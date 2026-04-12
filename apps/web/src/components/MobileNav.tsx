@@ -8,9 +8,10 @@ interface MobileNavProps {
   activeScreen: Screen;
   onScreenChange: (screen: Screen) => void;
   phase: 'town' | 'dungeon';
+  onNewGame?: () => void;
 }
 
-export function MobileNav({ activeScreen, onScreenChange, phase }: MobileNavProps) {
+export function MobileNav({ activeScreen, onScreenChange, phase, onNewGame }: MobileNavProps) {
   const tabBarHeight = TAB_BAR_HEIGHT;
 
   const tabs: Array<{ id: Screen; label: string; icon: string }> = [
@@ -54,6 +55,23 @@ export function MobileNav({ activeScreen, onScreenChange, phase }: MobileNavProp
           <div style={{ fontSize: 11, lineHeight: 1 }}>{tab.label}</div>
         </button>
       ))}
+      {onNewGame && (
+        <button
+          onClick={() => { if (window.confirm('Start a new game? Current progress will be lost.')) onNewGame(); }}
+          style={{
+            ...navBtnStyle,
+            background: '#222',
+            display: 'flex',
+            flexDirection: 'column',
+            alignItems: 'center',
+            justifyContent: 'center',
+            gap: '2px',
+          }}
+        >
+          <div style={{ fontSize: 18 }}>➕</div>
+          <div style={{ fontSize: 11, lineHeight: 1 }}>New Game</div>
+        </button>
+      )}
     </div>
   );
 }

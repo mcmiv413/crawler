@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { useGameStore } from './store/game-store.js';
 import { useKeyboard } from './hooks/useKeyboard.js';
 import { useAutoWalk } from './hooks/useAutoWalk.js';
@@ -75,7 +75,7 @@ function renderPanel(
 }
 
 export function App() {
-  const { view, gameId, combatLog, loading, error, createGame, sendCommand, clearError } = useGameStore();
+  const { view, gameId, combatLog, loading, error, createGame, sendCommand, clearError, restoreSession, resetGame } = useGameStore();
   const { isMobile } = useBreakpoint();
   const [playerName, setPlayerName] = useState('Adventurer');
   const [npcDialogue, setNpcDialogue] = useState<{ name: string; text: string } | null>(null);
@@ -85,6 +85,15 @@ export function App() {
   const [shownRisenNemesisIds, setShownRisenNemesisIds] = useState<Set<string>>(new Set());
   const [shownSlainNemesisIds, setShownSlainNemesisIds] = useState<Set<string>>(new Set());
   const [shownQuestIds, setShownQuestIds] = useState<Set<string>>(new Set());
+  const [sessionChecked, setSessionChecked] = useState(false);
+
+  useEffect(() => {
+    if (!gameId) {
+      restoreSession().finally(() => setSessionChecked(true));
+    } else {
+      setSessionChecked(true);
+    }
+  }, []); // eslint-disable-line react-hooks/exhaustive-deps
 
   function handleNavClick(screen: Screen) {
     if (screen === 'main') {
@@ -128,12 +137,19 @@ export function App() {
 
   // No game: show start screen
   if (!gameId || !view) {
+    if (!sessionChecked) {
+      return (
+        <div style={{ padding: 20, fontFamily: 'monospace', color: '#666', background: '#111', minHeight: '100vh', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+          Restoring session…
+        </div>
+      );
+    }
     return <StartScreen playerName={playerName} setPlayerName={setPlayerName} onCreateGame={createGame} loading={loading} error={error} />;
   }
 
   // Game over phase (full screen, no mobile nav)
   if (view.phase === 'game_over') {
-    return <GameOverPhase view={view} combatLog={combatLog} error={error} onNewGame={() => createGame(undefined, view.player.name)} />;
+    return <GameOverPhase view={view} combatLog={combatLog} error={error} onNewGame={() => { resetGame(); createGame(undefined, view.player.name); }} />;
   }
 
   // Nemesis risen screen (when a new nemesis is created from your death)
@@ -260,7 +276,7 @@ export function App() {
         {!isMobile && visiblePanels.map(p => renderPanel(p, view, combatLog, sendCommand, isMobile, () => handleNavClick(p)))}
         {isMobile && visiblePanels.length > 0 && visiblePanels.map(p => renderPanel(p, view, combatLog, sendCommand, isMobile, () => handleNavClick(p)))}
       </div>
-      <MobileNav activeScreen={activeNavScreen} onScreenChange={handleNavClick} phase={view.phase as 'town' | 'dungeon'} />
+      <MobileNav activeScreen={activeNavScreen} onScreenChange={handleNavClick} phase={view.phase as 'town' | 'dungeon'} onNewGame={resetGame} />
     </div>
   );
 }

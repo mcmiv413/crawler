@@ -1,5 +1,6 @@
 import { create } from 'zustand';
 import type { GameView, CombatLogEntry } from '@dungeon/presenter';
+import { saveSession, loadSession, clearSession } from './session-persistence.js';
 
 interface Position {
   readonly x: number;
@@ -19,6 +20,8 @@ interface GameStore {
   createGame: (seed?: number, playerName?: string) => Promise<void>;
   sendCommand: (command: unknown) => Promise<void>;
   refreshView: () => Promise<void>;
+  restoreSession: () => Promise<boolean>;
+  resetGame: () => void;
   clearError: () => void;
   startAutoWalk: (path: Position[]) => void;
   cancelAutoWalk: () => void;
@@ -40,6 +43,7 @@ export const useGameStore = create<GameStore>((set, get) => ({
     try {
       const api = await import('../api/client.js');
       const result = await api.createGame(seed, playerName);
+      saveSession(result.gameId, result.serializedState);
       set({
         gameId: result.gameId,
         view: result.view,
@@ -67,6 +71,7 @@ export const useGameStore = create<GameStore>((set, get) => ({
         });
       }
       const result = await api.sendCommand(gameId, command);
+      saveSession(gameId, result.serializedState);
       if (debugLogging && result.view.combatLog.length > 0) {
         const lastEntry = result.view.combatLog[result.view.combatLog.length - 1];
         console.log('[DEBUG] Combat Result:', {
@@ -99,6 +104,38 @@ export const useGameStore = create<GameStore>((set, get) => ({
   },
 
   clearError: () => set({ error: null }),
+
+  restoreSession: async () => {
+    const saved = loadSession();
+    if (!saved) return false;
+
+    set({ loading: true, error: null });
+    try {
+      const api = await import('../api/client.js');
+      // Try fetching view directly (server may still have it warm)
+      try {
+        const view = await api.fetchGameView(saved.gameId);
+        set({ gameId: saved.gameId, view, combatLog: [], loading: false });
+        return true;
+      } catch {
+        // Server lost it (cold start) — restore from client state
+      }
+      const result = await api.restoreGame(saved.serializedState);
+      saveSession(result.gameId, result.serializedState);
+      set({ gameId: result.gameId, view: result.view, combatLog: [], loading: false });
+      return true;
+    } catch {
+      // Saved state is corrupted or incompatible — clear and start fresh
+      clearSession();
+      set({ loading: false });
+      return false;
+    }
+  },
+
+  resetGame: () => {
+    clearSession();
+    set({ gameId: null, view: null, combatLog: [], error: null, autoWalkPath: [], autoWalkKnownEnemyIds: new Set() });
+  },
 
   startAutoWalk: (path) => {
     const view = get().view;

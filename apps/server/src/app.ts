@@ -7,7 +7,7 @@ import type { GameCommand, EntityId, GameState, RunMetrics } from '@dungeon/cont
 import { EMPTY_RUN_METRICS } from '@dungeon/contracts';
 import { InMemoryRepository } from './in-memory-repository.js';
 import { CompositeAiService } from './ai/ai-service-composite.js';
-import { applyRunConsequences, rollNemesisLoot, addItemToInventory } from '@dungeon/core';
+import { applyRunConsequences, rollNemesisLoot, addItemToInventory, serializeState, deserializeState } from '@dungeon/core';
 import { registerDebugRoutes } from './routes/debug.js';
 
 export async function buildApp(): Promise<FastifyInstance> {
@@ -47,6 +47,7 @@ export async function buildApp(): Promise<FastifyInstance> {
     return reply.code(201).send({
       gameId: state.gameId,
       view,
+      serializedState: serializeState(state),
     });
   });
 
@@ -212,6 +213,7 @@ export async function buildApp(): Promise<FastifyInstance> {
       view: { ...view, combatLog },
       events: result.events,
       runEnded: result.runEnded,
+      serializedState: serializeState(finalState),
     };
   });
 
@@ -251,6 +253,36 @@ export async function buildApp(): Promise<FastifyInstance> {
       return { events };
     },
   );
+
+  // POST /api/games/restore — restore a game from client-side serialized state
+  app.post('/api/games/restore', async (request, reply) => {
+    const body = request.body as { serializedState?: string };
+    if (!body.serializedState || typeof body.serializedState !== 'string') {
+      return reply.code(400).send({ error: 'Missing serializedState' });
+    }
+
+    try {
+      const state = deserializeState(body.serializedState);
+      if (!state.gameId) {
+        return reply.code(400).send({ error: 'Invalid game state' });
+      }
+
+      // Check if game already exists in repo (warm instance)
+      const existing = await repo.loadGame(state.gameId as EntityId);
+      if (existing) {
+        // Server already has it — just return the view
+        const view = buildGameView(existing);
+        return { gameId: existing.gameId, view, serializedState: serializeState(existing) };
+      }
+
+      // Cold start: re-hydrate from client state
+      await repo.createGame(state);
+      const view = buildGameView(state);
+      return { gameId: state.gameId, view, serializedState: body.serializedState };
+    } catch {
+      return reply.code(400).send({ error: 'Failed to deserialize game state' });
+    }
+  });
 
   // Debug routes (dev only)
   registerDebugRoutes(app, repo);
