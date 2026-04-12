@@ -1,0 +1,6 @@
+{
+  "framework": "vite",
+  "buildCommand": "cd ../.. && pnpm install --frozen-lockfile && pnpm --filter @dungeon/web build",
+  "installCommand": "echo 'install handled by buildCommand'",
+  "outputDirectory": "dist"
+}

@@ -34,6 +34,8 @@ const typedLanguageOptions = {
         "apps/*/src/hooks/*.test.ts",
         "apps/*/src/sprites/*.test.ts",
         "apps/*/src/utils/*.test.ts",
+        "apps/*/src/config/*.test.ts",
+        "apps/server/api/*.ts",
         "packages/*/vitest.config.ts",
         "packages/*/src/test-utils.d.ts",
         "packages/*/src/*.test.ts",

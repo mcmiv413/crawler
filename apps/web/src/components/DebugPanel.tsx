@@ -1,7 +1,8 @@
 import React, { useState } from 'react';
 import { useGameStore } from '../store/game-store.js';
+import { API_BASE_URL } from '../config/api.js';
 
-const BASE = '/api';
+const BASE = API_BASE_URL;
 
 async function debugInject(gameId: string, patch: Record<string, unknown>): Promise<void> {
   await fetch(`${BASE}/debug/inject/${gameId}`, {

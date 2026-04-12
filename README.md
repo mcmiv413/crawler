@@ -207,6 +207,80 @@ Sprite positions are defined in `apps/web/src/sprites/sprite-map.ts`. Grid formu
 
 ---
 
+## Deployment
+
+### Runtime Modes
+
+The application supports three runtime modes, selected by entrypoint and environment:
+
+| Mode | Server Entrypoint | Web Build | Persistence | AI |
+|------|-------------------|-----------|-------------|-----|
+| **Local dev** | `tsx watch src/dev-server.ts` | Vite dev server (proxy to :3000) | In-memory | LM Studio (optional) |
+| **Docker** | `node dist/dev-server.js` | nginx (proxy to server:3000) | In-memory or SQLite | LM Studio (optional) |
+| **Vercel (hosted)** | Serverless function (`api/index.ts`) | Static SPA | In-memory (non-durable) | Fallback-only (unless LM_HOST configured) |
+
+### Environment Variables
+
+| Variable | Used By | Default | Description |
+|----------|---------|---------|-------------|
+| `PORT` | Server | `3000` | HTTP listen port (local/Docker only) |
+| `HOST` | Server | `0.0.0.0` | Bind address (local/Docker only) |
+| `DUNGEON_DB_PATH` | Server | (unset) | Path to SQLite database file. If unset, uses in-memory storage (non-durable). |
+| `LM_HOST` | Server | (unset) | LM Studio host. If unset, AI uses static fallback content only. |
+| `LM_PORT` | Server | `1234` | LM Studio port |
+| `VITE_API_BASE_URL` | Web | `/api` | Full API base URL for hosted deployments (e.g., `https://your-server.vercel.app/api`) |
+| `VITE_ASCII_MODE` | Web | (unset) | Set to `true` to force ASCII renderer |
+
+### Persistence Modes
+
+- **In-memory** (default): Game state lives in server memory. Restarting the server loses all games. Suitable for development, demos, and stateless hosted deployments.
+- **SQLite**: Set `DUNGEON_DB_PATH=/path/to/dungeon.db` for durable storage. Required for any deployment where game state should survive restarts.
+
+The server logs which mode is active at startup.
+
+### AI Runtime Modes
+
+- **LM Studio + fallback**: When `LM_HOST` is set, the server attempts LM Studio for NPC dialogue, rumors, and run summaries with a 2-second timeout. On failure, static fallback content is used.
+- **Fallback-only**: When `LM_HOST` is unset, static content from `@dungeon/content` is used for all AI features. The game is fully playable without LM Studio.
+
+The server logs which AI mode is active at startup.
+
+### Deploying to Vercel
+
+The app deploys as **two separate Vercel projects**: one for the web client, one for the server API.
+
+#### Web (apps/web)
+
+1. Create a new Vercel project
+2. Set **Root Directory** to `apps/web`
+3. Framework preset: **Vite**
+4. Add environment variable: `VITE_API_BASE_URL` = your deployed server URL + `/api` (e.g., `https://dungeon-server.vercel.app/api`)
+5. Deploy
+
+#### Server (apps/server)
+
+1. Create a new Vercel project
+2. Set **Root Directory** to `apps/server`
+3. Framework preset: **Other**
+4. The serverless handler at `api/index.ts` handles all API routes
+5. Add environment variables as needed:
+   - `LM_HOST` / `LM_PORT` (optional, for AI features)
+   - `DUNGEON_DB_PATH` (optional, for SQLite persistence)
+6. Deploy
+
+> **Note**: The first hosted version uses in-memory persistence by default. Game state will not survive between serverless function cold starts. This is demo-grade; configure SQLite with durable storage for production use.
+
+### Docker (unchanged)
+
+Local Docker deployment continues to work exactly as before:
+
+```bash
+docker-compose up         # server on :3000, web on :8080
+docker-compose up --build # rebuild and start
+```
+
+---
+
 ## Contributing
 
 When adding new features or tests:

@@ -6,7 +6,6 @@ import { GameCommandSchema, CreateGameSchema } from '@dungeon/contracts';
 import type { GameCommand, EntityId, GameState, RunMetrics } from '@dungeon/contracts';
 import { EMPTY_RUN_METRICS } from '@dungeon/contracts';
 import { InMemoryRepository } from './in-memory-repository.js';
-import { SqliteRepository } from './sqlite-repository.js';
 import { CompositeAiService } from './ai/ai-service-composite.js';
 import { applyRunConsequences, rollNemesisLoot, addItemToInventory } from '@dungeon/core';
 import { registerDebugRoutes } from './routes/debug.js';
@@ -17,8 +16,19 @@ export async function buildApp(): Promise<FastifyInstance> {
 
   const engine = new GameEngine();
   const dbPath = process.env.DUNGEON_DB_PATH;
-  const repo = dbPath ? new SqliteRepository(dbPath) : new InMemoryRepository();
+  let repo;
+  if (dbPath) {
+    const { SqliteRepository } = await import('./sqlite-repository.js');
+    repo = new SqliteRepository(dbPath);
+  } else {
+    repo = new InMemoryRepository();
+  }
   const ai = new CompositeAiService();
+
+  const lmHost = process.env['LM_HOST'];
+  const lmPort = process.env['LM_PORT'] ?? '1234';
+  app.log.info(`Repository: ${dbPath ? `SQLite (${dbPath})` : 'in-memory (non-durable)'}`);
+  app.log.info(`AI: ${lmHost ? `LM Studio at ${lmHost}:${lmPort} (with fallback)` : 'fallback-only (LM_HOST not set)'}`);
 
   // POST /api/games — create a new game
   app.post('/api/games', async (request, reply) => {
