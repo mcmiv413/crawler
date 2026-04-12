@@ -70,7 +70,23 @@ export const useGameStore = create<GameStore>((set, get) => ({
           timestamp: new Date().toISOString(),
         });
       }
-      const result = await api.sendCommand(gameId, command);
+      let result: Awaited<ReturnType<typeof api.sendCommand>>;
+      try {
+        result = await api.sendCommand(gameId, command);
+      } catch (err) {
+        if (err instanceof api.GameNotFoundError) {
+          // Server lost state (cold start) — restore and retry
+          const saved = loadSession();
+          if (saved) {
+            await api.restoreGame(saved.serializedState);
+            result = await api.sendCommand(gameId, command);
+          } else {
+            throw new Error('Game session expired. Please start a new game.');
+          }
+        } else {
+          throw err;
+        }
+      }
       saveSession(gameId, result.serializedState);
       if (debugLogging && result.view.combatLog.length > 0) {
         const lastEntry = result.view.combatLog[result.view.combatLog.length - 1];

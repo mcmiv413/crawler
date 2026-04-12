@@ -55,7 +55,19 @@ export async function sendCommand(gameId: string, command: unknown): Promise<Com
     headers: { 'Content-Type': 'application/json' },
     body: JSON.stringify(command),
   });
+  if (res.status === 404) {
+    throw new GameNotFoundError(gameId);
+  }
   return json<CommandResponse>(res);
+}
+
+export class GameNotFoundError extends Error {
+  readonly gameId: string;
+  constructor(gameId: string) {
+    super('Game not found');
+    this.name = 'GameNotFoundError';
+    this.gameId = gameId;
+  }
 }
 
 export async function restoreGame(serializedState: string): Promise<CreateGameResponse> {
