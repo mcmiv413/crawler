@@ -4,12 +4,14 @@ import { API_BASE_URL } from '../config/api.js';
 export interface CreateGameResponse {
   gameId: string;
   view: GameView;
+  serializedState: string;
 }
 
 export interface CommandResponse {
   view: GameView & { combatLog: CombatLogEntry[] };
   events: unknown[];
   runEnded: boolean;
+  serializedState: string;
 }
 
 const BASE = API_BASE_URL;
@@ -54,4 +56,13 @@ export async function sendCommand(gameId: string, command: unknown): Promise<Com
     body: JSON.stringify(command),
   });
   return json<CommandResponse>(res);
+}
+
+export async function restoreGame(serializedState: string): Promise<CreateGameResponse> {
+  const res = await fetch(`${BASE}/games/restore`, {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ serializedState }),
+  });
+  return json<CreateGameResponse>(res);
 }
