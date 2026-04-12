@@ -2,13 +2,14 @@
   "version": 2,
   "buildCommand": "cd ../.. && pnpm install --frozen-lockfile && pnpm build",
   "functions": {
-    "dist/api.js": {
+    "api/index.js": {
       "memory": 1024,
-      "maxDuration": 30
+      "maxDuration": 30,
+      "includeFiles": "dist/**"
     }
   },
-  "routes": [
-    {"src": "/(.*)", "dest": "/dist/api.js"}
+  "rewrites": [
+    {"source": "/(.*)", "destination": "/api"}
   ]
 }
 
