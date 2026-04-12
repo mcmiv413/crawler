@@ -7,7 +7,7 @@
     "noUnusedLocals": false,
     "noUnusedParameters": false
   },
-  "include": ["src", "api"],
+  "include": ["src"],
   "exclude": ["src/**/*.test.ts"],
   "references": [
     { "path": "../../packages/game-contracts" },

@@ -1,5 +1,14 @@
 {
   "version": 2,
-  "buildCommand": "cd ../.. && pnpm install --frozen-lockfile && pnpm build"
+  "buildCommand": "cd ../.. && pnpm install --frozen-lockfile && pnpm build",
+  "functions": {
+    "dist/src/api.js": {
+      "runtime": "nodejs20.x"
+    }
+  },
+  "routes": [
+    {"src": "/(.*)", "dest": "/dist/src/api.js"}
+  ]
 }
+
 
