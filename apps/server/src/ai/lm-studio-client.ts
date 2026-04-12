@@ -12,7 +12,7 @@ export async function queryLmStudio(prompt: string): Promise<LmStudioResponse> {
   const timeout = setTimeout(() => controller.abort(), LM_TIMEOUT);
 
   try {
-    const response = await fetch(
+    const response: Response = await fetch(
       `http://${LM_HOST}:${LM_PORT}/v1/chat/completions`,
       {
         method: 'POST',
