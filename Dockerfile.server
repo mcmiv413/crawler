@@ -1,0 +1,40 @@
+FROM node:18-slim AS base
+RUN apt-get update && apt-get install -y python3 make g++ && rm -rf /var/lib/apt/lists/*
+RUN corepack enable && corepack prepare pnpm@10.32.1 --activate
+WORKDIR /app
+
+FROM base AS deps
+COPY package.json pnpm-lock.yaml pnpm-workspace.yaml ./
+COPY packages/game-contracts/package.json packages/game-contracts/
+COPY packages/game-core/package.json packages/game-core/
+COPY packages/content/package.json packages/content/
+COPY packages/presenter/package.json packages/presenter/
+COPY apps/server/package.json apps/server/
+RUN pnpm install --frozen-lockfile
+
+FROM deps AS build
+COPY tsconfig.base.json ./
+COPY packages/ packages/
+COPY apps/server/ apps/server/
+RUN pnpm build
+
+FROM base AS runtime
+WORKDIR /app
+# Copy package.json files and lock file
+COPY package.json pnpm-lock.yaml pnpm-workspace.yaml ./
+COPY apps/server/package.json apps/server/
+COPY packages/game-contracts/package.json packages/game-contracts/
+COPY packages/game-core/package.json packages/game-core/
+COPY packages/content/package.json packages/content/
+COPY packages/presenter/package.json packages/presenter/
+# Install production dependencies with pnpm (inherited base has pnpm + build tools)
+RUN pnpm install --frozen-lockfile --prod --no-optional
+# Copy compiled code from build stage
+COPY --from=build /app/apps/server/dist ./apps/server/dist
+COPY --from=build /app/packages/game-contracts/dist ./packages/game-contracts/dist
+COPY --from=build /app/packages/game-core/dist ./packages/game-core/dist
+COPY --from=build /app/packages/content/dist ./packages/content/dist
+COPY --from=build /app/packages/presenter/dist ./packages/presenter/dist
+EXPOSE 3000
+ENV NODE_ENV=production
+CMD ["node", "apps/server/dist/index.js"]

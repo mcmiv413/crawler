@@ -1,0 +1,9 @@
+{
+  "extends": "../apps/server/tsconfig.json",
+  "compilerOptions": {
+    "rootDir": ".",
+    "noUnusedLocals": false,
+    "noUnusedParameters": false
+  },
+  "include": ["."]
+}

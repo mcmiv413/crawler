@@ -1,0 +1,42 @@
+{
+  "name": "@dungeon/core",
+  "version": "0.1.0",
+  "private": true,
+  "type": "module",
+  "main": "./dist/index.js",
+  "types": "./dist/index.d.ts",
+  "exports": {
+    ".": {
+      "import": "./dist/index.js",
+      "types": "./dist/index.d.ts"
+    },
+    "./ai/ai-service": {
+      "import": "./dist/ai/ai-service.js",
+      "types": "./dist/ai/ai-service.d.ts"
+    },
+    "./ai/prompt-builders": {
+      "import": "./dist/ai/prompt-builders.js",
+      "types": "./dist/ai/prompt-builders.d.ts"
+    },
+    "./utils/pathfinding": {
+      "types": "./dist/utils/pathfinding.d.ts",
+      "import": "./dist/utils/pathfinding.js"
+    }
+  },
+  "scripts": {
+    "build": "tsc -b",
+    "test": "vitest run",
+    "test:watch": "vitest",
+    "clean": "rm -rf dist *.tsbuildinfo"
+  },
+  "dependencies": {
+    "@dungeon/contracts": "workspace:*",
+    "@dungeon/content": "workspace:*",
+    "@dungeon/presenter": "workspace:*",
+    "rot-js": "^2.2.0"
+  },
+  "devDependencies": {
+    "vitest": "^3.0.0",
+    "fast-check": "^4.0.0"
+  }
+}

@@ -1,0 +1,25 @@
+node_modules/
+dist/
+.turbo/
+*.tsbuildinfo
+coverage/
+.env
+.env.local
+*.db
+*.sqlite
+.DS_Store
+data/
+balance-results/
+scripts/node_modules/
+.claude/
+.serena/
+.plan/
+.fossil/
+playwright-report/
+
+# markdown policy if you truly want this going forward
+*.md
+!README.md
+!readme.md
+!README.MD
+!readme.MD

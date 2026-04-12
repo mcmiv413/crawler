@@ -1,0 +1,438 @@
+import type { GameState, EnemyInstance } from '@dungeon/contracts';
+import { posKey } from '@dungeon/contracts';
+import type { DomainEvent } from '@dungeon/contracts';
+import { decideEnemyAction, type EnemyAction } from '../systems/enemy-ai.js';
+import { decideAmbientAction } from '../systems/ambient-behavior-engine.js';
+import { resolveAttack } from '../systems/combat.js';
+import { getEffectiveStat, tickPlayerStatuses, tickEnemyStatuses } from '../systems/status-effects.js';
+import { handlePlayerDeath } from '../systems/death.js';
+import { chebyshevDistance } from '../utils/grid.js';
+import type { SeededRNG } from '../utils/rng.js';
+import { applyThornsToAttacker, applyBlinkOnHit, getEnchantmentRegenBonus, getTotalThornsReflect } from '../systems/enchantment-hooks.js';
+import { updateRunMetrics } from './command-handler.js';
+import { resolveEnemyAbility } from '../systems/enemy-abilities.js';
+import { COMBAT, AMBIENT_PROFILES } from '@dungeon/content';
+
+/** Process all enemy turns after a player action */
+export function processEnemyTurns(
+  state: GameState,
+  rng: SeededRNG,
+  playerSpeed?: number,
+): { state: GameState; events: DomainEvent[] } {
+  if (state.run === null) return { state, events: [] };
+
+  let currentState = state;
+  let allEvents: DomainEvent[] = [];
+
+  // Update speed accumulators if playerSpeed provided (for MOVE actions only)
+  if (playerSpeed !== undefined && currentState.run !== null) {
+    const newAccumulators: Record<string, number> = { ...currentState.run.speedAccumulators };
+    for (const enemy of currentState.run.enemies.values()) {
+      const ratio = enemy.stats.speed / playerSpeed;
+      newAccumulators[enemy.id] = (newAccumulators[enemy.id] ?? 0) + ratio;
+    }
+    currentState = {
+      ...currentState,
+      run: { ...currentState.run, speedAccumulators: newAccumulators },
+    };
+  }
+
+  // Sort enemies by speed (fastest first)
+  const mutableEnemiesBySpeed = [...currentState.run!.enemies.values()]
+    .filter(e => e.stats.health > 0);
+  mutableEnemiesBySpeed.sort((a, b) => b.stats.speed - a.stats.speed);
+  const enemies = mutableEnemiesBySpeed;
+
+  for (const enemy of enemies) {
+    if (currentState.player.stats.health <= 0) break;
+    if (currentState.run === null) break;
+
+    // Get fresh reference — state may have changed
+    const currentEnemy = currentState.run.enemies.get(posKey(enemy.position));
+    if (currentEnemy === undefined || currentEnemy.id !== enemy.id) continue;
+
+    // Alert check
+    let updatedEnemy = currentEnemy;
+    if (currentEnemy.isAlerted !== true) {
+      const dist = chebyshevDistance(currentEnemy.position, currentState.player.position);
+      if (dist <= 5) {
+        updatedEnemy = { ...currentEnemy, isAlerted: true, lastKnownPlayerPos: currentState.player.position };
+        const newEnemies = new Map(currentState.run.enemies);
+        newEnemies.delete(posKey(currentEnemy.position));
+        newEnemies.set(posKey(updatedEnemy.position), updatedEnemy);
+        currentState = {
+          ...currentState,
+          run: { ...currentState.run, enemies: newEnemies },
+        };
+        let alertEvents: DomainEvent[] = [{
+          type: 'ENEMY_ALERTED',
+          enemyId: updatedEnemy.id,
+          enemyName: updatedEnemy.name,
+          timestamp: Date.now(),
+          turnNumber: currentState.turnNumber,
+        }];
+
+        // Fire nemesis encountered event if this is a nemesis
+        if (updatedEnemy.nemesisId !== undefined) {
+          alertEvents = [...alertEvents, {
+            type: 'NEMESIS_ENCOUNTERED',
+            nemesisId: updatedEnemy.nemesisId,
+            nemesisName: updatedEnemy.name,
+            floor: currentState.run!.floor.depth,
+            timestamp: Date.now(),
+            turnNumber: currentState.turnNumber,
+          }];
+
+          // Increment encounter count on the nemesis record
+          const updatedNemeses = currentState.world.nemeses.map(n =>
+            n.id === updatedEnemy.nemesisId
+              ? { ...n, encounterCount: n.encounterCount + 1 }
+              : n,
+          );
+          currentState = {
+            ...currentState,
+            world: { ...currentState.world, nemeses: updatedNemeses },
+          };
+        }
+
+        // Alert propagation: notify nearby un-alerted enemies
+        const neighborsToAlert = Array.from(currentState.run!.enemies.values())
+          .filter(neighbor => !neighbor.isAlerted && chebyshevDistance(neighbor.position, updatedEnemy.position) <= 4);
+
+        let updatedRunState = currentState.run!;
+        let neighborAlertEvents: DomainEvent[] = [];
+        for (const neighbor of neighborsToAlert) {
+          const alertedNeighbor = { ...neighbor, isAlerted: true, lastKnownPlayerPos: currentState.player.position };
+          const newEnemies = new Map(updatedRunState.enemies);
+          newEnemies.delete(posKey(neighbor.position));
+          newEnemies.set(posKey(alertedNeighbor.position), alertedNeighbor);
+          updatedRunState = { ...updatedRunState, enemies: newEnemies };
+          neighborAlertEvents = [...neighborAlertEvents, {
+            type: 'ENEMY_ALERTED',
+            enemyId: alertedNeighbor.id,
+            enemyName: alertedNeighbor.name,
+            timestamp: Date.now(),
+            turnNumber: currentState.turnNumber,
+          }];
+        }
+        currentState = { ...currentState, run: updatedRunState };
+        allEvents = [...allEvents, ...alertEvents, ...neighborAlertEvents];
+      }
+    }
+
+    // Stun check (applies to both alerted and ambient behaviors)
+    if (updatedEnemy.statuses.some(s => s.id === 'stun')) continue;
+
+    // Decide action based on alert state
+    let action: EnemyAction;
+    let ambientStateChangeEvent: DomainEvent | null = null;
+
+    if (updatedEnemy.isAlerted === true) {
+      // Combat behavior
+      action = decideEnemyAction(updatedEnemy, currentState);
+    } else {
+      // Ambient behavior
+      const profileId = updatedEnemy.ambientBehaviorProfile;
+      const profile = profileId !== undefined ? AMBIENT_PROFILES.get(profileId) : undefined;
+      if (profile !== undefined) {
+        const ambientResult = decideAmbientAction(updatedEnemy, profile, currentState, rng);
+        action = ambientResult.action;
+        updatedEnemy = ambientResult.updatedEnemy;
+        ambientStateChangeEvent = ambientResult.stateChangeEvent;
+      } else {
+        action = { type: 'wait', enemyId: updatedEnemy.id };
+        // Still age the state even without a profile
+        updatedEnemy = { ...updatedEnemy, ambientStateAge: (updatedEnemy.ambientStateAge ?? 0) + 1 };
+      }
+    }
+
+    const result = executeEnemyAction(action, updatedEnemy, currentState, rng);
+    currentState = result.state;
+    allEvents = [...allEvents, ...result.events];
+    if (ambientStateChangeEvent !== null) {
+      allEvents = [...allEvents, ambientStateChangeEvent];
+    }
+  }
+
+  // Tick player statuses at end of round
+  const healthBeforeStatus = currentState.player.stats.health;
+  const statusResult = tickPlayerStatuses(currentState.player, currentState.turnNumber);
+  currentState = { ...currentState, player: statusResult.player };
+  allEvents = [...allEvents, ...statusResult.events];
+  const statusDamage = healthBeforeStatus - statusResult.player.stats.health;
+  if (statusDamage > 0) {
+    currentState = updateRunMetrics(currentState, { damageTaken: statusDamage });
+  }
+
+  // Apply enchantment HP regen
+  const regenBonus = getEnchantmentRegenBonus(currentState);
+  if (regenBonus > 0 && currentState.player.stats.health > 0) {
+    const newHealth = Math.min(currentState.player.stats.maxHealth, currentState.player.stats.health + regenBonus);
+    currentState = {
+      ...currentState,
+      player: { ...currentState.player, stats: { ...currentState.player.stats, health: newHealth } },
+    };
+  }
+
+  // Check player death from status damage (only if run is still active)
+  if (currentState.run !== null && currentState.player.stats.health <= 0) {
+    const deathResult = handlePlayerDeath(currentState, null, 'status effects', rng, Math.abs(currentState.player.stats.health));
+    currentState = deathResult.state;
+    allEvents = [...allEvents, ...deathResult.events];
+  }
+
+  // Tick enemy statuses at end of round
+  if (currentState.run !== null) {
+    const newEnemies = new Map(currentState.run.enemies);
+    let statusEvents: DomainEvent[] = [];
+    for (const [key, enemy] of newEnemies) {
+      const statusResult = tickEnemyStatuses(enemy, currentState.turnNumber);
+      newEnemies.set(key, statusResult.enemy);
+      statusEvents = [...statusEvents, ...statusResult.events];
+    }
+    currentState = { ...currentState, run: { ...currentState.run, enemies: newEnemies } };
+    allEvents = [...allEvents, ...statusEvents];
+  }
+
+  // Tick enemy ability cooldowns
+  currentState = tickEnemyCooldowns(currentState);
+
+  return { state: currentState, events: allEvents };
+}
+
+
+/** Tick down all enemy ability cooldowns at the end of a round */
+export function tickEnemyCooldowns(state: GameState): GameState {
+  if (state.run === null) return state;
+
+  const newEnemies = new Map(state.run.enemies);
+  for (const [key, enemy] of newEnemies) {
+    if (enemy.abilityCooldowns === undefined || Object.keys(enemy.abilityCooldowns).length === 0) continue;
+
+    const updatedCooldowns: Record<string, number> = {};
+    for (const [abilityId, cooldown] of Object.entries(enemy.abilityCooldowns)) {
+      updatedCooldowns[abilityId] = Math.max(0, cooldown - 1);
+    }
+
+    newEnemies.set(key, {
+      ...enemy,
+      abilityCooldowns: updatedCooldowns,
+    });
+  }
+
+  return {
+    ...state,
+    run: { ...state.run, enemies: newEnemies },
+  };
+}
+
+function executeEnemyAction(
+  action: EnemyAction,
+  enemy: EnemyInstance,
+  state: GameState,
+  rng: SeededRNG,
+): { state: GameState; events: DomainEvent[] } {
+  if (state.run === null) return { state, events: [] };
+
+  switch (action.type) {
+    case 'move': {
+      if (action.targetPosition === undefined) return { state, events: [] };
+
+      const newEnemies = new Map(state.run.enemies);
+      newEnemies.delete(posKey(enemy.position));
+
+      // If the target cell is already occupied by another enemy, the enemy waits
+      if (newEnemies.has(posKey(action.targetPosition))) {
+        return { state, events: [] };
+      }
+
+      const movedEnemy: EnemyInstance = {
+        ...enemy,
+        position: action.targetPosition,
+        lastKnownPlayerPos: state.player.position,
+      };
+      newEnemies.set(posKey(action.targetPosition), movedEnemy);
+
+      return {
+        state: {
+          ...state,
+          run: { ...state.run, enemies: newEnemies },
+        },
+        events: [{
+          type: 'ENEMY_MOVED',
+          enemyId: enemy.id,
+          from: enemy.position,
+          to: action.targetPosition,
+          timestamp: Date.now(),
+          turnNumber: state.turnNumber,
+        }],
+      };
+    }
+
+    case 'attack': {
+      const effectiveAttack = getEffectiveStat(enemy.stats.attack, 'attack', enemy.statuses);
+      const effectiveAccuracy = getEffectiveStat(enemy.stats.accuracy, 'accuracy', enemy.statuses);
+      const playerDefense = getEffectiveStat(state.player.stats.defense, 'defense', state.player.statuses);
+      const playerEvasion = state.player.stats.evasion;
+
+      // Determine enemy damage type from equipment or default to physical
+      // eslint-disable-next-line @typescript-eslint/no-unnecessary-condition
+      const damageType = enemy.equipment?.weapon?.damageType ?? 'physical';
+
+      // Player resistance from enchantments/armor (safe access)
+      // eslint-disable-next-line @typescript-eslint/no-unnecessary-condition
+      const resistance = (state.player.stats.resistances ?? {})[damageType] ?? 0;
+
+      // Check blink before resolving damage
+      const blinked = applyBlinkOnHit(state, () => rng.next());
+
+      const result = resolveAttack({
+        attackerId: enemy.id,
+        defenderId: state.player.id,
+        attackerAttack: effectiveAttack,
+        attackerAccuracy: effectiveAccuracy,
+        defenderDefense: playerDefense,
+        defenderEvasion: blinked === true ? 100 : playerEvasion, // blink = guaranteed miss
+        defenderHealth: state.player.stats.health,
+        damageType,
+        defenderResistance: resistance,
+      }, rng);
+
+      // Include diagnostic info for misses
+      const expectedHitChance = Math.max(
+        COMBAT.minHitChance,
+        Math.min(COMBAT.maxHitChance, COMBAT.baseHitChance + effectiveAccuracy - playerEvasion),
+      );
+      const debugReason = result.hit === false && result.hitRoll !== undefined
+        ? `base:${COMBAT.baseHitChance} +acc:${effectiveAccuracy} -eva:${playerEvasion} =chance:${expectedHitChance}% roll:${result.hitRoll.toFixed(1)}`
+        : undefined;
+
+      const attackEvent: DomainEvent = {
+        type: 'ATTACK_PERFORMED',
+        attackerId: enemy.id,
+        defenderId: state.player.id,
+        attackerName: enemy.name,
+        defenderName: state.player.name,
+        damage: result.damage,
+        damageType: result.damageType,
+        hit: result.hit,
+        critical: result.criticalHit,
+        reason: debugReason,
+        missReason: result.missReason,
+        timestamp: Date.now(),
+        turnNumber: state.turnNumber,
+      };
+
+      let newState = state;
+      let resultEvents: DomainEvent[] = [attackEvent];
+
+      // Track consecutive misses for streak detection
+      if (result.hit === true) {
+        // Reset miss counter on enemy hit
+        newState = updateRunMetrics(newState, { consecutiveMisses: 0 });
+      } else {
+        // Increment miss counter on enemy miss
+        const newMissCount = (newState.run?.runMetrics?.consecutiveMisses ?? 0) + 1;
+        newState = updateRunMetrics(newState, { consecutiveMisses: newMissCount });
+
+        // Emit debug event on 6+ consecutive misses
+        if (newMissCount >= 6) {
+          const debugEvent: DomainEvent = {
+            type: 'DEBUG_MISS_STREAK',
+            playerAccuracy: newState.player.stats.accuracy,
+            playerEvasion: newState.player.stats.evasion,
+            enemyAccuracy: enemy.stats.accuracy,
+            enemyEvasion: enemy.stats.evasion,
+            rngSeed: newState.seed,
+            streakLength: newMissCount,
+            timestamp: Date.now(),
+            turnNumber: newState.turnNumber,
+          };
+          resultEvents = [...resultEvents, debugEvent];
+        }
+      }
+
+      // Emit blink dodge event if applicable
+      if (blinked === true) {
+        resultEvents = [...resultEvents, {
+          type: 'BLINK_DODGED',
+          defenderId: state.player.id,
+          attackerId: enemy.id,
+          attackerName: enemy.name,
+          timestamp: Date.now(),
+          turnNumber: state.turnNumber,
+        }];
+      }
+
+      if (result.hit === true) {
+        const newHealth = Math.max(0, state.player.stats.health - result.damage);
+        newState = {
+          ...state,
+          player: {
+            ...state.player,
+            stats: { ...state.player.stats, health: newHealth },
+          },
+        };
+        newState = updateRunMetrics(newState, { damageTaken: result.damage });
+
+        // Thorns: reflect damage to attacker
+        const thornsAmount = getTotalThornsReflect(newState);
+        if (thornsAmount > 0) {
+          const thornsResult = applyThornsToAttacker(newState, enemy, thornsAmount);
+          const thornsEvent: DomainEvent = {
+            type: 'THORNS_REFLECTED',
+            targetId: enemy.id,
+            targetName: enemy.name,
+            damageAmount: thornsResult.thornsApplied,
+            byPlayerId: state.player.id,
+            timestamp: Date.now(),
+            turnNumber: state.turnNumber,
+          };
+          resultEvents = [...resultEvents, thornsEvent];
+
+          const newEnemies = new Map(newState.run!.enemies);
+          if (thornsResult.newEnemyHealth <= 0) {
+            newEnemies.delete(posKey(enemy.position));
+          } else {
+            newEnemies.set(posKey(enemy.position), {
+              ...enemy,
+              stats: { ...enemy.stats, health: thornsResult.newEnemyHealth },
+            });
+          }
+          newState = { ...newState, run: { ...newState.run!, enemies: newEnemies } };
+        }
+
+        if (newHealth <= 0) {
+          const rawHealth = state.player.stats.health - result.damage;
+          const deathResult = handlePlayerDeath(newState, enemy.id, `Killed by ${enemy.name}`, rng, Math.abs(rawHealth));
+          return {
+            state: deathResult.state,
+            events: [...resultEvents, ...deathResult.events],
+          };
+        }
+      }
+
+      return { state: newState, events: resultEvents };
+    }
+
+    case 'ability': {
+      if (action.abilityId === undefined) return { state, events: [] };
+
+      const result = resolveEnemyAbility(action.abilityId, enemy, state, rng);
+      let newState = result.state;
+
+      // Update run metrics for any damage dealt by the ability
+      for (const event of result.events) {
+        if (event.type === 'ATTACK_PERFORMED' && event.hit === true && event.damage > 0) {
+          newState = updateRunMetrics(newState, { damageTaken: event.damage });
+        }
+      }
+
+      return { state: newState, events: result.events };
+    }
+
+    case 'wait':
+    default:
+      return { state, events: [] };
+  }
+}

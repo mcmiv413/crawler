@@ -1,0 +1,40 @@
+import type { EnemyTemplate } from '@dungeon/contracts';
+import { SPRITE_MAP } from '../sprites/sprite-map.js';
+
+export const skeletonWarrior = {
+  templateId: 'skeleton_warrior',
+  name: 'Skeleton Warrior',
+  archetype: 'aggressive_melee',
+  tier: 1,
+  stats: {
+    maxHealth: 50,
+    health: 50,
+    attack: 14,
+    defense: 8,
+    accuracy: 65,
+    evasion: 5,
+    speed: 80,
+  },
+  equipment: {
+    weapon: {
+      damageMultiplier: 1.0,
+      damageType: 'physical',
+      range: 1,
+    },
+  },
+  affinities: { poison: 0.5 },
+  spawn: {
+    floorRange: [1, 3],
+    weight: 2,
+  },
+  lootTableId: 'loot_skeleton',
+  experienceValue: 15,
+  description: 'An animated skeleton wielding a rusty sword.',
+  ascii: 'S',
+  color: '#ccccaa',
+  movementBehaviorId: 'chokepoint_holder',
+  sprite: SPRITE_MAP['enemy:skeleton_warrior'],
+  biomes: [{ biomeId: 'stone_crypt' }],
+  factions: [{ factionId: 'undead_legion', weight: 1.0 }],
+  ambientBehaviorProfile: 'wanderer',
+} as const satisfies EnemyTemplate;

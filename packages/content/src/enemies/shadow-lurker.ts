@@ -1,0 +1,40 @@
+import type { EnemyTemplate } from '@dungeon/contracts';
+import { SPRITE_MAP } from '../sprites/sprite-map.js';
+
+export const shadowLurker = {
+  templateId: 'shadow_lurker',
+  name: 'Shadow Lurker',
+  archetype: 'ambusher',
+  tier: 2,
+  stats: {
+    maxHealth: 35,
+    health: 35,
+    attack: 14,
+    defense: 3,
+    accuracy: 80,
+    evasion: 30,
+    speed: 120,
+  },
+  equipment: {
+    weapon: {
+      damageMultiplier: 1.1,
+      damageType: 'corruption',
+      range: 1,
+    },
+  },
+  affinities: { corruption: 0.5 },
+  spawn: {
+    floorRange: [2, 4],
+    weight: 1,
+  },
+  lootTableId: 'loot_shadow',
+  experienceValue: 25,
+  description: 'A dark creature that strikes from the shadows.',
+  ascii: 'L',
+  color: '#5533aa',
+  movementBehaviorId: 'ambush_idle',
+  sprite: SPRITE_MAP['enemy:shadow_lurker'],
+  biomes: [{ biomeId: 'moss_caverns' }, { biomeId: 'frozen_depths' }],
+  factions: [{ factionId: 'shadow_cult', weight: 1.0 }],
+  ambientBehaviorProfile: 'wall_lurker',
+} as const satisfies EnemyTemplate;

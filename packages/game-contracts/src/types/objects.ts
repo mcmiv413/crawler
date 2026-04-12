@@ -1,0 +1,29 @@
+import type { SpriteRect, Position, EntityId } from './common.js';
+import type { BiomeMembership } from './enemy.js';
+
+export interface ObjectTemplate {
+  readonly templateId: string;
+  readonly name: string;
+  readonly description: string;
+  readonly ascii: string;
+  readonly color: string;
+  readonly sprite?: SpriteRect;
+  /** Effect on player health when interacted with. Negative = damage, positive = heal, 0 = no effect */
+  readonly healthDelta: number;
+  /** If true, object is removed from the map after one interaction */
+  readonly consumable: boolean;
+  /** If true, the player cannot walk through this object */
+  readonly blocksMovement: boolean;
+  /** If set, object dispenses loot on interaction (like a chest) */
+  readonly lootTableId?: string;
+  /** Which biomes this object can spawn in */
+  readonly biomes?: ReadonlyArray<BiomeMembership>;
+}
+
+export interface ObjectInstance {
+  readonly id: EntityId;
+  readonly templateId: string;
+  readonly position: Position;
+  /** True after a consumable has been interacted with (pending removal) */
+  readonly isExhausted: boolean;
+}

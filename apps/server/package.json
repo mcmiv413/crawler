@@ -1,0 +1,30 @@
+{
+  "name": "@dungeon/server",
+  "version": "0.1.0",
+  "private": true,
+  "type": "module",
+  "main": "./dist/index.js",
+  "scripts": {
+    "build": "tsc -b",
+    "dev": "LM_HOST=192.168.1.38 LM_PORT=1234 tsx watch src/index.ts",
+    "start": "node dist/index.js",
+    "test": "vitest run",
+    "clean": "rm -rf dist *.tsbuildinfo"
+  },
+  "dependencies": {
+    "@dungeon/content": "workspace:*",
+    "@dungeon/contracts": "workspace:*",
+    "@dungeon/core": "workspace:*",
+    "@dungeon/presenter": "workspace:*",
+    "@fastify/cors": "^11.0.0",
+    "better-sqlite3": "^12.8.0",
+    "fastify": "^5.2.0",
+    "zod": "^3.24.0"
+  },
+  "devDependencies": {
+    "@types/better-sqlite3": "^7.6.13",
+    "@types/node": "^22.0.0",
+    "tsx": "^4.19.0",
+    "vitest": "^3.0.0"
+  }
+}

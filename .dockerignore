@@ -1,0 +1,10 @@
+node_modules
+dist
+*.log
+.git
+.claude
+balance-results
+tests
+coverage
+*.test.ts
+*.property.test.ts

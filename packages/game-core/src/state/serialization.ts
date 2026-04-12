@@ -1,0 +1,146 @@
+import type { GameState, StoredFloor, RunState, EntityId, AnyItemTemplate, MapCell, EnemyInstance, DungeonFloor, ObjectInstance } from '@dungeon/contracts';
+import { BASE_PLAYER_STATS } from '@dungeon/content';
+
+/** Plain-object (JSON) form of a StoredFloor (Maps become Record). */
+interface StoredFloorJson {
+  floor: Record<string, unknown> & { cells: Record<string, unknown> };
+  enemies: Record<string, unknown>;
+  objects: Record<string, unknown>;
+  playerPosition: StoredFloor['playerPosition'];
+}
+
+/** Plain-object (JSON) form of a RunState (Maps become Records). */
+interface RunStateJson {
+  floor: Record<string, unknown> & { cells: Record<string, unknown> };
+  enemies: Record<string, unknown>;
+  objects: Record<string, unknown>;
+  floorHistory: StoredFloorJson[];
+  floorCache?: Record<string, StoredFloorJson> | null;
+  [key: string]: unknown;
+}
+
+/**
+ * Converts a StoredFloor (with Maps) to a plain-object representation for JSON.
+ */
+function serializeStoredFloor(sf: StoredFloor): unknown {
+  return {
+    floor: {
+      ...sf.floor,
+      cells: Object.fromEntries(sf.floor.cells),
+    },
+    enemies: Object.fromEntries(sf.enemies),
+    objects: Object.fromEntries(sf.objects),
+    playerPosition: sf.playerPosition,
+  };
+}
+
+/**
+ * Reconstructs a StoredFloor from its plain-object JSON representation.
+ */
+function deserializeStoredFloor(raw: StoredFloorJson): StoredFloor {
+  return {
+    floor: {
+      ...raw.floor,
+      cells: new Map(Object.entries(raw.floor.cells)) as ReadonlyMap<string, MapCell>,
+    } as DungeonFloor,
+    enemies: new Map(Object.entries(raw.enemies)) as ReadonlyMap<string, EnemyInstance>,
+    objects: new Map(Object.entries(raw.objects)) as ReadonlyMap<string, ObjectInstance>,
+    playerPosition: raw.playerPosition,
+  };
+}
+
+/**
+ * Serialize a GameState to a JSON string, converting all Maps to plain objects.
+ */
+export function serializeState(state: GameState): string {
+  const serializable = {
+    ...state,
+    run: state.run !== null ? serializeRun(state.run) : null,
+    itemRegistry: {
+      items: Object.fromEntries(state.itemRegistry.items),
+    },
+  };
+  return JSON.stringify(serializable);
+}
+
+function serializeRun(run: RunState): unknown {
+  return {
+    ...run,
+    floor: {
+      ...run.floor,
+      cells: Object.fromEntries(run.floor.cells),
+    },
+    enemies: Object.fromEntries(run.enemies),
+    objects: Object.fromEntries(run.objects),
+    floorHistory: run.floorHistory.map(serializeStoredFloor),
+    floorCache: run.floorCache !== undefined
+      ? Object.fromEntries(
+          Array.from(run.floorCache.entries()).map(([depth, sf]) => [
+            depth,
+            serializeStoredFloor(sf),
+          ]),
+        )
+      : undefined,
+  };
+}
+
+/**
+ * Deserialize a JSON string back into a GameState, reconstructing all Maps.
+ * Applies defensive defaults for fields that may be missing in old saves.
+ */
+export function deserializeState(json: string): GameState {
+  const parsed = JSON.parse(json) as Record<string, unknown> & {
+    run: RunStateJson | null;
+    itemRegistry: { items: Record<string, unknown> };
+    player: Record<string, unknown>;
+  };
+
+  // Apply defensive defaults for world state fields that may be missing in old saves
+  const world = {
+    shop: { items: [], buybackMultiplier: 0.5 },
+    factions: [],
+    ...parsed.world as Record<string, unknown>,
+  };
+
+  // Apply defensive defaults for player stats in case old saves are missing fields
+  const playerStats = {
+    ...BASE_PLAYER_STATS,
+    ...((parsed.player.stats ?? {}) as Record<string, unknown>),
+  };
+
+  const player = {
+    ...parsed.player,
+    stats: playerStats,
+  };
+
+  return {
+    ...parsed,
+    world,
+    player,
+    run: parsed.run !== null ? deserializeRun(parsed.run) : null,
+    itemRegistry: {
+      items: new Map(Object.entries(parsed.itemRegistry.items)) as unknown as ReadonlyMap<EntityId, AnyItemTemplate>,
+    },
+  } as unknown as GameState;
+}
+
+function deserializeRun(raw: RunStateJson): RunState {
+  return {
+    ...raw,
+    floor: {
+      ...raw.floor,
+      cells: new Map(Object.entries(raw.floor.cells)) as ReadonlyMap<string, MapCell>,
+    },
+    enemies: new Map(Object.entries(raw.enemies)) as ReadonlyMap<string, EnemyInstance>,
+    objects: new Map(Object.entries(raw.objects)) as ReadonlyMap<string, ObjectInstance>,
+    floorHistory: raw.floorHistory.map(deserializeStoredFloor),
+    floorCache: raw.floorCache !== null && raw.floorCache !== undefined
+      ? new Map(
+          Object.entries(raw.floorCache).map(([depth, sf]: [string, StoredFloorJson]) => [
+            Number(depth),
+            deserializeStoredFloor(sf),
+          ]),
+        ) as ReadonlyMap<number, StoredFloor>
+      : undefined,
+  } as unknown as RunState;
+}

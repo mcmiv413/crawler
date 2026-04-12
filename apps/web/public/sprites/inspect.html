@@ -1,0 +1,89 @@
+<!DOCTYPE html>
+<html>
+<head>
+<meta charset="utf-8">
+<title>Sprite Sheet Inspector</title>
+<style>
+  body { background: #222; color: #eee; font-family: monospace; margin: 20px; }
+  h2 { color: #ff0; }
+  #container { position: relative; display: inline-block; }
+  canvas { image-rendering: pixelated; cursor: crosshair; }
+  #info { margin-top: 12px; font-size: 14px; }
+  #info span { color: #ff0; }
+  #preview { margin-top: 12px; }
+  #preview canvas { border: 1px solid #555; image-rendering: pixelated; }
+  .grid-label { position: absolute; color: rgba(255,255,100,0.7); font-size: 7px; pointer-events: none; }
+</style>
+</head>
+<body>
+<h2>Kenney Tiny Dungeon — Tile Inspector</h2>
+<p>Hover or click a tile to see its col/row and sprite-map coordinates.</p>
+<div id="container">
+  <canvas id="sheet" width="576" height="528"></canvas><!-- 3x zoom: 192*3=576, 176*3=528 -->
+</div>
+<div id="info">
+  Hover a tile — <span id="coords">col ?, row ? → x: ?, y: ?</span>
+</div>
+<div id="preview">
+  <p>Selected tile (8x zoom):</p>
+  <canvas id="tile" width="128" height="128"></canvas>
+</div>
+<script>
+const COLS = 12, ROWS = 11, TILE = 16, ZOOM = 3;
+const sheet = document.getElementById('sheet');
+const ctx = sheet.getContext('2d');
+ctx.imageSmoothingEnabled = false;
+
+const img = new Image();
+img.src = 'kenney-tiny-dungeon.png';
+img.onload = () => {
+  // Draw zoomed sheet
+  ctx.drawImage(img, 0, 0, img.width * ZOOM, img.height * ZOOM);
+
+  // Draw grid
+  ctx.strokeStyle = 'rgba(255,255,0,0.5)';
+  ctx.lineWidth = 1;
+  for (let c = 0; c <= COLS; c++) {
+    ctx.beginPath();
+    ctx.moveTo(c * TILE * ZOOM, 0);
+    ctx.lineTo(c * TILE * ZOOM, ROWS * TILE * ZOOM);
+    ctx.stroke();
+  }
+  for (let r = 0; r <= ROWS; r++) {
+    ctx.beginPath();
+    ctx.moveTo(0, r * TILE * ZOOM);
+    ctx.lineTo(COLS * TILE * ZOOM, r * TILE * ZOOM);
+    ctx.stroke();
+  }
+
+  // Label each tile with col,row
+  ctx.fillStyle = 'rgba(255,255,100,0.8)';
+  ctx.font = `${ZOOM * 4}px monospace`;
+  for (let r = 0; r < ROWS; r++) {
+    for (let c = 0; c < COLS; c++) {
+      ctx.fillText(`${c},${r}`, c * TILE * ZOOM + 2, r * TILE * ZOOM + 10);
+    }
+  }
+};
+
+sheet.addEventListener('mousemove', e => {
+  const rect = sheet.getBoundingClientRect();
+  const mx = e.clientX - rect.left;
+  const my = e.clientY - rect.top;
+  const col = Math.floor(mx / (TILE * ZOOM));
+  const row = Math.floor(my / (TILE * ZOOM));
+  if (col >= 0 && col < COLS && row >= 0 && row < ROWS) {
+    document.getElementById('coords').textContent =
+      `col ${col}, row ${row}  →  x: ${col*16}, y: ${row*16}, w: 16, h: 16`;
+
+    // Draw 8x preview
+    const tc = document.getElementById('tile');
+    const tctx = tc.getContext('2d');
+    tctx.imageSmoothingEnabled = false;
+    tctx.clearRect(0, 0, 128, 128);
+    tctx.drawImage(img, col*16, row*16, 16, 16, 0, 0, 128, 128);
+  }
+});
+</script>
+</body>
+</html>
