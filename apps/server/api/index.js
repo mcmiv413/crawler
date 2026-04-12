@@ -1,4 +1,14 @@
 // Vercel serverless function entry point.
-// Plain .js re-export to avoid TypeScript/JavaScript filename conflicts.
-// Delegates to the compiled Fastify handler in dist/.
-export { default } from '../dist/api.js';
+// Imports buildApp directly and creates the handler inline,
+// avoiding re-export chains that confuse Vercel's module resolution.
+import { buildApp } from '../dist/app.js';
+
+let app;
+
+export default async function handler(req, res) {
+  if (!app) {
+    app = await buildApp();
+    await app.ready();
+  }
+  app.routing(req, res);
+}
