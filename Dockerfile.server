@@ -37,4 +37,4 @@ COPY --from=build /app/packages/content/dist ./packages/content/dist
 COPY --from=build /app/packages/presenter/dist ./packages/presenter/dist
 EXPOSE 3000
 ENV NODE_ENV=production
-CMD ["node", "apps/server/dist/index.js"]
+CMD ["node", "apps/server/dist/dev-server.js"]

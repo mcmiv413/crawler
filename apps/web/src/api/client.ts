@@ -1,4 +1,5 @@
 import type { GameView, CombatLogEntry } from '@dungeon/presenter';
+import { API_BASE_URL } from '../config/api.js';
 
 export interface CreateGameResponse {
   gameId: string;
@@ -11,7 +12,7 @@ export interface CommandResponse {
   runEnded: boolean;
 }
 
-const BASE = '/api';
+const BASE = API_BASE_URL;
 
 async function json<T>(res: Response): Promise<T> {
   if (!res.ok) {
