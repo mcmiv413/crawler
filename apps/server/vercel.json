@@ -1,13 +1,5 @@
 {
   "version": 2,
-  "buildCommand": "cd ../.. && pnpm install --frozen-lockfile && pnpm build",
-  "installCommand": "echo 'install handled by buildCommand'",
-  "functions": {
-    "api/index.ts": {
-      "includeFiles": "src/**"
-    }
-  },
-  "rewrites": [
-    { "source": "/api/(.*)", "destination": "/api" }
-  ]
+  "buildCommand": "cd ../.. && pnpm install --frozen-lockfile && pnpm build"
 }
+
