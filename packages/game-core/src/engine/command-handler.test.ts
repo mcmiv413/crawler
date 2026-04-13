@@ -9,7 +9,6 @@ import {
   createTestGameState,
   createTestEnemy,
 } from '../test-utils.js';
-import { ABILITY_DEFINITIONS } from '@dungeon/content';
 
 // ---------------------------------------------------------------------------
 // Helpers
@@ -229,6 +228,7 @@ describe('handleUseAbility', () => {
       const run = state.run!;
       const cells = new Map(run.floor.cells);
       const floorCell = { tile: { type: 'floor' as const, walkable: true, blocksVision: false, ascii: '.', color: '#aaa' }, visibility: 'visible' as const };
+      cells.set('1,0', floorCell);
       cells.set('2,0', floorCell);
       const stateWithCells: GameState = {
         ...state,
@@ -253,14 +253,34 @@ describe('handleUseAbility', () => {
       let primaryDamaged = false;
       let adjacentDamaged = false;
 
-      for (const [key, enemy] of afterEnemies) {
-        const beforeEnemy = beforeEnemies.get(key);
-        if (beforeEnemy && enemy.stats.health < beforeEnemy.stats.health) {
-          if (enemy.position.x === 1 && enemy.position.y === 0) {
-            primaryDamaged = true;
-          } else if (enemy.position.x === 2 && enemy.position.y === 0) {
-            adjacentDamaged = true;
-          }
+      // Map enemies by ID instead of by position, since they may have moved during enemy turns
+      const beforeById = new Map<string, { id: string; health: number }>();
+      for (const enemy of beforeEnemies.values()) {
+        beforeById.set(enemy.id, { id: enemy.id, health: enemy.stats.health });
+      }
+
+      const afterById = new Map<string, { id: string; health: number }>();
+      for (const enemy of afterEnemies.values()) {
+        afterById.set(enemy.id, { id: enemy.id, health: enemy.stats.health });
+      }
+
+      // Get the primary and adjacent enemy IDs from the initial setup
+      const enemyIds = Array.from(beforeEnemies.values()).map(e => e.id).sort();
+      if (enemyIds.length >= 1) {
+        const primaryId = enemyIds[0];
+        const primaryBefore = beforeById.get(primaryId);
+        const primaryAfter = afterById.get(primaryId);
+        if (primaryBefore && primaryAfter && primaryAfter.health < primaryBefore.health) {
+          primaryDamaged = true;
+        }
+      }
+
+      if (enemyIds.length >= 2) {
+        const adjacentId = enemyIds[1];
+        const adjacentBefore = beforeById.get(adjacentId);
+        const adjacentAfter = afterById.get(adjacentId);
+        if (adjacentBefore && adjacentAfter && adjacentAfter.health < adjacentBefore.health) {
+          adjacentDamaged = true;
         }
       }
 
@@ -423,10 +443,16 @@ describe('handleUseAbility', () => {
       const beforeEnemies = new Map(stateWithCells.run!.enemies);
       const afterEnemies = result.state.run!.enemies;
 
+      // Count by enemy ID, not by map key, since they may have moved
+      const beforeById = new Map<string, number>();
+      for (const enemy of beforeEnemies.values()) {
+        beforeById.set(enemy.id, enemy.stats.health);
+      }
+
       let damagedCount = 0;
-      for (const [key, afterEnemy] of afterEnemies) {
-        const beforeEnemy = beforeEnemies.get(key);
-        if (beforeEnemy && afterEnemy.stats.health < beforeEnemy.stats.health) {
+      for (const afterEnemy of afterEnemies.values()) {
+        const beforeHealth = beforeById.get(afterEnemy.id);
+        if (beforeHealth !== undefined && afterEnemy.stats.health < beforeHealth) {
           damagedCount++;
         }
       }

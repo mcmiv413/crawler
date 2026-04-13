@@ -1264,10 +1264,7 @@ describe('buildInspectableEntities', () => {
     // Modify floor to hide the enemy cell
     const hiddenCell = { tile: { type: 'floor' as const, walkable: true, blocksVision: false, ascii: '.', color: '#fff' }, visibility: 'hidden' as const };
     const cells = new Map(state.run!.floor.cells);
-    const firstKey = Array.from(state.run!.floor.cells.keys())[0];
-    if (firstKey) {
-      cells.set(firstKey, hiddenCell);
-    }
+    cells.set('1,0', hiddenCell);
     const modifiedRun = {
       ...state.run!,
       floor: {

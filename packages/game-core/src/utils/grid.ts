@@ -14,6 +14,9 @@ export function chebyshevDistance(a: Position, b: Position): number {
 /** Move a position in a direction */
 export function moveInDirection(pos: Position, dir: Direction): Position {
   const delta = DIRECTION_VECTORS[dir];
+  if (delta === undefined) {
+    throw new Error(`Invalid direction: ${dir}`);
+  }
   return { x: pos.x + delta.x, y: pos.y + delta.y };
 }
 

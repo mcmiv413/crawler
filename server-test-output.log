@@ -1,0 +1,196 @@
+
+> @dungeon/server@0.1.0 test /home/michael/claude/rpg-public/apps/server
+> vitest run
+
+
+ RUN  v3.2.4 /home/michael/claude/rpg-public/apps/server
+
+ ✓ src/ai/ai-service-composite.test.ts (8 tests) 31ms
+{"level":30,"time":1776080219503,"pid":70395,"hostname":"msi-aegis-z2","msg":"Repository: in-memory (non-durable)"}
+{"level":30,"time":1776080219534,"pid":70404,"hostname":"msi-aegis-z2","msg":"Repository: in-memory (non-durable)"}
+ ✓ src/ai/composite-ai.integration.test.ts (23 tests) 2174ms
+   ✓ CompositeAiService — LM Studio Integration > honors 2-second timeout for LM Studio requests  2103ms
+{"level":30,"time":1776080219530,"pid":70395,"hostname":"msi-aegis-z2","msg":"AI: fallback-only (LM_HOST not set)"}
+ ✓ src/entrypoint.test.ts (3 tests) 4145ms
+   ✓ Server entrypoint separation > buildApp() can be imported without triggering listener startup  3797ms
+   ✓ Server entrypoint separation > buildApp() creates a Fastify instance  331ms
+{"level":30,"time":1776080219682,"pid":70404,"hostname":"msi-aegis-z2","msg":"Repository: in-memory (non-durable)"}
+{"level":30,"time":1776080219543,"pid":70404,"hostname":"msi-aegis-z2","msg":"AI: fallback-only (LM_HOST not set)"}
+{"level":30,"time":1776080219576,"pid":70404,"hostname":"msi-aegis-z2","reqId":"req-1","req":{"method":"POST","url":"/api/games","host":"localhost:80","remoteAddress":"127.0.0.1"},"msg":"incoming request"}
+{"level":30,"time":1776080219648,"pid":70404,"hostname":"msi-aegis-z2","reqId":"req-1","res":{"statusCode":201},"responseTime":71.59839800000191,"msg":"request completed"}
+{"level":30,"time":1776080219682,"pid":70404,"hostname":"msi-aegis-z2","msg":"AI: fallback-only (LM_HOST not set)"}
+{"level":30,"time":1776080219694,"pid":70404,"hostname":"msi-aegis-z2","reqId":"req-1","req":{"method":"POST","url":"/api/games","host":"localhost:80","remoteAddress":"127.0.0.1"},"msg":"incoming request"}
+{"level":30,"time":1776080219717,"pid":70404,"hostname":"msi-aegis-z2","msg":"Repository: in-memory (non-durable)"}
+{"level":30,"time":1776080219702,"pid":70404,"hostname":"msi-aegis-z2","reqId":"req-1","res":{"statusCode":201},"responseTime":8.17985299997963,"msg":"request completed"}
+{"level":30,"time":1776080219717,"pid":70404,"hostname":"msi-aegis-z2","msg":"AI: fallback-only (LM_HOST not set)"}
+{"level":30,"time":1776080219724,"pid":70404,"hostname":"msi-aegis-z2","reqId":"req-1","req":{"method":"POST","url":"/api/games","host":"localhost:80","remoteAddress":"127.0.0.1"},"msg":"incoming request"}
+{"level":30,"time":1776080219743,"pid":70404,"hostname":"msi-aegis-z2","msg":"Repository: in-memory (non-durable)"}
+{"level":30,"time":1776080219728,"pid":70404,"hostname":"msi-aegis-z2","reqId":"req-1","res":{"statusCode":201},"responseTime":3.996733999811113,"msg":"request completed"}
+{"level":30,"time":1776080219745,"pid":70404,"hostname":"msi-aegis-z2","msg":"AI: fallback-only (LM_HOST not set)"}
+{"level":30,"time":1776080219750,"pid":70404,"hostname":"msi-aegis-z2","reqId":"req-1","req":{"method":"POST","url":"/api/games","host":"localhost:80","remoteAddress":"127.0.0.1"},"msg":"incoming request"}
+{"level":30,"time":1776080219766,"pid":70404,"hostname":"msi-aegis-z2","msg":"Repository: in-memory (non-durable)"}
+{"level":30,"time":1776080219764,"pid":70404,"hostname":"msi-aegis-z2","reqId":"req-1","res":{"statusCode":201},"responseTime":13.939843999920413,"msg":"request completed"}
+{"level":30,"time":1776080219785,"pid":70404,"hostname":"msi-aegis-z2","msg":"AI: fallback-only (LM_HOST not set)"}
+{"level":30,"time":1776080219787,"pid":70404,"hostname":"msi-aegis-z2","reqId":"req-1","req":{"method":"POST","url":"/api/games","host":"localhost:80","remoteAddress":"127.0.0.1"},"msg":"incoming request"}
+{"level":30,"time":1776080219802,"pid":70404,"hostname":"msi-aegis-z2","reqId":"req-1","res":{"statusCode":201},"responseTime":15.363091999897733,"msg":"request completed"}
+{"level":30,"time":1776080219802,"pid":70404,"hostname":"msi-aegis-z2","reqId":"req-2","req":{"method":"POST","url":"/api/games/035779cb-b9a1-4729-975e-ca6fc6a6e97b/commands","host":"localhost:80","remoteAddress":"127.0.0.1"},"msg":"incoming request"}
+{"level":30,"time":1776080219819,"pid":70404,"hostname":"msi-aegis-z2","msg":"Repository: in-memory (non-durable)"}
+{"level":30,"time":1776080219804,"pid":70404,"hostname":"msi-aegis-z2","reqId":"req-2","res":{"statusCode":200},"responseTime":1.341503000119701,"msg":"request completed"}
+{"level":30,"time":1776080219819,"pid":70404,"hostname":"msi-aegis-z2","msg":"AI: fallback-only (LM_HOST not set)"}
+{"level":30,"time":1776080219820,"pid":70404,"hostname":"msi-aegis-z2","reqId":"req-1","req":{"method":"POST","url":"/api/games","host":"localhost:80","remoteAddress":"127.0.0.1"},"msg":"incoming request"}
+{"level":30,"time":1776080219846,"pid":70404,"hostname":"msi-aegis-z2","reqId":"req-1","res":{"statusCode":201},"responseTime":26.430362000130117,"msg":"request completed"}
+{"level":30,"time":1776080219847,"pid":70404,"hostname":"msi-aegis-z2","reqId":"req-2","req":{"method":"POST","url":"/api/games/522dfb21-708a-497a-a364-1cf9f6744166/commands","host":"localhost:80","remoteAddress":"127.0.0.1"},"msg":"incoming request"}
+{"level":30,"time":1776080219856,"pid":70404,"hostname":"msi-aegis-z2","msg":"Repository: in-memory (non-durable)"}
+{"level":30,"time":1776080219849,"pid":70404,"hostname":"msi-aegis-z2","reqId":"req-2","res":{"statusCode":400},"responseTime":1.603338000131771,"msg":"request completed"}
+{"level":30,"time":1776080219865,"pid":70404,"hostname":"msi-aegis-z2","msg":"AI: fallback-only (LM_HOST not set)"}
+{"level":30,"time":1776080219867,"pid":70404,"hostname":"msi-aegis-z2","reqId":"req-1","req":{"method":"POST","url":"/api/games","host":"localhost:80","remoteAddress":"127.0.0.1"},"msg":"incoming request"}
+{"level":30,"time":1776080219886,"pid":70404,"hostname":"msi-aegis-z2","reqId":"req-1","res":{"statusCode":201},"responseTime":18.52171100000851,"msg":"request completed"}
+{"level":30,"time":1776080219887,"pid":70404,"hostname":"msi-aegis-z2","reqId":"req-2","req":{"method":"POST","url":"/api/games/58dbd3c9-04c8-42b3-b6fe-5bf9394d5b03/commands","host":"localhost:80","remoteAddress":"127.0.0.1"},"msg":"incoming request"}
+{"level":30,"time":1776080219906,"pid":70404,"hostname":"msi-aegis-z2","msg":"Repository: in-memory (non-durable)"}
+{"level":30,"time":1776080219887,"pid":70404,"hostname":"msi-aegis-z2","reqId":"req-2","res":{"statusCode":400},"responseTime":0.7700049998238683,"msg":"request completed"}
+{"level":30,"time":1776080219906,"pid":70404,"hostname":"msi-aegis-z2","msg":"AI: fallback-only (LM_HOST not set)"}
+{"level":30,"time":1776080219908,"pid":70404,"hostname":"msi-aegis-z2","reqId":"req-1","req":{"method":"POST","url":"/api/games","host":"localhost:80","remoteAddress":"127.0.0.1"},"msg":"incoming request"}
+{"level":30,"time":1776080219923,"pid":70404,"hostname":"msi-aegis-z2","reqId":"req-1","res":{"statusCode":201},"responseTime":15.25615799985826,"msg":"request completed"}
+{"level":30,"time":1776080219923,"pid":70404,"hostname":"msi-aegis-z2","reqId":"req-2","req":{"method":"POST","url":"/api/games/nonexistent-game-id/commands","host":"localhost:80","remoteAddress":"127.0.0.1"},"msg":"incoming request"}
+{"level":30,"time":1776080219939,"pid":70404,"hostname":"msi-aegis-z2","msg":"Repository: in-memory (non-durable)"}
+{"level":30,"time":1776080219927,"pid":70404,"hostname":"msi-aegis-z2","reqId":"req-2","res":{"statusCode":404},"responseTime":3.64855600008741,"msg":"request completed"}
+{"level":30,"time":1776080219939,"pid":70404,"hostname":"msi-aegis-z2","msg":"AI: fallback-only (LM_HOST not set)"}
+{"level":30,"time":1776080219951,"pid":70404,"hostname":"msi-aegis-z2","reqId":"req-1","req":{"method":"POST","url":"/api/games","host":"localhost:80","remoteAddress":"127.0.0.1"},"msg":"incoming request"}
+{"level":30,"time":1776080219952,"pid":70404,"hostname":"msi-aegis-z2","reqId":"req-1","res":{"statusCode":201},"responseTime":0.972942000022158,"msg":"request completed"}
+{"level":30,"time":1776080219965,"pid":70404,"hostname":"msi-aegis-z2","reqId":"req-2","req":{"method":"POST","url":"/api/games/150715f1-65b1-42f5-b3aa-34e6cdcbecf1/commands","host":"localhost:80","remoteAddress":"127.0.0.1"},"msg":"incoming request"}
+{"level":30,"time":1776080219975,"pid":70404,"hostname":"msi-aegis-z2","msg":"Repository: in-memory (non-durable)"}
+{"level":30,"time":1776080219967,"pid":70404,"hostname":"msi-aegis-z2","reqId":"req-2","res":{"statusCode":200},"responseTime":1.7305449999403208,"msg":"request completed"}
+{"level":30,"time":1776080219967,"pid":70404,"hostname":"msi-aegis-z2","reqId":"req-3","req":{"method":"GET","url":"/api/games/150715f1-65b1-42f5-b3aa-34e6cdcbecf1/view","host":"localhost:80","remoteAddress":"127.0.0.1"},"msg":"incoming request"}
+{"level":30,"time":1776080219967,"pid":70404,"hostname":"msi-aegis-z2","reqId":"req-3","res":{"statusCode":200},"responseTime":0.4280980001203716,"msg":"request completed"}
+{"level":30,"time":1776080219978,"pid":70404,"hostname":"msi-aegis-z2","msg":"AI: fallback-only (LM_HOST not set)"}
+{"level":30,"time":1776080219987,"pid":70404,"hostname":"msi-aegis-z2","reqId":"req-1","req":{"method":"POST","url":"/api/games","host":"localhost:80","remoteAddress":"127.0.0.1"},"msg":"incoming request"}
+{"level":30,"time":1776080219999,"pid":70404,"hostname":"msi-aegis-z2","msg":"Repository: in-memory (non-durable)"}
+{"level":30,"time":1776080219989,"pid":70404,"hostname":"msi-aegis-z2","reqId":"req-1","res":{"statusCode":201},"responseTime":1.7896839999593794,"msg":"request completed"}
+{"level":30,"time":1776080219989,"pid":70404,"hostname":"msi-aegis-z2","reqId":"req-2","req":{"method":"GET","url":"/api/games/ff4ed5b4-e52b-4da3-8d17-6ca081092183/view","host":"localhost:80","remoteAddress":"127.0.0.1"},"msg":"incoming request"}
+{"level":30,"time":1776080219990,"pid":70404,"hostname":"msi-aegis-z2","reqId":"req-2","res":{"statusCode":200},"responseTime":0.34063699981197715,"msg":"request completed"}
+{"level":30,"time":1776080220014,"pid":70404,"hostname":"msi-aegis-z2","msg":"Repository: in-memory (non-durable)"}
+{"level":30,"time":1776080219999,"pid":70404,"hostname":"msi-aegis-z2","msg":"AI: fallback-only (LM_HOST not set)"}
+{"level":30,"time":1776080220001,"pid":70404,"hostname":"msi-aegis-z2","reqId":"req-1","req":{"method":"POST","url":"/api/games","host":"localhost:80","remoteAddress":"127.0.0.1"},"msg":"incoming request"}
+{"level":30,"time":1776080220006,"pid":70404,"hostname":"msi-aegis-z2","reqId":"req-1","res":{"statusCode":201},"responseTime":5.264055999927223,"msg":"request completed"}
+{"level":30,"time":1776080220007,"pid":70404,"hostname":"msi-aegis-z2","reqId":"req-2","req":{"method":"GET","url":"/api/games/nonexistent-game-id/view","host":"localhost:80","remoteAddress":"127.0.0.1"},"msg":"incoming request"}
+{"level":30,"time":1776080220008,"pid":70404,"hostname":"msi-aegis-z2","reqId":"req-2","res":{"statusCode":404},"responseTime":0.20638800016604364,"msg":"request completed"}
+{"level":30,"time":1776080220015,"pid":70404,"hostname":"msi-aegis-z2","msg":"AI: fallback-only (LM_HOST not set)"}
+{"level":30,"time":1776080220028,"pid":70404,"hostname":"msi-aegis-z2","reqId":"req-1","req":{"method":"POST","url":"/api/games","host":"localhost:80","remoteAddress":"127.0.0.1"},"msg":"incoming request"}
+{"level":30,"time":1776080220056,"pid":70404,"hostname":"msi-aegis-z2","reqId":"req-1","res":{"statusCode":201},"responseTime":28.05615000007674,"msg":"request completed"}
+{"level":30,"time":1776080220058,"pid":70404,"hostname":"msi-aegis-z2","reqId":"req-2","req":{"method":"POST","url":"/api/games/7bc416ab-4f0c-4e75-a1d5-83e468cf0816/commands","host":"localhost:80","remoteAddress":"127.0.0.1"},"msg":"incoming request"}
+{"level":30,"time":1776080220066,"pid":70404,"hostname":"msi-aegis-z2","msg":"Repository: in-memory (non-durable)"}
+{"level":30,"time":1776080220060,"pid":70404,"hostname":"msi-aegis-z2","reqId":"req-2","res":{"statusCode":200},"responseTime":2.0376029999461025,"msg":"request completed"}
+{"level":30,"time":1776080220060,"pid":70404,"hostname":"msi-aegis-z2","reqId":"req-3","req":{"method":"GET","url":"/api/games/7bc416ab-4f0c-4e75-a1d5-83e468cf0816/view","host":"localhost:80","remoteAddress":"127.0.0.1"},"msg":"incoming request"}
+{"level":30,"time":1776080220062,"pid":70404,"hostname":"msi-aegis-z2","reqId":"req-3","res":{"statusCode":200},"responseTime":1.3413029999937862,"msg":"request completed"}
+{"level":30,"time":1776080220089,"pid":70404,"hostname":"msi-aegis-z2","msg":"Repository: in-memory (non-durable)"}
+{"level":30,"time":1776080220066,"pid":70404,"hostname":"msi-aegis-z2","msg":"AI: fallback-only (LM_HOST not set)"}
+{"level":30,"time":1776080220068,"pid":70404,"hostname":"msi-aegis-z2","reqId":"req-1","req":{"method":"POST","url":"/api/games","host":"localhost:80","remoteAddress":"127.0.0.1"},"msg":"incoming request"}
+{"level":30,"time":1776080220068,"pid":70404,"hostname":"msi-aegis-z2","reqId":"req-1","res":{"statusCode":201},"responseTime":0.7185980000067502,"msg":"request completed"}
+{"level":30,"time":1776080220069,"pid":70404,"hostname":"msi-aegis-z2","reqId":"req-2","req":{"method":"GET","url":"/api/games/156c2044-5ab1-426a-aa68-075ecc5a5c95","host":"localhost:80","remoteAddress":"127.0.0.1"},"msg":"incoming request"}
+{"level":30,"time":1776080220084,"pid":70404,"hostname":"msi-aegis-z2","reqId":"req-2","res":{"statusCode":200},"responseTime":15.429450999945402,"msg":"request completed"}
+{"level":30,"time":1776080220091,"pid":70404,"hostname":"msi-aegis-z2","msg":"AI: fallback-only (LM_HOST not set)"}
+{"level":30,"time":1776080220100,"pid":70404,"hostname":"msi-aegis-z2","reqId":"req-1","req":{"method":"POST","url":"/api/games","host":"localhost:80","remoteAddress":"127.0.0.1"},"msg":"incoming request"}
+{"level":30,"time":1776080220104,"pid":70404,"hostname":"msi-aegis-z2","msg":"Repository: in-memory (non-durable)"}
+{"level":30,"time":1776080220102,"pid":70404,"hostname":"msi-aegis-z2","reqId":"req-1","res":{"statusCode":201},"responseTime":1.7653109999373555,"msg":"request completed"}
+{"level":30,"time":1776080220102,"pid":70404,"hostname":"msi-aegis-z2","reqId":"req-2","req":{"method":"GET","url":"/api/games/nonexistent-game-id","host":"localhost:80","remoteAddress":"127.0.0.1"},"msg":"incoming request"}
+{"level":30,"time":1776080220102,"pid":70404,"hostname":"msi-aegis-z2","reqId":"req-2","res":{"statusCode":404},"responseTime":0.21706000017002225,"msg":"request completed"}
+{"level":30,"time":1776080220112,"pid":70404,"hostname":"msi-aegis-z2","msg":"AI: fallback-only (LM_HOST not set)"}
+{"level":30,"time":1776080220114,"pid":70404,"hostname":"msi-aegis-z2","reqId":"req-1","req":{"method":"POST","url":"/api/games","host":"localhost:80","remoteAddress":"127.0.0.1"},"msg":"incoming request"}
+{"level":30,"time":1776080220125,"pid":70404,"hostname":"msi-aegis-z2","msg":"Repository: in-memory (non-durable)"}
+{"level":30,"time":1776080220122,"pid":70404,"hostname":"msi-aegis-z2","reqId":"req-1","res":{"statusCode":201},"responseTime":7.74054400017485,"msg":"request completed"}
+{"level":30,"time":1776080220122,"pid":70404,"hostname":"msi-aegis-z2","reqId":"req-2","req":{"method":"POST","url":"/api/games/restore","host":"localhost:80","remoteAddress":"127.0.0.1"},"msg":"incoming request"}
+{"level":30,"time":1776080220123,"pid":70404,"hostname":"msi-aegis-z2","reqId":"req-2","res":{"statusCode":200},"responseTime":0.7020560000091791,"msg":"request completed"}
+{"level":30,"time":1776080220135,"pid":70404,"hostname":"msi-aegis-z2","msg":"AI: fallback-only (LM_HOST not set)"}
+{"level":30,"time":1776080220136,"pid":70404,"hostname":"msi-aegis-z2","reqId":"req-1","req":{"method":"POST","url":"/api/games/restore","host":"localhost:80","remoteAddress":"127.0.0.1"},"msg":"incoming request"}
+{"level":30,"time":1776080220144,"pid":70404,"hostname":"msi-aegis-z2","msg":"Repository: in-memory (non-durable)"}
+{"level":30,"time":1776080220142,"pid":70404,"hostname":"msi-aegis-z2","reqId":"req-1","res":{"statusCode":400},"responseTime":6.458939000032842,"msg":"request completed"}
+{"level":30,"time":1776080220151,"pid":70404,"hostname":"msi-aegis-z2","msg":"Repository: in-memory (non-durable)"}
+{"level":30,"time":1776080220144,"pid":70404,"hostname":"msi-aegis-z2","msg":"AI: fallback-only (LM_HOST not set)"}
+{"level":30,"time":1776080220145,"pid":70404,"hostname":"msi-aegis-z2","reqId":"req-1","req":{"method":"POST","url":"/api/games/restore","host":"localhost:80","remoteAddress":"127.0.0.1"},"msg":"incoming request"}
+{"level":30,"time":1776080220150,"pid":70404,"hostname":"msi-aegis-z2","reqId":"req-1","res":{"statusCode":400},"responseTime":4.616610000142828,"msg":"request completed"}
+{"level":30,"time":1776080220155,"pid":70404,"hostname":"msi-aegis-z2","msg":"AI: fallback-only (LM_HOST not set)"}
+{"level":30,"time":1776080220160,"pid":70404,"hostname":"msi-aegis-z2","reqId":"req-1","req":{"method":"POST","url":"/api/games/restore","host":"localhost:80","remoteAddress":"127.0.0.1"},"msg":"incoming request"}
+{"level":30,"time":1776080220166,"pid":70404,"hostname":"msi-aegis-z2","msg":"Repository: in-memory (non-durable)"}
+{"level":30,"time":1776080220165,"pid":70404,"hostname":"msi-aegis-z2","reqId":"req-1","res":{"statusCode":400},"responseTime":4.66213500010781,"msg":"request completed"}
+{"level":30,"time":1776080220173,"pid":70404,"hostname":"msi-aegis-z2","msg":"AI: fallback-only (LM_HOST not set)"}
+{"level":30,"time":1776080220175,"pid":70404,"hostname":"msi-aegis-z2","reqId":"req-1","req":{"method":"POST","url":"/api/games","host":"localhost:80","remoteAddress":"127.0.0.1"},"msg":"incoming request"}
+{"level":30,"time":1776080220181,"pid":70404,"hostname":"msi-aegis-z2","reqId":"req-1","res":{"statusCode":201},"responseTime":6.1104020001366735,"msg":"request completed"}
+{"level":30,"time":1776080220194,"pid":70404,"hostname":"msi-aegis-z2","reqId":"req-2","req":{"method":"POST","url":"/api/games/restore","host":"localhost:80","remoteAddress":"127.0.0.1"},"msg":"incoming request"}
+{"level":30,"time":1776080220196,"pid":70404,"hostname":"msi-aegis-z2","msg":"Repository: in-memory (non-durable)"}
+{"level":30,"time":1776080220195,"pid":70404,"hostname":"msi-aegis-z2","reqId":"req-2","res":{"statusCode":200},"responseTime":0.8230120001826435,"msg":"request completed"}
+{"level":30,"time":1776080220197,"pid":70404,"hostname":"msi-aegis-z2","msg":"AI: fallback-only (LM_HOST not set)"}
+{"level":30,"time":1776080220201,"pid":70404,"hostname":"msi-aegis-z2","reqId":"req-1","req":{"method":"POST","url":"/api/games","host":"localhost:80","remoteAddress":"127.0.0.1"},"msg":"incoming request"}
+{"level":30,"time":1776080220202,"pid":70404,"hostname":"msi-aegis-z2","reqId":"req-1","res":{"statusCode":201},"responseTime":1.044582000002265,"msg":"request completed"}
+{"level":30,"time":1776080220203,"pid":70404,"hostname":"msi-aegis-z2","reqId":"req-2","req":{"method":"POST","url":"/api/games/4b49054f-064e-4ee1-938a-8a7a169206d3/commands","host":"localhost:80","remoteAddress":"127.0.0.1"},"msg":"incoming request"}
+{"level":30,"time":1776080220213,"pid":70404,"hostname":"msi-aegis-z2","msg":"Repository: in-memory (non-durable)"}
+{"level":30,"time":1776080220205,"pid":70404,"hostname":"msi-aegis-z2","reqId":"req-2","res":{"statusCode":200},"responseTime":2.5572180000599474,"msg":"request completed"}
+{"level":30,"time":1776080220206,"pid":70404,"hostname":"msi-aegis-z2","reqId":"req-3","req":{"method":"GET","url":"/api/games/4b49054f-064e-4ee1-938a-8a7a169206d3/view","host":"localhost:80","remoteAddress":"127.0.0.1"},"msg":"incoming request"}
+{"level":30,"time":1776080220206,"pid":70404,"hostname":"msi-aegis-z2","reqId":"req-3","res":{"statusCode":200},"responseTime":0.3152930000796914,"msg":"request completed"}
+{"level":30,"time":1776080220206,"pid":70404,"hostname":"msi-aegis-z2","reqId":"req-4","req":{"method":"GET","url":"/api/games/4b49054f-064e-4ee1-938a-8a7a169206d3/view","host":"localhost:80","remoteAddress":"127.0.0.1"},"msg":"incoming request"}
+{"level":30,"time":1776080220206,"pid":70404,"hostname":"msi-aegis-z2","reqId":"req-4","res":{"statusCode":200},"responseTime":0.21249899989925325,"msg":"request completed"}
+{"level":30,"time":1776080220213,"pid":70404,"hostname":"msi-aegis-z2","msg":"AI: fallback-only (LM_HOST not set)"}
+{"level":30,"time":1776080220221,"pid":70404,"hostname":"msi-aegis-z2","reqId":"req-1","req":{"method":"POST","url":"/api/games","host":"localhost:80","remoteAddress":"127.0.0.1"},"msg":"incoming request"}
+{"level":30,"time":1776080220225,"pid":70404,"hostname":"msi-aegis-z2","msg":"Repository: in-memory (non-durable)"}
+{"level":30,"time":1776080220222,"pid":70404,"hostname":"msi-aegis-z2","reqId":"req-1","res":{"statusCode":201},"responseTime":0.6295360000804067,"msg":"request completed"}
+{"level":30,"time":1776080220222,"pid":70404,"hostname":"msi-aegis-z2","reqId":"req-2","req":{"method":"POST","url":"/api/games/6f5a5789-c54f-40d9-bc95-ebe28f6854a7/commands","host":"localhost:80","remoteAddress":"127.0.0.1"},"msg":"incoming request"}
+{"level":30,"time":1776080220223,"pid":70404,"hostname":"msi-aegis-z2","reqId":"req-2","res":{"statusCode":200},"responseTime":0.39836400002241135,"msg":"request completed"}
+{"level":30,"time":1776080220223,"pid":70404,"hostname":"msi-aegis-z2","reqId":"req-3","req":{"method":"POST","url":"/api/games/6f5a5789-c54f-40d9-bc95-ebe28f6854a7/commands","host":"localhost:80","remoteAddress":"127.0.0.1"},"msg":"incoming request"}
+{"level":30,"time":1776080220223,"pid":70404,"hostname":"msi-aegis-z2","reqId":"req-3","res":{"statusCode":200},"responseTime":0.365639999974519,"msg":"request completed"}
+{"level":30,"time":1776080220224,"pid":70404,"hostname":"msi-aegis-z2","reqId":"req-4","req":{"method":"GET","url":"/api/games/6f5a5789-c54f-40d9-bc95-ebe28f6854a7/view","host":"localhost:80","remoteAddress":"127.0.0.1"},"msg":"incoming request"}
+{"level":30,"time":1776080220224,"pid":70404,"hostname":"msi-aegis-z2","reqId":"req-4","res":{"statusCode":200},"responseTime":0.15845099999569356,"msg":"request completed"}
+{"level":30,"time":1776080220229,"pid":70404,"hostname":"msi-aegis-z2","msg":"AI: fallback-only (LM_HOST not set)"}
+{"level":30,"time":1776080220234,"pid":70404,"hostname":"msi-aegis-z2","reqId":"req-1","req":{"method":"POST","url":"/api/games","host":"localhost:80","remoteAddress":"127.0.0.1"},"msg":"incoming request"}
+{"level":30,"time":1776080220264,"pid":70404,"hostname":"msi-aegis-z2","reqId":"req-1","res":{"statusCode":201},"responseTime":30.155856000026688,"msg":"request completed"}
+{"level":30,"time":1776080220265,"pid":70404,"hostname":"msi-aegis-z2","reqId":"req-2","req":{"method":"POST","url":"/api/games/93c3b95f-b927-4b52-9fa4-619de665e18b/commands","host":"localhost:80","remoteAddress":"127.0.0.1"},"msg":"incoming request"}
+{"level":30,"time":1776080220266,"pid":70404,"hostname":"msi-aegis-z2","reqId":"req-2","res":{"statusCode":200},"responseTime":1.2313069999217987,"msg":"request completed"}
+{"level":30,"time":1776080220266,"pid":70404,"hostname":"msi-aegis-z2","reqId":"req-3","req":{"method":"POST","url":"/api/games/93c3b95f-b927-4b52-9fa4-619de665e18b/commands","host":"localhost:80","remoteAddress":"127.0.0.1"},"msg":"incoming request"}
+{"level":30,"time":1776080220282,"pid":70404,"hostname":"msi-aegis-z2","msg":"Repository: in-memory (non-durable)"}
+{"level":30,"time":1776080220274,"pid":70404,"hostname":"msi-aegis-z2","reqId":"req-3","res":{"statusCode":200},"responseTime":7.4319719998165965,"msg":"request completed"}
+{"level":30,"time":1776080220274,"pid":70404,"hostname":"msi-aegis-z2","reqId":"req-4","req":{"method":"GET","url":"/api/games/93c3b95f-b927-4b52-9fa4-619de665e18b/view","host":"localhost:80","remoteAddress":"127.0.0.1"},"msg":"incoming request"}
+{"level":30,"time":1776080220274,"pid":70404,"hostname":"msi-aegis-z2","reqId":"req-4","res":{"statusCode":200},"responseTime":0.18199499999172986,"msg":"request completed"}
+{"level":30,"time":1776080220294,"pid":70404,"hostname":"msi-aegis-z2","msg":"Repository: in-memory (non-durable)"}
+{"level":30,"time":1776080220282,"pid":70404,"hostname":"msi-aegis-z2","msg":"AI: fallback-only (LM_HOST not set)"}
+{"level":30,"time":1776080220283,"pid":70404,"hostname":"msi-aegis-z2","reqId":"req-1","req":{"method":"POST","url":"/api/games","host":"localhost:80","remoteAddress":"127.0.0.1"},"msg":"incoming request"}
+{"level":30,"time":1776080220285,"pid":70404,"hostname":"msi-aegis-z2","reqId":"req-1","res":{"statusCode":201},"responseTime":2.3685520000290126,"msg":"request completed"}
+{"level":30,"time":1776080220285,"pid":70404,"hostname":"msi-aegis-z2","reqId":"req-2","req":{"method":"GET","url":"/api/games/33acccc8-5dd5-4930-924f-0a5c5c8761e3/view","host":"localhost:80","remoteAddress":"127.0.0.1"},"msg":"incoming request"}
+{"level":30,"time":1776080220286,"pid":70404,"hostname":"msi-aegis-z2","reqId":"req-2","res":{"statusCode":200},"responseTime":0.8187120000366122,"msg":"request completed"}
+{"level":30,"time":1776080220294,"pid":70404,"hostname":"msi-aegis-z2","msg":"AI: fallback-only (LM_HOST not set)"}
+{"level":30,"time":1776080220296,"pid":70404,"hostname":"msi-aegis-z2","reqId":"req-1","req":{"method":"POST","url":"/api/games","host":"localhost:80","remoteAddress":"127.0.0.1"},"msg":"incoming request"}
+{"level":30,"time":1776080220297,"pid":70404,"hostname":"msi-aegis-z2","reqId":"req-1","res":{"statusCode":201},"responseTime":1.4428869998082519,"msg":"request completed"}
+{"level":30,"time":1776080220297,"pid":70404,"hostname":"msi-aegis-z2","reqId":"req-2","req":{"method":"GET","url":"/api/games/nonexistent/view","host":"localhost:80","remoteAddress":"127.0.0.1"},"msg":"incoming request"}
+{"level":30,"time":1776080220298,"pid":70404,"hostname":"msi-aegis-z2","reqId":"req-2","res":{"statusCode":404},"responseTime":0.0942720000166446,"msg":"request completed"}
+{"level":30,"time":1776080220298,"pid":70404,"hostname":"msi-aegis-z2","reqId":"req-3","req":{"method":"POST","url":"/api/games/23042b28-f916-4583-932c-b1927be0cd11/commands","host":"localhost:80","remoteAddress":"127.0.0.1"},"msg":"incoming request"}
+{"level":30,"time":1776080220306,"pid":70404,"hostname":"msi-aegis-z2","msg":"Repository: in-memory (non-durable)"}
+{"level":30,"time":1776080220300,"pid":70404,"hostname":"msi-aegis-z2","reqId":"req-3","res":{"statusCode":400},"responseTime":2.577510999981314,"msg":"request completed"}
+{"level":30,"time":1776080220322,"pid":70404,"hostname":"msi-aegis-z2","msg":"Repository: in-memory (non-durable)"}
+{"level":30,"time":1776080220306,"pid":70404,"hostname":"msi-aegis-z2","msg":"AI: fallback-only (LM_HOST not set)"}
+{"level":30,"time":1776080220307,"pid":70404,"hostname":"msi-aegis-z2","reqId":"req-1","req":{"method":"POST","url":"/api/games","host":"localhost:80","remoteAddress":"127.0.0.1"},"msg":"incoming request"}
+{"level":30,"time":1776080220307,"pid":70404,"hostname":"msi-aegis-z2","reqId":"req-1","res":{"statusCode":201},"responseTime":0.6742460001260042,"msg":"request completed"}
+{"level":30,"time":1776080220308,"pid":70404,"hostname":"msi-aegis-z2","reqId":"req-2","req":{"method":"POST","url":"/api/games/84d857d9-2716-4a73-8f13-9737846e564e/commands","host":"localhost:80","remoteAddress":"127.0.0.1"},"msg":"incoming request"}
+{"level":30,"time":1776080220319,"pid":70404,"hostname":"msi-aegis-z2","reqId":"req-2","res":{"statusCode":200},"responseTime":11.587678000098094,"msg":"request completed"}
+{"level":30,"time":1776080220325,"pid":70404,"hostname":"msi-aegis-z2","msg":"AI: fallback-only (LM_HOST not set)"}
+{"level":30,"time":1776080220331,"pid":70404,"hostname":"msi-aegis-z2","reqId":"req-1","req":{"method":"POST","url":"/api/games","host":"localhost:80","remoteAddress":"127.0.0.1"},"msg":"incoming request"}
+{"level":30,"time":1776080220333,"pid":70404,"hostname":"msi-aegis-z2","reqId":"req-1","res":{"statusCode":201},"responseTime":1.9263520000968128,"msg":"request completed"}
+{"level":30,"time":1776080220336,"pid":70404,"hostname":"msi-aegis-z2","reqId":"req-2","req":{"method":"POST","url":"/api/games/12007ea2-41ea-4dea-8ba6-a0a6259a4e4e/commands","host":"localhost:80","remoteAddress":"127.0.0.1"},"msg":"incoming request"}
+{"level":30,"time":1776080220345,"pid":70404,"hostname":"msi-aegis-z2","msg":"Repository: in-memory (non-durable)"}
+{"level":30,"time":1776080220340,"pid":70404,"hostname":"msi-aegis-z2","reqId":"req-2","res":{"statusCode":400},"responseTime":3.5816069999709725,"msg":"request completed"}
+{"level":30,"time":1776080220345,"pid":70404,"hostname":"msi-aegis-z2","msg":"AI: fallback-only (LM_HOST not set)"}
+{"level":30,"time":1776080220346,"pid":70404,"hostname":"msi-aegis-z2","reqId":"req-1","req":{"method":"POST","url":"/api/games","host":"localhost:80","remoteAddress":"127.0.0.1"},"msg":"incoming request"}
+{"level":30,"time":1776080220347,"pid":70404,"hostname":"msi-aegis-z2","reqId":"req-1","res":{"statusCode":201},"responseTime":0.9044829998165369,"msg":"request completed"}
+{"level":30,"time":1776080220347,"pid":70404,"hostname":"msi-aegis-z2","reqId":"req-2","req":{"method":"POST","url":"/api/games/3dcb7a2b-b4e1-4833-b978-f9e7816f160e/commands","host":"localhost:80","remoteAddress":"127.0.0.1"},"msg":"incoming request"}
+{"level":30,"time":1776080220348,"pid":70404,"hostname":"msi-aegis-z2","reqId":"req-2","res":{"statusCode":200},"responseTime":0.7699639999773353,"msg":"request completed"}
+{"level":30,"time":1776080220348,"pid":70404,"hostname":"msi-aegis-z2","reqId":"req-3","req":{"method":"POST","url":"/api/games/3dcb7a2b-b4e1-4833-b978-f9e7816f160e/commands","host":"localhost:80","remoteAddress":"127.0.0.1"},"msg":"incoming request"}
+ ✓ src/api/game-routes.test.ts (27 tests) 1107ms
+   ✓ Game Routes > POST /api/games > creates a new game and returns 201 with gameId, view, and serializedState  414ms
+{"level":30,"time":1776080220352,"pid":70404,"hostname":"msi-aegis-z2","reqId":"req-3","res":{"statusCode":200},"responseTime":3.7841349998489022,"msg":"request completed"}
+{"level":30,"time":1776080220352,"pid":70404,"hostname":"msi-aegis-z2","reqId":"req-4","req":{"method":"GET","url":"/api/games/3dcb7a2b-b4e1-4833-b978-f9e7816f160e/view","host":"localhost:80","remoteAddress":"127.0.0.1"},"msg":"incoming request"}
+{"level":30,"time":1776080220355,"pid":70404,"hostname":"msi-aegis-z2","reqId":"req-4","res":{"statusCode":200},"responseTime":2.3656919999048114,"msg":"request completed"}
+
+ Test Files  1 failed | 4 passed (5)
+      Tests  61 passed (61)
+   Start at  07:36:54
+   Duration  6.28s (transform 3.58s, setup 0ms, collect 6.81s, tests 7.46s, environment 1ms, prepare 1.84s)
+
+/home/michael/claude/rpg-public/apps/server:
+ ERR_PNPM_RECURSIVE_RUN_FIRST_FAIL  @dungeon/server@0.1.0 test: `vitest run`
+Exit status 1

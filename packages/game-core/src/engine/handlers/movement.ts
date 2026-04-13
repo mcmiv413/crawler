@@ -24,11 +24,16 @@ export function handleMove(
   if (!validation.valid || !validation.newPosition) {
     // Bump-to-attack: if blocked by enemy, attack that enemy
     if (validation.reason === 'Tile occupied by enemy' && state.run) {
-      const targetPos = moveInDirection(state.player.position, direction);
-      for (const enemy of state.run.enemies.values()) {
-        if (enemy.position.x === targetPos.x && enemy.position.y === targetPos.y) {
-          return handleAttack(state, enemy.id, rng);
+      try {
+        const targetPos = moveInDirection(state.player.position, direction);
+        for (const enemy of state.run.enemies.values()) {
+          if (enemy.position.x === targetPos.x && enemy.position.y === targetPos.y) {
+            return handleAttack(state, enemy.id, rng);
+          }
         }
+      } catch {
+        // If moveInDirection fails (invalid direction), just return empty result
+        return { state, events: [], runEnded: false };
       }
     }
     return { state, events: [], runEnded: false };
