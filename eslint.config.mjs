@@ -59,8 +59,6 @@ const typedLanguageOptions = {
         "tools/balance/*.test.ts",
         "vitest.workspace.ts",
         "playwright.config.ts",
-        "tests/**/*.spec.ts",
-        "tests/**/*.test.ts",
         "tests/vitest.config.ts",
       ],
       maximumDefaultProjectFileMatchCount_THIS_WILL_SLOW_DOWN_LINTING: 8000,
