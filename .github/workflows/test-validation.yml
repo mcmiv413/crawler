@@ -26,14 +26,17 @@ jobs:
       - name: Install dependencies
         run: pnpm install --frozen-lockfile
 
+      - name: Build all packages
+        run: pnpm build
+
+      - name: Check package exports
+        run: node scripts/check-package-exports.mjs
+
       - name: Run all tests
         run: pnpm test --run
 
       - name: Lint
         run: pnpm lint
-
-      - name: Build all packages
-        run: pnpm build
 
   docker-build:
     runs-on: ubuntu-latest

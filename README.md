@@ -291,6 +291,27 @@ When adding new features or tests:
 4. Run `pnpm lint` and `pnpm test` before committing
 5. Ensure E2E tests pass: `pnpm test:e2e`
 
+### Pre-Push Verification
+
+Before pushing to a branch, run:
+
+```bash
+pnpm run ci:verify
+```
+
+This command:
+- Cleans all build artifacts (`dist/`, `node_modules/.vite`, etc.)
+- Performs a fresh install (`pnpm install --frozen-lockfile`)
+- Rebuilds all packages from scratch
+- Validates package exports (ordering + runtime resolution)
+- Runs the full test suite
+
+This mirrors the exact CI environment, catching package contract issues and environment-parity problems that local development can mask.
+
+**Why?** Local machines accumulate state (old `dist/` files, cached symlinks) that CI doesn't have on a fresh checkout. Running `ci:verify` before push catches "works on my machine" failures early.
+
+See [CONTRIBUTING.md](./CONTRIBUTING.md) for more details on the monorepo structure and export validation.
+
 ---
 
 ## License
