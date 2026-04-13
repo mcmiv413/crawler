@@ -4,7 +4,8 @@
  */
 import type { Player, EnemyInstance, NemesisRecord, GameState, GamePhase, WorldState, PlayerStats, PlayerAbility, RunState, WeaponMastery, Position, EntityId, AnyItemTemplate } from '@dungeon/contracts';
 import { entityId, EMPTY_WEAPON_MASTERY, EMPTY_RUN_METRICS } from '@dungeon/contracts';
-import { BASE_PLAYER_STATS, INITIAL_FACTIONS, ITEM_BY_ID, ABILITY_DEFINITIONS } from '@dungeon/content';
+import { BASE_PLAYER_STATS, INITIAL_FACTIONS, ITEM_BY_ID } from '@dungeon/content';
+import { ALL_ABILITY_DEFINITIONS } from './abilities/definitions/index.js';
 
 export const BASE_TEST_STATS: PlayerStats = { ...BASE_PLAYER_STATS };
 
@@ -34,9 +35,9 @@ export function createTestPlayer(overrides?: Partial<Player>): Player {
 export function createTestEnemy(overrides?: Partial<EnemyInstance>): EnemyInstance {
   return {
     id: entityId('e1'),
-    templateId: 'goblin_skirmisher',
-    name: 'Goblin Skirmisher',
-    archetype: 'skittish_ranged',
+    templateId: 'goblin_archer',
+    name: 'Goblin Archer',
+    archetype: 'ranged',
     tier: 2,
     stats: { maxHealth: 30, health: 30, attack: 8, defense: 3, accuracy: 70, evasion: 15, speed: 120 },
     equipment: {
@@ -191,6 +192,9 @@ const WEAPON_BY_TYPE: Record<string, string> = {
   ranged: 'short_bow',
 };
 
+/** Ability definition lookup by ID */
+const ABILITY_DEFINITIONS = new Map(ALL_ABILITY_DEFINITIONS.map(def => [def.id, def]));
+
 /**
  * Create a GameState ready for ability testing.
  * Equips the correct weapon type for the ability and grants the ability with 0 cooldown.
@@ -200,9 +204,9 @@ export function createTestGameStateWithAbility(abilityId: string, options?: {
   enemyHealth?: number;
   additionalEnemies?: Array<{ id: string; position: Position; health?: number }>;
 }): GameState {
-  const def = ABILITY_DEFINITIONS[abilityId];
-  const requiresWeaponTypes = def?.requiresWeaponTypes;
-  const weaponType = (Array.isArray(requiresWeaponTypes) && requiresWeaponTypes.length > 0 ? requiresWeaponTypes[0] : undefined) ?? 'blade';
+  const def = ABILITY_DEFINITIONS.get(abilityId);
+  const weaponTypeRequirement = def?.requirements.find(req => req.kind === 'weapon_type');
+  const weaponType = (weaponTypeRequirement && 'weaponType' in weaponTypeRequirement && typeof (weaponTypeRequirement as Record<string, string>).weaponType === 'string' ? (weaponTypeRequirement as Record<string, string>).weaponType : undefined) ?? 'blade';
   const weaponId = WEAPON_BY_TYPE[weaponType] ?? 'rusty_sword';
   const enemyPos = options?.enemyPosition ?? { x: 1, y: 0 };
 

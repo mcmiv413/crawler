@@ -93,7 +93,7 @@ describe('promoteToNemesis', () => {
     expect(newState.world.nemeses).toHaveLength(1);
     const nemesis = newState.world.nemeses[0]!;
     expect(nemesis.isActive).toBe(true);
-    expect(nemesis.sourceTemplateId).toBe('goblin_skirmisher');
+    expect(nemesis.sourceTemplateId).toBe('goblin_archer');
     expect(nemesis.floorOfAscension).toBe(3);
     expect(nemesis.killCount).toBe(1);
     expect(nemesis.rank).toBe(1);
@@ -110,7 +110,7 @@ describe('promoteToNemesis', () => {
     const promoted = events.find(e => e.type === 'NEMESIS_PROMOTED');
     expect(promoted).toBeDefined();
     expect((promoted as any).floor).toBe(3);
-    expect((promoted as any).sourceTemplateId).toBe('goblin_skirmisher');
+    expect((promoted as any).sourceTemplateId).toBe('goblin_archer');
   });
 
   it('appends to existing nemeses immutably', () => {
@@ -146,7 +146,7 @@ describe('promoteToNemesis', () => {
       id: entityId('n0'),
       name: 'Grethak',
       title: 'the Old',
-      sourceTemplateId: 'goblin_skirmisher',
+      sourceTemplateId: 'goblin_archer',
       rank: 1,
       tier: 2,
       stats: createTestEnemy().stats,
@@ -172,7 +172,7 @@ describe('slayNemesis', () => {
       id: entityId('n1'),
       name: 'Vorreth',
       title: 'the Unbroken',
-      sourceTemplateId: 'goblin_skirmisher',
+      sourceTemplateId: 'goblin_archer',
       rank: 1,
       tier: 2,
       stats: createTestEnemy().stats,
@@ -199,7 +199,7 @@ describe('findNemesisByTemplateId', () => {
       id: entityId('n1'),
       name: 'Vorreth',
       title: 'the Unbroken',
-      sourceTemplateId: 'goblin_skirmisher',
+      sourceTemplateId: 'goblin_archer',
       rank: 1,
       tier: 2,
       stats: createTestEnemy().stats,
@@ -213,12 +213,12 @@ describe('findNemesisByTemplateId', () => {
       biomeOfAscension: 'crypt',
       killedByWeaponType: null,
     };
-    const result = findNemesisByTemplateId([active], 'goblin_skirmisher');
+    const result = findNemesisByTemplateId([active], 'goblin_archer');
     expect(result).toBe(active);
   });
 
   it('returns undefined if no active match', () => {
-    expect(findNemesisByTemplateId([], 'goblin_skirmisher')).toBeUndefined();
+    expect(findNemesisByTemplateId([], 'goblin_archer')).toBeUndefined();
   });
 });
 
@@ -228,7 +228,7 @@ describe('slayNemesis — Blueprint Unlock (Area 4a)', () => {
       id: entityId('n1'),
       name: 'Test Nemesis',
       title: 'the Dreaded',
-      sourceTemplateId: 'goblin_skirmisher',
+      sourceTemplateId: 'goblin_archer',
       rank: 1,
       tier: 2,
       stats: createTestEnemy().stats,
@@ -257,7 +257,7 @@ describe('slayNemesis — Blueprint Unlock (Area 4a)', () => {
       id: entityId('n2'),
       name: 'Test Nemesis 2',
       title: 'the Strong',
-      sourceTemplateId: 'goblin_skirmisher',
+      sourceTemplateId: 'goblin_archer',
       rank: 1,
       tier: 2,
       stats: createTestEnemy().stats,
@@ -284,7 +284,7 @@ describe('slayNemesis — Blueprint Unlock (Area 4a)', () => {
       id: entityId('n3'),
       name: 'Test Nemesis 3',
       title: 'the Mighty',
-      sourceTemplateId: 'goblin_skirmisher',
+      sourceTemplateId: 'goblin_archer',
       rank: 1,
       tier: 2,
       stats: createTestEnemy().stats,

@@ -15,7 +15,7 @@ export function applyEffect(
   effect: AbilityEffect,
   targetKey?: string,
   priorHit?: boolean,
-): { state: typeof context.state; events: readonly DomainEvent[] } {
+): { state: typeof context.state; events: readonly DomainEvent[]; hit?: boolean; damage?: number } {
   switch (effect.kind) {
     case 'attack':
       return applyAttack(context, effect, targetKey ?? '');

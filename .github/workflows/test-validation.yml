@@ -1,0 +1,49 @@
+name: Test Validation
+
+on:
+  pull_request:
+    branches: [main, develop]
+  push:
+    branches: [main, develop]
+
+jobs:
+  test-all:
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: pnpm/action-setup@v2
+        with:
+          version: latest
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+          cache: 'pnpm'
+
+      - name: Install dependencies
+        run: pnpm install --frozen-lockfile
+
+      - name: Run all tests
+        run: pnpm test --run
+
+      - name: Lint
+        run: pnpm lint
+
+      - name: Build all packages
+        run: pnpm build
+
+  docker-build:
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Build server Docker image
+        run: docker build -f Dockerfile.server -t rpg-server:test .
+
+      - name: Build web Docker image
+        run: docker build -f Dockerfile.web -t rpg-web:test .

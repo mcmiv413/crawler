@@ -33,7 +33,7 @@ export const crystalGolem = {
   ascii: 'R',
   color: '#aaddff',
   movementBehaviorId: 'chokepoint_holder',
-  sprite: SPRITE_MAP['enemy:dungeon_ogre'],
+  sprite: SPRITE_MAP['enemy:crystal_golem'],
   biomes: [{ biomeId: 'crystal_cave' }],
   factions: [{ factionId: 'beast_swarm', weight: 1.0 }],
   ambientBehaviorProfile: 'wanderer',

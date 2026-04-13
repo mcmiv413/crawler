@@ -10,6 +10,12 @@ export interface MoveValidation {
 
 /** Validate and compute a movement */
 export function validateMove(state: GameState, direction: Direction): MoveValidation {
+  // Validate direction is one of the valid directions
+  const validDirections = new Set(['N', 'S', 'E', 'W', 'NE', 'NW', 'SE', 'SW']);
+  if (!validDirections.has(direction)) {
+    return { valid: false, reason: 'Invalid direction' };
+  }
+
   if (state.run === null) {
     return { valid: false, reason: 'Not in a dungeon run' };
   }

@@ -52,6 +52,12 @@ export const SPRITE_MAP: Readonly<Record<string, import('@dungeon/contracts').Sp
   'enemy:dungeon_ogre':             { x: 0,   y: 128, w: 16, h: 16 }, // col 0,  row 8  — heavy fighter
   'enemy:briar_needler':            { x: 48,  y: 144, w: 16, h: 16 }, // col 3,  row 9  — plant creature
   'enemy:mire_toad':                { x: 80,  y: 160, w: 16, h: 16 }, // col 5,  row 10 — toad creature
+  'enemy:shard_priest':             { x: 96,  y: 128, w: 16, h: 16 }, // col 6,  row 8  — crystal/arcane figure
+  'enemy:ember_bat':                { x: 80,  y: 128, w: 16, h: 16 }, // col 5,  row 8  — fiery creature
+  'enemy:ash_beetle':               { x: 112, y: 128, w: 16, h: 16 }, // col 7,  row 8  — armored insect
+  'enemy:crystal_golem':            { x: 144, y: 128, w: 16, h: 16 }, // col 9,  row 8  — crystalline construct
+  'enemy:bone_shaman':              { x: 160, y: 128, w: 16, h: 16 }, // col 10, row 8  — undead mage
+  'enemy:chain_specter':            { x: 16,  y: 144, w: 16, h: 16 }, // col 1,  row 9  — spectral creature
 
   // ── Objects ────────────────────────────────────────────────────────────────
   'object:chest':                   { x: 80,  y: 112, w: 16, h: 16 }, // col 5,  row 7  — chest

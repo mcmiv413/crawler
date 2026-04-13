@@ -33,7 +33,7 @@ export const chainSpecter = {
   ascii: 'X',
   color: '#664488',
   movementBehaviorId: 'ambush_idle',
-  sprite: SPRITE_MAP['enemy:shadow_lurker'], // placeholder
+  sprite: SPRITE_MAP['enemy:chain_specter'],
   biomes: [{ biomeId: 'frozen_depths' }],
   factions: [{ factionId: 'shadow_cult', weight: 1.0 }],
   ambientBehaviorProfile: 'wall_lurker',

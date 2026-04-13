@@ -34,7 +34,23 @@ export function applyAttack(
   const affinityValue = target.affinities?.[abilityWeaponDamageType];
   const abilityDefenderResistance = affinityValue ?? 0;
 
-  const effectiveAttack = getEffectiveStat(newState.player.stats.attack, 'attack', newState.player.statuses) * effect.damageMultiplier + (effect.flatBonus ?? 0);
+  // Determine damage multiplier: check if this is adjacent to primary target (50% damage for adjacent)
+  let damageMultiplier = effect.damageMultiplier;
+  if (context.target !== undefined && context.target.key !== targetKey) {
+    // This is an adjacent target in AOE; reduce damage to 50%
+    const primaryX = context.target.instance.position.x;
+    const primaryY = context.target.instance.position.y;
+    const tx = target.position.x;
+    const ty = target.position.y;
+    const dx = Math.abs(tx - primaryX);
+    const dy = Math.abs(ty - primaryY);
+    if (dx <= 1 && dy <= 1) {
+      // Adjacent to primary target
+      damageMultiplier = 0.5;
+    }
+  }
+
+  const effectiveAttack = getEffectiveStat(newState.player.stats.attack, 'attack', newState.player.statuses) * damageMultiplier + (effect.flatBonus ?? 0);
   const accuracyBonus = effect.accuracyBonus ?? 0;
   const forceHit = effect.forceHit === true;
   const trackMastery = effect.trackMastery === true;

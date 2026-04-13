@@ -33,7 +33,7 @@ export const boneShaman = {
   ascii: 'H',
   color: '#5533aa',
   movementBehaviorId: 'rearline_anchor',
-  sprite: SPRITE_MAP['enemy:skeleton_warrior'], // placeholder
+  sprite: SPRITE_MAP['enemy:bone_shaman'],
   biomes: [{ biomeId: 'frozen_depths' }],
   factions: [{ factionId: 'undead_legion', weight: 1.0 }],
   ambientBehaviorProfile: 'wanderer',

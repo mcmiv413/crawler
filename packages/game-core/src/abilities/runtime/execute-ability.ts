@@ -65,6 +65,10 @@ export function executeAbility(
         const effectResult = applyEffect(newContext, effect, targetKey, lastAttackHit);
         newContext = { ...newContext, state: effectResult.state };
         accumulatedEvents = [...accumulatedEvents, ...effectResult.events];
+        // Update lastAttackHit if this was an attack effect
+        if (effect.kind === 'attack') {
+          lastAttackHit = (effectResult as any).hit ?? false;
+        }
       }
     }
   }

@@ -208,6 +208,9 @@ export function handleAttack(
   rng: SeededRNG,
 ): CommandResult {
   if (state.run === null) return { state, events: [], runEnded: false };
+  
+  // Check if player is dead
+  if (state.player.stats.health <= 0) return { state, events: [], runEnded: false };
 
   // Find the target enemy
   let targetEnemy: EnemyInstance | null = null;
