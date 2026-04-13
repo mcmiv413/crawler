@@ -31,9 +31,9 @@ describe('Config Governance: UI Sizing', () => {
     expect(ACTIONS_COLUMN_MIN_WIDTH).toBe(250);
 
     // Viewport and tiles
-    expect(CELL_SIZE).toBe(16);
+    expect(CELL_SIZE).toBe(24);
     expect(VP_WIDTH).toBe(30);
-    expect(VP_HEIGHT).toBe(32);
+    expect(VP_HEIGHT).toBe(22);
     expect(VIEWPORT_PX_WIDTH).toBe(VP_WIDTH * CELL_SIZE);
     expect(VIEWPORT_PX_HEIGHT).toBe(VP_HEIGHT * CELL_SIZE);
 
@@ -51,7 +51,7 @@ describe('Config Governance: UI Sizing', () => {
   });
 
   it('computed viewport pixel dimensions match formula', () => {
-    expect(VIEWPORT_PX_WIDTH).toBe(480);
-    expect(VIEWPORT_PX_HEIGHT).toBe(512);
+    expect(VIEWPORT_PX_WIDTH).toBe(720);
+    expect(VIEWPORT_PX_HEIGHT).toBe(528);
   });
 });

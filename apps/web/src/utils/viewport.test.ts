@@ -4,11 +4,11 @@ import { VP_WIDTH, VP_HEIGHT, CELL_SIZE, VIEWPORT_PX_WIDTH, VIEWPORT_PX_HEIGHT }
 describe('viewport constants', () => {
   it('exports consistent VP_WIDTH and VP_HEIGHT', () => {
     expect(VP_WIDTH).toBe(30);
-    expect(VP_HEIGHT).toBe(32);
+    expect(VP_HEIGHT).toBe(22);
   });
 
   it('exports consistent CELL_SIZE', () => {
-    expect(CELL_SIZE).toBe(16);
+    expect(CELL_SIZE).toBe(24);
   });
 
   it('computes viewport pixel dimensions correctly', () => {

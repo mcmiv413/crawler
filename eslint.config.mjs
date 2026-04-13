@@ -41,6 +41,7 @@ const typedLanguageOptions = {
         "packages/*/src/*.test.ts",
         "packages/*/src/*.test.tsx",
         "packages/*/src/abilities/*.test.ts",
+        "packages/*/src/abilities/runtime/*.test.ts",
         "packages/*/src/balance/*.test.ts",
         "packages/*/src/enchantments/*.test.ts",
         "packages/*/src/enemies/*.test.ts",

@@ -14,11 +14,10 @@ import { QuestAssignedScreen } from './components/QuestAssignedScreen.js';
 import { MobileNav } from './components/MobileNav.js';
 import { CharacterScreen } from './components/CharacterScreen.js';
 import { InventoryScreen } from './components/InventoryScreen.js';
-import { InspectScreen } from './components/InspectScreen.js';
 import { CombatLogView } from './components/CombatLogView.js';
 import * as api from './api/client.js';
 
-type Screen = 'main' | 'inventory' | 'character' | 'inspect' | 'log';
+type Screen = 'main' | 'inventory' | 'character' | 'log';
 
 function renderPanel(
   panelType: Screen,
@@ -51,14 +50,6 @@ function renderPanel(
     return (
       <div key="character" style={panelStyle}>
         <CharacterScreen player={view.player} activeQuests={view.activeQuests} />
-      </div>
-    );
-  }
-
-  if (panelType === 'inspect') {
-    return (
-      <div key="inspect" style={panelStyle}>
-        <InspectScreen entities={view.inspectableEntities} playerSpeed={view.player.speed} />
       </div>
     );
   }
@@ -113,9 +104,7 @@ export function App() {
   }
 
   useKeyboard(() => {
-    if (view?.phase === 'dungeon') {
-      handleNavClick('inspect');
-    }
+    // Keyboard shortcuts for future use
   });
   useAutoWalk();
 
@@ -238,7 +227,7 @@ export function App() {
   }
 
   // Unified layout for mobile and desktop
-  const visiblePanels: Screen[] = (['inventory', 'character', 'inspect', 'log'] as Screen[]).filter(p => openPanels.has(p));
+  const visiblePanels: Screen[] = (['inventory', 'character', 'log'] as Screen[]).filter(p => openPanels.has(p));
   const activeNavScreen: Screen = isMobile && openPanels.size > 0 ? ([...openPanels][0] ?? 'main') : 'main';
   // On mobile, show either main content or panels (switching), not both
   const showMainContent = !isMobile || visiblePanels.length === 0;

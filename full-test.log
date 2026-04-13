@@ -1,0 +1,1599 @@
+
+> dungeon-crawler-rpg@0.1.0 test /home/michael/claude/rpg-public
+> vitest run --reporter=verbose --no-coverage
+
+ DEPRECATED  The workspace file is deprecated and will be removed in the next major. Please, use the `test.projects` field in the root config file instead.
+
+ RUN  v3.2.4 /home/michael/claude/rpg-public
+
+ × |@dungeon/web| src/utils/viewport.test.ts > viewport constants > exports consistent VP_WIDTH and VP_HEIGHT 6ms
+   → expected 22 to be 32 // Object.is equality
+ × |@dungeon/web| src/utils/viewport.test.ts > viewport constants > exports consistent CELL_SIZE 0ms
+   → expected 24 to be 16 // Object.is equality
+ ✓ |@dungeon/web| src/utils/viewport.test.ts > viewport constants > computes viewport pixel dimensions correctly 0ms
+ ✓ |@dungeon/web| src/utils/viewport.test.ts > viewport constants > all viewport constants are used by both components 0ms
+ × |@dungeon/web| src/config.test.ts > Config Governance: UI Sizing > all UI sizing constants are defined and accessible 11ms
+   → expected 24 to be 16 // Object.is equality
+ × |@dungeon/web| src/config.test.ts > Config Governance: UI Sizing > computed viewport pixel dimensions match formula 1ms
+   → expected 720 to be 480 // Object.is equality
+ ✓ |@dungeon/web| src/components/EquipmentDoll.test.tsx > EquipmentDoll Component > Slot Labels and Structure > renders all 8 equipment slots 39ms
+ ✓ |@dungeon/web| src/components/EquipmentDoll.test.tsx > EquipmentDoll Component > Slot Labels and Structure > renders 2-column grid layout 19ms
+ ✓ |@dungeon/web| src/components/EquipmentDoll.test.tsx > EquipmentDoll Component > Empty Slots > displays placeholder text for empty slots 11ms
+ ✓ |@dungeon/web| src/components/EquipmentDoll.test.tsx > EquipmentDoll Component > Empty Slots > does not call onSlotClick when clicking empty slot 15ms
+ ✓ |@dungeon/web| src/components/EquipmentDoll.test.tsx > EquipmentDoll Component > Equipped Items > displays equipped item name in weapon slot 12ms
+ ✓ |@dungeon/web| src/components/EquipmentDoll.test.tsx > EquipmentDoll Component > Equipped Items > displays equipped item name in armor slot 16ms
+ ✓ |@dungeon/web| src/components/EquipmentDoll.test.tsx > EquipmentDoll Component > Equipped Items > displays rarity color for equipped items 10ms
+ ✓ |@dungeon/web| src/components/EquipmentDoll.test.tsx > EquipmentDoll Component > Equipped Items > calls onSlotClick with equipped item when slot is clicked 7ms
+ ✓ |@dungeon/web| src/components/EquipmentDoll.test.tsx > EquipmentDoll Component > Equipped Items > handles off-hand weapon in secondaryWeapon slot 10ms
+ ✓ |@dungeon/web| src/components/EquipmentDoll.test.tsx > EquipmentDoll Component > Equipped Items > handles all armor slots 11ms
+ ✓ |@dungeon/web| src/components/EquipmentDoll.test.tsx > EquipmentDoll Component > Rarity Coloring > applies correct color for legendary rarity 12ms
+ ✓ |@dungeon/web| src/components/EquipmentDoll.test.tsx > EquipmentDoll Component > Rarity Coloring > applies correct color for epic rarity 8ms
+ ✓ |@dungeon/web| src/hooks/useBreakpoint.test.ts > useBreakpoint Hook > returns isMobile: false when media query does not match 11ms
+ ✓ |@dungeon/web| src/hooks/useBreakpoint.test.ts > useBreakpoint Hook > returns isMobile: true when media query matches 2ms
+ ✓ |@dungeon/web| src/hooks/useBreakpoint.test.ts > useBreakpoint Hook > subscribes to matchMedia change event 3ms
+ ✓ |@dungeon/web| src/hooks/useBreakpoint.test.ts > useBreakpoint Hook > updates isMobile when media query change event fires 3ms
+ ✓ |@dungeon/web| src/hooks/useBreakpoint.test.ts > useBreakpoint Hook > cleans up event listener on unmount 2ms
+ ✓ |@dungeon/web| src/hooks/useBreakpoint.test.ts > useBreakpoint Hook > queries for max-width 768px breakpoint 2ms
+ ✓ |@dungeon/web| src/components/CombatLogView.test.tsx > CombatLogView Component > Basic Rendering > renders null when entries are empty 9ms
+ ✓ |@dungeon/web| src/components/CombatLogView.test.tsx > CombatLogView Component > Basic Rendering > renders log container when entries are present 13ms
+ ✓ |@dungeon/web| src/components/CombatLogView.test.tsx > CombatLogView Component > Basic Rendering > renders all entries with correct text 6ms
+ ✓ |@dungeon/web| src/components/CombatLogView.test.tsx > CombatLogView Component > Event Type Styling > applies death color to death events 7ms
+ ✓ |@dungeon/web| src/components/CombatLogView.test.tsx > CombatLogView Component > Event Type Styling > applies loot color to loot events 4ms
+ ✓ |@dungeon/web| src/components/CombatLogView.test.tsx > CombatLogView Component > Event Type Styling > applies info color to info events 4ms
+ ✓ |@dungeon/web| src/components/CombatLogView.test.tsx > CombatLogView Component > Event Type Styling > applies default color to unknown event types 4ms
+ ✓ |@dungeon/web| src/components/CombatLogView.test.tsx > CombatLogView Component > Scroll Behavior > scrolls to bottom when new entries are added 4ms
+ ✓ |@dungeon/web| src/components/CombatLogView.test.tsx > CombatLogView Component > Real Event Data (Integration) > renders attack event with complete details 8ms
+ ✓ |@dungeon/web| src/components/CombatLogView.test.tsx > CombatLogView Component > Real Event Data (Integration) > renders status effect event 2ms
+ ✓ |@dungeon/web| src/components/CombatLogView.test.tsx > CombatLogView Component > Real Event Data (Integration) > renders death event visually distinct 2ms
+ ✓ |@dungeon/web| src/components/CombatLogView.test.tsx > CombatLogView Component > Real Event Data (Integration) > renders loot event with green color 2ms
+ ✓ |@dungeon/web| src/components/CombatLogView.test.tsx > CombatLogView Component > Real Event Data (Integration) > renders multiple events in order 4ms
+ ✓ |@dungeon/web| src/components/CombatLogView.test.tsx > CombatLogView Component > Debug Mode Filtering > hides [DEBUG] entries when debugMode is false 4ms
+ ✓ |@dungeon/web| src/components/CombatLogView.test.tsx > CombatLogView Component > Debug Mode Filtering > shows [DEBUG] entries when debugMode is true 3ms
+ ✓ |@dungeon/web| src/components/CombatLogView.test.tsx > CombatLogView Component > Debug Mode Filtering > returns null when all entries are filtered out 1ms
+ ✓ |@dungeon/web| src/components/CombatLogView.test.tsx > CombatLogView Component > Edge Cases > handles very long event text 2ms
+ ✓ |@dungeon/web| src/components/CombatLogView.test.tsx > CombatLogView Component > Edge Cases > handles special characters in event text 2ms
+ ✓ |@dungeon/web| src/components/CombatLogView.test.tsx > CombatLogView Component > Edge Cases > preserves order when entries array is updated with duplicates 5ms
+ ✓ |@dungeon/web| src/components/ItemInspectModal.test.tsx > ItemInspectModal Component > Basic Rendering > renders item name and description 31ms
+ ✓ |@dungeon/web| src/components/ItemInspectModal.test.tsx > ItemInspectModal Component > Basic Rendering > renders backdrop with click-to-close 10ms
+ ✓ |@dungeon/web| src/components/ItemInspectModal.test.tsx > ItemInspectModal Component > Basic Rendering > renders close button 13ms
+ ✓ |@dungeon/web| src/components/ItemInspectModal.test.tsx > ItemInspectModal Component > Weapon Stats Display > displays weapon stats when weaponStats present 11ms
+ ✓ |@dungeon/web| src/components/ItemInspectModal.test.tsx > ItemInspectModal Component > Weapon Stats Display > does not display weapon stats for non-weapon items 11ms
+ ✓ |@dungeon/web| src/components/ItemInspectModal.test.tsx > ItemInspectModal Component > Armor Stats Display > displays armor stats when armorStats present 13ms
+ ✓ |@dungeon/web| src/components/InventoryScreen.test.tsx > InventoryScreen Component > Header and Navigation > renders inventory title 48ms
+ ✓ |@dungeon/web| src/components/InventoryScreen.test.tsx > InventoryScreen Component > Header and Navigation > renders back to game button 23ms
+ ✓ |@dungeon/web| src/components/TownPhase.test.tsx > TownPhase Component > Shop Rendering > displays shop section when items exist 73ms
+ ✓ |@dungeon/web| src/components/ItemInspectModal.test.tsx > ItemInspectModal Component > Armor Stats Display > displays evasion penalty when present 10ms
+ ✓ |@dungeon/web| src/components/ItemInspectModal.test.tsx > ItemInspectModal Component > Comparison Section > does not render comparison when equippedInSlot is null 9ms
+ ✓ |@dungeon/web| src/components/ItemInspectModal.test.tsx > ItemInspectModal Component > Comparison Section > does not render comparison when item is same as equipped 15ms
+ ✓ |@dungeon/web| src/components/ItemInspectModal.test.tsx > ItemInspectModal Component > Comparison Section > renders comparison section when equipped item is different 13ms
+ ✓ |@dungeon/web| src/components/ItemInspectModal.test.tsx > ItemInspectModal Component > Comparison Section > shows stat differences in comparison 17ms
+ ✓ |@dungeon/web| src/components/ItemInspectModal.test.tsx > ItemInspectModal Component > Action Buttons > renders equip button for unequipped weapon 12ms
+ ✓ |@dungeon/web| src/components/ItemInspectModal.test.tsx > ItemInspectModal Component > Action Buttons > renders unequip button for equipped item 19ms
+ ✓ |@dungeon/web| src/components/ItemInspectModal.test.tsx > ItemInspectModal Component > Action Buttons > calls sendCommand with EQUIP when equip button clicked 9ms
+ ✓ |@dungeon/web| src/components/ItemInspectModal.test.tsx > ItemInspectModal Component > Action Buttons > calls sendCommand with UNEQUIP when unequip button clicked 5ms
+ ✓ |@dungeon/web| src/components/InventoryScreen.test.tsx > InventoryScreen Component > Equipment Display > renders equipment section 31ms
+ ✓ |@dungeon/web| src/components/InventoryScreen.test.tsx > InventoryScreen Component > Equipment Display > renders all 8 equipment slots 25ms
+ ✓ |@dungeon/web| src/components/InventoryScreen.test.tsx > InventoryScreen Component > Bag Items Display > renders bag section with non-equipped items 52ms
+ ✓ |@dungeon/web| src/components/ItemInspectModal.test.tsx > ItemInspectModal Component > Action Buttons > renders use button for consumables 4ms
+ ✓ |@dungeon/web| src/components/ItemInspectModal.test.tsx > ItemInspectModal Component > Action Buttons > renders sell button in town phase 9ms
+ ✓ |@dungeon/web| src/components/ItemInspectModal.test.tsx > ItemInspectModal Component > Action Buttons > calls sendCommand with TOWN_ACTION sell in town phase 9ms
+ ✓ |@dungeon/web| src/components/ItemInspectModal.test.tsx > ItemInspectModal Component > Rarity Display > displays item rarity 5ms
+ ✓ |@dungeon/web| src/components/ItemInspectModal.test.tsx > ItemInspectModal Component > Rarity Display > displays value and sell price 5ms
+ ✓ |@dungeon/web| src/components/TownPhase.test.tsx > TownPhase Component > Shop Rendering > shows empty state when shop items array is empty 47ms
+ ✓ |@dungeon/web| src/components/TownPhase.test.tsx > TownPhase Component > Shop Rendering > displays shop items with prices and stock 35ms
+ ✓ |@dungeon/web| src/components/TownPhase.test.tsx > TownPhase Component > Shop Rendering > displays buy buttons for each item 22ms
+ ✓ |@dungeon/web| src/components/TownPhase.test.tsx > TownPhase Component > Shop Rendering > disables buy button when player lacks gold 24ms
+ ✓ |@dungeon/web| src/sprites/sprite-map.test.ts > SPRITE_MAP > has required keys 1ms
+ ✓ |@dungeon/web| src/sprites/sprite-map.test.ts > SPRITE_MAP > all rects have non-negative integer coordinates and 16×16 dimensions 6ms
+ ✓ |@dungeon/web| src/sprites/sprite-map.test.ts > SPRITE_MAP > all x/y are multiples of 16 (aligned to tile grid) 2ms
+ ✓ |@dungeon/web| src/sprites/sprite-map.test.ts > SPRITE_MAP > has at least one enemy entry 0ms
+ ✓ |@dungeon/web| src/sprites/sprite-map.test.ts > SPRITE_MAP > does not throw when accessing an unknown key 2ms
+ ✓ |@dungeon/web| src/components/InventoryScreen.test.tsx > InventoryScreen Component > Bag Items Display > does not render unequipped items in equipment section 35ms
+ ✓ |@dungeon/web| src/components/InventoryScreen.test.tsx > InventoryScreen Component > Bag Items Display > shows item quantities for stacked items 12ms
+ ✓ |@dungeon/web| src/components/InventoryScreen.test.tsx > InventoryScreen Component > Item Inspection > opens item inspect modal when clicking bag item 37ms
+ ✓ |@dungeon/web| src/components/InventoryScreen.test.tsx > InventoryScreen Component > Item Inspection > closes modal when back to game is clicked in modal context 33ms
+ ✓ |@dungeon/web| src/components/TownPhase.test.tsx > TownPhase Component > Factions Rendering > displays factions section with populated factions 25ms
+ ✓ |@dungeon/web| src/components/TownPhase.test.tsx > TownPhase Component > Factions Rendering > shows empty state when factions array is empty 24ms
+ ✓ |@dungeon/web| src/components/TownPhase.test.tsx > TownPhase Component > Factions Rendering > displays faction power and disposition 11ms
+ ✓ |@dungeon/web| src/components/TownPhase.test.tsx > TownPhase Component > NPC Section > displays available NPCs 18ms
+ ✓ |@dungeon/web| src/components/TownPhase.test.tsx > TownPhase Component > NPC Section > displays NPC roles 10ms
+ ✓ |@dungeon/web| src/components/TownPhase.test.tsx > TownPhase Component > NPC Section > displays Talk buttons for all NPCs 15ms
+ ✓ |@dungeon/web| src/components/InventoryScreen.test.tsx > InventoryScreen Component > Item Inspection > shows comparison modal for equipment slots 41ms
+ ✓ |@dungeon/web| src/components/InventoryScreen.test.tsx > InventoryScreen Component > Empty State > renders gracefully with no items 21ms
+ ✓ |@dungeon/web| src/components/InventoryScreen.test.tsx > InventoryScreen Component > Phase Context > passes correct phase to item inspect modal 41ms
+ ✓ |@dungeon/web| src/components/TownPhase.test.tsx > TownPhase Component > Healer NPC Interactivity > displays Heal button for healer NPC 23ms
+ ✓ |@dungeon/web| src/components/TownPhase.test.tsx > TownPhase Component > Healer NPC Interactivity > Heal button is enabled when player is damaged and has gold 18ms
+ ✓ |@dungeon/web| src/components/TownPhase.test.tsx > TownPhase Component > Healer NPC Interactivity > Heal button is disabled when player is at full health 26ms
+ ✓ |@dungeon/web| src/components/TownPhase.test.tsx > TownPhase Component > Healer NPC Interactivity > Heal button reflects correct cost when player lacks enough gold 24ms
+ ✓ |@dungeon/web| src/components/TownPhase.test.tsx > TownPhase Component > Healer NPC Interactivity > Heal button triggers rest command when clicked 22ms
+ ✓ |@dungeon/web| src/utils/pathfinding.test.ts > findPath > returns empty array when start === destination 1ms
+ ✓ |@dungeon/web| src/utils/pathfinding.test.ts > findPath > finds straight-line path on open grid 0ms
+ ✓ |@dungeon/web| src/utils/pathfinding.test.ts > findPath > routes around walls (non-walkable cells) 0ms
+ ✓ |@dungeon/web| src/utils/pathfinding.test.ts > findPath > routes around enemy-occupied cells 0ms
+ ✓ |@dungeon/web| src/utils/pathfinding.test.ts > findPath > handles 8-directional movement (diagonal paths) 0ms
+ ✓ |@dungeon/web| src/utils/pathfinding.test.ts > findPath > returns empty array when no path exists (walled off) 0ms
+ ✓ |@dungeon/web| src/utils/pathfinding.test.ts > findPath > uses visible and remembered cells but ignores hidden 0ms
+ ✓ |@dungeon/web| src/utils/pathfinding.test.ts > findPath > cannot path through hidden cells 0ms
+ ✓ |@dungeon/web| src/utils/pathfinding.test.ts > findPath > returns path excluding start, including destination 0ms
+ ✓ |@dungeon/web| src/components/EnchanterPanel.test.ts > EnchanterPanel enchantment data source > all enchantments should have names defined in content 4ms
+ ✓ |@dungeon/web| src/components/EnchanterPanel.test.ts > EnchanterPanel enchantment data source > all enchantments should have costs accessible from content 1ms
+ ✓ |@dungeon/web| src/components/EnchanterPanel.test.ts > EnchanterPanel enchantment data source > cost function should resolve tiers correctly 0ms
+ ✓ |@dungeon/web| src/components/EnchanterPanel.test.ts > EnchanterPanel enchantment data source > enchantment catalog has exactly 14 entries 0ms
+ ✓ |@dungeon/web| src/components/TownPhase.test.tsx > TownPhase Component > Shopkeeper NPC Interactivity > displays Shop button for shopkeeper NPC 16ms
+ ✓ |@dungeon/web| src/components/TownPhase.test.tsx > TownPhase Component > Shopkeeper NPC Interactivity > Shop button is visible (not hidden by overflow) 9ms
+ ✓ |@dungeon/web| src/components/TownPhase.test.tsx > TownPhase Component > Enchanter NPC Interactivity > displays Enchant button for blacksmith NPC 12ms
+ ✓ |@dungeon/web| src/components/TownPhase.test.tsx > TownPhase Component > Enchanter NPC Interactivity > displays Enchant button for enchanter NPC 14ms
+ ✓ |@dungeon/web| src/components/TownPhase.test.tsx > TownPhase Component > Mobile Rendering > displays shop on mobile and is visible 12ms
+ ✓ |@dungeon/web| src/components/TownPhase.test.tsx > TownPhase Component > Mobile Rendering > displays factions on mobile and is visible 14ms
+ ✓ |@dungeon/web| src/components/TownPhase.test.tsx > TownPhase Component > Mobile Rendering > displays NPCs on mobile and is visible 17ms
+ ✓ |@dungeon/web| src/components/TownPhase.test.tsx > TownPhase Component > Mobile Rendering > displays NPC buttons on mobile 28ms
+ ✓ |@dungeon/web| src/components/TownPhase.test.tsx > TownPhase Component > Unavailable NPCs > does not display unavailable NPCs 4ms
+ ✓ |@dungeon/web| src/components/DungeonPhase.test.tsx > DungeonPhase Component > Desktop Rendering > renders action button grid with Wait action 312ms
+ ✓ |@dungeon/web| src/utils/threat-detection.test.ts > detectNewThreats > returns empty when no new enemies 3ms
+ ✓ |@dungeon/web| src/utils/threat-detection.test.ts > detectNewThreats > detects newly visible enemy (ID not in known set) 2ms
+ ✓ |@dungeon/web| src/utils/threat-detection.test.ts > detectNewThreats > ignores enemies already in known set 0ms
+ ✓ |@dungeon/web| src/utils/threat-detection.test.ts > detectNewThreats > handles multiple new enemies at once 0ms
+ ✓ |@dungeon/web| src/utils/direction.test.ts > positionToDirection > maps N correctly (0, -1) 1ms
+ ✓ |@dungeon/web| src/utils/direction.test.ts > positionToDirection > maps S correctly (0, +1) 0ms
+ ✓ |@dungeon/web| src/utils/direction.test.ts > positionToDirection > maps E correctly (+1, 0) 0ms
+ ✓ |@dungeon/web| src/utils/direction.test.ts > positionToDirection > maps W correctly (-1, 0) 0ms
+ ✓ |@dungeon/web| src/utils/direction.test.ts > positionToDirection > maps NE correctly (+1, -1) 0ms
+ ✓ |@dungeon/web| src/utils/direction.test.ts > positionToDirection > maps NW correctly (-1, -1) 0ms
+ ✓ |@dungeon/web| src/utils/direction.test.ts > positionToDirection > maps SE correctly (+1, +1) 0ms
+ ✓ |@dungeon/web| src/utils/direction.test.ts > positionToDirection > maps SW correctly (-1, +1) 0ms
+ ✓ |@dungeon/web| src/utils/direction.test.ts > positionToDirection > returns null for non-adjacent positions 0ms
+ ✓ |@dungeon/web| src/components/DungeonPhase.test.tsx > DungeonPhase Component > Desktop Rendering > renders desktop action buttons with attack option 229ms
+ ✓ |@dungeon/web| src/config/api.test.ts > API_BASE_URL config > defaults to /api when VITE_API_BASE_URL is not set 4ms
+ ✓ |@dungeon/web| src/utils/screen-to-grid.test.ts > screenToGrid > converts (0,0) click to viewport origin 1ms
+ ✓ |@dungeon/web| src/utils/screen-to-grid.test.ts > screenToGrid > converts mid-canvas click correctly 0ms
+ ✓ |@dungeon/web| src/utils/screen-to-grid.test.ts > screenToGrid > handles edge of viewport 0ms
+ ✓ |@dungeon/web| src/components/DungeonPhase.test.tsx > DungeonPhase Component > Desktop Rendering > renders desktop action buttons with interact (chest) option 156ms
+ × |@dungeon/content| src/enemies/content-integrity.test.ts > Enemy Content Integrity > Sprite uniqueness > no two enemies share the same sprite (x,y) 5ms
+   → shard_priest and shadow_lurker share sprite at (0,144): expected 'shadow_lurker' to be undefined
+ × |@dungeon/content| src/enemies/content-integrity.test.ts > Enemy Content Integrity > ASCII character uniqueness > no two enemies share the same ascii character 1ms
+   → crystal_golem and moss_golem both use ascii 'G': expected 'moss_golem' to be undefined
+ ✓ |@dungeon/content| src/enemies/content-integrity.test.ts > Enemy Content Integrity > Faction membership > every enemy belongs to at least one faction 1ms
+ ✓ |@dungeon/content| src/enemies/content-integrity.test.ts > Enemy Content Integrity > Faction membership > all faction references are valid 0ms
+ ✓ |@dungeon/content| src/enemies/content-integrity.test.ts > Enemy Content Integrity > Faction membership > faction weights are in range (0, 1] 1ms
+ ✓ |@dungeon/content| src/enemies/content-integrity.test.ts > Enemy Content Integrity > Biome membership > every enemy belongs to at least one biome 0ms
+ ✓ |@dungeon/content| src/enemies/content-integrity.test.ts > Enemy Content Integrity > Biome membership > all biome references are valid 0ms
+ ✓ |@dungeon/content| src/enemies/content-integrity.test.ts > Enemy Content Integrity > Biome tier coverage > early biomes have at least one tier-1 enemy for new players 0ms
+ ✓ |@dungeon/content| src/enemies/content-integrity.test.ts > Enemy Content Integrity > Spawn weight > every enemy has positive spawn weight 0ms
+ ✓ |@dungeon/content| src/enemies/content-integrity.test.ts > Enemy Content Integrity > Sprite coverage > every enemy has a sprite defined 1ms
+ ✓ |@dungeon/web| src/components/DungeonPhase.test.tsx > DungeonPhase Component > Desktop Rendering > renders map display 198ms
+ × |@dungeon/web| src/components/DungeonPhase.test.tsx > DungeonPhase Component > Desktop Rendering > renders player HUD 363ms
+   → Unable to find an accessible element with the role "button" and name `/Inventory/i`
+
+Here are the accessible roles:
+
+  heading:
+
+  Name "Dungeon":
+  [36m<h2[39m
+    [33mstyle[39m=[32m"margin: 0px; color: #88cc44;"[39m
+  [36m/>[39m
+
+  --------------------------------------------------
+  button:
+
+  Name "⬛ ASCII":
+  [36m<button[39m
+    [33mstyle[39m=[32m"font-size: 11px; padding: 2px 8px; background: #333; color: #aaa; border: 1px solid #555; cursor: pointer;"[39m
+  [36m/>[39m
+
+  Name "Wait":
+  [36m<button[39m
+    [33mstyle[39m=[32m"padding: 8px 16px; margin: 3px 4px; background: #333; color: #ccc; border: 1px solid #555; cursor: pointer; font-family: monospace; font-size: 14px; min-height: 44px; border-radius: 4px;"[39m
+  [36m/>[39m
+
+  --------------------------------------------------
+  strong:
+
+  Name "":
+  [36m<strong[39m
+    [33mstyle[39m=[32m"color: #fff; min-width: 80px;"[39m
+  [36m/>[39m
+
+  --------------------------------------------------
+
+Ignored nodes: comments, script, style
+[36m<body>[39m
+  [36m<div>[39m
+    [36m<div[39m
+      [33mstyle[39m=[32m"padding: 8px; font-family: monospace; color: #ccc; background: #111; flex-grow: 1; flex-shrink: 1; flex-basis: 0%; overflow: hidden; display: flex; flex-direction: column; min-height: 0;"[39m
+    [36m>[39m
+      [36m<div[39m
+        [33mstyle[39m=[32m"display: flex; justify-content: space-between; align-items: center; margin-bottom: 10px; flex-shrink: 0;"[39m
+      [36m>[39m
+        [36m<h2[39m
+          [33mstyle[39m=[32m"margin: 0px; color: #88cc44;"[39m
+        [36m>[39m
+          [0mDungeon[0m
+        [36m</h2>[39m
+        [36m<button[39m
+          [33mstyle[39m=[32m"font-size: 11px; padding: 2px 8px; background: #333; color: #aaa; border: 1px solid #555; cursor: pointer;"[39m
+        [36m>[39m
+          [0m⬛ ASCII[0m
+        [36m</button>[39m
+      [36m</div>[39m
+      [36m<div[39m
+        [33mstyle[39m=[32m"margin-bottom: 8px; padding: 6px; border: 1px solid #333; background: #1a1a1a; font-size: 12px;"[39m
+      [36m>[39m
+        [36m<div[39m
+          [33mstyle[39m=[32m"display: flex; align-items: center; gap: 8px;"[39m
+        [36m>[39m
+          [36m<strong[39m
+            [33mstyle[39m=[32m"color: #fff; min-width: 80px;"[39m
+          [36m>[39m
+            [0mHero[0m
+          [36m</strong>[39m
+          [36m<span[39m
+            [33mstyle[39m=[32m"color: #888;"[39m
+          [36m>[39m
+            [0mLv.[0m
+            [0m1[0m
+          [36m</span>[39m
+          [36m<span[39m
+            [33mstyle[39m=[32m"color: #888;"[39m
+          [36m>[39m
+            [0mFloor [0m
+            [0m1[0m
+          [36m</span>[39m
+          [36m<span>[39m
+            [0mHP: [0m
+            [36m<span[39m
+              [33mstyle[39m=[32m"color: #ff4;"[39m
+            [36m>[39m
+              [0m50[0m
+              [0m/[0m
+              [0m100[0m
+            [36m</span>[39m
+          [36m</span>[39m
+          [36m<span[39m
+            [33mstyle[39m=[32m"color: #aaa; font-size: 11px;"[39m
+          [36m>[39m
+            [0m⬤ [0m
+            [0m?[0m
+          [36m</span>[39m
+        [36m</div>[39m
+      [36m</div>[39m
+      [36m<div[39m
+        [33mstyle[39m=[32m"margin-bottom: 8px; flex-shrink: 0;"[39m
+      [36m>[39m
+        [36m<div[39m
+          [33mstyle[39m=[32m"font-size: 11px; color: #ff4; margin-bottom: 4px;"[39m
+        [36m>[39m
+          [0mDanger: [0m
+          [0mModerate[0m
+        [36m</div>[39m
+        [36m<div[39m
+          [33mstyle[39m=[32m"width: 360px; height: 264px; overflow: hidden; flex-shrink: 0; margin-bottom: 8px; image-rendering: pixelated;"[39m
+        [36m>[39m
+          [36m<div[39m
+            [33mstyle[39m=[32m"transform: scale(0.5); transform-origin: top left; width: 720px; height: 528px;"[39m
+          [36m>[39m
+            [36m<div[39m
+              [33mstyle[39m=[32m"border: 1px solid #444; display: inline-block; background: #000;"[39m
+            [36m>[39m
+              [36m<div[39m
+                [33mstyle[39m=[32m"display: flex; height: 24px;"[39m
+              [36m>[39m
+                [36m<span[39m
+                  [33mstyle[39m=[32m"display: inline-block; width: 24px; height: 24px; line-height: 24px; text-align: center; color: #aaa; background-color: #000; font-family: monospace; font-size: 14px; cursor: pointer;"[39m
+                [36m>[39m
+                  [0m.[0m
+                [36m</span>[39m
+                [36m<span[39m
+                  [33mstyle[39m=[32m"display: inline-block; width: 24px; height: 24px; line-height: 24px; text-align: center; color: #aaa; background-color: #000; font-family: monospace; font-size: 14px; cursor: pointer;"[39m
+                [36m>[39m
+                  [0m.[0m
+                [36m</span>[39m
+                [36m<span[39m
+                  [33mstyle[39m=[32m"display: inline-block; width: 24px; height: 24px; line-height: 24px; text-align: center; color: #aaa; background-color: #000; font-family: monospace; font-size: 14px; cursor: pointer;"[39m
+                [36m>[39m
+                  [0m.[0m
+                [36m</span>[39m
+                [36m<span[39m
+                  [33mstyle[39m=[32m"display: inline-block; width: 24px; height: 24px; line-height: 24px; text-align: center; color: #aaa; background-color: #000; font-family: monospace; font-size: 14px; cursor: pointer;"[39m
+                [36m>[39m
+                  [0m.[0m
+                [36m</span>[39m
+                [36m<span[39m
+                  [33mstyle[39m=[32m"display: inline-block; width: 24px; height: 24px; line-height: 24px; text-align: center; color: #aaa; background-color: #000; font-family: monospace; font-size: 14px; cursor: pointer;"[39m
+                [36m>[39m
+                  [0m.[0m
+                [36m</span>[39m
+                [36m<span[39m
+                  [33mstyle[39m=[32m"display: inline-block; width: 24px; height: 24px; line-height: 24px; text-align: center; color: #aaa; background-color: #000; font-family: monospace; font-size: 14px; cursor: pointer;"[39m
+                [36m>[39m
+                  [0m.[0m
+                [36m</span>[39m
+                [36m<span[39m
+                  [33mstyle[39m=[32m"display: inline-block; width: 24px; height: 24px; line-height: 24px; text-align: center; color: #aaa; background-color: #000; font-family: monospace; font-size: 14px; cursor: pointer;"[39m
+                [36m>[39m
+                  [0m.[0m
+                [36m</span>[39m
+                [36m<span[39m
+                  [33mstyle[39m=[32m"display: inline-block; width: 24px; height: 24px; line-height: 24px; text-align: center; color: #aaa; background-color: #000; font-family: monospace; font-size: 14px; cursor: pointer;"[39m
+                [36m>[39m
+                  [0m.[0m
+                [36m</span>[39m
+                [36m<span[39m
+                  [33mstyle[39m=[32m"display: inline-block; width: 24px; height: 24px; line-height: 24px; text-align: center; color: #aaa; background-color: #000; font-family: monospace; font-size: 14px; cursor: pointer;"[39m
+                [36m>[39m
+                  [0m.[0m
+                [36m</span>[39m
+                [36m<span[39m
+                  [33mstyle[39m=[32m"display: inline-block; width: 24px; height: 24px; line-height: 24px; text-align: center; color: #aaa; background-color: #000; font-family: monospace; font-size: 14px; cursor: pointer;"[39m
+                [36m>[39m
+                  [0m.[0m
+                [36m</span>[39m
+                [36m<span[39m
+                  [33mstyle[39m=[32m"display: inline-block; width: 24px; height: 24px; line-height: 24px; text-align: center; color: #aaa; background-color: #000; font-family: monospace; font-size: 14px; cursor: pointer;"[3...
+ ✓ |@dungeon/web| src/components/DungeonPhase.test.tsx > DungeonPhase Component > Mobile Rendering > renders action buttons on mobile (regression test) 106ms
+ ✓ |@dungeon/web| src/components/DungeonPhase.test.tsx > DungeonPhase Component > Mobile Rendering > renders map display on mobile 96ms
+ ✓ |@dungeon/presenter| src/game-view-builder.test.ts > buildGameView runResult > returns runResult "victory" when game_over with victory metrics 3ms
+ ✓ |@dungeon/presenter| src/game-view-builder.test.ts > buildGameView runResult > returns runResult "death" when game_over with death metrics 0ms
+ ✓ |@dungeon/presenter| src/game-view-builder.test.ts > buildGameView runResult > returns runResult null when not in game_over phase 0ms
+ ✓ |@dungeon/presenter| src/game-view-builder.test.ts > buildGameView shop effectivePrice > shows effectivePrice with 25% discount when shopkeeper disposition=50 1ms
+ ✓ |@dungeon/presenter| src/game-view-builder.test.ts > buildGameView shop effectivePrice > effectivePrice equals price when no shopkeeper NPC 0ms
+ ✓ |@dungeon/presenter| src/game-view-builder.test.ts > buildGameView ascend action > includes ascend action when player is on stairs_up tile with floor history 0ms
+ ✓ |@dungeon/presenter| src/game-view-builder.test.ts > buildGameView ascend action > does NOT include ascend action when on stairs_up but no floor history (floor 1) 0ms
+ ✓ |@dungeon/presenter| src/game-view-builder.test.ts > buildGameView ascend action > does NOT include ascend action when not on stairs_up tile 0ms
+ ✓ |@dungeon/presenter| src/game-view-builder.test.ts > buildGameView inventory sellPrice > InventoryItemView.sellPrice equals floor(value * buybackMultiplier) 3ms
+ ✓ |@dungeon/presenter| src/game-view-builder.test.ts > buildGameView inventory sellPrice > sellPrice uses the actual buybackMultiplier, not hardcoded 0.4 0ms
+ ✓ |@dungeon/presenter| src/game-view-builder.test.ts > buildGameView player abilities > player.abilities is empty when player has no abilities 1ms
+ ✓ |@dungeon/presenter| src/game-view-builder.test.ts > buildGameView player abilities > player.abilities reflects a ready ability (cooldown 0) 1ms
+ ✓ |@dungeon/presenter| src/game-view-builder.test.ts > buildGameView player abilities > player.abilities shows ability on cooldown as not ready 0ms
+ ✓ |@dungeon/presenter| src/game-view-builder.test.ts > buildGameView player abilities > availableActions includes all abilities (ready and on-cooldown) with cooldown labels - Phase B2 1ms
+ ✓ |@dungeon/presenter| src/game-view-builder.test.ts > buildGameView player abilities > player.abilities filters out abilities incompatible with equipped weapon 1ms
+ ✓ |@dungeon/presenter| src/game-view-builder.test.ts > buildGameView player abilities > player.abilities hides weapon-specific abilities when no weapon is equipped 0ms
+ ✓ |@dungeon/presenter| src/game-view-builder.test.ts > buildGameView shop rarity > ShopItemView includes rarity from item template 0ms
+ ✓ |@dungeon/presenter| src/game-view-builder.test.ts > buildGameView map sprite fields > map.biomeId reflects the floor biomeId 0ms
+ ✓ |@dungeon/presenter| src/game-view-builder.test.ts > buildGameView map sprite fields > map cell has tileType matching the tile type 0ms
+ ✓ |@dungeon/presenter| src/game-view-builder.test.ts > buildGameView map sprite fields > map cell tileType is stairs_up when player is on stairs_up tile 1ms
+ ✓ |@dungeon/presenter| src/game-view-builder.test.ts > buildGameView map sprite fields > player entity has templateId null 0ms
+ ✓ |@dungeon/presenter| src/game-view-builder.test.ts > buildGameView map sprite fields > enemy entity has templateId from EnemyInstance 1ms
+ ✓ |@dungeon/presenter| src/game-view-builder.test.ts > buildGameView map sprite fields > floor object entity has correct templateId 1ms
+ ✓ |@dungeon/presenter| src/game-view-builder.test.ts > buildGameView map sprite fields > enemy entity uses ascii field from template, not name first letter 0ms
+ ✓ |@dungeon/presenter| src/game-view-builder.test.ts > buildGameView map sprite fields > enemy entity uses color field from template when present 0ms
+ ✓ |@dungeon/presenter| src/game-view-builder.test.ts > buildRunSummaryStats > returns null when no run metrics 0ms
+ ✓ |@dungeon/presenter| src/game-view-builder.test.ts > buildRunSummaryStats > returns stats when run metrics are present in town phase 0ms
+ ✓ |@dungeon/presenter| src/game-view-builder.test.ts > buildPrepAdvice > returns weapon advice when no weapon equipped 0ms
+ ✓ |@dungeon/presenter| src/game-view-builder.test.ts > buildPrepAdvice > returns low health advice when health below 50% 0ms
+ ✓ |@dungeon/presenter| src/game-view-builder.test.ts > buildPrepAdvice > returns high corruption warning when corruption > 75 0ms
+ ✓ |@dungeon/presenter| src/game-view-builder.test.ts > buildPrepAdvice > returns no consumables advice when inventory is empty 0ms
+ ✓ |@dungeon/presenter| src/game-view-builder.test.ts > computeDangerLevel (via MapView) > returns safe when depth is much lower than player level 0ms
+ ✓ |@dungeon/presenter| src/game-view-builder.test.ts > computeDangerLevel (via MapView) > returns moderate when depth roughly equals player level 0ms
+ ✓ |@dungeon/presenter| src/game-view-builder.test.ts > computeDangerLevel (via MapView) > returns dangerous when depth exceeds player level by 1-2 0ms
+ ✓ |@dungeon/presenter| src/game-view-builder.test.ts > computeDangerLevel (via MapView) > returns deadly when depth exceeds player level by more than 2 0ms
+ ✓ |@dungeon/presenter| src/game-view-builder.test.ts > buildDeathSummary > returns null when phase is not game_over 0ms
+ ✓ |@dungeon/presenter| src/game-view-builder.test.ts > buildDeathSummary > returns null for victory 0ms
+ ✓ |@dungeon/presenter| src/game-view-builder.test.ts > buildDeathSummary > returns death summary for death cause 0ms
+ ✓ |@dungeon/presenter| src/game-view-builder.test.ts > buildInventoryView equipped-items-first sorting > equipped items appear before unequipped items in items array 0ms
+ ✓ |@dungeon/presenter| src/game-view-builder.test.ts > buildInventoryView equipped-items-first sorting > isEquipped flag is true for equipped items, false for others 0ms
+ ✓ |@dungeon/presenter| src/game-view-builder.test.ts > buildInventoryView equipped-items-first sorting > relative order within each group is preserved 0ms
+ ✓ |@dungeon/presenter| src/game-view-builder.test.ts > buildInventoryView item stacking > stackable items with same templateId grouped into single entry with quantity: N 0ms
+ ✓ |@dungeon/presenter| src/game-view-builder.test.ts > buildInventoryView item stacking > non-stackable items remain separate with quantity: 1 0ms
+ ✓ |@dungeon/presenter| src/game-view-builder.test.ts > buildInventoryView item stacking > stackEntityIds contains all EntityIds in the stack 0ms
+ ✓ |@dungeon/presenter| src/game-view-builder.test.ts > buildInventoryView item stacking > equipped items are never stacked (even if stackable type) 0ms
+ ✓ |@dungeon/presenter| src/game-view-builder.test.ts > buildInventoryView item stacking > mixed inventory: stacked consumables + non-stackable weapons correct 0ms
+ ✓ |@dungeon/presenter| src/game-view-builder.test.ts > buildInventoryView item stacking > TownView exposes lastRetreatFloor when present (Phase A3) 0ms
+ ✓ |@dungeon/presenter| src/game-view-builder.test.ts > buildInventoryView item stacking > TownView omits lastRetreatFloor when undefined 0ms
+ ✓ |@dungeon/presenter| src/game-view-builder.test.ts > buildInventoryView item stacking > B1: ability actions include description from ABILITY_DEFINITIONS 0ms
+ ✓ |@dungeon/presenter| src/game-view-builder.test.ts > buildInventoryView item stacking > B2: all abilities shown in actions including on-cooldown 1ms
+ ✓ |@dungeon/presenter| src/game-view-builder.test.ts > buildInventoryView item stacking > B3: targeted abilities disabled when no enemy in range 0ms
+ ✓ |@dungeon/presenter| src/game-view-builder.test.ts > buildInventoryView item stacking > B3: non-targeted abilities always enabled when not on cooldown 0ms
+ ✓ |@dungeon/presenter| src/game-view-builder.test.ts > buildInventoryView equipped items in inventory.items > equipped items appear in inventory.items with isEquipped=true 0ms
+ ✓ |@dungeon/presenter| src/game-view-builder.test.ts > buildInventoryView equipped items in inventory.items > equipped item appears in both inventory.items and inventory.equipped.weapon 0ms
+ ✓ |@dungeon/presenter| src/game-view-builder.test.ts > buildInventoryView equipped items in inventory.items > unequipped items appear only once, not duplicated 0ms
+ ✓ |@dungeon/presenter| src/game-view-builder.test.ts > buildInventoryView equipped items in inventory.items > after equipping armor, item appears with isEquipped=true 0ms
+ ✓ |@dungeon/presenter| src/game-view-builder.test.ts > buildInspectableEntities > returns empty array when no run 0ms
+ × |@dungeon/presenter| src/game-view-builder.test.ts > buildInspectableEntities > includes visible enemies 7ms
+   → expected 0 to be greater than 0
+ ✓ |@dungeon/presenter| src/game-view-builder.test.ts > buildInspectableEntities > excludes hidden enemies (visibility !== visible) 0ms
+ × |@dungeon/presenter| src/game-view-builder.test.ts > buildInspectableEntities > deduplicates enemies by templateId 3ms
+   → expected [] to have a length of 1 but got +0
+ × |@dungeon/presenter| src/game-view-builder.test.ts > buildInspectableEntities > sorts enemies before objects 2ms
+   → expected 'object' to be 'enemy' // Object.is equality
+ ✓ |@dungeon/presenter| src/game-view-builder.test.ts > buildInspectableEntities > sorts closer enemies before farther enemies 0ms
+ ✓ |@dungeon/presenter| src/game-view-builder.test.ts > buildInspectableEntities > skips objects with missing template 1ms
+ × |@dungeon/presenter| src/game-view-builder.test.ts > buildInspectableEntities > sets entityType correctly for enemies and objects 1ms
+   → expected false to be true // Object.is equality
+ ✓ |@dungeon/core| src/generation/map-generator.property.test.ts > map-generator property tests > should produce valid connected maps for 100 random seeds 135ms
+ ✓ |@dungeon/core| src/generation/map-generator.property.test.ts > map-generator property tests > entrance and exit should be distinct positions 39ms
+ ✓ |@dungeon/web| src/components/DungeonPhase.test.tsx > DungeonPhase Component > Mobile Rendering > renders action buttons with multiple actions visible on mobile 112ms
+ ✓ |@dungeon/core| src/generation/spawn-validator.property.test.ts > spawn-validator property tests > populated floors should pass spawn validation after fix-up 98ms
+ ✓ |@dungeon/core| src/generation/spawn-validator.property.test.ts > spawn-validator property tests > no enemies within 2 tiles of entrance after population 57ms
+ ✓ |@dungeon/web| src/components/DungeonPhase.test.tsx > DungeonPhase Component > Mobile Rendering > renders "Actions" label on mobile to orient user 116ms
+ ✓ |@dungeon/web| src/components/DungeonPhase.test.tsx > DungeonPhase Component > Action Button Visibility > hides disabled action buttons visually 130ms
+ ✓ |@dungeon/core| src/engine/command-handler.test.ts > handleUseAbility > power_strike > deals 2x attack damage and emits ABILITY_USED 4ms
+ ✓ |@dungeon/core| src/engine/command-handler.test.ts > handleUseAbility > power_strike > without targetId: cooldown consumed but no effect (Bug 2) 1ms
+ ✓ |@dungeon/core| src/engine/command-handler.test.ts > handleUseAbility > second_wind > heals 25% of maxHP 1ms
+ ✓ |@dungeon/core| src/engine/command-handler.test.ts > handleUseAbility > second_wind > caps healing at maxHealth 0ms
+ ✓ |@dungeon/core| src/engine/command-handler.test.ts > handleUseAbility > blade_bleed > applies guaranteed bleed on hit 1ms
+ ✓ |@dungeon/core| src/engine/command-handler.test.ts > handleUseAbility > blade_bleed > rejected with wrong weapon type (axe equipped) 0ms
+ ✓ |@dungeon/core| src/engine/command-handler.test.ts > handleUseAbility > blade_riposte > deals 1.5x attack with forceHit and +50 accuracy 0ms
+ × |@dungeon/core| src/engine/command-handler.test.ts > handleUseAbility > bludgeon_stagger > deals damage and has 80% stun chance 8ms
+   → expected undefined to be defined
+ ✓ |@dungeon/core| src/engine/command-handler.test.ts > handleUseAbility > bludgeon_shatter > reduces enemy defense by 5 on hit 0ms
+ × |@dungeon/core| src/engine/command-handler.test.ts > handleUseAbility > axe_cleave > hits primary target at full damage and adjacent at 50% 1ms
+   → expected undefined to be defined
+ × |@dungeon/core| src/engine/command-handler.test.ts > handleUseAbility > axe_cleave > with no adjacent enemies: only primary hit 1ms
+   → expected undefined to be defined
+ × |@dungeon/core| src/engine/command-handler.test.ts > handleUseAbility > axe_execute > deals 3x damage to enemy below 30% HP 1ms
+   → expected undefined to be defined
+ × |@dungeon/core| src/engine/command-handler.test.ts > handleUseAbility > axe_execute > deals 1x damage to enemy above 30% HP 1ms
+   → expected undefined to be defined
+ × |@dungeon/core| src/engine/command-handler.test.ts > handleUseAbility > axe_execute > deals 1x damage at exactly 30% HP (strict < 0.3) 1ms
+   → expected undefined to be defined
+ × |@dungeon/core| src/engine/command-handler.test.ts > handleUseAbility > ranged_pin > applies guaranteed slow on hit 1ms
+   → expected undefined to be defined
+ × |@dungeon/core| src/engine/command-handler.test.ts > handleUseAbility > ranged_volley > hits all visible enemies at 70% damage 1ms
+   → expected undefined to be defined
+ × |@dungeon/core| src/engine/command-handler.test.ts > handleUseAbility > ranged_volley > with no visible enemies: ABILITY_USED emitted, no player attacks 3ms
+   → expected undefined to be defined
+ ✓ |@dungeon/core| src/engine/command-handler.test.ts > handleUseAbility > rejection cases > ability on cooldown: rejected, no state change 1ms
+ ✓ |@dungeon/core| src/engine/command-handler.test.ts > handleUseAbility > rejection cases > ability not in player list: rejected 0ms
+ ✓ |@dungeon/core| src/engine/command-handler.test.ts > handleUseAbility > rejection cases > unknown abilityId: rejected 0ms
+ ✓ |@dungeon/core| src/engine/command-handler.test.ts > handleAttack > basic hit: ATTACK_PERFORMED, enemy health decreases, turn increments 1ms
+ ✓ |@dungeon/core| src/engine/command-handler.test.ts > handleAttack > kill: ENTITY_DIED, enemy removed, XP gained 0ms
+ ✓ |@dungeon/core| src/engine/command-handler.test.ts > handleAttack > out of range: no state change, no turn consumed 0ms
+ ✓ |@dungeon/core| src/engine/command-handler.test.ts > handleAttack > victory: kill boss on floor >= 5 0ms
+ ✓ |@dungeon/core| src/engine/command-handler.test.ts > handleMove > bump-to-attack: moving into enemy triggers attack 1ms
+ ✓ |@dungeon/core| src/engine/command-handler.test.ts > handleMove > valid move: PLAYER_MOVED, position updated 1ms
+ ✓ |@dungeon/core| src/engine/command-handler.test.ts > handleMove > blocked by wall: no change 0ms
+ ✓ |@dungeon/core| src/engine/command-handler.test.ts > handleInteract > chest open: object removed from map 1ms
+ ✓ |@dungeon/core| src/engine/command-handler.test.ts > handleInteract > no object at position: no change 0ms
+ ✓ |@dungeon/core| src/engine/command-handler.test.ts > handleWait > turn advances and enemy turns process 0ms
+ ✓ |@dungeon/core| src/engine/command-handler.test.ts > handleUnequip > removes equipped item from slot and recalculates stats 0ms
+ ✓ |@dungeon/core| src/engine/command-handler.test.ts > handleUnequip > unequipping non-equipped item is no-op 0ms
+ ✓ |@dungeon/core| src/engine/command-handler.test.ts > handleSwapWeapons > swaps weapon with secondaryWeapon and recalculates stats 0ms
+ ✓ |@dungeon/core| src/engine/command-handler.test.ts > handleSwapWeapons > swap with null secondaryWeapon results in weapon going to secondary 0ms
+ ✓ |@dungeon/core| src/engine/command-handler.test.ts > handleEnchantArmor > applies enchantment to armor and deducts gold 0ms
+ ✓ |@dungeon/core| src/engine/command-handler.test.ts > handleEnchantArmor > reject if enchantment not unlocked 0ms
+ ✓ |@dungeon/core| src/engine/command-handler.test.ts > handleEnchantArmor > reject if insufficient gold 0ms
+ ✓ |@dungeon/core| src/engine/command-handler.test.ts > handleAttack - D1: minimum range for bows > D1: bow weapon with minRange field is checked in attack 0ms
+ ✓ |@dungeon/web| src/components/DungeonPhase.test.tsx > DungeonPhase Component > Action Button Visibility > keeps wait button visible even when loading 130ms
+ ✓ |@dungeon/core| src/engine/save-load.property.test.ts > save/load roundtrip property tests > game state should survive JSON serialization roundtrip 129ms
+ ✓ |@dungeon/core| src/generation/floor-populator.test.ts > populateFloor > enemies.size > 0 on a standard floor 7ms
+ ✓ |@dungeon/core| src/generation/floor-populator.test.ts > populateFloor > objects.size > 0 on a standard floor 4ms
+ ✓ |@dungeon/core| src/generation/floor-populator.test.ts > populateFloor > no enemy at entrance position 3ms
+ ✓ |@dungeon/core| src/generation/floor-populator.test.ts > populateFloor > no enemy at exit position 3ms
+ ✓ |@dungeon/core| src/generation/floor-populator.test.ts > populateFloor > no enemy within Chebyshev 2 of entrance 4ms
+ ✓ |@dungeon/core| src/generation/floor-populator.test.ts > populateFloor > all spawned enemies have isAlerted === false 6ms
+ ✓ |@dungeon/core| src/generation/floor-populator.test.ts > populateFloor > object positions do not overlap enemy positions 1ms
+ ✓ |@dungeon/core| src/generation/floor-populator.test.ts > populateFloor > extraEnemies increases count (worldMods with extraEnemies: 3 vs none, same seed) 2ms
+ ✓ |@dungeon/core| src/generation/floor-populator.test.ts > populateFloor > preferred templates not in biome pool can still spawn when faction is dominant 14ms
+ ✓ |@dungeon/core| src/generation/floor-populator.test.ts > populateFloor > preferred out-of-pool templates spawn more often than biome-only enemies at 3x weight 13ms
+ ✓ |@dungeon/core| src/generation/floor-populator.test.ts > guaranteed boss spawn on deep floors > floor depth 5 always has at least one high-tier enemy across seeds 23ms
+ ✓ |@dungeon/core| src/generation/floor-populator.test.ts > guaranteed boss spawn on deep floors > floor depth 4 does not force-spawn a high-tier enemy 27ms
+ ✓ |@dungeon/core| src/generation/floor-populator.test.ts > guaranteed boss spawn on deep floors > high-tier enemy spawns at a valid position (not entrance/exit, not within 2 of entrance) 2ms
+ ✓ |@dungeon/core| src/engine/game-engine.test.ts > GameEngine floor navigation > floor 1 run starts with empty floor history 23ms
+ ✓ |@dungeon/core| src/engine/game-engine.test.ts > GameEngine floor navigation > ASCEND on floor 1 (no history) retreats to town 5ms
+ ✓ |@dungeon/core| src/engine/game-engine.test.ts > GameEngine floor navigation > ASCEND with history restores prior floor and player position 13ms
+ ✓ |@dungeon/core| src/engine/game-engine.test.ts > GameEngine floor navigation > ASCEND with 2 floors of history leaves 1 floor in history 10ms
+ ✓ |@dungeon/core| src/engine/game-engine.test.ts > GameEngine floor navigation > descending pushes current floor onto history 3ms
+ ✓ |@dungeon/core| src/engine/game-engine.test.ts > GameEngine floor cache > floorCache is empty on run start 11ms
+ ✓ |@dungeon/core| src/engine/game-engine.test.ts > GameEngine floor cache > re-descending to a cleared floor restores cleared state, not a fresh floor 6ms
+ ✓ |@dungeon/core| src/engine/game-engine.test.ts > GameEngine floor cache > descending into a cached depth restores it instead of regenerating 4ms
+ ✓ |@dungeon/core| src/engine/game-engine.test.ts > GameEngine ranged combat > unarmed player cannot attack enemy at distance 3 4ms
+ ✓ |@dungeon/core| src/engine/game-engine.test.ts > GameEngine ranged combat > short bow (range 5) can attack enemy at distance 3 6ms
+ ✓ |@dungeon/core| src/engine/game-engine.test.ts > GameEngine ranged combat > short bow cannot attack enemy beyond its range (distance 6) 2ms
+ ✓ |@dungeon/core| src/engine/game-engine.test.ts > GameEngine ranged combat > melee weapon cannot attack at distance 2 1ms
+ ✓ |@dungeon/core| src/engine/game-engine.test.ts > GameEngine victory condition > killing a boss on floor ≥5 sets runMetrics.causeOfEnd to "victory" 4ms
+ ✓ |@dungeon/core| src/engine/game-engine.test.ts > GameEngine victory condition > killing a boss on floor <5 does NOT trigger victory 6ms
+ ✓ |@dungeon/core| src/engine/game-engine.test.ts > GameEngine victory condition > killing a boss on floor ≥5 sets phase to game_over 5ms
+ ✓ |@dungeon/core| src/engine/save-load.property.test.ts > save/load roundtrip property tests > deterministic engine produces same state for same seed 65ms
+ ✓ |@dungeon/core| src/engine/save-load.property.test.ts > save/load roundtrip property tests > floorCache and floorHistory survive serialization roundtrip 59ms
+ ✓ |@dungeon/core| src/engine/game-engine.test.ts > GameEngine floor re-entry (Area 4b) > player can re-enter at previously reached floor 8ms
+ ✓ |@dungeon/core| src/engine/game-engine.test.ts > GameEngine floor re-entry (Area 4b) > startDepth is clamped to [1, deepestFloor - 1] 2ms
+ ✓ |@dungeon/core| src/engine/game-engine.test.ts > GameEngine floor re-entry (Area 4b) > startDepth below 1 defaults to floor 1 3ms
+ ✓ |@dungeon/core| src/engine/game-engine.test.ts > GameEngine floor persistence (Phase A2) > retreating saves current floor to persistedFloorCache 2ms
+ ✓ |@dungeon/core| src/engine/game-engine.test.ts > GameEngine floor persistence (Phase A2) > re-entering at a cached floor restores the cached floor instead of generating fresh 3ms
+ ✓ |@dungeon/core| src/engine/game-engine.test.ts > GameEngine floor persistence (Phase A2) > death does NOT clear the persistedFloorCache 2ms
+ ✓ |@dungeon/core| src/engine/event-emission.property.test.ts > Event Emission Guarantees (Property Tests) > MOVE command > always emits PLAYER_MOVED and advances turn 19ms
+ ✓ |@dungeon/core| src/engine/event-emission.property.test.ts > Event Emission Guarantees (Property Tests) > ATTACK command > always emits ATTACK_PERFORMED with complete fields 25ms
+ ✓ |@dungeon/core| src/engine/event-emission.property.test.ts > Event Emission Guarantees (Property Tests) > ATTACK command > emits ENTITY_DIED when damage exceeds health 18ms
+ ✓ |@dungeon/core| src/engine/event-emission.property.test.ts > Event Emission Guarantees (Property Tests) > USE_ABILITY command > always emits ABILITY_USED and sets cooldown 21ms
+ ✓ |@dungeon/core| src/engine/event-emission.property.test.ts > Event Emission Guarantees (Property Tests) > USE_ITEM command > always emits ITEM_USED when item exists 8ms
+ ✓ |@dungeon/core| src/engine/event-emission.property.test.ts > Event Emission Guarantees (Property Tests) > WAIT command > allows enemies to act and emits their events 4ms
+ ✓ |@dungeon/core| src/engine/event-emission.property.test.ts > Event Emission Guarantees (Property Tests) > EQUIP command > updates equipment or explains failure 2ms
+ ✓ |@dungeon/web| src/components/DungeonPhase.test.tsx > DungeonPhase Component > No Actions State > renders without crashing when no actions available 137ms
+ ✓ |@dungeon/core| src/engine/event-emission.property.test.ts > Event Emission Guarantees (Property Tests) > RETREAT command > transitions state consistently 10ms
+ ✓ |@dungeon/core| src/engine/event-emission.property.test.ts > Event Emission Guarantees (Property Tests) > Turn number progression > increments on successful commands 10ms
+ ✓ |@dungeon/core| src/engine/event-emission.property.test.ts > Event Emission Guarantees (Property Tests) > Damage event consistency > damage number is non-negative and reasonable 10ms
+ ✓ |@dungeon/core| src/engine/event-emission.property.test.ts > Event Emission Guarantees (Property Tests) > Event timestamp validity > all events have valid timestamps 6ms
+ ✓ |@dungeon/core| src/engine/event-emission.property.test.ts > Event Emission Guarantees (Property Tests) > State immutability > original state is never modified 7ms
+ ✓ |@dungeon/core| src/systems/combat.property.test.ts > Combat - Property-Based Tests > Hit chance determinism > same seed produces same hit/miss sequences 26ms
+ ✓ |@dungeon/core| src/systems/combat.property.test.ts > Combat - Property-Based Tests > RNG isolation and independence > two SeededRNG instances with different seeds should produce independent sequences 5ms
+ ✓ |@dungeon/core| src/systems/combat.property.test.ts > Combat - Property-Based Tests > RNG isolation and independence > same seed should produce identical sequences 6ms
+ ✓ |@dungeon/core| src/systems/combat.property.test.ts > Combat - Property-Based Tests > RNG isolation and independence > concurrent RNG instances should not interfere with each other 5ms
+ ✓ |@dungeon/core| src/systems/combat.property.test.ts > Combat - Property-Based Tests > RNG isolation and independence > SeededRNG.chance() should respect probability bounds 7ms
+ ✓ |@dungeon/web| src/components/DungeonPhase.test.tsx > DungeonPhase Component > Combat Log > displays combat log entries 140ms
+ ✓ |@dungeon/web| src/components/DungeonPhase.test.tsx > DungeonPhase Component > Error Display > displays error message when present 153ms
+ ✓ |@dungeon/web| src/components/DungeonPhase.test.tsx > DungeonPhase Component > Error Display > displays error on mobile 132ms
+ ✓ |@dungeon/server| src/entrypoint.test.ts > Server entrypoint separation > buildApp() can be imported without triggering listener startup 1649ms
+ ✓ |@dungeon/core| src/engine/damage-type.test.ts > Combat damage type correctness > fire weapon attack reports fire damageType in ATTACK_PERFORMED event 18ms
+ ✓ |@dungeon/core| src/engine/damage-type.test.ts > Combat damage type correctness > fire weapon vs fire-resistant enemy deals reduced damage 6ms
+ ✓ |@dungeon/core| src/engine/damage-type.test.ts > Combat damage type correctness > unarmed attack uses physical damageType 8ms
+ ✓ |@dungeon/core| src/systems/enemy-respawn.test.ts > checkRespawn > returns unchanged state if respawn interval not reached 2ms
+ ✓ |@dungeon/core| src/systems/enemy-respawn.test.ts > checkRespawn > respawns an enemy when interval is reached and count < max 11ms
+ ✓ |@dungeon/core| src/systems/enemy-respawn.test.ts > checkRespawn > does not respawn if enemy count >= maxEnemiesOnFloor 0ms
+ ✓ |@dungeon/core| src/systems/enemy-respawn.test.ts > checkRespawn > does not respawn bosses 0ms
+ ✓ |@dungeon/core| src/systems/enemy-respawn.test.ts > checkRespawn > respawned enemies not placed in player FOV 3ms
+ ✓ |@dungeon/core| src/systems/enemy-respawn.test.ts > checkRespawn > enemy stats scale with floor depth 7ms
+ ✓ |@dungeon/core| src/systems/enemy-respawn.test.ts > checkRespawn > respawnCountPerTick limits spawns per tick 4ms
+ ✓ |@dungeon/core| src/systems/enemy-respawn.test.ts > checkRespawn > boss exclusion loop terminates safely 4ms
+ ✓ |@dungeon/core| src/systems/enemy-respawn.test.ts > checkRespawn > respawn FOV respects wall barriers (shadowcasting) 2ms
+{"level":30,"time":1776033505024,"pid":44981,"hostname":"msi-aegis-z2","msg":"Repository: in-memory (non-durable)"}
+{"level":30,"time":1776033505025,"pid":44981,"hostname":"msi-aegis-z2","msg":"AI: fallback-only (LM_HOST not set)"}
+ ✓ |@dungeon/server| src/entrypoint.test.ts > Server entrypoint separation > buildApp() creates a Fastify instance 65ms
+ ✓ |@dungeon/server| src/entrypoint.test.ts > Server entrypoint separation > hosted entrypoint exports a handler function 11ms
+ ✓ |@dungeon/core| src/generation/map-generator.test.ts > Map Generation > generates a floor with entrance and exit 7ms
+ ✓ |@dungeon/core| src/generation/map-generator.test.ts > Map Generation > floor cells exist and are a Map 3ms
+ ✓ |@dungeon/core| src/generation/map-generator.test.ts > Map Generation > bfsReachable returns true for connected positions 7ms
+ ✓ |@dungeon/core| src/generation/map-generator.test.ts > Map Generation > bfsReachable returns false for disconnected positions 0ms
+ ✓ |@dungeon/core| src/generation/map-generator.test.ts > Map Generation > generates valid floor with multiple seeds 6ms
+ ✓ |@dungeon/core| src/engine/command-handler.property.test.ts > command-handler invariants > turn number never decreases after any command 17ms
+ ✓ |@dungeon/core| src/engine/command-handler.property.test.ts > command-handler invariants > health never exceeds maxHealth after any command 8ms
+ ✓ |@dungeon/core| src/engine/command-handler.property.test.ts > command-handler invariants > CommandResult always has valid structure 3ms
+ ✓ |@dungeon/core| src/systems/balance-coverage.test.ts > Balance Coverage — Feature Completeness Tests > RNG determinism: same seed produces identical sequences 3ms
+ ✓ |@dungeon/core| src/systems/balance-coverage.test.ts > Balance Coverage — Feature Completeness Tests > SeededRNG implements RNG interface correctly 2ms
+ ✓ |@dungeon/core| src/systems/balance-coverage.test.ts > Balance Coverage — Feature Completeness Tests > createDefaultBalanceConfig produces valid config 0ms
+ ✓ |@dungeon/core| src/systems/balance-coverage.test.ts > Balance Coverage — Feature Completeness Tests > BalanceConfig can be injected into combat resolution 0ms
+ ✓ |@dungeon/core| src/systems/balance-coverage.test.ts > Balance Coverage — Feature Completeness Tests > RNG.chance() with percentage values works correctly 4ms
+ ✓ |@dungeon/core| src/systems/balance-coverage.test.ts > Balance Coverage — Feature Completeness Tests > getSeed() returns the seed used to initialize RNG 0ms
+ ✓ |@dungeon/core| src/generation/spawn-validator.test.ts > validateSpawns > returns valid when no enemies are present 2ms
+ ✓ |@dungeon/core| src/generation/spawn-validator.test.ts > validateSpawns > returns invalid when an enemy is on the entrance tile 0ms
+ ✓ |@dungeon/core| src/generation/spawn-validator.test.ts > validateSpawns > returns invalid when an enemy is within 2 tiles of entrance 0ms
+ ✓ |@dungeon/core| src/generation/spawn-validator.test.ts > validateSpawns > returns valid when all enemies are far from entrance 1ms
+ ✓ |@dungeon/core| src/abilities/runtime/runtime.test.ts > abilities/runtime > validateRequirements > should pass when no requirements 1ms
+ ✓ |@dungeon/core| src/abilities/runtime/runtime.test.ts > abilities/runtime > validateRequirements > should fail has_target when no target 0ms
+ ✓ |@dungeon/core| src/abilities/runtime/runtime.test.ts > abilities/runtime > validateRequirements > should pass has_target when target exists 0ms
+ ✓ |@dungeon/core| src/abilities/runtime/runtime.test.ts > abilities/runtime > validateRequirements > should fail no_target when target exists 0ms
+ ✓ |@dungeon/core| src/abilities/runtime/runtime.test.ts > abilities/runtime > validateRequirements > should pass no_target when no target 0ms
+ ✓ |@dungeon/core| src/abilities/runtime/runtime.test.ts > abilities/runtime > validateRequirements > should fail player_missing_hp when at full health 0ms
+ ✓ |@dungeon/core| src/abilities/runtime/runtime.test.ts > abilities/runtime > validateRequirements > should pass player_missing_hp when below full health 0ms
+ ✓ |@dungeon/core| src/abilities/runtime/runtime.test.ts > abilities/runtime > validateRequirements > should fail target_in_melee_range when target is far 0ms
+ ✓ |@dungeon/core| src/abilities/runtime/runtime.test.ts > abilities/runtime > validateRequirements > should pass target_in_melee_range when target is adjacent 0ms
+ ✓ |@dungeon/core| src/abilities/runtime/runtime.test.ts > abilities/runtime > validateRequirements > should pass target_visible (always for selected targets) 0ms
+ ✓ |@dungeon/core| src/abilities/runtime/runtime.test.ts > abilities/runtime > validateRequirements > should fail target_below_hp_pct when target HP is too high 0ms
+ ✓ |@dungeon/core| src/abilities/runtime/runtime.test.ts > abilities/runtime > validateRequirements > should pass target_below_hp_pct when target HP is low enough 0ms
+ ✓ |@dungeon/core| src/abilities/runtime/runtime.test.ts > abilities/runtime > resolveTargets > should return empty array for self selector 1ms
+ ✓ |@dungeon/core| src/abilities/runtime/runtime.test.ts > abilities/runtime > resolveTargets > should return empty array when run is null 0ms
+ ✓ |@dungeon/core| src/abilities/runtime/runtime.test.ts > abilities/runtime > resolveTargets > should find single_enemy by ID 1ms
+ ✓ |@dungeon/core| src/abilities/runtime/runtime.test.ts > abilities/runtime > resolveTargets > should return empty for single_enemy with no requested target 0ms
+ ✓ |@dungeon/core| src/abilities/runtime/runtime.test.ts > abilities/runtime > resolveTargets > should find nearest_enemy_melee in melee range 0ms
+ ✓ |@dungeon/core| src/abilities/runtime/runtime.test.ts > abilities/runtime > resolveTargets > should return empty for nearest_enemy_melee with no melee enemies 0ms
+ ✓ |@dungeon/core| src/abilities/runtime/runtime.test.ts > abilities/runtime > resolveTargets > should find nearest_visible_enemy 0ms
+ ✓ |@dungeon/core| src/abilities/runtime/runtime.test.ts > abilities/runtime > resolveTargets > should find all_visible_enemies 1ms
+ ✓ |@dungeon/core| src/abilities/runtime/runtime.test.ts > abilities/runtime > resolveTargets > should find target_plus_adjacent_enemies 0ms
+ ✓ |@dungeon/core| src/abilities/runtime/runtime.test.ts > abilities/runtime > executeAbility > should return no events for undefined ability 0ms
+ ✓ |@dungeon/core| src/abilities/runtime/runtime.test.ts > abilities/runtime > executeAbility > should return no events when validation fails 0ms
+ ✓ |@dungeon/core| src/abilities/runtime/runtime.test.ts > abilities/runtime > executeAbility > should emit ABILITY_USED event on successful execution 0ms
+ ✓ |@dungeon/core| src/systems/world-modifiers.test.ts > buildWorldModifiers > default world returns all zeros/empties 3ms
+ ✓ |@dungeon/core| src/systems/world-modifiers.test.ts > buildWorldModifiers > active nemesis at floorOfAscension <= depth adds 1 extraEnemy 0ms
+ ✓ |@dungeon/core| src/systems/world-modifiers.test.ts > buildWorldModifiers > inactive nemesis does not affect extraEnemies 0ms
+ ✓ |@dungeon/core| src/systems/world-modifiers.test.ts > buildWorldModifiers > active nemesis above its floorOfAscension (not yet reached) does not count 0ms
+ ✓ |@dungeon/core| src/systems/world-modifiers.test.ts > buildWorldModifiers > extraEnemies capped at 3 regardless of nemesis count 0ms
+ ✓ |@dungeon/core| src/systems/world-modifiers.test.ts > buildWorldModifiers > fear > 60 adds ambusher and fast_skirmisher to preferredArchetypes 0ms
+ ✓ |@dungeon/core| src/systems/world-modifiers.test.ts > buildWorldModifiers > fear exactly 60 does not add preferredArchetypes 0ms
+ ✓ |@dungeon/core| src/systems/world-modifiers.test.ts > buildWorldModifiers > corruption > 50 adds poison and corruption to preferredDamageTypes 0ms
+ ✓ |@dungeon/core| src/systems/world-modifiers.test.ts > buildWorldModifiers > faction power > 60 adds that faction's templates to preferredTemplates 0ms
+ ✓ |@dungeon/core| src/systems/world-modifiers.test.ts > buildWorldModifiers > corruption > 50 yields enemyHealthMultiplier > 1 0ms
+ ✓ |@dungeon/core| src/systems/world-modifiers.test.ts > buildWorldModifiers > corruption <= 50 yields enemyHealthMultiplier of 1.0 0ms
+ ✓ |@dungeon/core| src/systems/world-modifiers.test.ts > buildWorldModifiers > corruption > 75 yields tierUpgradeChance > 0 0ms
+ ✓ |@dungeon/core| src/systems/world-modifiers.test.ts > buildWorldModifiers > corruption > 90 yields negative bossFloorAdjust 0ms
+ ✓ |@dungeon/core| src/systems/world-modifiers.test.ts > buildWorldModifiers > active nemesis adds sourceTemplateId to preferredTemplates 0ms
+ ✓ |@dungeon/core| src/systems/world-modifiers.test.ts > buildWorldModifiers > inactive nemesis does not add to preferredTemplates 0ms
+ ✓ |@dungeon/core| src/systems/world-modifiers.test.ts > buildWorldModifiers > active nemesis above current depth does not add to preferredTemplates 0ms
+ ✓ |@dungeon/core| src/systems/town.test.ts > processTownAction rest > restores HP to max when player can afford full heal 1ms
+ ✓ |@dungeon/core| src/systems/town.test.ts > processTownAction rest > heals only affordable HP when gold is insufficient 0ms
+ ✓ |@dungeon/core| src/systems/town.test.ts > processTownAction rest > returns unchanged state when already at full HP 0ms
+ ✓ |@dungeon/core| src/systems/town.test.ts > processTownAction shop_sell > returns gold to player and removes item from inventory 1ms
+ ✓ |@dungeon/core| src/systems/town.test.ts > processTownAction shop_buy > deducts gold and adds item to inventory 1ms
+ ✓ |@dungeon/core| src/systems/town.test.ts > processTownAction shop_buy > fails when player has insufficient gold — state unchanged 0ms
+ ✓ |@dungeon/core| src/systems/town.test.ts > processTownAction shop_buy > decrements shop stock after purchase 0ms
+ ✓ |@dungeon/core| src/systems/town.test.ts > processTownAction shop_buy > shopkeeper with disposition=50 applies 5% discount per 10 disposition (25% total) 0ms
+ ✓ |@dungeon/core| src/systems/town.test.ts > processTownAction shop_buy > shopkeeper with disposition=0 applies no discount 0ms
+ ✓ |@dungeon/core| src/systems/town.test.ts > processTownAction shop_buy > discount is capped at 25% 0ms
+ ✓ |@dungeon/core| src/systems/town.test.ts > processTownAction shop_buy > allows purchasing uncommon items when highestFound >= uncommon 0ms
+ ✓ |@dungeon/core| src/systems/town.test.ts > processEnchantArmor > rejects if enchantmentId not in unlockedBlueprints 0ms
+ ✓ |@dungeon/core| src/systems/town.test.ts > processEnchantArmor > rejects if player has insufficient gold 0ms
+ ✓ |@dungeon/core| src/systems/town.test.ts > processEnchantArmor > rejects if no item in the equipment slot 0ms
+ ✓ |@dungeon/core| src/systems/town.test.ts > processEnchantArmor > rejects if item has no enchantment slots (common rarity) 0ms
+ ✓ |@dungeon/core| src/systems/town.test.ts > processEnchantArmor > rejects if all enchantment slots are already filled 0ms
+ ✓ |@dungeon/core| src/systems/town.test.ts > processEnchantArmor > rejects if enchantment is already applied to the item 0ms
+ ✓ |@dungeon/core| src/systems/town.test.ts > processEnchantArmor > deducts correct gold for T1 enchantment (40g) 0ms
+ ✓ |@dungeon/core| src/systems/town.test.ts > processEnchantArmor > fills the first null enchantment slot 0ms
+ ✓ |@dungeon/core| src/systems/town.test.ts > processEnchantArmor > emits ENCHANTMENT_APPLIED event 0ms
+ ✓ |@dungeon/core| src/systems/town.test.ts > processEnchantArmor > recalculates player stats after enchantment (defense_boost adds +5) 0ms
+ ✓ |@dungeon/core| src/systems/town.test.ts > processEnchantArmor > no partial mutation on failure — state identical to input 0ms
+ ✓ |@dungeon/core| src/systems/enemy-ai-engine.test.ts > Enemy AI Scoring Engine > scoreEnemyActions > returns valid trace with candidates 4ms
+ ✓ |@dungeon/core| src/systems/enemy-ai-engine.test.ts > Enemy AI Scoring Engine > scoreEnemyActions > aggressive_melee at distance 1 prefers attack 0ms
+ ✓ |@dungeon/core| src/systems/enemy-ai-engine.test.ts > Enemy AI Scoring Engine > scoreEnemyActions > skittish_ranged at distance 1 prefers move 0ms
+ ✓ |@dungeon/core| src/systems/enemy-ai-engine.test.ts > Enemy AI Scoring Engine > scoreEnemyActions > all candidates have scores and reasoning 0ms
+ ✓ |@dungeon/core| src/systems/enemy-ai-engine.test.ts > Enemy AI Scoring Engine > scoreEnemyActions > chosen action is highest-scoring candidate 0ms
+ ✓ |@dungeon/core| src/systems/enemy-ai-engine.test.ts > Enemy AI Scoring Engine > archetype behavior patterns > all archetypes produce valid decisions 1ms
+ ✓ |@dungeon/core| src/systems/enemy-ai-engine.test.ts > Enemy AI Scoring Engine > archetype behavior patterns > wait action is always available as fallback 0ms
+ ✓ |@dungeon/core| src/systems/enemy-ai-engine.test.ts > Enemy AI Scoring Engine > edge cases > handles enemy with no abilities gracefully 0ms
+ ✓ |@dungeon/core| src/systems/enemy-ai-engine.test.ts > Enemy AI Scoring Engine > edge cases > handles multiple candidates with same score 0ms
+ ✓ |@dungeon/presenter| src/event-formatter.test.ts > formatEvent > formats ATTACK_PERFORMED hit with damage 2ms
+ ✓ |@dungeon/presenter| src/event-formatter.test.ts > formatEvent > formats ATTACK_PERFORMED critical hit 0ms
+ ✓ |@dungeon/presenter| src/event-formatter.test.ts > formatEvent > formats ATTACK_PERFORMED miss 0ms
+ ✓ |@dungeon/presenter| src/event-formatter.test.ts > formatEvent > formats ENTITY_DIED showing name 0ms
+ ✓ |@dungeon/presenter| src/event-formatter.test.ts > formatEvent > formats PLAYER_DIED showing cause 0ms
+ ✓ |@dungeon/presenter| src/event-formatter.test.ts > formatEvent > formats LOOT_ACQUIRED showing item name 0ms
+ ✓ |@dungeon/presenter| src/event-formatter.test.ts > formatEvent > formats LEVEL_UP showing new level and stat gains 0ms
+ ✓ |@dungeon/presenter| src/event-formatter.test.ts > formatEvent > returns null for PLAYER_MOVED 0ms
+ ✓ |@dungeon/presenter| src/event-formatter.test.ts > formatEvent > formats STATUS_APPLIED showing statusId and duration 0ms
+ ✓ |@dungeon/presenter| src/event-formatter.test.ts > formatEvent > formats STATUS_EXPIRED showing statusId 0ms
+ ✓ |@dungeon/presenter| src/event-formatter.test.ts > formatEvent > formats ABILITY_USED with heal 0ms
+ ✓ |@dungeon/presenter| src/event-formatter.test.ts > formatEvent > formats ABILITY_USED with target damage 0ms
+ ✓ |@dungeon/presenter| src/event-formatter.test.ts > formatEvent > formats QUEST_COMPLETED showing title and gold 0ms
+ ✓ |@dungeon/presenter| src/event-formatter.test.ts > formatEvent > formats EQUIPMENT_DROPPED showing floor 0ms
+ ✓ |@dungeon/presenter| src/event-formatter.test.ts > formatEvent > formats EQUIPMENT_RECOVERED showing floor 0ms
+ ✓ |@dungeon/presenter| src/event-formatter.test.ts > formatEvent > formats PERMADEATH showing floor 0ms
+ ✓ |@dungeon/presenter| src/event-formatter.test.ts > formatEvent > formats GOLD_CHANGED showing gain 0ms
+ ✓ |@dungeon/presenter| src/event-formatter.test.ts > event format coverage guardrail > formats FLOOR_ENTERED showing depth 0ms
+ ✓ |@dungeon/presenter| src/event-formatter.test.ts > event format coverage guardrail > formats ITEM_USED showing item name 0ms
+ ✓ |@dungeon/presenter| src/event-formatter.test.ts > event format coverage guardrail > formats ENEMY_ALERTED showing enemy name 0ms
+ ✓ |@dungeon/presenter| src/event-formatter.test.ts > event format coverage guardrail > formats NEMESIS_PROMOTED showing nemesis name 0ms
+ ✓ |@dungeon/presenter| src/event-formatter.test.ts > event format coverage guardrail > formats LOOT_DROPPED showing item and enemy name 0ms
+ ✓ |@dungeon/presenter| src/event-formatter.test.ts > event format coverage guardrail > formats MASTERY_UNLOCKED showing ability and weapon type 0ms
+ ✓ |@dungeon/presenter| src/event-formatter.test.ts > event format coverage guardrail > formats ENCHANTMENT_APPLIED showing item and enchantment name 0ms
+ ✓ |@dungeon/presenter| src/event-formatter.test.ts > event format coverage guardrail > formats BLUEPRINT_UNLOCKED showing blueprint ids 0ms
+ ✓ |@dungeon/presenter| src/event-formatter.test.ts > event format coverage guardrail > returns null for ENEMY_MOVED 0ms
+ ✓ |@dungeon/presenter| src/event-formatter.test.ts > event format coverage guardrail > returns null for PHASE_CHANGED 0ms
+ ✓ |@dungeon/presenter| src/event-formatter.test.ts > event format coverage guardrail > returns null for RUN_STARTED 0ms
+ ✓ |@dungeon/presenter| src/event-formatter.test.ts > event format coverage guardrail > returns null for RUN_ENDED 0ms
+ ✓ |@dungeon/presenter| src/event-formatter.test.ts > event format coverage guardrail > returns null for TOWN_STATE_CHANGED 0ms
+ ✓ |@dungeon/presenter| src/event-formatter.test.ts > event format coverage guardrail > B4: formats SHOP_TIER_UNLOCKED event 0ms
+ ✓ |@dungeon/presenter| src/event-formatter.test.ts > formatEvents > filters out null entries 1ms
+ ✓ |@dungeon/presenter| src/event-formatter.test.ts > formatEvents > formats THORNS_REFLECTED event 0ms
+ ✓ |@dungeon/presenter| src/event-formatter.test.ts > formatEvents > formats BLINK_DODGED event 0ms
+ ✓ |@dungeon/presenter| src/event-formatter.test.ts > formatEvents > formats LIFE_STEAL event 0ms
+ ✓ |@dungeon/core| src/systems/combat.test.ts > resolveAttack > should resolve a hit when accuracy exceeds evasion 1ms
+ ✓ |@dungeon/core| src/systems/combat.test.ts > resolveAttack > should miss when evasion exceeds accuracy 0ms
+ ✓ |@dungeon/core| src/systems/combat.test.ts > resolveAttack > should calculate damage correctly with attack and defense 0ms
+ ✓ |@dungeon/core| src/systems/combat.test.ts > resolveAttack > should apply defense mitigation to damage 0ms
+ ✓ |@dungeon/core| src/systems/combat.test.ts > resolveAttack > should handle critical hits (guaranteed hit) 0ms
+ ✓ |@dungeon/core| src/systems/combat.test.ts > resolveAttack > should apply on-hit status when provided with 100% chance 1ms
+ ✓ |@dungeon/core| src/systems/combat.test.ts > resolveAttack > should trigger defender death when health drops to zero or below 0ms
+ ✓ |@dungeon/core| src/systems/combat.test.ts > damage type resistance > positive resistance reduces damage below unresisted value 0ms
+ ✓ |@dungeon/core| src/systems/combat.test.ts > damage type resistance > resistance 0 produces same result as baseline 0ms
+ ✓ |@dungeon/core| src/systems/combat.test.ts > damage type resistance > negative resistance (vulnerability) amplifies damage 0ms
+ ✓ |@dungeon/core| src/systems/combat.test.ts > damage type resistance > minimum damage of 1 enforced even with resistance 0.99 and high defense 0ms
+ ✓ |@dungeon/core| src/systems/combat.test.ts > accuracy (no double-count) > miss result includes missReason field when evasion causes miss 0ms
+ ✓ |@dungeon/core| src/systems/combat.test.ts > accuracy (no double-count) > accuracy stat does not double-count weapon bonus 0ms
+ ✓ |@dungeon/core| src/systems/death.test.ts > handlePlayerDeath > normal death: returns to town with gold loss 4ms
+ ✓ |@dungeon/core| src/systems/death.test.ts > handlePlayerDeath > equipment drop: equipped items become death stash 1ms
+ ✓ |@dungeon/core| src/systems/death.test.ts > handlePlayerDeath > no equipment: death stash is null 1ms
+ ✓ |@dungeon/core| src/systems/death.test.ts > handlePlayerDeath > existing stash is replaced by new death 0ms
+ ✓ |@dungeon/core| src/systems/death.test.ts > handlePlayerDeath > permadeath: overkill triggers game over 0ms
+ ✓ |@dungeon/core| src/systems/death.test.ts > handlePlayerDeath > permadeath: below threshold does NOT trigger permadeath 0ms
+ ✓ |@dungeon/core| src/systems/death.test.ts > handlePlayerDeath > permadeath: zero overkill is normal death 0ms
+ ✓ |@dungeon/core| src/systems/death.test.ts > handlePlayerDeath > permadeath: exact threshold uses > not >=, so exact = normal death 0ms
+ ✓ |@dungeon/core| src/systems/death.test.ts > handlePlayerDeath > gold loss at 0 gold stays 0 (not negative) 0ms
+ ✓ |@dungeon/core| src/systems/death.test.ts > handlePlayerDeath > gold loss rounding with odd gold values 0ms
+ ✓ |@dungeon/core| src/systems/death.test.ts > handlePlayerDeath > secondaryWeapon is included in death stash 0ms
+ ✓ |@dungeon/core| src/systems/enemy-ai.test.ts > decideEnemyAction > un-alerted enemy beyond dist 5 returns wait 2ms
+ ✓ |@dungeon/core| src/systems/enemy-ai.test.ts > decideEnemyAction > un-alerted enemy at dist 4 (within detection) approaches (not wait) 2ms
+ ✓ |@dungeon/core| src/systems/enemy-ai.test.ts > decideEnemyAction > melee_bruiser at dist 1 attacks 1ms
+ ✓ |@dungeon/core| src/systems/enemy-ai.test.ts > decideEnemyAction > melee_bruiser at dist 3 returns move 0ms
+ ✓ |@dungeon/core| src/systems/enemy-ai.test.ts > decideEnemyAction > fast_skirmisher at dist 1 retreats (skittish_ranged behavior) 1ms
+ ✓ |@dungeon/core| src/systems/enemy-ai.test.ts > decideEnemyAction > ambusher at dist 1 attacks 0ms
+ ✓ |@dungeon/core| src/systems/enemy-ai.test.ts > decideEnemyAction > ranged_attacker at dist 1 retreats when open tile exists 0ms
+ ✓ |@dungeon/core| src/systems/enemy-ai.test.ts > decideEnemyAction > ranged_attacker at dist 1 attacks when cornered (no retreat tile) 0ms
+ ✓ |@dungeon/core| src/systems/enemy-ai.test.ts > decideEnemyAction > ranged_attacker at dist 4 waits or moves (skittish_ranged behavior) 0ms
+ ✓ |@dungeon/core| src/systems/enemy-ai.test.ts > decideEnemyAction > support_buffer at dist 1 can attack or wait (cautious_defensive) 0ms
+ ✓ |@dungeon/core| src/systems/enemy-ai.test.ts > decideEnemyAction > support_buffer at dist 3 waits or attacks (cautious_defensive) 0ms
+ ✓ |@dungeon/core| src/systems/enemy-ai.test.ts > decideEnemyAction > support_buffer at dist 6 waits (cautious_defensive) 0ms
+ ✓ |@dungeon/core| src/systems/enemy-ai.test.ts > decideEnemyAction > enemy surrounded by walls returns wait 0ms
+ ✓ |@dungeon/core| src/systems/enemy-ai.test.ts > decideEnemyAction > ambusher waits when player is at distance 3 (un-alerted) 0ms
+ ✓ |@dungeon/core| src/systems/enemy-ai.test.ts > decideEnemyAction > ambusher approaches when player is at distance 2 (alerted) 0ms
+ ✓ |@dungeon/core| src/systems/enemy-ai.test.ts > decideEnemyAction > ambusher attacks when player is adjacent (alerted) 0ms
+ ✓ |@dungeon/core| src/systems/enemy-ai.test.ts > decideEnemyAction > ranged_attacker at dist 1 with blocked retreat picks valid action 0ms
+ ✓ |@dungeon/core| src/systems/enemy-ai.test.ts > decideEnemyAction > computeRetreat returns the tile that maximizes distance from player 0ms
+ ✓ |@dungeon/core| src/systems/enemy-ai.test.ts > decideEnemyAction > fast_skirmisher waits at distance 2 instead of approaching 0ms
+ ✓ |@dungeon/core| src/systems/enemy-ai.test.ts > decideEnemyAction > decideEnemyAction pursues lastKnownPlayerPos when player is out of detection range 0ms
+ ✓ |@dungeon/core| src/engine/turn-scheduler.test.ts > processEnemyTurns > fastest enemy acts first (speed ordering) 2ms
+ ✓ |@dungeon/core| src/engine/turn-scheduler.test.ts > processEnemyTurns > un-alerted enemy within range 5 becomes alerted 1ms
+ ✓ |@dungeon/core| src/engine/turn-scheduler.test.ts > processEnemyTurns > un-alerted enemy beyond range 5 stays idle 0ms
+ ✓ |@dungeon/core| src/engine/turn-scheduler.test.ts > processEnemyTurns > stunned enemy skips turn 1ms
+ ✓ |@dungeon/core| src/engine/turn-scheduler.test.ts > processEnemyTurns > enemy attacks player: ATTACK_PERFORMED event 1ms
+ ✓ |@dungeon/core| src/engine/turn-scheduler.test.ts > processEnemyTurns > enemy attack damages player 0ms
+ ✓ |@dungeon/core| src/engine/turn-scheduler.test.ts > processEnemyTurns > enemy move blocked by occupied cell 1ms
+ ✓ |@dungeon/core| src/engine/turn-scheduler.test.ts > processEnemyTurns > player at 0 HP → remaining enemies skip 1ms
+ ✓ |@dungeon/core| src/engine/turn-scheduler.test.ts > processEnemyTurns > Bug 2: enemy burn status ticks and damages enemy each turn 1ms
+ ✓ |@dungeon/core| src/engine/turn-scheduler.test.ts > processEnemyTurns > thorns reflects damage back to attacker on hit 1ms
+ ✓ |@dungeon/core| src/engine/turn-scheduler.test.ts > processEnemyTurns > blink dodges enemy attack with event 0ms
+ ✓ |@dungeon/core| src/engine/turn-scheduler.test.ts > processEnemyTurns > life steal heals player on enemy kill 0ms
+ ✓ |@dungeon/core| src/systems/loot.test.ts > Loot system > gold drop scales with enemy tier 2ms
+ ✓ |@dungeon/core| src/systems/loot.test.ts > Loot system > nemesis rank 1 multiplies gold by 3 (Area 4a) 0ms
+ ✓ |@dungeon/core| src/systems/loot.test.ts > Loot system > nemesis rank 2 multiplies gold by 5 (Area 4a) 0ms
+ ✓ |@dungeon/core| src/systems/loot.test.ts > Loot system > nemesis rank 3 multiplies gold by 8 (Area 4a) 0ms
+ ✓ |@dungeon/core| src/systems/loot.test.ts > Loot system > nemesis guarantees 100% item drop (Area 4a) 1ms
+ ✓ |@dungeon/core| src/systems/loot.test.ts > Loot system > item drop returns null or a valid string across multiple seeds 2ms
+ ✓ |@dungeon/core| src/systems/loot.test.ts > processEnemyLoot integration > adds gold to player state and emits GOLD_CHANGED event 2ms
+ ✓ |@dungeon/core| src/systems/loot.test.ts > processEnemyLoot integration > with inventory full: emits LOOT_DROPPED event, inventory unchanged 1ms
+ ✓ |@dungeon/core| src/systems/loot.test.ts > processEnemyLoot integration > loot always includes gold and optionally items 1ms
+ ✓ |@dungeon/presenter| src/feature-completeness.test.ts > Feature Completeness: Combat (ATTACK) > full chain: attack → damage dealt → event emitted → enemy dies → loot 4ms
+ ✓ |@dungeon/presenter| src/feature-completeness.test.ts > Feature Completeness: Movement (MOVE) > full chain: move → position changes → event emitted → FOV updated 3ms
+ ✓ |@dungeon/presenter| src/feature-completeness.test.ts > Feature Completeness: Wait > full chain: wait → turn advances → enemies act → metrics updated 1ms
+ ✓ |@dungeon/presenter| src/feature-completeness.test.ts > Feature Completeness: Equipment (EQUIP) > full chain: equip → slot filled → stats recalculated 1ms
+ ✓ |@dungeon/presenter| src/feature-completeness.test.ts > Feature Completeness: Item Use (USE_ITEM) > full chain: use potion → health restored → event emitted → metric tracked 1ms
+ ✓ |@dungeon/presenter| src/feature-completeness.test.ts > Feature Completeness: Shop Buy > full chain: buy item → gold deducted → item in inventory 1ms
+ ✓ |@dungeon/presenter| src/feature-completeness.test.ts > Feature Completeness: Quest System > full chain: talk to informant → quest assigned → visible in view → completable 3ms
+ ✓ |@dungeon/presenter| src/feature-completeness.test.ts > Feature Completeness: Leveling/XP > full chain: kill gives XP → level-up event → stats increase 1ms
+ ✓ |@dungeon/presenter| src/feature-completeness.test.ts > Feature Completeness: Retreat > full chain: retreat → return to town → run ends → equipment kept 2ms
+ ✓ |@dungeon/presenter| src/feature-completeness.test.ts > Feature Completeness: Death/Stash > full chain: player dies → equipment dropped → death stash set → event emitted 2ms
+ ✓ |@dungeon/presenter| src/feature-completeness.test.ts > Feature Completeness: Permadeath > full chain: massive overkill → PERMADEATH event → formatted → game_over 1ms
+ ✓ |@dungeon/presenter| src/feature-completeness.test.ts > Feature Completeness: Nemesis System > full chain: die to enemy → nemesis promoted → visible in town view → affects corruption 3ms
+ ✓ |@dungeon/presenter| src/feature-completeness.test.ts > Feature Completeness: Town State > full chain: run outcome → town stats change → atmosphere text updates → NPC availability 0ms
+ ✓ |@dungeon/presenter| src/feature-completeness.test.ts > Feature Completeness: NPC Dialogue/Disposition > full chain: talk → disposition increases → affects shop discount 0ms
+ ✓ |@dungeon/presenter| src/feature-completeness.test.ts > Feature Completeness: Abilities (USE_ABILITY) > full chain: use ability → damage dealt → event emitted → cooldown set 2ms
+ ✓ |@dungeon/presenter| src/feature-completeness.test.ts > Feature Completeness: damageTaken metric > damageTaken incremented when enemy attacks player during enemy turns 0ms
+ ✓ |@dungeon/presenter| src/feature-completeness.test.ts > Feature Completeness: Factions > full chain: nemesis exists → faction power increases → visible in view → trend shown 1ms
+ ✓ |@dungeon/presenter| src/feature-completeness.test.ts > Feature Completeness: Equipment (UNEQUIP) > full chain: unequip → slot emptied → stats recalculated 0ms
+ ✓ |@dungeon/presenter| src/feature-completeness.test.ts > Feature Completeness: Equipment (SWAP_WEAPONS) > full chain: swap → weapons exchanged → stats recalculated → both active 0ms
+ ✓ |@dungeon/presenter| src/feature-completeness.test.ts > Feature Completeness: Enchantment (ENCHANT_ARMOR) > full chain: enchant → armor updated → gold deducted → event emitted 1ms
+ ✓ |@dungeon/presenter| src/feature-completeness.test.ts > Feature Completeness: Interaction (INTERACT) > full chain: interact with chest → item added to inventory → event emitted → usable 1ms
+ ✓ |@dungeon/presenter| src/feature-completeness.test.ts > Feature Completeness: Ascension (ASCEND) > full chain: ascend → phase changes → equipment preserved → metrics updated 0ms
+ ✓ |@dungeon/presenter| src/feature-completeness.test.ts > Feature Completeness: Thorns Reflection (Enchantment Effect) > full chain: thorns reflects damage on enemy hit 0ms
+ ✓ |@dungeon/presenter| src/feature-completeness.test.ts > Feature Completeness: Blink Dodge (Enchantment Effect) > full chain: blink dodges attack with event 0ms
+ ✓ |@dungeon/presenter| src/feature-completeness.test.ts > Feature Completeness: Life Steal (Enchantment Effect) > full chain: life steal heals on kill, event emitted 0ms
+ ✓ |@dungeon/presenter| src/feature-completeness.test.ts > Feature Completeness: Weapon Mastery Unlock > full chain: hits with weapon → mastery count increases → event emitted 0ms
+ ✓ |@dungeon/presenter| src/feature-completeness.test.ts > Feature Completeness: Blueprint Unlock (on loot) > full chain: loot rare item → blueprint unlocked → event emitted → view shows it 0ms
+ ✓ |@dungeon/presenter| src/feature-completeness.test.ts > Feature Completeness: Shop Tier Unlock > full chain: find rare item → shop tier unlocked → event emitted → new items available 1ms
+ ✓ |@dungeon/presenter| src/feature-completeness.test.ts > Feature Completeness: Enemy Respawn > full chain: clear floor → run continues → next turn enemies respawn 0ms
+ ✓ |@dungeon/presenter| src/feature-completeness.test.ts > Feature Completeness: Status Effect Application (Poison) > full chain: apply status → player has status → event emitted → formatted 0ms
+ ✓ |@dungeon/presenter| src/feature-completeness.test.ts > Feature Completeness: Status Effect Expiration > full chain: status expires → tick damage applied → event emitted 1ms
+ ✓ |@dungeon/presenter| src/feature-completeness.test.ts > Feature Completeness: Retreat (RETREAT) > full chain: retreat → floor state preserved 1ms
+ ✓ |@dungeon/presenter| src/feature-completeness.test.ts > Feature Completeness: Retreat from Dead End (No Adjacent Exit) > full chain: retreat blocked → remains in dungeon → event explains it 0ms
+ ✓ |@dungeon/presenter| src/feature-completeness.test.ts > Feature Completeness: Critical Hit > full chain: roll crit → extra damage → CRIT text in event → visible in log 3ms
+ ✓ |@dungeon/presenter| src/feature-completeness.test.ts > Feature Completeness: Overkill (Damage Exceeds Health) > full chain: deal damage > health → enemy dies → permadeath event on overkill 1ms
+ ✓ |@dungeon/presenter| src/feature-completeness.test.ts > Feature Completeness: NPC Disposition Impact (Shop Pricing) > full chain: NPC disposition affects price → effective price calculated → view shows discount 0ms
+ ✓ |@dungeon/presenter| src/feature-completeness.test.ts > Feature Completeness: NPC Unavailability (Low Prosperity) > full chain: low prosperity → NPC unavailable → action disabled in view 0ms
+ ✓ |@dungeon/presenter| src/feature-completeness.test.ts > Feature Completeness: World Modifiers (Corruption/Fear Impact) > full chain: world state affects game → modifier applied → affects next turn 1ms
+ ✓ |@dungeon/presenter| src/feature-completeness.test.ts > Feature Completeness: Faction War (Multiple Factions) > full chain: faction power changes → disposition affects → visible in town 0ms
+ ✓ |@dungeon/presenter| src/feature-completeness.test.ts > Feature Completeness: Equipment Drop on Death > full chain: player dies → equipment dropped → event emitted → view shows stash 1ms
+ ✓ |@dungeon/presenter| src/feature-completeness.test.ts > Feature Completeness: Multiple Enemies in One Turn > full chain: multiple enemies → all act → events show sequence 1ms
+ ✓ |@dungeon/presenter| src/feature-completeness.test.ts > Feature Completeness: Item Type Actions (Consumables) > full chain: use consumable → state change → event → formatted → visible in log 1ms
+ ✓ |@dungeon/presenter| src/feature-completeness.test.ts > Feature Completeness: Swap Secondary Weapon > full chain: equip secondary weapon → visible in HUD 0ms
+ ✓ |@dungeon/presenter| src/feature-completeness.test.ts > Feature Completeness: Encounter Recovery (From Stash) > full chain: death stash exists → view shows recovery option 0ms
+ ✓ |@dungeon/presenter| src/feature-completeness.test.ts > Feature Completeness: All Events Format Correctly > guarantee: every non-internal event can be formatted 1ms
+ ✓ |@dungeon/core| src/systems/npc.test.ts > processTalkNpc > informant assigns a quest on first conversation 2ms
+ ✓ |@dungeon/core| src/systems/npc.test.ts > processTalkNpc > informant does not assign duplicate quest on second talk 1ms
+ ✓ |@dungeon/core| src/systems/npc.test.ts > processTalkNpc > increases informant disposition on first talk 0ms
+ ✓ |@dungeon/core| src/systems/npc.test.ts > processTalkNpc > non-informant NPC increases disposition on talk 0ms
+ ✓ |@dungeon/core| src/systems/npc.test.ts > processTalkNpc > non-informant NPC does not assign quests 0ms
+ ✓ |@dungeon/core| src/systems/npc.test.ts > processTalkNpc > returns unchanged state for unknown NPC id 0ms
+ ✓ |@dungeon/core| src/systems/npc.test.ts > processTalkNpc > disposition is capped at 100 0ms
+ ✓ |@dungeon/core| src/systems/npc.test.ts > processTalkNpc > informant with disposition < 20 does not assign quest 0ms
+ ✓ |@dungeon/core| src/systems/npc.test.ts > processTalkNpc > informant with disposition < 20 still gets small disposition bump 0ms
+ ✓ |@dungeon/core| src/systems/npc.test.ts > processTalkNpc > informant with disposition >= 20 assigns quest normally 0ms
+ ✓ |@dungeon/core| src/systems/npc.test.ts > updateNpcDisposition > increases disposition by delta 0ms
+ ✓ |@dungeon/core| src/systems/npc.test.ts > updateNpcDisposition > decreases disposition by delta 0ms
+ ✓ |@dungeon/core| src/systems/npc.test.ts > updateNpcDisposition > clamps disposition at 100 0ms
+ ✓ |@dungeon/core| src/systems/npc.test.ts > updateNpcDisposition > clamps disposition at 0 0ms
+ ✓ |@dungeon/core| src/systems/npc.test.ts > updateNpcDisposition > does not modify other NPCs 0ms
+ ✓ |@dungeon/core| src/systems/enemy-abilities.test.ts > Enemy Abilities > ENEMY_ABILITY_DEFINITIONS > should have crushing_blow ability 1ms
+ ✓ |@dungeon/core| src/systems/enemy-abilities.test.ts > Enemy Abilities > ENEMY_ABILITY_DEFINITIONS > should have fire_bolt ability 0ms
+ ✓ |@dungeon/core| src/systems/enemy-abilities.test.ts > Enemy Abilities > ENEMY_ABILITY_DEFINITIONS > should have flame_trail ability 0ms
+ ✓ |@dungeon/core| src/systems/enemy-abilities.test.ts > Enemy Abilities > ENEMY_ABILITY_DEFINITIONS > should have frost_bolt ability 0ms
+ ✓ |@dungeon/core| src/systems/enemy-abilities.test.ts > Enemy Abilities > ENEMY_ABILITY_DEFINITIONS > should have roar ability 0ms
+ ✓ |@dungeon/core| src/systems/enemy-abilities.test.ts > Enemy Abilities > ENEMY_ABILITY_DEFINITIONS > should have chilling_aura ability 0ms
+ ✓ |@dungeon/core| src/systems/enemy-abilities.test.ts > Enemy Abilities > resolveEnemyAbility > resolves crushing_blow ability 1ms
+ ✓ |@dungeon/core| src/systems/enemy-abilities.test.ts > Enemy Abilities > resolveEnemyAbility > resolves frost_bolt ability 0ms
+ ✓ |@dungeon/core| src/systems/enemy-abilities.test.ts > Enemy Abilities > resolveEnemyAbility > resolves roar ability 0ms
+ ✓ |@dungeon/core| src/systems/enemy-abilities.test.ts > Enemy Abilities > resolveEnemyAbility > returns unchanged state for invalid ability 1ms
+ ✓ |@dungeon/core| src/systems/enemy-abilities.test.ts > Enemy Abilities > crushing_blow deals 2x damage 0ms
+ ✓ |@dungeon/core| src/systems/enemy-abilities.test.ts > Enemy Abilities > fire_bolt uses fire damage type 0ms
+ ✓ |@dungeon/core| src/systems/enemy-abilities.test.ts > Enemy Abilities > flame_trail applies burn status on hit 0ms
+ ✓ |@dungeon/core| src/systems/enemy-abilities.test.ts > Enemy Abilities > frost_bolt applies slow status on hit 0ms
+ ✓ |@dungeon/core| src/systems/enemy-abilities.test.ts > Enemy Abilities > chilling_aura applies slow to player, ranged 1ms
+ ✓ |@dungeon/core| src/systems/enemy-abilities.test.ts > Enemy Abilities > roar applies strength to self, no damage 0ms
+ ✓ |@dungeon/core| src/systems/enemy-abilities.test.ts > Enemy Abilities > ability sets cooldown on enemy after use 0ms
+ ✓ |@dungeon/core| src/systems/enemy-abilities.test.ts > Enemy Abilities > returns unchanged state when run is null 0ms
+ ✓ |@dungeon/core| src/systems/enemy-abilities.test.ts > Enemy Abilities > Bug 4: resolveEnemyAbility returns without calling engine updateRunMetrics 0ms
+ ✓ |@dungeon/core| src/systems/equipment.test.ts > calculateEquippedStats > returns base stats when nothing is equipped 1ms
+ ✓ |@dungeon/core| src/systems/equipment.test.ts > calculateEquippedStats > adds weapon damage, accuracy, and speed bonuses 0ms
+ ✓ |@dungeon/core| src/systems/equipment.test.ts > calculateEquippedStats > adds armor defense and applies evasion penalty 0ms
+ ✓ |@dungeon/core| src/systems/equipment.test.ts > calculateEquippedStats > preserves current health, not base health 0ms
+ ✓ |@dungeon/core| src/systems/equipment.test.ts > equipItem stat recalculation > increases attack when a weapon is equipped 1ms
+ ✓ |@dungeon/core| src/systems/equipment.test.ts > equipItem stat recalculation > increases defense when armor is equipped 0ms
+ ✓ |@dungeon/core| src/systems/equipment.test.ts > equipItem stat recalculation > preserves current health (does not reset to max) when equipping 0ms
+ ✓ |@dungeon/core| src/systems/equipment.test.ts > equipItem stat recalculation > calculateEquippedStats with weapon=null after weapon equipped matches base stats 0ms
+ ✓ |@dungeon/core| src/systems/equipment.test.ts > equipItem stat recalculation > equipping second weapon fills secondary slot 0ms
+ ✓ |@dungeon/core| src/systems/equipment.test.ts > unequipItem - Phase C2: unequip items from all slots > unequips weapon and adds it back to inventory 2ms
+ ✓ |@dungeon/core| src/systems/equipment.test.ts > unequipItem - Phase C2: unequip items from all slots > unequips armor and adds it back to inventory 0ms
+ ✓ |@dungeon/core| src/systems/equipment.test.ts > unequipItem - Phase C2: unequip items from all slots > unequipping recalculates stats correctly 0ms
+ ✓ |@dungeon/core| src/systems/equipment.test.ts > unequipItem - Phase C2: unequip items from all slots > unequipping from one ring slot does not affect the other 0ms
+ ✓ |@dungeon/core| src/systems/equipment.test.ts > unequipItem - Phase C2: unequip items from all slots > returns empty result if item is not equipped 0ms
+ ✓ |@dungeon/core| src/systems/equipment.test.ts > swapWeaponSets - Phase C5: weapon swapping > swaps primary and secondary weapons 0ms
+ ✓ |@dungeon/core| src/systems/equipment.test.ts > swapWeaponSets - Phase C5: weapon swapping > equips secondary weapon when primary is full 0ms
+ ✓ |@dungeon/core| src/systems/equipment.test.ts > swapWeaponSets - Phase C5: weapon swapping > swapping recalculates stats based on active weapon 0ms
+ ✓ |@dungeon/core| src/systems/progression.test.ts > checkLevelUp > does nothing when XP is insufficient 2ms
+ ✓ |@dungeon/core| src/systems/progression.test.ts > checkLevelUp > levels up once when XP meets threshold 0ms
+ ✓ |@dungeon/core| src/systems/progression.test.ts > checkLevelUp > levels up multiple times when XP is very high 0ms
+ ✓ |@dungeon/core| src/systems/progression.test.ts > checkLevelUp > applies stat gains correctly 0ms
+ ✓ |@dungeon/core| src/systems/progression.test.ts > checkLevelUp > heals HP equal to maxHealth gain on level up 0ms
+ ✓ |@dungeon/core| src/systems/progression.test.ts > checkLevelUp > does not exceed max level 1ms
+ ✓ |@dungeon/core| src/systems/progression.test.ts > checkLevelUp ability grants > grants power_strike when reaching level 3 0ms
+ ✓ |@dungeon/core| src/systems/progression.test.ts > checkLevelUp ability grants > grants second_wind when reaching level 5 0ms
+ ✓ |@dungeon/core| src/systems/progression.test.ts > checkLevelUp ability grants > does not re-grant ability if player already has it 0ms
+ ✓ |@dungeon/core| src/systems/equipment-bugs.test.ts > EQUIPMENT BUGS - Critical Inventory Loss Issues > BUG-1: Armor replacement loses old armor > equipping new chest when chest is occupied loses old chest armor 3ms
+ ✓ |@dungeon/core| src/systems/equipment-bugs.test.ts > EQUIPMENT BUGS - Critical Inventory Loss Issues > BUG-1: Armor replacement loses old armor > equipping head armor when occupied should return old helmet 0ms
+ ✓ |@dungeon/core| src/systems/equipment-bugs.test.ts > EQUIPMENT BUGS - Critical Inventory Loss Issues > BUG-2: Ring replacement loses old ring > equipping 3rd ring loses ring1 (not returned to inventory) 0ms
+ ✓ |@dungeon/core| src/systems/equipment-bugs.test.ts > EQUIPMENT BUGS - Critical Inventory Loss Issues > BUG-3: Inventory item vanishes when equipped > item should remain in inventory until equipment is updated 1ms
+ ✓ |@dungeon/core| src/systems/equipment-bugs.test.ts > EQUIPMENT BUGS - Critical Inventory Loss Issues > Swap weapons button issues > swap weapons should work when both slots are filled 1ms
+ ✓ |@dungeon/core| src/systems/equipment-bugs.test.ts > EQUIPMENT BUGS - Critical Inventory Loss Issues > Integration test: Full equipment lifecycle > equip/unequip/reequip should preserve items 1ms
+ ✓ |@dungeon/core| src/systems/enemy-ai-abilities.test.ts > EnemyAction with abilities > should support ability action type 1ms
+ ✓ |@dungeon/core| src/systems/enemy-ai-abilities.test.ts > EnemyAction with abilities > should have optional targetPosition for ability actions 1ms
+ ✓ |@dungeon/core| src/systems/enemy-ai-abilities.test.ts > EnemyAction with abilities > should allow ability action without targetPosition 0ms
+ ✓ |@dungeon/core| src/systems/enemy-ai-abilities.test.ts > EnemyInstance with ability cooldowns > should track ability cooldowns 0ms
+ ✓ |@dungeon/core| src/systems/enemy-ai-abilities.test.ts > resolveEnemyAbility with cooldowns > should set ability cooldown after use 0ms
+ ✓ |@dungeon/core| src/systems/enemy-ai-abilities.test.ts > resolveEnemyAbility with cooldowns > should apply damage when ability has damageMultiplier 1ms
+ ✓ |@dungeon/core| src/systems/enemy-ai-abilities.test.ts > resolveEnemyAbility with cooldowns > should apply status effect when ability has statusId 0ms
+ ✓ |@dungeon/core| src/systems/enemy-ai-abilities.test.ts > resolveEnemyAbility with cooldowns > should handle zero damage abilities (like roar) without damage events 0ms
+ ✓ |@dungeon/core| src/systems/inventory.test.ts > Inventory System > adds an item to inventory and emits event 2ms
+ ✓ |@dungeon/core| src/systems/inventory.test.ts > Inventory System > removes an item from inventory 0ms
+ ✓ |@dungeon/core| src/systems/inventory.test.ts > Inventory System > using a health potion heals player 0ms
+ ✓ |@dungeon/core| src/systems/inventory.test.ts > Inventory System > using an antidote removes poison status 0ms
+ ✓ |@dungeon/core| src/systems/inventory.test.ts > Inventory System > C1: addItemToInventory allows unlimited items (no inventory limit) 1ms
+ ✓ |@dungeon/core| src/systems/inventory.test.ts > Inventory System > bomb deals magnitude damage to target enemy 1ms
+ ✓ |@dungeon/core| src/systems/inventory.test.ts > Inventory System > strength elixir applies strength status with correct duration and magnitude 1ms
+ ✓ |@dungeon/core| src/systems/inventory.test.ts > Inventory System > Bug 1: buff consumable applies stat via status only (no direct mutation) 0ms
+ ✓ |@dungeon/core| src/systems/inventory.test.ts > Inventory System > strength elixir is removed from inventory after use 0ms
+ ✓ |@dungeon/core| src/systems/inventory.test.ts > Inventory System > A4: bomb without target applies AOE damage to adjacent enemies 1ms
+ ✓ |@dungeon/core| src/systems/fov.test.ts > computeFov > open room: tiles within radius are visible 2ms
+ ✓ |@dungeon/core| src/systems/fov.test.ts > computeFov > wall blocks vision behind it 1ms
+ ✓ |@dungeon/core| src/systems/fov.test.ts > computeFov > previously visible tile becomes remembered after moving away 0ms
+ ✓ |@dungeon/core| src/systems/fov.test.ts > computeFov > custom radius parameter limits vision range 0ms
+ ✓ |@dungeon/content| src/enemies/tier-1-rebalance.test.ts > Tier 1 Enemy Rebalance > Cave Rat > should have 30 HP 1ms
+ ✓ |@dungeon/content| src/enemies/tier-1-rebalance.test.ts > Tier 1 Enemy Rebalance > Cave Rat > should have 10 attack 0ms
+ ✓ |@dungeon/content| src/enemies/tier-1-rebalance.test.ts > Tier 1 Enemy Rebalance > Cave Rat > should have 3 defense 0ms
+ ✓ |@dungeon/content| src/enemies/tier-1-rebalance.test.ts > Tier 1 Enemy Rebalance > Skeleton Warrior > should have 50 HP 0ms
+ ✓ |@dungeon/content| src/enemies/tier-1-rebalance.test.ts > Tier 1 Enemy Rebalance > Skeleton Warrior > should have 14 attack 0ms
+ ✓ |@dungeon/content| src/enemies/tier-1-rebalance.test.ts > Tier 1 Enemy Rebalance > Skeleton Warrior > should have 8 defense 0ms
+ ✓ |@dungeon/content| src/enemies/tier-1-rebalance.test.ts > Tier 1 Enemy Rebalance > Pit Spider > should have 35 HP 0ms
+ ✓ |@dungeon/content| src/enemies/tier-1-rebalance.test.ts > Tier 1 Enemy Rebalance > Pit Spider > should have 12 attack 0ms
+ ✓ |@dungeon/content| src/enemies/tier-1-rebalance.test.ts > Tier 1 Enemy Rebalance > Pit Spider > should have 4 defense 0ms
+ ✓ |@dungeon/core| src/systems/weapon-mastery.test.ts > checkWeaponMasteryUnlocks > grants T1 ability when blade hits reach 10 1ms
+ ✓ |@dungeon/core| src/systems/weapon-mastery.test.ts > checkWeaponMasteryUnlocks > grants T2 ability when blade hits reach 25 0ms
+ ✓ |@dungeon/core| src/systems/weapon-mastery.test.ts > checkWeaponMasteryUnlocks > does not re-grant already-owned ability (idempotent) 1ms
+ ✓ |@dungeon/core| src/systems/weapon-mastery.test.ts > checkWeaponMasteryUnlocks > emits MASTERY_UNLOCKED event with correct tier and abilityId 0ms
+ ✓ |@dungeon/core| src/systems/weapon-mastery.test.ts > checkWeaponMasteryUnlocks > does not grant bludgeon ability for blade hits 0ms
+ ✓ |@dungeon/core| src/systems/weapon-mastery.test.ts > checkWeaponMasteryUnlocks > grants nothing at 9 hits (one below threshold) 0ms
+ ✓ |@dungeon/core| src/systems/weapon-mastery.test.ts > checkWeaponMasteryUnlocks > grants T1 but not T2 at exactly 10 hits 0ms
+ ✓ |@dungeon/core| src/systems/weapon-mastery.test.ts > checkWeaponMasteryUnlocks > grants both T1 and T2 in same call when hits jump past 25 1ms
+ ✓ |@dungeon/core| src/systems/weapon-mastery.test.ts > checkWeaponMasteryUnlocks > tracks mastery independently per weapon type 0ms
+ ✓ |@dungeon/core| src/systems/enchantment-resistall.test.ts > Enchantment resistAll field > resistAll is defined on enchantments > arcane_ward has resistAll: [fire, shock, frost] 1ms
+ ✓ |@dungeon/core| src/systems/enchantment-resistall.test.ts > Enchantment resistAll field > resistAll is defined on enchantments > blight_ward has resistAll: [poison, corruption] 0ms
+ ✓ |@dungeon/core| src/systems/enchantment-resistall.test.ts > Enchantment resistAll field > calculateEquippedStats applies resistAll without hardcoded logic > applies arcane_ward resistance to all three elements 0ms
+ ✓ |@dungeon/core| src/systems/enchantment-resistall.test.ts > Enchantment resistAll field > calculateEquippedStats applies resistAll without hardcoded logic > applies blight_ward resistance to poison and corruption 0ms
+ ✓ |@dungeon/core| src/systems/enchantment-resistall.test.ts > Enchantment resistAll field > calculateEquippedStats applies resistAll without hardcoded logic > stacks resistAll with item-level resistance 0ms
+ ✓ |@dungeon/core| src/systems/enchantment-resistall.test.ts > Enchantment resistAll field > calculateEquippedStats applies resistAll without hardcoded logic > caps resistance at 0.75 when stacking multiple resistances 0ms
+ ✓ |@dungeon/core| src/systems/enchantment-resistall.test.ts > Enchantment resistAll field > new enchantments can use resistAll without code changes > resistAll field is generic and extensible 0ms
+ ✓ |@dungeon/core| src/systems/abilities.test.ts > grantAbility > adds a new ability with cooldown 0 2ms
+ ✓ |@dungeon/core| src/systems/abilities.test.ts > grantAbility > is idempotent — does not duplicate an already-granted ability 0ms
+ ✓ |@dungeon/core| src/systems/abilities.test.ts > grantAbility > can grant multiple different abilities 0ms
+ ✓ |@dungeon/core| src/systems/abilities.test.ts > tickAbilityCooldowns > decrements non-zero cooldowns by 1 0ms
+ ✓ |@dungeon/core| src/systems/abilities.test.ts > tickAbilityCooldowns > does not reduce cooldown below 0 0ms
+ ✓ |@dungeon/core| src/systems/abilities.test.ts > tickAbilityCooldowns > returns same state when no abilities exist 0ms
+ ✓ |@dungeon/core| src/systems/abilities.test.ts > canUseAbility > returns false when player does not have the ability 0ms
+ ✓ |@dungeon/core| src/systems/abilities.test.ts > canUseAbility > returns false when ability is on cooldown 0ms
+ ✓ |@dungeon/core| src/systems/abilities.test.ts > canUseAbility > returns true when ability is ready (cooldown = 0) 0ms
+ ✓ |@dungeon/core| src/systems/abilities.test.ts > canUseAbility > Bug 3: canUseAbility is single exported function for ability check 0ms
+ ✓ |@dungeon/core| src/systems/abilities.test.ts > Ability Definitions — Area 3 tuning > power_strike unlockLevel === 2 0ms
+ ✓ |@dungeon/core| src/systems/abilities.test.ts > Ability Definitions — Area 3 tuning > second_wind unlockLevel === 4 2ms
+ ✓ |@dungeon/core| src/systems/abilities.test.ts > Ability Definitions — Area 3 tuning > power_strike cooldown === 2 0ms
+ ✓ |@dungeon/core| src/systems/abilities.test.ts > Ability Definitions — Area 3 tuning > second_wind cooldown === 4 0ms
+ ✓ |@dungeon/core| src/systems/abilities.test.ts > Ability Definitions — Area 3 tuning > blade_bleed cooldown === 2 0ms
+ ✓ |@dungeon/core| src/systems/abilities.test.ts > Ability Definitions — Area 3 tuning > blade_riposte cooldown === 3 0ms
+ ✓ |@dungeon/core| src/systems/abilities.test.ts > Ability Definitions — Area 3 tuning > bludgeon_stagger cooldown === 2 0ms
+ ✓ |@dungeon/core| src/systems/abilities.test.ts > Ability Definitions — Area 3 tuning > bludgeon_shatter cooldown === 4 0ms
+ ✓ |@dungeon/core| src/systems/abilities.test.ts > Ability Definitions — Area 3 tuning > axe_cleave cooldown === 2 0ms
+ ✓ |@dungeon/core| src/systems/abilities.test.ts > Ability Definitions — Area 3 tuning > axe_execute cooldown === 3 0ms
+ ✓ |@dungeon/core| src/systems/abilities.test.ts > Ability Definitions — Area 3 tuning > ranged_pin cooldown === 2 0ms
+ ✓ |@dungeon/core| src/systems/abilities.test.ts > Ability Definitions — Area 3 tuning > ranged_volley cooldown === 4 0ms
+ ✓ |@dungeon/core| src/systems/abilities.test.ts > Ability Definitions — Area 3 tuning > ABILITY_UNLOCK_BY_LEVEL: power_strike at level 2 0ms
+ ✓ |@dungeon/core| src/systems/abilities.test.ts > Ability Definitions — Area 3 tuning > ABILITY_UNLOCK_BY_LEVEL: second_wind at level 4 0ms
+ ✓ |@dungeon/core| src/systems/abilities.test.ts > Ability Definitions — Area 3 tuning > MASTERY_THRESHOLDS tier 1 === 10 0ms
+ ✓ |@dungeon/core| src/systems/abilities.test.ts > Ability Definitions — Area 3 tuning > MASTERY_THRESHOLDS tier 2 === 25 0ms
+ ✓ |@dungeon/core| src/systems/nemesis.test.ts > shouldPromoteToNemesis > returns false when floor is below minFloor (floor 0) 2ms
+ ✓ |@dungeon/core| src/systems/nemesis.test.ts > shouldPromoteToNemesis > guarantees first nemesis on first-ever death 0ms
+ ✓ |@dungeon/core| src/systems/nemesis.test.ts > shouldPromoteToNemesis > uses probability for subsequent deaths after first nemesis 0ms
+ ✓ |@dungeon/core| src/systems/nemesis.test.ts > shouldPromoteToNemesis > returns false when max active nemeses reached 0ms
+ ✓ |@dungeon/core| src/systems/nemesis.test.ts > shouldPromoteToNemesis > always returns true for tier 5 enemy on eligible floor with seeded rng 0ms
+ ✓ |@dungeon/core| src/systems/nemesis.test.ts > promoteToNemesis > creates a NemesisRecord with boosted stats 2ms
+ ✓ |@dungeon/core| src/systems/nemesis.test.ts > promoteToNemesis > emits NEMESIS_PROMOTED event 0ms
+ ✓ |@dungeon/core| src/systems/nemesis.test.ts > promoteToNemesis > appends to existing nemeses immutably 1ms
+ ✓ |@dungeon/core| src/systems/nemesis.test.ts > promoteToNemesis > rank increases for repeated promotions of same template 0ms
+ ✓ |@dungeon/core| src/systems/nemesis.test.ts > slayNemesis > sets isActive to false for the given nemesis 0ms
+ ✓ |@dungeon/core| src/systems/nemesis.test.ts > findNemesisByTemplateId > returns the active nemesis matching the templateId 0ms
+ ✓ |@dungeon/core| src/systems/nemesis.test.ts > findNemesisByTemplateId > returns undefined if no active match 0ms
+ ✓ |@dungeon/core| src/systems/nemesis.test.ts > slayNemesis — Blueprint Unlock (Area 4a) > unlocks a blueprint when nemesis is slain 0ms
+ ✓ |@dungeon/core| src/systems/nemesis.test.ts > slayNemesis — Blueprint Unlock (Area 4a) > marks nemesis as inactive when slain 0ms
+ ✓ |@dungeon/core| src/systems/nemesis.test.ts > slayNemesis — Blueprint Unlock (Area 4a) > does not duplicate blueprints when already unlocked 0ms
+ ✓ |@dungeon/server| src/ai/ai-service-composite.test.ts > CompositeAiService — fallback on queryLmStudio throw > generateDialogue uses fallback when queryLmStudio throws 2ms
+ ✓ |@dungeon/server| src/ai/ai-service-composite.test.ts > CompositeAiService — fallback on queryLmStudio throw > generateDialogue returns LM text when available 0ms
+ ✓ |@dungeon/server| src/ai/ai-service-composite.test.ts > CompositeAiService — fallback on queryLmStudio throw > generateDialogue uses fallback when queryLmStudio returns null text 0ms
+ ✓ |@dungeon/server| src/ai/ai-service-composite.test.ts > CompositeAiService — fallback on queryLmStudio throw > generateRumor uses fallback when queryLmStudio throws 1ms
+ ✓ |@dungeon/server| src/ai/ai-service-composite.test.ts > CompositeAiService — fallback on queryLmStudio throw > generateRunSummary uses fallback when queryLmStudio throws 0ms
+ ✓ |@dungeon/server| src/ai/ai-service-composite.test.ts > CompositeAiService — fallback on queryLmStudio throw > generateNemesisName uses fallback when queryLmStudio throws 2ms
+ ✓ |@dungeon/server| src/ai/ai-service-composite.test.ts > CompositeAiService — fallback on queryLmStudio throw > generateNemesisName uses fallback when JSON parse fails 1ms
+ ✓ |@dungeon/server| src/ai/ai-service-composite.test.ts > CompositeAiService — fallback on queryLmStudio throw > generateNemesisName returns parsed name when LM returns valid JSON 0ms
+ ✓ |@dungeon/content| src/enchantments/index.test.ts > enchantment catalog > contains all 14 enchantment IDs 1ms
+ ✓ |@dungeon/content| src/enchantments/index.test.ts > enchantment catalog > tier assignments are correct 1ms
+ ✓ |@dungeon/content| src/enchantments/index.test.ts > getEnchantmentCost > returns correct costs per tier 0ms
+ ✓ |@dungeon/content| src/enchantments/index.test.ts > getEnchantmentCost > T1 cost === 40 (Area 2a tuning) 0ms
+ ✓ |@dungeon/content| src/enchantments/index.test.ts > getEnchantmentCost > T2 cost === 100 (Area 2a tuning) 0ms
+ ✓ |@dungeon/content| src/enchantments/index.test.ts > getEnchantmentCost > T3 cost === 200 (Area 2a tuning) 0ms
+ ✓ |@dungeon/content| src/enchantments/index.test.ts > getEnchantmentCost > unique cost === 150 (Area 2a tuning) 0ms
+ ✓ |@dungeon/content| src/enchantments/index.test.ts > getEnchantmentCost > returns 0 for unknown enchantment 0ms
+ ✓ |@dungeon/content| src/enchantments/index.test.ts > getImpliedBlueprints > T1 enchantment only implies itself 1ms
+ ✓ |@dungeon/content| src/enchantments/index.test.ts > getImpliedBlueprints > T2 enchantment only implies itself 0ms
+ ✓ |@dungeon/content| src/enchantments/index.test.ts > getImpliedBlueprints > T3 enchantment only implies itself 0ms
+ ✓ |@dungeon/content| src/enchantments/index.test.ts > getImpliedBlueprints > unique enchantment only implies itself 0ms
+ ✓ |@dungeon/content| src/enchantments/index.test.ts > getImpliedBlueprints > returns empty array for unknown enchantment 0ms
+ ✓ |@dungeon/core| src/systems/status-effects.test.ts > status-effects > applies a new status to player 1ms
+ ✓ |@dungeon/core| src/systems/status-effects.test.ts > status-effects > refreshes existing status duration 0ms
+ ✓ |@dungeon/core| src/systems/status-effects.test.ts > status-effects > ticks reduce status duration and expire after zero 0ms
+ ✓ |@dungeon/core| src/systems/status-effects.test.ts > status-effects > poison deals damage on each tick 0ms
+ ✓ |@dungeon/core| src/systems/status-effects.test.ts > status-effects > weaken reduces attack stat while active 0ms
+ ✓ |@dungeon/core| src/systems/status-effects.test.ts > status-effects > slow reduces speed stat while active 0ms
+ ✓ |@dungeon/core| src/systems/status-effects.test.ts > simultaneous statuses > two different statuses applied independently coexist 1ms
+ ✓ |@dungeon/core| src/systems/status-effects.test.ts > simultaneous statuses > tick removes expired status while leaving non-expired one intact 0ms
+ ✓ |@dungeon/core| src/systems/status-effects.test.ts > magnitude/duration refresh > reapply with lower magnitude keeps original (Math.max) 1ms
+ ✓ |@dungeon/core| src/systems/status-effects.test.ts > magnitude/duration refresh > reapply with higher magnitude upgrades (Math.max) 0ms
+ ✓ |@dungeon/core| src/systems/status-effects.test.ts > magnitude/duration refresh > reapply with shorter duration keeps original (Math.max) 0ms
+ ✓ |@dungeon/core| src/systems/status-effects.test.ts > Enemy status ticking > Bug 2: tickEnemyStatuses handles enemy status duration and damage 0ms
+ ✓ |@dungeon/core| src/systems/status-effects.test.ts > Enemy status ticking > enemy status expires after duration reaches 0 0ms
+ ✓ |@dungeon/core| src/systems/status-effects.test.ts > Enemy status ticking > multiple enemy statuses tick independently 0ms
+ ✓ |@dungeon/content| src/items/armor.test.ts > armor catalog > every item has a valid ArmorSlot 2ms
+ ✓ |@dungeon/content| src/items/armor.test.ts > armor catalog > enchantmentSlots matches ENCHANTMENT_SLOTS_BY_RARITY[rarity] 1ms
+ ✓ |@dungeon/content| src/items/armor.test.ts > armor catalog > enchantments array length equals enchantmentSlots 0ms
+ ✓ |@dungeon/content| src/items/armor.test.ts > armor catalog > null-only enchantments for non-pre-enchanted items 1ms
+ ✓ |@dungeon/content| src/items/armor.test.ts > armor catalog > at least 2 items per slot type 0ms
+ ✓ |@dungeon/content| src/items/armor.test.ts > armor catalog > pre-enchanted items have valid enchantment IDs 0ms
+ ✓ |@dungeon/core| src/systems/equipment-fifo.test.ts > equipment FIFO behavior > weapon FIFO > equips first weapon to primary slot 1ms
+ ✓ |@dungeon/core| src/systems/equipment-fifo.test.ts > equipment FIFO behavior > weapon FIFO > equips second weapon to secondary slot 0ms
+ ✓ |@dungeon/core| src/systems/equipment-fifo.test.ts > equipment FIFO behavior > weapon FIFO > replaces primary weapon when both slots full (FIFO) 1ms
+ ✓ |@dungeon/core| src/systems/equipment-fifo.test.ts > equipment FIFO behavior > ring FIFO > equips first ring to ring1 slot 0ms
+ ✓ |@dungeon/core| src/systems/equipment-fifo.test.ts > equipment FIFO behavior > ring FIFO > equips second ring to ring2 slot 0ms
+ ✓ |@dungeon/core| src/systems/equipment-fifo.test.ts > equipment FIFO behavior > ring FIFO > replaces ring1 when both slots full (FIFO) 0ms
+ ✓ |@dungeon/core| src/systems/equipment-fifo.test.ts > equipment FIFO behavior > ring FIFO > maintains FIFO order across multiple equips 0ms
+ ✓ |@dungeon/core| src/utils/auto-walk.test.ts > shouldCancelAutoWalk > returns false when phase is still dungeon and no threats 1ms
+ ✓ |@dungeon/core| src/utils/auto-walk.test.ts > shouldCancelAutoWalk > returns true when phase changes from dungeon to combat 0ms
+ ✓ |@dungeon/core| src/utils/auto-walk.test.ts > shouldCancelAutoWalk > returns true when phase changes from dungeon to town 0ms
+ ✓ |@dungeon/core| src/utils/auto-walk.test.ts > shouldCancelAutoWalk > returns true when phase changes from dungeon to game_over 0ms
+ ✓ |@dungeon/core| src/utils/auto-walk.test.ts > shouldCancelAutoWalk > returns true when player health decreases 0ms
+ ✓ |@dungeon/core| src/utils/auto-walk.test.ts > shouldCancelAutoWalk > returns false when player health stays the same 0ms
+ ✓ |@dungeon/core| src/utils/auto-walk.test.ts > shouldCancelAutoWalk > returns false when player health increases (healing) 0ms
+ ✓ |@dungeon/core| src/utils/auto-walk.test.ts > shouldCancelAutoWalk > returns true when new threat appears (new entity in map) 0ms
+ ✓ |@dungeon/core| src/utils/auto-walk.test.ts > shouldCancelAutoWalk > returns false when known enemy is still in same position 0ms
+ ✓ |@dungeon/core| src/systems/enchantment-hooks.test.ts > getTotalThornsReflect > returns 0 when no thorns/spikes enchantments 1ms
+ ✓ |@dungeon/core| src/systems/enchantment-hooks.test.ts > getTotalThornsReflect > returns 3 for thorns enchantment 0ms
+ ✓ |@dungeon/core| src/systems/enchantment-hooks.test.ts > getTotalThornsReflect > returns 6 for spikes enchantment 0ms
+ ✓ |@dungeon/core| src/systems/enchantment-hooks.test.ts > getTotalThornsReflect > stacks thorns + spikes from different slots 0ms
+ ✓ |@dungeon/core| src/systems/enchantment-hooks.test.ts > getEnchantmentRegenBonus > returns 0 when no regen enchantment 0ms
+ ✓ |@dungeon/core| src/systems/enchantment-hooks.test.ts > getEnchantmentRegenBonus > returns 2 for hp_regen enchantment 0ms
+ ✓ |@dungeon/core| src/systems/enchantment-hooks.test.ts > getExpBonusMultiplier > returns 1.0 when no exp_bonus enchantment 0ms
+ ✓ |@dungeon/core| src/systems/enchantment-hooks.test.ts > getExpBonusMultiplier > returns 1.25 for exp_bonus enchantment 0ms
+ ✓ |@dungeon/core| src/systems/enchantment-hooks.test.ts > applyThornsToAttacker > reflects thorns damage to enemy 0ms
+ ✓ |@dungeon/core| src/systems/enchantment-hooks.test.ts > applyThornsToAttacker > returns unmodified enemy health if no thorns 0ms
+ ✓ |@dungeon/core| src/systems/enchantment-hooks.test.ts > applyBlinkOnHit > returns blocked=false when no blink enchantment 0ms
+ ✓ |@dungeon/core| src/systems/enchantment-hooks.test.ts > applyBlinkOnHit > returns blocked=true with blink when rng < 0.3 0ms
+ ✓ |@dungeon/core| src/systems/enchantment-hooks.test.ts > applyBlinkOnHit > returns blocked=false with blink when rng >= 0.3 0ms
+ ✓ |@dungeon/core| src/systems/enchantment-hooks.test.ts > applyLifeStealOnKill > returns 0 when no life_steal enchantment 0ms
+ ✓ |@dungeon/core| src/systems/enchantment-hooks.test.ts > applyLifeStealOnKill > returns 2 for life_steal enchantment 0ms
+ ✓ |@dungeon/core| src/utils/pathfinding.test.ts > findPath (shared @dungeon/core) > returns empty array when start === destination 2ms
+ ✓ |@dungeon/core| src/utils/pathfinding.test.ts > findPath (shared @dungeon/core) > finds straight-line path on open grid 1ms
+ ✓ |@dungeon/core| src/utils/pathfinding.test.ts > findPath (shared @dungeon/core) > routes around walls (non-walkable cells) 1ms
+ ✓ |@dungeon/core| src/utils/pathfinding.test.ts > findPath (shared @dungeon/core) > routes around enemy-occupied cells 1ms
+ ✓ |@dungeon/core| src/utils/pathfinding.test.ts > findPath (shared @dungeon/core) > handles 8-directional movement (diagonal paths) 0ms
+ ✓ |@dungeon/core| src/utils/pathfinding.test.ts > findPath (shared @dungeon/core) > returns empty array when no path exists (walled off) 0ms
+ ✓ |@dungeon/core| src/utils/pathfinding.test.ts > findPath (shared @dungeon/core) > uses visible and remembered cells but ignores hidden 0ms
+ ✓ |@dungeon/core| src/utils/pathfinding.test.ts > findPath (shared @dungeon/core) > cannot path through hidden cells 0ms
+ ✓ |@dungeon/core| src/utils/pathfinding.test.ts > findPath (shared @dungeon/core) > returns path excluding start, including destination 0ms
+ ✓ |@dungeon/core| src/systems/movement-behaviors.test.ts > Movement Behaviors > wall_stalker behavior > prefers tiles adjacent to walls over open tiles 1ms
+ ✓ |@dungeon/core| src/systems/movement-behaviors.test.ts > Movement Behaviors > rearline_anchor behavior > prefers tiles far from player 0ms
+ ✓ |@dungeon/core| src/systems/movement-behaviors.test.ts > Movement Behaviors > chokepoint_holder behavior > prefers tiles close to player with wall coverage 0ms
+ ✓ |@dungeon/core| src/systems/movement-behaviors.test.ts > Movement Behaviors > ambush_idle behavior > prefers tiles far from player with cover 1ms
+ ✓ |@dungeon/core| src/systems/movement-behaviors.test.ts > Movement Behaviors > no behavior (default) > falls back to approaching player 0ms
+ ✓ |@dungeon/core| src/systems/movement-behaviors.test.ts > Movement Behaviors > getWalkableNeighbors > returns walkable neighbors from a valid floor 0ms
+ ✓ |@dungeon/core| src/systems/movement-behaviors.test.ts > Movement Behaviors > getWalkableNeighbors > returns empty array when run is null 0ms
+ ✓ |@dungeon/core| src/utils/direction.test.ts > positionToDirection > returns N when moving north (dy = -1) 1ms
+ ✓ |@dungeon/core| src/utils/direction.test.ts > positionToDirection > returns S when moving south (dy = 1) 0ms
+ ✓ |@dungeon/core| src/utils/direction.test.ts > positionToDirection > returns E when moving east (dx = 1) 0ms
+ ✓ |@dungeon/core| src/utils/direction.test.ts > positionToDirection > returns W when moving west (dx = -1) 0ms
+ ✓ |@dungeon/core| src/utils/direction.test.ts > positionToDirection > returns NE when moving northeast (dx=1, dy=-1) 0ms
+ ✓ |@dungeon/core| src/utils/direction.test.ts > positionToDirection > returns NW when moving northwest (dx=-1, dy=-1) 0ms
+ ✓ |@dungeon/core| src/utils/direction.test.ts > positionToDirection > returns SE when moving southeast (dx=1, dy=1) 0ms
+ ✓ |@dungeon/core| src/utils/direction.test.ts > positionToDirection > returns SW when moving southwest (dx=-1, dy=1) 0ms
+ ✓ |@dungeon/core| src/utils/direction.test.ts > positionToDirection > returns null for no movement (same position) 0ms
+ ✓ |@dungeon/core| src/utils/direction.test.ts > positionToDirection > returns null for invalid movement (more than 1 cell away) 0ms
+ ✓ |@dungeon/content| src/balance/tables.test.ts > Balance tables — property tests > MAP_GENERATION scaling > floor N enemies scales with baseDensity + perFloor * N 2ms
+ ✓ |@dungeon/content| src/balance/tables.test.ts > Balance tables — property tests > MAP_GENERATION scaling > enemyBaseDensity is a positive integer 0ms
+ ✓ |@dungeon/content| src/balance/tables.test.ts > Balance tables — property tests > MAP_GENERATION scaling > enemyPerFloor is a positive integer 0ms
+ ✓ |@dungeon/content| src/balance/tables.test.ts > Balance tables — property tests > FLOOR_SCALING multipliers > all multipliers are greater than 1.0 (enemies get stronger with depth) 0ms
+ ✓ |@dungeon/content| src/balance/tables.test.ts > Balance tables — property tests > FLOOR_SCALING multipliers > health multiplier is >= attack multiplier (survivability matters) 0ms
+ ✓ |@dungeon/content| src/balance/tables.test.ts > Balance tables — property tests > FLOOR_SCALING multipliers > floor scaling compounds correctly across depths 0ms
+ ✓ |@dungeon/content| src/balance/tables.test.ts > Balance tables — property tests > getFloorScalingMultipliers > floors 1-2 use reduced multipliers (sqrt) 0ms
+ ✓ |@dungeon/content| src/balance/tables.test.ts > Balance tables — property tests > getFloorScalingMultipliers > floor 3+ use normal multipliers 1ms
+ ✓ |@dungeon/content| src/balance/tables.test.ts > Balance tables — property tests > getFloorScalingMultipliers > floor 1-2 enemies are weaker than floor 3+ 0ms
+ ✓ |@dungeon/content| src/balance/tables.test.ts > Balance tables — property tests > isRarityBuyable > common items are always buyable 0ms
+ ✓ |@dungeon/content| src/balance/tables.test.ts > Balance tables — property tests > isRarityBuyable > uncommon items are buyable when highestFound >= uncommon (not epic) 0ms
+ ✓ |@dungeon/content| src/balance/tables.test.ts > Balance tables — property tests > isRarityBuyable > rare items are buyable when highestFound >= rare 0ms
+ ✓ |@dungeon/content| src/balance/tables.test.ts > Balance tables — property tests > isRarityBuyable > epic items are buyable when highestFound >= epic 0ms
+ ✓ |@dungeon/content| src/balance/tables.test.ts > Balance tables — property tests > isRarityBuyable > legendary items are never buyable 0ms
+ ✓ |@dungeon/content| src/balance/tables.test.ts > Balance tables — property tests > isRarityBuyable > handles unknown rarity gracefully 0ms
+ ✓ |@dungeon/content| src/items/weapons.test.ts > WEAPONS > every weapon has weaponType defined 1ms
+ ✓ |@dungeon/content| src/items/weapons.test.ts > WEAPONS > every weapon damage >= 1 0ms
+ ✓ |@dungeon/content| src/items/weapons.test.ts > WEAPONS > has exactly 4 blade weapons 1ms
+ ✓ |@dungeon/content| src/items/weapons.test.ts > WEAPONS > has exactly 2 bludgeon weapons 0ms
+ ✓ |@dungeon/content| src/items/weapons.test.ts > WEAPONS > has exactly 2 axe weapons 0ms
+ ✓ |@dungeon/content| src/items/weapons.test.ts > WEAPONS > has exactly 2 ranged weapons 1ms
+ ✓ |@dungeon/content| src/items/weapons.test.ts > WEAPONS > rusty_sword damage === 3 0ms
+ ✓ |@dungeon/content| src/items/weapons.test.ts > WEAPONS > frost_axe damage === 10 0ms
+ ✓ |@dungeon/content| src/items/weapons.test.ts > WEAPONS > rarity tier damage scaling: common < uncommon < rare 0ms
+ ✓ |@dungeon/content| src/items/weapons.test.ts > WEAPONS > iron_mace damage === 5 0ms
+ ✓ |@dungeon/content| src/items/weapons.test.ts > WEAPONS > short_bow damage === 3 0ms
+ ✓ |@dungeon/content| src/items/weapons.test.ts > WEAPONS > flame_dagger damage === 5 0ms
+ ✓ |@dungeon/content| src/items/weapons.test.ts > WEAPONS > venom_blade damage === 6 0ms
+ ✓ |@dungeon/content| src/items/weapons.test.ts > WEAPONS > war_bow damage === 6 0ms
+ ✓ |@dungeon/content| src/items/weapons.test.ts > WEAPONS > stone_hammer damage === 7 0ms
+ ✓ |@dungeon/content| src/items/weapons.test.ts > WEAPONS > iron_sword damage === 10 0ms
+ ✓ |@dungeon/content| src/items/weapons.test.ts > WEAPONS > frost_axe speed === 0 0ms
+ ✓ |@dungeon/content| src/items/weapons.test.ts > WEAPONS > flame_dagger speed === 10 0ms
+ ✓ |@dungeon/content| src/items/weapons.test.ts > WEAPONS > has 10 total weapons 0ms
+ ✓ |@dungeon/content| src/quests/quests.test.ts > quest templates > exports at least 3 quest templates 1ms
+ ✓ |@dungeon/content| src/quests/quests.test.ts > quest templates > each template has required fields 1ms
+ ✓ |@dungeon/content| src/quests/quests.test.ts > quest templates > each template has unique id 0ms
+ ✓ |@dungeon/content| src/quests/quests.test.ts > quest templates > selectRandomQuestTemplate returns a template from pool 1ms
+ ✓ |@dungeon/content| src/quests/quests.test.ts > quest templates > selectRandomQuestTemplate produces selection with different rng values 0ms
+ ✓ |@dungeon/content| src/quests/quests.test.ts > quest templates > createQuestFromTemplate generates valid quest 0ms
+ ✓ |@dungeon/content| src/quests/quests.test.ts > quest templates > createQuestFromTemplate creates unique quest ids for same template/npc at different turns 0ms
+ ✓ |@dungeon/content| src/quests/quests.test.ts > quest templates > all templates have meaningful reward amounts 0ms
+ ✓ |@dungeon/content| src/balance/enemy-respawn-constants.test.ts > ENEMY_RESPAWN constants > respawnIntervalTurns is a positive integer (respawns happen regularly) 1ms
+ ✓ |@dungeon/content| src/balance/enemy-respawn-constants.test.ts > ENEMY_RESPAWN constants > maxEnemiesOnFloor is a positive integer (cap to prevent overwhelming) 0ms
+ ✓ |@dungeon/content| src/balance/enemy-respawn-constants.test.ts > ENEMY_RESPAWN constants > minSpawnDistFromPlayer is non-negative (spawns not too close) 0ms
+ ✓ |@dungeon/content| src/balance/enemy-respawn-constants.test.ts > ENEMY_RESPAWN constants > respawnCountPerTick is a positive integer (at least one enemy per respawn) 0ms
+ ✓ |@dungeon/content| src/balance/enemy-respawn-constants.test.ts > ENEMY_RESPAWN constants > all constants exist and are defined 0ms
+ ✓ |@dungeon/core| src/systems/world-consequences.test.ts > applyRunConsequences > decreases prosperity on death 1ms
+ ✓ |@dungeon/core| src/systems/world-consequences.test.ts > applyRunConsequences > increases prosperity on retreat 0ms
+ ✓ |@dungeon/core| src/systems/world-consequences.test.ts > applyRunConsequences > increases prosperity more on victory with many kills 0ms
+ ✓ |@dungeon/core| src/systems/world-consequences.test.ts > applyRunConsequences > ticks corruption up when nemeses are active 0ms
+ ✓ |@dungeon/core| src/systems/world-consequences.test.ts > applyRunConsequences > emits TOWN_STATE_CHANGED events for changes 0ms
+ ✓ |@dungeon/core| src/systems/world-consequences.test.ts > applyRunConsequences shopkeeper availability > shopkeeper becomes unavailable when prosperity drops below 25 0ms
+ ✓ |@dungeon/core| src/systems/world-consequences.test.ts > applyRunConsequences shopkeeper availability > shopkeeper remains available when prosperity stays at or above 25 0ms
+ ✓ |@dungeon/core| src/systems/world-consequences.test.ts > applyRunConsequences shopkeeper availability > shopkeeper becomes available again when prosperity recovers to 40+ 0ms
+ ✓ |@dungeon/core| src/systems/world-consequences.test.ts > evaluateEventChains > triggers fear spike when 3+ deaths in recent history 0ms
+ ✓ |@dungeon/core| src/systems/world-consequences.test.ts > evaluateEventChains > does not spike fear when already at 80+ 0ms
+ ✓ |@dungeon/core| src/systems/world-consequences.test.ts > evaluateEventChains > faction at 0 power gets improved disposition 0ms
+ ✓ |@dungeon/core| src/systems/world-consequences.test.ts > event history capping > caps eventHistory to 100 entries after applyRunConsequences 0ms
+ ✓ |@dungeon/core| src/systems/world-consequences.test.ts > event history capping > does not trim eventHistory when at or below 100 0ms
+ ✓ |@dungeon/core| src/abilities/derive-mastery-map.test.ts > deriveMasteryAbilities > derives correct mastery ability map from definitions 1ms
+ ✓ |@dungeon/core| src/systems/retreat.test.ts > retreat > canRetreat returns true when on stairs_up tile 1ms
+ ✓ |@dungeon/core| src/systems/retreat.test.ts > retreat > canRetreat returns true when on entrance position 0ms
+ ✓ |@dungeon/core| src/systems/retreat.test.ts > retreat > canRetreat returns false when on a plain floor tile 0ms
+ ✓ |@dungeon/core| src/systems/retreat.test.ts > retreat > executeRetreat sets phase to town, clears run and increments totalRuns 1ms
+ ✓ |@dungeon/core| src/systems/retreat.test.ts > retreat > executeRetreat saves current floor to persistedFloorCache before clearing run 0ms
+ ✓ |@dungeon/core| src/systems/retreat.test.ts > retreat > executeRetreat sets lastRetreatFloor to current player floor 0ms
+ ✓ |@dungeon/core| src/systems/retreat.test.ts > retreat > executeRetreat updates lastRetreatFloor when retreating from higher floors 0ms
+ ✓ |@dungeon/core| src/utils/grid.test.ts > Grid utilities > calculates Manhattan distance correctly 1ms
+ ✓ |@dungeon/core| src/utils/grid.test.ts > Grid utilities > calculates Chebyshev distance correctly 0ms
+ ✓ |@dungeon/core| src/utils/grid.test.ts > Grid utilities > moves in each direction correctly 1ms
+ ✓ |@dungeon/core| src/utils/grid.test.ts > Grid utilities > checks positions equality correctly 0ms
+ ✓ |@dungeon/core| src/utils/grid.test.ts > Grid utilities > returns all 8 neighboring positions 1ms
+ ✓ |@dungeon/core| src/systems/factions.test.ts > updateFactionOnKill > reduces power of the faction matching the killed template 2ms
+ ✓ |@dungeon/core| src/systems/factions.test.ts > updateFactionOnKill > does not change other factions 0ms
+ ✓ |@dungeon/core| src/systems/factions.test.ts > updateFactionOnKill > does not go below 0 0ms
+ ✓ |@dungeon/core| src/systems/factions.test.ts > updateFactionOnKill > ignores unknown template 0ms
+ ✓ |@dungeon/core| src/systems/factions.test.ts > tickFactionPowerForNemeses > increases power of faction with an active nemesis 0ms
+ ✓ |@dungeon/core| src/systems/factions.test.ts > tickFactionPowerForNemeses > does nothing when no active nemeses 0ms
+ ✓ |@dungeon/core| src/engine/command-handler.type-safety.test.ts > command-handler type safety > handles MOVE command without type casting 2ms
+ ✓ |@dungeon/core| src/engine/command-handler.type-safety.test.ts > command-handler type safety > handles ATTACK command with typed access 1ms
+ ✓ |@dungeon/core| src/engine/command-handler.type-safety.test.ts > command-handler type safety > handles EQUIP command with typed access 0ms
+ ✓ |@dungeon/core| src/engine/command-handler.type-safety.test.ts > command-handler type safety > uses type guards to safely dispatch WAIT command 0ms
+ ✓ |@dungeon/core| src/engine/command-handler.type-safety.test.ts > command-handler type safety > exhaustively handles all command types 0ms
+ ✓ |@dungeon/core| src/systems/movement.test.ts > validateMove > allows a valid move on a floor tile 1ms
+ ✓ |@dungeon/core| src/systems/movement.test.ts > validateMove > blocks movement by a wall 0ms
+ ✓ |@dungeon/core| src/systems/movement.test.ts > validateMove > blocks movement onto an enemy 0ms
+ ✓ |@dungeon/core| src/systems/movement.test.ts > validateMove > blocks movement out of bounds 0ms
+ ✓ |@dungeon/core| src/systems/movement.test.ts > validateMove > blocks movement when not in a dungeon run 0ms
+ ✓ |@dungeon/core| src/config.test.ts > Config Governance: Balance Constants > all balance constants are properly exported from tables.ts 2ms
+ ✓ |@dungeon/core| src/utils/dice.test.ts > rollDamage > returns a value within the expected variance range 1ms
+ ✓ |@dungeon/core| src/utils/dice.test.ts > rollDamage > produces deterministic results with the same seed 0ms
+ ✓ |@dungeon/core| src/utils/dice.test.ts > calculateHitChance > clamps the hit chance to min and max 0ms
+ ✓ |@dungeon/core| src/utils/dice.test.ts > calculateHitChance > returns the calculated value when within bounds 0ms
+ ✓ |@dungeon/core| src/utils/dice.test.ts > applyDefense > mitigates damage using defense/(defense+divisor) formula 0ms
+ ✓ |@dungeon/core| src/utils/dice.test.ts > applyDefense > returns minimum 1 damage 0ms
+ ✓ |@dungeon/core| src/engine/engine-consequences.test.ts > GameEngine — applyRunConsequences integration > consequences applied when run ends via command > applies town deltas on victory 1ms
+ ✓ |@dungeon/core| src/engine/engine-consequences.test.ts > GameEngine — applyRunConsequences integration > consequences applied when run ends via command > world state is updated regardless of server call 0ms
+ ✓ |@dungeon/core| src/engine/engine-consequences.test.ts > GameEngine — applyRunConsequences integration > consequences applied when run ends via command > consequences trigger on player death 0ms
+ ✓ |@dungeon/core| src/engine/engine-consequences.test.ts > GameEngine — applyRunConsequences integration > consequences applied when run ends via command > event chains are evaluated after consequences 0ms
+
+⎯⎯⎯⎯⎯⎯ Failed Tests 20 ⎯⎯⎯⎯⎯⎯⎯
+
+ FAIL  |@dungeon/web| src/config.test.ts > Config Governance: UI Sizing > all UI sizing constants are defined and accessible
+AssertionError: expected 24 to be 16 // Object.is equality
+
+[32m- Expected[39m
+[31m+ Received[39m
+
+[32m- 16[39m
+[31m+ 24[39m
+
+ ❯ src/config.test.ts:34:23
+     32| 
+     33|     // Viewport and tiles
+     34|     expect(CELL_SIZE).toBe(16);
+       |                       ^
+     35|     expect(VP_WIDTH).toBe(30);
+     36|     expect(VP_HEIGHT).toBe(32);
+
+⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[1/20]⎯
+
+ FAIL  |@dungeon/web| src/config.test.ts > Config Governance: UI Sizing > computed viewport pixel dimensions match formula
+AssertionError: expected 720 to be 480 // Object.is equality
+
+[32m- Expected[39m
+[31m+ Received[39m
+
+[32m- 480[39m
+[31m+ 720[39m
+
+ ❯ src/config.test.ts:54:31
+     52| 
+     53|   it('computed viewport pixel dimensions match formula', () => {
+     54|     expect(VIEWPORT_PX_WIDTH).toBe(480);
+       |                               ^
+     55|     expect(VIEWPORT_PX_HEIGHT).toBe(512);
+     56|   });
+
+⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[2/20]⎯
+
+ FAIL  |@dungeon/web| src/components/DungeonPhase.test.tsx > DungeonPhase Component > Desktop Rendering > renders player HUD
+TestingLibraryElementError: Unable to find an accessible element with the role "button" and name `/Inventory/i`
+
+Here are the accessible roles:
+
+  heading:
+
+  Name "Dungeon":
+  [36m<h2[39m
+    [33mstyle[39m=[32m"margin: 0px; color: #88cc44;"[39m
+  [36m/>[39m
+
+  --------------------------------------------------
+  button:
+
+  Name "⬛ ASCII":
+  [36m<button[39m
+    [33mstyle[39m=[32m"font-size: 11px; padding: 2px 8px; background: #333; color: #aaa; border: 1px solid #555; cursor: pointer;"[39m
+  [36m/>[39m
+
+  Name "Wait":
+  [36m<button[39m
+    [33mstyle[39m=[32m"padding: 8px 16px; margin: 3px 4px; background: #333; color: #ccc; border: 1px solid #555; cursor: pointer; font-family: monospace; font-size: 14px; min-height: 44px; border-radius: 4px;"[39m
+  [36m/>[39m
+
+  --------------------------------------------------
+  strong:
+
+  Name "":
+  [36m<strong[39m
+    [33mstyle[39m=[32m"color: #fff; min-width: 80px;"[39m
+  [36m/>[39m
+
+  --------------------------------------------------
+
+Ignored nodes: comments, script, style
+[36m<body>[39m
+  [36m<div>[39m
+    [36m<div[39m
+      [33mstyle[39m=[32m"padding: 8px; font-family: monospace; color: #ccc; background: #111; flex-grow: 1; flex-shrink: 1; flex-basis: 0%; overflow: hidden; display: flex; flex-direction: column; min-height: 0;"[39m
+    [36m>[39m
+      [36m<div[39m
+        [33mstyle[39m=[32m"display: flex; justify-content: space-between; align-items: center; margin-bottom: 10px; flex-shrink: 0;"[39m
+      [36m>[39m
+        [36m<h2[39m
+          [33mstyle[39m=[32m"margin: 0px; color: #88cc44;"[39m
+        [36m>[39m
+          [0mDungeon[0m
+        [36m</h2>[39m
+        [36m<button[39m
+          [33mstyle[39m=[32m"font-size: 11px; padding: 2px 8px; background: #333; color: #aaa; border: 1px solid #555; cursor: pointer;"[39m
+        [36m>[39m
+          [0m⬛ ASCII[0m
+        [36m</button>[39m
+      [36m</div>[39m
+      [36m<div[39m
+        [33mstyle[39m=[32m"margin-bottom: 8px; padding: 6px; border: 1px solid #333; background: #1a1a1a; font-size: 12px;"[39m
+      [36m>[39m
+        [36m<div[39m
+          [33mstyle[39m=[32m"display: flex; align-items: center; gap: 8px;"[39m
+        [36m>[39m
+          [36m<strong[39m
+            [33mstyle[39m=[32m"color: #fff; min-width: 80px;"[39m
+          [36m>[39m
+            [0mHero[0m
+          [36m</strong>[39m
+          [36m<span[39m
+            [33mstyle[39m=[32m"color: #888;"[39m
+          [36m>[39m
+            [0mLv.[0m
+            [0m1[0m
+          [36m</span>[39m
+          [36m<span[39m
+            [33mstyle[39m=[32m"color: #888;"[39m
+          [36m>[39m
+            [0mFloor [0m
+            [0m1[0m
+          [36m</span>[39m
+          [36m<span>[39m
+            [0mHP: [0m
+            [36m<span[39m
+              [33mstyle[39m=[32m"color: #ff4;"[39m
+            [36m>[39m
+              [0m50[0m
+              [0m/[0m
+              [0m100[0m
+            [36m</span>[39m
+          [36m</span>[39m
+          [36m<span[39m
+            [33mstyle[39m=[32m"color: #aaa; font-size: 11px;"[39m
+          [36m>[39m
+            [0m⬤ [0m
+            [0m?[0m
+          [36m</span>[39m
+        [36m</div>[39m
+      [36m</div>[39m
+      [36m<div[39m
+        [33mstyle[39m=[32m"margin-bottom: 8px; flex-shrink: 0;"[39m
+      [36m>[39m
+        [36m<div[39m
+          [33mstyle[39m=[32m"font-size: 11px; color: #ff4; margin-bottom: 4px;"[39m
+        [36m>[39m
+          [0mDanger: [0m
+          [0mModerate[0m
+        [36m</div>[39m
+        [36m<div[39m
+          [33mstyle[39m=[32m"width: 360px; height: 264px; overflow: hidden; flex-shrink: 0; margin-bottom: 8px; image-rendering: pixelated;"[39m
+        [36m>[39m
+          [36m<div[39m
+            [33mstyle[39m=[32m"transform: scale(0.5); transform-origin: top left; width: 720px; height: 528px;"[39m
+          [36m>[39m
+            [36m<div[39m
+              [33mstyle[39m=[32m"border: 1px solid #444; display: inline-block; background: #000;"[39m
+            [36m>[39m
+              [36m<div[39m
+                [33mstyle[39m=[32m"display: flex; height: 24px;"[39m
+              [36m>[39m
+                [36m<span[39m
+                  [33mstyle[39m=[32m"display: inline-block; width: 24px; height: 24px; line-height: 24px; text-align: center; color: #aaa; background-color: #000; font-family: monospace; font-size: 14px; cursor: pointer;"[39m
+                [36m>[39m
+                  [0m.[0m
+                [36m</span>[39m
+                [36m<span[39m
+                  [33mstyle[39m=[32m"display: inline-block; width: 24px; height: 24px; line-height: 24px; text-align: center; color: #aaa; background-color: #000; font-family: monospace; font-size: 14px; cursor: pointer;"[39m
+                [36m>[39m
+                  [0m.[0m
+                [36m</span>[39m
+                [36m<span[39m
+                  [33mstyle[39m=[32m"display: inline-block; width: 24px; height: 24px; line-height: 24px; text-align: center; color: #aaa; background-color: #000; font-family: monospace; font-size: 14px; cursor: pointer;"[39m
+                [36m>[39m
+                  [0m.[0m
+                [36m</span>[39m
+                [36m<span[39m
+                  [33mstyle[39m=[32m"display: inline-block; width: 24px; height: 24px; line-height: 24px; text-align: center; color: #aaa; background-color: #000; font-family: monospace; font-size: 14px; cursor: pointer;"[39m
+                [36m>[39m
+                  [0m.[0m
+                [36m</span>[39m
+                [36m<span[39m
+                  [33mstyle[39m=[32m"display: inline-block; width: 24px; height: 24px; line-height: 24px; text-align: center; color: #aaa; background-color: #000; font-family: monospace; font-size: 14px; cursor: pointer;"[39m
+                [36m>[39m
+                  [0m.[0m
+                [36m</span>[39m
+                [36m<span[39m
+                  [33mstyle[39m=[32m"display: inline-block; width: 24px; height: 24px; line-height: 24px; text-align: center; color: #aaa; background-color: #000; font-family: monospace; font-size: 14px; cursor: pointer;"[39m
+                [36m>[39m
+                  [0m.[0m
+                [36m</span>[39m
+                [36m<span[39m
+                  [33mstyle[39m=[32m"display: inline-block; width: 24px; height: 24px; line-height: 24px; text-align: center; color: #aaa; background-color: #000; font-family: monospace; font-size: 14px; cursor: pointer;"[39m
+                [36m>[39m
+                  [0m.[0m
+                [36m</span>[39m
+                [36m<span[39m
+                  [33mstyle[39m=[32m"display: inline-block; width: 24px; height: 24px; line-height: 24px; text-align: center; color: #aaa; background-color: #000; font-family: monospace; font-size: 14px; cursor: pointer;"[39m
+                [36m>[39m
+                  [0m.[0m
+                [36m</span>[39m
+                [36m<span[39m
+                  [33mstyle[39m=[32m"display: inline-block; width: 24px; height: 24px; line-height: 24px; text-align: center; color: #aaa; background-color: #000; font-family: monospace; font-size: 14px; cursor: pointer;"[39m
+                [36m>[39m
+                  [0m.[0m
+                [36m</span>[39m
+                [36m<span[39m
+                  [33mstyle[39m=[32m"display: inline-block; width: 24px; height: 24px; line-height: 24px; text-align: center; color: #aaa; background-color: #000; font-family: monospace; font-size: 14px; cursor: pointer;"[39m
+                [36m>[39m
+                  [0m.[0m
+                [36m</span>[39m
+                [36m<span[39m
+                  [33mstyle[39m=[32m"display: inline-block; width: 24px; height: 24px; line-height: 24px; text-align: center; color: #aaa; background-color: #000; font-family: monospace; font-size: 14px; cursor: pointer;"[3...
+ ❯ Object.getElementError ../../node_modules/.pnpm/@testing-library+dom@10.4.1/node_modules/@testing-library/dom/dist/config.js:37:19
+ ❯ ../../node_modules/.pnpm/@testing-library+dom@10.4.1/node_modules/@testing-library/dom/dist/query-helpers.js:76:38
+ ❯ ../../node_modules/.pnpm/@testing-library+dom@10.4.1/node_modules/@testing-library/dom/dist/query-helpers.js:52:17
+ ❯ ../../node_modules/.pnpm/@testing-library+dom@10.4.1/node_modules/@testing-library/dom/dist/query-helpers.js:95:19
+ ❯ src/components/DungeonPhase.test.tsx:204:21
+    202|       expect(screen.getByText(/Dungeon/)).toBeInTheDocument();
+    203|       // HUD shows player information and interface buttons
+    204|       expect(screen.getByRole('button', { name: /Inventory/i })).toBeI…
+       |                     ^
+    205|     });
+    206|   });
+
+⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[3/20]⎯
+
+ FAIL  |@dungeon/web| src/utils/viewport.test.ts > viewport constants > exports consistent VP_WIDTH and VP_HEIGHT
+AssertionError: expected 22 to be 32 // Object.is equality
+
+[32m- Expected[39m
+[31m+ Received[39m
+
+[32m- 32[39m
+[31m+ 22[39m
+
+ ❯ src/utils/viewport.test.ts:7:23
+      5|   it('exports consistent VP_WIDTH and VP_HEIGHT', () => {
+      6|     expect(VP_WIDTH).toBe(30);
+      7|     expect(VP_HEIGHT).toBe(32);
+       |                       ^
+      8|   });
+      9| 
+
+⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[4/20]⎯
+
+ FAIL  |@dungeon/web| src/utils/viewport.test.ts > viewport constants > exports consistent CELL_SIZE
+AssertionError: expected 24 to be 16 // Object.is equality
+
+[32m- Expected[39m
+[31m+ Received[39m
+
+[32m- 16[39m
+[31m+ 24[39m
+
+ ❯ src/utils/viewport.test.ts:11:23
+      9| 
+     10|   it('exports consistent CELL_SIZE', () => {
+     11|     expect(CELL_SIZE).toBe(16);
+       |                       ^
+     12|   });
+     13| 
+
+⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[5/20]⎯
+
+ FAIL  |@dungeon/content| src/enemies/content-integrity.test.ts > Enemy Content Integrity > Sprite uniqueness > no two enemies share the same sprite (x,y)
+AssertionError: shard_priest and shadow_lurker share sprite at (0,144): expected 'shadow_lurker' to be undefined
+
+[32m- Expected:[39m 
+undefined
+
+[31m+ Received:[39m 
+"shadow_lurker"
+
+ ❯ src/enemies/content-integrity.test.ts:14:86
+     12|         const key = `${t.sprite.x},${t.sprite.y}`;
+     13|         const existing = seen.get(key);
+     14|         expect(existing, `${t.templateId} and ${existing} share sprite…
+       |                                                                                      ^
+     15|         seen.set(key, t.templateId);
+     16|       }
+
+⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[6/20]⎯
+
+ FAIL  |@dungeon/content| src/enemies/content-integrity.test.ts > Enemy Content Integrity > ASCII character uniqueness > no two enemies share the same ascii character
+AssertionError: crystal_golem and moss_golem both use ascii 'G': expected 'moss_golem' to be undefined
+
+[32m- Expected:[39m 
+undefined
+
+[31m+ Received:[39m 
+"moss_golem"
+
+ ❯ src/enemies/content-integrity.test.ts:28:11
+     26|           existing,
+     27|           `${t.templateId} and ${existing} both use ascii '${t.ascii}'…
+     28|         ).toBeUndefined();
+       |           ^
+     29|         seen.set(t.ascii, t.templateId);
+     30|       }
+
+⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[7/20]⎯
+
+ FAIL  |@dungeon/presenter| src/game-view-builder.test.ts > buildInspectableEntities > includes visible enemies
+AssertionError: expected 0 to be greater than 0
+ ❯ src/game-view-builder.test.ts:1258:45
+    1256|     const state = createTestGameStateInCombat({ enemyAt: { x: 1, y: 0 …
+    1257|     const view = buildGameView(state);
+    1258|     expect(view.inspectableEntities.length).toBeGreaterThan(0);
+       |                                             ^
+    1259|     expect(view.inspectableEntities[0]!.entityType).toBe('enemy');
+    1260|   });
+
+⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[8/20]⎯
+
+ FAIL  |@dungeon/presenter| src/game-view-builder.test.ts > buildInspectableEntities > deduplicates enemies by templateId
+AssertionError: expected [] to have a length of 1 but got +0
+
+[32m- Expected[39m
+[31m+ Received[39m
+
+[32m- 1[39m
+[31m+ 0[39m
+
+ ❯ src/game-view-builder.test.ts:1308:76
+    1306|     const view = buildGameView(state2);
+    1307|     // Both have same templateId, so only one should appear
+    1308|     expect(view.inspectableEntities.filter(e => e.entityType === 'enem…
+       |                                                                            ^
+    1309|   });
+    1310| 
+
+⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[9/20]⎯
+
+ FAIL  |@dungeon/presenter| src/game-view-builder.test.ts > buildInspectableEntities > sorts enemies before objects
+AssertionError: expected 'object' to be 'enemy' // Object.is equality
+
+Expected: [32m"enemy"[39m
+Received: [31m"object"[39m
+
+ ❯ src/game-view-builder.test.ts:1335:37
+    1333|     const view = buildGameView(state2);
+    1334|     const firstEntity = view.inspectableEntities[0];
+    1335|     expect(firstEntity?.entityType).toBe('enemy');
+       |                                     ^
+    1336|   });
+    1337| 
+
+⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[10/20]⎯
+
+ FAIL  |@dungeon/presenter| src/game-view-builder.test.ts > buildInspectableEntities > sets entityType correctly for enemies and objects
+AssertionError: expected false to be true // Object.is equality
+
+[32m- Expected[39m
+[31m+ Received[39m
+
+[32m- true[39m
+[31m+ false[39m
+
+ ❯ src/game-view-builder.test.ts:1417:22
+    1415|     const hasEnemy = view.inspectableEntities.some(e => e.entityType =…
+    1416|     const hasObject = view.inspectableEntities.some(e => e.entityType …
+    1417|     expect(hasEnemy).toBe(true);
+       |                      ^
+    1418|     expect(hasObject).toBe(true);
+    1419|   });
+
+⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[11/20]⎯
+
+ FAIL  |@dungeon/core| src/engine/command-handler.test.ts > handleUseAbility > bludgeon_stagger > deals damage and has 80% stun chance
+AssertionError: expected undefined to be defined
+ ❯ src/engine/command-handler.test.ts:188:28
+    186|         (e) => e.type === 'ABILITY_USED' && (e as any).abilityId === '…
+    187|       );
+    188|       expect(abilityEvent).toBeDefined();
+       |                            ^
+    189|     });
+    190|   });
+
+⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[12/20]⎯
+
+ FAIL  |@dungeon/core| src/engine/command-handler.test.ts > handleUseAbility > axe_cleave > hits primary target at full damage and adjacent at 50%
+AssertionError: expected undefined to be defined
+ ❯ src/engine/command-handler.test.ts:247:28
+    245|         (e) => e.type === 'ABILITY_USED' && (e as any).abilityId === '…
+    246|       );
+    247|       expect(abilityEvent).toBeDefined();
+       |                            ^
+    248| 
+    249|       // Verify both primary and adjacent enemies took damage
+
+⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[13/20]⎯
+
+ FAIL  |@dungeon/core| src/engine/command-handler.test.ts > handleUseAbility > axe_cleave > with no adjacent enemies: only primary hit
+AssertionError: expected undefined to be defined
+ ❯ src/engine/command-handler.test.ts:284:28
+    282|         (e) => e.type === 'ABILITY_USED',
+    283|       );
+    284|       expect(abilityEvent).toBeDefined();
+       |                            ^
+    285|       // No ATTACK_PERFORMED for other enemies (exclude enemy->player …
+    286|       const otherCleaveAttacks = result.events.filter(
+
+⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[14/20]⎯
+
+ FAIL  |@dungeon/core| src/engine/command-handler.test.ts > handleUseAbility > axe_execute > deals 3x damage to enemy below 30% HP
+AssertionError: expected undefined to be defined
+ ❯ src/engine/command-handler.test.ts:319:28
+    317|         (e) => e.type === 'ABILITY_USED',
+    318|       ) as any;
+    319|       expect(abilityEvent).toBeDefined();
+       |                            ^
+    320|       // Should deal high damage (3x attack)
+    321|     });
+
+⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[15/20]⎯
+
+ FAIL  |@dungeon/core| src/engine/command-handler.test.ts > handleUseAbility > axe_execute > deals 1x damage to enemy above 30% HP
+AssertionError: expected undefined to be defined
+ ❯ src/engine/command-handler.test.ts:336:28
+    334|         (e) => e.type === 'ABILITY_USED',
+    335|       ) as any;
+    336|       expect(abilityEvent).toBeDefined();
+       |                            ^
+    337|     });
+    338| 
+
+⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[16/20]⎯
+
+ FAIL  |@dungeon/core| src/engine/command-handler.test.ts > handleUseAbility > axe_execute > deals 1x damage at exactly 30% HP (strict < 0.3)
+AssertionError: expected undefined to be defined
+ ❯ src/engine/command-handler.test.ts:362:28
+    360|         (e) => e.type === 'ABILITY_USED',
+    361|       ) as any;
+    362|       expect(abilityEvent).toBeDefined();
+       |                            ^
+    363|     });
+    364|   });
+
+⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[17/20]⎯
+
+ FAIL  |@dungeon/core| src/engine/command-handler.test.ts > handleUseAbility > ranged_pin > applies guaranteed slow on hit
+AssertionError: expected undefined to be defined
+ ❯ src/engine/command-handler.test.ts:381:28
+    379|         (e) => e.type === 'ABILITY_USED',
+    380|       ) as any;
+    381|       expect(abilityEvent).toBeDefined();
+       |                            ^
+    382| 
+    383|       if (abilityEvent.damage > 0) {
+
+⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[18/20]⎯
+
+ FAIL  |@dungeon/core| src/engine/command-handler.test.ts > handleUseAbility > ranged_volley > hits all visible enemies at 70% damage
+AssertionError: expected undefined to be defined
+ ❯ src/engine/command-handler.test.ts:420:28
+    418|         (e) => e.type === 'ABILITY_USED' && (e as any).abilityId === '…
+    419|       );
+    420|       expect(abilityEvent).toBeDefined();
+       |                            ^
+    421| 
+    422|       // Verify both visible enemies took damage
+
+⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[19/20]⎯
+
+ FAIL  |@dungeon/core| src/engine/command-handler.test.ts > handleUseAbility > ranged_volley > with no visible enemies: ABILITY_USED emitted, no player attacks
+AssertionError: expected undefined to be defined
+ ❯ src/engine/command-handler.test.ts:458:28
+    456|         (e) => e.type === 'ABILITY_USED',
+    457|       );
+    458|       expect(abilityEvent).toBeDefined();
+       |                            ^
+    459| 
+    460|       // No player->enemy attacks from the volley (enemy->player attac…
+
+⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[20/20]⎯
+
+
+ Test Files  6 failed | 75 passed (81)
+      Tests  20 failed | 901 passed (921)
+   Start at  18:38:21
+   Duration  6.15s (transform 4.60s, setup 772ms, collect 14.64s, tests 7.32s, environment 2.51s, prepare 5.04s)
+
+ ELIFECYCLE  Test failed. See above for more details.

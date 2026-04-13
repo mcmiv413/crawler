@@ -32,7 +32,7 @@ function buildInspectableEntities(state: GameState): readonly InspectableEntityV
   const playerX = state.player.position.x;
   const playerY = state.player.position.y;
 
-  const entities: InspectableEntityView[] = [];
+  const mutableEntities: InspectableEntityView[] = [];
 
   // Build visible enemies — deduplicate by templateId (only show one of each type)
   for (const [key, enemy] of state.run.enemies) {
@@ -43,7 +43,7 @@ function buildInspectableEntities(state: GameState): readonly InspectableEntityV
     const template = ENEMY_TEMPLATES.get(enemy.templateId);
     if (!template) continue;
 
-    entities.push({
+    mutableEntities.push({
       id: enemy.id,
       name: enemy.name,
       description: template.description,
@@ -73,7 +73,7 @@ function buildInspectableEntities(state: GameState): readonly InspectableEntityV
     const template = OBJECT_TEMPLATES.get(obj.templateId);
     if (!template) continue;
 
-    entities.push({
+    mutableEntities.push({
       id: obj.id,
       name: template.name,
       description: template.description,
@@ -106,9 +106,8 @@ function buildInspectableEntities(state: GameState): readonly InspectableEntityV
     return 0;
   };
 
-  const mutableSorted = [...entities];
-  mutableSorted.sort(sortComparator);
-  return mutableSorted;
+  mutableEntities.sort(sortComparator);
+  return mutableEntities;
 }
 
 /** Build a GameView from authoritative GameState */

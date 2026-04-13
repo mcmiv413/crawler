@@ -1,8 +1,9 @@
 import React from 'react';
 import { TAB_BAR_HEIGHT } from '../config/ui-config.js';
 import { navBtnStyle } from '../styles.js';
+import { useBreakpoint } from '../hooks/useBreakpoint.js';
 
-type Screen = 'main' | 'inventory' | 'character' | 'inspect' | 'log';
+type Screen = 'main' | 'inventory' | 'character' | 'log';
 
 interface MobileNavProps {
   activeScreen: Screen;
@@ -13,14 +14,22 @@ interface MobileNavProps {
 
 export function MobileNav({ activeScreen, onScreenChange, phase, onNewGame }: MobileNavProps) {
   const tabBarHeight = TAB_BAR_HEIGHT;
+  const { isMobile } = useBreakpoint();
+  
+  // On very narrow screens (< 450px), hide labels, show only icons
+  // On wider screens, show both icons and labels
+  const showLabels = typeof window !== 'undefined' && window.innerWidth >= 450;
 
   const tabs: Array<{ id: Screen; label: string; icon: string }> = [
     { id: 'main', label: phase === 'town' ? 'Town' : 'Map', icon: phase === 'town' ? '🏘️' : '🗺️' },
     { id: 'inventory', label: 'Inventory', icon: '🎒' },
     { id: 'character', label: 'Character', icon: '🧙' },
-    { id: 'inspect', label: 'Inspect', icon: '🔍' },
     { id: 'log', label: 'Log', icon: '📜' },
   ];
+
+  // Icon and label sizes scale based on available space
+  const iconSize = isMobile ? (showLabels ? 14 : 18) : 18;
+  const labelSize = isMobile ? 9 : 11;
 
   return (
     <div
@@ -48,30 +57,46 @@ export function MobileNav({ activeScreen, onScreenChange, phase, onNewGame }: Mo
             flexDirection: 'column',
             alignItems: 'center',
             justifyContent: 'center',
-            gap: '2px',
+            gap: showLabels ? '2px' : '0px',
+            flex: 1,
+            minWidth: 0,
+            padding: isMobile && !showLabels ? '4px 2px' : '4px 6px',
           }}
         >
-          <div style={{ fontSize: 18 }}>{tab.icon}</div>
-          <div style={{ fontSize: 11, lineHeight: 1 }}>{tab.label}</div>
+          <div style={{ fontSize: iconSize, lineHeight: 1 }}>{tab.icon}</div>
+          {showLabels && (
+            <div style={{ fontSize: labelSize, lineHeight: 1, whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis', width: '100%' }}>
+              {tab.label}
+            </div>
+          )}
         </button>
       ))}
-      {onNewGame && (
-        <button
-          onClick={() => { if (window.confirm('Start a new game? Current progress will be lost.')) onNewGame(); }}
-          style={{
-            ...navBtnStyle,
-            background: '#222',
-            display: 'flex',
-            flexDirection: 'column',
-            alignItems: 'center',
-            justifyContent: 'center',
-            gap: '2px',
-          }}
-        >
-          <div style={{ fontSize: 18 }}>➕</div>
-          <div style={{ fontSize: 11, lineHeight: 1 }}>New Game</div>
-        </button>
-      )}
+      <button
+        onClick={() => {
+          if (onNewGame && window.confirm('Start a new game? Current progress will be lost.')) {
+            onNewGame();
+          }
+        }}
+        style={{
+          ...navBtnStyle,
+          background: '#222',
+          display: 'flex',
+          flexDirection: 'column',
+          alignItems: 'center',
+          justifyContent: 'center',
+          gap: showLabels ? '2px' : '0px',
+          flex: 1,
+          minWidth: 0,
+          padding: isMobile && !showLabels ? '4px 2px' : '4px 6px',
+        }}
+      >
+        <div style={{ fontSize: iconSize, lineHeight: 1 }}>➕</div>
+        {showLabels && (
+          <div style={{ fontSize: labelSize, lineHeight: 1, whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis', width: '100%' }}>
+            New Game
+          </div>
+        )}
+      </button>
     </div>
   );
 }

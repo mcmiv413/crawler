@@ -254,6 +254,6 @@ export interface InventoryItemView {
   readonly quantity: number;          // 1 for non-stackable, N for stacks
   readonly stackEntityIds: readonly string[];  // all EntityIds in this stack
   readonly templateId: string;        // itemId from template, for grouping
-  readonly weaponStats?: { damage: number; damageType: string; accuracy: number; speed: number; weaponRange: number };
+  readonly weaponStats?: { damage: number; damageType: string; accuracy: number; speed: number; weaponRange: number; minRange?: number };
   readonly armorStats?: { defense: number; evasionPenalty: number; slot: string; enchantmentSlots: number; enchantments: readonly (string | null)[] };
 }

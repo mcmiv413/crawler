@@ -1,0 +1,167 @@
+/**
+ * Styles for ActionOverlay component.
+ * Slides in from bottom for better mobile UX.
+ */
+
+.backdrop {
+  position: fixed;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background-color: rgba(0, 0, 0, 0.5);
+  display: flex;
+  justify-content: center;
+  align-items: flex-end;
+  z-index: 1000;
+  animation: fadeIn 0.2s ease;
+}
+
+@keyframes fadeIn {
+  from {
+    background-color: rgba(0, 0, 0, 0);
+  }
+  to {
+    background-color: rgba(0, 0, 0, 0.5);
+  }
+}
+
+.container {
+  background-color: #1a2a4a;
+  border: 1px solid #4a5a8a;
+  border-radius: 8px 8px 0 0;
+  display: flex;
+  flex-direction: column;
+  width: 100%;
+  max-width: 100%;
+  max-height: 80vh;
+  box-shadow: 0 -4px 16px rgba(0, 0, 0, 0.5);
+  animation: slideInUp 0.3s ease-out;
+}
+
+@keyframes slideInUp {
+  from {
+    transform: translateY(100%);
+    opacity: 0;
+  }
+  to {
+    transform: translateY(0);
+    opacity: 1;
+  }
+}
+
+.header {
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-start;
+  padding: 1rem;
+  border-bottom: 1px solid #3a4a6a;
+  flex-shrink: 0;
+}
+
+.titleRow {
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+}
+
+.icon {
+  font-size: 1.5rem;
+}
+
+.title {
+  margin: 0;
+  font-size: 1.125rem;
+  font-weight: 600;
+  color: #e0e8f0;
+  text-transform: capitalize;
+}
+
+.closeButton {
+  background: none;
+  border: 1px solid #4a5a8a;
+  border-radius: 4px;
+  color: #e0e8f0;
+  font-size: 1.25rem;
+  width: 2rem;
+  height: 2rem;
+  padding: 0;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  transition: all 0.2s ease;
+}
+
+.closeButton:hover {
+  background-color: #2a3a5a;
+  border-color: #6a7aaa;
+}
+
+.content {
+  overflow-y: auto;
+  flex: 1;
+  padding: 1rem;
+}
+
+.footer {
+  display: flex;
+  padding: 1rem;
+  border-top: 1px solid #3a4a6a;
+  flex-shrink: 0;
+}
+
+.cancelButton {
+  flex: 1;
+  padding: 0.75rem;
+  background-color: #2a3a5a;
+  border: 1px solid #4a5a8a;
+  border-radius: 4px;
+  color: #e0e8f0;
+  font-weight: 500;
+  cursor: pointer;
+  transition: all 0.2s ease;
+}
+
+.cancelButton:hover {
+  background-color: #3a4a6a;
+  border-color: #6a7aaa;
+}
+
+.cancelButton:active {
+  background-color: #1a2a4a;
+  transform: scale(0.98);
+}
+
+/* Mobile adjustments */
+@media (max-width: 640px) {
+  .container {
+    width: 100%;
+    max-width: 100%;
+    border-radius: 8px 8px 0 0;
+    height: auto;
+    max-height: 70vh;
+  }
+
+  .title {
+    font-size: 1rem;
+  }
+
+  .closeButton {
+    width: 1.75rem;
+    height: 1.75rem;
+    font-size: 1rem;
+  }
+
+  .header {
+    padding: 0.75rem;
+  }
+
+  .content {
+    padding: 0.75rem;
+  }
+
+  .footer {
+    padding: 0.75rem;
+  }
+}

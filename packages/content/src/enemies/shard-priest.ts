@@ -33,7 +33,7 @@ export const shardPriest = {
   ascii: 'C',
   color: '#dd44ff',
   movementBehaviorId: 'rearline_anchor',
-  sprite: SPRITE_MAP['enemy:shadow_lurker'], // placeholder
+  sprite: SPRITE_MAP['enemy:goblin_archer'],
   biomes: [{ biomeId: 'crystal_cave' }],
   factions: [{ factionId: 'shadow_cult', weight: 1.0 }],
   ambientBehaviorProfile: 'wanderer',

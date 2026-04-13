@@ -30,7 +30,7 @@ export const boneShaman = {
   lootTableId: 'loot_shadow',
   experienceValue: 32,
   description: 'An undead skeletal mage wielding shadow magic.',
-  ascii: 'S',
+  ascii: 'H',
   color: '#5533aa',
   movementBehaviorId: 'rearline_anchor',
   sprite: SPRITE_MAP['enemy:skeleton_warrior'], // placeholder

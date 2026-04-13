@@ -10,8 +10,8 @@
     "clean": "rm -rf dist *.tsbuildinfo"
   },
   "dependencies": {
-    "@dungeon/contracts": "workspace:*",
     "@dungeon/content": "workspace:*",
+    "@dungeon/contracts": "workspace:*",
     "@dungeon/presenter": "workspace:*",
     "react": "^19.0.0",
     "react-dom": "^19.0.0",
@@ -20,10 +20,11 @@
   "devDependencies": {
     "@testing-library/jest-dom": "^6.1.5",
     "@testing-library/react": "^16.0.0",
+    "@testing-library/user-event": "^14.6.1",
     "@types/react": "^19.0.0",
     "@types/react-dom": "^19.0.0",
     "@vitejs/plugin-react": "^4.3.0",
-    "vite": "^6.2.0",
-    "typescript": "^5.7.0"
+    "typescript": "^5.7.0",
+    "vite": "^6.2.0"
   }
 }

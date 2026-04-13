@@ -22,6 +22,32 @@ export const navBtnStyle: React.CSSProperties = {
   borderRadius: 0,
 };
 
+/** Compact button style for control panels (filter/sort buttons) - reduces padding on mobile */
+export const compactBtnStyle: React.CSSProperties = {
+  padding: '2px 6px',
+  margin: '2px 2px',
+  background: '#333',
+  color: '#ccc',
+  border: '1px solid #555',
+  cursor: 'pointer',
+  fontFamily: 'monospace',
+  fontSize: 11,
+  borderRadius: '4px',
+};
+
+/** Ultra-compact mobile button style - minimal padding for tight spaces */
+export const compactBtnStyleMobile: React.CSSProperties = {
+  padding: '2px 4px',
+  margin: '2px 0px',
+  background: '#333',
+  color: '#ccc',
+  border: '1px solid #555',
+  cursor: 'pointer',
+  fontFamily: 'monospace',
+  fontSize: 10,
+  borderRadius: '2px',
+};
+
 export const rarityColor: Record<string, string> = {
   common: '#aaa', uncommon: '#4af', rare: '#a4f', epic: '#fa4', legendary: '#ff4',
 };

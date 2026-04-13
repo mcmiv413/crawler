@@ -30,10 +30,10 @@ export const crystalGolem = {
   lootTableId: 'loot_golem',
   experienceValue: 35,
   description: 'A massive construct of glowing crystal shards.',
-  ascii: 'G',
+  ascii: 'R',
   color: '#aaddff',
   movementBehaviorId: 'chokepoint_holder',
-  sprite: SPRITE_MAP['enemy:moss_golem'], // placeholder
+  sprite: SPRITE_MAP['enemy:dungeon_ogre'],
   biomes: [{ biomeId: 'crystal_cave' }],
   factions: [{ factionId: 'beast_swarm', weight: 1.0 }],
   ambientBehaviorProfile: 'wanderer',
