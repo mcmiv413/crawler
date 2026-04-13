@@ -12,6 +12,8 @@ import { DebugPanel } from './DebugPanel.js';
 import { UnifiedActionPanel } from './UnifiedActionPanel.js';
 import { InspectModal } from './InspectModal.js';
 import { useBreakpoint } from '../hooks/useBreakpoint.js';
+import { CombatIndicators } from './CombatIndicators.js';
+import { useCombatIndicators } from '../hooks/useCombatIndicators.js';
 
 interface DungeonPhaseProps {
   view: GameView;
@@ -100,13 +102,17 @@ function MapDisplay({
   map,
   useSprites,
   containerRef,
+  combatLog,
 }: {
   map: any;
   useSprites: boolean;
   containerRef?: React.RefObject<HTMLDivElement | null>;
+  combatLog?: readonly { text: string; type: string }[];
 }) {
   const [vpTilesWidth, setVpTilesWidth] = useState(VP_WIDTH);
   const [vpTilesHeight, setVpTilesHeight] = useState(VP_HEIGHT);
+  const [vpLeft, setVpLeft] = useState(0);
+  const [vpTop, setVpTop] = useState(0);
   const displayContainerRef = React.useRef<HTMLDivElement>(null);
 
   useEffect(() => {
@@ -139,19 +145,44 @@ function MapDisplay({
     };
   }, []);
 
+  // Calculate viewport position for indicator positioning
+  useEffect(() => {
+    if (!map) return;
+    const minX = Math.min(...map.cells.map((c: any) => c.x));
+    const maxX = Math.max(...map.cells.map((c: any) => c.x));
+    const minY = Math.min(...map.cells.map((c: any) => c.y));
+    
+    const newVpLeft = Math.max(minX, map.playerPosition.x - Math.floor(vpTilesWidth / 2));
+    const newVpTop = Math.max(minY, map.playerPosition.y - Math.floor(vpTilesHeight / 2));
+    
+    setVpLeft(newVpLeft);
+    setVpTop(newVpTop);
+  }, [map, vpTilesWidth, vpTilesHeight]);
+
+  // Hook to track combat indicators
+  useCombatIndicators(map?.entities || [], combatLog || [], map?.playerPosition || { x: 0, y: 0 });
+
   if (!map) return null;
 
   const canvasPxWidth = vpTilesWidth * 24;
   const canvasPxHeight = vpTilesHeight * 24;
+  const CELL_SIZE = 24;
 
   return (
     <>
       <div style={{ fontSize: 11, color: dangerColor(map.dangerLevel), marginBottom: 4 }}>
         Danger: {map.dangerLevel.charAt(0).toUpperCase() + map.dangerLevel.slice(1)}
       </div>
-      <div ref={displayContainerRef} style={{ flex: 1, minHeight: 0, overflow: 'hidden', marginBottom: 8, imageRendering: 'pixelated' as const, display: 'flex', alignItems: 'center', justifyContent: 'center', background: '#0a0a0a' }}>
-        <div style={{ width: canvasPxWidth, height: canvasPxHeight }}>
+      <div ref={displayContainerRef} style={{ flex: 1, minHeight: 0, overflow: 'hidden', marginBottom: 8, imageRendering: 'pixelated' as const, display: 'flex', alignItems: 'center', justifyContent: 'center', background: '#0a0a0a', position: 'relative' }}>
+        <div style={{ width: canvasPxWidth, height: canvasPxHeight, position: 'relative' }}>
           {useSprites ? <DungeonCanvas map={map} vpTilesWidth={vpTilesWidth} vpTilesHeight={vpTilesHeight} /> : <DungeonView map={map} vpTilesWidth={vpTilesWidth} vpTilesHeight={vpTilesHeight} />}
+          <CombatIndicators 
+            entities={map.entities || []} 
+            vpLeft={vpLeft} 
+            vpTop={vpTop} 
+            cellSize={CELL_SIZE}
+            fadeOutDuration={500}
+          />
         </div>
       </div>
     </>
@@ -196,7 +227,7 @@ export function DungeonPhase({
 
         {/* Dungeon map: dynamically sized above combat log */}
         <div ref={mapContainerRef} style={{ flex: 1, minHeight: 0, display: 'flex', flexDirection: 'column', marginBottom: 6 }}>
-          <MapDisplay map={view.map} useSprites={useSprites} containerRef={mapContainerRef} />
+          <MapDisplay map={view.map} useSprites={useSprites} containerRef={mapContainerRef} combatLog={combatLog} />
         </div>
 
         {/* Combat log: fixed 4 lines, always visible above action panel */}
@@ -259,7 +290,7 @@ export function DungeonPhase({
 
       {/* Dungeon map: dynamically sized above combat log */}
       <div ref={mapContainerRef} style={{ flex: 1, minHeight: 0, display: 'flex', flexDirection: 'column', marginBottom: 8 }}>
-        <MapDisplay map={view.map} useSprites={useSprites} containerRef={mapContainerRef} />
+        <MapDisplay map={view.map} useSprites={useSprites} containerRef={mapContainerRef} combatLog={combatLog} />
       </div>
 
       {/* Combat log: fixed 4 lines, always visible above action panel */}
