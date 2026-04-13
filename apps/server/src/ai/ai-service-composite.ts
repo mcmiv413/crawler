@@ -1,6 +1,6 @@
-import type { AiService, NpcDialogueContext, RumorContext, RunSummaryContext, NemesisNameContext, NemesisLootContext } from '@dungeon/core/ai/ai-service';
+import type { AiService, NpcDialogueContext, RumorContext, RunSummaryContext, NemesisNameContext, NemesisLootContext } from '@dungeon/core/ai/ai-service.js';
 import { queryLmStudio } from './lm-studio-client.js';
-import { buildNpcDialoguePrompt, buildRumorPrompt, buildRunSummaryPrompt, buildNemesisNamePrompt, buildNemesisLootPrompt } from '@dungeon/core/ai/prompt-builders';
+import { buildNpcDialoguePrompt, buildRumorPrompt, buildRunSummaryPrompt, buildNemesisNamePrompt, buildNemesisLootPrompt } from '@dungeon/core/ai/prompt-builders.js';
 import { FallbackAiService } from './fallback-ai.js';
 
 export class CompositeAiService implements AiService {

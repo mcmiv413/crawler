@@ -20,7 +20,17 @@
     "noUnusedParameters": true,
     "exactOptionalPropertyTypes": false,
     "outDir": "dist",
-    "rootDir": "src"
+    "rootDir": "src",
+    "paths": {
+      "@dungeon/contracts": ["./packages/game-contracts/src/index.ts"],
+      "@dungeon/contracts/*": ["./packages/game-contracts/src/*"],
+      "@dungeon/core": ["./packages/game-core/src/index.ts"],
+      "@dungeon/core/*": ["./packages/game-core/src/*"],
+      "@dungeon/content": ["./packages/content/src/index.ts"],
+      "@dungeon/content/*": ["./packages/content/src/*"],
+      "@dungeon/presenter": ["./packages/presenter/src/index.ts"],
+      "@dungeon/presenter/*": ["./packages/presenter/src/*"]
+    }
   },
   "exclude": ["node_modules", "dist"]
 }
