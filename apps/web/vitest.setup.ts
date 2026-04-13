@@ -1,5 +1,2 @@
-/**
- * Vitest setup file for React Testing Library
- * Imports jest-dom matchers so they're available in all tests
- */
+/// <reference types="vitest/globals" />
 import '@testing-library/jest-dom';

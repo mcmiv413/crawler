@@ -6,12 +6,18 @@ import { useGameStore } from '../store/game-store.js';
 
 interface Props {
   map: MapView;
+  vpTilesWidth?: number;
+  vpTilesHeight?: number;
 }
 
 const buildPositionMap = <T extends { x: number; y: number }>(items: readonly T[]) =>
   new Map(items.map(i => [`${i.x},${i.y}`, i] as [string, T]));
 
-export function DungeonView({ map }: Props) {
+export function DungeonView({ map, vpTilesWidth, vpTilesHeight }: Props) {
+  // Use provided dimensions or fall back to constants
+  const vp_width = vpTilesWidth || VP_WIDTH;
+  const vp_height = vpTilesHeight || VP_HEIGHT;
+  
   const entityMap = buildPositionMap(map.entities);
 
   // Only render visible/remembered cells
@@ -21,8 +27,8 @@ export function DungeonView({ map }: Props) {
   const maxY = Math.max(...map.cells.map((c: MapCellView) => c.y));
 
   // Viewport centered on player
-  const vpLeft = Math.max(minX, map.playerPosition.x - Math.floor(VP_WIDTH / 2));
-  const vpTop = Math.max(minY, map.playerPosition.y - Math.floor(VP_HEIGHT / 2));
+  const vpLeft = Math.max(minX, map.playerPosition.x - Math.floor(vp_width / 2));
+  const vpTop = Math.max(minY, map.playerPosition.y - Math.floor(vp_height / 2));
 
   const cellLookup = buildPositionMap(map.cells);
 
@@ -41,9 +47,9 @@ export function DungeonView({ map }: Props) {
   );
 
   const rows: React.ReactNode[] = [];
-  for (let y = vpTop; y < vpTop + VP_HEIGHT; y++) {
+  for (let y = vpTop; y < vpTop + vp_height; y++) {
     const cells: React.ReactNode[] = [];
-    for (let x = vpLeft; x < vpLeft + VP_WIDTH; x++) {
+    for (let x = vpLeft; x < vpLeft + vp_width; x++) {
       const key = `${x},${y}`;
       const cell = cellLookup.get(key);
       const entity = entityMap.get(key);

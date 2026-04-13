@@ -9,12 +9,19 @@ import { VP_WIDTH, VP_HEIGHT, CELL_SIZE } from '../utils/viewport.js';
 
 interface Props {
   map: MapView;
+  vpTilesWidth?: number;
+  vpTilesHeight?: number;
 }
 
-export function DungeonCanvas({ map }: Props) {
+export function DungeonCanvas({ map, vpTilesWidth, vpTilesHeight }: Props) {
   const canvasRef = useRef<HTMLCanvasElement>(null);
   const [spritesReady, setSpritesReady] = useState(spriteRegistry.isReady());
   const vpRef = useRef({ left: 0, top: 0 });
+  
+  // Use provided dimensions or fall back to constants
+  const vp_width = vpTilesWidth || VP_WIDTH;
+  const vp_height = vpTilesHeight || VP_HEIGHT;
+  const cellSize = 24; // Fixed tile size
 
   useEffect(() => {
     spriteRegistry.onReady(() => setSpritesReady(true));
@@ -28,8 +35,8 @@ export function DungeonCanvas({ map }: Props) {
     if (!canvas) return;
 
     const dpr = window.devicePixelRatio;
-    const cssWidth = VP_WIDTH * CELL_SIZE;   // 640
-    const cssHeight = VP_HEIGHT * CELL_SIZE; // 400
+    const cssWidth = vp_width * cellSize;
+    const cssHeight = vp_height * cellSize;
 
     canvas.width = cssWidth * dpr;
     canvas.height = cssHeight * dpr;
@@ -44,25 +51,25 @@ export function DungeonCanvas({ map }: Props) {
     // Viewport centered on player
     const minX = Math.min(...map.cells.map(c => c.x));
     const minY = Math.min(...map.cells.map(c => c.y));
-    const vpLeft = Math.max(minX, map.playerPosition.x - Math.floor(VP_WIDTH / 2));
-    const vpTop = Math.max(minY, map.playerPosition.y - Math.floor(VP_HEIGHT / 2));
+    const vpLeft = Math.max(minX, map.playerPosition.x - Math.floor(vp_width / 2));
+    const vpTop = Math.max(minY, map.playerPosition.y - Math.floor(vp_height / 2));
 
     vpRef.current = { left: vpLeft, top: vpTop };
 
-    renderMap(ctx, map, vpLeft, vpTop, VP_WIDTH, VP_HEIGHT);
-  }, [map, spritesReady]);
+    renderMap(ctx, map, vpLeft, vpTop, vp_width, vp_height);
+  }, [map, spritesReady, vp_width, vp_height]);
 
   const handleClick = useCallback((e: React.MouseEvent<HTMLCanvasElement>) => {
     const canvas = canvasRef.current;
     if (!canvas) return;
 
     const rect = canvas.getBoundingClientRect();
-    const scaleX = (VP_WIDTH * CELL_SIZE) / rect.width;
-    const scaleY = (VP_HEIGHT * CELL_SIZE) / rect.height;
+    const scaleX = (vp_width * cellSize) / rect.width;
+    const scaleY = (vp_height * cellSize) / rect.height;
     const offsetX = (e.clientX - rect.left) * scaleX;
     const offsetY = (e.clientY - rect.top) * scaleY;
 
-    const grid = screenToGrid(offsetX, offsetY, vpRef.current.left, vpRef.current.top, CELL_SIZE);
+    const grid = screenToGrid(offsetX, offsetY, vpRef.current.left, vpRef.current.top, cellSize);
 
     // Validate target cell is visible/remembered and walkable
     const cell = map.cells.find(c => c.x === grid.x && c.y === grid.y);
@@ -84,7 +91,7 @@ export function DungeonCanvas({ map }: Props) {
 
     const { startAutoWalk } = useGameStore.getState();
     startAutoWalk(path);
-  }, [map]);
+  }, [map, vp_width, vp_height]);
 
   return (
     <canvas

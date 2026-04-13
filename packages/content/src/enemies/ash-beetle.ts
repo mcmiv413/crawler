@@ -33,7 +33,7 @@ export const ashBeetle = {
   ascii: 'a',
   color: '#dd6644',
   movementBehaviorId: 'ambush_idle',
-  sprite: SPRITE_MAP['enemy:pit_spider'], // placeholder
+  sprite: SPRITE_MAP['enemy:mire_toad'],
   biomes: [{ biomeId: 'volcanic' }],
   factions: [{ factionId: 'beast_swarm', weight: 1.0 }],
   ambientBehaviorProfile: 'wall_lurker',

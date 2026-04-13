@@ -1,4 +1,4 @@
-import type { GameState, EntityId, DeathStash, Equipment, DeathStashItem } from '@dungeon/contracts';
+import type { GameState, EntityId, DeathStash, Equipment, DeathStashItem, StoredFloor } from '@dungeon/contracts';
 import type { DomainEvent } from '@dungeon/contracts';
 import type { SeededRNG } from '../utils/rng.js';
 import { shouldPromoteToNemesis, promoteToNemesis } from './nemesis.js';
@@ -59,7 +59,11 @@ export function handlePlayerDeath(
       playerPosition: state.player.position,
     };
 
-    const updatedCache = new Map(state.persistedFloorCache ?? []);
+    // Safely copy the cache, handling both Map instances and undefined
+    const baseCache = state.persistedFloorCache ?? new Map<number, StoredFloor>();
+    const updatedCache = baseCache instanceof Map 
+      ? new Map(baseCache)
+      : new Map<number, StoredFloor>();
     updatedCache.set(currentFloorDepth, currentFloorSnapshot);
 
     const newState: GameState = {
@@ -165,7 +169,11 @@ export function handlePlayerDeath(
     playerPosition: state.player.position,
   };
 
-  const updatedCache = new Map(state.persistedFloorCache ?? []);
+  // Safely copy the cache, handling both Map instances and undefined
+  const baseCache = state.persistedFloorCache ?? new Map<number, StoredFloor>();
+  const updatedCache = baseCache instanceof Map 
+    ? new Map(baseCache)
+    : new Map<number, StoredFloor>();
   updatedCache.set(currentFloorDepth, currentFloorSnapshot);
 
   // --- Gold loss: 25% of current gold ---

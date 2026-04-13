@@ -33,7 +33,7 @@ export const emberBat = {
   ascii: 'b',
   color: '#ff6644',
   movementBehaviorId: 'rearline_anchor',
-  sprite: SPRITE_MAP['enemy:fire_imp'], // placeholder
+  sprite: SPRITE_MAP['enemy:briar_needler'],
   biomes: [{ biomeId: 'volcanic' }],
   factions: [{ factionId: 'shadow_cult', weight: 1.0 }],
   ambientBehaviorProfile: 'wanderer',

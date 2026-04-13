@@ -5,7 +5,7 @@ export const dungeonOgre = {
   templateId: 'dungeon_ogre',
   name: 'Dungeon Ogre',
   archetype: 'aggressive_melee',
-  tier: 3,
+  tier: 4,
   stats: {
     maxHealth: 120,
     health: 120,

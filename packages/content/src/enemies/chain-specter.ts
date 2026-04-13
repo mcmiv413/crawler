@@ -30,7 +30,7 @@ export const chainSpecter = {
   lootTableId: 'loot_shadow',
   experienceValue: 40,
   description: 'A phantasmal creature bound in spectral chains.',
-  ascii: 'C',
+  ascii: 'X',
   color: '#664488',
   movementBehaviorId: 'ambush_idle',
   sprite: SPRITE_MAP['enemy:shadow_lurker'], // placeholder

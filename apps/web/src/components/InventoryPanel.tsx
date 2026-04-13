@@ -1,7 +1,7 @@
 import React from 'react';
 import type { InventoryItemView, InventoryView } from '@dungeon/presenter';
 import { useGameStore } from '../store/game-store.js';
-import { btnStyle, rarityColor } from '../styles.js';
+import { btnStyle, rarityColor, compactBtnStyle } from '../styles.js';
 import { useInventoryFilter } from '../hooks/useInventoryFilter.js';
 
 function itemStatText(item: InventoryItemView): string {
@@ -44,38 +44,34 @@ export function InventoryPanel({ inventory, phase, gold }: InventoryPanelProps) 
       <h4 style={{ margin: 0, color: '#888' }}>Inventory</h4>
       {gold !== undefined && <div style={{ marginBottom: 6, color: '#cc8', fontSize: 11 }}>Gold: {gold}g</div>}
       {/* C4: Filter and sort controls */}
-      <div style={{ fontSize: 10, marginBottom: 6, display: 'flex', gap: 8, flexWrap: 'wrap' }}>
-        <div>
+      <div style={{ fontSize: 10, marginBottom: 6, display: 'flex', gap: 4, flexWrap: 'wrap' }}>
+        <div style={{ display: 'flex', gap: 2, flexWrap: 'wrap', alignItems: 'center' }}>
           Filter: {['all', 'weapons', 'armor', 'consumables'].map(f => (
             <button
               key={f}
               onClick={() => setFilter(f as any)}
               style={{
-                ...btnStyle,
-                fontSize: 9,
-                padding: '1px 4px',
-                marginLeft: 2,
+                ...compactBtnStyle,
                 background: filter === f ? '#2a4a2a' : '#2a2a2a',
                 color: filter === f ? '#4f4' : '#666',
               }}
+              title={f.charAt(0).toUpperCase() + f.slice(1)}
             >
               {f.charAt(0).toUpperCase() + f.slice(1)}
             </button>
           ))}
         </div>
-        <div>
+        <div style={{ display: 'flex', gap: 2, flexWrap: 'wrap', alignItems: 'center' }}>
           Sort: {['name', 'rarity'].map(s => (
             <button
               key={s}
               onClick={() => setSort(s as any)}
               style={{
-                ...btnStyle,
-                fontSize: 9,
-                padding: '1px 4px',
-                marginLeft: 2,
+                ...compactBtnStyle,
                 background: sort === s ? '#2a4a2a' : '#2a2a2a',
                 color: sort === s ? '#4f4' : '#666',
               }}
+              title={s.charAt(0).toUpperCase() + s.slice(1)}
             >
               {s.charAt(0).toUpperCase() + s.slice(1)}
             </button>
@@ -85,14 +81,13 @@ export function InventoryPanel({ inventory, phase, gold }: InventoryPanelProps) 
           <button
             onClick={() => sendCommand({ type: 'SWAP_WEAPONS' })}
             style={{
-              ...btnStyle,
-              fontSize: 9,
-              padding: '1px 4px',
+              ...compactBtnStyle,
               color: '#fc3',
             }}
             disabled={loading}
+            title="Swap to secondary weapon"
           >
-            ⚔ Swap Weapons
+            ⚔ Swap
           </button>
         )}
       </div>

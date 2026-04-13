@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import type { GameView, AvailableAction, QuestView } from '@dungeon/presenter';
-import { VIEWPORT_PX_WIDTH, VIEWPORT_PX_HEIGHT } from '../utils/viewport.js';
-import { ACTIONS_COLUMN_MIN_WIDTH, CONSUMABLES_BAR_MAX_HEIGHT, QUEST_TRACKER_MAX_HEIGHT } from '../config/ui-config.js';
+import { VIEWPORT_PX_WIDTH, VIEWPORT_PX_HEIGHT, VP_WIDTH, VP_HEIGHT } from '../utils/viewport.js';
+import { ACTIONS_COLUMN_MIN_WIDTH, CONSUMABLES_BAR_MAX_HEIGHT, QUEST_TRACKER_MAX_HEIGHT, TAB_BAR_HEIGHT } from '../config/ui-config.js';
 import { btnStyle } from '../styles.js';
 import { PlayerHud } from './PlayerHud.js';
 import { DungeonView } from './DungeonView.js';
@@ -9,6 +9,8 @@ import { DungeonCanvas } from './DungeonCanvas.js';
 import { CombatLogView } from './CombatLogView.js';
 import { InventoryPanel } from './InventoryPanel.js';
 import { DebugPanel } from './DebugPanel.js';
+import { UnifiedActionPanel } from './UnifiedActionPanel.js';
+import { InspectModal } from './InspectModal.js';
 import { useBreakpoint } from '../hooks/useBreakpoint.js';
 
 interface DungeonPhaseProps {
@@ -57,97 +59,7 @@ function MiniCombatLog({ entries }: { entries: readonly { text: string; type: st
   );
 }
 
-function ConsumablesBar({
-  actions,
-  loading,
-  handleClick,
-}: {
-  actions: readonly AvailableAction[];
-  loading: boolean;
-  handleClick: (action: AvailableAction) => void;
-}) {
-  const [open, setOpen] = useState(true);
-  const items = actions.filter((a: AvailableAction) => a.type === 'item');
-  if (items.length === 0) return null;
 
-  // Group items by label to show stacks
-  const itemStacks = Array.from(
-    items.reduce((map, action) => {
-      const existing = map.get(action.label);
-      if (existing) {
-        existing.count++;
-      } else {
-        map.set(action.label, { action, count: 1 });
-      }
-      return map;
-    }, new Map<string, { action: AvailableAction; count: number }>()).values()
-  );
-
-  return (
-    <div style={{ marginTop: 6 }}>
-      <button
-        onClick={() => setOpen((o) => !o)}
-        style={{
-          fontSize: 10,
-          padding: '4px 8px',
-          background: '#333',
-          color: '#aaa',
-          border: '1px solid #555',
-          cursor: 'pointer',
-        }}
-      >
-        Items ({itemStacks.length}) {open ? '▲' : '▼'}
-      </button>
-      {open && (
-        <div style={{ maxHeight: CONSUMABLES_BAR_MAX_HEIGHT, overflowY: 'auto' as const }}>
-          {itemStacks.map(({ action, count }) => (
-            <div key={action.label} style={{ display: 'flex', justifyContent: 'space-between', padding: '2px 0', alignItems: 'center' }}>
-              <span style={{ fontSize: 11 }}>
-                {action.label}
-                {count > 1 && <span style={{ color: '#8cf', marginLeft: 4 }}>×{count}</span>}
-              </span>
-              <button
-                onClick={() => handleClick(action)}
-                disabled={!action.enabled || loading}
-                style={{ ...btnStyle, fontSize: 10, padding: '2px 6px' }}
-              >
-                Use
-              </button>
-            </div>
-          ))}
-        </div>
-      )}
-    </div>
-  );
-}
-
-function ActionButtonGrid({
-  actions,
-  loading,
-  handleClick,
-}: {
-  actions: readonly AvailableAction[];
-  loading: boolean;
-  handleClick: (action: AvailableAction) => void;
-}) {
-  return (
-    <div style={{ display: 'flex', flexWrap: 'wrap', gap: 4 }}>
-      {actions
-        .filter((a: AvailableAction) => ['attack', 'retreat', 'interact', 'ascend', 'ability', 'wait'].includes(a.type))
-        .map((action: AvailableAction) => (
-          <button
-            key={action.id}
-            onClick={() => handleClick(action)}
-            style={action.type === 'ability' ? { ...btnStyle, color: '#6af', borderColor: '#2a4a7a' } : btnStyle}
-            disabled={!action.enabled || loading}
-            title={action.description}
-          >
-            {action.label}
-          </button>
-        ))}
-    </div>
-  );
-}
 
 function QuestTracker({ quests }: { quests: readonly QuestView[] }) {
   const [open, setOpen] = useState(false);
@@ -186,23 +98,60 @@ function QuestTracker({ quests }: { quests: readonly QuestView[] }) {
 
 function MapDisplay({
   map,
-  mapScale,
   useSprites,
+  containerRef,
 }: {
   map: any;
-  mapScale: number;
   useSprites: boolean;
+  containerRef?: React.RefObject<HTMLDivElement | null>;
 }) {
+  const [vpTilesWidth, setVpTilesWidth] = useState(VP_WIDTH);
+  const [vpTilesHeight, setVpTilesHeight] = useState(VP_HEIGHT);
+  const displayContainerRef = React.useRef<HTMLDivElement>(null);
+
+  useEffect(() => {
+    const calculateViewport = () => {
+      const container = displayContainerRef.current;
+      if (!container) return;
+
+      const CELL_SIZE = 24;
+      const availableWidth = container.offsetWidth;
+      const availableHeight = container.offsetHeight;
+
+      // Calculate how many tiles fit in available space (minimum 15x12)
+      const newVpTilesWidth = Math.max(15, Math.floor(availableWidth / CELL_SIZE));
+      const newVpTilesHeight = Math.max(12, Math.floor(availableHeight / CELL_SIZE));
+
+      setVpTilesWidth(newVpTilesWidth);
+      setVpTilesHeight(newVpTilesHeight);
+    };
+
+    calculateViewport();
+    window.addEventListener('resize', calculateViewport);
+    const resizeObserver = new ResizeObserver(() => calculateViewport());
+    if (displayContainerRef.current) {
+      resizeObserver.observe(displayContainerRef.current);
+    }
+
+    return () => {
+      window.removeEventListener('resize', calculateViewport);
+      resizeObserver.disconnect();
+    };
+  }, []);
+
   if (!map) return null;
+
+  const canvasPxWidth = vpTilesWidth * 24;
+  const canvasPxHeight = vpTilesHeight * 24;
 
   return (
     <>
       <div style={{ fontSize: 11, color: dangerColor(map.dangerLevel), marginBottom: 4 }}>
         Danger: {map.dangerLevel.charAt(0).toUpperCase() + map.dangerLevel.slice(1)}
       </div>
-      <div style={{ width: VIEWPORT_PX_WIDTH * mapScale, height: VIEWPORT_PX_HEIGHT * mapScale, overflow: 'hidden', flexShrink: 0, marginBottom: 8, imageRendering: 'pixelated' as const }}>
-        <div style={{ transform: `scale(${mapScale})`, transformOrigin: 'top left', width: VIEWPORT_PX_WIDTH, height: VIEWPORT_PX_HEIGHT }}>
-          {useSprites ? <DungeonCanvas map={map} /> : <DungeonView map={map} />}
+      <div ref={displayContainerRef} style={{ flex: 1, minHeight: 0, overflow: 'hidden', marginBottom: 8, imageRendering: 'pixelated' as const, display: 'flex', alignItems: 'center', justifyContent: 'center', background: '#0a0a0a' }}>
+        <div style={{ width: canvasPxWidth, height: canvasPxHeight }}>
+          {useSprites ? <DungeonCanvas map={map} vpTilesWidth={vpTilesWidth} vpTilesHeight={vpTilesHeight} /> : <DungeonView map={map} vpTilesWidth={vpTilesWidth} vpTilesHeight={vpTilesHeight} />}
         </div>
       </div>
     </>
@@ -220,68 +169,78 @@ export function DungeonPhase({
   setUseSprites,
 }: DungeonPhaseProps) {
   const { isMobile } = useBreakpoint();
-  const [mapScale, setMapScale] = useState(1);
   const mapContainerRef = React.useRef<HTMLDivElement>(null);
+  const [showInspectModal, setShowInspectModal] = useState(false);
 
-  // Calculate map scale to fit available width
-  useEffect(() => {
-    const updateScale = () => {
-      if (isMobile) {
-        // Mobile: scale down if needed to fit window width
-        const padding = 16;
-        setMapScale(Math.min(1, (window.innerWidth - padding) / VIEWPORT_PX_WIDTH));
-      } else {
-        // Desktop: scale up to fill available left-column width
-        const container = mapContainerRef.current?.parentElement;
-        if (container) {
-          const availableWidth = container.offsetWidth;
-          const MAX_SCALE = 2.0;
-          const scale = Math.min(MAX_SCALE, Math.max(0.5, availableWidth / VIEWPORT_PX_WIDTH));
-          setMapScale(scale);
-        } else {
-          setMapScale(1);
-        }
-      }
-    };
+  // Mobile: same layout as desktop - action panel always visible with fixed combat log
+  if (isMobile) {
+    return (
+      <div style={{ padding: 8, fontFamily: 'monospace', color: '#ccc', background: '#111', flex: 1, overflow: 'hidden', display: 'flex', flexDirection: 'column', minHeight: 0, paddingBottom: TAB_BAR_HEIGHT + 8 }}>
+        {/* Header: always visible */}
+        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 10, flexShrink: 0 }}>
+          <h2 style={{ margin: 0, color: '#88cc44', fontSize: 16 }}>Dungeon</h2>
+          {view.map && (
+            <button
+              onClick={() => setUseSprites(s => !s)}
+              style={{ fontSize: 10, padding: '2px 6px', background: '#333', color: '#aaa', border: '1px solid #555', cursor: 'pointer' }}
+            >
+              {useSprites ? '🎨' : '⬛'}
+            </button>
+          )}
+        </div>
 
-    updateScale();
-    window.addEventListener('resize', updateScale);
-    const resizeObserver = new ResizeObserver(() => updateScale());
-    if (mapContainerRef.current?.parentElement) {
-      resizeObserver.observe(mapContainerRef.current.parentElement);
-    }
+        {/* Player HUD: always visible */}
+        <div style={{ flexShrink: 0, marginBottom: 6 }}>
+          <PlayerHud player={view.player} compact />
+        </div>
 
-    return () => {
-      window.removeEventListener('resize', updateScale);
-      resizeObserver.disconnect();
-    };
-  }, [isMobile]);
+        {/* Dungeon map: dynamically sized above combat log */}
+        <div ref={mapContainerRef} style={{ flex: 1, minHeight: 0, display: 'flex', flexDirection: 'column', marginBottom: 6 }}>
+          <MapDisplay map={view.map} useSprites={useSprites} containerRef={mapContainerRef} />
+        </div>
 
-  const handleActionClick = (action: AvailableAction) => {
-    if (action.type === 'attack' && action.targetId) {
-      sendCommand({ type: 'ATTACK', targetId: action.targetId });
-    } else if (action.type === 'retreat') {
-      sendCommand({ type: 'RETREAT' });
-    } else if (action.type === 'interact' && action.targetPosition) {
-      sendCommand({ type: 'INTERACT', targetPosition: action.targetPosition });
-    } else if (action.type === 'ascend') {
-      sendCommand({ type: 'ASCEND' });
-    } else if (action.type === 'wait') {
-      sendCommand({ type: 'WAIT' });
-    } else if (action.type === 'ability') {
-      const abilityId = action.id.replace('use_ability_', '');
-      sendCommand({ type: 'USE_ABILITY', abilityId, targetId: action.targetId });
-    } else if (action.type === 'item' && action.targetId) {
-      const isUse = action.id.startsWith('use_');
-      const itemId = action.id.replace(isUse ? 'use_' : 'equip_', '');
-      sendCommand({ type: isUse ? 'USE_ITEM' : 'EQUIP', itemId });
-    }
-  };
+        {/* Combat log: fixed 4 lines, always visible above action panel */}
+        <div style={{ flexShrink: 0, minHeight: 64, maxHeight: 80, borderTop: '1px solid #222', paddingTop: 4, marginBottom: 6, overflow: 'hidden' }}>
+          <MiniCombatLog entries={combatLog} />
+        </div>
 
+        {/* Action panel: always visible at bottom */}
+        <div style={{ flexShrink: 0 }}>
+          <UnifiedActionPanel
+            view={view}
+            onSendCommand={sendCommand}
+            onInspectOpen={() => setShowInspectModal(true)}
+          />
+        </div>
 
+        {/* Inspect modal overlay */}
+        {showInspectModal && view.inspectableEntities && (
+          <InspectModal
+            entities={view.inspectableEntities}
+            playerSpeed={view.player.speed}
+            useSprites={useSprites}
+            onClose={() => setShowInspectModal(false)}
+          />
+        )}
+
+        {/* Quests section */}
+        <div style={{ flexShrink: 0, marginTop: 6 }}>
+          <QuestTracker quests={view.activeQuests} />
+        </div>
+
+        {/* Error message */}
+        {error && <p style={{ color: '#f44', fontSize: 10, margin: '4px 0 0 0' }}>{error}</p>}
+
+        {import.meta.env.VITE_DEBUG === 'true' && <DebugPanel />}
+      </div>
+    );
+  }
+
+  // Desktop: new layout with always-visible action panel and dynamic dungeon
   return (
-    <div style={{ padding: 8, fontFamily: 'monospace', color: '#ccc', background: '#111', flex: 1, overflow: 'auto', display: 'flex', flexDirection: 'column' }}>
-      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 10 }}>
+    <div style={{ padding: 8, fontFamily: 'monospace', color: '#ccc', background: '#111', flex: 1, overflow: 'hidden', display: 'flex', flexDirection: 'column', minHeight: 0, paddingBottom: TAB_BAR_HEIGHT + 8 }}>
+      {/* Header: always visible */}
+      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 10, flexShrink: 0 }}>
         <h2 style={{ margin: 0, color: '#88cc44' }}>Dungeon</h2>
         {view.map && (
           <button
@@ -292,25 +251,49 @@ export function DungeonPhase({
           </button>
         )}
       </div>
-      <PlayerHud player={view.player} compact />
-      <MapDisplay map={view.map} mapScale={mapScale} useSprites={useSprites} />
-      {view.inventory.equipped.secondaryWeapon && (
-        <button
-          onClick={() => sendCommand({ type: 'SWAP_WEAPONS' })}
-          style={{ ...btnStyle, background: '#2a2a44', color: '#8af', marginTop: 8, width: '100%' }}
-          disabled={loading}
-        >
-          ⚔ Swap to {view.inventory.equipped.secondaryWeapon.name}
-        </button>
+
+      {/* Player HUD: always visible */}
+      <div style={{ flexShrink: 0, marginBottom: 6 }}>
+        <PlayerHud player={view.player} compact />
+      </div>
+
+      {/* Dungeon map: dynamically sized above combat log */}
+      <div ref={mapContainerRef} style={{ flex: 1, minHeight: 0, display: 'flex', flexDirection: 'column', marginBottom: 8 }}>
+        <MapDisplay map={view.map} useSprites={useSprites} containerRef={mapContainerRef} />
+      </div>
+
+      {/* Combat log: fixed 4 lines, always visible above action panel */}
+      <div style={{ flexShrink: 0, minHeight: 64, maxHeight: 80, borderTop: '1px solid #222', paddingTop: 4, marginBottom: 8, overflow: 'hidden' }}>
+        <MiniCombatLog entries={combatLog} />
+      </div>
+
+      {/* Action panel: always visible at bottom */}
+      <div style={{ flexShrink: 0 }}>
+        <UnifiedActionPanel
+          view={view}
+          onSendCommand={sendCommand}
+          onInspectOpen={() => setShowInspectModal(true)}
+        />
+      </div>
+
+      {/* Inspect modal overlay */}
+      {showInspectModal && view.inspectableEntities && (
+        <InspectModal
+          entities={view.inspectableEntities}
+          playerSpeed={view.player.speed}
+          useSprites={useSprites}
+          onClose={() => setShowInspectModal(false)}
+        />
       )}
-      <div style={{ marginTop: 8 }}>
-        <div style={{ fontSize: 10, color: '#666', marginBottom: 4 }}>Actions</div>
-        <ActionButtonGrid actions={view.availableActions} loading={loading} handleClick={handleActionClick} />
-        <ConsumablesBar actions={view.availableActions} loading={loading} handleClick={handleActionClick} />
+
+      {/* Quests section */}
+      <div style={{ flexShrink: 0, marginTop: 8 }}>
         <QuestTracker quests={view.activeQuests} />
       </div>
-      <MiniCombatLog entries={combatLog} />
-      {error && <p style={{ color: '#f44' }}>{error}</p>}
+
+      {/* Error message */}
+      {error && <p style={{ color: '#f44', flexShrink: 0, marginTop: 8 }}>{error}</p>}
+
       {import.meta.env.VITE_DEBUG === 'true' && <DebugPanel />}
     </div>
   );

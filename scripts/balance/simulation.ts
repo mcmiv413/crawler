@@ -3,7 +3,7 @@
  */
 
 import { GameEngine } from '@dungeon/core';
-import type { GameCommand, GameState, RunMetrics, WeaponMastery, WorldState, EnchantmentAppliedEvent } from '@dungeon/contracts';
+import type { GameCommand, GameState, RunMetrics, WeaponMastery, WorldState, EnchantmentAppliedEvent, ObjectInteractedEvent } from '@dungeon/contracts';
 import { EMPTY_WEAPON_MASTERY } from '@dungeon/contracts';
 import { buildGameView } from '@dungeon/presenter';
 import type { GameView, AvailableAction, InventoryItemView } from '@dungeon/presenter';
@@ -368,7 +368,7 @@ export async function simulateSession(
         }
         // Phase 4: Track dungeon loot sources
         if (ev.type === 'OBJECT_INTERACTED') {
-          const objEv = ev as any; // OBJECT_INTERACTED event
+          const objEv = ev as ObjectInteractedEvent; // OBJECT_INTERACTED event
           if (objEv.gotLoot) {
             chestsOpened++;
             itemsFromChests++;  // We count 1 item per chest (could be refined to track exact count)

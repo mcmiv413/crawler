@@ -1,9 +1,10 @@
 import React, { useState } from 'react';
 import type { InventoryItemView, InventoryView } from '@dungeon/presenter';
-import { btnStyle, rarityColor } from '../styles.js';
+import { btnStyle, rarityColor, compactBtnStyle } from '../styles.js';
 import { EquipmentDoll } from './EquipmentDoll.js';
 import { ItemInspectModal } from './ItemInspectModal.js';
 import { useInventoryFilter } from '../hooks/useInventoryFilter.js';
+import { useBreakpoint } from '../hooks/useBreakpoint.js';
 
 interface InventoryScreenProps {
   inventory: InventoryView;
@@ -23,6 +24,7 @@ export function InventoryScreen({
   onClose,
   gold,
 }: InventoryScreenProps) {
+  const { isMobile } = useBreakpoint();
   const [selectedItem, setSelectedItem] = useState<InventoryItemView | null>(null);
 
   // Get non-equipped items for the bag
@@ -58,17 +60,18 @@ export function InventoryScreen({
   return (
     <div
       style={{
-        position: 'relative',
+        display: 'flex',
+        flexDirection: 'column',
         background: '#111',
-        overflow: 'auto',
         padding: 16,
         fontFamily: 'monospace',
         color: '#ccc',
         height: '100%',
+        minHeight: 0,
       }}
     >
-      {/* Header */}
-      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 20 }}>
+      {/* Header - always visible */}
+      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 20, flexShrink: 0 }}>
         <div>
           <h1 style={{ margin: 0, fontSize: 18, color: '#cc8' }}>Inventory</h1>
           {gold !== undefined && <div style={{ color: '#cc8', fontSize: 11, marginTop: 4 }}>Gold: {gold}g</div>}
@@ -85,14 +88,15 @@ export function InventoryScreen({
             cursor: 'pointer',
             borderRadius: 2,
             whiteSpace: 'nowrap',
+            flexShrink: 0,
           }}
         >
           Back to Game
         </button>
       </div>
 
-      {/* Equipment Section */}
-      <div style={{ marginBottom: 24 }}>
+      {/* Equipment Section - always visible */}
+      <div style={{ marginBottom: 24, flexShrink: 0 }}>
         <h2 style={{ fontSize: 14, color: '#888', marginBottom: 8 }}>Equipment</h2>
         <EquipmentDoll
           equipped={inventory.equipped}
@@ -100,44 +104,40 @@ export function InventoryScreen({
         />
       </div>
 
-      {/* Bag Section */}
+      {/* Bag Section - scrolls internally */}
       {bagItems.length > 0 && (
-        <div>
-          <h2 style={{ fontSize: 14, color: '#888', marginBottom: 8 }}>Bag</h2>
+        <div style={{ flex: 1, minHeight: 0, display: 'flex', flexDirection: 'column', overflow: 'hidden' }}>
+          <h2 style={{ fontSize: 14, color: '#888', marginBottom: 8, flexShrink: 0 }}>Bag</h2>
 
-          {/* Filter/Sort Controls */}
-          <div style={{ fontSize: 10, marginBottom: 8, display: 'flex', gap: 6, flexWrap: 'wrap' }}>
-            <div>
+          {/* Filter/Sort Controls - always visible */}
+          <div style={{ fontSize: 10, marginBottom: 8, display: 'flex', gap: 6, flexWrap: 'wrap', flexShrink: 0 }}>
+            <div style={{ display: 'flex', gap: 4, flexWrap: 'wrap', alignItems: 'center' }}>
               Filter: {['all', 'weapons', 'armor', 'consumables'].map((f) => (
                 <button
                   key={f}
                   onClick={() => setFilter(f as any)}
                   style={{
-                    ...btnStyle,
-                    fontSize: 9,
-                    padding: '2px 6px',
-                    marginLeft: 2,
+                    ...compactBtnStyle,
                     background: filter === f ? '#2a4a2a' : '#2a2a2a',
                     color: filter === f ? '#4f4' : '#666',
                   }}
+                  title={f.charAt(0).toUpperCase() + f.slice(1)}
                 >
                   {f.charAt(0).toUpperCase() + f.slice(1)}
                 </button>
               ))}
             </div>
-            <div>
+            <div style={{ display: 'flex', gap: 4, flexWrap: 'wrap', alignItems: 'center' }}>
               Sort: {['name', 'rarity'].map((s) => (
                 <button
                   key={s}
                   onClick={() => setSortBy(s as any)}
                   style={{
-                    ...btnStyle,
-                    fontSize: 9,
-                    padding: '2px 6px',
-                    marginLeft: 2,
+                    ...compactBtnStyle,
                     background: sortBy === s ? '#2a4a2a' : '#2a2a2a',
                     color: sortBy === s ? '#4f4' : '#666',
                   }}
+                  title={s.charAt(0).toUpperCase() + s.slice(1)}
                 >
                   {s.charAt(0).toUpperCase() + s.slice(1)}
                 </button>
@@ -145,7 +145,8 @@ export function InventoryScreen({
             </div>
           </div>
 
-          <div>
+          {/* Item list - scrolls internally */}
+          <div style={{ flex: 1, minHeight: 0, overflow: 'auto' }}>
             {sorted.map((item, idx) => {
               const quantity = item.quantity ?? 1;
               const isEquippable = item.itemClass !== 'consumable';
@@ -194,16 +195,14 @@ export function InventoryScreen({
                         sendCommand({ type: 'EQUIP', itemId: item.stackEntityIds?.[0] ?? item.id });
                       }}
                       style={{
-                        fontSize: 9,
-                        padding: '2px 6px',
+                        ...compactBtnStyle,
                         background: '#1a3a1a',
                         border: '1px solid #4f4',
                         color: '#4f4',
-                        cursor: 'pointer',
-                        borderRadius: 2,
-                        marginLeft: 4,
                         whiteSpace: 'nowrap',
+                        padding: '2px 6px',
                       }}
+                      title="Equip this item"
                     >
                       Equip
                     </button>
