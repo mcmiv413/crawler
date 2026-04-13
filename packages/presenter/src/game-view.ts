@@ -60,6 +60,40 @@ export interface WeaponMasteryView {
   readonly ranged: number;
 }
 
+export interface MasteryTierInfo {
+  readonly weaponType: string;
+  readonly uses: number;
+  readonly tier: number;
+}
+
+export interface StatBonusSource {
+  readonly source: string;
+  readonly amount: number;
+}
+
+export interface StatBreakdown {
+  readonly stat: string;
+  readonly base: number;
+  readonly bonuses: readonly StatBonusSource[];
+  readonly total: number;
+}
+
+export interface EnchantmentView {
+  readonly id: string;
+  readonly name: string;
+  readonly description: string;
+  readonly tier: 1 | 2 | 3 | 'unique';
+}
+
+export interface EquippedItemView {
+  readonly slot: string;
+  readonly itemId: string;
+  readonly name: string;
+  readonly rarity: string;
+  readonly baseBonus: number;
+  readonly enchantments: readonly EnchantmentView[];
+}
+
 export interface PlayerHudView {
   readonly name: string;
   readonly level: number;
@@ -78,6 +112,8 @@ export interface PlayerHudView {
   readonly statuses: readonly StatusView[];
   readonly abilities: readonly AbilityView[];
   readonly weaponMastery: WeaponMasteryView | null;
+  readonly equippedItems: readonly EquippedItemView[];
+  readonly statBreakdowns: Record<string, StatBreakdown>;
 }
 
 export interface StatusView {
