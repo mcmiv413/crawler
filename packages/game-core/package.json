@@ -8,19 +8,38 @@
   "exports": {
     ".": {
       "import": "./dist/index.js",
+      "default": "./dist/index.js",
       "types": "./dist/index.d.ts"
     },
     "./ai/ai-service": {
       "import": "./dist/ai/ai-service.js",
+      "default": "./dist/ai/ai-service.js",
+      "types": "./dist/ai/ai-service.d.ts"
+    },
+    "./ai/ai-service.js": {
+      "import": "./dist/ai/ai-service.js",
+      "default": "./dist/ai/ai-service.js",
       "types": "./dist/ai/ai-service.d.ts"
     },
     "./ai/prompt-builders": {
       "import": "./dist/ai/prompt-builders.js",
+      "default": "./dist/ai/prompt-builders.js",
+      "types": "./dist/ai/prompt-builders.d.ts"
+    },
+    "./ai/prompt-builders.js": {
+      "import": "./dist/ai/prompt-builders.js",
+      "default": "./dist/ai/prompt-builders.js",
       "types": "./dist/ai/prompt-builders.d.ts"
     },
     "./utils/pathfinding": {
-      "types": "./dist/utils/pathfinding.d.ts",
-      "import": "./dist/utils/pathfinding.js"
+      "import": "./dist/utils/pathfinding.js",
+      "default": "./dist/utils/pathfinding.js",
+      "types": "./dist/utils/pathfinding.d.ts"
+    },
+    "./utils/pathfinding.js": {
+      "import": "./dist/utils/pathfinding.js",
+      "default": "./dist/utils/pathfinding.js",
+      "types": "./dist/utils/pathfinding.d.ts"
     }
   },
   "scripts": {

@@ -1,4 +1,5 @@
 import { defineConfig } from 'vitest/config';
+import { createJsToTsResolvePlugin } from '../../vite-helpers.js';
 
 export default defineConfig({
   test: {
@@ -7,9 +8,8 @@ export default defineConfig({
     environment: 'happy-dom',
     setupFiles: ['./vitest.setup.ts'],
   },
+  plugins: [createJsToTsResolvePlugin()],
   resolve: {
-    alias: {
-      '@': '/src',
-    },
+    alias: [{ find: '@', replacement: '/src' }],
   },
 });
