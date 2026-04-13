@@ -1,0 +1,33 @@
+#!/usr/bin/env bash
+# Pre-push hook: validate package exports and verify tests before pushing
+# 
+# Install this hook:
+#   cp .githooks/pre-push .git/hooks/pre-push
+#   chmod +x .git/hooks/pre-push
+#
+# To skip this hook:
+#   git push --no-verify
+#
+# To override and run anyway:
+#   git push --force
+
+set -euo pipefail
+
+echo "⚙️  Running pre-push checks..."
+echo ""
+
+# Run the clean-room verification (build + test + export check)
+if ! pnpm run ci:verify > /dev/null 2>&1; then
+  echo "❌ Pre-push check failed."
+  echo ""
+  echo "   To fix, run locally:"
+  echo "   pnpm run ci:verify"
+  echo ""
+  echo "   Or skip this check with:"
+  echo "   git push --no-verify"
+  echo ""
+  exit 1
+fi
+
+echo "✅ Pre-push checks passed!"
+echo ""
