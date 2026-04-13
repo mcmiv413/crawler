@@ -1,6 +1,10 @@
 import React, { useState } from 'react';
 import type { PlayerHudView, QuestView } from '@dungeon/presenter';
-import { ABILITY_DEFINITIONS } from '@dungeon/content';
+import { ABILITY_DEFINITIONS, MASTERY_THRESHOLDS } from '@dungeon/content';
+import { ClickableStatGrid } from './ClickableStatGrid.js';
+import { EnchantmentLibrary } from './EnchantmentLibrary.js';
+import { EquipmentOverview } from './EquipmentOverview.js';
+import { MasteryDetailModal } from './MasteryDetailModal.js';
 
 interface CharacterScreenProps {
   player: PlayerHudView;
@@ -14,6 +18,7 @@ function getHealthColor(health: number, maxHealth: number): string {
   return '#f44';
 }
 
+// Keep old StatGrid for backwards compatibility if needed, but won't be used in new layout
 function StatGrid({ player }: { player: PlayerHudView }) {
   return (
     <div
@@ -129,15 +134,28 @@ function AbilityDetailPanel({
   abilityId,
   ready,
   cooldownRemaining,
+  player,
   onClose,
 }: {
   abilityId: string;
   ready: boolean;
   cooldownRemaining: number;
+  player: PlayerHudView;
   onClose: () => void;
 }) {
   const def = ABILITY_DEFINITIONS[abilityId as keyof typeof ABILITY_DEFINITIONS];
   if (!def) return null;
+
+  // Check weapon requirement status
+  let equippedWeaponType: string | null = null;
+  const weaponItem = player.equippedItems.find(i => i.slot === 'weapon');
+  if (weaponItem) {
+    // We'd need the weapon type from the registry, but for now we can show it's equipped
+    equippedWeaponType = 'equipped';
+  }
+
+  const hasWeaponRequirement = def.requiresWeaponTypes && def.requiresWeaponTypes.length > 0;
+  const weaponRequirementMet = !hasWeaponRequirement || equippedWeaponType !== null;
 
   return (
     <div style={{ marginBottom: 12, padding: 8, background: '#1a2a3a', border: '1px solid #2a4a6a' }}>
@@ -175,10 +193,12 @@ function AbilityDetailPanel({
           </div>
         </div>
 
-        {def.requiresWeaponTypes && def.requiresWeaponTypes.length > 0 && (
+        {hasWeaponRequirement && (
           <div>
             <div style={{ color: '#888', marginBottom: 2 }}>Weapon</div>
-            <div style={{ color: '#fa8', textTransform: 'capitalize' }}>{def.requiresWeaponTypes.join(', ')}</div>
+            <div style={{ color: weaponRequirementMet ? '#4f4' : '#f88', textTransform: 'capitalize' }}>
+              {weaponRequirementMet ? '✓' : '✗'} {def.requiresWeaponTypes!.join(', ')}
+            </div>
           </div>
         )}
 
@@ -238,6 +258,7 @@ function AbilitiesSection({
           abilityId={selectedAbility.id}
           ready={selectedAbility.ready}
           cooldownRemaining={selectedAbility.cooldownRemaining}
+          player={player}
           onClose={() => onSelectAbility(null)}
         />
       )}
@@ -246,28 +267,55 @@ function AbilitiesSection({
 }
 
 function MasterySection({ player }: { player: PlayerHudView }) {
+  const [selectedWeaponType, setSelectedWeaponType] = useState<string | null>(null);
+
   if (!player.weaponMastery || Object.keys(player.weaponMastery).length === 0) return null;
 
+  const calculateTier = (uses: number): number => {
+    if (uses < MASTERY_THRESHOLDS[1]) return 0;
+    if (uses < MASTERY_THRESHOLDS[2]) return 1;
+    return 2;
+  };
+
   return (
-    <div style={{ marginBottom: 12 }}>
-      <div style={{ color: '#888', fontSize: 11, marginBottom: 4, fontWeight: 'bold' }}>WEAPON MASTERY</div>
-      <div style={{ display: 'flex', flexWrap: 'wrap', gap: '4px' }}>
-        {Object.entries(player.weaponMastery).map(([type, progress]) => (
-          <div
-            key={type}
-            style={{
-              padding: '3px 8px',
-              background: '#1a3a2a',
-              color: progress.tier > 0 ? '#4f4' : '#888',
-              border: `1px solid ${progress.tier > 0 ? '#2a6a3a' : '#333'}`,
-              fontSize: 11,
-            }}
-          >
-            {type}: {progress.uses}/{progress.tier === 0 ? '10' : '25'} {progress.tier > 0 ? `[T${progress.tier}]` : ''}
-          </div>
-        ))}
+    <>
+      <div style={{ marginBottom: 12 }}>
+        <div style={{ color: '#888', fontSize: 11, marginBottom: 4, fontWeight: 'bold' }}>WEAPON MASTERY</div>
+        <div style={{ display: 'flex', flexWrap: 'wrap', gap: '4px' }}>
+          {Object.entries(player.weaponMastery).map(([type, progress]) => {
+            const tier = calculateTier(progress);
+            const isSelected = selectedWeaponType === type;
+
+            return (
+              <button
+                key={type}
+                onClick={() => setSelectedWeaponType(isSelected ? null : type)}
+                style={{
+                  padding: '3px 8px',
+                  background: isSelected ? '#1a4a3a' : '#1a3a2a',
+                  color: tier > 0 ? '#4f4' : '#888',
+                  border: `1px solid ${isSelected ? '#2a8a6a' : tier > 0 ? '#2a6a3a' : '#333'}`,
+                  fontSize: 11,
+                  cursor: 'pointer',
+                  textTransform: 'capitalize',
+                }}
+              >
+                {type}: {progress}/{tier === 0 ? '10' : '25'} {tier > 0 ? `[T${tier}]` : ''}
+              </button>
+            );
+          })}
+        </div>
       </div>
-    </div>
+
+      {selectedWeaponType && (
+        <MasteryDetailModal
+          weaponType={selectedWeaponType}
+          progress={player.weaponMastery[selectedWeaponType as keyof typeof player.weaponMastery]}
+          tier={calculateTier(player.weaponMastery[selectedWeaponType as keyof typeof player.weaponMastery])}
+          onClose={() => setSelectedWeaponType(null)}
+        />
+      )}
+    </>
   );
 }
 
@@ -327,7 +375,9 @@ export function CharacterScreen({ player, activeQuests }: CharacterScreenProps) 
         <div style={{ fontSize: 12, color: '#888' }}>Level {player.level}</div>
       </div>
 
-      <StatGrid player={player} />
+      <ClickableStatGrid player={player} />
+      <EquipmentOverview player={player} />
+      <EnchantmentLibrary player={player} />
       <QuestSection quests={activeQuests} />
       <ResistancesSection player={player} />
       <StatusSection player={player} />
