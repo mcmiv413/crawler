@@ -18,6 +18,12 @@ export interface BiomeDefinition {
     readonly wall?: SpriteRect;
     readonly interactable?: SpriteRect;
   };
+  readonly mapGen?: {
+    readonly roomWidth: readonly [number, number];
+    readonly roomHeight: readonly [number, number];
+    readonly corridorLength: readonly [number, number];
+    readonly dugPercentage: number;
+  };
 }
 
 export const stoneCrypt: BiomeDefinition = {
@@ -29,4 +35,10 @@ export const stoneCrypt: BiomeDefinition = {
   ambientColor: '#444444',
   floorAscii: '.',
   wallAscii: '#',
+  mapGen: {
+    roomWidth: [3, 5],
+    roomHeight: [2, 4],
+    corridorLength: [1, 3],
+    dugPercentage: 0.38,
+  },
 };

@@ -14,4 +14,10 @@ export const goblinWarrens: BiomeDefinition = {
     floor: SPRITE_MAP['tile:floor:goblin_warrens'],
     interactable: SPRITE_MAP['tile:interactable:goblin_warrens'],
   },
+  mapGen: {
+    roomWidth: [2, 4],
+    roomHeight: [2, 3],
+    corridorLength: [2, 7],
+    dugPercentage: 0.32,
+  },
 };

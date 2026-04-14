@@ -9,4 +9,10 @@ export const mossCaverns: BiomeDefinition = {
   ambientColor: '#2a4a2a',
   floorAscii: '~',
   wallAscii: '#',
+  mapGen: {
+    roomWidth: [3, 7],
+    roomHeight: [3, 6],
+    corridorLength: [1, 4],
+    dugPercentage: 0.48,
+  },
 };
