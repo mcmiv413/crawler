@@ -10,6 +10,7 @@ export const CONSUMABLES: readonly ConsumableTemplate[] = [
     value: 10,
     stackable: true,
     maxStack: 5,
+    spriteName: 'purple red potion',
     consumable: { effect: 'heal', magnitude: 30 },
   },
   {
@@ -21,6 +22,7 @@ export const CONSUMABLES: readonly ConsumableTemplate[] = [
     value: 25,
     stackable: true,
     maxStack: 3,
+    spriteName: 'ruby potion',
     consumable: { effect: 'heal', magnitude: 60 },
   },
   {
@@ -32,6 +34,7 @@ export const CONSUMABLES: readonly ConsumableTemplate[] = [
     value: 8,
     stackable: true,
     maxStack: 5,
+    spriteName: 'dark green potion',
     consumable: { effect: 'cure', magnitude: 0, targetStatus: 'poison' },
   },
   {
@@ -43,6 +46,7 @@ export const CONSUMABLES: readonly ConsumableTemplate[] = [
     value: 20,
     stackable: true,
     maxStack: 3,
+    spriteName: 'golden potion',
     consumable: { effect: 'buff', magnitude: 5, duration: 10 },
   },
   {
@@ -54,6 +58,7 @@ export const CONSUMABLES: readonly ConsumableTemplate[] = [
     value: 15,
     stackable: true,
     maxStack: 3,
+    spriteName: 'fire bomb',
     consumable: { effect: 'damage', magnitude: 25 },
   },
 ];
