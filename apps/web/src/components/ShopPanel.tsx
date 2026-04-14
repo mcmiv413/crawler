@@ -20,7 +20,8 @@ export function ShopPanel({ view, loading, sendCommand, isMobile }: ShopPanelPro
 
   // Initialize sell filter hook at top level
   const shop = view.town?.shop;
-  const sellFiltered = useInventoryFilter(view.inventory.items);
+  const unequippedItems = view.inventory.items.filter(item => !item.isEquipped);
+  const sellFiltered = useInventoryFilter(unequippedItems);
 
   if (!shop) return null;
 
