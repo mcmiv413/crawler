@@ -1,6 +1,13 @@
 {
+  "$schema": "https://openapi.vercel.sh/vercel.json",
   "framework": "vite",
   "buildCommand": "cd ../.. && pnpm install --frozen-lockfile && pnpm --filter @dungeon/web build",
   "installCommand": "echo 'install handled by buildCommand'",
-  "outputDirectory": "dist"
+  "outputDirectory": "dist",
+  "git": {
+    "deploymentEnabled": {
+      "main": true,
+      "*": false
+    }
+  }
 }
