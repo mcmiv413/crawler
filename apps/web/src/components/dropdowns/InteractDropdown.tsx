@@ -104,5 +104,8 @@ function getObjectType(name: string): ObjectTypeInfo {
   if (nameLower.includes('door') || nameLower.includes('gate')) {
     return { label: 'Door', emoji: '🚪', spriteName: SPRITE_NAMES.OBJECT_DOOR };
   }
+  if (nameLower.includes('firepit') || nameLower.includes('lava')) {
+    return { label: 'Firepit', emoji: '🔥', spriteName: SPRITE_NAMES.OBJECT_FIREPIT };
+  }
   return { label: 'Object', emoji: '📦' };
 }
