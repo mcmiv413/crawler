@@ -12,7 +12,7 @@ export const volcanic: BiomeDefinition = {
   tileSprites: {
     floor: 'day brick floor c',
     wall: 'lit heat wall center',
-    interactable: 'statue',
+    interactable: 'closed stone door front',
   },
   mapGen: {
     roomWidth: [5, 10],

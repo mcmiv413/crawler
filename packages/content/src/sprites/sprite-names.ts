@@ -68,5 +68,6 @@ export const SPRITE_NAMES = {
   // Tiles
   dayStoneFloorC: spriteName('day stone floor c'),
   darkBrickWallCenter: spriteName('dark brick wall center'),
-  statue: spriteName('statue'),
+  closedStoneDoorFront: spriteName('closed stone door front'),
+  closedWoodenDoorFront: spriteName('closed wooden door front'),
 } as const;

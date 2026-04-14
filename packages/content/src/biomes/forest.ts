@@ -12,7 +12,7 @@ export const forest: BiomeDefinition = {
   tileSprites: {
     floor: 'day grass floor c',
     wall: 'lit infernal wall center',
-    interactable: 'statue',
+    interactable: 'closed wooden door front',
   },
   mapGen: {
     roomWidth: [6, 12],

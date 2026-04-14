@@ -12,7 +12,7 @@ export const mossCaverns: BiomeDefinition = {
   tileSprites: {
     floor: 'day tile floor c',
     wall: 'dark fort wall center',
-    interactable: 'statue',
+    interactable: 'closed wooden door front',
   },
   mapGen: {
     roomWidth: [3, 7],
