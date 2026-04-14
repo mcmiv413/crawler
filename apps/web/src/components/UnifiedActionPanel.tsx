@@ -17,6 +17,7 @@ import type {
 import type { ActionButtonType } from '../config/action-icons';
 import { ACTION_ORDER } from '../config/action-icons';
 import { ActionButton } from './ActionButton';
+import { ItemSpriteIcon } from './ItemSpriteIcon';
 import { AttackDropdown } from './dropdowns/AttackDropdown';
 import { AbilityDropdown } from './dropdowns/AbilityDropdown';
 import { InteractDropdown } from './dropdowns/InteractDropdown';
@@ -269,6 +270,7 @@ export function UnifiedActionPanel({
             enabled={true}
             isActive={dropdown.active === 'STAIRS'}
             onClick={() => handleActionClick('STAIRS')}
+            iconElement={<ItemSpriteIcon spriteName="large stairs up" size={16} />}
           />
         )}
       </div>
