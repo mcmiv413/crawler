@@ -9,4 +9,10 @@ export const forest: BiomeDefinition = {
   ambientColor: '#2a4a2a',
   floorAscii: '.',
   wallAscii: 'T',
+  mapGen: {
+    roomWidth: [6, 12],
+    roomHeight: [5, 9],
+    corridorLength: [1, 2],
+    dugPercentage: 0.65,
+  },
 };

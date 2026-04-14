@@ -9,4 +9,10 @@ export const frozenDepths: BiomeDefinition = {
   ambientColor: '#3a5a7a',
   floorAscii: '.',
   wallAscii: '█',
+  mapGen: {
+    roomWidth: [2, 4],
+    roomHeight: [2, 3],
+    corridorLength: [3, 9],
+    dugPercentage: 0.35,
+  },
 };

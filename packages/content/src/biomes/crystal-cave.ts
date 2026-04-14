@@ -9,4 +9,10 @@ export const crystalCave: BiomeDefinition = {
   ambientColor: '#331a66',
   floorAscii: '.',
   wallAscii: '*',
+  mapGen: {
+    roomWidth: [4, 7],
+    roomHeight: [3, 5],
+    corridorLength: [2, 4],
+    dugPercentage: 0.42,
+  },
 };
