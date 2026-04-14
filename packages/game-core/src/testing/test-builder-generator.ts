@@ -27,7 +27,7 @@ export interface PropertySpec {
  */
 export function generateBuilder(typeName: string): string {
   const spec = getBuildersSpec(typeName);
-  if (!spec) {
+  if (spec === null) {
     throw new Error(`No builder spec for type: ${typeName}`);
   }
 
@@ -162,53 +162,45 @@ function getBuildersSpec(typeName: string): BuilderSpec | null {
  */
 function renderBuilder(spec: BuilderSpec): string {
   const classNameBuilder = `${spec.typeName}Builder`;
-  const lines: string[] = [];
 
-  // Imports
-  spec.imports.forEach((imp) => lines.push(imp));
-  if (spec.imports.length > 0) lines.push('');
+  const importLines = spec.imports.length > 0 ? [...spec.imports, ''] : [];
+  const classStart = [`export class ${classNameBuilder} {`, `  private data: Partial<${spec.typeName}> = {`];
+  const defaultLines = Object.entries(spec.defaults).map(([key, value]) => `    ${key}: ${value},`);
+  const classEnd = ['  };', ''];
 
-  // Class declaration
-  lines.push(`export class ${classNameBuilder} {`);
-  lines.push(`  private data: Partial<${spec.typeName}> = {`);
+  const setterLines = spec.properties
+    .filter((prop) => prop.name !== 'id')
+    .flatMap((prop) => {
+      const methodName = toCamelCase(prop.name);
+      return [
+        `  with${capitalize(methodName)}(value: ${prop.type}): this {`,
+        `    this.data.${prop.name} = value;`,
+        `    return this;`,
+        `  }`,
+        '',
+      ];
+    });
 
-  // Default values
-  Object.entries(spec.defaults).forEach(([key, value]) => {
-    lines.push(`    ${key}: ${value},`);
-  });
+  const buildDefaultLines = Object.entries(spec.defaults).map(([key]) => `      ${key}: this.data.${key},`);
+  const buildLines = [
+    `  build(): ${spec.typeName} {`,
+    `    const defaults = {`,
+    ...buildDefaultLines,
+    '    };',
+    `    return { ...defaults, ...this.data } as ${spec.typeName};`,
+    '  }',
+    '',
+  ];
 
-  lines.push('  };');
-  lines.push('');
+  const staticLines = [
+    `  static default(): ${spec.typeName} {`,
+    `    return new ${classNameBuilder}().build();`,
+    '  }',
+    '}',
+  ];
 
-  // Fluent setter methods
-  spec.properties.forEach((prop) => {
-    if (prop.name === 'id') return; // Skip ID setter
-    const methodName = toCamelCase(prop.name);
-    lines.push(`  with${capitalize(methodName)}(value: ${prop.type}): this {`);
-    lines.push(`    this.data.${prop.name} = value;`);
-    lines.push(`    return this;`);
-    lines.push(`  }`);
-    lines.push('');
-  });
-
-  // build() method
-  lines.push(`  build(): ${spec.typeName} {`);
-  lines.push(`    const defaults = {`);
-  Object.entries(spec.defaults).forEach(([key]) => {
-    lines.push(`      ${key}: this.data.${key},`);
-  });
-  lines.push('    };');
-  lines.push(`    return { ...defaults, ...this.data } as ${spec.typeName};`);
-  lines.push('  }');
-  lines.push('');
-
-  // static default() method
-  lines.push(`  static default(): ${spec.typeName} {`);
-  lines.push(`    return new ${classNameBuilder}().build();`);
-  lines.push('  }');
-  lines.push('}');
-
-  return lines.join('\n');
+  const allLines = [...importLines, ...classStart, ...defaultLines, ...classEnd, ...setterLines, ...buildLines, ...staticLines];
+  return allLines.join('\n');
 }
 
 // ============================================================================

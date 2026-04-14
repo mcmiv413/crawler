@@ -26,7 +26,9 @@ export function DungeonCanvas({ map, vpTilesWidth, vpTilesHeight }: Props) {
   useEffect(() => {
     spriteRegistry.onReady(() => setSpritesReady(true));
     if (!spriteRegistry.isReady()) {
-      spriteRegistry.load().catch(console.error);
+      spriteRegistry.load().catch(() => {
+        // Silently fail - sprites are optional, ASCII fallback available
+      });
     }
   }, []);
 
