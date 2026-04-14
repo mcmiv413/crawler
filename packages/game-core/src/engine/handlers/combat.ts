@@ -120,6 +120,17 @@ export function processEnemyKill(
     const slayResult = slayNemesis(newState, enemy.nemesisId, killingWeaponType ?? undefined);
     newState = slayResult.state;
     events = [...events, ...slayResult.events];
+  } else {
+    // Double-check: if this enemy template matches an active nemesis, slay it
+    const activeNemesis = newState.world.nemeses.find(
+      n => n.isActive && n.sourceTemplateId === enemy.templateId
+    );
+    if (activeNemesis !== undefined) {
+      const killingWeaponType = getEquippedWeaponType(newState);
+      const slayResult = slayNemesis(newState, activeNemesis.id, killingWeaponType ?? undefined);
+      newState = slayResult.state;
+      events = [...events, ...slayResult.events];
+    }
   }
 
   // 8. Update faction power
