@@ -48,7 +48,14 @@ export function buildMapView(state: GameState): MapView | null {
 
       // Determine sprite name based on tile type and biome
       let spriteName: string | undefined;
-      if (biome?.tileSprites) {
+
+      // Stairs sprites are universal, not biome-specific
+      if (cell.tile.type === 'stairs_up') {
+        spriteName = 'large stairs up';
+      } else if (cell.tile.type === 'stairs_down') {
+        spriteName = 'large stairs down';
+      } else if (biome?.tileSprites) {
+        // Other tile types use biome-specific sprites
         if (cell.tile.type === 'floor') {
           spriteName = biome.tileSprites.floor;
         } else if (cell.tile.type === 'wall') {

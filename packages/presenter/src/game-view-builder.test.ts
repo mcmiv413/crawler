@@ -1457,3 +1457,65 @@ describe('InspectableEntityView ASCII consistency (Phase 6)', () => {
     expect(inspectableEnemy?.ascii).toBe(mapEntity?.ascii);
   });
 });
+
+describe('Map view stairs sprites (Phase 1a)', () => {
+  it('renders stairs_up tile with sprite name "large stairs up"', () => {
+    const state = makeState({
+      run: makeRunState(2, true, true),
+    });
+    const view = buildGameView(state);
+    const mapView = view.map;
+
+    if (!mapView) throw new Error('No map view');
+    const stairsCell = mapView.cells.find(c => c.tileType === 'stairs_up');
+
+    expect(stairsCell).toBeDefined();
+    expect(stairsCell?.spriteName).toBe('large stairs up');
+  });
+
+  it('renders stairs_down tile with sprite name "large stairs down"', () => {
+    const stairsTile = {
+      type: 'stairs_down' as const,
+      walkable: true,
+      blocksVision: false,
+      ascii: '>',
+      color: '#0ff',
+    };
+    const cells = new Map([
+      [posKey({ x: 0, y: 0 }), { tile: stairsTile, visibility: 'visible' as const }],
+    ]);
+    const floor = {
+      width: 10,
+      height: 10,
+      depth: 3,
+      biomeId: 'crypt',
+      cells,
+      entrance: { x: 0, y: 0 },
+      exit: { x: 9, y: 9 },
+      seed: 42,
+    };
+
+    const state = makeState({
+      run: {
+        runId: entityId('run1'),
+        floor,
+        enemies: new Map(),
+        objects: new Map(),
+        turnCount: 1,
+        isActive: true,
+        floorHistory: [],
+        weaponMastery: { slashing: 0, blunt: 0, ranged: 0 },
+        speedAccumulators: {},
+      },
+    });
+
+    const view = buildGameView(state);
+    const mapView = view.map;
+
+    if (!mapView) throw new Error('No map view');
+    const stairsCell = mapView.cells.find(c => c.tileType === 'stairs_down');
+
+    expect(stairsCell).toBeDefined();
+    expect(stairsCell?.spriteName).toBe('large stairs down');
+  });
+});
