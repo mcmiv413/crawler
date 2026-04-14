@@ -28,6 +28,25 @@ export interface QuestView {
   readonly giverNpcId: string;
 }
 
+export interface NemesisInfo {
+  readonly id: string;
+  readonly name: string;
+  readonly title: string;
+  readonly rarity: string;
+  readonly defeats: number;
+  readonly promotionStage: number;
+  readonly lastSeenFloor: number | null;
+  readonly nextPossibleFloor: number;
+}
+
+export interface FactionStanding {
+  readonly factionId: string;
+  readonly name: string;
+  readonly alignment: string;
+  readonly standing: number;
+  readonly maxStanding: number;
+}
+
 export interface GameView {
   readonly gameId: string;
   readonly phase: 'town' | 'dungeon' | 'combat' | 'game_over';
@@ -108,12 +127,16 @@ export interface PlayerHudView {
   readonly gold: number;
   readonly floor: number;
   readonly experience: number;
+  readonly experienceForNextLevel: number;
   readonly biomeId: string | null;
   readonly statuses: readonly StatusView[];
   readonly abilities: readonly AbilityView[];
   readonly weaponMastery: WeaponMasteryView | null;
   readonly equippedItems: readonly EquippedItemView[];
   readonly statBreakdowns: Record<string, StatBreakdown>;
+  readonly activeQuests: readonly QuestView[];
+  readonly nemesisInfo: NemesisInfo | null;
+  readonly factionStandings: readonly FactionStanding[];
 }
 
 export interface StatusView {
