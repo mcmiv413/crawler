@@ -16,6 +16,7 @@ import type {
 } from '@dungeon/presenter';
 import type { ActionButtonType } from '../config/action-icons';
 import { ACTION_ORDER } from '../config/action-icons';
+import { SPRITE_NAMES } from '../config/sprite-names';
 import { ActionButton } from './ActionButton';
 import { ItemSpriteIcon } from './ItemSpriteIcon';
 import { AttackDropdown } from './dropdowns/AttackDropdown';
@@ -270,7 +271,7 @@ export function UnifiedActionPanel({
             enabled={true}
             isActive={dropdown.active === 'STAIRS'}
             onClick={() => handleActionClick('STAIRS')}
-            iconElement={<ItemSpriteIcon spriteName="large stairs up" size={16} />}
+            iconElement={<ItemSpriteIcon spriteName={SPRITE_NAMES.STAIRS_UP} size={16} />}
           />
         )}
       </div>
