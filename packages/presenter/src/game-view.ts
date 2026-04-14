@@ -45,6 +45,8 @@ export interface FactionStanding {
   readonly alignment: string;
   readonly standing: number;
   readonly maxStanding: number;
+  readonly description: string;
+  readonly enemiesInCurrentDungeon: readonly string[];
 }
 
 export interface GameView {

@@ -1,5 +1,5 @@
 import type { GameState, WeaponType } from '@dungeon/contracts';
-import { STATUS_DEFINITIONS, ABILITY_DEFINITIONS, ENCHANTMENT_BY_ID, XP_TABLE } from '@dungeon/content';
+import { STATUS_DEFINITIONS, ABILITY_DEFINITIONS, ENCHANTMENT_BY_ID, XP_TABLE, FACTIONS } from '@dungeon/content';
 import type { PlayerHudView, StatusView, AbilityView, EquippedItemView, EnchantmentView, NemesisInfo, FactionStanding } from '../game-view.js';
 import { calculateStatBreakdown } from './stat-breakdown-builder.js';
 
@@ -133,13 +133,29 @@ export function buildPlayerHud(state: GameState): PlayerHudView {
   }
 
   // Build faction standings
-  const factionStandings: FactionStanding[] = state.world.factions.map(f => ({
-    factionId: f.id,
-    name: f.name,
-    alignment: f.power > 50 ? 'strong' : f.power < 50 ? 'weak' : 'neutral',
-    standing: Math.max(0, f.disposition + 100),
-    maxStanding: 200,
-  }));
+  const factionStandings: FactionStanding[] = state.world.factions.map(f => {
+    const factionDef = FACTIONS.get(f.id);
+    
+    // Find enemies in current dungeon that belong to this faction
+    const mutableEnemiesInCurrentDungeon: string[] = [];
+    if (state.run) {
+      for (const enemy of state.run.enemies.values()) {
+        if (enemy.factions?.some(ef => ef.factionId === f.id)) {
+          mutableEnemiesInCurrentDungeon.push(enemy.name);
+        }
+      }
+    }
+
+    return {
+      factionId: f.id,
+      name: f.name,
+      alignment: f.power > 50 ? 'strong' : f.power < 50 ? 'weak' : 'neutral',
+      standing: Math.max(0, f.disposition + 100),
+      maxStanding: 200,
+      description: factionDef?.description ?? '',
+      enemiesInCurrentDungeon: mutableEnemiesInCurrentDungeon,
+    };
+  });
 
   return {
     name: p.name,
