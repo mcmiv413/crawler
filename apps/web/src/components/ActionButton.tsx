@@ -13,6 +13,7 @@ export interface ActionButtonProps {
   readonly enabled: boolean;
   readonly isActive: boolean; // Whether dropdown is open
   readonly onClick: () => void;
+  readonly iconElement?: React.ReactNode; // Optional custom icon override
 }
 
 export function ActionButton({
@@ -21,6 +22,7 @@ export function ActionButton({
   enabled,
   isActive,
   onClick,
+  iconElement,
 }: ActionButtonProps) {
   const icon = ACTION_ICONS[type];
 
@@ -32,7 +34,7 @@ export function ActionButton({
       title={icon.tooltip}
       aria-label={`${label}: ${icon.tooltip}`}
     >
-      <div className={styles.icon}>{icon.emoji}</div>
+      <div className={styles.icon}>{iconElement ?? icon.emoji}</div>
       <div className={styles.label}>{label}</div>
     </button>
   );
