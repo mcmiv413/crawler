@@ -18,13 +18,11 @@ export function ClickableStatGrid({ player }: ClickableStatGridProps) {
 
   const stats = [
     { key: 'health', label: 'HP', value: `${player.health}/${player.maxHealth}`, color: getHealthColor(player.health, player.maxHealth) },
-    { key: 'experience', label: 'XP', value: player.experience.toString(), color: '#6af' },
     { key: 'attack', label: 'ATK', value: player.attack.toString(), color: '#fa4' },
     { key: 'defense', label: 'DEF', value: player.defense.toString(), color: '#fa4' },
     ...(player.accuracy !== undefined ? [{ key: 'accuracy', label: 'ACC', value: `${player.accuracy}%`, color: '#4af' }] : []),
     ...(player.evasion !== undefined ? [{ key: 'evasion', label: 'EVA', value: `${player.evasion}%`, color: '#4af' }] : []),
     ...(player.speed !== undefined ? [{ key: 'speed', label: 'SPD', value: player.speed.toString(), color: '#4af' }] : []),
-    { key: 'gold', label: 'Gold', value: `${player.gold}g`, color: '#cc8' },
   ];
 
   const selectedBreakdown = selectedStat ? player.statBreakdowns[selectedStat] : null;
