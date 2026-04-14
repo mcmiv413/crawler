@@ -16,6 +16,12 @@ export const SPRITE_NAMES = {
   ACTION_INTERACT: 'action_interact',
   ACTION_USE: 'action_use',
   ACTION_INSPECT: 'action_inspect',
+
+  // Interaction objects
+  OBJECT_CHEST: 'closed chest',
+  OBJECT_FOUNTAIN: 'fountain',
+  OBJECT_ALTAR: 'arcane altar',
+  OBJECT_DOOR: 'closed stone door front',
 } as const;
 
 // Type for valid sprite names (useful for validation)

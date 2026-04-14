@@ -3,6 +3,8 @@
  */
 
 import type { EntityView } from '@dungeon/presenter';
+import { SPRITE_NAMES } from '../../config/sprite-names';
+import { ItemSpriteIcon } from '../ItemSpriteIcon';
 import styles from './ActionDropdowns.module.css';
 
 export interface InteractDropdownProps {
@@ -61,7 +63,18 @@ export function InteractDropdown({
             </div>
             <div className={styles.targetStats}>
               <span className={styles.distance}>
-                {objectType} • {distance} squares away
+                <span style={{ display: 'inline-flex', alignItems: 'center', gap: '4px' }}>
+                  {objectType.spriteName ? (
+                    <>
+                      <ItemSpriteIcon spriteName={objectType.spriteName} size={16} />
+                      <span>{objectType.label}</span>
+                    </>
+                  ) : (
+                    <span>{objectType.emoji} {objectType.label}</span>
+                  )}
+                </span>
+                {' • '}
+                {distance} squares away
               </span>
             </div>
           </button>
@@ -71,11 +84,25 @@ export function InteractDropdown({
   );
 }
 
-function getObjectType(name: string): string {
+interface ObjectTypeInfo {
+  label: string;
+  emoji: string;
+  spriteName?: string;
+}
+
+function getObjectType(name: string): ObjectTypeInfo {
   const nameLower = name.toLowerCase();
-  if (nameLower.includes('chest') || nameLower.includes('treasure')) return '💰 Loot';
-  if (nameLower.includes('fountain') || nameLower.includes('shrine')) return '⛲ Shrine';
-  if (nameLower.includes('altar')) return '🙏 Altar';
-  if (nameLower.includes('door') || nameLower.includes('gate')) return '🚪 Door';
-  return '📦 Object';
+  if (nameLower.includes('chest') || nameLower.includes('treasure')) {
+    return { label: 'Loot', emoji: '💰', spriteName: SPRITE_NAMES.OBJECT_CHEST };
+  }
+  if (nameLower.includes('fountain') || nameLower.includes('shrine')) {
+    return { label: 'Shrine', emoji: '⛲', spriteName: SPRITE_NAMES.OBJECT_FOUNTAIN };
+  }
+  if (nameLower.includes('altar')) {
+    return { label: 'Altar', emoji: '🙏', spriteName: SPRITE_NAMES.OBJECT_ALTAR };
+  }
+  if (nameLower.includes('door') || nameLower.includes('gate')) {
+    return { label: 'Door', emoji: '🚪', spriteName: SPRITE_NAMES.OBJECT_DOOR };
+  }
+  return { label: 'Object', emoji: '📦' };
 }
