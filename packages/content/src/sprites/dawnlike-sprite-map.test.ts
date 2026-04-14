@@ -1,5 +1,6 @@
 import { describe, it, expect } from 'vitest';
 import { DAWNLIKE_SPRITE_MAP } from './dawnlike-sprite-map.js';
+import { DAWNLIKE_NAME_MAP, resolveSprite } from './dawnlike-name-map.js';
 import { ENEMY_TEMPLATES, BIOMES, OBJECT_TEMPLATES } from '../index.js';
 
 const ATLAS_WIDTH = 2048;
@@ -50,5 +51,19 @@ describe('DawnLike Sprite Map', () => {
       if (r) walls.push(`${r.x},${r.y}`);
     }
     expect(new Set(walls).size).toBeGreaterThanOrEqual(4);
+  });
+
+  it('all game keys resolve to a sprite in the atlas', () => {
+    const missing: string[] = [];
+    for (const key of Object.keys(DAWNLIKE_NAME_MAP)) {
+      const sprite = resolveSprite(key);
+      if (!sprite) {
+        missing.push(key);
+      }
+    }
+    if (missing.length > 0) {
+      throw new Error(`${missing.length} game keys do not resolve to sprites:\n${missing.join('\n')}`);
+    }
+    expect(missing).toEqual([]);
   });
 });
