@@ -143,7 +143,7 @@ export async function buildApp(): Promise<FastifyInstance> {
           });
         } catch (error) {
           // If loot generation fails, continue without the unique item
-          console.error('Failed to generate nemesis loot:', error);
+          // Silently fail - nemesis loot generation is non-critical
         }
       }
     }
