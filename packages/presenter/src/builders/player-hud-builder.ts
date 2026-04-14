@@ -1,6 +1,6 @@
 import type { GameState, WeaponType } from '@dungeon/contracts';
-import { STATUS_DEFINITIONS, ABILITY_DEFINITIONS, ENCHANTMENT_BY_ID } from '@dungeon/content';
-import type { PlayerHudView, StatusView, AbilityView, EquippedItemView, EnchantmentView } from '../game-view.js';
+import { STATUS_DEFINITIONS, ABILITY_DEFINITIONS, ENCHANTMENT_BY_ID, XP_TABLE } from '@dungeon/content';
+import type { PlayerHudView, StatusView, AbilityView, EquippedItemView, EnchantmentView, NemesisInfo, FactionStanding } from '../game-view.js';
 import { calculateStatBreakdown } from './stat-breakdown-builder.js';
 
 export function buildPlayerHud(state: GameState): PlayerHudView {
@@ -96,6 +96,51 @@ export function buildPlayerHud(state: GameState): PlayerHudView {
       } satisfies AbilityView;
     });
 
+  // Calculate XP needed for next level
+  const experienceForNextLevel = p.level + 1 < XP_TABLE.length ? XP_TABLE[p.level + 1]! : XP_TABLE[XP_TABLE.length - 1]!;
+
+  // Build active quests list
+  const activeQuests = state.activeQuests.map(q => ({
+    id: q.id,
+    title: q.title,
+    description: q.description,
+    status: q.status,
+    rewardGold: q.rewardGold,
+    giverNpcId: q.giverNpcId,
+  }));
+
+  // Build nemesis info - show first active nemesis
+  let nemesisInfo: NemesisInfo | null = null;
+  const activeNemesis = state.world.nemeses.find(n => n.isActive);
+  if (activeNemesis !== undefined) {
+    const tierToRarity: Record<number, string> = {
+      1: 'common',
+      2: 'uncommon',
+      3: 'rare',
+      4: 'epic',
+      5: 'legendary',
+    };
+    nemesisInfo = {
+      id: activeNemesis.id,
+      name: activeNemesis.name,
+      title: activeNemesis.title,
+      rarity: tierToRarity[activeNemesis.tier] ?? 'unknown',
+      defeats: activeNemesis.killCount,
+      promotionStage: activeNemesis.rank,
+      lastSeenFloor: state.run?.floor.depth ?? null,
+      nextPossibleFloor: activeNemesis.floorOfAscension + 1,
+    };
+  }
+
+  // Build faction standings
+  const factionStandings: FactionStanding[] = state.world.factions.map(f => ({
+    factionId: f.id,
+    name: f.name,
+    alignment: f.power > 50 ? 'strong' : f.power < 50 ? 'weak' : 'neutral',
+    standing: Math.max(0, f.disposition + 100),
+    maxStanding: 200,
+  }));
+
   return {
     name: p.name,
     level: p.level,
@@ -110,11 +155,15 @@ export function buildPlayerHud(state: GameState): PlayerHudView {
     gold: p.gold,
     floor: p.floor,
     experience: p.experience,
+    experienceForNextLevel,
     biomeId: state.run?.floor.biomeId ?? null,
     statuses: statusList,
     abilities: abilityList,
     weaponMastery: state.run ? { ...state.run.weaponMastery } : null,
     equippedItems: mutableEquippedItems,
     statBreakdowns: calculateStatBreakdown(state),
+    activeQuests,
+    nemesisInfo,
+    factionStandings,
   };
 }

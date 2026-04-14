@@ -10,10 +10,10 @@ function collectWeaponBonuses(statName: string, weapon: unknown): StatBonusSourc
   if (statName === 'attack' && w.damage > 0) {
     mutableBonuses.push({ source: `${(weapon as { name: string }).name}`, amount: w.damage });
   }
-  if (statName === 'accuracy' && w.accuracy > 0) {
+  if (statName === 'accuracy' && w.accuracy !== 0) {
     mutableBonuses.push({ source: `${(weapon as { name: string }).name} accuracy`, amount: w.accuracy });
   }
-  if (statName === 'speed' && w.speed > 0) {
+  if (statName === 'speed' && w.speed !== 0) {
     mutableBonuses.push({ source: `${(weapon as { name: string }).name} speed`, amount: w.speed });
   }
 
@@ -36,9 +36,9 @@ function collectArmorBonuses(state: GameState, statName: string, armorSlots: rea
       mutableBonuses.push({ source: `${(armor as { name: string }).name}`, amount: a.defense });
     }
 
-    if (statName === 'defense' && a.resistance) {
+    if (a.resistance) {
       for (const [damageType, resistance] of Object.entries(a.resistance)) {
-        if (resistance > 0) {
+        if (resistance !== 0) {
           mutableBonuses.push({
             source: `${(armor as { name: string }).name} vs ${damageType}`,
             amount: resistance,
