@@ -19,5 +19,8 @@ export const volcanic: BiomeDefinition = {
     roomHeight: [4, 8],
     corridorLength: [1, 2],
     dugPercentage: 0.58,
+    algorithm: 'cellular',
+    fillProbability: 0.55,
+    iterations: 4,
   },
 };

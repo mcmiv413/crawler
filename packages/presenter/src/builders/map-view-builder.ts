@@ -53,12 +53,23 @@ export function buildMapView(state: GameState): MapView | null {
           spriteName = biome.tileSprites.floor;
         } else if (cell.tile.type === 'wall') {
           spriteName = biome.tileSprites.wall;
-          // Add organic variation to walls in certain biomes
+          // Add organic variation to walls in cellular biomes
           const variation = (x! + y! * 7) % 2;
-          if (biome.biomeId === 'forest' && variation === 1) {
-            spriteName = 'trunk b';
-          } else if (biome.biomeId === 'moss_caverns' && variation === 1) {
-            spriteName = 'bright rock wall flat';
+          if (variation === 1) {
+            switch (biome.biomeId) {
+              case 'forest':
+                spriteName = 'trunk b';
+                break;
+              case 'moss_caverns':
+                spriteName = 'bright rock wall flat';
+                break;
+              case 'crystal_cave':
+                spriteName = 'bright blue wall flat';
+                break;
+              case 'frozen_depths':
+                spriteName = 'bright ice wall flat';
+                break;
+            }
           }
         } else if (cell.tile.type === 'door') {
           spriteName = biome.tileSprites.interactable;
