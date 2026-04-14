@@ -113,6 +113,7 @@ export interface EquippedItemView {
   readonly rarity: string;
   readonly baseBonus: number;
   readonly enchantments: readonly EnchantmentView[];
+  readonly spriteName?: string;  // Atlas sprite name for rendering
 }
 
 export interface PlayerHudView {
@@ -167,6 +168,7 @@ export interface MapCellView {
   readonly visibility: 'hidden' | 'remembered' | 'visible';
   readonly walkable: boolean;
   readonly tileType: import('@dungeon/contracts').TileType;
+  readonly spriteName?: string;  // Atlas sprite name for tile
 }
 
 export interface EntityView {
@@ -182,6 +184,7 @@ export interface EntityView {
   readonly templateId: string | null;  // templateId for enemies, itemId for items, null for player
   readonly isNemesis?: boolean;
   readonly nemesisName?: string;
+  readonly spriteName?: string;  // Atlas sprite name for rendering
 }
 
 export interface InspectableEntityView {
@@ -287,6 +290,7 @@ export interface ShopItemView {
   readonly effectivePrice: number;  // after shopkeeper disposition discount
   readonly stock: number;
   readonly itemClass: string;  // weapon | armor | consumable
+  readonly spriteName?: string;  // Atlas sprite name for rendering
 }
 
 export interface InventoryView {
@@ -315,6 +319,7 @@ export interface InventoryItemView {
   readonly quantity: number;          // 1 for non-stackable, N for stacks
   readonly stackEntityIds: readonly string[];  // all EntityIds in this stack
   readonly templateId: string;        // itemId from template, for grouping
+  readonly spriteName?: string;       // Atlas sprite name for rendering
   readonly weaponStats?: { damage: number; damageType: string; accuracy: number; speed: number; weaponRange: number; minRange?: number };
   readonly armorStats?: { defense: number; evasionPenalty: number; slot: string; enchantmentSlots: number; enchantments: readonly (string | null)[] };
 }

@@ -1,5 +1,4 @@
 import type { EnemyTemplate } from '@dungeon/contracts';
-import { SPRITE_MAP } from '../sprites/sprite-map.js';
 
 export const shadowLurker = {
   templateId: 'shadow_lurker',
@@ -33,7 +32,7 @@ export const shadowLurker = {
   ascii: 'L',
   color: '#5533aa',
   movementBehaviorId: 'ambush_idle',
-  sprite: SPRITE_MAP['enemy:shadow_lurker'],
+  spriteName: 'shadow skeleton',
   biomes: [{ biomeId: 'moss_caverns' }, { biomeId: 'frozen_depths' }],
   factions: [{ factionId: 'shadow_cult', weight: 1.0 }],
   ambientBehaviorProfile: 'wall_lurker',

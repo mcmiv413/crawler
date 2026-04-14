@@ -5,14 +5,13 @@ import { FACTIONS } from '../factions/index.js';
 
 describe('Enemy Content Integrity', () => {
   describe('Sprite uniqueness', () => {
-    it('no two enemies share the same sprite (x,y)', () => {
+    it('no two enemies share the same sprite name', () => {
       const seen = new Map<string, string>();
       for (const t of ENEMY_TEMPLATES.values()) {
-        if (!t.sprite) continue;
-        const key = `${t.sprite.x},${t.sprite.y}`;
-        const existing = seen.get(key);
-        expect(existing, `${t.templateId} and ${existing} share sprite at (${key})`).toBeUndefined();
-        seen.set(key, t.templateId);
+        if (!t.spriteName) continue;
+        const existing = seen.get(t.spriteName);
+        expect(existing, `${t.templateId} and ${existing} share spriteName '${t.spriteName}'`).toBeUndefined();
+        seen.set(t.spriteName, t.templateId);
       }
     });
   });
@@ -117,9 +116,9 @@ describe('Enemy Content Integrity', () => {
   describe('Sprite coverage', () => {
     it('every enemy has a sprite defined', () => {
       const missing = Array.from(ENEMY_TEMPLATES.values())
-        .filter(t => !t.sprite)
+        .filter(t => !t.spriteName)
         .map(t => t.templateId);
-      expect(missing, `enemies missing sprite: ${missing.join(', ')}`).toHaveLength(0);
+      expect(missing, `enemies missing spriteName: ${missing.join(', ')}`).toHaveLength(0);
     });
   });
 });

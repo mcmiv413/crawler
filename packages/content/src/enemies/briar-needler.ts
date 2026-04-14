@@ -1,5 +1,4 @@
 import type { EnemyTemplate } from '@dungeon/contracts';
-import { SPRITE_MAP } from '../sprites/sprite-map.js';
 
 export const briarNeedler = {
   templateId: 'briar_needler',
@@ -35,7 +34,7 @@ export const briarNeedler = {
   ascii: 'n',
   color: '#66aa55',
   movementBehaviorId: 'wall_stalker',
-  sprite: SPRITE_MAP['enemy:briar_needler'],
+  spriteName: 'killer beetle',
   biomes: [{ biomeId: 'forest' }],
   factions: [{ factionId: 'beast_swarm', weight: 1.0 }],
   ambientBehaviorProfile: 'wanderer',

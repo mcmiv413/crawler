@@ -9,6 +9,11 @@ export const frozenDepths: BiomeDefinition = {
   ambientColor: '#3a5a7a',
   floorAscii: '.',
   wallAscii: '█',
+  tileSprites: {
+    floor: 'day stone floor c',
+    wall: 'dark ice wall center',
+    interactable: 'statue',
+  },
   mapGen: {
     roomWidth: [2, 4],
     roomHeight: [2, 3],

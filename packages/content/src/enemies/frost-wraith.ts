@@ -1,5 +1,4 @@
 import type { EnemyTemplate } from '@dungeon/contracts';
-import { SPRITE_MAP } from '../sprites/sprite-map.js';
 
 export const frostWraith = {
   templateId: 'frost_wraith',
@@ -32,7 +31,7 @@ export const frostWraith = {
   description: 'A spectral figure radiating bitter cold.',
   ascii: 'W',
   color: '#aaddff',
-  sprite: SPRITE_MAP['enemy:frost_wraith'],
+  spriteName: 'wraith',
   biomes: [{ biomeId: 'frozen_depths' }],
   factions: [{ factionId: 'undead_legion', weight: 1.0 }],
   ambientBehaviorProfile: 'wanderer',

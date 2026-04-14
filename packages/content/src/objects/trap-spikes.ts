@@ -1,5 +1,5 @@
 import type { ObjectTemplate } from '@dungeon/contracts';
-import { SPRITE_MAP } from '../sprites/sprite-map.js';
+
 
 export const trapSpikes: ObjectTemplate = {
   templateId: 'trap_spikes',
@@ -7,7 +7,7 @@ export const trapSpikes: ObjectTemplate = {
   description: 'Pressure-plate spikes. Triggered when stepped on.',
   ascii: 'v',
   color: '#888',
-  sprite: SPRITE_MAP['object:trap_spikes'],
+  spriteName: 'spiked pit tile',
   healthDelta: -15,
   consumable: false,
   blocksMovement: false,

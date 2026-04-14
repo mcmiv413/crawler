@@ -9,6 +9,11 @@ export const mossCaverns: BiomeDefinition = {
   ambientColor: '#2a4a2a',
   floorAscii: '~',
   wallAscii: '#',
+  tileSprites: {
+    floor: 'day tile floor c',
+    wall: 'dark fort wall center',
+    interactable: 'statue',
+  },
   mapGen: {
     roomWidth: [3, 7],
     roomHeight: [3, 6],

@@ -1,5 +1,4 @@
 import type { EnemyTemplate } from '@dungeon/contracts';
-import { SPRITE_MAP } from '../sprites/sprite-map.js';
 
 export const shardPriest = {
   templateId: 'shard_priest',
@@ -33,7 +32,7 @@ export const shardPriest = {
   ascii: 'C',
   color: '#dd44ff',
   movementBehaviorId: 'rearline_anchor',
-  sprite: SPRITE_MAP['enemy:shard_priest'],
+  spriteName: 'high priest',
   biomes: [{ biomeId: 'crystal_cave' }],
   factions: [{ factionId: 'shadow_cult', weight: 1.0 }],
   ambientBehaviorProfile: 'wanderer',

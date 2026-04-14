@@ -8,7 +8,6 @@ function drawCell(
   cell: MapCellView,
   screenX: number,
   screenY: number,
-  biomeId: string,
 ): void {
   const isRemembered = cell.visibility === 'remembered';
 
@@ -16,7 +15,12 @@ function drawCell(
     ctx.globalAlpha = 0.35;
   }
 
-  const sprite = spriteRegistry.getTileSprite(cell.tileType, biomeId);
+  // Try to use atlas sprite name first, then fall back to old getTileSprite
+  let sprite = null;
+  if (cell.spriteName) {
+    sprite = spriteRegistry.getSpriteByAtlasName(cell.spriteName);
+  }
+
   if (sprite) {
     const { image, rect } = sprite;
     ctx.drawImage(image, rect.x, rect.y, rect.w, rect.h, screenX, screenY, CELL_SIZE, CELL_SIZE);
@@ -43,19 +47,14 @@ function drawEntity(
   screenX: number,
   screenY: number,
 ): void {
-  let spriteKey: string | null = null;
-
-  if (entity.type === 'player') {
-    spriteKey = 'player';
-  } else if (entity.type === 'enemy' && entity.templateId) {
-    spriteKey = `enemy:${entity.templateId}`;
-  } else if (entity.type === 'item' && entity.templateId) {
-    spriteKey = `item:${entity.templateId}`;
-  } else if (entity.type === 'object' && entity.templateId) {
-    spriteKey = `object:${entity.templateId}`;
+  // Use entity's atlas name if available (enemies, items, objects)
+  let sprite = null;
+  if ('spriteName' in entity && entity.spriteName) {
+    sprite = spriteRegistry.getSpriteByAtlasName(entity.spriteName);
+  } else if (entity.type === 'player') {
+    // Fallback to player sprite
+    sprite = spriteRegistry.getSprite('player');
   }
-
-  const sprite = spriteKey ? spriteRegistry.getSprite(spriteKey) : null;
 
   if (sprite) {
     const { image, rect } = sprite;
@@ -105,7 +104,7 @@ export function renderMap(
 
       if (!cell) continue;
 
-      drawCell(ctx, cell, screenX, screenY, map.biomeId);
+      drawCell(ctx, cell, screenX, screenY);
 
       // Draw entity on top (only for visible cells)
       if (cell.visibility === 'visible') {

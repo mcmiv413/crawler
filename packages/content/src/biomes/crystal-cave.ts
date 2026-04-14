@@ -9,6 +9,11 @@ export const crystalCave: BiomeDefinition = {
   ambientColor: '#331a66',
   floorAscii: '.',
   wallAscii: '*',
+  tileSprites: {
+    floor: 'day tile floor c',
+    wall: 'dark deep wall center',
+    interactable: 'statue',
+  },
   mapGen: {
     roomWidth: [4, 7],
     roomHeight: [3, 5],

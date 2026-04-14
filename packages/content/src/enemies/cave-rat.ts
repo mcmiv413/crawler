@@ -1,5 +1,4 @@
 import type { EnemyTemplate } from '@dungeon/contracts';
-import { SPRITE_MAP } from '../sprites/sprite-map.js';
 
 export const caveRat = {
   templateId: 'cave_rat',
@@ -33,7 +32,7 @@ export const caveRat = {
   ascii: 'r',
   color: '#aa7755',
   movementBehaviorId: 'rearline_anchor',
-  sprite: SPRITE_MAP['enemy:cave_rat'],
+  spriteName: 'enormous rat',
   biomes: [{ biomeId: 'stone_crypt' }, { biomeId: 'goblin_warrens' }, { biomeId: 'forest' }],
   factions: [{ factionId: 'beast_swarm', weight: 1.0 }],
   ambientBehaviorProfile: 'swarmer',
