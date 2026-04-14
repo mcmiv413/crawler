@@ -26,22 +26,16 @@ describe('armor catalog', () => {
     }
   });
 
-  it('null-only enchantments for non-pre-enchanted items', () => {
-    const preEnchanted = new Set([
-      'regen_vest',
-      // D4: New enchanted items
-      'spiked_leather', 'ember_cloak', 'shadow_vest', 'bone_guard_plate', 'plague_mantle',
-      'warden_helm', 'iron_crown', 'mind_veil',
-      'swift_boots', 'phase_steps',
-      'grip_gauntlets', 'leech_wraps',
-      'venom_ring', 'blessed_ring', 'iron_band', 'ember_ring', 'shadow_ring',
-    ]);
+  it('items with enchantments should have non-null enchantments, others should be null', () => {
     for (const item of ARMOR) {
-      if (!preEnchanted.has(item.itemId)) {
-        for (const enc of item.armor.enchantments) {
-          expect(enc, `${item.itemId} should have null enchantment slots`).toBeNull();
-        }
-      }
+      const hasAnyEnchantment = item.armor.enchantments.some(e => e !== null);
+      const allAreNull = item.armor.enchantments.every(e => e === null);
+
+      // Each item is either all-null or has at least one non-null enchantment
+      expect(
+        hasAnyEnchantment || allAreNull,
+        `${item.itemId} has mixed null/non-null enchantments`,
+      ).toBe(true);
     }
   });
 

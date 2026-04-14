@@ -1,6 +1,7 @@
 import { describe, it, expect } from 'vitest';
 import { ALL_ABILITY_DEFINITIONS, buildRegistry } from './index.js';
 import { BASE_PLAYER_STATS, XP_TABLE } from '@dungeon/content';
+import { WEAPON_TYPES } from '@dungeon/contracts';
 
 /**
  * Contract Tests: Ability Data Integrity
@@ -226,7 +227,7 @@ describe('Unlock Level Consistency', () => {
   });
 
   it('mastery-unlocked abilities reference valid weapon types', () => {
-    const validWeaponTypes = new Set(['blade', 'bludgeon', 'axe', 'ranged']);
+    const validWeaponTypes = new Set(WEAPON_TYPES);
 
     for (const ability of ALL_ABILITY_DEFINITIONS) {
       for (const unlock of ability.unlocks) {
@@ -262,7 +263,7 @@ describe('Ability-Specific Validations', () => {
     for (const ability of ALL_ABILITY_DEFINITIONS) {
       // Check for weapon-specific ability names
       const abilityId = ability.id;
-      for (const weaponType of ['blade', 'bludgeon', 'axe', 'ranged']) {
+      for (const weaponType of WEAPON_TYPES) {
         if (abilityId.startsWith(weaponType + '_')) {
           const key = weaponType;
           const existing = weaponAbilities.get(key);

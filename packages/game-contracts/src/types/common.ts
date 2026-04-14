@@ -47,6 +47,8 @@ export interface WeaponMastery {
   readonly ranged: number;
 }
 
+export const WEAPON_TYPES: readonly WeaponType[] = ['blade', 'bludgeon', 'axe', 'ranged'];
+
 export const EMPTY_WEAPON_MASTERY: WeaponMastery = { blade: 0, bludgeon: 0, axe: 0, ranged: 0 };
 
 /** Item rarity */
