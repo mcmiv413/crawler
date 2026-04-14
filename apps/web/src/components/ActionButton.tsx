@@ -5,6 +5,7 @@
 
 import type { ActionButtonType } from '../config/action-icons';
 import { ACTION_ICONS } from '../config/action-icons';
+import { ItemSpriteIcon } from './ItemSpriteIcon';
 import styles from './ActionButton.module.css';
 
 export interface ActionButtonProps {
@@ -26,6 +27,15 @@ export function ActionButton({
 }: ActionButtonProps) {
   const icon = ACTION_ICONS[type];
 
+  // Determine what to render: custom override → sprite → emoji
+  let renderedIcon = iconElement;
+  if (!renderedIcon && icon.spriteName) {
+    renderedIcon = <ItemSpriteIcon spriteName={icon.spriteName} size={16} />;
+  }
+  if (!renderedIcon) {
+    renderedIcon = icon.emoji;
+  }
+
   return (
     <button
       className={`${styles.button} ${isActive ? styles.active : ''} ${!enabled ? styles.disabled : ''}`}
@@ -34,7 +44,7 @@ export function ActionButton({
       title={icon.tooltip}
       aria-label={`${label}: ${icon.tooltip}`}
     >
-      <div className={styles.icon}>{iconElement ?? icon.emoji}</div>
+      <div className={styles.icon}>{renderedIcon}</div>
       <div className={styles.label}>{label}</div>
     </button>
   );
