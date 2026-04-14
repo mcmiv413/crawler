@@ -12,7 +12,7 @@ export const crystalCave: BiomeDefinition = {
   tileSprites: {
     floor: 'day tile floor c',
     wall: 'dark deep wall center',
-    interactable: 'statue',
+    interactable: 'closed stone door front',
   },
   mapGen: {
     roomWidth: [4, 7],

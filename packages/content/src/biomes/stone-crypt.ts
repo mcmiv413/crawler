@@ -36,7 +36,7 @@ export const stoneCrypt: BiomeDefinition = {
   tileSprites: {
     floor: 'day stone floor c',
     wall: 'dark brick wall center',
-    interactable: 'statue',
+    interactable: 'closed stone door front',
   },
   mapGen: {
     roomWidth: [3, 5],

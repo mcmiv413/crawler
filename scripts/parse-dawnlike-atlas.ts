@@ -16,9 +16,9 @@ interface AtlasEntry {
 }
 
 /**
- * Parse libGDX .atlas format and convert to canvas coordinates.
- * libGDX uses bottom-left origin; canvas uses top-left.
- * Conversion: canvasY = atlasHeight - atlasY - spriteHeight
+ * Parse libGDX .atlas format.
+ * Modern (non-legacy) libGDX TexturePacker output uses top-left origin,
+ * matching canvas coordinates — no y-flip needed.
  */
 function parseAtlas(atlasPath: string): {
   sprites: Record<string, ParsedSprite>;
@@ -111,13 +111,10 @@ function parseAtlas(atlasPath: string): {
       const [rawX, rawY] = entry.xy;
       const [w, h] = entry.size;
 
-      // Apply y-axis flip: bottom-left (libGDX) → top-left (canvas)
-      const canvasY = atlasHeight - rawY - h;
-
       const spriteKey = entries.length === 1 ? name : `${name}#${frameIdx}`;
       sprites[spriteKey] = {
         x: rawX,
-        y: canvasY,
+        y: rawY,
         w,
         h,
       };
@@ -129,8 +126,7 @@ function parseAtlas(atlasPath: string): {
       if (firstEntry) {
         const [rawX, rawY] = firstEntry.xy;
         const [w, h] = firstEntry.size;
-        const canvasY = atlasHeight - rawY - h;
-        sprites[name] = { x: rawX, y: canvasY, w, h };
+        sprites[name] = { x: rawX, y: rawY, w, h };
       }
     }
   }
