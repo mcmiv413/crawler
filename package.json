@@ -28,7 +28,8 @@
     "docker:build": "docker-compose build",
     "docker:up": "docker-compose up -d",
     "docker:down": "docker-compose down",
-    "docker:restart": "docker-compose down && docker-compose up -d --build"
+    "docker:restart": "docker-compose down && docker-compose up -d --build",
+    "parse-atlas": "tsx --tsconfig scripts/tsconfig.json scripts/parse-dawnlike-atlas.ts"
   },
   "devDependencies": {
     "@fast-check/vitest": "^0.1.0",
