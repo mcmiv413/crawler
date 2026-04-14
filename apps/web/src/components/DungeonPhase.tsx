@@ -10,7 +10,6 @@ import { InventoryPanel } from './InventoryPanel.js';
 import { DebugPanel } from './DebugPanel.js';
 import { UnifiedActionPanel } from './UnifiedActionPanel.js';
 import { InspectModal } from './InspectModal.js';
-import { PlayerInfoPanel } from './PlayerInfoPanel.js';
 import { useBreakpoint } from '../hooks/useBreakpoint.js';
 import { CombatIndicators } from './CombatIndicators.js';
 import { useCombatIndicators } from '../hooks/useCombatIndicators.js';
@@ -195,11 +194,6 @@ export function DungeonPhase({
           <PlayerHud player={view.player} compact />
         </div>
 
-        {/* Player Info Panel: quests, factions, masteries, enchantments */}
-        <div style={{ flexShrink: 0, marginBottom: 6 }}>
-          <PlayerInfoPanel view={view} />
-        </div>
-
         {/* Dungeon map: dynamically sized above combat log */}
         <div ref={mapContainerRef} style={{ flex: 1, minHeight: 0, display: 'flex', flexDirection: 'column', marginBottom: 6 }}>
           <MapDisplay map={view.map} useSprites={useSprites} containerRef={mapContainerRef} combatLog={combatLog} />
@@ -259,11 +253,6 @@ export function DungeonPhase({
       {/* Player HUD: always visible */}
       <div style={{ flexShrink: 0, marginBottom: 6 }}>
         <PlayerHud player={view.player} compact />
-      </div>
-
-      {/* Player Info Panel: quests, factions, masteries, enchantments */}
-      <div style={{ flexShrink: 0, marginBottom: 6 }}>
-        <PlayerInfoPanel view={view} />
       </div>
 
       {/* Dungeon map: dynamically sized above combat log */}
