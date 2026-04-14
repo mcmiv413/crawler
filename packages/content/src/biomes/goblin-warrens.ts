@@ -12,7 +12,7 @@ export const goblinWarrens: BiomeDefinition = {
   tileSprites: {
     floor: 'day dirt floor c',
     wall: 'dark mine wall center',
-    interactable: 'statue',
+    interactable: 'closed wooden door front',
   },
   mapGen: {
     roomWidth: [2, 4],

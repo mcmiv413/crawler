@@ -12,7 +12,7 @@ export const frozenDepths: BiomeDefinition = {
   tileSprites: {
     floor: 'day stone floor c',
     wall: 'dark ice wall center',
-    interactable: 'statue',
+    interactable: 'closed stone door front',
   },
   mapGen: {
     roomWidth: [2, 4],
