@@ -4,9 +4,9 @@
  */
 
 export const SPRITE_NAMES = {
-  // Stairs
-  STAIRS_UP: 'large stairs up',
-  STAIRS_DOWN: 'large stairs down',
+  // Stairs - using right-facing variants for UI
+  STAIRS_UP: 'staircase up right',
+  STAIRS_DOWN: 'staircase down right',
 
   // Action buttons
   ACTION_WAIT: 'action_wait',
@@ -22,6 +22,7 @@ export const SPRITE_NAMES = {
   OBJECT_FOUNTAIN: 'fountain',
   OBJECT_ALTAR: 'arcane altar',
   OBJECT_DOOR: 'closed stone door front',
+  OBJECT_FIREPIT: 'lava pool right',
 } as const;
 
 // Type for valid sprite names (useful for validation)

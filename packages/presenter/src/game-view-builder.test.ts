@@ -1459,7 +1459,7 @@ describe('InspectableEntityView ASCII consistency (Phase 6)', () => {
 });
 
 describe('Map view stairs sprites (Phase 1a)', () => {
-  it('renders stairs_up tile with sprite name "large stairs up"', () => {
+  it('renders stairs_up tile with sprite name "staircase up left"', () => {
     const state = makeState({
       run: makeRunState(2, true, true),
     });
@@ -1470,10 +1470,10 @@ describe('Map view stairs sprites (Phase 1a)', () => {
     const stairsCell = mapView.cells.find(c => c.tileType === 'stairs_up');
 
     expect(stairsCell).toBeDefined();
-    expect(stairsCell?.spriteName).toBe('large stairs up');
+    expect(stairsCell?.spriteName).toBe('staircase up left');
   });
 
-  it('renders stairs_down tile with sprite name "large stairs down"', () => {
+  it('renders stairs_down tile with sprite name "staircase down left"', () => {
     const stairsTile = {
       type: 'stairs_down' as const,
       walkable: true,
@@ -1516,6 +1516,6 @@ describe('Map view stairs sprites (Phase 1a)', () => {
     const stairsCell = mapView.cells.find(c => c.tileType === 'stairs_down');
 
     expect(stairsCell).toBeDefined();
-    expect(stairsCell?.spriteName).toBe('large stairs down');
+    expect(stairsCell?.spriteName).toBe('staircase down left');
   });
 });
