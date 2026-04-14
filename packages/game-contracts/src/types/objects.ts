@@ -14,6 +14,8 @@ export interface ObjectTemplate {
   readonly consumable: boolean;
   /** If true, the player cannot walk through this object */
   readonly blocksMovement: boolean;
+  /** If true, this object is a hazard that triggers automatically (traps, lava, etc.) */
+  readonly isHazard?: boolean;
   /** If set, object dispenses loot on interaction (like a chest) */
   readonly lootTableId?: string;
   /** Which biomes this object can spawn in */
