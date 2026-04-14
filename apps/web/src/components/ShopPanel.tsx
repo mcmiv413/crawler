@@ -291,9 +291,11 @@ export function ShopPanel({ view, loading, sendCommand, isMobile }: ShopPanelPro
                 justifyContent: 'space-between',
                 alignItems: 'center',
                 cursor: 'pointer',
+                gap: 4,
               }}
               onClick={() => setSelectedItem(item)}
             >
+              {item.spriteName && <ItemSpriteIcon spriteName={item.spriteName} size={16} />}
               <div style={{ flex: 1 }}>
                 <span style={{ color: rarityColor[item.rarity] ?? '#aaa', marginRight: 4 }}>
                   [{item.rarity}]
