@@ -172,6 +172,7 @@ export function buildTownView(state: GameState): TownView {
             effectivePrice,
             stock: si.stock,
             itemClass: template?.itemClass ?? 'unknown',
+            spriteName: template?.spriteName,
           } satisfies ShopItemView;
         }),
       canUndo: !!state.world.shop.lastTransaction,

@@ -1,5 +1,5 @@
 import type { GameState, EnemyInstance, DamageType } from '@dungeon/contracts';
-import { OBJECT_TEMPLATES } from '@dungeon/content';
+import { OBJECT_TEMPLATES, ENEMY_TEMPLATES, BIOMES } from '@dungeon/content';
 import type { MapView, EntityView } from '../game-view.js';
 
 function getDamageTypeColor(damageType: DamageType): string {
@@ -37,6 +37,7 @@ function computeDangerLevel(depth: number, playerLevel: number): 'safe' | 'moder
 export function buildMapView(state: GameState): MapView | null {
   if (!state.run) return null;
   const floor = state.run.floor;
+  const biome = BIOMES.get(floor.biomeId);
 
   // Build cell views — only visible + remembered
   const cellArray = Array.from(floor.cells)
@@ -44,6 +45,19 @@ export function buildMapView(state: GameState): MapView | null {
     .map(([key, cell]) => {
       const [x, y] = key.split(',').map(Number);
       const dimmed = cell.visibility === 'remembered';
+
+      // Determine sprite name based on tile type and biome
+      let spriteName: string | undefined;
+      if (biome?.tileSprites) {
+        if (cell.tile.type === 'floor') {
+          spriteName = biome.tileSprites.floor;
+        } else if (cell.tile.type === 'wall') {
+          spriteName = biome.tileSprites.wall;
+        } else if (cell.tile.type === 'door') {
+          spriteName = biome.tileSprites.interactable;
+        }
+      }
+
       return {
         x: x!,
         y: y!,
@@ -53,6 +67,7 @@ export function buildMapView(state: GameState): MapView | null {
         visibility: cell.visibility,
         walkable: cell.tile.walkable,
         tileType: cell.tile.type,
+        spriteName,
       };
     });
 
@@ -73,20 +88,24 @@ export function buildMapView(state: GameState): MapView | null {
   // Build visible enemies
   const enemyEntities = Array.from(state.run.enemies)
     .filter(([key]) => floor.cells.get(key)?.visibility === 'visible')
-    .map(([, enemy]): EntityView => ({
-      id: enemy.id,
-      x: enemy.position.x,
-      y: enemy.position.y,
-      ascii: enemy.ascii,
-      color: getEnemyColor(enemy),
-      name: enemy.name,
-      type: 'enemy',
-      health: enemy.stats.health,
-      maxHealth: enemy.stats.maxHealth,
-      templateId: enemy.templateId,
-      isNemesis: !!enemy.nemesisId,
-      nemesisName: enemy.nemesisId ? enemy.name : undefined,
-    }));
+    .map(([, enemy]): EntityView => {
+      const template = ENEMY_TEMPLATES.get(enemy.templateId);
+      return {
+        id: enemy.id,
+        x: enemy.position.x,
+        y: enemy.position.y,
+        ascii: enemy.ascii,
+        color: getEnemyColor(enemy),
+        name: enemy.name,
+        type: 'enemy',
+        health: enemy.stats.health,
+        maxHealth: enemy.stats.maxHealth,
+        templateId: enemy.templateId,
+        isNemesis: !!enemy.nemesisId,
+        nemesisName: enemy.nemesisId ? enemy.name : undefined,
+        spriteName: template?.spriteName,
+      };
+    });
 
   // Build visible objects
   const objectEntities = Array.from(state.run.objects ?? new Map())
@@ -103,6 +122,7 @@ export function buildMapView(state: GameState): MapView | null {
         name: template?.name ?? obj.templateId,
         type: 'object',
         templateId: obj.templateId,
+        spriteName: template?.spriteName,
       };
     });
 

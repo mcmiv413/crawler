@@ -1,4 +1,4 @@
-import type { SpriteRect, Position, EntityId } from './common.js';
+import type { Position, EntityId } from './common.js';
 import type { BiomeMembership } from './enemy.js';
 
 export interface ObjectTemplate {
@@ -7,7 +7,7 @@ export interface ObjectTemplate {
   readonly description: string;
   readonly ascii: string;
   readonly color: string;
-  readonly sprite?: SpriteRect;
+  readonly spriteName?: string;
   /** Effect on player health when interacted with. Negative = damage, positive = heal, 0 = no effect */
   readonly healthDelta: number;
   /** If true, object is removed from the map after one interaction */

@@ -10,6 +10,7 @@ import { InventoryPanel } from './InventoryPanel.js';
 import { DebugPanel } from './DebugPanel.js';
 import { UnifiedActionPanel } from './UnifiedActionPanel.js';
 import { InspectModal } from './InspectModal.js';
+import { ItemSpriteIcon } from './ItemSpriteIcon.js';
 import { useBreakpoint } from '../hooks/useBreakpoint.js';
 import { CombatIndicators } from './CombatIndicators.js';
 import { useCombatIndicators } from '../hooks/useCombatIndicators.js';
@@ -177,7 +178,10 @@ export function DungeonPhase({
         <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 10, flexShrink: 0 }}>
           <div style={{ display: 'flex', gap: 8, alignItems: 'center' }}>
             <h2 style={{ margin: 0, color: '#88cc44', fontSize: 16 }}>Dungeon</h2>
-            <span style={{ fontSize: 11, color: '#aaa' }}>{weaponDisplay}</span>
+            <div style={{ display: 'flex', gap: 4, alignItems: 'center' }}>
+              <ItemSpriteIcon spriteName={equippedWeapon?.spriteName} size={16} />
+              <span style={{ fontSize: 11, color: '#aaa' }}>{weaponDisplay}</span>
+            </div>
           </div>
           {view.map && (
             <button
@@ -238,7 +242,10 @@ export function DungeonPhase({
       <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 10, flexShrink: 0 }}>
         <div style={{ display: 'flex', gap: 8, alignItems: 'center' }}>
           <h2 style={{ margin: 0, color: '#88cc44' }}>Dungeon</h2>
-          <span style={{ fontSize: 11, color: '#aaa' }}>{weaponDisplay}</span>
+          <div style={{ display: 'flex', gap: 4, alignItems: 'center' }}>
+            <ItemSpriteIcon spriteName={equippedWeapon?.spriteName} size={16} />
+            <span style={{ fontSize: 11, color: '#aaa' }}>{weaponDisplay}</span>
+          </div>
         </div>
         {view.map && (
           <button

@@ -1,5 +1,4 @@
 import type { EnemyTemplate } from '@dungeon/contracts';
-import { SPRITE_MAP } from '../sprites/sprite-map.js';
 
 export const boneShaman = {
   templateId: 'bone_shaman',
@@ -33,7 +32,7 @@ export const boneShaman = {
   ascii: 'H',
   color: '#5533aa',
   movementBehaviorId: 'rearline_anchor',
-  sprite: SPRITE_MAP['enemy:bone_shaman'],
+  spriteName: 'shaman karnov',
   biomes: [{ biomeId: 'frozen_depths' }],
   factions: [{ factionId: 'undead_legion', weight: 1.0 }],
   ambientBehaviorProfile: 'wanderer',

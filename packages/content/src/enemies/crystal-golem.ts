@@ -1,5 +1,4 @@
 import type { EnemyTemplate } from '@dungeon/contracts';
-import { SPRITE_MAP } from '../sprites/sprite-map.js';
 
 export const crystalGolem = {
   templateId: 'crystal_golem',
@@ -33,7 +32,7 @@ export const crystalGolem = {
   ascii: 'R',
   color: '#aaddff',
   movementBehaviorId: 'chokepoint_holder',
-  sprite: SPRITE_MAP['enemy:crystal_golem'],
+  spriteName: 'crystal golem',
   biomes: [{ biomeId: 'crystal_cave' }],
   factions: [{ factionId: 'beast_swarm', weight: 1.0 }],
   ambientBehaviorProfile: 'wanderer',

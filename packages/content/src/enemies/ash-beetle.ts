@@ -1,5 +1,4 @@
 import type { EnemyTemplate } from '@dungeon/contracts';
-import { SPRITE_MAP } from '../sprites/sprite-map.js';
 
 export const ashBeetle = {
   templateId: 'ash_beetle',
@@ -33,7 +32,7 @@ export const ashBeetle = {
   ascii: 'a',
   color: '#dd6644',
   movementBehaviorId: 'ambush_idle',
-  sprite: SPRITE_MAP['enemy:ash_beetle'],
+  spriteName: 'giant beetle',
   biomes: [{ biomeId: 'volcanic' }],
   factions: [{ factionId: 'beast_swarm', weight: 1.0 }],
   ambientBehaviorProfile: 'wall_lurker',

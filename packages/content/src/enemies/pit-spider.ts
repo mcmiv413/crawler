@@ -1,5 +1,4 @@
 import type { EnemyTemplate } from '@dungeon/contracts';
-import { SPRITE_MAP } from '../sprites/sprite-map.js';
 
 export const pitSpider = {
   templateId: 'pit_spider',
@@ -35,7 +34,7 @@ export const pitSpider = {
   ascii: 's',
   color: '#884444',
   movementBehaviorId: 'wall_stalker',
-  sprite: SPRITE_MAP['enemy:pit_spider'],
+  spriteName: 'cave spider',
   biomes: [{ biomeId: 'stone_crypt' }, { biomeId: 'moss_caverns' }],
   factions: [{ factionId: 'beast_swarm', weight: 1.0 }],
   ambientBehaviorProfile: 'wall_lurker',

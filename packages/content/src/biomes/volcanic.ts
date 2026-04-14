@@ -9,6 +9,11 @@ export const volcanic: BiomeDefinition = {
   ambientColor: '#4a2200',
   floorAscii: ',',
   wallAscii: '^',
+  tileSprites: {
+    floor: 'day brick floor c',
+    wall: 'lit heat wall center',
+    interactable: 'statue',
+  },
   mapGen: {
     roomWidth: [5, 10],
     roomHeight: [4, 8],

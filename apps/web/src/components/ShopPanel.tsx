@@ -2,6 +2,7 @@ import React, { useState } from 'react';
 import type { GameView, ShopItemView, InventoryItemView } from '@dungeon/presenter';
 import { btnStyle, rarityColor } from '../styles.js';
 import { ItemInspectModal } from './ItemInspectModal.js';
+import { ItemSpriteIcon } from './ItemSpriteIcon.js';
 import { useInventoryFilter } from '../hooks/useInventoryFilter.js';
 
 interface ShopPanelProps {
@@ -133,7 +134,8 @@ export function ShopPanel({ view, loading, sendCommand, isMobile }: ShopPanelPro
                   }}
                   onClick={() => setSelectedItem(item)}
                 >
-                  <div style={{ flex: 1 }}>
+                  <div style={{ flex: 1, display: 'flex', alignItems: 'center', gap: 6 }}>
+                    <ItemSpriteIcon spriteName={item.spriteName} size={16} />
                     <span style={{ color: rarityColor[item.rarity] ?? '#aaa', marginRight: 4 }}>
                       [{item.rarity}]
                     </span>

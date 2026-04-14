@@ -10,10 +10,12 @@ export const WEAPONS: readonly WeaponTemplate[] = [
     value: 15,
     stackable: false,
     maxStack: 1,
+    spriteName: 'dwarvish short sword',
     weapon: { damage: 3, damageType: 'physical', accuracy: 5, speed: 0, slot: 'weapon', weaponRange: 1, weaponType: 'blade' },
   },
   {
     itemId: 'iron_mace',
+    spriteName: 'mace',
     name: 'Iron Mace',
     description: 'A heavy mace that hits hard but slow.',
     itemClass: 'weapon',
@@ -25,6 +27,7 @@ export const WEAPONS: readonly WeaponTemplate[] = [
   },
   {
     itemId: 'short_bow',
+    spriteName: 'composite bow',
     name: 'Short Bow',
     description: 'A simple ranged weapon. Can attack from up to 5 tiles away.',
     itemClass: 'weapon',
@@ -36,6 +39,7 @@ export const WEAPONS: readonly WeaponTemplate[] = [
   },
   {
     itemId: 'flame_dagger',
+    spriteName: 'elven dagger',
     name: 'Flame Dagger',
     description: 'A dagger that burns on contact.',
     itemClass: 'weapon',
@@ -47,6 +51,7 @@ export const WEAPONS: readonly WeaponTemplate[] = [
   },
   {
     itemId: 'venom_blade',
+    spriteName: 'dagger',
     name: 'Venom Blade',
     description: 'A wicked blade coated in poison.',
     itemClass: 'weapon',
@@ -58,6 +63,7 @@ export const WEAPONS: readonly WeaponTemplate[] = [
   },
   {
     itemId: 'frost_axe',
+    spriteName: 'battle axe',
     name: 'Frost Axe',
     description: 'An axe wreathed in cold.',
     itemClass: 'weapon',
@@ -70,6 +76,7 @@ export const WEAPONS: readonly WeaponTemplate[] = [
   // 4 new weapons
   {
     itemId: 'hand_axe',
+    spriteName: 'axe',
     name: 'Hand Axe',
     description: 'A light axe balanced for throwing or swinging.',
     itemClass: 'weapon',
@@ -81,6 +88,7 @@ export const WEAPONS: readonly WeaponTemplate[] = [
   },
   {
     itemId: 'war_bow',
+    spriteName: 'crossbow',
     name: 'War Bow',
     description: 'A powerful longbow with exceptional range.',
     itemClass: 'weapon',
@@ -92,6 +100,7 @@ export const WEAPONS: readonly WeaponTemplate[] = [
   },
   {
     itemId: 'iron_sword',
+    spriteName: 'elven short sword',
     name: 'Iron Sword',
     description: 'A reliable blade forged from quality iron.',
     itemClass: 'weapon',
@@ -103,6 +112,7 @@ export const WEAPONS: readonly WeaponTemplate[] = [
   },
   {
     itemId: 'stone_hammer',
+    spriteName: 'war hammer',
     name: 'Stone Hammer',
     description: 'A brutal hammer that weakens foes on impact.',
     itemClass: 'weapon',

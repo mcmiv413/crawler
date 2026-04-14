@@ -1,5 +1,4 @@
 import type { EnemyTemplate } from '@dungeon/contracts';
-import { SPRITE_MAP } from '../sprites/sprite-map.js';
 
 export const dungeonOgre = {
   templateId: 'dungeon_ogre',
@@ -32,7 +31,7 @@ export const dungeonOgre = {
   description: 'A massive ogre blocking the passage, club in hand.',
   ascii: 'O',
   color: '#558855',
-  sprite: SPRITE_MAP['enemy:dungeon_ogre'],
+  spriteName: 'ogre',
   biomes: [{ biomeId: 'frozen_depths' }],
   factions: [{ factionId: 'goblin_warband', weight: 1.0 }],
   ambientBehaviorProfile: 'wanderer',

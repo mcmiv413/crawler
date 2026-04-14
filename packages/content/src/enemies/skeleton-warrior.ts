@@ -1,5 +1,4 @@
 import type { EnemyTemplate } from '@dungeon/contracts';
-import { SPRITE_MAP } from '../sprites/sprite-map.js';
 
 export const skeletonWarrior = {
   templateId: 'skeleton_warrior',
@@ -33,7 +32,7 @@ export const skeletonWarrior = {
   ascii: 'S',
   color: '#ccccaa',
   movementBehaviorId: 'chokepoint_holder',
-  sprite: SPRITE_MAP['enemy:skeleton_warrior'],
+  spriteName: 'skeleton',
   biomes: [{ biomeId: 'stone_crypt' }],
   factions: [{ factionId: 'undead_legion', weight: 1.0 }],
   ambientBehaviorProfile: 'wanderer',

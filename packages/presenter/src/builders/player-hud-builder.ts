@@ -28,6 +28,7 @@ export function buildPlayerHud(state: GameState): PlayerHudView {
         rarity: weapon.rarity,
         baseBonus: weapon.weapon.damage,
         enchantments: [],
+        spriteName: weapon.spriteName,
       });
     }
   }
@@ -64,6 +65,7 @@ export function buildPlayerHud(state: GameState): PlayerHudView {
       rarity: armor.rarity,
       baseBonus: armor.armor.defense,
       enchantments,
+      spriteName: armor.spriteName,
     });
   }
 

@@ -1,5 +1,5 @@
 import type { ObjectTemplate } from '@dungeon/contracts';
-import { SPRITE_MAP } from '../sprites/sprite-map.js';
+
 
 export const firePit: ObjectTemplate = {
   templateId: 'fire_pit',
@@ -7,7 +7,7 @@ export const firePit: ObjectTemplate = {
   description: 'A pit of burning coals. Stepping near it scorches.',
   ascii: '^',
   color: '#ff4400',
-  sprite: SPRITE_MAP['object:fire_pit'],
+  spriteName: 'brass lantern',
   healthDelta: -10,
   consumable: false,
   blocksMovement: false,

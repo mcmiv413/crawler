@@ -1,5 +1,4 @@
 import type { EnemyTemplate } from '@dungeon/contracts';
-import { SPRITE_MAP } from '../sprites/sprite-map.js';
 
 export const chainSpecter = {
   templateId: 'chain_specter',
@@ -33,7 +32,7 @@ export const chainSpecter = {
   ascii: 'X',
   color: '#664488',
   movementBehaviorId: 'ambush_idle',
-  sprite: SPRITE_MAP['enemy:chain_specter'],
+  spriteName: 'phase spider',
   biomes: [{ biomeId: 'frozen_depths' }],
   factions: [{ factionId: 'shadow_cult', weight: 1.0 }],
   ambientBehaviorProfile: 'wall_lurker',
