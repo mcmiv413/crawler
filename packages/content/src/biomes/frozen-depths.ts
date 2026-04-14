@@ -11,7 +11,7 @@ export const frozenDepths: BiomeDefinition = {
   wallAscii: '█',
   tileSprites: {
     floor: 'day stone floor c',
-    wall: 'dark ice wall center',
+    wall: 'bright ice wall center',
     interactable: 'closed stone door front',
   },
   mapGen: {
@@ -19,5 +19,8 @@ export const frozenDepths: BiomeDefinition = {
     roomHeight: [2, 3],
     corridorLength: [3, 9],
     dugPercentage: 0.35,
+    algorithm: 'cellular',
+    fillProbability: 0.48,
+    iterations: 5,
   },
 };

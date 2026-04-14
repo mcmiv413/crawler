@@ -11,7 +11,7 @@ export const crystalCave: BiomeDefinition = {
   wallAscii: '*',
   tileSprites: {
     floor: 'day tile floor c',
-    wall: 'dark deep wall center',
+    wall: 'bright blue wall center',
     interactable: 'closed stone door front',
   },
   mapGen: {
@@ -19,5 +19,8 @@ export const crystalCave: BiomeDefinition = {
     roomHeight: [3, 5],
     corridorLength: [2, 4],
     dugPercentage: 0.42,
+    algorithm: 'cellular',
+    fillProbability: 0.52,
+    iterations: 4,
   },
 };
