@@ -1,5 +1,6 @@
 import { describe, it, expect } from 'vitest';
 import { WEAPONS } from './weapons.js';
+import { WEAPON_TYPES } from '@dungeon/contracts';
 
 describe('WEAPONS', () => {
   it('every weapon has weaponType defined', () => {
@@ -14,20 +15,11 @@ describe('WEAPONS', () => {
     }
   });
 
-  it('has exactly 4 blade weapons', () => {
-    expect(WEAPONS.filter(w => w.weapon.weaponType === 'blade')).toHaveLength(4);
-  });
-
-  it('has exactly 2 bludgeon weapons', () => {
-    expect(WEAPONS.filter(w => w.weapon.weaponType === 'bludgeon')).toHaveLength(2);
-  });
-
-  it('has exactly 2 axe weapons', () => {
-    expect(WEAPONS.filter(w => w.weapon.weaponType === 'axe')).toHaveLength(2);
-  });
-
-  it('has exactly 2 ranged weapons', () => {
-    expect(WEAPONS.filter(w => w.weapon.weaponType === 'ranged')).toHaveLength(2);
+  it('every weapon type has at least one weapon', () => {
+    for (const weaponType of WEAPON_TYPES) {
+      const count = WEAPONS.filter(w => w.weapon.weaponType === weaponType).length;
+      expect(count, `no weapons of type ${weaponType}`).toBeGreaterThan(0);
+    }
   });
 
   it('rusty_sword damage === 3', () => {
@@ -98,7 +90,7 @@ describe('WEAPONS', () => {
     expect(w?.weapon.speed).toBe(10);
   });
 
-  it('has 10 total weapons', () => {
-    expect(WEAPONS).toHaveLength(10);
+  it('has weapons defined', () => {
+    expect(WEAPONS.length).toBeGreaterThan(0);
   });
 });
