@@ -90,6 +90,7 @@ export interface MasteryTierInfo {
 export interface StatBonusSource {
   readonly source: string;
   readonly amount: number;
+  readonly spriteName?: string;  // Atlas sprite name for rendering
 }
 
 export interface StatBreakdown {

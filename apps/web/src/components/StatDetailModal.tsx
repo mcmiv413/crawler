@@ -1,5 +1,6 @@
 import React from 'react';
 import type { StatBreakdown } from '@dungeon/presenter';
+import { ItemSpriteIcon } from './ItemSpriteIcon';
 
 const statDescriptions: Record<string, string> = {
   health: 'Maximum health. Determines how much damage you can take before dying.',
@@ -53,8 +54,11 @@ export function StatDetailModal({ breakdown, onClose }: StatDetailModalProps) {
           <div style={{ color: '#888', fontSize: 11, marginBottom: 4, fontWeight: 'bold' }}>BONUSES</div>
           <div style={{ display: 'flex', flexDirection: 'column', gap: 2 }}>
             {breakdown.bonuses.map((bonus, idx) => (
-              <div key={idx} style={{ fontSize: 10, color: '#8f8', display: 'flex', justifyContent: 'space-between' }}>
-                <span>{bonus.source}</span>
+              <div key={idx} style={{ fontSize: 10, color: '#8f8', display: 'flex', alignItems: 'center', gap: 4, justifyContent: 'space-between' }}>
+                <div style={{ display: 'flex', alignItems: 'center', gap: 4 }}>
+                  {bonus.spriteName && <ItemSpriteIcon spriteName={bonus.spriteName} size={16} />}
+                  <span>{bonus.source}</span>
+                </div>
                 <span>+{bonus.amount}</span>
               </div>
             ))}
