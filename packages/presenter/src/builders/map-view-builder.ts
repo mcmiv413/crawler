@@ -2,6 +2,10 @@ import type { GameState, EnemyInstance, DamageType } from '@dungeon/contracts';
 import { OBJECT_TEMPLATES, ENEMY_TEMPLATES, BIOMES } from '@dungeon/content';
 import type { MapView, EntityView } from '../game-view.js';
 
+// Sprite names for map rendering
+const STAIRS_UP_SPRITE = 'large stairs up';
+const STAIRS_DOWN_SPRITE = 'large stairs down';
+
 function getDamageTypeColor(damageType: DamageType): string {
   switch (damageType) {
     case 'fire': return '#ff4400';
@@ -51,9 +55,9 @@ export function buildMapView(state: GameState): MapView | null {
 
       // Stairs sprites are universal, not biome-specific
       if (cell.tile.type === 'stairs_up') {
-        spriteName = 'large stairs up';
+        spriteName = STAIRS_UP_SPRITE;
       } else if (cell.tile.type === 'stairs_down') {
-        spriteName = 'large stairs down';
+        spriteName = STAIRS_DOWN_SPRITE;
       } else if (biome?.tileSprites) {
         // Other tile types use biome-specific sprites
         if (cell.tile.type === 'floor') {

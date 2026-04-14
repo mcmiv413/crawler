@@ -3,6 +3,8 @@
  * Currently uses emoji; structured for future sprite migration.
  */
 
+import { SPRITE_NAMES } from './sprite-names';
+
 export type ActionButtonType = 'WAIT' | 'ATTACK' | 'SWAP' | 'ABILITY' | 'INTERACT' | 'USE' | 'INSPECT';
 
 export interface ActionIcon {
@@ -14,37 +16,37 @@ export interface ActionIcon {
 export const ACTION_ICONS: Record<ActionButtonType, ActionIcon> = {
   WAIT: {
     emoji: '⏸️',
-    spriteName: 'action_wait',
+    spriteName: SPRITE_NAMES.ACTION_WAIT,
     tooltip: 'Skip your turn',
   },
   ATTACK: {
     emoji: '⚔️',
-    spriteName: 'action_attack',
+    spriteName: SPRITE_NAMES.ACTION_ATTACK,
     tooltip: 'Attack selected enemy',
   },
   SWAP: {
     emoji: '🔄',
-    spriteName: 'action_swap',
+    spriteName: SPRITE_NAMES.ACTION_SWAP,
     tooltip: 'Swap weapons',
   },
   ABILITY: {
     emoji: '✨',
-    spriteName: 'action_ability',
+    spriteName: SPRITE_NAMES.ACTION_ABILITY,
     tooltip: 'Use an ability',
   },
   INTERACT: {
     emoji: '🤝',
-    spriteName: 'action_interact',
+    spriteName: SPRITE_NAMES.ACTION_INTERACT,
     tooltip: 'Interact with objects',
   },
   USE: {
     emoji: '🧪',
-    spriteName: 'action_use',
+    spriteName: SPRITE_NAMES.ACTION_USE,
     tooltip: 'Use consumable item',
   },
   INSPECT: {
     emoji: '🔍',
-    spriteName: 'action_inspect',
+    spriteName: SPRITE_NAMES.ACTION_INSPECT,
     tooltip: 'Inspect dungeon',
   },
 };
