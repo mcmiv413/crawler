@@ -1,6 +1,7 @@
 import React, { useState } from 'react';
 import { ENCHANTMENT_BY_ID } from '@dungeon/content';
 import type { PlayerHudView } from '@dungeon/presenter';
+import { ItemSpriteIcon } from './ItemSpriteIcon';
 
 interface EnchantmentDetailModalProps {
   player: PlayerHudView;
@@ -8,13 +9,13 @@ interface EnchantmentDetailModalProps {
 }
 
 export function EnchantmentDetailModal({ player, onClose }: EnchantmentDetailModalProps) {
-  // Collect all enchantments from equipped items
-  const enchantmentMap = new Map<string, string[]>();
-  
+  // Collect all enchantments from equipped items with sprite data
+  const enchantmentMap = new Map<string, Array<{ name: string; spriteName?: string }>>();
+
   for (const item of player.equippedItems) {
     for (const ench of item.enchantments) {
       const existing = enchantmentMap.get(ench.id) || [];
-      enchantmentMap.set(ench.id, [...existing, item.name]);
+      enchantmentMap.set(ench.id, [...existing, { name: item.name, spriteName: item.spriteName }]);
     }
   }
 
@@ -124,8 +125,9 @@ export function EnchantmentDetailModal({ player, onClose }: EnchantmentDetailMod
                     <div style={{ fontSize: 11, color: '#888', marginBottom: 4, fontWeight: 'bold' }}>USED ON</div>
                     <div style={{ display: 'flex', flexDirection: 'column', gap: '3px' }}>
                       {enchantmentMap.get(selectedEnchantmentId)!.map((item, idx) => (
-                        <div key={idx} style={{ fontSize: 10, color: '#6af' }}>
-                          • {item}
+                        <div key={idx} style={{ fontSize: 10, color: '#6af', display: 'flex', alignItems: 'center', gap: 4 }}>
+                          {item.spriteName && <ItemSpriteIcon spriteName={item.spriteName} size={16} />}
+                          <span>• {item.name}</span>
                         </div>
                       ))}
                     </div>
