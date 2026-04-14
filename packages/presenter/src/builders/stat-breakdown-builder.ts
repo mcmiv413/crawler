@@ -5,16 +5,17 @@ function collectWeaponBonuses(statName: string, weapon: unknown): StatBonusSourc
   if (!weapon || typeof weapon !== 'object' || !('name' in weapon) || !('weapon' in weapon)) return [];
 
   const w = (weapon as { name: string; weapon: { damage: number; accuracy: number; speed: number } }).weapon;
+  const spriteName = 'spriteName' in weapon ? (weapon as { spriteName?: string }).spriteName : undefined;
   const mutableBonuses: StatBonusSource[] = [];
 
   if (statName === 'attack' && w.damage > 0) {
-    mutableBonuses.push({ source: `${(weapon as { name: string }).name}`, amount: w.damage });
+    mutableBonuses.push({ source: `${(weapon as { name: string }).name}`, amount: w.damage, spriteName });
   }
   if (statName === 'accuracy' && w.accuracy !== 0) {
-    mutableBonuses.push({ source: `${(weapon as { name: string }).name} accuracy`, amount: w.accuracy });
+    mutableBonuses.push({ source: `${(weapon as { name: string }).name} accuracy`, amount: w.accuracy, spriteName });
   }
   if (statName === 'speed' && w.speed !== 0) {
-    mutableBonuses.push({ source: `${(weapon as { name: string }).name} speed`, amount: w.speed });
+    mutableBonuses.push({ source: `${(weapon as { name: string }).name} speed`, amount: w.speed, spriteName });
   }
 
   return mutableBonuses;
@@ -31,9 +32,10 @@ function collectArmorBonuses(state: GameState, statName: string, armorSlots: rea
     if (!armor || !('armor' in armor)) continue;
 
     const a = (armor as { name: string; armor: { defense: number; resistance?: Record<string, number> } }).armor;
+    const spriteName = 'spriteName' in armor ? (armor as { spriteName?: string }).spriteName : undefined;
 
     if (statName === 'defense' && a.defense > 0) {
-      mutableBonuses.push({ source: `${(armor as { name: string }).name}`, amount: a.defense });
+      mutableBonuses.push({ source: `${(armor as { name: string }).name}`, amount: a.defense, spriteName });
     }
 
     if (a.resistance) {
@@ -42,6 +44,7 @@ function collectArmorBonuses(state: GameState, statName: string, armorSlots: rea
           mutableBonuses.push({
             source: `${(armor as { name: string }).name} vs ${damageType}`,
             amount: resistance,
+            spriteName,
           });
         }
       }
