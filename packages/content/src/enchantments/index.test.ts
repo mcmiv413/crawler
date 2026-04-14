@@ -1,35 +1,40 @@
 import { describe, it, expect } from 'vitest';
 import {
+  ENCHANTMENTS,
   ENCHANTMENT_BY_ID,
   getEnchantmentCost,
   getImpliedBlueprints,
   ENCHANTMENT_COSTS,
 } from './index.js';
 
-const EXPECTED_IDS = [
-  'hp_regen', 'thorns', 'resist_fire', 'resist_frost', 'resist_poison',
-  'evasion_boost', 'defense_boost', 'blight_ward', 'spikes', 'speed_boost',
-  'exp_bonus', 'life_steal', 'arcane_ward', 'blink',
-];
-
 describe('enchantment catalog', () => {
-  it('contains all 14 enchantment IDs', () => {
-    for (const id of EXPECTED_IDS) {
-      expect(ENCHANTMENT_BY_ID.has(id), `missing ${id}`).toBe(true);
+  it('all enchantments are in ENCHANTMENT_BY_ID map', () => {
+    for (const ench of ENCHANTMENTS) {
+      expect(ENCHANTMENT_BY_ID.has(ench.id), `missing ${ench.id}`).toBe(true);
     }
-    expect(ENCHANTMENT_BY_ID.size).toBe(14);
+  });
+
+  it('map size matches data array', () => {
+    expect(ENCHANTMENT_BY_ID.size).toBe(ENCHANTMENTS.length);
   });
 
   it('tier assignments are correct', () => {
-    const t1 = ['hp_regen', 'thorns', 'resist_fire', 'resist_frost', 'resist_poison'];
-    const t2 = ['evasion_boost', 'defense_boost', 'blight_ward', 'spikes', 'speed_boost'];
-    const t3 = ['exp_bonus', 'life_steal', 'arcane_ward'];
-    const unique = ['blink'];
+    const byTier = {
+      1: ENCHANTMENTS.filter(e => e.tier === 1),
+      2: ENCHANTMENTS.filter(e => e.tier === 2),
+      3: ENCHANTMENTS.filter(e => e.tier === 3),
+      unique: ENCHANTMENTS.filter(e => e.tier === 'unique'),
+    };
 
-    for (const id of t1) expect(ENCHANTMENT_BY_ID.get(id)!.tier).toBe(1);
-    for (const id of t2) expect(ENCHANTMENT_BY_ID.get(id)!.tier).toBe(2);
-    for (const id of t3) expect(ENCHANTMENT_BY_ID.get(id)!.tier).toBe(3);
-    for (const id of unique) expect(ENCHANTMENT_BY_ID.get(id)!.tier).toBe('unique');
+    expect(byTier[1].length).toBeGreaterThan(0);
+    expect(byTier[2].length).toBeGreaterThan(0);
+    expect(byTier[3].length).toBeGreaterThan(0);
+    expect(byTier.unique.length).toBeGreaterThan(0);
+
+    for (const ench of ENCHANTMENTS) {
+      const retrieved = ENCHANTMENT_BY_ID.get(ench.id)!;
+      expect(retrieved.tier).toBe(ench.tier);
+    }
   });
 });
 

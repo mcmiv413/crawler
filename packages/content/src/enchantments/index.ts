@@ -35,6 +35,8 @@ const ENCHANTMENTS: readonly EnchantmentDefinition[] = [
     effect: { type: 'blink', value: 0.3 } },
 ];
 
+export { ENCHANTMENTS };
+
 export const ENCHANTMENT_BY_ID: ReadonlyMap<string, EnchantmentDefinition> =
   new Map(ENCHANTMENTS.map(e => [e.id, e]));
 
