@@ -9,4 +9,10 @@ export const volcanic: BiomeDefinition = {
   ambientColor: '#4a2200',
   floorAscii: ',',
   wallAscii: '^',
+  mapGen: {
+    roomWidth: [5, 10],
+    roomHeight: [4, 8],
+    corridorLength: [1, 2],
+    dugPercentage: 0.58,
+  },
 };

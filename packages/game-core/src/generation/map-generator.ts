@@ -41,11 +41,12 @@ function attemptGeneration(
   const cells = new Map<string, MapCell>();
   let floorPositions: Position[] = [];
 
+  const mg = biome.mapGen;
   const digger = new RotMap.Digger(width, height, {
-    roomWidth: [3, 7],
-    roomHeight: [3, 5],
-    corridorLength: [1, 5],
-    dugPercentage: 0.45,
+    roomWidth: mg !== undefined ? [...mg.roomWidth] : [3, 7],
+    roomHeight: mg !== undefined ? [...mg.roomHeight] : [3, 5],
+    corridorLength: mg !== undefined ? [...mg.corridorLength] : [1, 5],
+    dugPercentage: Math.min(0.7, Math.max(0.3, mg?.dugPercentage ?? 0.45)),
   });
 
   digger.create((x, y, value) => {
@@ -109,10 +110,11 @@ function attemptUniformGeneration(
   const cells = new Map<string, MapCell>();
   let floorPositions: Position[] = [];
 
+  const mg = biome.mapGen;
   const uniform = new RotMap.Uniform(width, height, {
-    roomWidth: [3, 7],
-    roomHeight: [3, 5],
-    roomDugPercentage: 0.35,
+    roomWidth: mg !== undefined ? [...mg.roomWidth] : [3, 7],
+    roomHeight: mg !== undefined ? [...mg.roomHeight] : [3, 5],
+    roomDugPercentage: Math.min(0.7, Math.max(0.3, mg?.dugPercentage ?? 0.35)),
   });
 
   uniform.create((x, y, value) => {

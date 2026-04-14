@@ -1,8 +1,7 @@
 import { describe, it, expect } from 'vitest';
 import { generateFloor, bfsReachable } from './map-generator.js';
 import { SeededRNG } from '../utils/rng.js';
-import { stoneCrypt } from '@dungeon/content';
-import { posKey } from '@dungeon/contracts';
+import { stoneCrypt, forest, goblinWarrens } from '@dungeon/content';
 
 describe('Map Generation', () => {
   it('generates a floor with entrance and exit', () => {
@@ -67,5 +66,22 @@ describe('Map Generation', () => {
     const sizeSame = floor1.cells.size === floor2.cells.size;
     const different = !entranceSame || !exitSame || !sizeSame;
     expect(different).toBe(true);
+  });
+
+  it('mapGen params are applied to floor generation', () => {
+    // Same seed, different biomes should produce different layouts due to mapGen
+    const rng1 = new SeededRNG(42);
+    const { floor: forestFloor } = generateFloor(2, forest, rng1);
+    const rng2 = new SeededRNG(42);
+    const { floor: goblinFloor } = generateFloor(2, goblinWarrens, rng2);
+
+    // With different mapGen params, the layouts should differ
+    // Most likely the floor sizes or entrance/exit positions will differ
+    const forestEntrance = `${forestFloor.entrance.x},${forestFloor.entrance.y}`;
+    const goblinEntrance = `${goblinFloor.entrance.x},${goblinFloor.entrance.y}`;
+
+    // At least the entrance should differ (with high probability)
+    const layoutDiffers = forestEntrance !== goblinEntrance || forestFloor.cells.size !== goblinFloor.cells.size;
+    expect(layoutDiffers).toBe(true);
   });
 });

@@ -29,7 +29,7 @@ class SpriteRegistry {
         this.loading = false;
         reject(new Error('Failed to load sprite sheet'));
       };
-      img.src = '/sprites/kenney-tiny-dungeon.png';
+      img.src = '/sprites/dawnlike.png';
     });
   }
 

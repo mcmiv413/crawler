@@ -1,0 +1,54 @@
+import { describe, it, expect } from 'vitest';
+import { DAWNLIKE_SPRITE_MAP } from './dawnlike-sprite-map.js';
+import { ENEMY_TEMPLATES, BIOMES, OBJECT_TEMPLATES } from '../index.js';
+
+const ATLAS_WIDTH = 2048;
+const ATLAS_HEIGHT = 1024;
+
+describe('DawnLike Sprite Map', () => {
+  it('all entries fit within atlas bounds', () => {
+    for (const [key, rect] of Object.entries(DAWNLIKE_SPRITE_MAP)) {
+      expect(rect.x + rect.w, `${key} x overflow`).toBeLessThanOrEqual(ATLAS_WIDTH);
+      expect(rect.y + rect.h, `${key} y overflow`).toBeLessThanOrEqual(ATLAS_HEIGHT);
+      expect(rect.w, `${key} width`).toBe(16);
+      expect(rect.h, `${key} height`).toBe(16);
+    }
+  });
+
+  it('all enemy sprites are unique', () => {
+    const coords: string[] = [];
+    for (const [enemyId] of ENEMY_TEMPLATES) {
+      const r = DAWNLIKE_SPRITE_MAP[`enemy:${enemyId}`];
+      if (r) coords.push(`${r.x},${r.y}`);
+    }
+    expect(new Set(coords).size).toBe(coords.length);
+  });
+
+  it('all object sprites are unique', () => {
+    const coords: string[] = [];
+    for (const [objectId] of OBJECT_TEMPLATES) {
+      const r = DAWNLIKE_SPRITE_MAP[`object:${objectId}`];
+      if (r) coords.push(`${r.x},${r.y}`);
+    }
+    expect(new Set(coords).size).toBe(coords.length);
+  });
+
+  it('biome floor overrides differ from one another', () => {
+    const floors: string[] = [];
+    for (const [biomeId] of BIOMES) {
+      const r = DAWNLIKE_SPRITE_MAP[`tile:floor:${biomeId}`];
+      if (r) floors.push(`${r.x},${r.y}`);
+    }
+    // At least 5 of 7 must be distinct (some sharing is acceptable)
+    expect(new Set(floors).size).toBeGreaterThanOrEqual(5);
+  });
+
+  it('biome wall overrides differ from one another', () => {
+    const walls: string[] = [];
+    for (const [biomeId] of BIOMES) {
+      const r = DAWNLIKE_SPRITE_MAP[`tile:wall:${biomeId}`];
+      if (r) walls.push(`${r.x},${r.y}`);
+    }
+    expect(new Set(walls).size).toBeGreaterThanOrEqual(4);
+  });
+});
