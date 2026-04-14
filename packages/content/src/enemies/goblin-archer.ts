@@ -1,5 +1,4 @@
 import type { EnemyTemplate } from '@dungeon/contracts';
-import { SPRITE_MAP } from '../sprites/sprite-map.js';
 
 export const goblinArcher = {
   templateId: 'goblin_archer',
@@ -33,7 +32,7 @@ export const goblinArcher = {
   ascii: 'g',
   color: '#66aa55',
   movementBehaviorId: 'rearline_anchor',
-  sprite: SPRITE_MAP['enemy:goblin_archer'],
+  spriteName: 'goblin',
   biomes: [{ biomeId: 'goblin_warrens' }],
   factions: [{ factionId: 'goblin_warband', weight: 1.0 }],
   ambientBehaviorProfile: 'wanderer',

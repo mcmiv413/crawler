@@ -1,4 +1,4 @@
-import type { EntityId, Position, ThreatTier, DamageType, SpriteRect } from './common.js';
+import type { EntityId, Position, ThreatTier, DamageType } from './common.js';
 import type { StatusEffect } from './player.js';
 import type { AmbientState } from './ambient-behavior.js';
 
@@ -94,7 +94,7 @@ export interface EnemyTemplate {
   readonly color?: string;
   readonly movementBehaviorId?: string;
   readonly abilities?: readonly string[];
-  readonly sprite?: SpriteRect;
+  readonly spriteName?: string;
   readonly biomes?: ReadonlyArray<BiomeMembership>;
   readonly factions?: ReadonlyArray<FactionMembership>;
   readonly ambientBehaviorProfile?: string; // profile ID or undefined = no ambient behavior

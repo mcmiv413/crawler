@@ -1,5 +1,3 @@
-import type { SpriteRect } from '@dungeon/contracts';
-
 export interface BiomeDefinition {
   readonly biomeId: string;
   readonly name: string;
@@ -14,9 +12,9 @@ export interface BiomeDefinition {
   readonly floorAscii: string;
   readonly wallAscii: string;
   readonly tileSprites?: {
-    readonly floor?: SpriteRect;
-    readonly wall?: SpriteRect;
-    readonly interactable?: SpriteRect;
+    readonly floor?: string;
+    readonly wall?: string;
+    readonly interactable?: string;
   };
   readonly mapGen?: {
     readonly roomWidth: readonly [number, number];
@@ -35,6 +33,11 @@ export const stoneCrypt: BiomeDefinition = {
   ambientColor: '#444444',
   floorAscii: '.',
   wallAscii: '#',
+  tileSprites: {
+    floor: 'day stone floor c',
+    wall: 'dark brick wall center',
+    interactable: 'statue',
+  },
   mapGen: {
     roomWidth: [3, 5],
     roomHeight: [2, 4],

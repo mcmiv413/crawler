@@ -1,5 +1,4 @@
 import type { EnemyTemplate } from '@dungeon/contracts';
-import { SPRITE_MAP } from '../sprites/sprite-map.js';
 
 export const mireToad = {
   templateId: 'mire_toad',
@@ -35,7 +34,7 @@ export const mireToad = {
   ascii: 't',
   color: '#88aa44',
   movementBehaviorId: 'ambush_idle',
-  sprite: SPRITE_MAP['enemy:mire_toad'],
+  spriteName: 'frog',
   biomes: [{ biomeId: 'forest' }],
   factions: [{ factionId: 'beast_swarm', weight: 1.0 }],
   ambientBehaviorProfile: 'wall_lurker',

@@ -9,6 +9,11 @@ export const forest: BiomeDefinition = {
   ambientColor: '#2a4a2a',
   floorAscii: '.',
   wallAscii: 'T',
+  tileSprites: {
+    floor: 'day grass floor c',
+    wall: 'lit infernal wall center',
+    interactable: 'statue',
+  },
   mapGen: {
     roomWidth: [6, 12],
     roomHeight: [5, 9],

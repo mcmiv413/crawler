@@ -1,4 +1,4 @@
-import { SPRITE_MAP, type SpriteRect } from './sprite-map.js';
+import { SPRITE_MAP, type SpriteRect, DAWNLIKE_ATLAS } from '@dungeon/content';
 
 export interface SpriteEntry {
   image: HTMLImageElement;
@@ -49,6 +49,14 @@ class SpriteRegistry {
   getSprite(key: string): SpriteEntry | null {
     if (!this.sheet) return null;
     const rect = SPRITE_MAP[key];
+    if (!rect) return null;
+    return { image: this.sheet, rect };
+  }
+
+  /** Look up a sprite by atlas name (e.g., 'dwarvish short sword', 'skeleton'). Returns null if not found. */
+  getSpriteByAtlasName(atlasName: string): SpriteEntry | null {
+    if (!this.sheet) return null;
+    const rect = DAWNLIKE_ATLAS[atlasName];
     if (!rect) return null;
     return { image: this.sheet, rect };
   }

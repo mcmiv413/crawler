@@ -3,6 +3,7 @@ import type { InventoryItemView, InventoryView } from '@dungeon/presenter';
 import { btnStyle, rarityColor, compactBtnStyle } from '../styles.js';
 import { EquipmentDoll } from './EquipmentDoll.js';
 import { ItemInspectModal } from './ItemInspectModal.js';
+import { ItemSpriteIcon } from './ItemSpriteIcon.js';
 import { useInventoryFilter } from '../hooks/useInventoryFilter.js';
 import { useBreakpoint } from '../hooks/useBreakpoint.js';
 
@@ -178,6 +179,7 @@ export function InventoryScreen({
                     }}
                   >
                     <span>{idx + 1}.</span>
+                    <ItemSpriteIcon spriteName={item.spriteName} size={16} />
                     <span style={{ flex: 1 }}>
                       {item.name}
                       {quantity > 1 && <span style={{ color: '#8cf', fontSize: 10 }}> x{quantity}</span>}

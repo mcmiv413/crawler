@@ -9,6 +9,7 @@ export interface ItemTemplate {
   readonly value: number;
   readonly stackable: boolean;
   readonly maxStack: number;
+  readonly spriteName?: string;
 }
 
 export interface WeaponData {

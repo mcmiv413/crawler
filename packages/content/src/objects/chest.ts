@@ -1,5 +1,4 @@
 import type { ObjectTemplate } from '@dungeon/contracts';
-import { SPRITE_MAP } from '../sprites/sprite-map.js';
 
 export const chest: ObjectTemplate = {
   templateId: 'chest',
@@ -7,7 +6,7 @@ export const chest: ObjectTemplate = {
   description: 'A locked chest containing dungeon spoils.',
   ascii: '!',
   color: '#ff0',
-  sprite: SPRITE_MAP['object:chest'],
+  spriteName: 'closed chest',
   healthDelta: 0,
   consumable: true,
   blocksMovement: false,

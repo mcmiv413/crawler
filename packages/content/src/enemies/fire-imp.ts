@@ -1,5 +1,4 @@
 import type { EnemyTemplate } from '@dungeon/contracts';
-import { SPRITE_MAP } from '../sprites/sprite-map.js';
 
 export const fireImp = {
   templateId: 'fire_imp',
@@ -32,7 +31,7 @@ export const fireImp = {
   description: 'A small, cackling demon wreathed in flame.',
   ascii: 'i',
   color: '#ff6644',
-  sprite: SPRITE_MAP['enemy:fire_imp'],
+  spriteName: 'imp',
   biomes: [{ biomeId: 'goblin_warrens' }],
   factions: [{ factionId: 'shadow_cult', weight: 1.0 }],
   ambientBehaviorProfile: 'wanderer',

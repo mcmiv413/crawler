@@ -1,5 +1,4 @@
 import type { EnemyTemplate } from '@dungeon/contracts';
-import { SPRITE_MAP } from '../sprites/sprite-map.js';
 
 export const emberBat = {
   templateId: 'ember_bat',
@@ -33,7 +32,7 @@ export const emberBat = {
   ascii: 'b',
   color: '#ff6644',
   movementBehaviorId: 'rearline_anchor',
-  sprite: SPRITE_MAP['enemy:ember_bat'],
+  spriteName: 'baby bat',
   biomes: [{ biomeId: 'volcanic' }],
   factions: [{ factionId: 'shadow_cult', weight: 1.0 }],
   ambientBehaviorProfile: 'wanderer',

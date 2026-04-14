@@ -1,5 +1,4 @@
 import type { BiomeDefinition } from './stone-crypt.js';
-import { SPRITE_MAP } from '../sprites/sprite-map.js';
 
 export const goblinWarrens: BiomeDefinition = {
   biomeId: 'goblin_warrens',
@@ -11,8 +10,9 @@ export const goblinWarrens: BiomeDefinition = {
   floorAscii: ',',
   wallAscii: '#',
   tileSprites: {
-    floor: SPRITE_MAP['tile:floor:goblin_warrens'],
-    interactable: SPRITE_MAP['tile:interactable:goblin_warrens'],
+    floor: 'day dirt floor c',
+    wall: 'dark mine wall center',
+    interactable: 'statue',
   },
   mapGen: {
     roomWidth: [2, 4],

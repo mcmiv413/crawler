@@ -11,6 +11,7 @@ export const ARMOR: readonly ArmorTemplate[] = [
   // === CHEST ===
   {
     itemId: 'leather_vest',
+    spriteName: 'scale armor',
     name: 'Leather Vest',
     description: 'Basic leather protection.',
     itemClass: 'armor',
@@ -22,6 +23,7 @@ export const ARMOR: readonly ArmorTemplate[] = [
   },
   {
     itemId: 'chain_shirt',
+    spriteName: 'chain shirt',
     name: 'Chain Shirt',
     description: 'Linked metal rings offering decent protection.',
     itemClass: 'armor',
@@ -33,6 +35,7 @@ export const ARMOR: readonly ArmorTemplate[] = [
   },
   {
     itemId: 'plate_armor',
+    spriteName: 'full plate',
     name: 'Plate Armor',
     description: 'Heavy metal plates. Excellent defense, poor mobility.',
     itemClass: 'armor',
@@ -44,6 +47,7 @@ export const ARMOR: readonly ArmorTemplate[] = [
   },
   {
     itemId: 'fire_ward_cloak',
+    spriteName: 'bogwyrm armor',
     name: 'Fire Ward Cloak',
     description: 'A cloak woven with fire-resistant fibers.',
     itemClass: 'armor',
@@ -55,6 +59,7 @@ export const ARMOR: readonly ArmorTemplate[] = [
   },
   {
     itemId: 'regen_vest',
+    spriteName: 'brass armor',
     name: 'Regen Vest',
     description: 'A vest imbued with regenerative magic.',
     itemClass: 'armor',
@@ -68,6 +73,7 @@ export const ARMOR: readonly ArmorTemplate[] = [
   // === HEAD ===
   {
     itemId: 'leather_cap',
+    spriteName: 'elven leather helm',
     name: 'Leather Cap',
     description: 'A simple leather cap.',
     itemClass: 'armor',
@@ -79,6 +85,7 @@ export const ARMOR: readonly ArmorTemplate[] = [
   },
   {
     itemId: 'iron_helm',
+    spriteName: 'dwarvish iron helm',
     name: 'Iron Helm',
     description: 'A solid iron helmet.',
     itemClass: 'armor',
@@ -92,6 +99,7 @@ export const ARMOR: readonly ArmorTemplate[] = [
   // === GLOVES ===
   {
     itemId: 'leather_gloves',
+    spriteName: 'leather glove',
     name: 'Leather Gloves',
     description: 'Simple leather hand protection.',
     itemClass: 'armor',
@@ -103,6 +111,7 @@ export const ARMOR: readonly ArmorTemplate[] = [
   },
   {
     itemId: 'chain_gauntlets',
+    spriteName: 'iron gauntlet',
     name: 'Chain Gauntlets',
     description: 'Mail gauntlets for solid hand defense.',
     itemClass: 'armor',
@@ -116,6 +125,7 @@ export const ARMOR: readonly ArmorTemplate[] = [
   // === BOOTS ===
   {
     itemId: 'leather_boots',
+    spriteName: 'leather boots',
     name: 'Leather Boots',
     description: 'Basic leather footwear.',
     itemClass: 'armor',
@@ -127,6 +137,7 @@ export const ARMOR: readonly ArmorTemplate[] = [
   },
   {
     itemId: 'steel_sabatons',
+    spriteName: 'exquisite boots',
     name: 'Steel Sabatons',
     description: 'Heavy steel foot armor.',
     itemClass: 'armor',
@@ -140,6 +151,7 @@ export const ARMOR: readonly ArmorTemplate[] = [
   // === RING ===
   {
     itemId: 'copper_ring',
+    spriteName: 'copper ring',
     name: 'Copper Ring',
     description: 'A plain copper ring, suitable for enchanting.',
     itemClass: 'armor',
@@ -151,6 +163,7 @@ export const ARMOR: readonly ArmorTemplate[] = [
   },
   {
     itemId: 'silver_band',
+    spriteName: 'agate ring',
     name: 'Silver Band',
     description: 'A silver ring with one enchantment slot.',
     itemClass: 'armor',
@@ -166,6 +179,7 @@ export const ARMOR: readonly ArmorTemplate[] = [
   // Chest armor
   {
     itemId: 'spiked_leather',
+    spriteName: 'darkwyrm armor',
     name: 'Spiked Leather',
     description: 'Leather armor with sharp spikes protruding from the surface.',
     itemClass: 'armor',
@@ -177,6 +191,7 @@ export const ARMOR: readonly ArmorTemplate[] = [
   },
   {
     itemId: 'ember_cloak',
+    spriteName: 'dreadwyrm armor',
     name: 'Ember Cloak',
     description: 'A cloak that radiates heat and grants regeneration.',
     itemClass: 'armor',
@@ -188,6 +203,7 @@ export const ARMOR: readonly ArmorTemplate[] = [
   },
   {
     itemId: 'shadow_vest',
+    spriteName: 'mirror plate',
     name: 'Shadow Vest',
     description: 'A dark vest that enables brief moments of teleportation.',
     itemClass: 'armor',
@@ -199,6 +215,7 @@ export const ARMOR: readonly ArmorTemplate[] = [
   },
   {
     itemId: 'bone_guard_plate',
+    spriteName: 'bronze armor',
     name: 'Bone Guard Plate',
     description: 'Heavy plate crafted from bone, with sharp edges.',
     itemClass: 'armor',
@@ -210,6 +227,7 @@ export const ARMOR: readonly ArmorTemplate[] = [
   },
   {
     itemId: 'plague_mantle',
+    spriteName: 'scale armor',
     name: 'Plague Mantle',
     description: 'A tattered mantle that grants poison resistance.',
     itemClass: 'armor',
@@ -223,6 +241,7 @@ export const ARMOR: readonly ArmorTemplate[] = [
   // Head armor
   {
     itemId: 'warden_helm',
+    spriteName: 'crested helm',
     name: 'Warden Helm',
     description: 'A sturdy helmet that improves defense.',
     itemClass: 'armor',
@@ -234,6 +253,7 @@ export const ARMOR: readonly ArmorTemplate[] = [
   },
   {
     itemId: 'iron_crown',
+    spriteName: 'etched helm',
     name: 'Iron Crown',
     description: 'A regal crown of pure iron with enhanced defenses.',
     itemClass: 'armor',
@@ -245,6 +265,7 @@ export const ARMOR: readonly ArmorTemplate[] = [
   },
   {
     itemId: 'mind_veil',
+    spriteName: 'helmet',
     name: 'Mind Veil',
     description: 'A mystical veil that protects against magical ailments.',
     itemClass: 'armor',
@@ -258,6 +279,7 @@ export const ARMOR: readonly ArmorTemplate[] = [
   // Boots
   {
     itemId: 'swift_boots',
+    spriteName: 'exquisite boots',
     name: 'Swift Boots',
     description: 'Enchanted boots that enhance movement speed.',
     itemClass: 'armor',
@@ -269,6 +291,7 @@ export const ARMOR: readonly ArmorTemplate[] = [
   },
   {
     itemId: 'phase_steps',
+    spriteName: 'exquisite boots',
     name: 'Phase Steps',
     description: 'Boots that allow brief teleportation and enhanced evasion.',
     itemClass: 'armor',
@@ -282,6 +305,7 @@ export const ARMOR: readonly ArmorTemplate[] = [
   // Gloves
   {
     itemId: 'grip_gauntlets',
+    spriteName: 'iron gauntlet',
     name: 'Grip Gauntlets',
     description: 'Reinforced gauntlets that improve defensive capabilities.',
     itemClass: 'armor',
@@ -293,6 +317,7 @@ export const ARMOR: readonly ArmorTemplate[] = [
   },
   {
     itemId: 'leech_wraps',
+    spriteName: 'iron gauntlet',
     name: 'Leech Wraps',
     description: 'Mystical wraps that steal vitality from enemies.',
     itemClass: 'armor',
@@ -306,6 +331,7 @@ export const ARMOR: readonly ArmorTemplate[] = [
   // Rings
   {
     itemId: 'venom_ring',
+    spriteName: 'agate ring',
     name: 'Venom Ring',
     description: 'A ring that grants poison resistance.',
     itemClass: 'armor',
@@ -317,6 +343,7 @@ export const ARMOR: readonly ArmorTemplate[] = [
   },
   {
     itemId: 'blessed_ring',
+    spriteName: 'agate ring',
     name: 'Blessed Ring',
     description: 'A holy ring that grants slow regeneration.',
     itemClass: 'armor',
@@ -328,6 +355,7 @@ export const ARMOR: readonly ArmorTemplate[] = [
   },
   {
     itemId: 'iron_band',
+    spriteName: 'copper ring',
     name: 'Iron Band',
     description: 'A sturdy iron ring that enhances defense.',
     itemClass: 'armor',
@@ -339,6 +367,7 @@ export const ARMOR: readonly ArmorTemplate[] = [
   },
   {
     itemId: 'ember_ring',
+    spriteName: 'copper ring',
     name: 'Ember Ring',
     description: 'A ring wreathed in flames, granting fire resistance.',
     itemClass: 'armor',
@@ -350,6 +379,7 @@ export const ARMOR: readonly ArmorTemplate[] = [
   },
   {
     itemId: 'shadow_ring',
+    spriteName: 'agate ring',
     name: 'Shadow Ring',
     description: 'A dark ring that enables evasion and teleportation.',
     itemClass: 'armor',

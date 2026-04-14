@@ -31,6 +31,7 @@ export function buildInventoryView(state: GameState): InventoryView {
       quantity: 1,
       stackEntityIds: [itemId],
       templateId: template.itemId,
+      spriteName: template.spriteName,
       weaponStats: template.itemClass === 'weapon'
         ? { damage: (template as WeaponTemplate).weapon.damage, damageType: (template as WeaponTemplate).weapon.damageType, accuracy: (template as WeaponTemplate).weapon.accuracy, speed: (template as WeaponTemplate).weapon.speed, weaponRange: (template as WeaponTemplate).weapon.weaponRange, minRange: (template as WeaponTemplate).weapon.minRange }
         : undefined,
