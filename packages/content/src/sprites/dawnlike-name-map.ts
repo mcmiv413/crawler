@@ -31,9 +31,11 @@ export const DAWNLIKE_NAME_MAP: Record<string, string> = {
   'tile:floor:volcanic': 'day brick floor c',
   'tile:wall:volcanic': 'lit heat wall center',
   'tile:floor:crystal_cave': 'day tile floor c',
-  'tile:wall:crystal_cave': 'dark deep wall center',
+  'tile:wall:crystal_cave': 'bright blue wall center',
+  'tile:wall:crystal_cave:alt1': 'bright blue wall flat',
   'tile:floor:frozen_depths': 'day stone floor c',
-  'tile:wall:frozen_depths': 'dark ice wall center',
+  'tile:wall:frozen_depths': 'bright ice wall center',
+  'tile:wall:frozen_depths:alt1': 'bright ice wall flat',
 
   // Enemies
   'enemy:skeleton_warrior': 'skeleton',
