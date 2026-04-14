@@ -1,6 +1,6 @@
-import type { GameState, EnemyInstance } from '@dungeon/contracts';
-import type { GameView, QuestView, InspectableEntityView } from './game-view.js';
-import { ENEMY_TEMPLATES, STATUS_DEFINITIONS, OBJECT_TEMPLATES } from '@dungeon/content';
+import type { GameState, EnemyInstance, PlayerDiedEvent, EquipmentDroppedEvent } from '@dungeon/contracts';
+import type { GameView, QuestView, InspectableEntityView, DeathContext } from './game-view.js';
+import { ENEMY_TEMPLATES, STATUS_DEFINITIONS, OBJECT_TEMPLATES, DEATH_CONSEQUENCES } from '@dungeon/content';
 import { buildPlayerHud } from './builders/player-hud-builder.js';
 import { buildMapView } from './builders/map-view-builder.js';
 
@@ -110,6 +110,47 @@ function buildInspectableEntities(state: GameState): readonly InspectableEntityV
   return mutableEntities;
 }
 
+function buildDeathContext(state: GameState): DeathContext | null {
+  const eventHistory = state.world.eventHistory;
+  const recentEvents = eventHistory.slice(Math.max(0, eventHistory.length - 30));
+  
+  // Find most recent death event (iterate backwards)
+  let deathEvent: PlayerDiedEvent | null = null;
+  for (let i = recentEvents.length - 1; i >= 0; i--) {
+    const event = recentEvents[i];
+    if (event && event.type === 'PLAYER_DIED') {
+      deathEvent = event as PlayerDiedEvent;
+      break;
+    }
+  }
+  if (!deathEvent) return null;
+
+  // Find most recent equipment dropped event (iterate backwards)
+  let equipEvent: EquipmentDroppedEvent | null = null;
+  for (let i = recentEvents.length - 1; i >= 0; i--) {
+    const event = recentEvents[i];
+    if (event && event.type === 'EQUIPMENT_DROPPED') {
+      equipEvent = event as EquipmentDroppedEvent;
+      break;
+    }
+  }
+
+  const permadeathThreshold = Math.floor(
+    DEATH_CONSEQUENCES.overkillPermadeathThreshold * state.player.stats.maxHealth
+  );
+
+  return {
+    killerName: deathEvent.killerName,
+    killerSpriteName: deathEvent.killerSpriteName,
+    floor: deathEvent.floor,
+    equipmentLost: equipEvent ? equipEvent.items : [],
+    goldLost: deathEvent.goldLost,
+    overkillDamage: deathEvent.overkillDamage,
+    permadeathThreshold,
+    totalDeaths: state.player.totalDeaths,
+  };
+}
+
 /** Build a GameView from authoritative GameState */
 export function buildGameView(state: GameState): GameView {
   return {
@@ -138,6 +179,9 @@ export function buildGameView(state: GameState): GameView {
       : null,
     deathStashFloor: state.player.deathStash?.floor ?? null,
     deathSummary: buildDeathSummary(state),
+    deathContext: state.phase === 'town' && state.world.eventHistory.some(e => e.type === 'PLAYER_DIED')
+      ? buildDeathContext(state)
+      : null,
     inspectableEntities: buildInspectableEntities(state),
     debugMode: state.debugMode ?? false,
   };
