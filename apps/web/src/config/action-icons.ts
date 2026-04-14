@@ -7,44 +7,44 @@ export type ActionButtonType = 'WAIT' | 'ATTACK' | 'SWAP' | 'ABILITY' | 'INTERAC
 
 export interface ActionIcon {
   readonly emoji: string;
-  readonly spriteKey?: string; // For future sprite-based rendering
+  readonly spriteName?: string; // DawnLike sprite name for icon rendering
   readonly tooltip: string;
 }
 
 export const ACTION_ICONS: Record<ActionButtonType, ActionIcon> = {
   WAIT: {
     emoji: '⏸️',
-    spriteKey: 'action_wait',
+    spriteName: 'action_wait',
     tooltip: 'Skip your turn',
   },
   ATTACK: {
     emoji: '⚔️',
-    spriteKey: 'action_attack',
+    spriteName: 'action_attack',
     tooltip: 'Attack selected enemy',
   },
   SWAP: {
     emoji: '🔄',
-    spriteKey: 'action_swap',
+    spriteName: 'action_swap',
     tooltip: 'Swap weapons',
   },
   ABILITY: {
     emoji: '✨',
-    spriteKey: 'action_ability',
+    spriteName: 'action_ability',
     tooltip: 'Use an ability',
   },
   INTERACT: {
     emoji: '🤝',
-    spriteKey: 'action_interact',
+    spriteName: 'action_interact',
     tooltip: 'Interact with objects',
   },
   USE: {
     emoji: '🧪',
-    spriteKey: 'action_use',
+    spriteName: 'action_use',
     tooltip: 'Use consumable item',
   },
   INSPECT: {
     emoji: '🔍',
-    spriteKey: 'action_inspect',
+    spriteName: 'action_inspect',
     tooltip: 'Inspect dungeon',
   },
 };
