@@ -142,8 +142,8 @@ export function ShopPanel({ view, loading, sendCommand, isMobile }: ShopPanelPro
                     </span>
                     {item.name}
                   </div>
-                  <div style={{ display: 'flex', gap: 8, alignItems: 'center', marginRight: 8 }}>
-                    <div style={{ color: '#888', fontSize: 10, minWidth: 50, textAlign: 'right' }}>
+                  <div style={{ display: 'flex', flexDirection: 'column', gap: 2, marginRight: 8, minWidth: 100 }}>
+                    <div style={{ color: '#888', fontSize: 10, textAlign: 'right' }}>
                       {discounted ? (
                         <>
                           <span style={{ textDecoration: 'line-through' }}>{item.price}g</span>{' '}
@@ -153,9 +153,21 @@ export function ShopPanel({ view, loading, sendCommand, isMobile }: ShopPanelPro
                         <span>{item.price}g</span>
                       )}
                     </div>
-                    <div style={{ color: '#666', fontSize: 10, minWidth: 30, textAlign: 'right' }}>
+                    <div style={{ color: '#666', fontSize: 10, textAlign: 'right' }}>
                       ×{item.stock}
                     </div>
+                    {item.weaponData && (
+                      <div style={{ fontSize: '9px', color: '#88f' }}>
+                        <div>Dmg: {item.weaponData.damage} ({item.weaponData.damageType})</div>
+                        {item.weaponData.accuracy > 0 && <div>Acc: +{item.weaponData.accuracy}</div>}
+                      </div>
+                    )}
+                    {item.armorData && (
+                      <div style={{ fontSize: '9px', color: '#8f8' }}>
+                        <div>Def: +{item.armorData.defense}</div>
+                        {item.armorData.slot && <div>Slot: {item.armorData.slot}</div>}
+                      </div>
+                    )}
                   </div>
                   <button
                     onClick={(e) => {

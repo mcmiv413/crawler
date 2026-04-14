@@ -173,6 +173,8 @@ export function buildTownView(state: GameState): TownView {
             stock: si.stock,
             itemClass: template?.itemClass ?? 'unknown',
             spriteName: template?.spriteName,
+            weaponData: template?.itemClass === 'weapon' && 'weapon' in template ? template.weapon : undefined,
+            armorData: template?.itemClass === 'armor' && 'armor' in template ? template.armor : undefined,
           } satisfies ShopItemView;
         }),
       canUndo: !!state.world.shop.lastTransaction,
