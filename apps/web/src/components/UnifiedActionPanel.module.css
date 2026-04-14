@@ -20,15 +20,15 @@
 
 .dropdownContainer {
   position: fixed;
-  top: 0;
+  bottom: 0;
   left: 0;
   right: 0;
-  bottom: 0;
+  max-height: 70vh;
   display: flex;
   flex-direction: column;
   gap: 0.75rem;
   padding: 1rem;
-  background-color: rgba(0, 0, 0, 0.7);
+  background-color: transparent;
   border: none;
   border-radius: 0;
   animation: fadeIn 0.2s ease-out;
