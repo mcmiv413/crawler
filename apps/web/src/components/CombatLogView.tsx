@@ -54,8 +54,8 @@ export function CombatLogView({ entries, debugMode, maxHeight = COMBAT_LOG_MAX_H
           {debugMode ? '🐛 DEBUG ON' : 'DEBUG'}
         </button>
       </div>
-      {filteredEntries.map((entry, i) => (
-        <div key={i} style={{ fontSize: 11, color: logColor(entry), padding: '1px 0' }}>
+      {filteredEntries.map((entry) => (
+        <div key={`${entry.type}-${entry.text}`} style={{ fontSize: 11, color: logColor(entry), padding: '1px 0' }}>
           {entry.text}
         </div>
       ))}

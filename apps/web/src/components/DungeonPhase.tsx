@@ -45,9 +45,9 @@ function MiniCombatLog({ entries }: { entries: readonly { text: string; type: st
   if (recent.length === 0) return null;
   return (
     <div style={{ marginTop: 8, borderTop: '1px solid #222', paddingTop: 4 }}>
-      {recent.map((e, i) => (
+      {recent.map((e) => (
         <div
-          key={i}
+          key={`${e.type}-${e.text}`}
           style={{
             fontSize: 10,
             lineHeight: 1.3,

@@ -67,7 +67,7 @@ export function executeAbility(
         accumulatedEvents = [...accumulatedEvents, ...effectResult.events];
         // Update lastAttackHit if this was an attack effect
         if (effect.kind === 'attack') {
-          lastAttackHit = (effectResult as any).hit ?? false;
+          lastAttackHit = effectResult.hit ?? false;
         }
       }
     }

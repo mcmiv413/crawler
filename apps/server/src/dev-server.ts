@@ -8,7 +8,7 @@ async function main() {
 
   try {
     await app.listen({ port: PORT, host: HOST });
-    console.log(`Dungeon Crawler server listening on ${HOST}:${PORT}`);
+    app.log.info(`Dungeon Crawler server listening on ${HOST}:${PORT}`);
   } catch (err) {
     app.log.error(err);
     process.exit(1);
