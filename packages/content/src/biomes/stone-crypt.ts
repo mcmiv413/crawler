@@ -21,6 +21,9 @@ export interface BiomeDefinition {
     readonly roomHeight: readonly [number, number];
     readonly corridorLength: readonly [number, number];
     readonly dugPercentage: number;
+    readonly algorithm?: 'digger' | 'cellular';
+    readonly fillProbability?: number;
+    readonly iterations?: number;
   };
 }
 

@@ -11,7 +11,7 @@ export const mossCaverns: BiomeDefinition = {
   wallAscii: '#',
   tileSprites: {
     floor: 'day tile floor c',
-    wall: 'dark fort wall center',
+    wall: 'bright rock wall center',
     interactable: 'closed wooden door front',
   },
   mapGen: {
@@ -19,5 +19,8 @@ export const mossCaverns: BiomeDefinition = {
     roomHeight: [3, 6],
     corridorLength: [1, 4],
     dugPercentage: 0.48,
+    algorithm: 'cellular',
+    fillProbability: 0.50,
+    iterations: 5,
   },
 };

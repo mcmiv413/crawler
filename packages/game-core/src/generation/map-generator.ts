@@ -16,12 +16,18 @@ export interface GeneratedFloor {
   readonly valid: boolean;
 }
 
-/** Generate a dungeon floor using rot.js Digger */
+/** Generate a dungeon floor using rot.js Digger or Cellular automata */
 export function generateFloor(
   depth: number,
   biome: BiomeDefinition,
   rng: SeededRNG,
 ): GeneratedFloor {
+  // Use cellular automata for biomes that opt in (organic layouts)
+  if (biome.mapGen?.algorithm === 'cellular') {
+    return attemptCellularGeneration(depth, biome, rng);
+  }
+
+  // Default: room-based generation (Digger with Uniform fallback)
   for (let attempt = 0; attempt < MAP_GENERATION.maxRetries; attempt++) {
     const result = attemptGeneration(depth, biome, rng);
     if (result.valid === true) return result;
@@ -189,6 +195,74 @@ export function bfsReachable(
   }
 
   return false;
+}
+
+function attemptCellularGeneration(
+  depth: number,
+  biome: BiomeDefinition,
+  rng: SeededRNG,
+): GeneratedFloor {
+  const width = rng.int(MAP_GENERATION.minWidth, MAP_GENERATION.maxWidth);
+  const height = rng.int(MAP_GENERATION.minHeight, MAP_GENERATION.maxHeight);
+
+  const fillProbability = biome.mapGen?.fillProbability ?? 0.48;
+  const iterations = biome.mapGen?.iterations ?? 4;
+
+  // Create cellular automata with default rules (born: [5,6,7,8], survive: [4,5,6,7,8])
+  const cellular = new RotMap.Cellular(width, height);
+  cellular.randomize(fillProbability);
+
+  // Run automata iterations to create organic structures
+  for (let i = 0; i < iterations; i++) {
+    cellular.create();
+  }
+
+  const cells = new Map<string, MapCell>();
+  let floorPositions: Position[] = [];
+
+  // Use connect() to carve tunnels between disconnected regions
+  // Callback value: 0 = floor (open space), 1 = wall
+  cellular.connect(
+    (x, y, value) => {
+      const pos = { x, y };
+      const key = posKey(pos);
+      if (value === 0) {
+        cells.set(key, { tile: FLOOR_TILE, visibility: 'hidden' });
+        floorPositions = [...floorPositions, pos];
+      } else {
+        cells.set(key, { tile: WALL_TILE, visibility: 'hidden' });
+      }
+    },
+    0, // value to consider as empty space (floor)
+  );
+
+  if (floorPositions.length < 20) {
+    return { floor: emptyFloor(depth, biome, rng), valid: false };
+  }
+
+  // Pick entrance and exit from floor positions
+  const entrance = floorPositions[0]!;
+  const exit = floorPositions[floorPositions.length - 1]!;
+
+  // Place stairs
+  cells.set(posKey(entrance), { tile: STAIRS_UP, visibility: 'hidden' });
+  cells.set(posKey(exit), { tile: STAIRS_DOWN, visibility: 'hidden' });
+
+  // Verify connectivity
+  const valid = bfsReachable(cells, entrance, exit);
+
+  const floor: DungeonFloor = {
+    width,
+    height,
+    depth,
+    biomeId: biome.biomeId,
+    cells,
+    entrance,
+    exit,
+    seed: rng.getSeed(),
+  };
+
+  return { floor, valid };
 }
 
 function emptyFloor(depth: number, biome: BiomeDefinition, rng: SeededRNG): DungeonFloor {

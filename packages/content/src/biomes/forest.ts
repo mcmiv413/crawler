@@ -11,7 +11,7 @@ export const forest: BiomeDefinition = {
   wallAscii: 'T',
   tileSprites: {
     floor: 'day grass floor c',
-    wall: 'lit infernal wall center',
+    wall: 'forest tree trunk',
     interactable: 'closed wooden door front',
   },
   mapGen: {
@@ -19,5 +19,8 @@ export const forest: BiomeDefinition = {
     roomHeight: [5, 9],
     corridorLength: [1, 2],
     dugPercentage: 0.65,
+    algorithm: 'cellular',
+    fillProbability: 0.45,
+    iterations: 4,
   },
 };
