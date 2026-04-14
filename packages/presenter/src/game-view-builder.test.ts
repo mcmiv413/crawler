@@ -1415,3 +1415,45 @@ describe('buildInspectableEntities', () => {
     expect(hasObject).toBe(true);
   });
 });
+
+describe('InspectableEntityView ASCII consistency (Phase 6)', () => {
+  it('uses enemy.ascii from template, not derived from name', () => {
+    const state = createTestGameStateInCombat({ enemyAt: { x: 1, y: 0 } });
+    if (!state.run) throw new Error('No run');
+
+    // Get the actual enemy instance to verify it has the template ASCII
+    const enemy = Array.from(state.run.enemies.values())[0];
+    if (!enemy) throw new Error('No enemy found');
+
+    const view = buildGameView(state);
+    const inspectableEnemy = view.inspectableEntities.find(e => e.entityType === 'enemy' && e.id === enemy.id);
+
+    // Should use enemy.ascii from template, not enemy.name.charAt(0).toUpperCase()
+    expect(inspectableEnemy?.ascii).toBe(enemy.ascii);
+    // The test will fail if it's deriving from name (e.g., "Pit Spider" → "P" instead of "s")
+    if (enemy.name === 'Pit Spider' || enemy.name.startsWith('Pit')) {
+      expect(inspectableEnemy?.ascii).not.toBe('P');
+    }
+  });
+
+  it('makes InspectScreen ASCII match map view ASCII', () => {
+    const state = createTestGameStateInCombat({ enemyAt: { x: 1, y: 0 } });
+    if (!state.run) throw new Error('No run');
+
+    const enemy = Array.from(state.run.enemies.values())[0];
+    if (!enemy) throw new Error('No enemy found');
+
+    // Build inspect view
+    const gameView = buildGameView(state);
+    const inspectableEnemy = gameView.inspectableEntities.find(e => e.id === enemy.id);
+
+    // Get map view to compare
+    const mapView = gameView.map;
+    if (!mapView) throw new Error('No map view');
+
+    const mapEntity = mapView.entities.find(e => e.id === enemy.id);
+
+    // Both should show the same ASCII character
+    expect(inspectableEnemy?.ascii).toBe(mapEntity?.ascii);
+  });
+});
