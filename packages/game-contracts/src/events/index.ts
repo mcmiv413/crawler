@@ -85,8 +85,12 @@ export interface FloorEnteredEvent extends BaseEvent {
 export interface PlayerDiedEvent extends BaseEvent {
   readonly type: 'PLAYER_DIED';
   readonly killerId: EntityId | null;
+  readonly killerName: string | null;
+  readonly killerSpriteName: string | null;
   readonly floor: number;
   readonly cause: string;
+  readonly goldLost: number;
+  readonly overkillDamage: number;
 }
 
 export interface RunStartedEvent extends BaseEvent {

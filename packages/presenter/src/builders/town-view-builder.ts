@@ -1,5 +1,5 @@
 import type { GameState, TownState, NemesisRecord } from '@dungeon/contracts';
-import { ITEM_BY_ID, TOWN_DESCRIPTIONS, getFactionIdsForTemplate, isRarityBuyable } from '@dungeon/content';
+import { ITEM_BY_ID, TOWN_DESCRIPTIONS, getFactionIdsForTemplate, isRarityBuyable, ENEMY_TEMPLATES } from '@dungeon/content';
 import type { TownView, FactionView, NemesisView, ShopItemView, RunSummaryStats } from '../game-view.js';
 
 function shopkeeperDiscountPct(state: GameState): number {
@@ -129,6 +129,7 @@ export function buildTownView(state: GameState): TownView {
         killedByWeaponType: n.killedByWeaponType,
         isActive: n.isActive,
         weaknesses: n.weaknesses,
+        spriteName: ENEMY_TEMPLATES.get(n.sourceTemplateId)?.spriteName ?? null,
       })),
     slainNemeses: state.world.nemeses
       .filter(n => !n.isActive)
@@ -143,6 +144,7 @@ export function buildTownView(state: GameState): TownView {
         killedByWeaponType: n.killedByWeaponType,
         isActive: n.isActive,
         weaknesses: n.weaknesses,
+        spriteName: ENEMY_TEMPLATES.get(n.sourceTemplateId)?.spriteName ?? null,
       })),
     npcs: state.world.npcs.map(npc => ({
       id: npc.id,
