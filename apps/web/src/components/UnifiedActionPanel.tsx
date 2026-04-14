@@ -210,8 +210,13 @@ export function UnifiedActionPanel({
     switch (actionType) {
       case 'WAIT':
         return true;
-      case 'ATTACK':
-        return enemies.length > 0;
+      case 'ATTACK': {
+        // Only enabled if enemies are in weapon range
+        return enemies.some((enemy) => {
+          const distance = calculateDistance(playerPos.x, playerPos.y, enemy.x, enemy.y);
+          return distance <= weaponRange && distance >= minRange;
+        });
+      }
       case 'SWAP':
         return !!view.inventory.equipped.secondaryWeapon; // Only enabled if secondary weapon exists
       case 'ABILITY':
