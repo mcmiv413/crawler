@@ -1,8 +1,7 @@
 import React, { useState, useEffect } from 'react';
-import type { GameView, AvailableAction, QuestView } from '@dungeon/presenter';
-import { VIEWPORT_PX_WIDTH, VIEWPORT_PX_HEIGHT, VP_WIDTH, VP_HEIGHT } from '../utils/viewport.js';
-import { ACTIONS_COLUMN_MIN_WIDTH, CONSUMABLES_BAR_MAX_HEIGHT, QUEST_TRACKER_MAX_HEIGHT, TAB_BAR_HEIGHT } from '../config/ui-config.js';
-import { btnStyle } from '../styles.js';
+import type { GameView } from '@dungeon/presenter';
+import { VP_WIDTH, VP_HEIGHT } from '../utils/viewport.js';
+import { TAB_BAR_HEIGHT } from '../config/ui-config.js';
 import { PlayerHud } from './PlayerHud.js';
 import { DungeonView } from './DungeonView.js';
 import { DungeonCanvas } from './DungeonCanvas.js';
@@ -11,6 +10,7 @@ import { InventoryPanel } from './InventoryPanel.js';
 import { DebugPanel } from './DebugPanel.js';
 import { UnifiedActionPanel } from './UnifiedActionPanel.js';
 import { InspectModal } from './InspectModal.js';
+import { PlayerInfoPanel } from './PlayerInfoPanel.js';
 import { useBreakpoint } from '../hooks/useBreakpoint.js';
 import { CombatIndicators } from './CombatIndicators.js';
 import { useCombatIndicators } from '../hooks/useCombatIndicators.js';
@@ -57,43 +57,6 @@ function MiniCombatLog({ entries }: { entries: readonly { text: string; type: st
           {e.text}
         </div>
       ))}
-    </div>
-  );
-}
-
-
-
-function QuestTracker({ quests }: { quests: readonly QuestView[] }) {
-  const [open, setOpen] = useState(false);
-  const active = quests.filter(q => q.status === 'active');
-  if (active.length === 0) return null;
-
-  return (
-    <div style={{ marginTop: 6 }}>
-      <button
-        onClick={() => setOpen(o => !o)}
-        style={{
-          fontSize: 10,
-          padding: '4px 8px',
-          background: '#333',
-          color: '#aaa',
-          border: '1px solid #555',
-          cursor: 'pointer',
-        }}
-      >
-        📜 Quests ({active.length}) {open ? '▲' : '▼'}
-      </button>
-      {open && (
-        <div style={{ maxHeight: QUEST_TRACKER_MAX_HEIGHT, overflowY: 'auto' as const }}>
-          {active.map(q => (
-            <div key={q.id} style={{ padding: '6px 0', borderBottom: '1px solid #1a2a1a' }}>
-              <div style={{ fontSize: 11, color: '#88bb88' }}>{q.title}</div>
-              <div style={{ fontSize: 10, color: '#666' }}>{q.description}</div>
-              <div style={{ fontSize: 10, color: '#cc8844' }}>Reward: {q.rewardGold}g</div>
-            </div>
-          ))}
-        </div>
-      )}
     </div>
   );
 }
@@ -225,6 +188,11 @@ export function DungeonPhase({
           <PlayerHud player={view.player} compact />
         </div>
 
+        {/* Player Info Panel: quests, factions, masteries, enchantments */}
+        <div style={{ flexShrink: 0, marginBottom: 6 }}>
+          <PlayerInfoPanel view={view} />
+        </div>
+
         {/* Dungeon map: dynamically sized above combat log */}
         <div ref={mapContainerRef} style={{ flex: 1, minHeight: 0, display: 'flex', flexDirection: 'column', marginBottom: 6 }}>
           <MapDisplay map={view.map} useSprites={useSprites} containerRef={mapContainerRef} combatLog={combatLog} />
@@ -253,11 +221,6 @@ export function DungeonPhase({
             onClose={() => setShowInspectModal(false)}
           />
         )}
-
-        {/* Quests section */}
-        <div style={{ flexShrink: 0, marginTop: 6 }}>
-          <QuestTracker quests={view.activeQuests} />
-        </div>
 
         {/* Error message */}
         {error && <p style={{ color: '#f44', fontSize: 10, margin: '4px 0 0 0' }}>{error}</p>}
@@ -288,6 +251,11 @@ export function DungeonPhase({
         <PlayerHud player={view.player} compact />
       </div>
 
+      {/* Player Info Panel: quests, factions, masteries, enchantments */}
+      <div style={{ flexShrink: 0, marginBottom: 6 }}>
+        <PlayerInfoPanel view={view} />
+      </div>
+
       {/* Dungeon map: dynamically sized above combat log */}
       <div ref={mapContainerRef} style={{ flex: 1, minHeight: 0, display: 'flex', flexDirection: 'column', marginBottom: 8 }}>
         <MapDisplay map={view.map} useSprites={useSprites} containerRef={mapContainerRef} combatLog={combatLog} />
@@ -316,11 +284,6 @@ export function DungeonPhase({
           onClose={() => setShowInspectModal(false)}
         />
       )}
-
-      {/* Quests section */}
-      <div style={{ flexShrink: 0, marginTop: 8 }}>
-        <QuestTracker quests={view.activeQuests} />
-      </div>
 
       {/* Error message */}
       {error && <p style={{ color: '#f44', flexShrink: 0, marginTop: 8 }}>{error}</p>}
