@@ -166,13 +166,20 @@ export function DungeonPhase({
   const mapContainerRef = React.useRef<HTMLDivElement>(null);
   const [showInspectModal, setShowInspectModal] = useState(false);
 
+  // Get equipped weapon
+  const equippedWeapon = (view.player.equippedItems ?? []).find(item => item.slot === 'weapon');
+  const weaponDisplay = equippedWeapon ? `[${equippedWeapon.name}]` : 'Unarmed';
+
   // Mobile: same layout as desktop - action panel always visible with fixed combat log
   if (isMobile) {
     return (
       <div style={{ padding: 8, fontFamily: 'monospace', color: '#ccc', background: '#111', flex: 1, overflow: 'hidden', display: 'flex', flexDirection: 'column', minHeight: 0, paddingBottom: TAB_BAR_HEIGHT + 8 }}>
         {/* Header: always visible */}
         <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 10, flexShrink: 0 }}>
-          <h2 style={{ margin: 0, color: '#88cc44', fontSize: 16 }}>Dungeon</h2>
+          <div style={{ display: 'flex', gap: 8, alignItems: 'center' }}>
+            <h2 style={{ margin: 0, color: '#88cc44', fontSize: 16 }}>Dungeon</h2>
+            <span style={{ fontSize: 11, color: '#aaa' }}>{weaponDisplay}</span>
+          </div>
           {view.map && (
             <button
               onClick={() => setUseSprites(s => !s)}
@@ -235,7 +242,10 @@ export function DungeonPhase({
     <div style={{ padding: 8, fontFamily: 'monospace', color: '#ccc', background: '#111', flex: 1, overflow: 'hidden', display: 'flex', flexDirection: 'column', minHeight: 0, paddingBottom: TAB_BAR_HEIGHT + 8 }}>
       {/* Header: always visible */}
       <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 10, flexShrink: 0 }}>
-        <h2 style={{ margin: 0, color: '#88cc44' }}>Dungeon</h2>
+        <div style={{ display: 'flex', gap: 8, alignItems: 'center' }}>
+          <h2 style={{ margin: 0, color: '#88cc44' }}>Dungeon</h2>
+          <span style={{ fontSize: 11, color: '#aaa' }}>{weaponDisplay}</span>
+        </div>
         {view.map && (
           <button
             onClick={() => setUseSprites(s => !s)}
