@@ -2,9 +2,9 @@ import type { GameState, EnemyInstance, DamageType } from '@dungeon/contracts';
 import { OBJECT_TEMPLATES, ENEMY_TEMPLATES, BIOMES } from '@dungeon/content';
 import type { MapView, EntityView } from '../game-view.js';
 
-// Sprite names for map rendering
-const STAIRS_UP_SPRITE = 'large stairs up';
-const STAIRS_DOWN_SPRITE = 'large stairs down';
+// Sprite names for map rendering - using left-facing variants for map consistency
+const STAIRS_UP_SPRITE = 'staircase up left';
+const STAIRS_DOWN_SPRITE = 'staircase down left';
 
 function getDamageTypeColor(damageType: DamageType): string {
   switch (damageType) {

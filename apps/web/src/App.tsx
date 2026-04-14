@@ -10,6 +10,7 @@ import { DungeonPhase } from './components/DungeonPhase.js';
 import { GameOverPhase } from './components/GameOverPhase.js';
 import { NemesisRisenScreen } from './components/NemesisRisenScreen.js';
 import { NemesisSlainScreen } from './components/NemesisSlainScreen.js';
+import { DeathNotificationModal } from './components/DeathNotificationModal.js';
 import { QuestAssignedScreen } from './components/QuestAssignedScreen.js';
 import { MobileNav } from './components/MobileNav.js';
 import { CharacterScreen } from './components/CharacterScreen.js';
@@ -165,6 +166,7 @@ export function App() {
         <NemesisRisenScreen
           view={view}
           nemesis={activeNemesis}
+          deathContext={view.deathContext}
           onDismiss={() => {
             setShownRisenNemesisIds(new Set([...shownRisenNemesisIds, activeNemesis.id]));
           }}
@@ -183,6 +185,21 @@ export function App() {
           nemesis={unshownSlain}
           onDismiss={() => {
             setShownSlainNemesisIds(new Set([...shownSlainNemesisIds, unshownSlain.id]));
+          }}
+        />
+      );
+    }
+  }
+
+  // Death notification modal (when you die without nemesis promotion)
+  if (view.phase === 'town' && view.deathContext && !view.town?.runSummaryStats?.nemesisPromoted) {
+    const notShownDeaths = view.deathContext ? 1 : 0; // Track if we've shown this death
+    if (notShownDeaths > 0 && !shownRisenNemesisIds.has('death-notification')) {
+      return (
+        <DeathNotificationModal
+          deathContext={view.deathContext}
+          onDismiss={() => {
+            setShownRisenNemesisIds(new Set([...shownRisenNemesisIds, 'death-notification']));
           }}
         />
       );

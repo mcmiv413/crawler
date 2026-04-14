@@ -19,6 +19,17 @@ export interface DeathSummary {
   readonly damageTaken: number;
 }
 
+export interface DeathContext {
+  readonly killerName: string | null;
+  readonly killerSpriteName: string | null;
+  readonly floor: number;
+  readonly equipmentLost: readonly { slot: string; itemName: string }[];
+  readonly goldLost: number;
+  readonly overkillDamage: number;
+  readonly permadeathThreshold: number;
+  readonly totalDeaths: number;
+}
+
 export interface QuestView {
   readonly id: string;
   readonly title: string;
@@ -62,6 +73,7 @@ export interface GameView {
   readonly runResult: 'victory' | 'death' | 'permadeath' | null;
   readonly deathStashFloor: number | null;
   readonly deathSummary: DeathSummary | null;
+  readonly deathContext: DeathContext | null;
   readonly inspectableEntities: readonly InspectableEntityView[];
   readonly debugMode: boolean;
 }
@@ -244,6 +256,7 @@ export interface NemesisView {
   readonly killedByWeaponType: string | null;
   readonly isActive: boolean;
   readonly weaknesses: readonly string[];
+  readonly spriteName: string | null;
 }
 
 export interface EnchantmentSlotView {

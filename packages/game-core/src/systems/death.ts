@@ -1,9 +1,8 @@
-import type { GameState, EntityId, DeathStash, Equipment, DeathStashItem, StoredFloor } from '@dungeon/contracts';
-import type { DomainEvent } from '@dungeon/contracts';
+import type { DomainEvent, GameState, EntityId, Equipment, DeathStash, DeathStashItem, StoredFloor } from '@dungeon/contracts';
 import type { SeededRNG } from '../utils/rng.js';
 import { shouldPromoteToNemesis, promoteToNemesis } from './nemesis.js';
 import { randomizeShop } from '../state/world-state.js';
-import { DEATH_CONSEQUENCES } from '@dungeon/content';
+import { DEATH_CONSEQUENCES, ENEMY_TEMPLATES } from '@dungeon/content';
 
 /** Handle player death — end run, return to town with penalties */
 export function handlePlayerDeath(
@@ -79,12 +78,27 @@ export function handlePlayerDeath(
   }
 
   // --- Normal death ---
+  // Compute killer info early so it can go into the event
+  const killer = killerId !== null
+    ? [...run.enemies.values()].find(e => e.id === killerId) ?? null
+    : null;
+
+  const killerTemplate = killer !== null
+    ? ENEMY_TEMPLATES.get(killer.templateId) ?? null
+    : null;
+
+  const goldLoss = Math.floor(state.player.gold * DEATH_CONSEQUENCES.goldLossPercent);
+
   events = [
     {
       type: 'PLAYER_DIED',
       killerId,
+      killerName: killer?.name ?? null,
+      killerSpriteName: killerTemplate?.spriteName ?? null,
       floor: state.player.floor,
       cause,
+      goldLost: goldLoss,
+      overkillDamage: overkillDamage ?? 0,
       timestamp: Date.now(),
       turnNumber: state.turnNumber,
     },
@@ -148,14 +162,10 @@ export function handlePlayerDeath(
   // --- Nemesis promotion ---
   let newWorld = state.world;
   let nemesisEvents: DomainEvent[] = [];
-  if (killerId !== null) {
-    // Find killer by entity ID (enemies map is keyed by position, so we need to search)
-    const killer = [...run.enemies.values()].find(e => e.id === killerId);
-    if (killer !== undefined && shouldPromoteToNemesis(state, killer, state.player.floor, rng)) {
-      const promotionResult = promoteToNemesis(state, killer, state.player.floor, rng);
-      newWorld = promotionResult.state.world;
-      nemesisEvents = promotionResult.events.filter(e => e.type === 'NEMESIS_PROMOTED');
-    }
+  if (killer !== null && shouldPromoteToNemesis(state, killer, state.player.floor, rng)) {
+    const promotionResult = promoteToNemesis(state, killer, state.player.floor, rng);
+    newWorld = promotionResult.state.world;
+    nemesisEvents = promotionResult.events.filter(e => e.type === 'NEMESIS_PROMOTED');
   }
 
   events = [...events, ...deathStashEvents, ...nemesisEvents];
@@ -176,8 +186,7 @@ export function handlePlayerDeath(
     : new Map<number, StoredFloor>();
   updatedCache.set(currentFloorDepth, currentFloorSnapshot);
 
-  // --- Gold loss: 25% of current gold ---
-  const goldLoss = Math.floor(state.player.gold * DEATH_CONSEQUENCES.goldLossPercent);
+  // --- Gold loss: 25% of current gold (already computed for event above) ---
   const newGold = Math.max(0, state.player.gold - goldLoss);
 
   // --- Clear equipment ---
