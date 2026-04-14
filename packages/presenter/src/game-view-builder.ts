@@ -47,7 +47,7 @@ function buildInspectableEntities(state: GameState): readonly InspectableEntityV
       id: enemy.id,
       name: enemy.name,
       description: template.description,
-      ascii: enemy.name.charAt(0).toUpperCase(),
+      ascii: enemy.ascii,
       color: getEnemyColor(enemy),
       entityType: 'enemy',
       templateId: enemy.templateId,
