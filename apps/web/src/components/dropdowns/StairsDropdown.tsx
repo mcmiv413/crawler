@@ -3,6 +3,8 @@
  */
 
 import React from 'react';
+import { SPRITE_NAMES } from '../../config/sprite-names';
+import { ItemSpriteIcon } from '../ItemSpriteIcon';
 import styles from '../ActionOverlay.module.css';
 
 interface StairsDropdownProps {
@@ -44,7 +46,8 @@ export function StairsDropdown({
             e.currentTarget.style.backgroundColor = 'transparent';
           }}
         >
-          <span>📈 Ascend to Previous Floor</span>
+          <ItemSpriteIcon spriteName={SPRITE_NAMES.STAIRS_UP} size={16} />
+          <span>Ascend to Previous Floor</span>
         </button>
       )}
       {canRetreat && (
