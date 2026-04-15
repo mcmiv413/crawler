@@ -245,4 +245,50 @@ describe('CombatLogView Component', () => {
       expect(allEvents).toHaveLength(2);
     });
   });
+
+  describe('Responsive Height', () => {
+    it('respects custom maxHeight prop when provided', () => {
+      const entries = [{ text: 'Test event', type: 'info' }];
+      const { container } = render(
+        <CombatLogView entries={entries} debugMode={false} maxHeight={400} />,
+      );
+      // Find the main scroll container (first div with border style)
+      const scrollContainer = container.querySelector('div[style*="border"]') as HTMLDivElement;
+      expect(scrollContainer).toBeDefined();
+      expect(scrollContainer?.style.maxHeight).toBe('400px');
+    });
+
+    it('uses default maxHeight on desktop when not provided', () => {
+      const entries = [{ text: 'Test event', type: 'info' }];
+      const { container } = render(
+        <CombatLogView entries={entries} debugMode={false} isMobile={false} />,
+      );
+      const scrollContainer = container.querySelector('div[style*="border"]') as HTMLDivElement;
+      expect(scrollContainer).toBeDefined();
+      // Desktop should use COMBAT_LOG_MAX_HEIGHT (250px)
+      expect(scrollContainer?.style.maxHeight).toBe('250px');
+    });
+
+    it('uses none maxHeight on mobile to fill available space', () => {
+      const entries = [{ text: 'Test event', type: 'info' }];
+      const { container } = render(
+        <CombatLogView entries={entries} debugMode={false} isMobile={true} />,
+      );
+      const scrollContainer = container.querySelector('div[style*="border"]') as HTMLDivElement;
+      expect(scrollContainer).toBeDefined();
+      // Mobile should use 'none' to fill available flex space
+      expect(scrollContainer?.style.maxHeight).toBe('none');
+    });
+
+    it('explicit maxHeight overrides isMobile setting', () => {
+      const entries = [{ text: 'Test event', type: 'info' }];
+      const { container } = render(
+        <CombatLogView entries={entries} debugMode={false} isMobile={true} maxHeight={200} />,
+      );
+      const scrollContainer = container.querySelector('div[style*="border"]') as HTMLDivElement;
+      expect(scrollContainer).toBeDefined();
+      // Explicit maxHeight should take precedence
+      expect(scrollContainer?.style.maxHeight).toBe('200px');
+    });
+  });
 });

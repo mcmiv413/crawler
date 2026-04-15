@@ -6,9 +6,12 @@ interface CombatLogViewProps {
   entries: readonly { text: string; type: string }[];
   debugMode: boolean;
   maxHeight?: number;
+  isMobile?: boolean;
 }
 
-export function CombatLogView({ entries, debugMode, maxHeight = COMBAT_LOG_MAX_HEIGHT }: CombatLogViewProps) {
+export function CombatLogView({ entries, debugMode, maxHeight, isMobile = false }: CombatLogViewProps) {
+  // On mobile, fill available vertical space; on desktop, cap at COMBAT_LOG_MAX_HEIGHT
+  const computedMaxHeight = maxHeight !== undefined ? maxHeight : (isMobile ? 'none' : COMBAT_LOG_MAX_HEIGHT);
   const scrollRef = useRef<HTMLDivElement>(null);
   const { toggleDebugLogging } = useGameStore();
 
@@ -35,7 +38,7 @@ export function CombatLogView({ entries, debugMode, maxHeight = COMBAT_LOG_MAX_H
   }
 
   return (
-    <div ref={scrollRef} style={{ marginTop: 10, maxHeight, overflowY: 'auto', border: '1px solid #333', padding: 5, background: '#0a0a0a' }}>
+    <div ref={scrollRef} style={{ marginTop: 10, maxHeight: computedMaxHeight, overflowY: 'auto', border: '1px solid #333', padding: 5, background: '#0a0a0a' }}>
       <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 5 }}>
         <h4 style={{ margin: 0, color: '#888' }}>Log</h4>
         <button
