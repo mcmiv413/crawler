@@ -224,7 +224,7 @@ export function UnifiedActionPanel({
       case 'SWAP':
         return !!view.inventory.equipped.secondaryWeapon; // Only enabled if secondary weapon exists
       case 'ABILITY':
-        return view.player.abilities.length > 0;
+        return view.player.abilities.some((a) => a.ready);
       case 'INTERACT':
         return objects.length > 0;
       case 'USE':

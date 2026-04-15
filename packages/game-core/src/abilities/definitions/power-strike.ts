@@ -9,6 +9,7 @@ export const POWER_STRIKE_DEFINITION: AbilityDefinition = {
   unlocks: [{ kind: 'level', minLevel: 2 }],
   requirements: [
     { kind: 'has_target' },
+    { kind: 'target_in_melee_range' },
   ],
   targeting: { selector: { kind: 'single_enemy' } },
   effects: [
