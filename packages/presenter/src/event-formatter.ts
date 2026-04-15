@@ -241,6 +241,13 @@ export function formatEvent(event: DomainEvent): CombatLogEntry | null {
       };
     }
 
+    case 'TRAP_TRIGGERED':
+      return {
+        text: `${event.trapName} dealt ${event.damage} damage!`,
+        type: 'damage',
+        timestamp: event.timestamp,
+      };
+
     case 'THORNS_REFLECTED':
       return {
         text: `Thorns: ${event.targetName} takes ${event.damageAmount} damage!`,

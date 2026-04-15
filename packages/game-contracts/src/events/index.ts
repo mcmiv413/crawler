@@ -286,6 +286,14 @@ export interface ObjectInteractedEvent extends BaseEvent {
   readonly gotLoot: boolean;
 }
 
+export interface TrapTriggeredEvent extends BaseEvent {
+  readonly type: 'TRAP_TRIGGERED';
+  readonly trapId: EntityId;
+  readonly trapName: string;
+  readonly position: Position;
+  readonly damage: number;
+}
+
 export interface ThornsReflectedEvent extends BaseEvent {
   readonly type: 'THORNS_REFLECTED';
   readonly targetId: EntityId;
@@ -356,6 +364,7 @@ export type DomainEvent =
   | EnemyDecisionMadeEvent
   | TreasureOpenedEvent
   | ObjectInteractedEvent
+  | TrapTriggeredEvent
   | ThornsReflectedEvent
   | BlinkDodgedEvent
   | LifeStealEvent

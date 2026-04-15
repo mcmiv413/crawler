@@ -14,6 +14,7 @@ import { tickAbilityCooldowns } from '../../systems/abilities.js';
 import { rollChestLoot } from '../../systems/loot.js';
 import { addItemToInventory } from '../../systems/inventory.js';
 import { handleAttack } from './combat.js';
+import { handlePlayerDeath } from '../../systems/death.js';
 
 export function handleMove(
   state: GameState,
@@ -55,6 +56,57 @@ export function handleMove(
     player: { ...state.player, position: newPos },
     turnNumber: state.turnNumber + 1,
   };
+
+  // Check for hazardous objects (traps) at the new position
+  if (newState.run !== null) {
+    const objKey = posKey(newPos);
+    const objAtPos = newState.run.objects.get(objKey);
+    if (objAtPos !== undefined) {
+      const template = OBJECT_TEMPLATES.get(objAtPos.templateId);
+      if (template !== undefined && template.healthDelta < 0) {
+        // Trap triggered - apply damage to player
+        const healthBefore = newState.player.stats.health;
+        const healthAfter = Math.max(0, healthBefore + template.healthDelta);
+        newState = {
+          ...newState,
+          player: {
+            ...newState.player,
+            stats: {
+              ...newState.player.stats,
+              health: healthAfter,
+            },
+          },
+        };
+
+        // Emit trap triggered event
+        events = [...events, {
+          type: 'TRAP_TRIGGERED',
+          trapId: objAtPos.id,
+          trapName: template.name,
+          position: newPos,
+          damage: Math.abs(template.healthDelta),
+          timestamp: Date.now(),
+          turnNumber: state.turnNumber,
+        }];
+
+        // Check if trap damage is lethal
+        if (healthAfter <= 0) {
+          const deathResult = handlePlayerDeath(
+            newState,
+            {
+              type: 'TRAP_HAZARD',
+              hazardId: objAtPos.id,
+              hazardName: template.name,
+              damage: Math.abs(template.healthDelta),
+            },
+          );
+          newState = deathResult.state;
+          events = [...events, ...deathResult.events];
+          return { state: newState, events, runEnded: true };
+        }
+      }
+    }
+  }
 
   // Track turn elapsed
   newState = updateRunMetrics(newState, { turnsElapsed: 1 });
