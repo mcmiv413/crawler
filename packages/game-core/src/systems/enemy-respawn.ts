@@ -1,4 +1,4 @@
-import type { GameState, DomainEvent, EnemyTemplate, EnemyInstance } from '@dungeon/contracts';
+import type { GameState, DomainEvent, EnemyTemplate, EnemyInstance, DungeonFloor, StoredFloor } from '@dungeon/contracts';
 import { posKey } from '@dungeon/contracts';
 import { ENEMY_RESPAWN } from '@dungeon/content';
 import type { BiomeDefinition } from '@dungeon/content';
@@ -8,6 +8,8 @@ import { type SeededRNG } from '../utils/rng.js';
 import { entityId } from '@dungeon/contracts';
 import { generateId } from '../utils/id.js';
 import { computeFov } from './fov.js';
+import { preSimulateAmbientBehavior } from './ambient-behavior-engine.js';
+import { AMBIENT_PROFILES } from '@dungeon/content';
 
 /**
  * Check if enemies should respawn this turn.
@@ -169,6 +171,111 @@ function instantiateEnemy(
     statuses: [],
     isAlerted: false,
     lastKnownPlayerPos: null,
+  };
+}
+
+/**
+ * Respawn enemies on a cached floor based on time elapsed and original enemy count.
+ * Respawns at a fixed rate and cap at 50% of original count.
+ */
+export function respawnEnemiesOnPersistedFloor(
+  floor: DungeonFloor,
+  currentEnemies: ReadonlyMap<string, EnemyInstance>,
+  originalEnemyCount: number,
+  biome: BiomeDefinition,
+  depth: number,
+  turnsSinceVisit: number,
+  rng: SeededRNG,
+): ReadonlyMap<string, EnemyInstance> {
+  // Calculate how many enemies should respawn based on time elapsed
+  const respawnInterval = 15; // Base interval; can be adjusted per biome
+  const respawnsWorth = Math.floor(turnsSinceVisit / respawnInterval);
+
+  // Cap respawned enemies at 50% of original count
+  const maxRespawns = Math.floor(originalEnemyCount * 0.5);
+  const enemiesKilled = originalEnemyCount - currentEnemies.size;
+  const eligibleRespawns = Math.min(respawnsWorth, enemiesKilled, maxRespawns - (currentEnemies.size - (originalEnemyCount - enemiesKilled)));
+
+  let newEnemies = new Map(currentEnemies);
+
+  // Find walkable spawn tiles not in current FOV (simulate from entrance)
+  const visibleCells = computeFov(floor, floor.entrance);
+  const playerFov = new Set<string>(
+    Array.from(visibleCells).filter(([, cell]) => cell.visibility === 'visible').map(([key]) => key)
+  );
+
+  const candidateSpawns: { x: number; y: number }[] = Array.from(floor.cells)
+    .filter(([key, cell]) => {
+      if (cell.tile.walkable !== true) return false;
+      const [x, y] = key.split(',').map(Number);
+      if (x === undefined || y === undefined) return false;
+      if (newEnemies.has(key)) return false;
+      if (playerFov.has(key)) return false;
+      // Spawn away from entrance
+      if (chebyshevDistance({ x, y }, floor.entrance) < 5) return false;
+      return true;
+    })
+    .map(([key]) => {
+      const [x, y] = key.split(',').map(Number);
+      return { x: x!, y: y! };
+    });
+
+  // Spawn respawned enemies
+  for (let i = 0; i < eligibleRespawns && candidateSpawns.length > 0; i++) {
+    const spawnIdx = rng.int(0, candidateSpawns.length - 1);
+    const spawnPos = candidateSpawns[spawnIdx]!;
+    candidateSpawns.splice(spawnIdx, 1);
+
+    // Pick enemy template from biome (no bosses)
+    let template: EnemyTemplate | null = pickEnemy(biome, rng);
+    while (template && template.archetype === 'boss') {
+      template = pickEnemy(biome, rng);
+    }
+    if (!template) continue;
+
+    const newEnemy = instantiateEnemy(template, spawnPos, depth, rng);
+    newEnemies.set(posKey(spawnPos), newEnemy);
+  }
+
+  return newEnemies;
+}
+
+/**
+ * Simulate a floor's time passage: respawn enemies and run ambient behavior.
+ * Returns the floor state as if the given number of turns have passed.
+ */
+export function simulatePersistedFloorTimeElapsed(
+  storedFloor: StoredFloor,
+  turnsSinceVisit: number,
+  biome: BiomeDefinition,
+  depth: number,
+  rng: SeededRNG,
+): StoredFloor {
+  const originalCount = storedFloor.originalEnemyCount ?? 0;
+
+  // Respawn enemies based on time elapsed
+  const respawnedEnemies = respawnEnemiesOnPersistedFloor(
+    storedFloor.floor,
+    storedFloor.enemies,
+    originalCount,
+    biome,
+    depth,
+    turnsSinceVisit,
+    rng,
+  );
+
+  // Run 10 turns of ambient behavior simulation so enemies aren't idle on re-entry
+  const simulatedEnemies = preSimulateAmbientBehavior(
+    new Map(respawnedEnemies),
+    AMBIENT_PROFILES,
+    10,
+    storedFloor.floor.seed,
+  );
+
+  return {
+    ...storedFloor,
+    enemies: simulatedEnemies,
+    lastSimulatedTurn: turnsSinceVisit,
   };
 }
 

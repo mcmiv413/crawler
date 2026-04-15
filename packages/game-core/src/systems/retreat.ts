@@ -57,6 +57,9 @@ export function executeRetreat(state: GameState, rng: SeededRNG): { state: GameS
     enemies: simulatedEnemies,
     objects: state.run!.objects,
     playerPosition: state.player.position,
+    // Capture metadata for respawn simulation on re-entry
+    originalEnemyCount: state.run!.enemies.size,
+    lastSimulatedTurn: state.run!.turnCount,
   };
 
   const updatedCache = new Map(state.persistedFloorCache ?? []);
