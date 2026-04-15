@@ -176,20 +176,18 @@ export function App() {
   }
 
   // Nemesis slain screen (when you defeat a nemesis in dungeon)
-  if (view.town?.slainNemeses) {
-    // Find any unshown slain nemesis
-    const unshownSlain = view.town.slainNemeses.find(n => !shownSlainNemesisIds.has(n.id));
-    if (unshownSlain) {
-      return (
-        <NemesisSlainScreen
-          view={view}
-          nemesis={unshownSlain}
-          onDismiss={() => {
-            setShownSlainNemesisIds(new Set([...shownSlainNemesisIds, unshownSlain.id]));
-          }}
-        />
-      );
-    }
+  // Show immediately when nemesis is defeated, in any phase
+  if (view.recentlyDefeatedNemesis && !shownSlainNemesisIds.has(view.recentlyDefeatedNemesis.id)) {
+    const defeatedNemesis = view.recentlyDefeatedNemesis;
+    return (
+      <NemesisSlainScreen
+        view={view}
+        nemesis={defeatedNemesis}
+        onDismiss={() => {
+          setShownSlainNemesisIds(new Set([...shownSlainNemesisIds, defeatedNemesis.id]));
+        }}
+      />
+    );
   }
 
   // Death notification modal (when you die without nemesis promotion)
