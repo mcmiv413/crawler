@@ -75,6 +75,7 @@ export interface GameView {
   readonly deathSummary: DeathSummary | null;
   readonly deathContext: DeathContext | null;
   readonly inspectableEntities: readonly InspectableEntityView[];
+  readonly recentlyDefeatedNemesis: NemesisView | null;
   readonly debugMode: boolean;
 }
 

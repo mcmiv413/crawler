@@ -22,6 +22,7 @@ import { buildAvailableActions } from './builders/actions-builder.js';
 import { buildTownView } from './builders/town-view-builder.js';
 import { buildInventoryView } from './builders/inventory-view-builder.js';
 import { buildDeathSummary } from './builders/death-summary-builder.js';
+import type { NemesisView } from './game-view.js';
 
 function buildInspectableEntities(state: GameState): readonly InspectableEntityView[] {
   if (!state.run) return [];
@@ -153,6 +154,33 @@ function buildDeathContext(state: GameState): DeathContext | null {
 
 /** Build a GameView from authoritative GameState */
 export function buildGameView(state: GameState): GameView {
+  // Find most recent NEMESIS_SLAIN event in current run
+  let recentlyDefeatedNemesis: NemesisView | null = null;
+  if (state.run) {
+    const nemesisSslainEvent = [...state.world.eventHistory]
+      .reverse()
+      .find((e): e is Extract<typeof e, { type: 'NEMESIS_SLAIN' }> => e.type === 'NEMESIS_SLAIN');
+
+    if (nemesisSslainEvent) {
+      const nemesis = state.world.nemeses.find(n => n.id === nemesisSslainEvent.nemesisId);
+      if (nemesis) {
+        recentlyDefeatedNemesis = {
+          id: nemesis.id,
+          name: nemesis.name,
+          title: nemesis.title,
+          tier: nemesis.tier,
+          rank: nemesis.rank,
+          floorOfAscension: nemesis.floorOfAscension,
+          killCount: nemesis.killCount,
+          killedByWeaponType: nemesis.killedByWeaponType,
+          isActive: nemesis.isActive,
+          weaknesses: nemesis.weaknesses,
+          spriteName: ENEMY_TEMPLATES.get(nemesis.sourceTemplateId)?.spriteName ?? null,
+        };
+      }
+    }
+  }
+
   return {
     gameId: state.gameId,
     phase: state.phase,
@@ -183,6 +211,7 @@ export function buildGameView(state: GameState): GameView {
       ? buildDeathContext(state)
       : null,
     inspectableEntities: buildInspectableEntities(state),
+    recentlyDefeatedNemesis,
     debugMode: state.debugMode ?? false,
   };
 }
