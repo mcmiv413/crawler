@@ -176,7 +176,8 @@ export function App() {
   }
 
   // Nemesis slain screen (when you defeat a nemesis in dungeon)
-  if (view.phase === 'town' && view.town?.slainNemeses) {
+  if (view.town?.slainNemeses) {
+    // Find any unshown slain nemesis
     const unshownSlain = view.town.slainNemeses.find(n => !shownSlainNemesisIds.has(n.id));
     if (unshownSlain) {
       return (
