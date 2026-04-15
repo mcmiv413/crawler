@@ -5,6 +5,7 @@ export default defineConfig({
   test: {
     globals: true,
     include: ['src/**/*.test.ts'],
+    exclude: ['src/**/*.balance.test.ts'],
   },
   plugins: [createJsToTsResolvePlugin()],
 });

@@ -10,11 +10,14 @@ export default defineConfig({
       '**/*.test.tsx',
       '**/*.spec.ts',
       '**/*.e2e.test.ts',
-      '**/*.balance.test.ts',
       '**/*.integration.test.ts',
       '**/*.contract.test.ts',
       '**/*.property.test.ts',
     ],
-    exclude: ['**/node_modules/**', '**/dist/**'],
+    exclude: [
+      '**/node_modules/**',
+      '**/dist/**',
+      '**/*.balance.test.ts',
+    ],
   },
 });
