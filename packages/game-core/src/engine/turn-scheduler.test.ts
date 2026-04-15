@@ -352,4 +352,48 @@ describe('processEnemyTurns', () => {
     expect(event.hpRestored).toBeGreaterThan(0);
     expect(event.enemyName).toBeDefined();
   });
+
+  describe('Debug Events', () => {
+    it('supports ENEMY_AMBIENT_STATE_CHANGED event structure', () => {
+      // Verify that the event structure is valid and can be created
+      const ambientStateEvent: any = {
+        type: 'ENEMY_AMBIENT_STATE_CHANGED',
+        enemyId: entityId('e1'),
+        oldState: 'roaming',
+        newState: 'regrouping',
+        reason: 'test',
+        timestamp: Date.now(),
+        turnNumber: 1,
+      };
+
+      expect(ambientStateEvent.type).toBe('ENEMY_AMBIENT_STATE_CHANGED');
+      expect(ambientStateEvent.enemyId).toBeDefined();
+      expect(ambientStateEvent.oldState).toBeDefined();
+      expect(ambientStateEvent.newState).toBeDefined();
+      expect(ambientStateEvent.reason).toBeDefined();
+    });
+
+    it('supports DEBUG_MISS_STREAK event structure', () => {
+      // Verify that the event structure is valid and can be created
+      const missStreakEvent: any = {
+        type: 'DEBUG_MISS_STREAK',
+        streakLength: 6,
+        playerAccuracy: 50,
+        playerEvasion: 20,
+        enemyAccuracy: 45,
+        enemyEvasion: 15,
+        rngSeed: 12345,
+        timestamp: Date.now(),
+        turnNumber: 1,
+      };
+
+      expect(missStreakEvent.type).toBe('DEBUG_MISS_STREAK');
+      expect(missStreakEvent.streakLength).toBeGreaterThanOrEqual(6);
+      expect(missStreakEvent.playerAccuracy).toBeDefined();
+      expect(missStreakEvent.playerEvasion).toBeDefined();
+      expect(missStreakEvent.enemyAccuracy).toBeDefined();
+      expect(missStreakEvent.enemyEvasion).toBeDefined();
+      expect(missStreakEvent.rngSeed).toBeDefined();
+    });
+  });
 });

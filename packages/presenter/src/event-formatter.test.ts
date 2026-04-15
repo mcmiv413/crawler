@@ -567,4 +567,47 @@ describe('formatEvents', () => {
     expect(result?.text).toContain('Fire Elemental');
     expect(result?.type).toBe('loot');
   });
+
+  describe('Debug Events', () => {
+    it('formats DEBUG_MISS_STREAK showing streak details', () => {
+      const event: DomainEvent = {
+        ...base,
+        type: 'DEBUG_MISS_STREAK',
+        streakLength: 6,
+        playerAccuracy: 50,
+        playerEvasion: 20,
+        enemyAccuracy: 45,
+        enemyEvasion: 15,
+        rngSeed: 12345,
+      };
+      const result = formatEvent(event);
+      expect(result).not.toBeNull();
+      expect(result!.text).toContain('[DEBUG]');
+      expect(result!.text).toContain('Miss streak of 6');
+      expect(result!.text).toContain('pAcc:50');
+      expect(result!.text).toContain('pEva:20');
+      expect(result!.text).toContain('eAcc:45');
+      expect(result!.text).toContain('eEva:15');
+      expect(result!.type).toBe('info');
+    });
+
+    it('formats ENEMY_AMBIENT_STATE_CHANGED showing state transition', () => {
+      const event: DomainEvent = {
+        ...base,
+        type: 'ENEMY_AMBIENT_STATE_CHANGED',
+        enemyId: entityId('e1'),
+        oldState: 'roaming',
+        newState: 'regrouping',
+        reason: 'spotted_ally_in_danger',
+      };
+      const result = formatEvent(event);
+      expect(result).not.toBeNull();
+      expect(result!.text).toContain('[DEBUG]');
+      expect(result!.text).toContain('e1');
+      expect(result!.text).toContain('roaming');
+      expect(result!.text).toContain('regrouping');
+      expect(result!.text).toContain('spotted_ally_in_danger');
+      expect(result!.type).toBe('info');
+    });
+  });
 });

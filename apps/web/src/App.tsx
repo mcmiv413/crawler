@@ -58,7 +58,7 @@ function renderPanel(
   if (panelType === 'log') {
     return (
       <div key="log" style={panelStyle}>
-        <CombatLogView entries={combatLog} debugMode={view.debugMode} />
+        <CombatLogView entries={combatLog} debugMode={view.debugMode} isMobile={isMobile} />
       </div>
     );
   }
