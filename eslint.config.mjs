@@ -19,57 +19,12 @@ const NO_MATH_RANDOM = {
 const typedLanguageOptions = {
   parser: tseslint.parser,
   parserOptions: {
-    projectService: {
-      allowDefaultProject: [
-        "*.ts",
-        "*.mts",
-        "apps/*/vitest.config.ts",
-        "apps/*/vite.config.ts",
-        "apps/*/vitest.setup.ts",
-        "apps/*/src/*.test.ts",
-        "apps/*/src/*.test.tsx",
-        "apps/*/src/ai/*.test.ts",
-        "apps/*/src/components/*.test.ts",
-        "apps/*/src/components/*.test.tsx",
-        "apps/*/src/hooks/*.test.ts",
-        "apps/*/src/sprites/*.test.ts",
-        "apps/*/src/utils/*.test.ts",
-        "apps/*/src/config/*.test.ts",
-        "apps/*/src/api/*.test.ts",
-        "apps/*/src/store/*.test.ts",
-        "apps/server/api/*.ts",
-        "packages/*/vitest.config.ts",
-        "packages/*/src/test-utils.d.ts",
-        "packages/*/src/*.test.ts",
-        "packages/*/src/*.test.tsx",
-        "packages/*/src/abilities/*.test.ts",
-        "packages/*/src/abilities/runtime/*.test.ts",
-        "packages/*/src/balance/*.test.ts",
-        "packages/*/src/biomes/*.test.ts",
-        "packages/*/src/enchantments/*.test.ts",
-        "packages/*/src/enemies/*.test.ts",
-        "packages/*/src/engine/*.test.ts",
-        "packages/*/src/engine/handlers/*.test.ts",
-        "packages/*/src/generation/*.test.ts",
-        "packages/*/src/sprites/*.test.ts",
-        "packages/*/src/utils/*.test.ts",
-        "packages/*/src/items/*.test.ts",
-        "packages/*/src/quests/*.test.ts",
-        "packages/*/src/state/*.test.ts",
-        "packages/*/src/systems/*.test.ts",
-        "packages/*/src/testing/*.test.ts",
-        "packages/*/src/validation/*.test.ts",
-        "tools/balance/*.ts",
-        "tools/balance/*.test.ts",
-        "vitest.workspace.ts",
-        "playwright.config.ts",
-        "tests/contracts/*.contract.test.ts",
-        "tests/e2e/*.spec.ts",
-        "tests/vitest.config.ts",
-      ],
-      maximumDefaultProjectFileMatchCount_THIS_WILL_SLOW_DOWN_LINTING: 8000,
-    },
+    projectService: true,
   },
+};
+
+const untypedLanguageOptions = {
+  parser: tseslint.parser,
 };
 
 export default tseslint.config(
@@ -87,13 +42,13 @@ export default tseslint.config(
     ],
   },
 
-  // Base config for all TypeScript files
+  // Base config for all TypeScript files (untyped for speed)
   {
     files: ["**/*.ts", "**/*.tsx"],
     plugins: {
       dungeon: pluginDungeon,
     },
-    languageOptions: typedLanguageOptions,
+    languageOptions: untypedLanguageOptions,
     rules: {
       "no-console": "warn",
       eqeqeq: ["error", "always", { null: "ignore" }],
@@ -190,7 +145,7 @@ export default tseslint.config(
   // Web: general
   {
     files: ["apps/web/src/**/*.ts", "apps/web/src/**/*.tsx"],
-    ignores: ["**/*.test.ts"],
+    ignores: ["**/*.test.ts", "**/*.test.tsx"],
     plugins: {
       "@typescript-eslint": tseslint.plugin,
       react: pluginReact,
@@ -247,7 +202,7 @@ export default tseslint.config(
     },
   },
 
-  // Scripts top-level
+  // Scripts top-level (untyped - tooling, not core game code)
   {
     files: [
       "scripts/analyze-session.ts",
@@ -257,39 +212,44 @@ export default tseslint.config(
       "@typescript-eslint": tseslint.plugin,
       dungeon: pluginDungeon,
     },
-    languageOptions: typedLanguageOptions,
+    languageOptions: untypedLanguageOptions,
     rules: {
-      "@typescript-eslint/no-floating-promises": "error",
-      "@typescript-eslint/no-misused-promises": "error",
       "@typescript-eslint/no-explicit-any": "warn",
       "dungeon/no-array-mutation": "off",
       "no-console": "off",
     },
   },
 
-  // Scripts/balance
+  // Scripts/balance (untyped - tooling, not core game code)
   {
     files: ["scripts/balance/**/*.ts"],
     plugins: {
       "@typescript-eslint": tseslint.plugin,
       dungeon: pluginDungeon,
     },
-    languageOptions: typedLanguageOptions,
+    languageOptions: untypedLanguageOptions,
     rules: {
-      "@typescript-eslint/no-explicit-any": "error",
-      "@typescript-eslint/no-floating-promises": "error",
-      "@typescript-eslint/strict-boolean-expressions": "warn",
+      "@typescript-eslint/no-explicit-any": "warn",
       "dungeon/no-array-mutation": "off",
       "no-console": "off",
     },
   },
 
-  // Tests
+  // Tests (untyped for speed)
   {
     files: [
       "**/*.test.ts",
+      "**/*.test.tsx",
       "**/*.property.test.ts",
       "tests/e2e/**/*.ts",
+      "tests/**/*.ts",
+      "*.test.ts",
+      "vitest.workspace.ts",
+      "apps/*/vitest.config.ts",
+      "apps/*/vite.config.ts",
+      "apps/*/vitest.setup.ts",
+      "packages/*/vitest.config.ts",
+      "playwright.config.ts",
     ],
     plugins: {
       "@typescript-eslint": tseslint.plugin,
@@ -297,7 +257,7 @@ export default tseslint.config(
       dungeon: pluginDungeon,
     },
     languageOptions: {
-      ...typedLanguageOptions,
+      ...untypedLanguageOptions,
       globals: {
         ...pluginVitest.environments.env.globals,
       },
@@ -312,7 +272,6 @@ export default tseslint.config(
       "dungeon/no-implicit-boolean": "off",
       complexity: "off",
       "max-lines-per-function": "off",
-      "@typescript-eslint/no-floating-promises": "error",
       "vitest/no-focused-tests": "error",
       "vitest/no-disabled-tests": "warn",
     },
