@@ -71,15 +71,21 @@ export function AbilityDropdown({
             ? `Cooldown: ${ability.cooldownRemaining} turn${ability.cooldownRemaining > 1 ? 's' : ''}`
             : 'Ready';
 
+        // Disable button if ability requires target but no targets available
+        const isDisabled = ability.requiresTarget && enemiesInRange.length === 0;
+        const disabledReason = isDisabled ? 'No valid targets in range' : undefined;
+
         return (
           <button
             key={ability.id}
             className={`${styles.itemButton}`}
             onClick={() => handleAbilitySelect(ability.id)}
+            disabled={isDisabled}
+            title={disabledReason}
           >
             <div className={styles.itemHeader}>
               <span className={styles.itemName}>{ability.name}</span>
-              <span className={`${styles.badge} ${styles.ready}`}>{cooldownStatus}</span>
+              <span className={`${styles.badge} ${styles.ready}`}>{disabledReason ?? cooldownStatus}</span>
             </div>
             <div className={styles.itemDescription}>{ability.description}</div>
           </button>

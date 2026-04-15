@@ -95,6 +95,7 @@ export function buildPlayerHud(state: GameState): PlayerHudView {
         description: def?.description ?? '',
         ready: a.cooldownRemaining === 0,
         cooldownRemaining: a.cooldownRemaining,
+        requiresTarget: def?.requiresTarget ?? false,
       } satisfies AbilityView;
     });
 
