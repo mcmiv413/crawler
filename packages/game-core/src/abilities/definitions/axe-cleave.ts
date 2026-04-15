@@ -10,6 +10,7 @@ export const AXE_CLEAVE_DEFINITION: AbilityDefinition = {
   requirements: [
     { kind: 'weapon_type', weaponType: 'axe' },
     { kind: 'has_target' },
+    { kind: 'target_in_melee_range' },
   ],
   targeting: { selector: { kind: 'target_plus_adjacent_enemies' } },
   effects: [
