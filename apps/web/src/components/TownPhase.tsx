@@ -155,6 +155,11 @@ export function TownPhase({
             Continue from Floor {view.town.lastRetreatFloor}
           </button>
         )}
+        {view.deathStashFloor && view.deathStashFloor > 0 && (
+          <button onClick={() => { setNpcDialogue(null); sendCommand({ type: 'TOWN_ACTION', action: 'enter_dungeon', startDepth: view.deathStashFloor }); }} style={{ ...btnStyle, background: '#442222' }} disabled={loading} title="Return to retrieve your lost items">
+            Return to Floor {view.deathStashFloor}
+          </button>
+        )}
       </div>
 
       {view.town?.npcs && view.town.npcs.length > 0 && (

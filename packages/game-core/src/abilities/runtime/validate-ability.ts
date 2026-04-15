@@ -51,9 +51,11 @@ function validateSingleRequirement(
       if (context.target === undefined) {
         return { valid: false, reason: 'No target selected' };
       }
-      // Melee range = adjacent tiles (distance <= 1.5)
-      const dist = Math.abs(context.player.position.x - context.target.instance.position.x) +
-                   Math.abs(context.player.position.y - context.target.instance.position.y);
+      // Melee range = adjacent tiles (distance <= 1, using Chebyshev distance)
+      const dist = Math.max(
+        Math.abs(context.player.position.x - context.target.instance.position.x),
+        Math.abs(context.player.position.y - context.target.instance.position.y),
+      );
       if (dist > 1) {
         return { valid: false, reason: 'Target out of melee range' };
       }
