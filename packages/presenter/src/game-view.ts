@@ -85,6 +85,7 @@ export interface AbilityView {
   readonly description: string;
   readonly ready: boolean;
   readonly cooldownRemaining: number;
+  readonly requiresTarget: boolean;
 }
 
 export interface WeaponMasteryView {
