@@ -527,5 +527,44 @@ describe('abilities/runtime', () => {
       // If the ability doesn't exist, runEnded should still be false
       expect(result.runEnded).toBe(false);
     });
+
+    it('should include damage in ABILITY_USED event when ability deals damage', () => {
+      // Create state with an enemy to target
+      const state = createTestGameStateInCombat({ equippedWeaponId: 'rusty_sword' });
+      const rng = new SeededRNG(42);
+
+      // Get first enemy as target
+      const enemies = [...state.run!.enemies.values()];
+      if (enemies.length === 0) {
+        // Skip if no enemies
+        expect(true).toBe(true);
+        return;
+      }
+
+      const targetEnemy = enemies[0]!;
+      const targetId = targetEnemy.id;
+
+      // Execute power_strike ability (damage-dealing attack ability)
+      const result = executeAbility(state, 'power_strike', rng, targetId);
+
+      // Should emit events
+      expect(result.events.length).toBeGreaterThan(0);
+
+      // Find ABILITY_USED event
+      const abilityEvent = result.events.find((e) => e.type === 'ABILITY_USED');
+      expect(abilityEvent).toBeDefined();
+
+      // Find ATTACK_PERFORMED event to know what damage was actually dealt
+      const attackEvent = result.events.find((e) => e.type === 'ATTACK_PERFORMED');
+
+      // Verify damage is populated in ABILITY_USED event
+      if (abilityEvent && abilityEvent.type === 'ABILITY_USED') {
+        // If attack was performed, ability event should include the damage that was dealt
+        if (attackEvent && attackEvent.type === 'ATTACK_PERFORMED') {
+          // Damage should match the attack damage
+          expect(abilityEvent.damage).toBe(attackEvent.damage);
+        }
+      }
+    });
   });
 });

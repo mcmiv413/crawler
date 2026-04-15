@@ -68,6 +68,10 @@ export function executeAbility(
         // Update lastAttackHit if this was an attack effect
         if (effect.kind === 'attack') {
           lastAttackHit = effectResult.hit ?? false;
+          // Capture damage from attack effect
+          if (effectResult.damage !== undefined) {
+            resultData.damage = effectResult.damage;
+          }
         }
       }
     }
