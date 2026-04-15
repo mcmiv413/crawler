@@ -16,6 +16,8 @@ scripts/node_modules/
 .plan/
 .fossil/
 playwright-report/
+test-results/
+.eslintcache
 
 # markdown policy if you truly want this going forward
 *.md

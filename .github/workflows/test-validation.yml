@@ -23,8 +23,20 @@ jobs:
           node-version: '20'
           cache: 'pnpm'
 
+      - name: Cache ESLint results
+        uses: actions/cache@v4
+        with:
+          path: .eslintcache
+          key: eslint-cache-${{ runner.os }}-${{ github.ref }}-${{ hashFiles('eslint.config.mjs') }}
+          restore-keys: |
+            eslint-cache-${{ runner.os }}-${{ github.ref }}-
+            eslint-cache-${{ runner.os }}-
+
       - name: Install dependencies
         run: pnpm install --frozen-lockfile
+
+      - name: Build ESLint plugin
+        run: NODE_OPTIONS="--max-old-space-size=2048" pnpm lint:prepare
 
       - name: Build all packages
         run: pnpm build
@@ -32,11 +44,14 @@ jobs:
       - name: Check package exports
         run: node scripts/check-package-exports.mjs
 
-      - name: Run all tests
-        run: pnpm test --run
+      - name: Lint (with cache)
+        run: NODE_OPTIONS="--max-old-space-size=2048" pnpm lint:eslint-cached
 
-      - name: Lint
-        run: pnpm lint
+      - name: Type check
+        run: NODE_OPTIONS="--max-old-space-size=2048" pnpm run lint:types
+
+      - name: Run tests (excluding balance/heavy simulations)
+        run: VITEST_MAX_THREADS=2 NODE_OPTIONS="--max-old-space-size=2048" pnpm test
 
   docker-build:
     runs-on: ubuntu-latest
