@@ -87,6 +87,13 @@ export function App() {
     }
   }, []); // eslint-disable-line react-hooks/exhaustive-deps
 
+  // Reset shown overlay states when starting a new game
+  useEffect(() => {
+    setShownRisenNemesisIds(new Set());
+    setShownSlainNemesisIds(new Set());
+    setShownQuestIds(new Set());
+  }, [gameId]);
+
   function handleNavClick(screen: Screen) {
     if (screen === 'main') {
       setOpenPanels(new Set());
