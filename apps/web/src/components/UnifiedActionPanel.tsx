@@ -127,8 +127,12 @@ export function UnifiedActionPanel({
         break;
       }
       case 'ABILITY': {
-        const abilityId = selection as string;
-        onSendCommand({ type: 'USE_ABILITY', abilityId });
+        const abilitySelection = selection as { abilityId: string; targetId?: string };
+        onSendCommand({
+          type: 'USE_ABILITY',
+          abilityId: abilitySelection.abilityId,
+          targetId: abilitySelection.targetId,
+        });
         break;
       }
       case 'INTERACT': {
@@ -299,7 +303,10 @@ export function UnifiedActionPanel({
             {dropdown.active === 'ABILITY' && (
               <AbilityDropdown
                 abilities={view.player.abilities}
-                onSelect={(abilityId) => handleDropdownSelect('ABILITY', abilityId)}
+                enemies={enemies}
+                playerX={playerPos.x}
+                playerY={playerPos.y}
+                onSelect={(abilitySelection) => handleDropdownSelect('ABILITY', abilitySelection)}
               />
             )}
 
