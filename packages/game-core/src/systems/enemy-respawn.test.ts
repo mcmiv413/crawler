@@ -1,9 +1,10 @@
 import { describe, it, expect } from 'vitest';
-import { checkRespawn } from './enemy-respawn.js';
+import { checkRespawn, respawnEnemiesOnPersistedFloor, simulatePersistedFloorTimeElapsed } from './enemy-respawn.js';
 import { createTestGameState, createTestRunState, createTestEnemy } from '../test-utils.js';
 import { SeededRNG } from '../utils/rng.js';
 import { ENEMY_RESPAWN } from '@dungeon/content';
 import { stoneCrypt } from '@dungeon/content';
+import type { StoredFloor } from '@dungeon/contracts';
 
 describe('checkRespawn', () => {
   it('returns unchanged state if respawn interval not reached', () => {
@@ -86,7 +87,7 @@ describe('checkRespawn', () => {
 
   it('respawned enemies not placed in player FOV', () => {
     const rng = new SeededRNG(42);
-    const baseState = createTestGameState({ phase: 'dungeon', playerPosition: { x: 5, y: 5 } });
+    const baseState = createTestGameState({ phase: 'dungeon', player: { position: { x: 5, y: 5 } } });
 
     // Create a floor with FOV
     let run = createTestRunState({ enemies: new Map() });
@@ -236,7 +237,7 @@ describe('checkRespawn', () => {
 
   it('respawn FOV respects wall barriers (shadowcasting)', () => {
     const rng = new SeededRNG(42);
-    const baseState = createTestGameState({ phase: 'dungeon', playerPosition: { x: 5, y: 5 } });
+    const baseState = createTestGameState({ phase: 'dungeon', player: { position: { x: 5, y: 5 } } });
 
     let run = createTestRunState({ enemies: new Map() });
     const largeFloor = {
@@ -273,5 +274,110 @@ describe('checkRespawn', () => {
 
     // Should spawn at least 1 enemy with sufficient candidates
     expect(spawnedCount).toBeGreaterThan(0);
+  });
+});
+
+describe('respawnEnemiesOnPersistedFloor', () => {
+  it('respawns enemies up to 50% cap', () => {
+    const rng = new SeededRNG(42);
+    const run = createTestRunState({ enemies: new Map() });
+
+    // Create a large floor with plenty of spawn space
+    const largeFloor = {
+      ...run.floor,
+      width: 40,
+      height: 40,
+      cells: new Map<string, any>(),
+    };
+
+    const floorCell = { tile: { type: 'floor' as const, walkable: true, blocksVision: false, ascii: '.', color: '#aaa' }, visibility: 'hidden' as const };
+    for (let x = 0; x < 40; x++) {
+      for (let y = 0; y < 40; y++) {
+        largeFloor.cells.set(`${x},${y}`, floorCell);
+      }
+    }
+
+    const originalEnemyCount = 10;
+    const respawned = respawnEnemiesOnPersistedFloor(
+      largeFloor,
+      new Map(), // No current enemies
+      originalEnemyCount,
+      stoneCrypt,
+      1, // depth
+      30, // 30 turns since last visit
+      rng,
+    );
+
+    // Should respawn some enemies but capped at 50% (5)
+    expect(respawned.size).toBeGreaterThan(0);
+    expect(respawned.size).toBeLessThanOrEqual(5);
+  });
+
+  it('does not respawn if no time has passed', () => {
+    const rng = new SeededRNG(42);
+    const run = createTestRunState({ enemies: new Map() });
+    const largeFloor = { ...run.floor, width: 40, height: 40, cells: new Map<string, any>() };
+
+    const floorCell = { tile: { type: 'floor' as const, walkable: true, blocksVision: false, ascii: '.', color: '#aaa' }, visibility: 'hidden' as const };
+    for (let x = 0; x < 40; x++) {
+      for (let y = 0; y < 40; y++) {
+        largeFloor.cells.set(`${x},${y}`, floorCell);
+      }
+    }
+
+    const respawned = respawnEnemiesOnPersistedFloor(
+      largeFloor,
+      new Map(),
+      10,
+      stoneCrypt,
+      1,
+      0, // No time elapsed
+      rng,
+    );
+
+    expect(respawned.size).toBe(0);
+  });
+});
+
+describe('simulatePersistedFloorTimeElapsed', () => {
+  it('simulates respawning and ambient behavior on cached floor', () => {
+    const rng = new SeededRNG(42);
+    let run = createTestRunState({ enemies: new Map() });
+
+    // Create a large floor with spawn space
+    const largeFloor = {
+      ...run.floor,
+      width: 40,
+      height: 40,
+      cells: new Map<string, any>(),
+    };
+
+    const floorCell = { tile: { type: 'floor' as const, walkable: true, blocksVision: false, ascii: '.', color: '#aaa' }, visibility: 'hidden' as const };
+    for (let x = 0; x < 40; x++) {
+      for (let y = 0; y < 40; y++) {
+        largeFloor.cells.set(`${x},${y}`, floorCell);
+      }
+    }
+
+    const storedFloor: StoredFloor = {
+      floor: largeFloor,
+      enemies: new Map(),
+      objects: new Map(),
+      playerPosition: largeFloor.entrance,
+      originalEnemyCount: 10,
+      lastSimulatedTurn: 0,
+    };
+
+    const simulated = simulatePersistedFloorTimeElapsed(
+      storedFloor,
+      30, // 30 turns have passed
+      stoneCrypt,
+      1,
+      rng,
+    );
+
+    // Should have respawned enemies
+    expect(simulated.enemies.size).toBeGreaterThan(0);
+    expect(simulated.lastSimulatedTurn).toBe(30);
   });
 });

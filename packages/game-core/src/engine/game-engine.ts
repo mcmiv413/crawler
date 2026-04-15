@@ -17,6 +17,7 @@ import { createInitialWorldState } from '../state/world-state.js';
 import { buildWorldModifiers } from '../systems/world-modifiers.js';
 import { executeRetreat } from '../systems/retreat.js';
 import { applyRunConsequences } from '../systems/world-consequences.js';
+import { simulatePersistedFloorTimeElapsed } from '../systems/enemy-respawn.js';
 
 /** D1: Check and complete quests that require reaching a specific floor depth */
 function completeFloorDepthQuests(
@@ -144,10 +145,22 @@ export class GameEngine implements IGameEngine {
     let objects: ReadonlyMap<string, ObjectInstance>;
 
     if (cachedFloor !== undefined) {
-      // Restore cached floor state
-      floor = cachedFloor.floor;
-      enemies = cachedFloor.enemies;
-      objects = cachedFloor.objects;
+      // Restore cached floor and simulate time elapsed for respawning
+      const biome = BIOME_BY_FLOOR(depth, rng);
+      const turnsSinceVisit = state.turnNumber - (cachedFloor.lastSimulatedTurn ?? 0);
+
+      // Simulate respawning and ambient behavior based on time elapsed
+      const simulatedFloor = simulatePersistedFloorTimeElapsed(
+        cachedFloor,
+        turnsSinceVisit,
+        biome,
+        depth,
+        rng,
+      );
+
+      floor = simulatedFloor.floor;
+      enemies = simulatedFloor.enemies;
+      objects = simulatedFloor.objects;
 
       // Update FOV from entrance (cached floor doesn't have updated visibility)
       const visibleCells = computeFov(floor, floor.entrance);

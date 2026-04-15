@@ -7,12 +7,17 @@ import type { TownState, NpcState, ShopInventory, FactionState, Quest } from './
 import type { AnyItemTemplate } from './items.js';
 import type { DomainEvent } from '../events/index.js';
 import type { NemesisRecord } from './nemesis.js';
+import type { EnemyTemplate } from './enemy.js';
 
 export interface StoredFloor {
   readonly floor: DungeonFloor;
   readonly enemies: ReadonlyMap<string, EnemyInstance>;
   readonly objects: ReadonlyMap<string, ObjectInstance>;
   readonly playerPosition: Position;
+  // Persistence metadata for respawn simulation
+  readonly originalEnemyCount?: number;
+  readonly lastSimulatedTurn?: number;
+  readonly baseEnemyTemplates?: ReadonlyMap<string, EnemyTemplate>;
 }
 
 export interface RunState {
