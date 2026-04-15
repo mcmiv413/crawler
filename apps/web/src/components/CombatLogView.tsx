@@ -38,8 +38,22 @@ export function CombatLogView({ entries, debugMode, maxHeight, isMobile = false 
   }
 
   return (
-    <div ref={scrollRef} style={{ marginTop: 10, maxHeight: computedMaxHeight, overflowY: 'auto', border: '1px solid #333', padding: 5, background: '#0a0a0a' }}>
-      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 5 }}>
+    <div
+      ref={scrollRef}
+      style={{
+        marginTop: 10,
+        maxHeight: computedMaxHeight,
+        overflowY: 'auto',
+        border: '1px solid #333',
+        padding: 5,
+        background: '#0a0a0a',
+        display: 'flex',
+        flexDirection: 'column',
+        flex: computedMaxHeight === 'none' ? 1 : undefined,
+        minHeight: 0,
+      }}
+    >
+      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 5, flexShrink: 0 }}>
         <h4 style={{ margin: 0, color: '#888' }}>Log</h4>
         <button
           onClick={toggleDebugLogging}
@@ -57,11 +71,13 @@ export function CombatLogView({ entries, debugMode, maxHeight, isMobile = false 
           {debugMode ? '🐛 DEBUG ON' : 'DEBUG'}
         </button>
       </div>
-      {filteredEntries.map((entry, index) => (
-        <div key={`${index}-${entry.type}-${entry.text}`} style={{ fontSize: 11, color: logColor(entry), padding: '1px 0' }}>
-          {entry.text}
-        </div>
-      ))}
+      <div style={{ overflow: 'auto', flex: 1, minHeight: 0 }}>
+        {filteredEntries.map((entry, index) => (
+          <div key={`${index}-${entry.type}-${entry.text}`} style={{ fontSize: 11, color: logColor(entry), padding: '1px 0' }}>
+            {entry.text}
+          </div>
+        ))}
+      </div>
     </div>
   );
 }
