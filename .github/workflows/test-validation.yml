@@ -45,7 +45,7 @@ jobs:
         run: node scripts/check-package-exports.mjs
 
       - name: Lint (with cache)
-        run: NODE_OPTIONS="--max-old-space-size=2048" pnpm lint:eslint-cached
+        run: NODE_OPTIONS="--max-old-space-size=2048" pnpm lint:eslint:cached
 
       - name: Type check
         run: NODE_OPTIONS="--max-old-space-size=2048" pnpm run lint:types
