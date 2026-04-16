@@ -291,7 +291,7 @@ describe('Repository: State Safety', () => {
       expect(retrieved).toHaveLength(3);
       expect(retrieved[0].type).toBe('ATTACK_PERFORMED');
       expect((retrieved[0] as any).damage).toBe(15);
-      expect(retrieved[1].type).toBe('ENEMY_DEFEATED');
+      expect(retrieved[1].type).toBe('ENTITY_DIED');
       expect(retrieved[2].type).toBe('LOOT_ACQUIRED');
     });
 
