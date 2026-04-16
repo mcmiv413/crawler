@@ -17,7 +17,17 @@ export interface IGameEngine {
 export interface IGameRepository {
   createGame(state: GameState): Promise<void>;
   loadGame(gameId: EntityId): Promise<GameState | null>;
+
+  /**
+   * @deprecated Use commitTick for new code. Saves game state with OCC version check.
+   * This method should only be called as part of commitTick for atomicity guarantees.
+   */
   saveGame(gameId: EntityId, state: GameState): Promise<void>;
+
+  /**
+   * @deprecated Use commitTick for new code. Appends events to the event log.
+   * Separate calls to saveGame + appendEvents can result in torn logs if a failure occurs between them.
+   */
   appendEvents(gameId: EntityId, events: readonly DomainEvent[]): Promise<void>;
   getRecentEvents(gameId: EntityId, limit: number): Promise<readonly DomainEvent[]>;
   recordRunMetrics(metrics: RunMetrics, gameId?: string): void;
