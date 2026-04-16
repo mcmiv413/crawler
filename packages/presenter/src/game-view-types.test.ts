@@ -4,7 +4,7 @@
  */
 
 import { describe, it, expect } from 'vitest';
-import type { DeathContext, NemesisView, GameView } from '../game-view.js';
+import type { DeathContext, NemesisView, GameView } from './game-view.js';
 
 describe('GameView DeathContext type', () => {
   it('should define DeathContext interface with required fields', () => {
@@ -59,8 +59,8 @@ describe('GameView DeathContext type', () => {
     };
 
     expect(context.equipmentLost).toHaveLength(3);
-    expect(context.equipmentLost[0].slot).toBe('weapon');
-    expect(context.equipmentLost[0].itemName).toBe('Excalibur');
+    expect(context.equipmentLost[0]!.slot).toBe('weapon');
+    expect(context.equipmentLost[0]!.itemName).toBe('Excalibur');
   });
 
   it('should enforce readonly on DeathContext fields', () => {
@@ -86,11 +86,12 @@ describe('NemesisView spriteName field', () => {
       id: 'nem1',
       name: 'Lord of Shadows',
       title: 'Nemesis',
-      rarity: 'legendary',
       tier: 3,
-      defeats: 2,
-      promotionStage: 3,
-      floor: 5,
+      rank: 2,
+      floorOfAscension: 5,
+      killCount: 3,
+      killedByWeaponType: null,
+      isActive: true,
       weaknesses: ['fire', 'light'],
       spriteName: 'enemy_nemesis_shadows_01',
     };
@@ -103,11 +104,12 @@ describe('NemesisView spriteName field', () => {
       id: 'nem2',
       name: 'Unknown Entity',
       title: 'Nemesis',
-      rarity: 'rare',
       tier: 2,
-      defeats: 1,
-      promotionStage: 2,
-      floor: 3,
+      rank: 1,
+      floorOfAscension: 3,
+      killCount: 1,
+      killedByWeaponType: null,
+      isActive: false,
       weaknesses: [],
       spriteName: null,
     };
@@ -120,11 +122,12 @@ describe('NemesisView spriteName field', () => {
       id: 'nem3',
       name: 'Cursed Knight',
       title: 'Nemesis',
-      rarity: 'epic',
       tier: 2,
-      defeats: 1,
-      promotionStage: 2,
-      floor: 4,
+      rank: 1,
+      floorOfAscension: 4,
+      killCount: 2,
+      killedByWeaponType: 'axe',
+      isActive: true,
       weaknesses: ['holy'],
       spriteName: 'enemy_knight_cursed_01',
     };
