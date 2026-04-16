@@ -204,8 +204,12 @@ export async function buildApp(): Promise<FastifyInstance> {
       };
     }
 
-    // Atomically save state and events in a single transaction
-    // Uses OCC to detect concurrent modifications
+    // Atomically save state and events in a single transaction (prevents torn event logs).
+    // commitTick enforces all-or-nothing semantics:
+    // - If version mismatch (concurrent write), throws before any mutations
+    // - If success, both state and events persist together
+    // - No intermediate state where one is saved but the other is lost
+    // Uses OCC (Optimistic Concurrency Control) to detect concurrent modifications
     const prevVersion = state.version; // Version before this command was processed
     await repo.commitTick(request.params.id as EntityId, prevVersion, finalState, result.events);
     const view = buildGameView(finalState);
