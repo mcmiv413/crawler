@@ -1,6 +1,6 @@
 import { describe, it, expect } from 'vitest';
 import { buildGameView } from './game-view-builder.js';
-import { createTestGameState } from '../../game-core/src/test-utils.js';
+import { createTestGameState } from '@dungeon/core/testing';
 
 describe('Nemesis Defeat Screen - GameView', () => {
   it('should populate recentlyDefeatedNemesis when NEMESIS_SLAIN event exists in history', () => {

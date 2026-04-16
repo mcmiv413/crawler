@@ -9,7 +9,7 @@
 import { describe, it, expect } from 'vitest';
 import fc from 'fast-check';
 import { buildGameView } from './game-view-builder.js';
-import { createTestGameStateInCombat, createTestEnemy, createTestGameState, createTestRunState } from '../../game-core/src/test-utils.js';
+import { createTestGameStateInCombat, createTestEnemy, createTestGameState, createTestRunState } from '@dungeon/core/testing';
 import { entityId, posKey, type GameState } from '@dungeon/contracts';
 import type { InspectableEntityView } from './game-view.js';
 
