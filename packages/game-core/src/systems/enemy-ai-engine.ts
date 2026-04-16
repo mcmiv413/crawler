@@ -176,8 +176,6 @@ function evaluateCondition(
   if (condition === 'playerRange2to5') return dist >= 2 && dist <= 5;
   if (condition === 'playerRange6Plus') return dist >= 6;
   if (condition === 'playerNotAlerted') return enemy.isAlerted !== true;
-  if (condition === 'allyNearby') return false; // TODO: group cohesion not yet implemented
-  if (condition === 'allyHurtNearby') return false; // TODO: ally support not yet implemented
   if (condition === 'selfHpLow') return hpPercent < 0.3;
 
   // Parse threshold conditions like 'hpBelowThreshold(0.5)'
