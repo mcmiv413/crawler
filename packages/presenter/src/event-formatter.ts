@@ -3,14 +3,16 @@ import { STATUS_DEFINITIONS } from '@dungeon/content';
 import type { CombatLogEntry } from './game-view.js';
 
 /**
- * Formatter function type for any event.
- * Uses `any` to support table-driven dispatch; individual handlers are type-safe.
+ * Mapped type for event formatters.
+ * Ensures every DomainEvent type has a corresponding formatter with proper typing.
+ * TypeScript will report an error if a handler is missing or has the wrong signature.
  */
-// eslint-disable-next-line @typescript-eslint/no-explicit-any
-type EventFormatter = (event: any) => CombatLogEntry | null;
+type EventFormatterMap = {
+  [K in DomainEvent['type']]: (event: Extract<DomainEvent, { type: K }>) => CombatLogEntry | null;
+};
 
 /** Table of event formatters by event type */
-const EVENT_FORMATTERS: Record<string, EventFormatter> = {
+const EVENT_FORMATTERS = {
   'ATTACK_PERFORMED': (event) => {
     if (event.hit) {
       const critText = event.critical ? ' CRIT!' : '';
@@ -46,7 +48,6 @@ const EVENT_FORMATTERS: Record<string, EventFormatter> = {
   }),
 
   'STATUS_APPLIED': (event) => {
-    // @ts-expect-error - statusId is string due to any type
     const statusName = STATUS_DEFINITIONS[event.statusId]?.name ?? event.statusId;
     return {
       text: `${statusName} applied for ${event.duration} turns.`,
@@ -56,7 +57,6 @@ const EVENT_FORMATTERS: Record<string, EventFormatter> = {
   },
 
   'STATUS_EXPIRED': (event) => {
-    // @ts-expect-error - statusId is string due to any type
     const statusName = STATUS_DEFINITIONS[event.statusId]?.name ?? event.statusId;
     return {
       text: `${statusName} has worn off.`,
@@ -276,15 +276,13 @@ const EVENT_FORMATTERS: Record<string, EventFormatter> = {
   'RUN_ENDED': () => null,
   'TOWN_STATE_CHANGED': () => null,
   'ENEMY_SPAWNED': () => null,
-};
+} satisfies EventFormatterMap;
 
 /** Format domain events into human-readable combat log entries */
 export function formatEvent(event: DomainEvent): CombatLogEntry | null {
-  const formatter = EVENT_FORMATTERS[event.type];
-  if (!formatter) {
-    // Fallback for unknown event types (should not happen at runtime)
-    return null;
-  }
+  // Safe type assertion: at runtime, event.type is always a valid key
+  // The satisfies EventFormatterMap above guarantees all event types have handlers
+  const formatter = EVENT_FORMATTERS[event.type] as (e: DomainEvent) => CombatLogEntry | null;
   return formatter(event);
 }
 
