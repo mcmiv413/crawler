@@ -22,9 +22,7 @@ export function DungeonView({ map, vpTilesWidth, vpTilesHeight }: Props) {
 
   // Only render visible/remembered cells
   const minX = Math.min(...map.cells.map((c: MapCellView) => c.x));
-  const maxX = Math.max(...map.cells.map((c: MapCellView) => c.x));
   const minY = Math.min(...map.cells.map((c: MapCellView) => c.y));
-  const maxY = Math.max(...map.cells.map((c: MapCellView) => c.y));
 
   // Viewport centered on player
   const vpLeft = Math.max(minX, map.playerPosition.x - Math.floor(vp_width / 2));
