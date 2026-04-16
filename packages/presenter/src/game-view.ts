@@ -126,6 +126,7 @@ export interface EquippedItemView {
   readonly itemId: string;
   readonly name: string;
   readonly rarity: string;
+  readonly rarityColor: string;  // Canonical color from @dungeon/content
   readonly baseBonus: number;
   readonly enchantments: readonly EnchantmentView[];
   readonly spriteName?: string;  // Atlas sprite name for rendering
@@ -302,6 +303,7 @@ export interface ShopItemView {
   readonly name: string;
   readonly description: string;
   readonly rarity: string;
+  readonly rarityColor: string;  // Canonical color from @dungeon/content
   readonly price: number;
   readonly effectivePrice: number;  // after shopkeeper disposition discount
   readonly stock: number;
@@ -331,6 +333,7 @@ export interface InventoryItemView {
   readonly description: string;
   readonly itemClass: string;
   readonly rarity: string;
+  readonly rarityColor: string;  // Canonical color from @dungeon/content
   readonly value: number;
   readonly sellPrice: number;  // floor(value * buybackMultiplier)
   readonly isEquipped: boolean;

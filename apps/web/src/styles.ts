@@ -48,6 +48,3 @@ export const compactBtnStyleMobile: React.CSSProperties = {
   borderRadius: '2px',
 };
 
-export const rarityColor: Record<string, string> = {
-  common: '#aaa', uncommon: '#4af', rare: '#a4f', epic: '#fa4', legendary: '#ff4',
-};
