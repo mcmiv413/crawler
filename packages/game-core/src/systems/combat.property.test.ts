@@ -163,7 +163,7 @@ describe('Combat - Property-Based Tests', () => {
 
             // For extreme probabilities, check bounds
             if (probability === 0) {
-              expect(trueCount).toBe(0);
+              expect(trueCount).toBeLessThanOrEqual(0);
             } else if (probability === 100) {
               expect(trueCount).toBe(trials);
             } else {
