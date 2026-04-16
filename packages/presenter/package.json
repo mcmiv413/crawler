@@ -10,6 +10,11 @@
       "types": "./dist/index.d.ts",
       "import": "./dist/index.js",
       "default": "./dist/index.js"
+    },
+    "./testing/feature-chain-helpers": {
+      "types": "./dist/testing/feature-chain-helpers.d.ts",
+      "import": "./dist/testing/feature-chain-helpers.js",
+      "default": "./dist/testing/feature-chain-helpers.js"
     }
   },
   "scripts": {
