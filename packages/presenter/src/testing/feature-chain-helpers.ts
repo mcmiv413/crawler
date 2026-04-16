@@ -50,7 +50,7 @@ export interface FeatureChainAssertion {
  *   - Link 4: View metrics updated
  */
 export function assertFeatureChain(
-  result: { state: GameState; events: DomainEvent[] },
+  result: { state: GameState; events: readonly DomainEvent[] },
   beforeState: GameState,
   assertions: FeatureChainAssertion,
 ): void {
@@ -101,10 +101,10 @@ export function assertFeatureChain(
  * @returns The matching events
  */
 export function expectEventEmitted(
-  events: DomainEvent[],
+  events: readonly DomainEvent[],
   eventType: string,
   minCount = 1,
-): DomainEvent[] {
+): readonly DomainEvent[] {
   const found = events.filter((e) => e.type === eventType);
   expect(
     found.length,
