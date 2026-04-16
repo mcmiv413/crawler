@@ -7,7 +7,6 @@ import {
   createTestGameStateInCombat,
   createTestGameStateWithAbility,
   createTestGameState,
-  createTestEnemy,
   createUseAbilityCommand,
   createAttackCommand,
   createMoveCommandWithDirection,
@@ -17,6 +16,10 @@ import {
   createEnchantArmorCommand,
   createWaitCommand,
 } from '../test-utils.js';
+import {
+  assertFeatureChain,
+  expectFormattedEvent,
+} from '../../../presenter/src/testing/feature-chain-helpers.js';
 
 // ---------------------------------------------------------------------------
 // Helpers
@@ -67,7 +70,6 @@ describe('handleUseAbility', () => {
       const result = useAbility(state, 'power_strike', rng); // no targetId
 
       // Cooldown was consumed (bug: this should arguably not happen)
-      const ability = result.state.player.abilities.find((a) => a.id === 'power_strike');
       // The ability went on cooldown before target validation
       // Documenting Bug 1 & 2: cooldown consumed, turn consumed, but no ABILITY_USED event
       const abilityUsedEvents = result.events.filter((e) => e.type === 'ABILITY_USED');
@@ -558,9 +560,12 @@ describe('handleAttack', () => {
 
     const result = handleCommand(state, createAttackCommand(entityId(targetId)), rng);
 
-    const attackEvent = result.events.find((e) => e.type === 'ATTACK_PERFORMED');
-    expect(attackEvent).toBeDefined();
-    expect(result.state.turnNumber).toBeGreaterThan(state.turnNumber);
+    // Feature chain: Entry (command) → State (health/turn) → Event (ATTACK_PERFORMED) → Format
+    assertFeatureChain(result, state, {
+      eventType: 'ATTACK_PERFORMED',
+      stateChanges: (before, after) => after.turnNumber > before.turnNumber,
+      formattingCheck: (e) => expectFormattedEvent(e) !== null,
+    });
   });
 
   it('kill: ENTITY_DIED, enemy removed, XP gained', () => {
@@ -729,6 +734,7 @@ describe('handleUnequip', () => {
   it('removes equipped item from slot and recalculates stats', () => {
     const state = createTestGameStateInCombat({ equippedWeaponId: 'rusty_sword' });
     const weaponId = state.player.equipment.weapon;
+    if (!weaponId) throw new Error('Expected weapon to be equipped in test setup');
     const initialAttack = state.player.stats.attack;
     const rng = new SeededRNG(1);
 
@@ -850,6 +856,7 @@ describe('handleEnchantArmor', () => {
         gold: 500,
         equipment: {
           weapon: null,
+          secondaryWeapon: null,
           chest: armorId,
           head: null,
           gloves: null,
@@ -907,7 +914,7 @@ describe('handleEnchantArmor', () => {
       player: {
         ...baseState.player,
         gold: 500,
-        equipment: { chest: armorId, weapon: null, head: null, gloves: null, boots: null, ring1: null, ring2: null },
+        equipment: { chest: armorId, weapon: null, secondaryWeapon: null, head: null, gloves: null, boots: null, ring1: null, ring2: null },
       },
       world: {
         ...baseState.world,
@@ -953,7 +960,7 @@ describe('handleEnchantArmor', () => {
       player: {
         ...baseState.player,
         gold: 1,
-        equipment: { chest: armorId, weapon: null, head: null, gloves: null, boots: null, ring1: null, ring2: null },
+        equipment: { chest: armorId, weapon: null, secondaryWeapon: null, head: null, gloves: null, boots: null, ring1: null, ring2: null },
       },
       world: {
         ...baseState.world,

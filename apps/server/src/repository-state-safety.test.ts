@@ -271,9 +271,11 @@ describe('Repository: State Safety', () => {
           damage: 15,
         },
         {
-          type: 'ENEMY_DEFEATED' as const,
-          enemyId: entityId('e1'),
-          experienceGained: 100,
+          type: 'ENTITY_DIED' as const,
+          entityId: entityId('e1'),
+          entityName: 'Goblin',
+          isPlayer: false,
+          wasNemesis: false,
         },
         {
           type: 'LOOT_ACQUIRED' as const,
