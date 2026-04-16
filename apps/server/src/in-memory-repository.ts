@@ -52,4 +52,23 @@ export class InMemoryRepository implements IGameRepository {
   getRunMetricsLog(): readonly RunMetrics[] {
     return this.runMetricsLog;
   }
+
+  async commitTick(gameId: EntityId, prevVersion: number, nextState: GameState, events: readonly DomainEvent[]): Promise<void> {
+    // Atomically verify, save state, and append events
+    const currentVersion = this.versions.get(gameId);
+    if (currentVersion !== prevVersion) {
+      throw new Error(
+        `Concurrent modification detected for game ${gameId}. ` +
+          `Expected version ${prevVersion}, got ${currentVersion}. ` +
+          `Please retry the command.`,
+      );
+    }
+
+    // All-or-nothing: save state and events together
+    const nextVersion = nextState.version;
+    this.games.set(gameId, nextState);
+    this.versions.set(gameId, nextVersion);
+    const existing = this.events.get(gameId) ?? [];
+    this.events.set(gameId, [...existing, ...events]);
+  }
 }

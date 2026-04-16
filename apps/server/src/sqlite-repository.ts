@@ -112,6 +112,48 @@ export class SqliteRepository implements IGameRepository {
     return rows.map((r) => JSON.parse(r.metrics_json));
   }
 
+  async commitTick(gameId: EntityId, prevVersion: number, nextState: GameState, events: readonly DomainEvent[]): Promise<void> {
+    // Use a transaction to ensure both saveGame and appendEvents succeed atomically
+    const commit = this.db.transaction(() => {
+      // Step 1: Verify current version matches expected version
+      const currentRow = this.db
+        .prepare('SELECT version FROM games WHERE game_id = ?')
+        .get(gameId) as { version: number } | undefined;
+
+      if (!currentRow || currentRow.version !== prevVersion) {
+        throw new Error(
+          `Concurrent modification detected for game ${gameId}. ` +
+            `Expected version ${prevVersion}, got ${currentRow?.version ?? 'not found'}. ` +
+            `Please retry the command.`,
+        );
+      }
+
+      // Step 2: Update state and version (same OCC check as saveGame)
+      const updateStmt = this.db.prepare(
+        "UPDATE games SET state_json = ?, version = ?, updated_at = datetime('now') WHERE game_id = ? AND version = ?",
+      );
+      const result = updateStmt.run(serializeState(nextState), prevVersion + 1, gameId, prevVersion);
+
+      if (result.changes === 0) {
+        throw new Error(
+          `Concurrent modification detected for game ${gameId}. ` +
+            `Expected version ${prevVersion}, got ${currentRow.version}. ` +
+            `Please retry the command.`,
+        );
+      }
+
+      // Step 3: Append events (same logic as appendEvents)
+      const insertStmt = this.db.prepare(
+        'INSERT INTO events (game_id, event_type, event_json, turn_number) VALUES (?, ?, ?, ?)',
+      );
+      for (const event of events) {
+        insertStmt.run(gameId, event.type, JSON.stringify(event), event.turnNumber ?? 0);
+      }
+    });
+
+    commit();
+  }
+
   close(): void {
     this.db.close();
   }
