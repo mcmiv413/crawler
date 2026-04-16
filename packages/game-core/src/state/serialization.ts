@@ -59,6 +59,14 @@ export function serializeState(state: GameState): string {
     itemRegistry: {
       items: Object.fromEntries(state.itemRegistry.items),
     },
+    persistedFloorCache: state.persistedFloorCache !== undefined
+      ? Object.fromEntries(
+          Array.from(state.persistedFloorCache.entries()).map(([depth, sf]) => [
+            depth,
+            serializeStoredFloor(sf),
+          ]),
+        )
+      : undefined,
   };
   return JSON.stringify(serializable);
 }
@@ -113,6 +121,17 @@ export function deserializeState(json: string): GameState {
     stats: playerStats,
   };
 
+  const persistedFloorCache = (parsed.persistedFloorCache !== null && parsed.persistedFloorCache !== undefined)
+    ? new Map(
+        Object.entries(parsed.persistedFloorCache as Record<string, StoredFloorJson>).map(
+          ([depth, sf]: [string, StoredFloorJson]) => [
+            Number(depth),
+            deserializeStoredFloor(sf),
+          ],
+        ),
+      ) as ReadonlyMap<number, StoredFloor>
+    : undefined;
+
   return {
     ...parsed,
     world,
@@ -121,6 +140,7 @@ export function deserializeState(json: string): GameState {
     itemRegistry: {
       items: new Map(Object.entries(parsed.itemRegistry.items)) as unknown as ReadonlyMap<EntityId, AnyItemTemplate>,
     },
+    persistedFloorCache,
   } as unknown as GameState;
 }
 
