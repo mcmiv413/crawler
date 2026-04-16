@@ -139,7 +139,7 @@ describe('Movement Behaviors', () => {
         activeQuests: [],
       };
       const neighbors = getWalkableNeighbors({ x: 0, y: 0 }, state);
-      expect(neighbors.length).toBe(0);
+      expect(neighbors.length).toBeLessThanOrEqual(0);
     });
   });
 

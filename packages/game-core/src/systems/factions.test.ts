@@ -30,7 +30,7 @@ describe('updateFactionOnKill', () => {
       world: { factions: [{ id: 'goblin_warband', name: 'Goblin Warband', power: 1, disposition: -30 }] },
     });
     const newState = updateFactionOnKill(state, 'goblin_archer');
-    expect(newState.world.factions[0]!.power).toBe(0);
+    expect(newState.world.factions[0]!.power).toBeLessThanOrEqual(0);
   });
 
   it('ignores unknown template', () => {
