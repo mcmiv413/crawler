@@ -11,6 +11,79 @@ interface TileScore {
 }
 
 /**
+ * A movement behavior that scores tiles to decide where an enemy should move.
+ * Scores higher = more desirable position for this behavior.
+ */
+interface MovementBehavior {
+  readonly id: MovementBehaviorId;
+  readonly name: string;
+  readonly description: string;
+  readonly scoreTiles: (enemy: EnemyInstance, tiles: Position[], state: GameState) => TileScore[];
+}
+
+/**
+ * Registry of all available movement behaviors.
+ * Eliminates if/else ladder and makes it trivial to add new behaviors.
+ */
+const MOVEMENT_BEHAVIOR_REGISTRY: readonly MovementBehavior[] = [
+  {
+    id: 'wall_stalker',
+    name: 'Wall Stalker',
+    description: 'Prefers tiles adjacent to walls (corners, edges). Stay hidden near cover.',
+    scoreTiles: scoreWallStalker,
+  },
+  {
+    id: 'rearline_anchor',
+    name: 'Rearline Anchor',
+    description: 'Prefers tiles far from player, stays back. Ranged/support positioning.',
+    scoreTiles: scoreRearlineAnchor,
+  },
+  {
+    id: 'chokepoint_holder',
+    name: 'Chokepoint Holder',
+    description: 'Prefers tiles close to player with good wall coverage. Melee/tank positioning.',
+    scoreTiles: scoreChokepointHolder,
+  },
+  {
+    id: 'ambush_idle',
+    name: 'Ambush Idle',
+    description: 'Prefers corners/walls with good distance from player. Lurking/waiting positioning.',
+    scoreTiles: scoreAmbushIdle,
+  },
+];
+
+/**
+ * Look up a behavior by ID in the registry.
+ * Returns undefined if behavior is not found.
+ */
+function getBehavior(id: string | undefined): MovementBehavior | undefined {
+  if (id === undefined) return undefined;
+  return MOVEMENT_BEHAVIOR_REGISTRY.find(b => b.id === id);
+}
+
+/**
+ * Get all available movement behaviors.
+ * Useful for UI/documentation and behavior analysis.
+ */
+export function getAllBehaviors(): readonly MovementBehavior[] {
+  return MOVEMENT_BEHAVIOR_REGISTRY;
+}
+
+/**
+ * Get metadata about a specific behavior.
+ * Returns behavior details (name, description) without executing the scoring function.
+ */
+export function getBehaviorInfo(id: MovementBehaviorId): Omit<MovementBehavior, 'scoreTiles'> | undefined {
+  const behavior = getBehavior(id);
+  if (behavior === undefined) return undefined;
+  return {
+    id: behavior.id,
+    name: behavior.name,
+    description: behavior.description,
+  };
+}
+
+/**
  * Get all walkable neighbor tiles (8-directional) around an enemy.
  */
 export function getWalkableNeighbors(
@@ -25,7 +98,8 @@ export function getWalkableNeighbors(
     for (let dy = -1; dy <= 1; dy++) {
       if (dx === 0 && dy === 0) continue;
       const nextPos = { x: position.x + dx, y: position.y + dy };
-      if (isWalkable(state, nextPos) === true) {
+      const walkable = isWalkable(state, nextPos);
+      if (walkable !== false) {
         mutableNeighbors.push(nextPos);
       }
     }
@@ -52,7 +126,8 @@ export function decideMovementByBehavior(
 
 /**
  * Score walkable neighbor tiles according to a behavior strategy.
- * Used to influence enemy positioning when no combat action is selected.
+ * Uses the behavior registry to look up the behavior by ID.
+ * Falls back to default approach if behavior not found.
  */
 export function scoreTilesForBehavior(
   enemy: EnemyInstance,
@@ -62,22 +137,10 @@ export function scoreTilesForBehavior(
 ): Position | null {
   if (availableTiles.length === 0) return null;
 
-  const behavior = behaviorId as MovementBehaviorId | undefined;
-
-  let scores: TileScore[] = [];
-
-  if (behavior === 'wall_stalker') {
-    scores = scoreWallStalker(enemy, availableTiles, state);
-  } else if (behavior === 'rearline_anchor') {
-    scores = scoreRearlineAnchor(enemy, availableTiles, state);
-  } else if (behavior === 'chokepoint_holder') {
-    scores = scoreChokepointHolder(enemy, availableTiles, state);
-  } else if (behavior === 'ambush_idle') {
-    scores = scoreAmbushIdle(enemy, availableTiles, state);
-  } else {
-    // No behavior or unknown behavior — default to approach player
-    scores = scoreDefaultApproach(enemy, availableTiles, state);
-  }
+  // Look up behavior in registry, or use default
+  const behavior = getBehavior(behaviorId);
+  const scoringFn = behavior?.scoreTiles ?? scoreDefaultApproach;
+  const scores = scoringFn(enemy, availableTiles, state);
 
   if (scores.length === 0) return availableTiles[0] ?? null;
 
@@ -88,8 +151,8 @@ export function scoreTilesForBehavior(
 }
 
 /**
- * Wall Stalker: Prefers tiles adjacent to walls (corners, edges).
- * Stay hidden near cover.
+ * Wall Stalker scoring function.
+ * Prefers tiles adjacent to walls (corners, edges). Stay hidden near cover.
  */
 function scoreWallStalker(
   _enemy: EnemyInstance,
@@ -107,7 +170,7 @@ function scoreWallStalker(
         if (dx === 0 && dy === 0) continue;
         const neighborKey = posKey({ x: tile.x + dx, y: tile.y + dy });
         const neighborCell = floor.cells.get(neighborKey);
-        if (neighborCell === undefined || neighborCell.tile.walkable === false) {
+        if (neighborCell === undefined || neighborCell.tile.walkable !== true) {
           wallProximity += 1; // Wall or out of bounds
         }
       }
@@ -159,7 +222,7 @@ function chokepointHolder(
         if (dx === 0 && dy === 0) continue;
         const neighborKey = posKey({ x: tile.x + dx, y: tile.y + dy });
         const neighborCell = floor.cells.get(neighborKey);
-        if (neighborCell === undefined || neighborCell.tile.walkable === false) {
+        if (neighborCell === undefined || neighborCell.tile.walkable !== true) {
           wallProximity += 1;
         }
       }
@@ -206,7 +269,7 @@ function scoreAmbushIdle(
         if (dx === 0 && dy === 0) continue;
         const neighborKey = posKey({ x: tile.x + dx, y: tile.y + dy });
         const neighborCell = floor.cells.get(neighborKey);
-        if (neighborCell === undefined || neighborCell.tile.walkable === false) {
+        if (neighborCell === undefined || neighborCell.tile.walkable !== true) {
           wallProximity += 1;
         }
       }
