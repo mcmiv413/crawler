@@ -40,6 +40,11 @@
       "types": "./dist/utils/pathfinding.d.ts",
       "import": "./dist/utils/pathfinding.js",
       "default": "./dist/utils/pathfinding.js"
+    },
+    "./testing": {
+      "types": "./dist/testing/index.d.ts",
+      "import": "./dist/testing/index.js",
+      "default": "./dist/testing/index.js"
     }
   },
   "scripts": {
