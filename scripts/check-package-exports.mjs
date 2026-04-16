@@ -79,6 +79,7 @@ const checks = [
   { pkg: 'core',      specifier: '@dungeon/core/ai/ai-service.js',  desc: '@dungeon/core/ai/ai-service.js' },
   { pkg: 'core',      specifier: '@dungeon/core/ai/prompt-builders.js', desc: '@dungeon/core/ai/prompt-builders.js' },
   { pkg: 'core',      specifier: '@dungeon/core/utils/pathfinding.js',  desc: '@dungeon/core/utils/pathfinding.js' },
+  { pkg: 'core',      specifier: '@dungeon/core/testing.js',        desc: '@dungeon/core/testing.js' },
 ];
 
 let resolveErrors = 0;
