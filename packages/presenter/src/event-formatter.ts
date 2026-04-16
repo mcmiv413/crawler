@@ -42,6 +42,7 @@ const EVENT_FORMATTERS: Record<string, EventFormatter> = {
   }),
 
   'STATUS_APPLIED': (event) => {
+    // @ts-expect-error - statusId is string due to any type
     const statusName = STATUS_DEFINITIONS[event.statusId]?.name ?? event.statusId;
     return {
       text: `${statusName} applied for ${event.duration} turns.`,
@@ -51,6 +52,7 @@ const EVENT_FORMATTERS: Record<string, EventFormatter> = {
   },
 
   'STATUS_EXPIRED': (event) => {
+    // @ts-expect-error - statusId is string due to any type
     const statusName = STATUS_DEFINITIONS[event.statusId]?.name ?? event.statusId;
     return {
       text: `${statusName} has worn off.`,
