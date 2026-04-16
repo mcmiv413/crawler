@@ -9,7 +9,7 @@ import {
   LEVEL_UP_GAINS,
   FLOOR_SCALING,
 } from '@dungeon/content';
-import { GameCommandSchema } from '@dungeon/contracts';
+import { GameCommandSchema, WEAPON_TYPES } from '@dungeon/contracts';
 
 /**
  * Contract Tests: Game Config Integrity
@@ -89,7 +89,7 @@ describe('Ability Registry Contract', () => {
     const abilities = Object.values(ABILITY_DEFINITIONS);
     const ids = new Set<string>();
 
-    const validWeaponTypes = new Set(['blade', 'bludgeon', 'axe', 'staff', 'spear', 'whip', 'ranged']);
+    const validWeaponTypes = new Set(WEAPON_TYPES);
 
     for (const ability of abilities) {
       // Check for duplicates
