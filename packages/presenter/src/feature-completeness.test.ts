@@ -472,7 +472,7 @@ describe('Feature Completeness: damageTaken metric', () => {
 
     if (enemyAttacks.length > 0) {
       // Link 2: damageTaken should be incremented (only if run is still active)
-      if (result.state.run !== null) {
+      if (result.state.run !== null && result.state.run.runMetrics) {
         expect(result.state.run.runMetrics.damageTaken).toBeGreaterThan(0);
       }
     }
@@ -699,7 +699,7 @@ describe('Feature Completeness: Thorns Reflection (Enchantment Effect)', () => {
       ...beforeState,
       player: {
         ...beforeState.player,
-        equipment: { ...beforeState.player.equipment, chest: 'spiked_leather' },
+        equipment: { ...beforeState.player.equipment, chest: entityId('spiked_leather') },
       },
     };
     const enemy = [...state.run!.enemies.values()][0]!;
@@ -726,14 +726,14 @@ describe('Feature Completeness: Blink Dodge (Enchantment Effect)', () => {
       ...beforeState,
       player: {
         ...beforeState.player,
-        equipment: { ...beforeState.player.equipment, ring1: 'shadow_ring' }, // has blink
+        equipment: { ...beforeState.player.equipment, ring1: entityId('shadow_ring') }, // has blink
       },
     };
 
     const result = handleCommand(state, { type: 'WAIT' }, rng(100));
 
     // Verify all events format correctly
-    expectAllEventsFormatted(result.events);
+    expectAllEventsFormatted([...result.events]);
 
     // Blink events may appear (probabilistic), but if they do, they format
     const blinkEvents = result.events.filter(e => e.type === 'BLINK_DODGED');
@@ -788,7 +788,7 @@ describe('Feature Completeness: Weapon Mastery Unlock', () => {
       expectFormattedEvent(event);
     }
 
-    expectAllEventsFormatted(result.events);
+    expectAllEventsFormatted([...result.events]);
   });
 });
 
@@ -808,7 +808,7 @@ describe('Feature Completeness: Blueprint Unlock (on loot)', () => {
       }
     }
 
-    expectAllEventsFormatted(result.events);
+    expectAllEventsFormatted([...result.events]);
   });
 });
 
@@ -817,7 +817,7 @@ describe('Feature Completeness: Shop Tier Unlock', () => {
     const state = createTestGameState({ phase: 'town' });
 
     // Manually simulate finding a rare item
-    const stateBefore = { ...state, player: { ...state.player, inventory: ['rusty_sword'] } };
+    const stateBefore = { ...state, player: { ...state.player, inventory: ['rusty_sword'].map(entityId) } };
     const stateAfter = {
       ...stateBefore,
       player: { ...stateBefore.player, highestRarityFound: 'rare' as const },
@@ -863,7 +863,7 @@ describe('Feature Completeness: Status Effect Application (Poison)', () => {
       expect((event as any).duration).toBeGreaterThan(0);
     }
 
-    expectAllEventsFormatted(result.events);
+    expectAllEventsFormatted([...result.events]);
   });
 });
 
@@ -891,7 +891,7 @@ describe('Feature Completeness: Status Effect Expiration', () => {
       expectFormattedEvent(event);
     }
 
-    expectAllEventsFormatted(result.events);
+    expectAllEventsFormatted([...result.events]);
   });
 });
 
@@ -905,7 +905,7 @@ describe('Feature Completeness: Retreat (RETREAT)', () => {
     // Floor depth should be preserved or phase changed to town
     expect(result.state.run?.floor.depth ?? result.state.phase).toBeDefined();
 
-    expectAllEventsFormatted(result.events);
+    expectAllEventsFormatted([...result.events]);
   });
 });
 
@@ -919,7 +919,7 @@ describe('Feature Completeness: Retreat from Dead End (No Adjacent Exit)', () =>
     const attackEvents = result.events.filter(e => e.type === 'ATTACK_PERFORMED');
     expect(attackEvents).toBeDefined(); // May retry as attack instead
 
-    expectAllEventsFormatted(result.events);
+    expectAllEventsFormatted([...result.events]);
   });
 });
 
@@ -1088,7 +1088,7 @@ describe('Feature Completeness: Multiple Enemies in One Turn', () => {
     const result = handleCommand(stateWithMultiple, { type: 'WAIT' }, rng());
 
     // Verify all events format
-    expectAllEventsFormatted(result.events);
+    expectAllEventsFormatted([...result.events]);
 
     // Should have attack events from both enemies
     const attackCount = result.events.filter(e => e.type === 'ATTACK_PERFORMED').length;
@@ -1101,10 +1101,10 @@ describe('Feature Completeness: Item Type Actions (Consumables)', () => {
     const baseState = createTestGameStateInCombat();
     const stateWithPotion = {
       ...baseState,
-      player: { ...baseState.player, inventory: ['health_potion', ...baseState.player.inventory] },
+      player: { ...baseState.player, inventory: ['health_potion', ...baseState.player.inventory].map(entityId) },
     };
 
-    const result = handleCommand(stateWithPotion, { type: 'USE_ITEM', itemId: 'health_potion' }, rng());
+    const result = handleCommand(stateWithPotion, { type: 'USE_ITEM', itemId: entityId('health_potion') }, rng());
 
     // Verify item used event (if consumable use succeeds)
     const itemEvents = result.events.filter(e => e.type === 'ITEM_USED');
@@ -1112,7 +1112,7 @@ describe('Feature Completeness: Item Type Actions (Consumables)', () => {
       expectFormattedEvent(event);
     }
 
-    expectAllEventsFormatted(result.events);
+    expectAllEventsFormatted([...result.events]);
   });
 });
 
@@ -1123,11 +1123,11 @@ describe('Feature Completeness: Swap Secondary Weapon', () => {
       ...baseState,
       player: {
         ...baseState.player,
-        inventory: ['rusty_sword', 'rusty_dagger'],
+        inventory: ['rusty_sword', 'rusty_dagger'].map(entityId),
         equipment: {
           ...baseState.player.equipment,
-          weapon: 'rusty_sword',
-          secondaryWeapon: 'rusty_dagger',
+          weapon: entityId('rusty_sword'),
+          secondaryWeapon: entityId('rusty_dagger'),
         },
       },
     };
@@ -1158,6 +1158,6 @@ describe('Feature Completeness: All Events Format Correctly', () => {
 
     const result = handleCommand(state, { type: 'ATTACK', targetId: target.id }, rng());
 
-    expectAllEventsFormatted(result.events);
+    expectAllEventsFormatted([...result.events]);
   });
 });

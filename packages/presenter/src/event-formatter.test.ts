@@ -91,8 +91,12 @@ describe('formatEvent', () => {
       ...base,
       type: 'PLAYER_DIED',
       killerId: entityId('e1'),
+      killerName: 'Goblin',
+      killerSpriteName: 'goblin-archer',
       floor: 3,
       cause: 'a goblin attack',
+      goldLost: 100,
+      overkillDamage: 5,
     };
     const result = formatEvent(event);
     expect(result).toEqual({

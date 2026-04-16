@@ -1,7 +1,10 @@
 {
   "extends": "../../tsconfig.base.json",
   "compilerOptions": {
+    "rootDir": ".",
     "skipLibCheck": true,
+    "noUnusedLocals": false,
+    "noUnusedParameters": false,
     "noEmit": true,
     "composite": false,
     "declaration": false,
