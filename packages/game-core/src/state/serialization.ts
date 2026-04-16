@@ -1,4 +1,5 @@
 import type { GameState, StoredFloor, RunState, EntityId, AnyItemTemplate, MapCell, EnemyInstance, DungeonFloor, ObjectInstance } from '@dungeon/contracts';
+import { CURRENT_SCHEMA_VERSION, validateSchemaVersion } from '@dungeon/contracts';
 import { BASE_PLAYER_STATS } from '@dungeon/content';
 
 /** Plain-object (JSON) form of a StoredFloor (Maps become Record). */
@@ -51,9 +52,11 @@ function deserializeStoredFloor(raw: StoredFloorJson): StoredFloor {
 
 /**
  * Serialize a GameState to a JSON string, converting all Maps to plain objects.
+ * Includes schemaVersion to support future migrations and version mismatch detection.
  */
 export function serializeState(state: GameState): string {
   const serializable = {
+    schemaVersion: CURRENT_SCHEMA_VERSION,
     ...state,
     run: state.run !== null ? serializeRun(state.run) : null,
     itemRegistry: {
@@ -94,30 +97,32 @@ function serializeRun(run: RunState): unknown {
 
 /**
  * Deserialize a JSON string back into a GameState, reconstructing all Maps.
+ * Validates schema version before deserialization.
  * Applies defensive defaults for fields that may be missing in old saves.
+ *
+ * @throws SchemaVersionMismatchError if save file version doesn't match current schema
+ * @throws SchemaParseError if JSON is malformed or missing required fields
  */
 export function deserializeState(json: string): GameState {
-  const parsed = JSON.parse(json) as Record<string, unknown> & {
-    run: RunStateJson | null;
-    itemRegistry: { items: Record<string, unknown> };
-    player: Record<string, unknown>;
-  };
+  // Validate schema version before attempting to deserialize
+  const { parsed } = validateSchemaVersion(json);
 
   // Apply defensive defaults for world state fields that may be missing in old saves
   const world = {
     shop: { items: [], buybackMultiplier: 0.5 },
     factions: [],
-    ...parsed.world as Record<string, unknown>,
+    ...(parsed.world as Record<string, unknown>),
   };
 
   // Apply defensive defaults for player stats in case old saves are missing fields
+  const playerObj = parsed.player as Record<string, unknown>;
   const playerStats = {
     ...BASE_PLAYER_STATS,
-    ...((parsed.player.stats ?? {}) as Record<string, unknown>),
+    ...((playerObj.stats ?? {}) as Record<string, unknown>),
   };
 
   const player = {
-    ...parsed.player,
+    ...playerObj,
     stats: playerStats,
   };
 
@@ -132,13 +137,16 @@ export function deserializeState(json: string): GameState {
       ) as ReadonlyMap<number, StoredFloor>
     : undefined;
 
+  const runObj = parsed.run as (RunStateJson | null);
+  const itemRegistryObj = parsed.itemRegistry as { items: Record<string, unknown> };
+
   return {
     ...parsed,
     world,
     player,
-    run: parsed.run !== null ? deserializeRun(parsed.run) : null,
+    run: runObj !== null ? deserializeRun(runObj) : null,
     itemRegistry: {
-      items: new Map(Object.entries(parsed.itemRegistry.items)) as unknown as ReadonlyMap<EntityId, AnyItemTemplate>,
+      items: new Map(Object.entries(itemRegistryObj.items)) as unknown as ReadonlyMap<EntityId, AnyItemTemplate>,
     },
     persistedFloorCache,
   } as unknown as GameState;
