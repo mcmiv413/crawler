@@ -1,5 +1,6 @@
 import Database from 'better-sqlite3';
 import type { IGameRepository, GameState, EntityId, DomainEvent, RunMetrics } from '@dungeon/contracts';
+import { SchemaVersionMismatchError, SchemaParseError } from '@dungeon/contracts';
 import { serializeState, deserializeState } from '@dungeon/core';
 
 export class SqliteRepository implements IGameRepository {
@@ -51,7 +52,16 @@ export class SqliteRepository implements IGameRepository {
       .prepare('SELECT state_json FROM games WHERE game_id = ?')
       .get(gameId) as { state_json: string } | undefined;
     if (!row) return null;
-    return deserializeState(row.state_json);
+
+    try {
+      return deserializeState(row.state_json);
+    } catch (error) {
+      // Re-throw schema validation errors with additional context
+      if (error instanceof SchemaVersionMismatchError || error instanceof SchemaParseError) {
+        throw error; // Let app.ts handle these for proper HTTP responses
+      }
+      throw error; // Other errors propagate as-is
+    }
   }
 
   async saveGame(gameId: EntityId, state: GameState): Promise<void> {
