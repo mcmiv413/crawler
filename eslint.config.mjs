@@ -276,4 +276,12 @@ export default tseslint.config(
       "vitest/no-disabled-tests": "warn",
     },
   },
+
+  // Game-core system tests: enforce resilient numeric assertions
+  {
+    files: ["packages/game-core/src/systems/**/*.test.ts"],
+    rules: {
+      "dungeon/no-numeric-toBe": "warn",
+    },
+  },
 );
