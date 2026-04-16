@@ -180,11 +180,32 @@ describe('Repository: State Safety', () => {
       await repo.createGame(stateA);
       await repo.createGame(stateB);
 
+      const now = Date.now();
       const eventsA: DomainEvent[] = [
-        { type: 'ATTACK_PERFORMED' as const, targetId: entityId('e1'), damage: 10 },
+        {
+          type: 'ATTACK_PERFORMED' as const,
+          timestamp: now,
+          turnNumber: 1,
+          attackerId: entityId('p1'),
+          defenderId: entityId('e1'),
+          attackerName: 'Hero',
+          defenderName: 'Goblin',
+          damage: 10,
+          damageType: 'physical' as const,
+          hit: true,
+          critical: false,
+        },
       ];
       const eventsB: DomainEvent[] = [
-        { type: 'ITEM_USED' as const, itemId: entityId('i1') },
+        {
+          type: 'ITEM_USED' as const,
+          timestamp: now,
+          turnNumber: 1,
+          itemId: entityId('i1'),
+          itemName: 'Potion',
+          userId: entityId('p1'),
+          effect: 'heal',
+        },
       ];
 
       await repo.appendEvents(gameA, eventsA);
@@ -264,24 +285,36 @@ describe('Repository: State Safety', () => {
       const state = createMinimalGameState({ gameId });
       await repo.createGame(state);
 
+      const now = Date.now();
       const complexEvents: DomainEvent[] = [
         {
           type: 'ATTACK_PERFORMED' as const,
-          targetId: entityId('e1'),
+          timestamp: now,
+          turnNumber: 1,
+          attackerId: entityId('p1'),
+          defenderId: entityId('e1'),
+          attackerName: 'Hero',
+          defenderName: 'Goblin',
           damage: 15,
+          damageType: 'physical' as const,
+          hit: true,
+          critical: false,
         },
         {
           type: 'ENTITY_DIED' as const,
+          timestamp: now,
+          turnNumber: 2,
           entityId: entityId('e1'),
+          killerId: entityId('p1'),
           entityName: 'Goblin',
-          isPlayer: false,
-          wasNemesis: false,
         },
         {
           type: 'LOOT_ACQUIRED' as const,
+          timestamp: now,
+          turnNumber: 3,
           itemId: entityId('i1'),
           itemName: 'Rusty Sword',
-          rarity: 'common' as const,
+          playerId: entityId('p1'),
         },
       ];
 
@@ -300,10 +333,19 @@ describe('Repository: State Safety', () => {
       const state = createMinimalGameState({ gameId });
       await repo.createGame(state);
 
+      const now = Date.now();
       const manyEvents: DomainEvent[] = Array.from({ length: 20 }, (_, i) => ({
         type: 'ATTACK_PERFORMED' as const,
-        targetId: entityId(`e${i}`),
+        timestamp: now + i * 100,
+        turnNumber: i + 1,
+        attackerId: entityId('p1'),
+        defenderId: entityId(`e${i}`),
+        attackerName: 'Hero',
+        defenderName: `Enemy${i}`,
         damage: i + 1,
+        damageType: 'physical' as const,
+        hit: true,
+        critical: false,
       }));
 
       await repo.appendEvents(gameId, manyEvents);
@@ -322,14 +364,42 @@ describe('Repository: State Safety', () => {
       const state = createMinimalGameState({ gameId });
       await repo.createGame(state);
 
+      const now = Date.now();
       const batch1: DomainEvent[] = [
-        { type: 'ATTACK_PERFORMED' as const, targetId: entityId('e1'), damage: 10 },
+        {
+          type: 'ATTACK_PERFORMED' as const,
+          timestamp: now,
+          turnNumber: 1,
+          attackerId: entityId('p1'),
+          defenderId: entityId('e1'),
+          attackerName: 'Hero',
+          defenderName: 'Goblin',
+          damage: 10,
+          damageType: 'physical' as const,
+          hit: true,
+          critical: false,
+        },
       ];
       const batch2: DomainEvent[] = [
-        { type: 'ITEM_USED' as const, itemId: entityId('i1') },
+        {
+          type: 'ITEM_USED' as const,
+          timestamp: now + 100,
+          turnNumber: 2,
+          itemId: entityId('i1'),
+          itemName: 'Potion',
+          userId: entityId('p1'),
+          effect: 'heal',
+        },
       ];
       const batch3: DomainEvent[] = [
-        { type: 'ENEMY_DEFEATED' as const, enemyId: entityId('e1'), experienceGained: 50 },
+        {
+          type: 'ENTITY_DIED' as const,
+          timestamp: now + 200,
+          turnNumber: 3,
+          entityId: entityId('e1'),
+          killerId: entityId('p1'),
+          entityName: 'Goblin',
+        },
       ];
 
       await repo.appendEvents(gameId, batch1);
@@ -340,7 +410,7 @@ describe('Repository: State Safety', () => {
       expect(allEvents).toHaveLength(3);
       expect(allEvents[0].type).toBe('ATTACK_PERFORMED');
       expect(allEvents[1].type).toBe('ITEM_USED');
-      expect(allEvents[2].type).toBe('ENEMY_DEFEATED');
+      expect(allEvents[2].type).toBe('ENTITY_DIED');
     });
   });
 
@@ -351,14 +421,15 @@ describe('Repository: State Safety', () => {
   describe('Run Metrics Tracking', () => {
     it('should record and retrieve run metrics', () => {
       const metrics1 = {
-        runId: entityId('run_1'),
-        floorReached: 5,
-        enemiesDefeated: 25,
-        itemsAcquired: 10,
-        totalDamageTaken: 150,
-        totalDamageDealt: 500,
-        timeInSeconds: 300,
-        seed: 12345,
+        damageDealt: 500,
+        damageTaken: 150,
+        turnsElapsed: 42,
+        enemiesKilled: 25,
+        itemsUsed: 10,
+        goldEarned: 250,
+        floorsCleared: 5,
+        causeOfEnd: 'victory' as const,
+        consecutiveMisses: 0,
       };
 
       repo.recordRunMetrics(metrics1);
@@ -370,24 +441,26 @@ describe('Repository: State Safety', () => {
 
     it('should accumulate multiple run metrics', () => {
       const metrics1 = {
-        runId: entityId('run_1'),
-        floorReached: 5,
-        enemiesDefeated: 25,
-        itemsAcquired: 10,
-        totalDamageTaken: 150,
-        totalDamageDealt: 500,
-        timeInSeconds: 300,
-        seed: 12345,
+        damageDealt: 500,
+        damageTaken: 150,
+        turnsElapsed: 42,
+        enemiesKilled: 25,
+        itemsUsed: 10,
+        goldEarned: 250,
+        floorsCleared: 5,
+        causeOfEnd: 'victory' as const,
+        consecutiveMisses: 0,
       };
       const metrics2 = {
-        runId: entityId('run_2'),
-        floorReached: 8,
-        enemiesDefeated: 40,
-        itemsAcquired: 15,
-        totalDamageTaken: 200,
-        totalDamageDealt: 800,
-        timeInSeconds: 450,
-        seed: 54321,
+        damageDealt: 800,
+        damageTaken: 200,
+        turnsElapsed: 56,
+        enemiesKilled: 40,
+        itemsUsed: 15,
+        goldEarned: 400,
+        floorsCleared: 8,
+        causeOfEnd: 'victory' as const,
+        consecutiveMisses: 1,
       };
 
       repo.recordRunMetrics(metrics1);
@@ -401,14 +474,15 @@ describe('Repository: State Safety', () => {
 
     it('should handle optional gameId parameter', () => {
       const metrics = {
-        runId: entityId('run_1'),
-        floorReached: 3,
-        enemiesDefeated: 15,
-        itemsAcquired: 5,
-        totalDamageTaken: 100,
-        totalDamageDealt: 300,
-        timeInSeconds: 200,
-        seed: 99999,
+        damageDealt: 300,
+        damageTaken: 100,
+        turnsElapsed: 28,
+        enemiesKilled: 15,
+        itemsUsed: 5,
+        goldEarned: 150,
+        floorsCleared: 3,
+        causeOfEnd: 'retreat' as const,
+        consecutiveMisses: 2,
       };
 
       // Record with optional gameId
@@ -463,7 +537,7 @@ describe('Repository: State Safety', () => {
       }
 
       // Queue multiple reads
-      const reads = [];
+      const reads: Promise<GameState | null>[] = [];
       for (let i = 0; i < 5; i++) {
         reads.push(repo.loadGame(gameId));
       }
@@ -480,14 +554,42 @@ describe('Repository: State Safety', () => {
       await repo.createGame(state);
 
       // Append events in batches "concurrently"
+      const now = Date.now();
       const batch1: DomainEvent[] = [
-        { type: 'ATTACK_PERFORMED' as const, targetId: entityId('e1'), damage: 10 },
+        {
+          type: 'ATTACK_PERFORMED' as const,
+          timestamp: now,
+          turnNumber: 1,
+          attackerId: entityId('p1'),
+          defenderId: entityId('e1'),
+          attackerName: 'Hero',
+          defenderName: 'Enemy',
+          damage: 10,
+          damageType: 'physical' as const,
+          hit: true,
+          critical: false,
+        },
       ];
       const batch2: DomainEvent[] = [
-        { type: 'ITEM_USED' as const, itemId: entityId('i1') },
+        {
+          type: 'ITEM_USED' as const,
+          timestamp: now + 100,
+          turnNumber: 2,
+          itemId: entityId('i1'),
+          itemName: 'Potion',
+          userId: entityId('p1'),
+          effect: 'heal',
+        },
       ];
       const batch3: DomainEvent[] = [
-        { type: 'ENEMY_DEFEATED' as const, enemyId: entityId('e1'), experienceGained: 50 },
+        {
+          type: 'ENTITY_DIED' as const,
+          timestamp: now + 200,
+          turnNumber: 3,
+          entityId: entityId('e1'),
+          killerId: entityId('p1'),
+          entityName: 'Enemy',
+        },
       ];
 
       // All appends should be accumulated in order
@@ -503,7 +605,7 @@ describe('Repository: State Safety', () => {
       expect(allEvents.map((e) => e.type)).toEqual([
         'ATTACK_PERFORMED',
         'ITEM_USED',
-        'ENEMY_DEFEATED',
+        'ENTITY_DIED',
       ]);
     });
   });
@@ -576,10 +678,19 @@ describe('Repository: State Safety', () => {
       // Simulate many events
       await repo.createGame(baseState);
 
+      const now = Date.now();
       const manyEvents: DomainEvent[] = Array.from({ length: 1000 }, (_, i) => ({
         type: 'ATTACK_PERFORMED' as const,
-        targetId: entityId(`e${i % 10}`),
+        timestamp: now + i * 50,
+        turnNumber: i + 1,
+        attackerId: entityId('p1'),
+        defenderId: entityId(`e${i % 10}`),
+        attackerName: 'Hero',
+        defenderName: `Enemy${i % 10}`,
         damage: (i % 100) + 1,
+        damageType: 'physical' as const,
+        hit: true,
+        critical: false,
       }));
 
       await repo.appendEvents(gameId, manyEvents);
