@@ -338,7 +338,10 @@ export function createSwapWeaponsCommand(): { type: 'SWAP_WEAPONS' } {
 }
 
 /** Create a properly typed ENCHANT_ARMOR command */
-export function createEnchantArmorCommand(equipSlot: string, enchantmentId: string): { type: 'ENCHANT_ARMOR'; equipSlot: string; enchantmentId: string } {
+export function createEnchantArmorCommand(
+  equipSlot: 'weapon' | 'chest' | 'head' | 'gloves' | 'boots' | 'ring1' | 'ring2',
+  enchantmentId: string,
+): { type: 'ENCHANT_ARMOR'; equipSlot: 'weapon' | 'chest' | 'head' | 'gloves' | 'boots' | 'ring1' | 'ring2'; enchantmentId: string } {
   return {
     type: 'ENCHANT_ARMOR' as const,
     equipSlot,
