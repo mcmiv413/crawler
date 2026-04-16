@@ -18,40 +18,27 @@ function getEquippedEnchantments(state: GameState): string[] {
   return ids;
 }
 
-/** Sum total thorns/spikes reflect damage from all equipped armor */
-export function getTotalThornsReflect(state: GameState): number {
+/** Sum effect values for a specific enchantment type from all equipped armor */
+function sumEnchantmentEffect(state: GameState, effectType: string): number {
   let total = 0;
   for (const encId of getEquippedEnchantments(state)) {
     const def = ENCHANTMENT_BY_ID.get(encId);
-    if (def?.effect.type === 'thorns' && def.effect.value !== undefined) {
+    if (def?.effect.type === effectType && def.effect.value !== undefined) {
       total += def.effect.value;
     }
   }
   return total;
 }
 
+/** Sum total thorns/spikes reflect damage from all equipped armor */
+export const getTotalThornsReflect = (state: GameState) => sumEnchantmentEffect(state, 'thorns');
+
 /** Get HP regen bonus per turn from enchantments */
-export function getEnchantmentRegenBonus(state: GameState): number {
-  let total = 0;
-  for (const encId of getEquippedEnchantments(state)) {
-    const def = ENCHANTMENT_BY_ID.get(encId);
-    if (def?.effect.type === 'regen' && def.effect.value !== undefined) {
-      total += def.effect.value;
-    }
-  }
-  return total;
-}
+export const getEnchantmentRegenBonus = (state: GameState) => sumEnchantmentEffect(state, 'regen');
 
 /** Get XP multiplier from exp_bonus enchantments (stacks additively) */
 export function getExpBonusMultiplier(state: GameState): number {
-  let bonus = 0;
-  for (const encId of getEquippedEnchantments(state)) {
-    const def = ENCHANTMENT_BY_ID.get(encId);
-    if (def?.effect.type === 'exp_bonus' && def.effect.value !== undefined) {
-      bonus += def.effect.value;
-    }
-  }
-  return 1.0 + bonus;
+  return 1.0 + sumEnchantmentEffect(state, 'exp_bonus');
 }
 
 /**
@@ -85,13 +72,4 @@ export function applyBlinkOnHit(state: GameState, rngNext: () => number): boolea
 /**
  * Get HP healed on kill from life_steal enchantments.
  */
-export function applyLifeStealOnKill(state: GameState): number {
-  let total = 0;
-  for (const encId of getEquippedEnchantments(state)) {
-    const def = ENCHANTMENT_BY_ID.get(encId);
-    if (def?.effect.type === 'life_steal' && def.effect.value !== undefined) {
-      total += def.effect.value;
-    }
-  }
-  return total;
-}
+export const applyLifeStealOnKill = (state: GameState) => sumEnchantmentEffect(state, 'life_steal');
