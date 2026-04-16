@@ -610,4 +610,164 @@ describe('formatEvents', () => {
       expect(result!.type).toBe('info');
     });
   });
+
+  describe('Exhaustiveness', () => {
+    it('every DomainEvent type has a formatter (no silent undefined returns)', () => {
+      // This test validates that the mapped type in event-formatter.ts
+      // actually enforces completeness. It's a belt-and-braces check
+      // that complements the TypeScript satisfies clause.
+
+      // List of all event types that are expected to return null (silent events)
+      const silentEventTypes = new Set([
+        'PLAYER_MOVED',
+        'ENEMY_MOVED',
+        'RUN_STARTED',
+        'RUN_ENDED',
+        'PHASE_CHANGED',
+        'TOWN_STATE_CHANGED',
+        'ENEMY_SPAWNED',
+      ]);
+
+      // For each event type, create a stub and verify formatEvent returns something
+      // (either a formatted entry or null for silent events, never undefined)
+      const allEventTypes = [
+        'ATTACK_PERFORMED',
+        'ENTITY_DIED',
+        'STATUS_APPLIED',
+        'STATUS_EXPIRED',
+        'LOOT_ACQUIRED',
+        'GOLD_CHANGED',
+        'FLOOR_ENTERED',
+        'PLAYER_DIED',
+        'ITEM_USED',
+        'ENEMY_ALERTED',
+        'LEVEL_UP',
+        'NEMESIS_ENCOUNTERED',
+        'NEMESIS_PROMOTED',
+        'NEMESIS_SLAIN',
+        'LOOT_DROPPED',
+        'QUEST_ASSIGNED',
+        'QUEST_COMPLETED',
+        'ABILITY_USED',
+        'MASTERY_UNLOCKED',
+        'ENCHANTMENT_APPLIED',
+        'BLUEPRINT_UNLOCKED',
+        'SHOP_TIER_UNLOCKED',
+        'EQUIPMENT_DROPPED',
+        'EQUIPMENT_RECOVERED',
+        'PERMADEATH',
+        'TREASURE_OPENED',
+        'OBJECT_INTERACTED',
+        'TRAP_TRIGGERED',
+        'THORNS_REFLECTED',
+        'BLINK_DODGED',
+        'LIFE_STEAL',
+        'DEBUG_MISS_STREAK',
+        'ENEMY_AMBIENT_STATE_CHANGED',
+        ...silentEventTypes,
+      ];
+
+      // Stub event factory for validation
+      const createStubEvent = (type: string): DomainEvent => {
+        const base = { timestamp: ts, turnNumber: 1 } as any;
+        switch (type) {
+          case 'PLAYER_MOVED':
+            return { ...base, type, from: { x: 0, y: 0 }, to: { x: 1, y: 1 } };
+          case 'ENEMY_MOVED':
+            return { ...base, type, enemyId: entityId('e1'), from: { x: 0, y: 0 }, to: { x: 1, y: 1 } };
+          case 'ATTACK_PERFORMED':
+            return { ...base, type, attackerId: entityId('p1'), defenderId: entityId('e1'), attackerName: 'A', defenderName: 'B', damage: 10, damageType: 'physical', hit: true, critical: false };
+          case 'ENTITY_DIED':
+            return { ...base, type, entityId: entityId('e1'), killerId: entityId('p1'), entityName: 'Enemy' };
+          case 'STATUS_APPLIED':
+            return { ...base, type, targetId: entityId('p1'), statusId: 'poisoned', duration: 3, sourceId: null };
+          case 'STATUS_EXPIRED':
+            return { ...base, type, targetId: entityId('p1'), statusId: 'poisoned' };
+          case 'LOOT_ACQUIRED':
+            return { ...base, type, itemName: 'Sword' };
+          case 'GOLD_CHANGED':
+            return { ...base, type, amount: 10, reason: 'kill' };
+          case 'FLOOR_ENTERED':
+            return { ...base, type, depth: 1 };
+          case 'PLAYER_DIED':
+            return { ...base, type, killerId: entityId('e1'), killerName: 'Goblin', killerSpriteName: 'goblin', floor: 5, cause: 'overkill', goldLost: 50, overkillDamage: 20 };
+          case 'RUN_STARTED':
+            return { ...base, type, runId: 'run-1' };
+          case 'RUN_ENDED':
+            return { ...base, type, runId: 'run-1', result: 'victory' };
+          case 'PHASE_CHANGED':
+            return { ...base, type, newPhase: 'dungeon' };
+          case 'TOWN_STATE_CHANGED':
+            return { ...base, type, stateChanges: {} };
+          case 'ITEM_USED':
+            return { ...base, type, itemName: 'Potion' };
+          case 'ENEMY_ALERTED':
+            return { ...base, type, enemyName: 'Goblin' };
+          case 'ENEMY_AMBIENT_STATE_CHANGED':
+            return { ...base, type, enemyId: entityId('e1'), oldState: 'idle', newState: 'alert', reason: 'spotted' };
+          case 'LEVEL_UP':
+            return { ...base, type, newLevel: 2, statGains: { maxHealth: 10, attack: 2, defense: 1 } };
+          case 'NEMESIS_ENCOUNTERED':
+            return { ...base, type, nemesisName: 'Archfiend' };
+          case 'NEMESIS_PROMOTED':
+            return { ...base, type, nemesisName: 'Archfiend' };
+          case 'NEMESIS_SLAIN':
+            return { ...base, type, nemesisName: 'Archfiend', lootItemName: null, blueprintUnlocked: null };
+          case 'LOOT_DROPPED':
+            return { ...base, type, itemName: 'Sword', enemyName: 'Goblin' };
+          case 'QUEST_ASSIGNED':
+            return { ...base, type, questTitle: 'Quest', questDescription: 'Do something', giverNpcId: entityId('npc1') };
+          case 'QUEST_COMPLETED':
+            return { ...base, type, questTitle: 'Quest', rewardGold: 100, giverNpcId: entityId('npc1') };
+          case 'ABILITY_USED':
+            return { ...base, type, abilityName: 'Fireball', healAmount: undefined, targetName: undefined };
+          case 'MASTERY_UNLOCKED':
+            return { ...base, type, abilityName: 'Technique', weaponType: 'blade', tier: 1 };
+          case 'ENCHANTMENT_APPLIED':
+            return { ...base, type, itemName: 'Sword', enchantmentName: 'Flame' };
+          case 'BLUEPRINT_UNLOCKED':
+            return { ...base, type, blueprintIds: ['fire-enchant'] };
+          case 'SHOP_TIER_UNLOCKED':
+            return { ...base, type, unlockedTier: 'rare' };
+          case 'EQUIPMENT_DROPPED':
+            return { ...base, type, floor: 5 };
+          case 'EQUIPMENT_RECOVERED':
+            return { ...base, type, floor: 5 };
+          case 'PERMADEATH':
+            return { ...base, type, floor: 5 };
+          case 'ENEMY_SPAWNED':
+            return { ...base, type, enemyId: entityId('e1'), enemyName: 'Goblin', x: 5, y: 5 };
+          case 'TREASURE_OPENED':
+            return { ...base, type, itemCount: 3 };
+          case 'OBJECT_INTERACTED':
+            return { ...base, type, objectName: 'Pedestal', healthDelta: 0, gotLoot: false };
+          case 'TRAP_TRIGGERED':
+            return { ...base, type, trapName: 'Spikes', damage: 5 };
+          case 'THORNS_REFLECTED':
+            return { ...base, type, targetName: 'Enemy', damageAmount: 3 };
+          case 'BLINK_DODGED':
+            return { ...base, type, attackerName: 'Enemy' };
+          case 'LIFE_STEAL':
+            return { ...base, type, hpRestored: 5, enemyName: 'Goblin' };
+          case 'DEBUG_MISS_STREAK':
+            return { ...base, type, playerAccuracy: 50, playerEvasion: 20, enemyAccuracy: 45, enemyEvasion: 15, rngSeed: 123, streakLength: 3 };
+          default:
+            throw new Error(`Unhandled event type in test: ${type}`);
+        }
+      };
+
+      for (const eventType of allEventTypes) {
+        const event = createStubEvent(eventType);
+        const result = formatEvent(event);
+
+        if (silentEventTypes.has(eventType)) {
+          expect(result).toBeNull();
+        } else {
+          expect(result).not.toBeNull();
+          expect(result?.text).toBeTruthy();
+          expect(result?.timestamp).toBe(ts);
+        }
+      }
+    });
+  });
 });
