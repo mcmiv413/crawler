@@ -23,6 +23,7 @@ function makeFloor(depth: number, playerOnStairsUp = false) {
     cells,
     entrance: { x: 0, y: 0 },
     exit: { x: 9, y: 9 },
+    seed: 12345,
   };
 }
 
@@ -41,7 +42,7 @@ function makeRunState(depth: number, playerOnStairsUp: boolean, hasHistory: bool
     turnCount: 1,
     isActive: true,
     floorHistory: storedFloor,
-    weaponMastery: { slashing: { tier1: false, tier2: false }, blunt: { tier1: false, tier2: false }, ranged: { tier1: false, tier2: false } },
+    weaponMastery: { blade: 0, bludgeon: 0, axe: 0, ranged: 0 },
     speedAccumulators: {},
   };
 }
@@ -56,6 +57,7 @@ function makeState(overrides: Partial<GameState> = {}): GameState {
       level: 1,
       experience: 0,
       stats: { maxHealth: 100, health: 100, attack: 10, defense: 5, accuracy: 75, evasion: 10, speed: 100 },
+      baseStats: { maxHealth: 100, health: 100, attack: 10, defense: 5, accuracy: 75, evasion: 10, speed: 100 },
       position: { x: 0, y: 0 },
       equipment: { weapon: null, secondaryWeapon: null, chest: null, head: null, gloves: null, boots: null, ring1: null, ring2: null },
       inventory: [],
@@ -66,6 +68,7 @@ function makeState(overrides: Partial<GameState> = {}): GameState {
       totalKills: 0,
       totalDeaths: 0,
       totalRuns: 0,
+      deathStash: null,
     },
     run: null,
     world: {
@@ -143,6 +146,8 @@ describe('buildGameView shop effectivePrice', () => {
         deepestFloor: 0,
         nemeses: [],
         factions: [],
+        unlockedBlueprints: [],
+        highestRarityFound: 'common' as const,
       },
     });
     const view = buildGameView(state);
@@ -164,6 +169,8 @@ describe('buildGameView shop effectivePrice', () => {
         deepestFloor: 0,
         nemeses: [],
         factions: [],
+        unlockedBlueprints: [],
+        highestRarityFound: 'common' as const,
       },
     });
     const view = buildGameView(state);
@@ -207,15 +214,18 @@ describe('buildGameView inventory sellPrice', () => {
         level: 1,
         experience: 0,
         stats: { maxHealth: 100, health: 100, attack: 10, defense: 5, accuracy: 75, evasion: 10, speed: 100 },
+        baseStats: { maxHealth: 100, health: 100, attack: 10, defense: 5, accuracy: 75, evasion: 10, speed: 100 },
         position: { x: 0, y: 0 },
         equipment: { weapon: null, secondaryWeapon: null, chest: null, head: null, gloves: null, boots: null, ring1: null, ring2: null },
         inventory: [itemId],
         statuses: [],
+        abilities: [],
         gold: 50,
         floor: 0,
         totalKills: 0,
         totalDeaths: 0,
         totalRuns: 0,
+        deathStash: null,
       },
       world: {
         town: { prosperity: 50, fear: 20, corruption: 10, rumors: [], lastRunSummary: null },
@@ -226,6 +236,8 @@ describe('buildGameView inventory sellPrice', () => {
         deepestFloor: 0,
         nemeses: [],
         factions: [],
+        unlockedBlueprints: [],
+        highestRarityFound: 'common' as const,
       },
       itemRegistry: {
         items: new Map([[itemId, {
@@ -238,7 +250,7 @@ describe('buildGameView inventory sellPrice', () => {
           stackable: true,
           maxStack: 5,
           consumable: { effect: 'heal' as const, magnitude: 30 },
-        }]]),
+        }]]) as any,
       },
     });
     const view = buildGameView(state);
@@ -256,15 +268,18 @@ describe('buildGameView inventory sellPrice', () => {
         level: 1,
         experience: 0,
         stats: { maxHealth: 100, health: 100, attack: 10, defense: 5, accuracy: 75, evasion: 10, speed: 100 },
+        baseStats: { maxHealth: 100, health: 100, attack: 10, defense: 5, accuracy: 75, evasion: 10, speed: 100 },
         position: { x: 0, y: 0 },
         equipment: { weapon: null, secondaryWeapon: null, chest: null, head: null, gloves: null, boots: null, ring1: null, ring2: null },
         inventory: [itemId],
         statuses: [],
+        abilities: [],
         gold: 50,
         floor: 0,
         totalKills: 0,
         totalDeaths: 0,
         totalRuns: 0,
+        deathStash: null,
       },
       world: {
         town: { prosperity: 50, fear: 20, corruption: 10, rumors: [], lastRunSummary: null },
@@ -275,6 +290,8 @@ describe('buildGameView inventory sellPrice', () => {
         deepestFloor: 0,
         nemeses: [],
         factions: [],
+        unlockedBlueprints: [],
+        highestRarityFound: 'common' as const,
       },
       itemRegistry: {
         items: new Map([[itemId, {
@@ -287,7 +304,7 @@ describe('buildGameView inventory sellPrice', () => {
           stackable: true,
           maxStack: 5,
           consumable: { effect: 'heal' as const, magnitude: 30 },
-        }]]),
+        }]]) as any,
       },
     });
     const view = buildGameView(state);
@@ -487,6 +504,8 @@ describe('buildGameView shop rarity', () => {
         deepestFloor: 0,
         nemeses: [],
         factions: [],
+        unlockedBlueprints: [],
+        highestRarityFound: 'common' as const,
       },
     });
     const view = buildGameView(state);
@@ -536,9 +555,8 @@ describe('buildGameView map sprite fields', () => {
       position: { x: 0, y: 0 },
       stats: { maxHealth: 30, health: 30, attack: 8, defense: 2, accuracy: 70, evasion: 5, speed: 80 },
       statuses: [],
-      loot: [],
       xpReward: 10,
-    });
+    } as any);
     const state = makeState({ run: { ...run, enemies } });
     const view = buildGameView(state);
     const enemy = view.map?.entities.find(e => e.type === 'enemy');
@@ -782,6 +800,7 @@ describe('buildInventoryView equipped-items-first sorting', () => {
         inventory: inventory.map(id => entityId(id)),
         equipment: {
           weapon: weaponId ? entityId(weaponId) : null,
+          secondaryWeapon: null,
           chest: null, head: null, gloves: null, boots: null, ring1: null, ring2: null,
         },
       },
@@ -789,7 +808,7 @@ describe('buildInventoryView equipped-items-first sorting', () => {
         ...makeState().world,
         shop: { items: [], buybackMultiplier: 0.4 },
       },
-      itemRegistry: { items },
+      itemRegistry: { items: items as any },
     });
   }
 
@@ -862,6 +881,7 @@ describe('buildInventoryView item stacking', () => {
         inventory: inventoryIds.map(id => entityId(id)),
         equipment: {
           weapon: equippedWeaponId ? entityId(equippedWeaponId) : null,
+          secondaryWeapon: null,
           chest: null, head: null, gloves: null, boots: null, ring1: null, ring2: null,
         },
       },
@@ -869,7 +889,7 @@ describe('buildInventoryView item stacking', () => {
         ...makeState().world,
         shop: { items: [], buybackMultiplier: 0.4 },
       },
-      itemRegistry: { items: registry },
+      itemRegistry: { items: registry as any },
     });
   }
 
@@ -1105,7 +1125,6 @@ describe('buildInventoryView equipped items in inventory.items', () => {
           ring1: null,
           ring2: null,
           secondaryWeapon: null,
-          accessory: null,
         },
       },
       itemRegistry: {
@@ -1144,7 +1163,6 @@ describe('buildInventoryView equipped items in inventory.items', () => {
           ring1: null,
           ring2: null,
           secondaryWeapon: null,
-          accessory: null,
         },
       },
       itemRegistry: {
@@ -1185,7 +1203,6 @@ describe('buildInventoryView equipped items in inventory.items', () => {
           ring1: null,
           ring2: null,
           secondaryWeapon: null,
-          accessory: null,
         },
       },
       itemRegistry: {
@@ -1224,7 +1241,6 @@ describe('buildInventoryView equipped items in inventory.items', () => {
           ring1: null,
           ring2: null,
           secondaryWeapon: null,
-          accessory: null,
         },
       },
       itemRegistry: {
@@ -1314,6 +1330,7 @@ describe('buildInspectableEntities', () => {
       id: entityId('o1'),
       templateId: 'chest',
       position: { x: 1, y: 0 },
+      isExhausted: false,
     };
 
     const visibleCell = { tile: { type: 'floor' as const, walkable: true, blocksVision: false, ascii: '.', color: '#fff' }, visibility: 'visible' as const };
@@ -1370,6 +1387,7 @@ describe('buildInspectableEntities', () => {
       id: entityId('o1'),
       templateId: 'nonexistent_template_xyz',
       position: { x: 1, y: 0 },
+      isExhausted: false,
     };
 
     const visibleCell = { tile: { type: 'floor' as const, walkable: true, blocksVision: false, ascii: '.', color: '#fff' }, visibility: 'visible' as const };
@@ -1395,6 +1413,7 @@ describe('buildInspectableEntities', () => {
       id: entityId('o1'),
       templateId: 'chest',
       position: { x: 2, y: 0 },
+      isExhausted: false,
     };
 
     const visibleCell = { tile: { type: 'floor' as const, walkable: true, blocksVision: false, ascii: '.', color: '#fff' }, visibility: 'visible' as const };
@@ -1507,7 +1526,7 @@ describe('Map view stairs sprites (Phase 1a)', () => {
         turnCount: 1,
         isActive: true,
         floorHistory: [],
-        weaponMastery: { slashing: 0, blunt: 0, ranged: 0 },
+        weaponMastery: { blade: 0, bludgeon: 0, axe: 0, ranged: 0 },
         speedAccumulators: {},
       },
     });
