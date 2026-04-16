@@ -532,6 +532,52 @@ const rules: Record<string, Rule.RuleModule> = {
     },
   },
 
+  "no-numeric-toBe": {
+    meta: {
+      type: "suggestion",
+      docs: {
+        description:
+          "Disallow .toBe() with numeric literals in tests. Use range assertions (.toBeGreaterThan, .toBeLessThan) or config-based values instead.",
+        category: "Testing",
+        recommended: true,
+      },
+      messages: {
+        noNumericToBe:
+          "Avoid .toBe() with numeric literals; use .toBeGreaterThan(), .toBeLessThan(), or config-injected values. Numeric assertions break on balance tuning.",
+      },
+      schema: [],
+    },
+    create(context: any): Rule.RuleListener {
+      return {
+        CallExpression(node: Node): void {
+          const callExpr = node as CallExpression;
+
+          // Check if this is a .toBe() call
+          if (
+            callExpr.callee.type !== "MemberExpression" ||
+            getPropertyName(callExpr.callee as MemberExpression) !== "toBe"
+          ) {
+            return;
+          }
+
+          // Check if the argument is a numeric literal
+          if (
+            callExpr.arguments.length > 0 &&
+            callExpr.arguments[0]!.type === "Literal"
+          ) {
+            const literal = callExpr.arguments[0] as { value: unknown };
+            if (typeof literal.value === "number") {
+              context.report({
+                node,
+                messageId: "noNumericToBe",
+              });
+            }
+          }
+        },
+      };
+    },
+  },
+
 };
 
 module.exports = { rules };

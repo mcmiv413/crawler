@@ -2,6 +2,8 @@ node_modules/
 dist/
 .turbo/
 *.tsbuildinfo
+*.d.ts
+*.js.map
 coverage/
 .env
 .env.local
