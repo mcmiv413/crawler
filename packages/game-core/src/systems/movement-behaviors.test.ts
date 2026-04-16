@@ -1,5 +1,5 @@
 import { describe, it, expect } from 'vitest';
-import { decideMovementByBehavior, getWalkableNeighbors } from './movement-behaviors.js';
+import { decideMovementByBehavior, getWalkableNeighbors, getAllBehaviors, getBehaviorInfo } from './movement-behaviors.js';
 import { createTestGameStateInCombat, createTestEnemy, createTestRunState } from '../test-utils.js';
 import type { GameState } from '@dungeon/contracts';
 
@@ -140,6 +140,43 @@ describe('Movement Behaviors', () => {
       };
       const neighbors = getWalkableNeighbors({ x: 0, y: 0 }, state);
       expect(neighbors.length).toBe(0);
+    });
+  });
+
+  describe('Behavior Registry', () => {
+    it('getAllBehaviors returns all registered behaviors', () => {
+      const behaviors = getAllBehaviors();
+      expect(behaviors.length).toBeGreaterThan(0);
+      expect(behaviors.map(b => b.id)).toContain('wall_stalker');
+      expect(behaviors.map(b => b.id)).toContain('rearline_anchor');
+      expect(behaviors.map(b => b.id)).toContain('chokepoint_holder');
+      expect(behaviors.map(b => b.id)).toContain('ambush_idle');
+    });
+
+    it('getBehaviorInfo returns metadata for valid behavior IDs', () => {
+      const stalkerInfo = getBehaviorInfo('wall_stalker');
+      expect(stalkerInfo).toBeDefined();
+      expect(stalkerInfo?.name).toBe('Wall Stalker');
+      expect(stalkerInfo?.description).toContain('walls');
+    });
+
+    it('getBehaviorInfo returns undefined for invalid behavior IDs', () => {
+      const info = getBehaviorInfo('nonexistent' as any);
+      expect(info).toBeUndefined();
+    });
+
+    it('each behavior has required metadata fields', () => {
+      const behaviors = getAllBehaviors();
+      for (const behavior of behaviors) {
+        expect(behavior.id).toBeDefined();
+        expect(typeof behavior.id).toBe('string');
+        expect(behavior.name).toBeDefined();
+        expect(typeof behavior.name).toBe('string');
+        expect(behavior.description).toBeDefined();
+        expect(typeof behavior.description).toBe('string');
+        expect(behavior.scoreTiles).toBeDefined();
+        expect(typeof behavior.scoreTiles).toBe('function');
+      }
     });
   });
 });
