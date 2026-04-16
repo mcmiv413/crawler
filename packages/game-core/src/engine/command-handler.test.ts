@@ -8,6 +8,14 @@ import {
   createTestGameStateWithAbility,
   createTestGameState,
   createTestEnemy,
+  createUseAbilityCommand,
+  createAttackCommand,
+  createMoveCommandWithDirection,
+  createInteractCommand,
+  createUnequipCommand,
+  createSwapWeaponsCommand,
+  createEnchantArmorCommand,
+  createWaitCommand,
 } from '../test-utils.js';
 
 // ---------------------------------------------------------------------------
@@ -21,11 +29,7 @@ function useAbility(
   rng: SeededRNG,
   targetId?: string,
 ): CommandResult {
-  return handleCommand(state, {
-    type: 'USE_ABILITY',
-    abilityId,
-    targetId: targetId ? entityId(targetId) : undefined,
-  } as any, rng);
+  return handleCommand(state, createUseAbilityCommand(abilityId, targetId ? entityId(targetId) : undefined), rng);
 }
 
 /** Get the first enemy id from a combat state */
@@ -552,7 +556,7 @@ describe('handleAttack', () => {
     const targetId = firstEnemyId(state);
     const rng = new SeededRNG(1);
 
-    const result = handleCommand(state, { type: 'ATTACK', targetId: entityId(targetId) } as any, rng);
+    const result = handleCommand(state, createAttackCommand(entityId(targetId)), rng);
 
     const attackEvent = result.events.find((e) => e.type === 'ATTACK_PERFORMED');
     expect(attackEvent).toBeDefined();
@@ -570,7 +574,7 @@ describe('handleAttack', () => {
     const targetId = firstEnemyId(weakState);
     const rng = new SeededRNG(1);
 
-    const result = handleCommand(weakState, { type: 'ATTACK', targetId: entityId(targetId) } as any, rng);
+    const result = handleCommand(weakState, createAttackCommand(entityId(targetId)), rng);
 
     const diedEvent = result.events.find((e) => e.type === 'ENTITY_DIED');
     expect(diedEvent).toBeDefined();
@@ -582,7 +586,7 @@ describe('handleAttack', () => {
     const targetId = firstEnemyId(state);
     const rng = new SeededRNG(1);
 
-    const result = handleCommand(state, { type: 'ATTACK', targetId: entityId(targetId) } as any, rng);
+    const result = handleCommand(state, createAttackCommand(entityId(targetId)), rng);
 
     expect(result.state.turnNumber).toBe(state.turnNumber);
     // Now returns ATTACK_PERFORMED event with reason explaining why attack failed
@@ -605,7 +609,7 @@ describe('handleAttack', () => {
     const targetId = firstEnemyId(bossState);
     const rng = new SeededRNG(1);
 
-    const result = handleCommand(bossState, { type: 'ATTACK', targetId: entityId(targetId) } as any, rng);
+    const result = handleCommand(bossState, createAttackCommand(entityId(targetId)), rng);
 
     expect(result.state.phase).toBe('game_over');
     const runEndedEvent = result.events.find((e) => e.type === 'RUN_ENDED');
@@ -623,7 +627,7 @@ describe('handleMove', () => {
     const state = createTestGameStateInCombat({ enemyAt: { x: 1, y: 0 } });
     const rng = new SeededRNG(1);
 
-    const result = handleCommand(state, { type: 'MOVE', direction: 'E' } as any, rng);
+    const result = handleCommand(state, createMoveCommandWithDirection('E'), rng);
 
     const attackEvent = result.events.find((e) => e.type === 'ATTACK_PERFORMED');
     expect(attackEvent).toBeDefined();
@@ -633,7 +637,7 @@ describe('handleMove', () => {
     const state = createTestGameStateInCombat({ enemyAt: { x: 3, y: 3 } });
     const rng = new SeededRNG(1);
 
-    const result = handleCommand(state, { type: 'MOVE', direction: 'E' } as any, rng);
+    const result = handleCommand(state, createMoveCommandWithDirection('E'), rng);
 
     const moveEvent = result.events.find((e) => e.type === 'PLAYER_MOVED');
     expect(moveEvent).toBeDefined();
@@ -645,7 +649,7 @@ describe('handleMove', () => {
     const rng = new SeededRNG(1);
 
     // Move west from 0,0 — should be out of bounds
-    const result = handleCommand(state, { type: 'MOVE', direction: 'W' } as any, rng);
+    const result = handleCommand(state, createMoveCommandWithDirection('W'), rng);
 
     expect(result.events.filter((e) => e.type === 'PLAYER_MOVED')).toHaveLength(0);
     expect(result.state.player.position).toEqual({ x: 0, y: 0 });
@@ -675,7 +679,7 @@ describe('handleInteract', () => {
 
     const result = handleCommand(
       stateWithChest,
-      { type: 'INTERACT', targetPosition: { x: 1, y: 0 } } as any,
+      createInteractCommand(1, 0),
       rng,
     );
 
@@ -693,7 +697,7 @@ describe('handleInteract', () => {
 
     const result = handleCommand(
       noObjectState,
-      { type: 'INTERACT', targetPosition: { x: 5, y: 5 } } as any,
+      createInteractCommand(5, 5),
       rng,
     );
 
@@ -711,7 +715,7 @@ describe('handleWait', () => {
     const state = createTestGameStateInCombat();
     const rng = new SeededRNG(1);
 
-    const result = handleCommand(state, { type: 'WAIT' } as any, rng);
+    const result = handleCommand(state, createWaitCommand(), rng);
 
     expect(result.state.turnNumber).toBeGreaterThan(state.turnNumber);
   });
@@ -728,7 +732,7 @@ describe('handleUnequip', () => {
     const initialAttack = state.player.stats.attack;
     const rng = new SeededRNG(1);
 
-    const result = handleCommand(state, { type: 'UNEQUIP', itemId: weaponId } as any, rng);
+    const result = handleCommand(state, createUnequipCommand(weaponId), rng);
 
     // Link 2: Weapon slot should be empty
     expect(result.state.player.equipment.weapon).toBeNull();
@@ -742,7 +746,7 @@ describe('handleUnequip', () => {
     const rng = new SeededRNG(1);
     const inventoryBefore = [...state.player.inventory];
 
-    const result = handleCommand(state, { type: 'UNEQUIP', itemId: entityId('invalid_id') } as any, rng);
+    const result = handleCommand(state, createUnequipCommand(entityId('invalid_id')), rng);
 
     // State should be unchanged
     expect(result.state.player.equipment).toEqual(state.player.equipment);
@@ -774,7 +778,7 @@ describe('handleSwapWeapons', () => {
     const weaponBefore = state.player.equipment.weapon;
     const secondaryBefore = state.player.equipment.secondaryWeapon;
 
-    const result = handleCommand(state, { type: 'SWAP_WEAPONS' } as any, rng);
+    const result = handleCommand(state, createSwapWeaponsCommand(), rng);
 
     // Weapons should be swapped
     expect(result.state.player.equipment.weapon).toBe(secondaryBefore);
@@ -798,7 +802,7 @@ describe('handleSwapWeapons', () => {
     });
     const rng = new SeededRNG(1);
 
-    const result = handleCommand(state, { type: 'SWAP_WEAPONS' } as any, rng);
+    const result = handleCommand(state, createSwapWeaponsCommand(), rng);
 
     // Weapon should move to secondary, secondary becomes null
     expect(result.state.player.equipment.weapon).toBeNull();
@@ -865,7 +869,7 @@ describe('handleEnchantArmor', () => {
 
     const result = handleCommand(
       state,
-      { type: 'ENCHANT_ARMOR', equipSlot: 'chest', enchantmentId: 'defense_boost' } as any,
+      createEnchantArmorCommand('chest', 'defense_boost'),
       rng,
     );
 
@@ -915,7 +919,7 @@ describe('handleEnchantArmor', () => {
 
     const result = handleCommand(
       state,
-      { type: 'ENCHANT_ARMOR', equipSlot: 'chest', enchantmentId: 'defense_boost' } as any,
+      createEnchantArmorCommand('chest', 'defense_boost'),
       rng,
     );
 
@@ -961,7 +965,7 @@ describe('handleEnchantArmor', () => {
 
     const result = handleCommand(
       state,
-      { type: 'ENCHANT_ARMOR', equipSlot: 'chest', enchantmentId: 'defense_boost' } as any,
+      createEnchantArmorCommand('chest', 'defense_boost'),
       rng,
     );
 
