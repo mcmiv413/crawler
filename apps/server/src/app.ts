@@ -2,9 +2,8 @@ import Fastify, { type FastifyInstance } from 'fastify';
 import cors from '@fastify/cors';
 import { GameEngine } from '@dungeon/core';
 import { buildGameView, formatEvents } from '@dungeon/presenter';
-import { GameCommandSchema, CreateGameSchema } from '@dungeon/contracts';
+import { GameCommandSchema, CreateGameSchema, SchemaVersionMismatchError, SchemaParseError, getSchemaVersionErrorMessage } from '@dungeon/contracts';
 import type { GameCommand, EntityId, GameState, RunMetrics } from '@dungeon/contracts';
-import { EMPTY_RUN_METRICS } from '@dungeon/contracts';
 import { InMemoryRepository } from './in-memory-repository.js';
 import { CompositeAiService } from './ai/ai-service-composite.js';
 import { applyRunConsequences, rollNemesisLoot, addItemToInventory, serializeState, deserializeState } from '@dungeon/core';
@@ -53,16 +52,50 @@ export async function buildApp(): Promise<FastifyInstance> {
 
   // GET /api/games/:id — get current game view
   app.get<{ Params: { id: string } }>('/api/games/:id', async (request, reply) => {
-    const state = await repo.loadGame(request.params.id as EntityId);
-    if (!state) return reply.code(404).send({ error: 'Game not found' });
+    try {
+      const state = await repo.loadGame(request.params.id as EntityId);
+      if (!state) return reply.code(404).send({ error: 'Game not found' });
 
-    const view = buildGameView(state);
-    return view;
+      const view = buildGameView(state);
+      return view;
+    } catch (error) {
+      if (error instanceof SchemaVersionMismatchError) {
+        return reply.code(400).send({
+          error: 'Incompatible save file',
+          message: getSchemaVersionErrorMessage(error.foundVersion),
+        });
+      }
+      if (error instanceof SchemaParseError) {
+        return reply.code(400).send({
+          error: 'Invalid save file',
+          message: error.message,
+        });
+      }
+      throw error;
+    }
   });
 
   // POST /api/games/:id/commands — submit a game command
   app.post<{ Params: { id: string } }>('/api/games/:id/commands', async (request, reply) => {
-    const state = await repo.loadGame(request.params.id as EntityId);
+    let state: GameState | null;
+    try {
+      state = await repo.loadGame(request.params.id as EntityId);
+    } catch (error) {
+      if (error instanceof SchemaVersionMismatchError) {
+        return reply.code(400).send({
+          error: 'Incompatible save file',
+          message: getSchemaVersionErrorMessage(error.foundVersion),
+        });
+      }
+      if (error instanceof SchemaParseError) {
+        return reply.code(400).send({
+          error: 'Invalid save file',
+          message: error.message,
+        });
+      }
+      throw error;
+    }
+
     if (!state) return reply.code(404).send({ error: 'Game not found' });
 
     const parsed = GameCommandSchema.safeParse(request.body);
@@ -227,7 +260,25 @@ export async function buildApp(): Promise<FastifyInstance> {
   app.get<{ Params: { id: string; npcId: string } }>(
     '/api/games/:id/npc/:npcId/dialogue',
     async (request, reply) => {
-      const state = await repo.loadGame(request.params.id as EntityId);
+      let state: GameState | null;
+      try {
+        state = await repo.loadGame(request.params.id as EntityId);
+      } catch (error) {
+        if (error instanceof SchemaVersionMismatchError) {
+          return reply.code(400).send({
+            error: 'Incompatible save file',
+            message: getSchemaVersionErrorMessage(error.foundVersion),
+          });
+        }
+        if (error instanceof SchemaParseError) {
+          return reply.code(400).send({
+            error: 'Invalid save file',
+            message: error.message,
+          });
+        }
+        throw error;
+      }
+
       if (!state) return reply.code(404).send({ error: 'Game not found' });
 
       const npc = state.world.npcs.find(n => n.id === request.params.npcId);
@@ -251,12 +302,28 @@ export async function buildApp(): Promise<FastifyInstance> {
   app.get<{ Params: { id: string }; Querystring: { limit?: string } }>(
     '/api/games/:id/events',
     async (request, reply) => {
-      const state = await repo.loadGame(request.params.id as EntityId);
-      if (!state) return reply.code(404).send({ error: 'Game not found' });
+      try {
+        const state = await repo.loadGame(request.params.id as EntityId);
+        if (!state) return reply.code(404).send({ error: 'Game not found' });
 
-      const limit = parseInt(request.query.limit ?? '50', 10);
-      const events = await repo.getRecentEvents(request.params.id as EntityId, limit);
-      return { events };
+        const limit = parseInt(request.query.limit ?? '50', 10);
+        const events = await repo.getRecentEvents(request.params.id as EntityId, limit);
+        return { events };
+      } catch (error) {
+        if (error instanceof SchemaVersionMismatchError) {
+          return reply.code(400).send({
+            error: 'Incompatible save file',
+            message: getSchemaVersionErrorMessage(error.foundVersion),
+          });
+        }
+        if (error instanceof SchemaParseError) {
+          return reply.code(400).send({
+            error: 'Invalid save file',
+            message: error.message,
+          });
+        }
+        throw error;
+      }
     },
   );
 
@@ -274,18 +341,47 @@ export async function buildApp(): Promise<FastifyInstance> {
       }
 
       // Check if game already exists in repo (warm instance)
-      const existing = await repo.loadGame(state.gameId as EntityId);
-      if (existing) {
-        // Server already has it — just return the view
-        const view = buildGameView(existing);
-        return { gameId: existing.gameId, view, serializedState: serializeState(existing) };
+      try {
+        const existing = await repo.loadGame(state.gameId as EntityId);
+        if (existing) {
+          // Server already has it — just return the view
+          const view = buildGameView(existing);
+          return { gameId: existing.gameId, view, serializedState: serializeState(existing) };
+        }
+      } catch (loadError) {
+        // If server has a corrupted version of this game, we can't load it
+        if (loadError instanceof SchemaVersionMismatchError) {
+          return reply.code(400).send({
+            error: 'Incompatible save file on server',
+            message: getSchemaVersionErrorMessage(loadError.foundVersion),
+          });
+        }
+        if (loadError instanceof SchemaParseError) {
+          return reply.code(400).send({
+            error: 'Corrupted save file on server',
+            message: loadError.message,
+          });
+        }
+        throw loadError;
       }
 
       // Cold start: re-hydrate from client state
       await repo.createGame(state);
       const view = buildGameView(state);
       return { gameId: state.gameId, view, serializedState: body.serializedState };
-    } catch {
+    } catch (error) {
+      if (error instanceof SchemaVersionMismatchError) {
+        return reply.code(400).send({
+          error: 'Incompatible save file',
+          message: getSchemaVersionErrorMessage(error.foundVersion),
+        });
+      }
+      if (error instanceof SchemaParseError) {
+        return reply.code(400).send({
+          error: 'Invalid save file',
+          message: error.message,
+        });
+      }
       return reply.code(400).send({ error: 'Failed to deserialize game state' });
     }
   });
@@ -295,14 +391,30 @@ export async function buildApp(): Promise<FastifyInstance> {
 
   // GET /api/games/:id/view — get game view model
   app.get<{ Params: { id: string } }>('/api/games/:id/view', async (request, reply) => {
-    const state = await repo.loadGame(request.params.id as EntityId);
-    if (!state) return reply.code(404).send({ error: 'Game not found' });
+    try {
+      const state = await repo.loadGame(request.params.id as EntityId);
+      if (!state) return reply.code(404).send({ error: 'Game not found' });
 
-    const view = buildGameView(state);
-    const events = await repo.getRecentEvents(request.params.id as EntityId, 20);
-    const combatLog = formatEvents(events);
+      const view = buildGameView(state);
+      const events = await repo.getRecentEvents(request.params.id as EntityId, 20);
+      const combatLog = formatEvents(events);
 
-    return { ...view, combatLog };
+      return { ...view, combatLog };
+    } catch (error) {
+      if (error instanceof SchemaVersionMismatchError) {
+        return reply.code(400).send({
+          error: 'Incompatible save file',
+          message: getSchemaVersionErrorMessage(error.foundVersion),
+        });
+      }
+      if (error instanceof SchemaParseError) {
+        return reply.code(400).send({
+          error: 'Invalid save file',
+          message: error.message,
+        });
+      }
+      throw error;
+    }
   });
 
   // GET /api/runs/metrics — get aggregated session metrics

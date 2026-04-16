@@ -11,3 +11,5 @@ export * from './nemesis.js';
 export * from './ambient-behavior.js';
 export * from './rng.js';
 export * from './balance-config.js';
+export * from './schema-version.js';
+export * from './schema-validators.js';
