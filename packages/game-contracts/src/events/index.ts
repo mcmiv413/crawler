@@ -263,14 +263,6 @@ export interface EnemySpawnedEvent extends BaseEvent {
   readonly reason: 'initial_population' | 'respawn';
 }
 
-export interface EnemyDecisionMadeEvent extends BaseEvent {
-  readonly type: 'ENEMY_DECISION_MADE';
-  readonly enemyId: EntityId;
-  readonly enemyName: string;
-  readonly chosenAction: 'move' | 'attack' | 'ability' | 'wait';
-  readonly reasoning: string;
-}
-
 export interface TreasureOpenedEvent extends BaseEvent {
   readonly type: 'TREASURE_OPENED';
   readonly position: Position;
@@ -361,7 +353,6 @@ export type DomainEvent =
   | EquipmentRecoveredEvent
   | PermadeathEvent
   | EnemySpawnedEvent
-  | EnemyDecisionMadeEvent
   | TreasureOpenedEvent
   | ObjectInteractedEvent
   | TrapTriggeredEvent
