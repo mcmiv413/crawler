@@ -1,7 +1,7 @@
 import type { GameState, DomainEvent } from '@dungeon/contracts';
 import { buildGameView } from '../game-view-builder.js';
 import { formatEvent } from '../event-formatter.js';
-import type { GameView } from '../game-view.js';
+import type { GameView, CombatLogEntry } from '../game-view.js';
 import { expect } from 'vitest';
 
 /**
@@ -124,7 +124,7 @@ export function expectEventEmitted(
  * @param event The domain event to format
  * @returns The formatted event (guaranteed non-null)
  */
-export function expectFormattedEvent(event: DomainEvent) {
+export function expectFormattedEvent(event: DomainEvent): CombatLogEntry {
   const formatted = formatEvent(event);
   expect(
     formatted,
