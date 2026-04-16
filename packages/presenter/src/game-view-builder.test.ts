@@ -2,7 +2,7 @@ import { describe, it, expect } from 'vitest';
 import { buildGameView } from './game-view-builder.js';
 import { entityId, posKey, EMPTY_RUN_METRICS } from '@dungeon/contracts';
 import type { GameState, RunState, NpcState } from '@dungeon/contracts';
-import { createTestGameStateInCombat, createTestEnemy } from '../../game-core/src/test-utils.js';
+import { createTestGameStateInCombat, createTestEnemy } from '@dungeon/core/testing';
 
 function makeFloor(depth: number, playerOnStairsUp = false) {
   const stairsTile = {

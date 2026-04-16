@@ -24,7 +24,7 @@ import {
   createTestEnemy,
   createTestNemesis,
   createTestRunState,
-} from '../../game-core/src/test-utils.js';
+} from '@dungeon/core/testing';
 import { buildGameView } from './game-view-builder.js';
 import { formatEvent } from './event-formatter.js';
 import { entityId, EMPTY_RUN_METRICS } from '@dungeon/contracts';

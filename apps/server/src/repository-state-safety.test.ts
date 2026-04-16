@@ -22,7 +22,7 @@ import {
   createTestPlayer,
   createTestEnemy,
   createTestRunState,
-} from '../../../packages/game-core/src/test-utils.js';
+} from '@dungeon/core/testing';
 
 function createMinimalGameState(overrides?: Partial<GameState>): GameState {
   const baseState = createTestGameState();

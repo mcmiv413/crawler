@@ -2,7 +2,11 @@ import type { DomainEvent, EnemyAmbientStateChangedEvent } from '@dungeon/contra
 import { STATUS_DEFINITIONS } from '@dungeon/content';
 import type { CombatLogEntry } from './game-view.js';
 
-/** Formatter function type for any event */
+/**
+ * Formatter function type for any event.
+ * Uses `any` to support table-driven dispatch; individual handlers are type-safe.
+ */
+// eslint-disable-next-line @typescript-eslint/no-explicit-any
 type EventFormatter = (event: any) => CombatLogEntry | null;
 
 /** Table of event formatters by event type */
