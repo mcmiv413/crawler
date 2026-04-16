@@ -246,3 +246,102 @@ export function createTestGameStateWithAbility(abilityId: string, options?: {
     },
   };
 }
+
+// ============================================================================
+// Command Builders (Replace `as any` Casts)
+// ============================================================================
+
+/** Create a properly typed USE_ABILITY command */
+export function createUseAbilityCommand(abilityId: string, targetId?: EntityId) {
+  return {
+    type: 'USE_ABILITY' as const,
+    abilityId,
+    targetId: targetId as unknown as string,
+  };
+}
+
+/** Create a properly typed MOVE command */
+export function createMoveCommand(x: number, y: number) {
+  return {
+    type: 'MOVE' as const,
+    position: { x, y },
+  };
+}
+
+/** Create a properly typed ATTACK command */
+export function createAttackCommand(targetId: EntityId) {
+  return {
+    type: 'ATTACK' as const,
+    targetId: targetId as unknown as string,
+  };
+}
+
+/** Create a properly typed EQUIP command */
+export function createEquipCommand(itemId: EntityId) {
+  return {
+    type: 'EQUIP' as const,
+    itemId: itemId as unknown as string,
+  };
+}
+
+/** Create a properly typed USE_ITEM command */
+export function createUseItemCommand(itemId: EntityId) {
+  return {
+    type: 'USE_ITEM' as const,
+    itemId: itemId as unknown as string,
+  };
+}
+
+/** Create a properly typed WAIT command */
+export function createWaitCommand() {
+  return {
+    type: 'WAIT' as const,
+  };
+}
+
+/** Create a properly typed RETREAT command */
+export function createRetreatCommand() {
+  return {
+    type: 'RETREAT' as const,
+  };
+}
+
+/** Create a properly typed MOVE command (with direction) */
+export function createMoveCommandWithDirection(direction: 'N' | 'S' | 'E' | 'W') {
+  return {
+    type: 'MOVE' as const,
+    direction,
+  };
+}
+
+/** Create a properly typed INTERACT command */
+export function createInteractCommand(x: number, y: number) {
+  return {
+    type: 'INTERACT' as const,
+    targetPosition: { x, y },
+  };
+}
+
+/** Create a properly typed UNEQUIP command */
+export function createUnequipCommand(itemId: EntityId) {
+  return {
+    type: 'UNEQUIP' as const,
+    itemId: itemId as unknown as string,
+  };
+}
+
+/** Create a properly typed SWAP_WEAPONS command */
+export function createSwapWeaponsCommand() {
+  return {
+    type: 'SWAP_WEAPONS' as const,
+  };
+}
+
+/** Create a properly typed ENCHANT_ARMOR command */
+export function createEnchantArmorCommand(equipSlot: string, enchantmentId: string) {
+  return {
+    type: 'ENCHANT_ARMOR' as const,
+    equipSlot,
+    enchantmentId,
+  };
+}
