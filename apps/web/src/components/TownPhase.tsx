@@ -2,7 +2,7 @@ import React, { useState, useEffect, useRef } from 'react';
 import type { GameView, ShopItemView, NpcView, NemesisView, FactionView } from '@dungeon/presenter';
 import { SIDE_PANEL_WIDTH, SIDEBAR_CENTER_WIDTH } from '../config/ui-config.js';
 import { CharacterScreen } from './CharacterScreen.js';
-import { btnStyle, rarityColor } from '../styles.js';
+import { btnStyle } from '../styles.js';
 import { PlayerHud } from './PlayerHud.js';
 import { CombatLogView } from './CombatLogView.js';
 import { InventoryPanel } from './InventoryPanel.js';

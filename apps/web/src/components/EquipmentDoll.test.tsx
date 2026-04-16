@@ -7,6 +7,7 @@
 import { describe, it, expect, vi } from 'vitest';
 import React from 'react';
 import { render, screen, fireEvent } from '@testing-library/react';
+import { getRarityColor } from '@dungeon/content';
 import { EquipmentDoll } from './EquipmentDoll.js';
 import type { InventoryItemView } from '@dungeon/presenter';
 
@@ -29,6 +30,7 @@ const mockWeapon: InventoryItemView = {
   description: 'A solid iron sword',
   itemClass: 'weapon',
   rarity: 'common',
+  rarityColor: getRarityColor('common'),
   value: 50,
   sellPrice: 25,
   isEquipped: true,
@@ -50,6 +52,7 @@ const mockArmor: InventoryItemView = {
   description: 'A leather chest piece',
   itemClass: 'armor',
   rarity: 'uncommon',
+  rarityColor: getRarityColor('uncommon'),
   value: 80,
   sellPrice: 40,
   isEquipped: true,
@@ -133,7 +136,7 @@ describe('EquipmentDoll Component', () => {
       );
 
       const itemText = screen.getByText('Iron Sword');
-      expect(itemText).toHaveStyle('color: #aaa'); // common rarity color
+      expect(itemText).toHaveStyle('color: #a0a0a0'); // common rarity color
     });
 
     it('calls onSlotClick with equipped item when slot is clicked', () => {
@@ -182,23 +185,23 @@ describe('EquipmentDoll Component', () => {
 
   describe('Rarity Coloring', () => {
     it('applies correct color for legendary rarity', () => {
-      const legendary = { ...mockWeapon, rarity: 'legendary' as const };
+      const legendary = { ...mockWeapon, rarity: 'legendary' as const, rarityColor: getRarityColor('legendary') };
       const equipped = { ...emptyEquipped, weapon: legendary };
       const { container } = render(
         <EquipmentDoll equipped={equipped} onSlotClick={vi.fn()} />
       );
 
       const itemText = screen.getByText('Iron Sword');
-      expect(itemText).toHaveStyle('color: #ff4'); // legendary color
+      expect(itemText).toHaveStyle('color: #ffaa00'); // legendary color
     });
 
     it('applies correct color for epic rarity', () => {
-      const epic = { ...mockWeapon, rarity: 'epic' as const };
+      const epic = { ...mockWeapon, rarity: 'epic' as const, rarityColor: getRarityColor('epic') };
       const equipped = { ...emptyEquipped, weapon: epic };
       render(<EquipmentDoll equipped={equipped} onSlotClick={vi.fn()} />);
 
       const itemText = screen.getByText('Iron Sword');
-      expect(itemText).toHaveStyle('color: #fa4'); // epic color
+      expect(itemText).toHaveStyle('color: #ff00ff'); // epic color
     });
   });
 });

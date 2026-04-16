@@ -4,7 +4,6 @@
 
 import type { InventoryItemView } from '@dungeon/presenter';
 import styles from './ActionDropdowns.module.css';
-import { getRarityColor } from '../../utils/rarity-color.js';
 
 export interface UseDropdownProps {
   readonly consumables: readonly (InventoryItemView & { readonly quantity: number })[];
@@ -27,7 +26,6 @@ export function UseDropdown({
     <div className={styles.listContainer}>
       {consumables.map((item) => {
         const isAvailable = item.quantity > 0;
-        const rarityColor = getRarityColor(item.rarity);
 
         return (
           <button
@@ -39,7 +37,7 @@ export function UseDropdown({
             disabled={!isAvailable}
           >
             <div className={styles.itemHeader}>
-              <span className={styles.itemName} style={{ color: rarityColor }}>
+              <span className={styles.itemName} style={{ color: item.rarityColor }}>
                 {item.name}
               </span>
               <span className={styles.quantity}>

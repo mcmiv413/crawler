@@ -1,5 +1,5 @@
 import type { GameState, WeaponType } from '@dungeon/contracts';
-import { STATUS_DEFINITIONS, ABILITY_DEFINITIONS, ENCHANTMENT_BY_ID, XP_TABLE, FACTIONS } from '@dungeon/content';
+import { STATUS_DEFINITIONS, ABILITY_DEFINITIONS, ENCHANTMENT_BY_ID, XP_TABLE, FACTIONS, getRarityColor } from '@dungeon/content';
 import type { PlayerHudView, StatusView, AbilityView, EquippedItemView, EnchantmentView, NemesisInfo, FactionStanding } from '../game-view.js';
 import { calculateStatBreakdown } from './stat-breakdown-builder.js';
 
@@ -26,6 +26,7 @@ export function buildPlayerHud(state: GameState): PlayerHudView {
         itemId: p.equipment.weapon as unknown as string,
         name: weapon.name,
         rarity: weapon.rarity,
+        rarityColor: getRarityColor(weapon.rarity),
         baseBonus: weapon.weapon.damage,
         enchantments: [],
         spriteName: weapon.spriteName,
@@ -63,6 +64,7 @@ export function buildPlayerHud(state: GameState): PlayerHudView {
       itemId: itemId as unknown as string,
       name: armor.name,
       rarity: armor.rarity,
+      rarityColor: getRarityColor(armor.rarity),
       baseBonus: armor.armor.defense,
       enchantments,
       spriteName: armor.spriteName,

@@ -4,7 +4,6 @@
 
 import type { InventoryItemView } from '@dungeon/presenter';
 import styles from './ActionDropdowns.module.css';
-import { getRarityColor } from '../../utils/rarity-color.js';
 
 export interface SwapDropdownProps {
   readonly weapons: readonly InventoryItemView[];
@@ -36,7 +35,6 @@ export function SwapDropdown({
     <div className={styles.listContainer}>
       {sortedWeapons.map((weapon) => {
         const isEquipped = weapon.id === equippedWeaponId;
-        const rarityColor = getRarityColor(weapon.rarity);
 
         return (
           <button
@@ -46,7 +44,7 @@ export function SwapDropdown({
             disabled={isEquipped}
           >
             <div className={styles.itemHeader}>
-              <span className={styles.itemName} style={{ color: rarityColor }}>
+              <span className={styles.itemName} style={{ color: weapon.rarityColor }}>
                 {weapon.name}
               </span>
               {isEquipped && <span className={styles.badge}>EQUIPPED</span>}

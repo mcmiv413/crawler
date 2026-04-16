@@ -1,6 +1,5 @@
 import React from 'react';
 import type { InventoryItemView, InventoryView } from '@dungeon/presenter';
-import { rarityColor } from '../styles.js';
 import { ItemSpriteIcon } from './ItemSpriteIcon.js';
 
 interface EquipmentDollProps {
@@ -69,7 +68,7 @@ export function EquipmentDoll({ equipped, onSlotClick }: EquipmentDollProps) {
                 <div
                   style={{
                     fontSize: 11,
-                    color: rarityColor[item.rarity] ?? '#aaa',
+                    color: item.rarityColor,
                     fontWeight: 'bold',
                   }}
                 >
