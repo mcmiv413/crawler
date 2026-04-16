@@ -221,17 +221,18 @@ export function respawnEnemiesOnPersistedFloor(
     });
 
   // Spawn respawned enemies
-  for (let i = 0; i < eligibleRespawns && candidateSpawns.length > 0; i++) {
-    const spawnIdx = rng.int(0, candidateSpawns.length - 1);
-    const spawnPos = candidateSpawns[spawnIdx]!;
-    candidateSpawns.splice(spawnIdx, 1);
+  let mutableCandidateSpawns = [...candidateSpawns];
+  for (let i = 0; i < eligibleRespawns && mutableCandidateSpawns.length > 0; i++) {
+    const spawnIdx = rng.int(0, mutableCandidateSpawns.length - 1);
+    const spawnPos = mutableCandidateSpawns[spawnIdx]!;
+    mutableCandidateSpawns = mutableCandidateSpawns.filter((_, idx) => idx !== spawnIdx);
 
     // Pick enemy template from biome (no bosses)
     let template: EnemyTemplate | null = pickEnemy(biome, rng);
     while (template && template.archetype === 'boss') {
       template = pickEnemy(biome, rng);
     }
-    if (!template) continue;
+    if (template === null) continue;
 
     const newEnemy = instantiateEnemy(template, spawnPos, depth, rng);
     newEnemies.set(posKey(spawnPos), newEnemy);

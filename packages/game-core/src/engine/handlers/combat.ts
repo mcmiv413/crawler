@@ -153,21 +153,9 @@ export function processEnemyKill(
           q => q.status === 'active' && q.targetItemId === (itemTemplate as ItemTemplate).itemId,
         );
         if (completedQuest !== undefined) {
-          newState = {
-            ...newState,
-            activeQuests: newState.activeQuests.map(q =>
-              q.id === completedQuest.id ? { ...q, status: 'complete' as const } : q,
-            ),
-            player: { ...newState.player, gold: newState.player.gold + completedQuest.rewardGold },
-          };
-          events = [...events, {
-            type: 'QUEST_COMPLETED',
-            questId: completedQuest.id,
-            questTitle: completedQuest.title,
-            rewardGold: completedQuest.rewardGold,
-            timestamp: Date.now(),
-            turnNumber: newState.turnNumber,
-          }];
+          const result = completeQuest(newState, completedQuest);
+          newState = result.state;
+          events = [...events, result.event];
         }
       }
     }
@@ -178,21 +166,9 @@ export function processEnemyKill(
     q => q.status === 'active' && q.targetEnemyTemplateId === enemy.templateId,
   );
   for (const quest of enemyTargetQuests) {
-    newState = {
-      ...newState,
-      activeQuests: newState.activeQuests.map(q =>
-        q.id === quest.id ? { ...q, status: 'complete' as const } : q,
-      ),
-      player: { ...newState.player, gold: newState.player.gold + quest.rewardGold },
-    };
-    events = [...events, {
-      type: 'QUEST_COMPLETED',
-      questId: quest.id,
-      questTitle: quest.title,
-      rewardGold: quest.rewardGold,
-      timestamp: Date.now(),
-      turnNumber: newState.turnNumber,
-    }];
+    const result = completeQuest(newState, quest);
+    newState = result.state;
+    events = [...events, result.event];
   }
 
   // 12. Check victory condition: depth >= 5 and killed a boss (tier >= 4 indicates boss)
@@ -480,4 +456,27 @@ export function handleUseAbility(
 
   const runEnded = resultState.phase === 'town' || resultState.phase === 'game_over';
   return { state: resultState, events: resultEvents, runEnded };
+}
+
+/** Helper: Complete a quest and emit event. Returns updated state and event. */
+function completeQuest(
+  state: GameState,
+  quest: GameState['activeQuests'][number],
+): { state: GameState; event: DomainEvent } {
+  const updatedState = {
+    ...state,
+    activeQuests: state.activeQuests.map(q =>
+      q.id === quest.id ? { ...q, status: 'complete' as const } : q,
+    ),
+    player: { ...state.player, gold: state.player.gold + quest.rewardGold },
+  };
+  const event: DomainEvent = {
+    type: 'QUEST_COMPLETED',
+    questId: quest.id,
+    questTitle: quest.title,
+    rewardGold: quest.rewardGold,
+    timestamp: Date.now(),
+    turnNumber: state.turnNumber,
+  };
+  return { state: updatedState, event };
 }

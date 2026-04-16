@@ -24,6 +24,11 @@ import {
   createTestEnemy,
   createTestNemesis,
   createTestRunState,
+  createUnequipCommand,
+  createSwapWeaponsCommand,
+  createEnchantArmorCommand,
+  createInteractCommand,
+  createAscendCommand,
 } from '@dungeon/core/testing';
 import { buildGameView } from './game-view-builder.js';
 import { formatEvent } from './event-formatter.js';
@@ -509,7 +514,7 @@ describe('Feature Completeness: Equipment (UNEQUIP)', () => {
     if (template) registry.set(weaponId, template as any);
     const stateWithItem: GameState = { ...state, itemRegistry: { items: registry } };
 
-    const result = handleCommand(stateWithItem, { type: 'UNEQUIP', itemId: weaponId } as any, rng());
+    const result = handleCommand(stateWithItem, createUnequipCommand(weaponId), rng());
 
     // Link 2: weapon slot emptied
     expect(result.state.player.equipment.weapon).toBeNull();
@@ -541,7 +546,7 @@ describe('Feature Completeness: Equipment (SWAP_WEAPONS)', () => {
       },
     });
 
-    const result = handleCommand(state, { type: 'SWAP_WEAPONS' } as any, rng());
+    const result = handleCommand(state, createSwapWeaponsCommand(), rng());
 
     // Link 2: weapons swapped
     expect(result.state.player.equipment.weapon).toBe(axe);
@@ -608,7 +613,7 @@ describe('Feature Completeness: Enchantment (ENCHANT_ARMOR)', () => {
 
     const result = handleCommand(
       state,
-      { type: 'ENCHANT_ARMOR', equipSlot: 'chest', enchantmentId: 'defense_boost' } as any,
+      createEnchantArmorCommand('chest', 'defense_boost'),
       rng(),
     );
 
@@ -640,7 +645,7 @@ describe('Feature Completeness: Interaction (INTERACT)', () => {
     });
     const stateWithChest: GameState = { ...state, run: { ...state.run!, objects } };
 
-    const result = handleCommand(stateWithChest, { type: 'INTERACT', targetPosition: chestPos } as any, rng());
+    const result = handleCommand(stateWithChest, createInteractCommand(chestPos.x, chestPos.y), rng());
 
     // Link 3: OBJECT_INTERACTED event emitted
     const objectEvents = result.events.filter(e => e.type === 'OBJECT_INTERACTED');
@@ -672,7 +677,7 @@ describe('Feature Completeness: Ascension (ASCEND)', () => {
     });
     const equipmentBefore = state.player.equipment;
 
-    const result = handleCommand(state, { type: 'ASCEND' } as any, rng());
+    const result = handleCommand(state, createAscendCommand(), rng());
 
     // Link 4: equipment preserved (ascend doesn't modify equipment)
     expect(result.state.player.equipment).toEqual(equipmentBefore);
