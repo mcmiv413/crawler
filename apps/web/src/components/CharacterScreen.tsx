@@ -12,13 +12,6 @@ interface CharacterScreenProps {
   activeQuests?: readonly QuestView[];
 }
 
-function getHealthColor(health: number, maxHealth: number): string {
-  const pct = Math.round((health / maxHealth) * 100);
-  if (pct > 60) return '#4f4';
-  if (pct > 30) return '#ff4';
-  return '#f44';
-}
-
 function ResistancesSection({ player }: { player: PlayerHudView }) {
   if (!player.resistances) return null;
   const hasResistances = Object.keys(player.resistances).some((r) => (player.resistances as Record<string, number>)[r]! > 0);

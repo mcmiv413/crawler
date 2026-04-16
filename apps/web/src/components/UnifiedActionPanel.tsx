@@ -180,12 +180,6 @@ export function UnifiedActionPanel({
       quantity: item.quantity ?? 0,
     }));
 
-  // Prepare weapons (excluding equipped main weapon, which is shown as swap option)
-  const swappableWeapons = view.inventory.items
-    .filter((item) => item.itemClass === 'weapon')
-    .filter((item) => item.id !== view.inventory.equipped.weapon?.id)
-    .filter((item) => item.id !== view.inventory.equipped.secondaryWeapon?.id);
-
   // Helper: detect if player is on stairs_up (can ascend)
   const isOnStairs = (): boolean => {
     if (!view.map) return false;
