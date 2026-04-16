@@ -92,18 +92,23 @@ describe('Repository: State Safety', () => {
       });
       await repo.createGame(state1);
 
-      // Create a completely new state object
+      // Load the current state to get the correct version
+      const currentState = await repo.loadGame(gameId);
+      expect(currentState).not.toBeNull();
+
+      // Create a new state object with the correct version for OCC
       const state2 = createMinimalGameState({
         gameId,
         player: createTestPlayer({ gold: 500 }),
+        version: currentState!.version, // Use the version we just loaded
       });
 
       await repo.saveGame(gameId, state2);
 
-      // The new state should be stored
+      // The new state should be stored with incremented version
       const retrieved = await repo.loadGame(gameId);
       expect(retrieved!.player.gold).toBe(500);
-      expect(retrieved).toBe(state2); // Same reference as new state
+      expect(retrieved!.version).toBe(state2.version + 1); // Version should be incremented
     });
   });
 
@@ -439,24 +444,28 @@ describe('Repository: State Safety', () => {
       const state = createMinimalGameState({ gameId, turnNumber: 0 });
       await repo.createGame(state);
 
-      // Simulate concurrent reads and writes
-      const operations = [];
-
-      // Queue multiple updates
+      // Simulate sequential updates with proper version handling
+      let currentState = state;
       for (let i = 1; i <= 5; i++) {
         const updatedState = createMinimalGameState({
           gameId,
           turnNumber: i * 10,
+          version: currentState.version, // Use the current version for OCC
         });
-        operations.push(repo.saveGame(gameId, updatedState));
+        await repo.saveGame(gameId, updatedState);
+
+        // Load the updated state with new version for next iteration
+        const loaded = await repo.loadGame(gameId);
+        expect(loaded).not.toBeNull();
+        currentState = loaded!;
       }
 
       // Queue multiple reads
+      const reads = [];
       for (let i = 0; i < 5; i++) {
-        operations.push(repo.loadGame(gameId));
+        reads.push(repo.loadGame(gameId));
       }
-
-      await Promise.all(operations);
+      await Promise.all(reads);
 
       // Final state should reflect last save
       const final = await repo.loadGame(gameId);
