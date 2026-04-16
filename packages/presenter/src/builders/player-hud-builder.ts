@@ -1,5 +1,5 @@
 import type { GameState, WeaponType } from '@dungeon/contracts';
-import { STATUS_DEFINITIONS, ABILITY_DEFINITIONS, ENCHANTMENT_BY_ID, XP_TABLE, FACTIONS, getRarityColor } from '@dungeon/content';
+import { STATUS_DEFINITIONS, ABILITY_DEFINITIONS, ENCHANTMENT_BY_ID, XP_TABLE, FACTIONS, getRarityColor, BIOMES } from '@dungeon/content';
 import type { PlayerHudView, StatusView, AbilityView, EquippedItemView, EnchantmentView, NemesisInfo, FactionStanding } from '../game-view.js';
 import { calculateStatBreakdown } from './stat-breakdown-builder.js';
 
@@ -178,6 +178,7 @@ export function buildPlayerHud(state: GameState): PlayerHudView {
     experience: p.experience,
     experienceForNextLevel,
     biomeId: state.run?.floor.biomeId ?? null,
+    biomeColor: state.run?.floor.biomeId ? (BIOMES.get(state.run.floor.biomeId)?.ambientColor ?? '#666') : '#666',
     statuses: statusList,
     abilities: abilityList,
     weaponMastery: state.run ? { ...state.run.weaponMastery } : null,

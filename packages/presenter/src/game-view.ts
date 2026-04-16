@@ -148,6 +148,7 @@ export interface PlayerHudView {
   readonly experience: number;
   readonly experienceForNextLevel: number;
   readonly biomeId: string | null;
+  readonly biomeColor: string;  // Ambient color from biome definition
   readonly statuses: readonly StatusView[];
   readonly abilities: readonly AbilityView[];
   readonly weaponMastery: WeaponMasteryView | null;
