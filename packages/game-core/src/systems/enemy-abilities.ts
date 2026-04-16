@@ -125,7 +125,6 @@ export function resolveEnemyAbility(
   if (abilityDef === undefined) return { state, events: [] };
 
   let events: DomainEvent[] = [];
-  let newState = state;
 
   // Set ability cooldown after use
   let updatedEnemy = { ...enemy };
@@ -144,10 +143,10 @@ export function resolveEnemyAbility(
   const newEnemies = new Map(state.run.enemies);
   newEnemies.delete(posKey(enemy.position));
   newEnemies.set(posKey(updatedEnemy.position), updatedEnemy);
-  newState = {
-    ...newState,
+  let newState = {
+    ...state,
     run: {
-      ...newState.run,
+      ...state.run,
       runId: state.run.runId,
       floor: state.run.floor,
       enemies: newEnemies,
