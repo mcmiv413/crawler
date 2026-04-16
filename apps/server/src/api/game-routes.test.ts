@@ -322,12 +322,13 @@ describe('Game Routes', () => {
       });
       const createBody = JSON.parse(createResponse.body);
       const serializedState = createBody.serializedState;
+      const stateSignature = createBody.stateSignature;
 
       // Restore the game
       const restoreResponse = await app.inject({
         method: 'POST',
         url: '/api/games/restore',
-        payload: { serializedState },
+        payload: { serializedState, stateSignature },
       });
 
       expect(restoreResponse.statusCode).toBe(200);
@@ -380,14 +381,14 @@ describe('Game Routes', () => {
         payload: { playerName: 'Player1' },
       });
       const createBody = JSON.parse(createResponse.body);
-      const gameId1 = createBody.gameId;
       const serializedState = createBody.serializedState;
+      const stateSignature = createBody.stateSignature;
 
       // Restore same state
       const restoreResponse = await app.inject({
         method: 'POST',
         url: '/api/games/restore',
-        payload: { serializedState },
+        payload: { serializedState, stateSignature },
       });
 
       expect(restoreResponse.statusCode).toBe(200);
