@@ -11,6 +11,12 @@
       "command": "npx",
       "args": ["-y", "@upstash/context7-mcp"],
       "env": {}
+    },
+    "fossil": {
+      "type": "stdio",
+      "command": "fossil-mcp",
+      "args": [],
+      "env": {}
     }
   }
 }
