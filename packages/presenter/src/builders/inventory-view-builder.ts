@@ -1,4 +1,5 @@
 import type { GameState, EntityId, WeaponTemplate, ArmorTemplate } from '@dungeon/contracts';
+import { getRarityColor } from '@dungeon/content';
 import type { InventoryView, InventoryItemView } from '../game-view.js';
 
 export function buildInventoryView(state: GameState): InventoryView {
@@ -25,6 +26,7 @@ export function buildInventoryView(state: GameState): InventoryView {
       description,
       itemClass: template.itemClass,
       rarity: template.rarity,
+      rarityColor: getRarityColor(template.rarity),
       value: template.value,
       sellPrice: Math.floor(template.value * buybackMultiplier),
       isEquipped,

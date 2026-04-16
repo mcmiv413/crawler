@@ -1,7 +1,7 @@
 import React from 'react';
 import type { InventoryItemView, ShopItemView } from '@dungeon/presenter';
 import { ITEM_MODAL_MAX_HEIGHT } from '../config/ui-config.js';
-import { btnStyle, rarityColor } from '../styles.js';
+import { btnStyle } from '../styles.js';
 import { ENCHANTMENT_BY_ID } from '@dungeon/content';
 
 interface ItemInspectModalProps {
@@ -61,7 +61,7 @@ export function ItemInspectModal({
         {/* Header */}
         <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'start', marginBottom: 16 }}>
           <div>
-            <h2 style={{ margin: 0, color: rarityColor[item.rarity] ?? '#aaa' }}>{item.name}</h2>
+            <h2 style={{ margin: 0, color: item.rarityColor }}>{item.name}</h2>
             <div style={{ color: '#888', fontSize: 11, marginTop: 4 }}>{item.rarity}</div>
           </div>
           <button
