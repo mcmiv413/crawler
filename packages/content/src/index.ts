@@ -16,3 +16,4 @@ export * from './sprites/sprite-map.js';
 export * from './sprites/dawnlike-atlas-raw.js';
 export * from './sprites/sprite-names.js';
 export * from './ambient-profiles/index.js';
+export * from './rarity.js';

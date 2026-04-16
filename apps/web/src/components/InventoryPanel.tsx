@@ -1,7 +1,7 @@
 import React from 'react';
 import type { InventoryItemView, InventoryView } from '@dungeon/presenter';
 import { useGameStore } from '../store/game-store.js';
-import { btnStyle, rarityColor, compactBtnStyle } from '../styles.js';
+import { btnStyle, compactBtnStyle } from '../styles.js';
 import { useInventoryFilter } from '../hooks/useInventoryFilter.js';
 
 function itemStatText(item: InventoryItemView): string {
@@ -158,7 +158,7 @@ export function InventoryPanel({ inventory, phase, gold }: InventoryPanelProps) 
               <div style={{ display: 'flex', alignItems: 'center', gap: 6, flexWrap: 'wrap' }}>
                 <span>{item.name}</span>
                 {quantity > 1 && <span style={{ color: '#8cf', fontSize: 10 }}>x{quantity}</span>}
-                {item.rarity && <span style={{ color: rarityColor[item.rarity] ?? '#aaa', fontSize: 9 }}>[{item.rarity}]</span>}
+                {item.rarity && <span style={{ color: item.rarityColor, fontSize: 9 }}>[{item.rarity}]</span>}
                 {stats && <span style={{ color: '#888' }}>({stats})</span>}
                 {isEquipped && (
                   <span style={{ color: '#4f4', fontSize: 10 }}>[Equipped]</span>

@@ -1,6 +1,6 @@
 import React, { useState } from 'react';
 import type { InventoryItemView, InventoryView } from '@dungeon/presenter';
-import { btnStyle, rarityColor, compactBtnStyle } from '../styles.js';
+import { btnStyle, compactBtnStyle } from '../styles.js';
 import { EquipmentDoll } from './EquipmentDoll.js';
 import { ItemInspectModal } from './ItemInspectModal.js';
 import { ItemSpriteIcon } from './ItemSpriteIcon.js';
@@ -184,7 +184,7 @@ export function InventoryScreen({
                       {item.name}
                       {quantity > 1 && <span style={{ color: '#8cf', fontSize: 10 }}> x{quantity}</span>}
                     </span>
-                    <span style={{ color: rarityColor[item.rarity] ?? '#888', fontSize: 10 }}>
+                    <span style={{ color: item.rarityColor, fontSize: 10 }}>
                       [{item.rarity}]
                     </span>
                   </div>

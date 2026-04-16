@@ -1,5 +1,5 @@
 import type { GameState, TownState, NemesisRecord } from '@dungeon/contracts';
-import { ITEM_BY_ID, TOWN_DESCRIPTIONS, getFactionIdsForTemplate, isRarityBuyable, ENEMY_TEMPLATES } from '@dungeon/content';
+import { ITEM_BY_ID, TOWN_DESCRIPTIONS, getFactionIdsForTemplate, isRarityBuyable, ENEMY_TEMPLATES, getRarityColor } from '@dungeon/content';
 import type { TownView, FactionView, NemesisView, ShopItemView, RunSummaryStats } from '../game-view.js';
 
 function shopkeeperDiscountPct(state: GameState): number {
@@ -165,11 +165,13 @@ export function buildTownView(state: GameState): TownView {
         .map(si => {
           const template = ITEM_BY_ID.get(si.itemId);
           const effectivePrice = Math.max(1, Math.floor(si.price * (1 - discountPct / 100)));
+          const rarity = template?.rarity ?? 'common';
           return {
             itemId: si.itemId,
             name: template?.name ?? si.itemId,
             description: template?.description ?? '',
-            rarity: template?.rarity ?? 'common',
+            rarity,
+            rarityColor: getRarityColor(rarity),
             price: si.price,
             effectivePrice,
             stock: si.stock,
