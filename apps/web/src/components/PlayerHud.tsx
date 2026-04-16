@@ -14,24 +14,9 @@ function formatBiomeName(biomeId: string | null): string {
     .join(' ');
 }
 
-// Get biome color for visual distinction
-function getBiomeColor(biomeId: string | null): string {
-  switch (biomeId) {
-    case 'stone_crypt': return '#888';      // Gray
-    case 'goblin_warrens': return '#cc8';   // Orange/brown
-    case 'moss_caverns': return '#484';     // Green
-    case 'frozen_depths': return '#88f';    // Blue
-    case 'forest': return '#4a4';           // Green
-    case 'volcanic': return '#f44';         // Red/orange
-    case 'crystal_cave': return '#f8f';     // Magenta
-    default: return '#aaa';                 // Default gray
-  }
-}
-
 export function PlayerHud({ player, compact = false }: PlayerHudProps) {
   const healthPct = Math.round((player.health / player.maxHealth) * 100);
   const healthColor = healthPct > 60 ? '#4f4' : healthPct > 30 ? '#ff4' : '#f44';
-  const biomeColor = getBiomeColor(player.biomeId);
   const biomeName = formatBiomeName(player.biomeId);
 
   if (compact) {
@@ -44,7 +29,7 @@ export function PlayerHud({ player, compact = false }: PlayerHudProps) {
           <span>
             HP: <span style={{ color: healthColor }}>{player.health}/{player.maxHealth}</span>
           </span>
-          <span style={{ color: biomeColor, fontSize: 11 }}>⬤ {biomeName}</span>
+          <span style={{ color: player.biomeColor, fontSize: 11 }}>⬤ {biomeName}</span>
         </div>
       </div>
     );
@@ -54,7 +39,7 @@ export function PlayerHud({ player, compact = false }: PlayerHudProps) {
     <div style={{ marginBottom: 10, padding: 8, border: '1px solid #333', background: '#1a1a1a' }}>
       <div><strong style={{ color: '#fff' }}>{player.name}</strong> Lv.{player.level} | Floor {player.floor} | XP: {player.experience}</div>
       <div>
-        HP: <span style={{ color: healthColor }}>{player.health}/{player.maxHealth}</span> | <span style={{ color: biomeColor }}>⬤ {biomeName}</span> |
+        HP: <span style={{ color: healthColor }}>{player.health}/{player.maxHealth}</span> | <span style={{ color: player.biomeColor }}>⬤ {biomeName}</span> |
         ATK: {player.attack} | DEF: {player.defense} |
         {player.accuracy !== undefined && <>ACC: {player.accuracy} | </>}
         {player.evasion !== undefined && <>EVA: {player.evasion} | </>}
