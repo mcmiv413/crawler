@@ -56,9 +56,14 @@ export class SqliteRepository implements IGameRepository {
 
   async saveGame(gameId: EntityId, state: GameState): Promise<void> {
     const stmt = this.db.prepare(
-      "UPDATE games SET state_json = ?, version = ?, updated_at = datetime('now') WHERE game_id = ?",
+      "UPDATE games SET state_json = ?, version = ?, updated_at = datetime('now') WHERE game_id = ? AND version = ?",
     );
-    stmt.run(serializeState(state), state.version, gameId);
+    const result = stmt.run(serializeState(state), state.version + 1, gameId, state.version);
+
+    // Check if the update affected any rows (optimistic concurrency control)
+    if (result.changes === 0) {
+      throw new Error(`Concurrent modification detected for game ${gameId}. Please retry the command.`);
+    }
   }
 
   async appendEvents(
