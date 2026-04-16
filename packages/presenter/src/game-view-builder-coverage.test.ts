@@ -16,7 +16,7 @@ import type { InspectableEntityView } from './game-view.js';
 /**
  * Helper: Create a floor cell with explicit visibility
  */
-function createVisibilityCell(visibility: 'visible' | 'hidden' | 'revealed' = 'visible') {
+function createVisibilityCell(visibility: 'visible' | 'hidden' | 'remembered' = 'visible') {
   return {
     tile: { type: 'floor' as const, walkable: true, blocksVision: false, ascii: '.', color: '#fff' },
     visibility,
@@ -31,6 +31,7 @@ function createTestObject(id: string, templateId: string, x: number, y: number) 
     id: entityId(id),
     templateId,
     position: { x, y },
+    isExhausted: false,
   };
 }
 
@@ -107,8 +108,8 @@ describe('game-view-builder coverage: entity visibility', () => {
 
     it('multiple visible entities all appear (not deduplicated incorrectly)', () => {
       const baseState = createTestGameStateInCombat();
-      const enemy1 = createTestEnemy({ id: 'e1', templateId: 'goblin_skirmisher', position: { x: 1, y: 0 } });
-      const enemy2 = createTestEnemy({ id: 'e2', templateId: 'goblin_archer', position: { x: 2, y: 0 } });
+      const enemy1 = createTestEnemy({ id: entityId('e1'), templateId: 'goblin_skirmisher', position: { x: 1, y: 0 } });
+      const enemy2 = createTestEnemy({ id: entityId('e2'), templateId: 'goblin_archer', position: { x: 2, y: 0 } });
       
       const cells = new Map([
         ['0,0', createVisibilityCell('visible')], // player
@@ -155,10 +156,10 @@ describe('game-view-builder coverage: entity visibility', () => {
 
     it('revealed entity handled (may or may not appear depending on implementation)', () => {
       const state = createTestGameStateInCombat({ enemyAt: { x: 1, y: 0 } });
-      
+
       // Mark as revealed (not fully visible)
       const cells = new Map(state.run!.floor.cells);
-      cells.set('1,0', createVisibilityCell('revealed'));
+      cells.set('1,0', createVisibilityCell('remembered'));
       const modifiedRun = { ...state.run!, floor: { ...state.run!.floor, cells } };
       const modifiedState = { ...state, run: modifiedRun };
       
@@ -170,7 +171,7 @@ describe('game-view-builder coverage: entity visibility', () => {
 
     it('entities at unmapped positions excluded (no visibility cell)', () => {
       const baseState = createTestGameStateInCombat();
-      const enemy = createTestEnemy({ id: 'e1', position: { x: 10, y: 10 } });
+      const enemy = createTestEnemy({ id: entityId('e1'), position: { x: 10, y: 10 } });
       
       // Create floor with cells but don't include the enemy's position
       const cells = new Map([['0,0', createVisibilityCell('visible')]]);
@@ -194,7 +195,7 @@ describe('game-view-builder coverage: entity visibility', () => {
       const state = createTestGameStateInCombat({ enemyAt: { x: 1, y: 0 } });
       
       const cells = new Map(state.run!.floor.cells);
-      cells.set('1,0', { ...createVisibilityCell('visible'), visibility: 'revealed' as const });
+      cells.set('1,0', { ...createVisibilityCell('visible'), visibility: 'remembered' as const });
       
       const modifiedRun = { ...state.run!, floor: { ...state.run!.floor, cells } };
       const modifiedState = { ...state, run: modifiedRun };
@@ -207,8 +208,8 @@ describe('game-view-builder coverage: entity visibility', () => {
 
     it('mixed visibility states in floor cells handled', () => {
       const baseState = createTestGameStateInCombat();
-      const enemy1 = createTestEnemy({ id: 'e1', position: { x: 1, y: 0 } });
-      const enemy2 = createTestEnemy({ id: 'e2', templateId: 'goblin_archer', position: { x: 2, y: 0 } });
+      const enemy1 = createTestEnemy({ id: entityId('e1'), position: { x: 1, y: 0 } });
+      const enemy2 = createTestEnemy({ id: entityId('e2'), templateId: 'goblin_archer', position: { x: 2, y: 0 } });
       
       const cells = new Map([
         ['1,0', createVisibilityCell('visible')],
@@ -392,8 +393,8 @@ describe('game-view-builder coverage: entity sorting and deduplication', () => {
   describe('deduplication behavior', () => {
     it('same templateId enemies may be deduplicated (observable: 0 or 1 entry)', () => {
       const baseState = createTestGameStateInCombat();
-      const enemy1 = createTestEnemy({ id: 'e1', templateId: 'goblin_skirmisher', position: { x: 1, y: 0 } });
-      const enemy2 = createTestEnemy({ id: 'e2', templateId: 'goblin_skirmisher', position: { x: 2, y: 0 } });
+      const enemy1 = createTestEnemy({ id: entityId('e1'), templateId: 'goblin_skirmisher', position: { x: 1, y: 0 } });
+      const enemy2 = createTestEnemy({ id: entityId('e2'), templateId: 'goblin_skirmisher', position: { x: 2, y: 0 } });
       
       const cells = new Map([
         ['1,0', createVisibilityCell('visible')],
@@ -421,8 +422,8 @@ describe('game-view-builder coverage: entity sorting and deduplication', () => {
 
     it('different templateId enemies may appear (observable: 0, 1, or 2)', () => {
       const baseState = createTestGameStateInCombat();
-      const enemy1 = createTestEnemy({ id: 'e1', templateId: 'goblin_skirmisher', position: { x: 1, y: 0 } });
-      const enemy2 = createTestEnemy({ id: 'e2', templateId: 'goblin_archer', position: { x: 2, y: 0 } });
+      const enemy1 = createTestEnemy({ id: entityId('e1'), templateId: 'goblin_skirmisher', position: { x: 1, y: 0 } });
+      const enemy2 = createTestEnemy({ id: entityId('e2'), templateId: 'goblin_archer', position: { x: 2, y: 0 } });
       
       const cells = new Map([
         ['1,0', createVisibilityCell('visible')],
@@ -482,7 +483,7 @@ describe('game-view-builder coverage: entity sorting and deduplication', () => {
   describe('sorting behavior', () => {
     it('enemies sorted before objects when both present', () => {
       const baseState = createTestGameStateInCombat();
-      const enemy = createTestEnemy({ id: 'e1', position: { x: 1, y: 0 } });
+      const enemy = createTestEnemy({ id: entityId('e1'), position: { x: 1, y: 0 } });
       const object1 = createTestObject('o1', 'chest', 3, 3);
       
       const cells = new Map([
@@ -513,8 +514,8 @@ describe('game-view-builder coverage: entity sorting and deduplication', () => {
 
     it('closer enemies sorted before farther enemies (distance from player at 0,0)', () => {
       const baseState = createTestGameStateInCombat();
-      const closeEnemy = createTestEnemy({ id: 'e1', templateId: 'goblin_skirmisher', position: { x: 1, y: 0 } });
-      const farEnemy = createTestEnemy({ id: 'e2', templateId: 'goblin_archer', position: { x: 5, y: 5 } });
+      const closeEnemy = createTestEnemy({ id: entityId('e1'), templateId: 'goblin_skirmisher', position: { x: 1, y: 0 } });
+      const farEnemy = createTestEnemy({ id: entityId('e2'), templateId: 'goblin_archer', position: { x: 5, y: 5 } });
       
       const cells = new Map([
         ['1,0', createVisibilityCell('visible')],
@@ -548,8 +549,8 @@ describe('game-view-builder coverage: entity sorting and deduplication', () => {
 
     it('deterministic ordering at equal distance (sorted by templateId or id)', () => {
       const baseState = createTestGameStateInCombat();
-      const enemy1 = createTestEnemy({ id: 'e1', templateId: 'goblin_archer', position: { x: 1, y: 1 } });
-      const enemy2 = createTestEnemy({ id: 'e2', templateId: 'goblin_skirmisher', position: { x: 1, y: 1 } });
+      const enemy1 = createTestEnemy({ id: entityId('e1'), templateId: 'goblin_archer', position: { x: 1, y: 1 } });
+      const enemy2 = createTestEnemy({ id: entityId('e2'), templateId: 'goblin_skirmisher', position: { x: 1, y: 1 } });
       
       const cells = new Map([['1,1', createVisibilityCell('visible')]]);
       
@@ -638,7 +639,7 @@ describe('game-view-builder coverage: entity type assignment', () => {
         expect(typeof enemy.attack).toBe('number');
         expect(typeof enemy.defense).toBe('number');
         expect(enemy.health).toBeGreaterThan(0);
-        expect(enemy.maxHealth).toBeGreaterThanOrEqual(enemy.health);
+        expect(enemy.maxHealth).toBeGreaterThanOrEqual(enemy.health!);
       });
     });
 
@@ -757,7 +758,7 @@ describe('game-view-builder coverage: edge cases', () => {
   describe('boundary conditions', () => {
     it('entities at map boundaries (0,0) handled correctly', () => {
       const baseState = createTestGameStateInCombat();
-      const cornerEnemy = createTestEnemy({ id: 'e1', position: { x: 0, y: 0 } });
+      const cornerEnemy = createTestEnemy({ id: entityId('e1'), position: { x: 0, y: 0 } });
       
       const cells = new Map([['0,0', createVisibilityCell('visible')]]);
       
@@ -777,7 +778,7 @@ describe('game-view-builder coverage: edge cases', () => {
 
     it('entities at max boundaries (width-1, height-1) handled correctly', () => {
       const baseState = createTestGameStateInCombat();
-      const farEnemy = createTestEnemy({ id: 'e1', position: { x: 79, y: 29 } });
+      const farEnemy = createTestEnemy({ id: entityId('e1'), position: { x: 79, y: 29 } });
       
       const cells = new Map([['79,29', createVisibilityCell('visible')]]);
       
@@ -810,7 +811,7 @@ describe('game-view-builder coverage: edge cases', () => {
             const key = `${x},${y}`;
             
             const enemy = createTestEnemy({
-              id: `e${i}`,
+              id: entityId(`e${i}`),
               templateId: i % 2 === 0 ? 'goblin_skirmisher' : 'goblin_archer',
               position: { x, y },
             });
@@ -852,7 +853,7 @@ describe('game-view-builder coverage: edge cases', () => {
       // Add 5 enemies
       for (let i = 0; i < 5; i++) {
         const key = `${i},0`;
-        const enemy = createTestEnemy({ id: `e${i}`, position: { x: i, y: 0 } });
+        const enemy = createTestEnemy({ id: entityId(`e${i}`), position: { x: i, y: 0 } });
         enemies.set(key, enemy);
         cells.set(key, createVisibilityCell('visible'));
       }
@@ -909,7 +910,7 @@ describe('game-view-builder coverage: edge cases', () => {
     });
 
     it('no run state returns empty inspectableEntities', () => {
-      const state = createTestGameState({ phase: 'town', run: null });
+      const state = createTestGameState({ phase: 'town' });
       const view = buildGameView(state);
       
       expect(view.inspectableEntities).toEqual([]);
@@ -958,8 +959,8 @@ describe('game-view-builder coverage: feature chain validation', () => {
 
     it('entity IDs are unique within view (no duplicates)', () => {
       const baseState = createTestGameStateInCombat();
-      const enemy1 = createTestEnemy({ id: 'e1', position: { x: 1, y: 0 } });
-      const enemy2 = createTestEnemy({ id: 'e2', templateId: 'goblin_archer', position: { x: 2, y: 0 } });
+      const enemy1 = createTestEnemy({ id: entityId('e1'), position: { x: 1, y: 0 } });
+      const enemy2 = createTestEnemy({ id: entityId('e2'), templateId: 'goblin_archer', position: { x: 2, y: 0 } });
       const object1 = createTestObject('o1', 'chest', 3, 0);
       
       const cells = new Map([
