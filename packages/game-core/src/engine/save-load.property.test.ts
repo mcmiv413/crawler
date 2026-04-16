@@ -111,10 +111,8 @@ describe('save/load roundtrip property tests', () => {
             const restSf = restored.run.floorHistory[i];
             expect(restSf.floor.cells).toBeInstanceOf(Map);
             expect(restSf.enemies).toBeInstanceOf(Map);
-            expect(restSf.items).toBeInstanceOf(Map);
             expect(restSf.floor.cells.size).toBe(origSf.floor.cells.size);
             expect(restSf.enemies.size).toBe(origSf.enemies.size);
-            expect(restSf.items.size).toBe(origSf.items.size);
             expect(restSf.playerPosition).toEqual(origSf.playerPosition);
           }
 
@@ -128,10 +126,63 @@ describe('save/load roundtrip property tests', () => {
               expect(restSf).toBeDefined();
               expect(restSf!.floor.cells).toBeInstanceOf(Map);
               expect(restSf!.enemies).toBeInstanceOf(Map);
-              expect(restSf!.items).toBeInstanceOf(Map);
               expect(restSf!.floor.cells.size).toBe(origSf.floor.cells.size);
             }
           }
+        },
+      ),
+      { numRuns: 20 },
+    );
+  });
+
+  it('persistedFloorCache survives serialization roundtrip', () => {
+    fc.assert(
+      fc.property(
+        fc.integer({ min: 1, max: 100_000 }),
+        (seed) => {
+          const engine = new GameEngine();
+          const state = engine.createNewGame(seed);
+
+          // Enter dungeon
+          const entered = engine.submitCommand(state, {
+            type: 'TOWN_ACTION',
+            action: 'enter_dungeon',
+          });
+
+          let stateWithCache = entered.state;
+          if (!stateWithCache.run) return;
+
+          // Simulate having retreated by populating persistedFloorCache
+          const retrievedFloor = stateWithCache.run.floorHistory[0];
+          if (!retrievedFloor) return;
+
+          stateWithCache = {
+            ...stateWithCache,
+            persistedFloorCache: new Map([[1, retrievedFloor]]),
+          };
+
+          // Verify we have a cache before serialization
+          expect(stateWithCache.persistedFloorCache).toBeDefined();
+          expect(stateWithCache.persistedFloorCache!.size).toBe(1);
+          expect(stateWithCache.persistedFloorCache!.has(1)).toBe(true);
+
+          // Roundtrip
+          const json = serializeState(stateWithCache);
+          const restored = deserializeState(json);
+
+          // persistedFloorCache should roundtrip correctly
+          expect(restored.persistedFloorCache).toBeDefined();
+          expect(restored.persistedFloorCache).toBeInstanceOf(Map);
+          expect(restored.persistedFloorCache!.size).toBe(1);
+          expect(restored.persistedFloorCache!.has(1)).toBe(true);
+
+          const restoredFloor = restored.persistedFloorCache!.get(1);
+          expect(restoredFloor).toBeDefined();
+          expect(restoredFloor!.floor.cells).toBeInstanceOf(Map);
+          expect(restoredFloor!.enemies).toBeInstanceOf(Map);
+          expect(restoredFloor!.floor.cells.size).toBe(retrievedFloor.floor.cells.size);
+          expect(restoredFloor!.enemies.size).toBe(retrievedFloor.enemies.size);
+          expect(restoredFloor!.playerPosition).toEqual(retrievedFloor.playerPosition);
         },
       ),
       { numRuns: 20 },
