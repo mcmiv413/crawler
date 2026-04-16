@@ -202,10 +202,12 @@ export async function buildApp(): Promise<FastifyInstance> {
           eventHistory: [...finalState.world.eventHistory, ...result.events],
         },
       };
-      await repo.appendEvents(request.params.id as EntityId, result.events);
     }
 
-    await repo.saveGame(request.params.id as EntityId, finalState);
+    // Atomically save state and events in a single transaction
+    // Uses OCC to detect concurrent modifications
+    const prevVersion = state.version; // Version before this command was processed
+    await repo.commitTick(request.params.id as EntityId, prevVersion, finalState, result.events);
     const view = buildGameView(finalState);
     const combatLog = formatEvents(result.events);
 
