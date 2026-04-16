@@ -16,11 +16,6 @@ export const CAUTIOUS_DEFENSIVE = {
 
   actionSelection: [
     {
-      condition: 'allyNearby',
-      actions: ['ability'],
-      weight: 3,
-    },
-    {
       condition: 'playerAdjacent',
       actions: ['attack'],
       weight: 2,
