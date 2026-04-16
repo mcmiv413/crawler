@@ -215,10 +215,10 @@ describe('Repository: State Safety', () => {
       const retrievedB = await repo.getRecentEvents(gameB, 10);
 
       expect(retrievedA).toHaveLength(1);
-      expect(retrievedA[0].type).toBe('ATTACK_PERFORMED');
+      expect(retrievedA[0]!.type).toBe('ATTACK_PERFORMED');
 
       expect(retrievedB).toHaveLength(1);
-      expect(retrievedB[0].type).toBe('ITEM_USED');
+      expect(retrievedB[0]!.type).toBe('ITEM_USED');
     });
   });
 
@@ -322,10 +322,10 @@ describe('Repository: State Safety', () => {
       const retrieved = await repo.getRecentEvents(gameId, 10);
 
       expect(retrieved).toHaveLength(3);
-      expect(retrieved[0].type).toBe('ATTACK_PERFORMED');
+      expect(retrieved[0]!.type).toBe('ATTACK_PERFORMED');
       expect((retrieved[0] as any).damage).toBe(15);
-      expect(retrieved[1].type).toBe('ENTITY_DIED');
-      expect(retrieved[2].type).toBe('LOOT_ACQUIRED');
+      expect(retrieved[1]!.type).toBe('ENTITY_DIED');
+      expect(retrieved[2]!.type).toBe('LOOT_ACQUIRED');
     });
 
     it('should respect limit on recent events retrieval', async () => {
@@ -408,9 +408,9 @@ describe('Repository: State Safety', () => {
 
       const allEvents = await repo.getRecentEvents(gameId, 10);
       expect(allEvents).toHaveLength(3);
-      expect(allEvents[0].type).toBe('ATTACK_PERFORMED');
-      expect(allEvents[1].type).toBe('ITEM_USED');
-      expect(allEvents[2].type).toBe('ENTITY_DIED');
+      expect(allEvents[0]!.type).toBe('ATTACK_PERFORMED');
+      expect(allEvents[1]!.type).toBe('ITEM_USED');
+      expect(allEvents[2]!.type).toBe('ENTITY_DIED');
     });
   });
 

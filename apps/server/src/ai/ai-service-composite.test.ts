@@ -37,7 +37,7 @@ const rumorCtx = {
 };
 
 const summaryCtx = {
-  runMetrics: { causeOfEnd: 'retreat' as const, enemiesKilled: 5, goldEarned: 100, floorsCleared: 2, damageDealt: 200, damageTaken: 50, itemsFound: 1, turnsElapsed: 30, turnsPlayed: 30, statusEffectsApplied: 2, itemsUsed: 0 },
+  runMetrics: { causeOfEnd: 'retreat' as const, enemiesKilled: 5, goldEarned: 100, floorsCleared: 2, damageDealt: 200, damageTaken: 50, turnsElapsed: 30, consecutiveMisses: 0, itemsUsed: 0 },
   recentEvents: [],
   playerName: 'Hero',
   floor: 3,
