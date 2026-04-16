@@ -250,3 +250,134 @@ describe('OCC (Optimistic Concurrency Control)', () => {
     expect(loaded.player.gold).toBe(500);
   });
 });
+
+/**
+ * commitTick atomic transaction tests
+ *
+ * Verifies that commitTick bundles saveGame + appendEvents into a single
+ * all-or-nothing operation. Either both succeed (version advances) or
+ * both fail (version unchanged, no partial writes).
+ */
+describe('commitTick atomicity', () => {
+  let repo: InMemoryRepository;
+
+  beforeEach(() => {
+    repo = new InMemoryRepository();
+  });
+
+  /**
+   * Scenario: Version mismatch must fail before any mutations
+   * commitTick should not save state or append events if version check fails
+   */
+  it('should reject commitTick on version mismatch without partial writes', async () => {
+    const gameId = entityId('commit_tick_test_1');
+    const initialState = createMinimalGameState({
+      gameId,
+      version: 1,
+      player: createTestPlayer({ gold: 100 }),
+    });
+    await repo.createGame(initialState);
+
+    // Try to commit with stale prevVersion (should be 1, passing 99)
+    const newState = {
+      ...initialState,
+      version: 100, // This will be checked against
+      player: createTestPlayer({ gold: 500 }),
+    };
+
+    // This should throw (using empty events array)
+    const fakeEvents: any[] = [];
+
+    await expect(repo.commitTick(gameId, 99, newState, fakeEvents)).rejects.toThrow(
+      /Concurrent modification|version/i,
+    );
+
+    // Verify neither state nor events changed
+    const finalState = (await repo.loadGame(gameId))!;
+    expect(finalState.version).toBe(1); // Should still be 1 (commitTick failed)
+    expect(finalState.player.gold).toBe(100); // Original value unchanged
+
+    // Get events to verify none were added
+    const recentEvents = await repo.getRecentEvents(gameId, 10);
+    expect(recentEvents.length).toBe(0); // No events should have been appended
+  });
+
+  /**
+   * Scenario: Successful commitTick advances version and persists events
+   */
+  it('should atomically advance version and append events on success', async () => {
+    const gameId = entityId('commit_tick_test_2');
+    const initialState = createMinimalGameState({
+      gameId,
+      version: 1,
+      player: createTestPlayer({ gold: 100 }),
+    });
+    await repo.createGame(initialState);
+
+    // Load to get current state
+    const loaded = (await repo.loadGame(gameId))!;
+    expect(loaded.version).toBe(1);
+
+    // Prepare new state (as if engine processed a command)
+    const newState = {
+      ...loaded,
+      version: 2, // Engine increments version
+      player: createTestPlayer({ gold: 150 }),
+    };
+
+    const events: any[] = [];
+
+    // commitTick should succeed
+    await repo.commitTick(gameId, loaded.version, newState, events);
+
+    // Verify state persisted
+    const finalState = (await repo.loadGame(gameId))!;
+    expect(finalState.version).toBe(2); // Created at v1, commitTick advanced to v2
+    expect(finalState.player.gold).toBe(150);
+  });
+
+  /**
+   * Scenario: Two concurrent commitTick calls with same prevVersion
+   * Only one should succeed; the second should see version already advanced
+   */
+  it('should handle concurrent commitTick calls with OCC conflict', async () => {
+    const gameId = entityId('commit_tick_test_3');
+    const initialState = createMinimalGameState({
+      gameId,
+      version: 1,
+      player: createTestPlayer({ gold: 100 }),
+    });
+    await repo.createGame(initialState);
+
+    const loaded = (await repo.loadGame(gameId))!;
+    const prevVersion = loaded.version;
+
+    // Create two state updates from the same baseline
+    const state1 = {
+      ...loaded,
+      version: prevVersion + 1,
+      player: createTestPlayer({ gold: 200 }),
+    };
+
+    const state2 = {
+      ...loaded,
+      version: prevVersion + 1,
+      player: createTestPlayer({ gold: 300 }),
+    };
+
+    const events1: any[] = [];
+    const events2: any[] = [];
+
+    // First commit should succeed
+    await repo.commitTick(gameId, prevVersion, state1, events1);
+
+    // Second commit should fail (version now advanced)
+    await expect(repo.commitTick(gameId, prevVersion, state2, events2)).rejects.toThrow(
+      /Concurrent modification|version/i,
+    );
+
+    // Verify final state is from first commit
+    const final = (await repo.loadGame(gameId))!;
+    expect(final.player.gold).toBe(200); // First commit won
+  });
+});

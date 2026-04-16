@@ -22,6 +22,22 @@ export interface IGameRepository {
   getRecentEvents(gameId: EntityId, limit: number): Promise<readonly DomainEvent[]>;
   recordRunMetrics(metrics: RunMetrics, gameId?: string): void;
   getRunMetricsLog(): readonly RunMetrics[];
+
+  /**
+   * Atomically save state and append events in a single transaction.
+   * Verifies that the game's current version matches prevVersion before proceeding.
+   * If version mismatch, throws without modifying state or events (all-or-nothing semantics).
+   *
+   * Preferred over separate saveGame + appendEvents calls for new code.
+   * Prevents torn event logs where state advances but events are lost.
+   *
+   * @param gameId Unique game identifier
+   * @param prevVersion Expected current version (from state.version before this tick)
+   * @param nextState New game state to persist (must have version = prevVersion + 1)
+   * @param events New events that caused this state change
+   * @throws Error if version mismatch (concurrent write detected)
+   */
+  commitTick(gameId: EntityId, prevVersion: number, nextState: GameState, events: readonly DomainEvent[]): Promise<void>;
 }
 
 /** Stub for Phase 1+ AI narrative integration */
