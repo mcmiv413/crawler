@@ -7,6 +7,7 @@ import type { GameCommand, EntityId, GameState, RunMetrics } from '@dungeon/cont
 import { InMemoryRepository } from './in-memory-repository.js';
 import { CompositeAiService } from './ai/ai-service-composite.js';
 import { applyRunConsequences, rollNemesisLoot, addItemToInventory, serializeState, deserializeState } from '@dungeon/core';
+import { signSaveState, verifySaveSignature } from './save-signing.js';
 import { registerDebugRoutes } from './routes/debug.js';
 
 export async function buildApp(): Promise<FastifyInstance> {
@@ -42,11 +43,13 @@ export async function buildApp(): Promise<FastifyInstance> {
 
     await repo.createGame(state);
     const view = buildGameView(state);
+    const serializedState = serializeState(state);
 
     return reply.code(201).send({
       gameId: state.gameId,
       view,
-      serializedState: serializeState(state),
+      serializedState,
+      stateSignature: signSaveState(serializedState),
     });
   });
 
@@ -247,12 +250,14 @@ export async function buildApp(): Promise<FastifyInstance> {
     await repo.commitTick(request.params.id as EntityId, prevVersion, finalState, result.events);
     const view = buildGameView(finalState);
     const combatLog = formatEvents(result.events);
+    const serializedState = serializeState(finalState);
 
     return {
       view: { ...view, combatLog },
       events: result.events,
       runEnded: result.runEnded,
-      serializedState: serializeState(finalState),
+      serializedState,
+      stateSignature: signSaveState(serializedState),
     };
   });
 
@@ -329,9 +334,22 @@ export async function buildApp(): Promise<FastifyInstance> {
 
   // POST /api/games/restore — restore a game from client-side serialized state
   app.post('/api/games/restore', async (request, reply) => {
-    const body = request.body as { serializedState?: string };
+    const body = request.body as {
+      serializedState?: string;
+      stateSignature?: string;
+    };
     if (!body.serializedState || typeof body.serializedState !== 'string') {
       return reply.code(400).send({ error: 'Missing serializedState' });
+    }
+
+    // Verify the state signature to prevent tampering
+    // (client trying to replay an older saved state or modify the JSON)
+    const signature = body.stateSignature;
+    if (!signature || typeof signature !== 'string' || !verifySaveSignature(body.serializedState, signature)) {
+      return reply.code(400).send({
+        error: 'Save file signature invalid',
+        message: 'The save file has been tampered with or is from an incompatible game version. Please start a new run.',
+      });
     }
 
     try {
@@ -346,7 +364,13 @@ export async function buildApp(): Promise<FastifyInstance> {
         if (existing) {
           // Server already has it — just return the view
           const view = buildGameView(existing);
-          return { gameId: existing.gameId, view, serializedState: serializeState(existing) };
+          const existingSerializedState = serializeState(existing);
+          return {
+            gameId: existing.gameId,
+            view,
+            serializedState: existingSerializedState,
+            stateSignature: signSaveState(existingSerializedState),
+          };
         }
       } catch (loadError) {
         // If server has a corrupted version of this game, we can't load it
@@ -368,7 +392,12 @@ export async function buildApp(): Promise<FastifyInstance> {
       // Cold start: re-hydrate from client state
       await repo.createGame(state);
       const view = buildGameView(state);
-      return { gameId: state.gameId, view, serializedState: body.serializedState };
+      return {
+        gameId: state.gameId,
+        view,
+        serializedState: body.serializedState,
+        stateSignature: signature,
+      };
     } catch (error) {
       if (error instanceof SchemaVersionMismatchError) {
         return reply.code(400).send({
