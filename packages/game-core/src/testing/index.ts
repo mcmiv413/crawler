@@ -23,4 +23,5 @@ export {
   createUnequipCommand,
   createSwapWeaponsCommand,
   createEnchantArmorCommand,
+  createAscendCommand,
 } from '../test-utils.js';

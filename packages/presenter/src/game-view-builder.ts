@@ -1,4 +1,4 @@
-import type { GameState, EnemyInstance, PlayerDiedEvent, EquipmentDroppedEvent } from '@dungeon/contracts';
+import type { GameState, EnemyInstance, PlayerDiedEvent, EquipmentDroppedEvent, DomainEvent } from '@dungeon/contracts';
 import type { GameView, QuestView, InspectableEntityView, DeathContext } from './game-view.js';
 import { ENEMY_TEMPLATES, STATUS_DEFINITIONS, OBJECT_TEMPLATES, DEATH_CONSEQUENCES } from '@dungeon/content';
 import { buildPlayerHud } from './builders/player-hud-builder.js';
@@ -157,9 +157,13 @@ export function buildGameView(state: GameState): GameView {
   // Find most recent NEMESIS_SLAIN event in current run
   let recentlyDefeatedNemesis: NemesisView | null = null;
   if (state.run) {
-    const nemesisSslainEvent = [...state.world.eventHistory]
-      .reverse()
-      .find((e): e is Extract<typeof e, { type: 'NEMESIS_SLAIN' }> => e.type === 'NEMESIS_SLAIN');
+    let nemesisSslainEvent: Extract<DomainEvent, { type: 'NEMESIS_SLAIN' }> | null = null;
+    for (let i = state.world.eventHistory.length - 1; i >= 0; i -= 1) {
+      if (state.world.eventHistory[i]!.type === 'NEMESIS_SLAIN') {
+        nemesisSslainEvent = state.world.eventHistory[i] as Extract<DomainEvent, { type: 'NEMESIS_SLAIN' }>;
+        break;
+      }
+    }
 
     if (nemesisSslainEvent) {
       const nemesis = state.world.nemeses.find(n => n.id === nemesisSslainEvent.nemesisId);

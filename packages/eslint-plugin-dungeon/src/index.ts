@@ -31,10 +31,6 @@ interface NoImplicitBooleanOptions {
   allowedPatterns?: string[];
 }
 
-interface PreferConsoleInfoOptions {
-  allowedFunctions?: string[];
-}
-
 const DEFAULT_ALLOWED_VARIABLES: readonly string[] = [] as const;
 const DEFAULT_MUTATING_METHODS = [
   "push",
@@ -536,65 +532,6 @@ const rules: Record<string, Rule.RuleModule> = {
     },
   },
 
-  "prefer-console-info": {
-    meta: {
-      type: "suggestion",
-      docs: {
-        description:
-          "Prefer console.info over console.log for informational messages",
-        category: "Code Quality",
-        recommended: true,
-      },
-      fixable: "code",
-      messages: {
-        useConsoleInfo:
-          "Use console.info for informational messages instead of console.log.",
-      },
-      schema: [
-        {
-          type: "object",
-          properties: {
-            allowedFunctions: {
-              type: "array",
-              items: { type: "string" },
-            },
-          },
-          additionalProperties: false,
-        },
-      ],
-    },
-    create(context: any): Rule.RuleListener {
-      const options = (context.options[0] as PreferConsoleInfoOptions) ?? {};
-      const allowedFunctions = new Set(
-        options.allowedFunctions ?? ["error", "warn", "debug", "trace"],
-      );
-
-      return {
-        CallExpression(node: Node): void {
-          const callExpr = node as CallExpression;
-          if (callExpr.callee.type !== "MemberExpression") return;
-          const memberExpr = callExpr.callee as MemberExpression;
-          const objectName = getObjectName(memberExpr);
-          const propertyName = getPropertyName(memberExpr);
-
-          if (
-            objectName === "console" &&
-            propertyName === "log" &&
-            allowedFunctions.has("log") === false
-          ) {
-            context.report({
-              node,
-              messageId: "useConsoleInfo",
-              fix(fixer) {
-                const property = memberExpr.property as Identifier;
-                return fixer.replaceText(property, "info");
-              },
-            });
-          }
-        },
-      };
-    },
-  },
 };
 
 module.exports = { rules };
