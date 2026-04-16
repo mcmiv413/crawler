@@ -4,6 +4,7 @@
 
 import type { InventoryItemView } from '@dungeon/presenter';
 import styles from './ActionDropdowns.module.css';
+import { getRarityColor } from '../../utils/rarity-color.js';
 
 export interface UseDropdownProps {
   readonly consumables: readonly (InventoryItemView & { readonly quantity: number })[];
@@ -54,15 +55,4 @@ export function UseDropdown({
       })}
     </div>
   );
-}
-
-function getRarityColor(rarity: string): string {
-  const rarityMap: Record<string, string> = {
-    common: '#a0a0a0',
-    uncommon: '#00ff00',
-    rare: '#0080ff',
-    epic: '#ff00ff',
-    legendary: '#ffaa00',
-  };
-  return rarityMap[rarity.toLowerCase()] || '#a0a0a0';
 }

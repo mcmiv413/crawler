@@ -31,10 +31,10 @@ function sumEnchantmentEffect(state: GameState, effectType: string): number {
 }
 
 /** Sum total thorns/spikes reflect damage from all equipped armor */
-export const getTotalThornsReflect = (state: GameState) => sumEnchantmentEffect(state, 'thorns');
+export const getTotalThornsReflect = (state: GameState): number => sumEnchantmentEffect(state, 'thorns');
 
 /** Get HP regen bonus per turn from enchantments */
-export const getEnchantmentRegenBonus = (state: GameState) => sumEnchantmentEffect(state, 'regen');
+export const getEnchantmentRegenBonus = (state: GameState): number => sumEnchantmentEffect(state, 'regen');
 
 /** Get XP multiplier from exp_bonus enchantments (stacks additively) */
 export function getExpBonusMultiplier(state: GameState): number {
@@ -72,4 +72,4 @@ export function applyBlinkOnHit(state: GameState, rngNext: () => number): boolea
 /**
  * Get HP healed on kill from life_steal enchantments.
  */
-export const applyLifeStealOnKill = (state: GameState) => sumEnchantmentEffect(state, 'life_steal');
+export const applyLifeStealOnKill = (state: GameState): number => sumEnchantmentEffect(state, 'life_steal');

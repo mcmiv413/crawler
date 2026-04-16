@@ -2,8 +2,8 @@ import { describe, it, expect } from 'vitest';
 import { handlePlayerDeath } from './death.js';
 import { SeededRNG } from '../utils/rng.js';
 import { entityId } from '@dungeon/contracts';
-import type { GameState, AnyItemTemplate } from '@dungeon/contracts';
-import { createTestGameState } from '../test-utils.js';
+import type { GameState } from '@dungeon/contracts';
+import { createTestGameStateInCombat } from '../test-utils.js';
 
 describe('handlePlayerDeath', () => {
   const killerId = entityId('enemy1');
@@ -18,90 +18,64 @@ describe('handlePlayerDeath', () => {
     deathStash?: any;
     enemyInRun?: boolean;
   }): GameState {
+    // Use combat state builder to get proper RunState structure
+    const combatState = createTestGameStateInCombat();
+
     const floor = overrides?.floor ?? 3;
     const maxHealth = overrides?.maxHealth ?? 100;
     const health = overrides?.health ?? 50;
     const weapon = overrides?.equipment?.weapon ?? null;
     const chest = overrides?.equipment?.chest ?? null;
 
-    const itemRegistry = { items: new Map<string, AnyItemTemplate>() };
+    // Build item registry with proper type handling
+    const itemRegistry = { items: new Map(combatState.itemRegistry.items) };
     if (weapon) {
-      itemRegistry.items.set(weapon as any, {
-        itemId: weapon, name: 'Test Sword', description: '', itemClass: 'weapon',
+      const weaponId = entityId(weapon);
+      itemRegistry.items.set(weaponId, {
+        itemId: weaponId, name: 'Test Sword', description: '', itemClass: 'weapon',
         rarity: 'common', value: 10, stackable: false, maxStack: 1,
         weapon: { damage: 5, damageType: 'physical', accuracy: 0, speed: 0, slot: 'weapon', weaponRange: 1, weaponType: 'blade' },
-      } as any);
+      });
     }
     if (chest) {
-      itemRegistry.items.set(chest as any, {
-        itemId: chest, name: 'Test Armor', description: '', itemClass: 'armor',
+      const chestId = entityId(chest);
+      itemRegistry.items.set(chestId, {
+        itemId: chestId, name: 'Test Armor', description: '', itemClass: 'armor',
         rarity: 'common', value: 15, stackable: false, maxStack: 1,
         armor: { defense: 3, slot: 'chest', evasionPenalty: 0, enchantmentSlots: 0, enchantments: [] },
-      } as any);
+      });
     }
 
-    const enemies = new Map();
-    if (overrides?.enemyInRun !== false) {
-      enemies.set('1,0', {
-        id: killerId, name: 'Goblin', templateId: 'goblin_skirmisher',
-        tier: 1, position: { x: 1, y: 0 },
-        stats: { maxHealth: 20, health: 15, attack: 5, defense: 2, accuracy: 70, evasion: 5, speed: 3 },
-        archetype: 'aggressive_melee',
-        equipment: {
-          weapon: {
-            damageMultiplier: 1.0,
-            damageType: 'physical',
-            range: 1,
-          },
-        },
-        affinities: {},
-        spawn: { floorRange: [1, 3], weight: 1 },
-        lootTableId: 'goblin',
-        experienceValue: 10,
-        description: 'A goblin',
-        ascii: 'g',
-        statuses: [],
-        isAlerted: true,
-        lastKnownPlayerPos: null,
-      } as any);
-    }
-
-    const base = createTestGameState({
-      player: {
-        gold: overrides?.gold ?? 200,
-        floor,
-        position: { x: 5, y: 5 },
-        equipment: {
-          weapon: weapon ? entityId(weapon) : null,
-          chest: chest ? entityId(chest) : null,
-          head: null, gloves: null, boots: null, ring1: null, ring2: null,
-        },
-        totalDeaths: 2,
-        totalRuns: 5,
-        deathStash: overrides?.deathStash ?? null,
+    // Build player with proper equipment
+    const player = {
+      ...combatState.player,
+      gold: overrides?.gold ?? 200,
+      floor,
+      position: { x: 5, y: 5 },
+      equipment: {
+        ...combatState.player.equipment,
+        weapon: weapon ? entityId(weapon) : null,
+        chest: chest ? entityId(chest) : null,
       },
-      phase: 'dungeon',
-    });
+      stats: { ...combatState.player.stats, maxHealth, health },
+      totalDeaths: 2,
+      totalRuns: 5,
+      deathStash: overrides?.deathStash ?? null,
+    };
 
+    // Build run with proper floor depth
+    const runState = {
+      ...combatState.run!,
+      floor: { ...combatState.run!.floor, depth: floor },
+    };
+
+    // Build the final state with combat as base
     return {
-      ...base,
-      player: {
-        ...base.player,
-        stats: { ...base.player.stats, maxHealth, health },
-      },
-      run: {
-        runId: entityId('run1'),
-        floor: { width: 10, height: 10, depth: floor, biomeId: 'crypt', cells: [], entrance: { x: 0, y: 0 }, exit: { x: 9, y: 9 }, seed: 42 } as any,
-        enemies,
-        items: new Map(),
-        turnCount: 0,
-        isActive: true,
-        runMetrics: { causeOfEnd: null, floorsCleared: 0, enemiesKilled: 0, damageDealt: 0, damageTaken: 0, goldEarned: 0, itemsCollected: 0, turnsPlayed: 0, abilitiesUsed: 0 } as any,
-        floorHistory: [],
-        floorCache: new Map(),
-        weaponMastery: { blade: { uses: 0, tier: 0 }, bludgeon: { uses: 0, tier: 0 }, axe: { uses: 0, tier: 0 }, ranged: { uses: 0, tier: 0 } },
-      },
-      itemRegistry: itemRegistry as any,
+      ...combatState,
+      player,
+      run: runState,
+      itemRegistry,
+      phase: 'dungeon' as const,
     };
   }
 
@@ -265,13 +239,13 @@ describe('handlePlayerDeath', () => {
       itemId: secondaryWeapon,
       name: 'Test Dagger',
       description: '',
-      itemClass: 'weapon',
-      rarity: 'common',
+      itemClass: 'weapon' as const,
+      rarity: 'common' as const,
       value: 5,
       stackable: false,
       maxStack: 1,
-      weapon: { damage: 3, damageType: 'physical', accuracy: 0, speed: 0, slot: 'secondaryWeapon', weaponRange: 1, weaponType: 'blade' },
-    } as any);
+      weapon: { damage: 3, damageType: 'physical', accuracy: 0, speed: 0, slot: 'weapon' as const, weaponRange: 1, weaponType: 'blade' as const },
+    });
 
     const stateWithSecondaryWeapon = {
       ...state,
