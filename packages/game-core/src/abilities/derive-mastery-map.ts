@@ -13,6 +13,7 @@ export function deriveMasteryAbilities(
     bludgeon: { 1: '', 2: '' },
     axe: { 1: '', 2: '' },
     ranged: { 1: '', 2: '' },
+    dagger: { 1: '', 2: '' },
   };
 
   for (const def of definitions) {

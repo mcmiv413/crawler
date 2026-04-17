@@ -16,5 +16,7 @@ export type TownActionCommand = Extract<GameCommand, { type: 'TOWN_ACTION' }>;
 export type AscendCommand = Extract<GameCommand, { type: 'ASCEND' }>;
 export type UseAbilityCommand = Extract<GameCommand, { type: 'USE_ABILITY' }>;
 export type EnchantArmorCommand = Extract<GameCommand, { type: 'ENCHANT_ARMOR' }>;
+export type DisarmTrapCommand = Extract<GameCommand, { type: 'DISARM_TRAP' }>;
+export type SetTrapCommand = Extract<GameCommand, { type: 'SET_TRAP' }>;
 
 export type CommandType = GameCommand['type'];

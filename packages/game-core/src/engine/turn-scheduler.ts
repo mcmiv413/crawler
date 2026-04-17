@@ -11,7 +11,8 @@ import type { SeededRNG } from '../utils/rng.js';
 import { applyThornsToAttacker, applyBlinkOnHit, getEnchantmentRegenBonus, getTotalThornsReflect } from '../systems/enchantment-hooks.js';
 import { updateRunMetrics } from './command-handler.js';
 import { resolveEnemyAbility } from '../systems/enemy-abilities.js';
-import { COMBAT, AMBIENT_PROFILES } from '@dungeon/content';
+import { COMBAT, AMBIENT_PROFILES, OBJECT_TEMPLATES } from '@dungeon/content';
+import { calculateHazardDamage } from '../systems/hazard-damage.js';
 
 /** Process all enemy turns after a player action */
 export function processEnemyTurns(
@@ -253,20 +254,72 @@ function executeEnemyAction(
       };
       newEnemies.set(posKey(action.targetPosition), movedEnemy);
 
-      return {
-        state: {
-          ...state,
-          run: { ...state.run, enemies: newEnemies },
-        },
-        events: [{
-          type: 'ENEMY_MOVED',
-          enemyId: enemy.id,
-          from: enemy.position,
-          to: action.targetPosition,
-          timestamp: Date.now(),
-          turnNumber: state.turnNumber,
-        }],
+      let newState = {
+        ...state,
+        run: { ...state.run, enemies: newEnemies },
       };
+
+      let events: DomainEvent[] = [{
+        type: 'ENEMY_MOVED',
+        enemyId: enemy.id,
+        from: enemy.position,
+        to: action.targetPosition,
+        timestamp: Date.now(),
+        turnNumber: state.turnNumber,
+      }];
+
+      // Check for hazards at the new position
+      const objKey = posKey(action.targetPosition);
+      const hazardAtPos = state.run.objects.get(objKey);
+      if (hazardAtPos !== undefined) {
+        const hazardTemplate = OBJECT_TEMPLATES.get(hazardAtPos.templateId);
+        if (hazardTemplate !== undefined && hazardTemplate.isHazard === true) {
+          const damage = calculateHazardDamage(hazardTemplate, movedEnemy.stats.maxHealth);
+          const newHealth = Math.max(0, movedEnemy.stats.health - damage);
+
+          const updatedEnemy: EnemyInstance = {
+            ...movedEnemy,
+            stats: { ...movedEnemy.stats, health: newHealth },
+          };
+          newEnemies.set(objKey, updatedEnemy);
+          newState = {
+            ...newState,
+            run: { ...newState.run, enemies: newEnemies },
+          };
+
+          events = [...events, {
+            type: 'TRAP_TRIGGERED',
+            trapId: hazardAtPos.id,
+            trapName: hazardTemplate.name,
+            position: action.targetPosition,
+            damage,
+            rarity: hazardTemplate.rarity,
+            hazardType: hazardTemplate.hazardType,
+            statusEffect: hazardTemplate.statusEffect,
+            timestamp: Date.now(),
+            turnNumber: state.turnNumber,
+          }];
+
+          // Handle enemy death from hazard
+          if (newHealth <= 0) {
+            newEnemies.delete(objKey);
+            newState = {
+              ...newState,
+              run: { ...newState.run, enemies: newEnemies },
+            };
+            events = [...events, {
+              type: 'ENTITY_DIED',
+              entityId: updatedEnemy.id,
+              killerId: null,
+              entityName: updatedEnemy.name,
+              timestamp: Date.now(),
+              turnNumber: state.turnNumber,
+            }];
+          }
+        }
+      }
+
+      return { state: newState, events };
     }
 
     case 'attack': {

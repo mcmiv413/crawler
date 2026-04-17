@@ -8,7 +8,7 @@ import { describe, it, expect } from 'vitest';
 import { handlePlayerDeath } from './death.js';
 import { SeededRNG } from '../utils/rng.js';
 import { entityId } from '@dungeon/contracts';
-import type { GameState, AnyItemTemplate } from '@dungeon/contracts';
+import type { GameState } from '@dungeon/contracts';
 import { createTestGameState } from '../test-utils.js';
 
 describe('handlePlayerDeath - enriched event fields', () => {
@@ -94,7 +94,7 @@ describe('handlePlayerDeath - enriched event fields', () => {
         floorHistory: [],
         floorCache: new Map(),
         speedAccumulators: {},
-        weaponMastery: { blade: 0, bludgeon: 0, axe: 0, ranged: 0 },
+        weaponMastery: { blade: 0, bludgeon: 0, axe: 0, ranged: 0, dagger: 0 },
       },
       itemRegistry: { items: new Map() } as any,
     };

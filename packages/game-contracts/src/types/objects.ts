@@ -1,4 +1,4 @@
-import type { Position, EntityId } from './common.js';
+import type { Position, EntityId, ItemRarity, StatusId } from './common.js';
 import type { BiomeMembership } from './enemy.js';
 
 export interface ObjectTemplate {
@@ -20,6 +20,12 @@ export interface ObjectTemplate {
   readonly lootTableId?: string;
   /** Which biomes this object can spawn in */
   readonly biomes?: ReadonlyArray<BiomeMembership>;
+  /** For traps: rarity determines damage scaling (percentage of max health) */
+  readonly rarity?: ItemRarity;
+  /** For traps: status effect applied when triggered */
+  readonly statusEffect?: StatusId;
+  /** For traps: type identifier for matching trap items to hazards (spike, fire, poison, etc.) */
+  readonly hazardType?: 'spike' | 'fire' | 'poison' | 'frost' | 'lightning';
 }
 
 export interface ObjectInstance {

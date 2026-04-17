@@ -37,7 +37,7 @@ export type ThreatTier = 1 | 2 | 3 | 4 | 5;
 export type EnemyArchetype = 'melee_bruiser' | 'fast_skirmisher' | 'ranged_attacker' | 'support_buffer' | 'ambusher' | 'hazard_creator' | 'elite' | 'boss';
 
 /** Weapon category for mastery tracking */
-export type WeaponType = 'blade' | 'bludgeon' | 'axe' | 'ranged';
+export type WeaponType = 'blade' | 'bludgeon' | 'axe' | 'ranged' | 'dagger';
 
 /** Per-run hit counts by weapon type */
 export interface WeaponMastery {
@@ -45,17 +45,18 @@ export interface WeaponMastery {
   readonly bludgeon: number;
   readonly axe: number;
   readonly ranged: number;
+  readonly dagger: number;
 }
 
-export const WEAPON_TYPES: readonly WeaponType[] = ['blade', 'bludgeon', 'axe', 'ranged'];
+export const WEAPON_TYPES: readonly WeaponType[] = ['blade', 'bludgeon', 'axe', 'ranged', 'dagger'];
 
-export const EMPTY_WEAPON_MASTERY: WeaponMastery = { blade: 0, bludgeon: 0, axe: 0, ranged: 0 };
+export const EMPTY_WEAPON_MASTERY: WeaponMastery = { blade: 0, bludgeon: 0, axe: 0, ranged: 0, dagger: 0 };
 
 /** Item rarity */
 export type ItemRarity = 'common' | 'uncommon' | 'rare' | 'epic' | 'legendary';
 
 /** Item class */
-export type ItemClass = 'weapon' | 'armor' | 'consumable' | 'relic' | 'quest' | 'tool';
+export type ItemClass = 'weapon' | 'armor' | 'consumable' | 'relic' | 'quest' | 'tool' | 'trap';
 
 /** Armor slot (used for routing equip) */
 export type ArmorSlot = 'chest' | 'head' | 'gloves' | 'boots' | 'ring';

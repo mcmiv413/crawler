@@ -162,6 +162,7 @@ export function equipItem(
 ): { state: GameState; events: DomainEvent[] } {
   const template = state.itemRegistry.items.get(itemId);
   if (template === undefined) return { state, events: [] };
+  if (template.itemClass === 'trap') return { state, events: [] };
 
   let newEquipment = { ...state.player.equipment };
   let events: DomainEvent[] = [];

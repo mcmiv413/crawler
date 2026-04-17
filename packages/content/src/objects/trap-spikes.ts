@@ -1,6 +1,5 @@
 import type { ObjectTemplate } from '@dungeon/contracts';
 
-
 export const trapSpikes: ObjectTemplate = {
   templateId: 'trap_spikes',
   name: 'Spike Trap',
@@ -11,5 +10,8 @@ export const trapSpikes: ObjectTemplate = {
   healthDelta: -15,
   consumable: false,
   blocksMovement: false,
+  isHazard: true,
+  statusEffect: 'bleed',
+  hazardType: 'spike',
   biomes: [{ biomeId: 'goblin_warrens' }, { biomeId: 'stone_crypt' }],
 };

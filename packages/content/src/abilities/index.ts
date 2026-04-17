@@ -105,6 +105,25 @@ export const ABILITY_DEFINITIONS: Readonly<Record<string, AbilityDefinition>> = 
     unlockLevel: 0,
     requiresWeaponTypes: ['ranged'],
   },
+  // Dagger mastery
+  dagger_disarm: {
+    id: 'dagger_disarm',
+    name: 'Disarm Trap',
+    description: 'Remove an adjacent trap and add it to your inventory.',
+    cooldown: 0,
+    requiresTarget: false,
+    unlockLevel: 0,
+    requiresWeaponTypes: ['dagger'],
+  },
+  dagger_set_trap: {
+    id: 'dagger_set_trap',
+    name: 'Set Trap',
+    description: 'Place a trap on an adjacent empty tile.',
+    cooldown: 0,
+    requiresTarget: false,
+    unlockLevel: 0,
+    requiresWeaponTypes: ['dagger'],
+  },
 } as const;
 
 /** Ordered list of abilities granted at each level (index = level) */
@@ -122,4 +141,5 @@ export const MASTERY_ABILITIES: Record<WeaponType, Record<1 | 2, string>> = {
   bludgeon: { 1: 'bludgeon_stagger', 2: 'bludgeon_shatter' },
   axe:      { 1: 'axe_cleave',       2: 'axe_execute'      },
   ranged:   { 1: 'ranged_pin',       2: 'ranged_volley'    },
+  dagger:   { 1: 'dagger_disarm',    2: 'dagger_set_trap'  },
 };

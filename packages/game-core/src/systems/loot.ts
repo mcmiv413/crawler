@@ -22,10 +22,10 @@ function weightedPickRarity(weights: [number, number, number, number], rng: Seed
 export function rollChestLoot(depth: number, rng: SeededRNG): string | null {
   const weights = getDropWeights(depth);
   const rarity = weightedPickRarity(weights, rng);
-  const eligible = ALL_ITEMS.filter(item => item.rarity === rarity);
+  const eligible = ALL_ITEMS.filter(item => item.rarity === rarity && item.itemClass !== 'trap');
   if (eligible.length === 0) {
     // Fallback to any item if no eligible at this rarity
-    const fallback = ALL_ITEMS.filter(item => item.rarity === 'common');
+    const fallback = ALL_ITEMS.filter(item => item.rarity === 'common' && item.itemClass !== 'trap');
     if (fallback.length === 0) return null;
     const weighted = fallback.flatMap(item => item.itemClass === 'consumable' ? [item] : [item, item]);
     return rng.pick(weighted).itemId;
@@ -75,9 +75,9 @@ export function rollItemDrop(
   }
 
   const rarity = weightedPickRarity(adjustedWeights as [number, number, number, number], rng);
-  const eligible = ALL_ITEMS.filter(item => item.rarity === rarity);
+  const eligible = ALL_ITEMS.filter(item => item.rarity === rarity && item.itemClass !== 'trap');
   if (eligible.length === 0) {
-    const fallback = ALL_ITEMS.filter(item => item.rarity === 'common');
+    const fallback = ALL_ITEMS.filter(item => item.rarity === 'common' && item.itemClass !== 'trap');
     if (fallback.length === 0) return null;
     const weighted = fallback.flatMap(item => item.itemClass === 'consumable' ? [item] : [item, item]);
     return rng.pick(weighted).itemId;

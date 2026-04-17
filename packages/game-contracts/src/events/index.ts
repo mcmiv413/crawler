@@ -284,6 +284,9 @@ export interface TrapTriggeredEvent extends BaseEvent {
   readonly trapName: string;
   readonly position: Position;
   readonly damage: number;
+  readonly rarity?: string;
+  readonly hazardType?: string;
+  readonly statusEffect?: StatusId;
 }
 
 export interface ThornsReflectedEvent extends BaseEvent {
