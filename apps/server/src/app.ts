@@ -7,7 +7,6 @@ import type { GameCommand, EntityId, GameState, RunMetrics } from '@dungeon/cont
 import { InMemoryRepository } from './in-memory-repository.js';
 import { CompositeAiService } from './ai/ai-service-composite.js';
 import { applyRunConsequences, rollNemesisLoot, addItemToInventory, serializeState, deserializeState } from '@dungeon/core';
-import { signSaveState, verifySaveSignature } from './save-signing.js';
 import { registerDebugRoutes } from './routes/debug.js';
 
 export async function buildApp(): Promise<FastifyInstance> {
@@ -49,7 +48,6 @@ export async function buildApp(): Promise<FastifyInstance> {
       gameId: state.gameId,
       view,
       serializedState,
-      stateSignature: signSaveState(serializedState),
     });
   });
 
@@ -257,7 +255,6 @@ export async function buildApp(): Promise<FastifyInstance> {
       events: result.events,
       runEnded: result.runEnded,
       serializedState,
-      stateSignature: signSaveState(serializedState),
     };
   });
 
@@ -336,20 +333,9 @@ export async function buildApp(): Promise<FastifyInstance> {
   app.post('/api/games/restore', async (request, reply) => {
     const body = request.body as {
       serializedState?: string;
-      stateSignature?: string;
     };
     if (!body.serializedState || typeof body.serializedState !== 'string') {
       return reply.code(400).send({ error: 'Missing serializedState' });
-    }
-
-    // Verify the state signature to prevent tampering
-    // (client trying to replay an older saved state or modify the JSON)
-    const signature = body.stateSignature;
-    if (!signature || typeof signature !== 'string' || !verifySaveSignature(body.serializedState, signature)) {
-      return reply.code(400).send({
-        error: 'Save file signature invalid',
-        message: 'The save file has been tampered with or is from an incompatible game version. Please start a new run.',
-      });
     }
 
     try {
@@ -369,7 +355,6 @@ export async function buildApp(): Promise<FastifyInstance> {
             gameId: existing.gameId,
             view,
             serializedState: existingSerializedState,
-            stateSignature: signSaveState(existingSerializedState),
           };
         }
       } catch (loadError) {
@@ -396,7 +381,6 @@ export async function buildApp(): Promise<FastifyInstance> {
         gameId: state.gameId,
         view,
         serializedState: body.serializedState,
-        stateSignature: signature,
       };
     } catch (error) {
       if (error instanceof SchemaVersionMismatchError) {
