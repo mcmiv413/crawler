@@ -43,9 +43,13 @@ function makeAiState(
       seed: 42,
     },
     enemies: new Map([[posKey(enemy.position), enemy]]),
+    objects: new Map(),
     turnCount: 0,
     isActive: true,
+    runMetrics: {} as any,
     floorHistory: [],
+    floorCache: new Map(),
+    speedAccumulators: {},
     weaponMastery: EMPTY_WEAPON_MASTERY,
   };
 
