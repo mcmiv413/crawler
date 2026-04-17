@@ -26,8 +26,8 @@ function makeStateWithEnchantedArmor(enchantments: (string | null)[], slot: 'che
   };
   const registry = new Map([[armorId, armor]]);
   const equipment = slot === 'chest'
-    ? { weapon: null, chest: armorId, head: null, gloves: null, boots: null, ring1: null, ring2: null }
-    : { weapon: null, chest: null, head: armorId, gloves: null, boots: null, ring1: null, ring2: null };
+    ? { weapon: null, secondaryWeapon: null, chest: armorId, head: null, gloves: null, boots: null, ring1: null, ring2: null }
+    : { weapon: null, secondaryWeapon: null, chest: null, head: armorId, gloves: null, boots: null, ring1: null, ring2: null };
   return {
     ...createTestGameState(),
     player: { ...createTestGameState().player, equipment },
@@ -68,7 +68,7 @@ describe('getTotalThornsReflect', () => {
       ...createTestGameState(),
       player: {
         ...createTestGameState().player,
-        equipment: { weapon: null, chest: armorId1, head: armorId2, gloves: null, boots: null, ring1: null, ring2: null },
+        equipment: { weapon: null, secondaryWeapon: null, chest: armorId1, head: armorId2, gloves: null, boots: null, ring1: null, ring2: null },
       },
       itemRegistry: { items: registry as any },
     };

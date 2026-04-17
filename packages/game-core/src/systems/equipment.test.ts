@@ -20,7 +20,7 @@ const testWeapon: WeaponTemplate = {
   value: 10,
   stackable: false,
   maxStack: 1,
-  weapon: { damage: 8, damageType: 'physical', accuracy: 5, speed: 3, slot: 'weapon', weaponRange: 1 },
+  weapon: { damage: 8, damageType: 'physical', accuracy: 5, speed: 3, slot: 'weapon', weaponRange: 1, weaponType: 'blade' as const },
 };
 
 const testArmor: ArmorTemplate = {
@@ -212,25 +212,25 @@ describe('unequipItem - Phase C2: unequip items from all slots', () => {
 
   it('unequipping from one ring slot does not affect the other', () => {
     const ring1: ArmorTemplate = {
-      id: entityId('ring1'),
       itemId: 'ring1',
       name: 'Ring 1',
       itemClass: 'armor',
       description: 'A ring',
       rarity: 'common',
       value: 10,
-      weight: 0.1,
+      stackable: false,
+      maxStack: 1,
       armor: { slot: 'ring', defense: 2, evasionPenalty: 0, enchantments: [], enchantmentSlots: 0 },
     };
     const ring2: ArmorTemplate = {
-      id: entityId('ring2'),
       itemId: 'ring2',
       name: 'Ring 2',
       itemClass: 'armor',
       description: 'Another ring',
       rarity: 'common',
       value: 10,
-      weight: 0.1,
+      stackable: false,
+      maxStack: 1,
       armor: { slot: 'ring', defense: 2, evasionPenalty: 0, enchantments: [], enchantmentSlots: 0 },
     };
 

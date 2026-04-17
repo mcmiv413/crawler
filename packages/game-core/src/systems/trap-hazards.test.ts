@@ -4,11 +4,10 @@ import { SeededRNG } from '../utils/rng.js';
 import { entityId } from '@dungeon/contracts';
 import type { GameState } from '@dungeon/contracts';
 import { createTestGameState } from '../test-utils.js';
-import { CRYPT_BIOME } from '@dungeon/content';
 
 /**
  * TDD Test Suite: Trap Hazards in Death Attribution
- * 
+ *
  * These tests ensure that when the player dies to a trap hazard (not an enemy),
  * the game over screen correctly attributes the death to the hazard rather than
  * an enemy, and displays the hazard name as the killer.
@@ -45,7 +44,6 @@ function createTestGameStateWithRun(overrides?: {
         seed: 42,
       } as any,
       enemies: new Map(),
-      items: new Map(),
       objects: new Map(),
       turnCount: overrides?.turnCount ?? 0,
       isActive: true,
@@ -69,7 +67,7 @@ function createTestGameStateWithRun(overrides?: {
 describe('Trap Hazard Death Attribution', () => {
   /**
    * Test 1: Player dies to trap hazard - killer name should be trap, not enemy
-   * 
+   *
    * When a player steps on a trap hazard and takes overkill damage from it,
    * the PlayerDiedEvent should have killerName set to the trap name, not null
    * or an enemy name.
@@ -86,8 +84,7 @@ describe('Trap Hazard Death Attribution', () => {
     });
 
     // Manually set player health to 10 to make trap damage lethal
-    state.player.stats.health = 10;
-    state.player.stats.maxHealth = 100;
+    state = { ...state, player: { ...state.player, stats: { ...state.player.stats, health: 10, maxHealth: 100 } } };
 
     // Simulate trap triggering with 50 damage (causing 40 overkill)
     const result = handlePlayerDeath(
@@ -103,7 +100,7 @@ describe('Trap Hazard Death Attribution', () => {
 
   /**
    * Test 2: Game over screen shows hazard as cause, not enemy
-   * 
+   *
    * The death context should expose the hazard as the killer, not look for
    * an enemy in the run state.
    */
@@ -118,9 +115,7 @@ describe('Trap Hazard Death Attribution', () => {
       phase: 'dungeon',
     });
 
-    state.player.totalDeaths = 1;
-    state.player.stats.health = 10;
-    state.player.stats.maxHealth = 100;
+    state = { ...state, player: { ...state.player, totalDeaths: 1, stats: { ...state.player.stats, health: 10, maxHealth: 100 } } };
 
     // Trap deals 25 damage (causing 15 overkill) - below permadeath threshold
     const result = handlePlayerDeath(
@@ -136,7 +131,7 @@ describe('Trap Hazard Death Attribution', () => {
 
   /**
    * Test 3: Trap hazard death still calculates overkill correctly
-   * 
+   *
    * Overkill should be (damage - current health), not affected by whether
    * the source is a trap or an enemy.
    */
@@ -146,8 +141,7 @@ describe('Trap Hazard Death Attribution', () => {
       phase: 'dungeon',
     });
 
-    state.player.stats.health = 15;
-    state.player.stats.maxHealth = 100;
+    state = { ...state, player: { ...state.player, stats: { ...state.player.stats, health: 15, maxHealth: 100 } } };
 
     // Trap deals 50 damage, player has 15 health → 35 overkill
     const result = handlePlayerDeath(
@@ -162,7 +156,7 @@ describe('Trap Hazard Death Attribution', () => {
 
   /**
    * Test 4: Trap hazard death respects permadeath thresholds
-   * 
+   *
    * Even if death is caused by a trap, permadeath checks should still apply.
    */
   it('should trigger permadeath for trap hazard if overkill exceeds threshold', () => {
@@ -174,9 +168,7 @@ describe('Trap Hazard Death Attribution', () => {
       phase: 'dungeon',
     });
 
-    state.player.totalDeaths = 10; // High death count
-    state.player.stats.health = 10;
-    state.player.stats.maxHealth = 50;
+    state = { ...state, player: { ...state.player, totalDeaths: 10, stats: { ...state.player.stats, health: 10, maxHealth: 50 } } };
 
     // Trap deals 100 damage (90 overkill), high permadeath counter → should trigger
     const result = handlePlayerDeath(
@@ -192,7 +184,7 @@ describe('Trap Hazard Death Attribution', () => {
 
   /**
    * Test 5: Trap hazard in game over context should not reference enemy
-   * 
+   *
    * When building the game view after a trap hazard death, the killer
    * should be the trap name, not pulled from an enemy template.
    */
@@ -202,8 +194,7 @@ describe('Trap Hazard Death Attribution', () => {
       phase: 'dungeon',
     });
 
-    state.player.stats.health = 60;
-    state.player.stats.maxHealth = 100;
+    state = { ...state, player: { ...state.player, stats: { ...state.player.stats, health: 60, maxHealth: 100 } } };
 
     // Trap deals 30 damage - below permadeath threshold (about 30 at max health 100)
     const result = handlePlayerDeath(
@@ -213,7 +204,7 @@ describe('Trap Hazard Death Attribution', () => {
 
     const playerDiedEvent = result.events.find((e) => e.type === 'PLAYER_DIED');
     expect(playerDiedEvent).toBeDefined();
-    
+
     // Sprite name should be null for trap hazards
     expect(playerDiedEvent?.killerSpriteName).toBe(null);
     // But name should always be set
@@ -222,7 +213,7 @@ describe('Trap Hazard Death Attribution', () => {
 
   /**
    * Test 6: Hazard death should emit PLAYER_DIED event (not a different event)
-   * 
+   *
    * The event type and structure should be consistent regardless of source.
    */
   it('should emit PLAYER_DIED event for hazard deaths', () => {
@@ -231,8 +222,7 @@ describe('Trap Hazard Death Attribution', () => {
       phase: 'dungeon',
     });
 
-    state.player.stats.health = 30;
-    state.player.stats.maxHealth = 100;
+    state = { ...state, player: { ...state.player, stats: { ...state.player.stats, health: 30, maxHealth: 100 } } };
 
     const result = handlePlayerDeath(
       state,
@@ -242,6 +232,6 @@ describe('Trap Hazard Death Attribution', () => {
     const playerDiedEvents = result.events.filter((e) => e.type === 'PLAYER_DIED');
     expect(playerDiedEvents.length).toBeGreaterThan(0);
     expect(playerDiedEvents.length).toBeLessThanOrEqual(1);
-    expect(playerDiedEvents[0].killerName).toBe('Dart Trap');
+    expect(playerDiedEvents[0]!.killerName).toBe('Dart Trap');
   });
 });

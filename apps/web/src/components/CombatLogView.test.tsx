@@ -75,7 +75,7 @@ describe('CombatLogView Component', () => {
   describe('Scroll Behavior', () => {
     it('scrolls to bottom when new entries are added', () => {
       const { rerender } = render(
-        <CombatLogView entries={[{ text: 'Entry 1', type: 'info' }]} />,
+        <CombatLogView entries={[{ text: 'Entry 1', type: 'info' }]} debugMode={false} />,
       );
 
       const scrollContainer = document.querySelector('[style*="overflowY"]') as HTMLDivElement;
@@ -89,6 +89,7 @@ describe('CombatLogView Component', () => {
             { text: 'Entry 2', type: 'info' },
             { text: 'Entry 3', type: 'info' },
           ]}
+          debugMode={false}
         />,
       );
 
@@ -228,7 +229,7 @@ describe('CombatLogView Component', () => {
 
     it('preserves order when entries array is updated with duplicates', () => {
       const { rerender } = render(
-        <CombatLogView entries={[{ text: 'Event 1', type: 'info' }]} />,
+        <CombatLogView entries={[{ text: 'Event 1', type: 'info' }]} debugMode={false} />,
       );
 
       rerender(
@@ -238,6 +239,7 @@ describe('CombatLogView Component', () => {
             { text: 'Event 1', type: 'info' },
             { text: 'Event 2', type: 'info' },
           ]}
+          debugMode={false}
         />,
       );
 

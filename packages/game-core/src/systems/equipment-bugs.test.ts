@@ -83,7 +83,7 @@ const testWeapon: WeaponTemplate = {
   value: 10,
   stackable: false,
   maxStack: 1,
-  weapon: { damage: 8, damageType: 'physical', accuracy: 5, speed: 3, slot: 'weapon', weaponRange: 1 },
+  weapon: { damage: 8, damageType: 'physical', accuracy: 5, speed: 3, slot: 'weapon', weaponRange: 1, weaponType: 'blade' as const },
 };
 
 describe('EQUIPMENT BUGS - Critical Inventory Loss Issues', () => {

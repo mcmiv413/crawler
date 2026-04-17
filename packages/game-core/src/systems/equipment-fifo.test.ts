@@ -1,7 +1,7 @@
 import { describe, it, expect, beforeEach } from 'vitest';
 import { equipItem } from './equipment.js';
 import { createTestGameState } from '../test-utils.js';
-import type { WeaponTemplate, ArmorTemplate, GameState } from '@dungeon/contracts';
+import type { WeaponTemplate, ArmorTemplate, GameState, EntityId, AnyItemTemplate } from '@dungeon/contracts';
 import { entityId } from '@dungeon/contracts';
 
 describe('equipment FIFO behavior', () => {
@@ -16,7 +16,7 @@ describe('equipment FIFO behavior', () => {
     value: 10,
     stackable: false,
     maxStack: 1,
-    weapon: { damage: 8, damageType: 'physical', accuracy: 5, speed: 3, slot: 'weapon', weaponRange: 1 },
+    weapon: { damage: 8, damageType: 'physical', accuracy: 5, speed: 3, slot: 'weapon', weaponRange: 1, weaponType: 'blade' },
   };
 
   const axe: WeaponTemplate = {
@@ -28,7 +28,7 @@ describe('equipment FIFO behavior', () => {
     value: 10,
     stackable: false,
     maxStack: 1,
-    weapon: { damage: 10, damageType: 'physical', accuracy: 3, speed: 2, slot: 'weapon', weaponRange: 1 },
+    weapon: { damage: 10, damageType: 'physical', accuracy: 3, speed: 2, slot: 'weapon', weaponRange: 1, weaponType: 'axe' },
   };
 
   const mace: WeaponTemplate = {
@@ -40,7 +40,7 @@ describe('equipment FIFO behavior', () => {
     value: 10,
     stackable: false,
     maxStack: 1,
-    weapon: { damage: 9, damageType: 'physical', accuracy: 4, speed: 2, slot: 'weapon', weaponRange: 1 },
+    weapon: { damage: 9, damageType: 'physical', accuracy: 4, speed: 2, slot: 'weapon', weaponRange: 1, weaponType: 'bludgeon' },
   };
 
   const ring1: ArmorTemplate = {
@@ -84,41 +84,41 @@ describe('equipment FIFO behavior', () => {
     state = {
       ...baseState,
       itemRegistry: {
-        items: new Map<string, any>([
-          ['sword_test', sword],
-          ['axe_test', axe],
-          ['mace_test', mace],
-          ['ring_fire_test', ring1],
-          ['ring_ice_test', ring2],
-          ['ring_light_test', ring3],
+        items: new Map<EntityId, AnyItemTemplate>([
+          [entityId('sword_test'), sword],
+          [entityId('axe_test'), axe],
+          [entityId('mace_test'), mace],
+          [entityId('ring_fire_test'), ring1],
+          [entityId('ring_ice_test'), ring2],
+          [entityId('ring_light_test'), ring3],
         ]),
       },
       player: {
         ...baseState.player,
-        inventory: ['sword_test', 'axe_test', 'mace_test', 'ring_fire_test', 'ring_ice_test', 'ring_light_test'],
+        inventory: [entityId('sword_test'), entityId('axe_test'), entityId('mace_test'), entityId('ring_fire_test'), entityId('ring_ice_test'), entityId('ring_light_test')],
       },
     };
   });
 
   describe('weapon FIFO', () => {
     it('equips first weapon to primary slot', () => {
-      const result = equipItem(state, 'sword_test');
+      const result = equipItem(state, entityId('sword_test'));
       expect(result.state.player.equipment.weapon).toBe('sword_test');
       expect(result.state.player.equipment.secondaryWeapon).toBeNull();
     });
 
     it('equips second weapon to secondary slot', () => {
-      let result = equipItem(state, 'sword_test');
-      result = equipItem(result.state, 'axe_test');
+      let result = equipItem(state, entityId('sword_test'));
+      result = equipItem(result.state, entityId('axe_test'));
 
       expect(result.state.player.equipment.weapon).toBe('sword_test');
       expect(result.state.player.equipment.secondaryWeapon).toBe('axe_test');
     });
 
     it('replaces primary weapon when both slots full (FIFO)', () => {
-      let result = equipItem(state, 'sword_test');
-      result = equipItem(result.state, 'axe_test');
-      result = equipItem(result.state, 'mace_test');
+      let result = equipItem(state, entityId('sword_test'));
+      result = equipItem(result.state, entityId('axe_test'));
+      result = equipItem(result.state, entityId('mace_test'));
 
       // New weapon should be primary, old primary should go to inventory
       expect(result.state.player.equipment.weapon).toBe('mace_test');
@@ -129,23 +129,23 @@ describe('equipment FIFO behavior', () => {
 
   describe('ring FIFO', () => {
     it('equips first ring to ring1 slot', () => {
-      const result = equipItem(state, 'ring_fire_test');
+      const result = equipItem(state, entityId('ring_fire_test'));
       expect(result.state.player.equipment.ring1).toBe('ring_fire_test');
       expect(result.state.player.equipment.ring2).toBeNull();
     });
 
     it('equips second ring to ring2 slot', () => {
-      let result = equipItem(state, 'ring_fire_test');
-      result = equipItem(result.state, 'ring_ice_test');
+      let result = equipItem(state, entityId('ring_fire_test'));
+      result = equipItem(result.state, entityId('ring_ice_test'));
 
       expect(result.state.player.equipment.ring1).toBe('ring_fire_test');
       expect(result.state.player.equipment.ring2).toBe('ring_ice_test');
     });
 
     it('replaces ring1 when both slots full (FIFO)', () => {
-      let result = equipItem(state, 'ring_fire_test');
-      result = equipItem(result.state, 'ring_ice_test');
-      result = equipItem(result.state, 'ring_light_test');
+      let result = equipItem(state, entityId('ring_fire_test'));
+      result = equipItem(result.state, entityId('ring_ice_test'));
+      result = equipItem(result.state, entityId('ring_light_test'));
 
       // New ring should be in ring1, old ring1 should go to inventory
       expect(result.state.player.equipment.ring1).toBe('ring_light_test');
@@ -155,9 +155,9 @@ describe('equipment FIFO behavior', () => {
 
     it('maintains FIFO order across multiple equips', () => {
       // Equip rings in sequence A, B, C, D
-      let result = equipItem(state, 'ring_fire_test');
-      result = equipItem(result.state, 'ring_ice_test');
-      result = equipItem(result.state, 'ring_light_test');
+      let result = equipItem(state, entityId('ring_fire_test'));
+      result = equipItem(result.state, entityId('ring_ice_test'));
+      result = equipItem(result.state, entityId('ring_light_test'));
 
       // Current state: ring1=C, ring2=B, inventory has A
       expect(result.state.player.equipment.ring1).toBe('ring_light_test');

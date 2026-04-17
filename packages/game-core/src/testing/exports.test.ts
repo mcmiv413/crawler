@@ -65,7 +65,7 @@ describe('package exports: @dungeon/core/testing', () => {
     expect(gameState.phase).toBe('town');
   });
 
-  it('package.json should export testing subpath', async () => {
+  it('package.json should export testing subpath', () => {
     // This test confirms that the package can be built and exports work
     // Import from testing/index.ts to verify the re-export structure
     const state = createTestGameState();

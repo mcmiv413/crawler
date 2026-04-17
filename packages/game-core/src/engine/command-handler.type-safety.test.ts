@@ -1,24 +1,20 @@
 import { describe, it, expect, beforeEach } from 'vitest';
 import { handleCommand } from './command-handler.js';
 import { createTestGameState } from '../test-utils.js';
+import { SeededRNG } from '../utils/rng.js';
 import type {
   MoveCommand,
   AttackCommand,
   UseItemCommand,
   EquipCommand,
   TownActionCommand,
-  SeededRNG,
 } from '@dungeon/contracts';
 
 describe('command-handler type safety', () => {
   let rng: SeededRNG;
 
   beforeEach(() => {
-    // Mock RNG for testing
-    let counter = 0;
-    rng = {
-      next: () => ({ value: counter++, done: false }),
-    };
+    rng = new SeededRNG(42);
   });
 
   it('handles MOVE command without type casting', () => {
@@ -35,26 +31,7 @@ describe('command-handler type safety', () => {
   });
 
   it('handles ATTACK command with typed access', () => {
-    const state = createTestGameState({
-      world: {
-        ...createTestGameState().world,
-        npcs: [],
-        enemies: [
-          {
-            id: 'enemy1',
-            name: 'Orc',
-            x: 1,
-            y: 0,
-            health: 20,
-            maxHealth: 20,
-            stats: { attack: 5, defense: 2, accuracy: 5, evasion: 3, speed: 5 },
-            type: 'melee',
-            behavior: 'aggressive',
-            abilities: [],
-          },
-        ],
-      },
-    });
+    const state = createTestGameState();
 
     const attackCmd: AttackCommand = {
       type: 'ATTACK',

@@ -33,7 +33,7 @@ describe('Event Emission Guarantees (Property Tests)', () => {
           fc.integer({ min: 1, max: 100 }),
           fc.integer({ min: 0, max: 3 }),
           (seed, direction) => {
-            const state = createTestGameStateInCombat({ seed });
+            const state = createTestGameStateInCombat();
             const dirMap = ['N', 'S', 'E', 'W'];
 
             const result = handleCommand(
@@ -63,7 +63,7 @@ describe('Event Emission Guarantees (Property Tests)', () => {
     it('always emits ATTACK_PERFORMED with complete fields', { timeout: 30000 }, () => {
       fc.assert(
         fc.property(fc.integer({ min: 1, max: 100 }), (seed) => {
-          const state = createTestGameStateInCombat({ seed });
+          const state = createTestGameStateInCombat();
           const target = [...state.run!.enemies.values()][0];
           if (!target) return; // Skip if no target
 
@@ -101,7 +101,7 @@ describe('Event Emission Guarantees (Property Tests)', () => {
             stats: { maxHealth: 5, health: 5, attack: 1, defense: 0, accuracy: 0, evasion: 0, speed: 10 },
           });
 
-          const state = createTestGameStateInCombat({ seed });
+          const state = createTestGameStateInCombat();
           const stateWithWeak = {
             ...state,
             run: {
@@ -174,7 +174,7 @@ describe('Event Emission Guarantees (Property Tests)', () => {
           const state = createTestGameStateInCombat();
           const stateWithPotion = {
             ...state,
-            player: { ...state.player, inventory: ['health_potion', ...state.player.inventory] },
+            player: { ...state.player, inventory: [entityId('health_potion'), ...state.player.inventory] },
           };
 
           const result = handleCommand(
@@ -204,7 +204,7 @@ describe('Event Emission Guarantees (Property Tests)', () => {
     it('allows enemies to act and emits their events', () => {
       fc.assert(
         fc.property(fc.integer({ min: 1, max: 50 }), (seed) => {
-          const state = createTestGameStateInCombat({ seed });
+          const state = createTestGameStateInCombat();
 
           const result = handleCommand(state, { type: 'WAIT' }, new SeededRNG(seed));
 
@@ -231,7 +231,7 @@ describe('Event Emission Guarantees (Property Tests)', () => {
 
           const result = handleCommand(
             state,
-            { type: 'EQUIP', itemId: 'rusty_sword', slot: 'weapon' },
+            { type: 'EQUIP', itemId: 'rusty_sword' },
             new SeededRNG(seed),
           );
 
@@ -251,7 +251,7 @@ describe('Event Emission Guarantees (Property Tests)', () => {
     it('transitions state consistently', () => {
       fc.assert(
         fc.property(fc.integer({ min: 1, max: 50 }), (seed) => {
-          const state = createTestGameStateInCombat({ seed });
+          const state = createTestGameStateInCombat();
 
           const result = handleCommand(state, { type: 'RETREAT' }, new SeededRNG(seed));
 
@@ -276,7 +276,7 @@ describe('Event Emission Guarantees (Property Tests)', () => {
     it('increments on successful commands', () => {
       fc.assert(
         fc.property(fc.integer({ min: 1, max: 50 }), (seed) => {
-          const state = createTestGameStateInCombat({ seed });
+          const state = createTestGameStateInCombat();
 
           const result = handleCommand(state, { type: 'WAIT' }, new SeededRNG(seed));
 
@@ -300,7 +300,7 @@ describe('Event Emission Guarantees (Property Tests)', () => {
     it('damage number is non-negative and reasonable', () => {
       fc.assert(
         fc.property(fc.integer({ min: 1, max: 100 }), (seed) => {
-          const state = createTestGameStateInCombat({ seed });
+          const state = createTestGameStateInCombat();
           const target = [...state.run!.enemies.values()][0];
           if (!target) return;
 
@@ -329,7 +329,7 @@ describe('Event Emission Guarantees (Property Tests)', () => {
     it('all events have valid timestamps', () => {
       fc.assert(
         fc.property(fc.integer({ min: 1, max: 50 }), (seed) => {
-          const state = createTestGameStateInCombat({ seed });
+          const state = createTestGameStateInCombat();
 
           const result = handleCommand(state, { type: 'WAIT' }, new SeededRNG(seed));
 
@@ -350,7 +350,7 @@ describe('Event Emission Guarantees (Property Tests)', () => {
     it('original state is never modified', () => {
       fc.assert(
         fc.property(fc.integer({ min: 1, max: 50 }), (seed) => {
-          const state = createTestGameStateInCombat({ seed });
+          const state = createTestGameStateInCombat();
           const originalPlayer = state.player;
           const originalRun = state.run;
 

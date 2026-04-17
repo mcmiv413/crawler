@@ -50,7 +50,7 @@ function firstEnemyId(state: GameState): string {
 function enemyAtIndex(state: GameState, index: number): string {
   const enemies = Array.from(state.run!.enemies.values());
   if (index >= enemies.length) throw new Error(`No enemy at index ${index}`);
-  return enemies[index].id;
+  return enemies[index]!.id;
 }
 
 // ---------------------------------------------------------------------------
@@ -129,7 +129,7 @@ describe('Single-Target Abilities', () => {
       // Link 2: State - target should have bleeding status or be dead
       const afterEnemies = Array.from(result.state.run!.enemies.values());
       if (afterEnemies.length > 0) {
-        const hasBleed = afterEnemies[0]!.statuses.some((s) => s.id === 'bleeding');
+        const hasBleed = afterEnemies[0]!.statuses.some((s) => s.id === 'bleed');
         // Ability hit, so either bleed was applied or enemy died
         expect(hasBleed || result.state.run!.enemies.size === 0).toBe(true);
       }

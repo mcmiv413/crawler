@@ -2,6 +2,7 @@ import { describe, it, expect } from 'vitest';
 import fc from 'fast-check';
 import { SeededRNG } from '../utils/rng.js';
 import { resolveAttack } from './combat.js';
+import { entityId } from '@dungeon/contracts';
 import type { CombatContext } from '@dungeon/contracts';
 
 describe('Combat - Property-Based Tests', () => {
@@ -18,8 +19,8 @@ describe('Combat - Property-Based Tests', () => {
             const rng2 = new SeededRNG(seed);
 
             const ctx: CombatContext = {
-              attackerId: 'test-attacker',
-              defenderId: 'test-defender',
+              attackerId: entityId('test-attacker'),
+              defenderId: entityId('test-defender'),
               attackerAttack: attack,
               attackerAccuracy: accuracy,
               defenderDefense: 5,

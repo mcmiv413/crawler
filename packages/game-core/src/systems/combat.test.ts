@@ -1,25 +1,15 @@
 import { describe, it, expect, vi } from 'vitest';
 import { resolveAttack } from './combat.js';
 import { SeededRNG } from '../utils/rng.js';
-
-type CombatContext = {
-  attackerId: string;
-  defenderId: string;
-  attackerAttack: number;
-  attackerAccuracy: number;
-  defenderDefense: number;
-  defenderEvasion: number;
-  defenderHealth: number;
-  damageType: string;
-  defenderResistance: number;
-};
+import { entityId } from '@dungeon/contracts';
+import type { CombatContext } from '@dungeon/contracts';
 
 describe('resolveAttack', () => {
   const rng = new SeededRNG(12345);
 
   const baseCtx: CombatContext = {
-    attackerId: 'attacker',
-    defenderId: 'defender',
+    attackerId: entityId('attacker'),
+    defenderId: entityId('defender'),
     attackerAttack: 50,
     attackerAccuracy: 80,
     defenderDefense: 20,
@@ -88,15 +78,16 @@ describe('resolveAttack', () => {
 
 describe('damage type resistance', () => {
   const rng = new SeededRNG(12345);
-  const baseCtx = {
-    attackerId: 'attacker',
-    defenderId: 'defender',
+  const baseCtx: CombatContext = {
+    attackerId: entityId('attacker'),
+    defenderId: entityId('defender'),
     attackerAttack: 50,
     attackerAccuracy: 100,
     defenderDefense: 0,
     defenderEvasion: 0,
     defenderHealth: 200,
     damageType: 'fire',
+    defenderResistance: 0,
   };
 
   it('positive resistance reduces damage below unresisted value', () => {
@@ -134,9 +125,9 @@ describe('accuracy (no double-count)', () => {
   it('miss result includes missReason field when evasion causes miss', () => {
     // Verify missReason field exists and has correct value on miss
     // Use very high evasion and low accuracy to guarantee miss
-    const ctx = {
-      attackerId: 'attacker',
-      defenderId: 'defender',
+    const ctx: CombatContext = {
+      attackerId: entityId('attacker'),
+      defenderId: entityId('defender'),
       attackerAttack: 50,
       attackerAccuracy: -50,  // Very low to guarantee miss
       defenderDefense: 20,
@@ -163,9 +154,9 @@ describe('accuracy (no double-count)', () => {
     // This test validates the fix: effectiveAccuracy should use getEffectiveStat
     // which doesn't double-count weapon bonuses that are already in player.stats.accuracy
     const baseAccuracy = 80;
-    const ctx = {
-      attackerId: 'attacker',
-      defenderId: 'defender',
+    const ctx: CombatContext = {
+      attackerId: entityId('attacker'),
+      defenderId: entityId('defender'),
       attackerAttack: 50,
       attackerAccuracy: baseAccuracy,
       defenderDefense: 20,

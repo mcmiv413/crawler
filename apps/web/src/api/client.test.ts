@@ -20,57 +20,83 @@ vi.stubGlobal('fetch', vi.fn());
  * Helper builders to avoid brittle test data.
  */
 
+const BASE_PLAYER = {
+  name: 'TestHero',
+  level: 1,
+  health: 100,
+  maxHealth: 100,
+  attack: 10,
+  defense: 5,
+  accuracy: 80,
+  evasion: 20,
+  speed: 1,
+  resistances: {} as Record<string, number>,
+  gold: 0,
+  floor: 1,
+  experience: 0,
+  experienceForNextLevel: 100,
+  biomeId: null as string | null,
+  biomeColor: '#888888',
+  statuses: [] as never[],
+  abilities: [] as never[],
+  weaponMastery: null,
+  equippedItems: [] as never[],
+  statBreakdowns: {} as Record<string, never>,
+  activeQuests: [] as never[],
+  nemesisInfo: null,
+  factionStandings: [] as never[],
+};
+
 class GameViewBuilder {
-  private data: Partial<GameView> = {
-    gameId: randomUUID(),
-    player: {
-      id: 'player_1',
-      name: 'TestHero',
-      stats: { maxHealth: 100, health: 100, attack: 10, defense: 5, accuracy: 80, evasion: 20, speed: 100 },
-      equipment: { weapon: null, armor: [] },
-      inventory: { items: [], gold: 0 },
-      abilities: new Map(),
-      statuses: [],
-      level: 1,
-      experience: 0,
-    },
-    turn: 1,
-    isCombat: false,
-  };
+  private gameId: string = randomUUID();
+  private playerHealth: number = 100;
+  private phase: GameView['phase'] = 'dungeon';
 
   withGameId(gameId: string): this {
-    this.data.gameId = gameId;
+    this.gameId = gameId;
     return this;
   }
 
   withPlayerHealth(health: number): this {
-    if (this.data.player) {
-      this.data.player.stats = { ...this.data.player.stats, health };
-    }
+    this.playerHealth = health;
     return this;
   }
 
-  withCombatStatus(isCombat: boolean): this {
-    this.data.isCombat = isCombat;
+  withCombatStatus(_isCombat: boolean): this {
+    this.phase = _isCombat ? 'combat' : 'dungeon';
     return this;
   }
 
   build(): GameView {
     return {
-      gameId: this.data.gameId ?? randomUUID(),
-      player: this.data.player ?? {
-        id: 'player_1',
-        name: 'TestHero',
-        stats: { maxHealth: 100, health: 100, attack: 10, defense: 5, accuracy: 80, evasion: 20, speed: 100 },
-        equipment: { weapon: null, armor: [] },
-        inventory: { items: [], gold: 0 },
-        abilities: new Map(),
-        statuses: [],
-        level: 1,
-        experience: 0,
+      gameId: this.gameId,
+      phase: this.phase,
+      player: { ...BASE_PLAYER, health: this.playerHealth },
+      map: null,
+      combatLog: [],
+      availableActions: [],
+      town: null,
+      inventory: {
+        items: [],
+        equipped: {
+          weapon: null,
+          secondaryWeapon: null,
+          chest: null,
+          head: null,
+          gloves: null,
+          boots: null,
+          ring1: null,
+          ring2: null,
+        },
       },
-      turn: this.data.turn ?? 1,
-      isCombat: this.data.isCombat ?? false,
+      activeQuests: [],
+      runResult: null,
+      deathStashFloor: null,
+      deathSummary: null,
+      deathContext: null,
+      inspectableEntities: [],
+      recentlyDefeatedNemesis: null,
+      debugMode: false,
     };
   }
 }
@@ -184,13 +210,13 @@ describe('API Client', () => {
       const result = await createGame(42, 'TestHero');
 
       expect(mockFetch).toHaveBeenCalledOnce();
-      const callUrl = mockFetch.mock.calls[0][0] as string;
+      const callUrl = mockFetch.mock.calls[0]![0] as string;
       expect(callUrl).toMatch(/\/games$/);
-      const callOptions = mockFetch.mock.calls[0][1];
+      const callOptions = mockFetch.mock.calls[0]![1];
       expect(callOptions).toBeDefined();
       if (callOptions) {
-        expect((callOptions as RequestInit).method).toBe('POST');
-        const body = JSON.parse((callOptions as RequestInit).body as string);
+        expect(callOptions.method).toBe('POST');
+        const body = JSON.parse(callOptions.body as string);
         expect(body.seed).toBe(42);
         expect(body.playerName).toBe('TestHero');
       }
@@ -218,7 +244,7 @@ describe('API Client', () => {
       const result = await fetchGameView(gameId);
 
       expect(mockFetch).toHaveBeenCalledOnce();
-      const callUrl = mockFetch.mock.calls[0][0] as string;
+      const callUrl = mockFetch.mock.calls[0]![0] as string;
       expect(callUrl).toMatch(new RegExp(`/games/${gameId}/view`));
       expect(result.gameId).toBe(gameId);
       expect(result.player).toBeDefined();
@@ -236,13 +262,13 @@ describe('API Client', () => {
       const result = await sendCommand(gameId, command);
 
       expect(mockFetch).toHaveBeenCalledOnce();
-      const callUrl = mockFetch.mock.calls[0][0] as string;
+      const callUrl = mockFetch.mock.calls[0]![0] as string;
       expect(callUrl).toMatch(new RegExp(`/games/${gameId}/commands`));
-      const callOptions = mockFetch.mock.calls[0][1];
+      const callOptions = mockFetch.mock.calls[0]![1];
       expect(callOptions).toBeDefined();
       if (callOptions) {
-        expect((callOptions as RequestInit).method).toBe('POST');
-        expect((callOptions as RequestInit).body).toEqual(JSON.stringify(command));
+        expect(callOptions.method).toBe('POST');
+        expect(callOptions.body).toEqual(JSON.stringify(command));
       }
       expect(result.view).toBeDefined();
       expect(result.serializedState).toBeDefined();
@@ -291,13 +317,13 @@ describe('API Client', () => {
       const result = await restoreGame(serializedState);
 
       expect(mockFetch).toHaveBeenCalledOnce();
-      const callUrl = mockFetch.mock.calls[0][0] as string;
+      const callUrl = mockFetch.mock.calls[0]![0] as string;
       expect(callUrl).toMatch(/\/games\/restore$/);
-      const callOptions = mockFetch.mock.calls[0][1];
+      const callOptions = mockFetch.mock.calls[0]![1];
       expect(callOptions).toBeDefined();
       if (callOptions) {
-        expect((callOptions as RequestInit).method).toBe('POST');
-        const body = JSON.parse((callOptions as RequestInit).body as string);
+        expect(callOptions.method).toBe('POST');
+        const body = JSON.parse(callOptions.body as string);
         expect(body.serializedState).toBe(serializedState);
       }
       expect(result.gameId).toBeDefined();
@@ -334,7 +360,7 @@ describe('API Client', () => {
       const result = await fetchNpcDialogue(gameId, npcId);
 
       expect(mockFetch).toHaveBeenCalledOnce();
-      const callUrl = mockFetch.mock.calls[0][0] as string;
+      const callUrl = mockFetch.mock.calls[0]![0] as string;
       expect(callUrl).toMatch(new RegExp(`/games/${gameId}/npc/${npcId}/dialogue`));
       expect(result.npcId).toBe(npcId);
       expect(result.npcName).toBe('Old Merchant');
@@ -395,7 +421,7 @@ describe('API Client', () => {
 
       await createGame(123, 'Legolas');
 
-      const call = mockFetch.mock.calls[0];
+      const call = mockFetch.mock.calls[0]!;
       const body = JSON.parse(call[1]?.body as string);
       expect(body.seed).toBe(123);
       expect(body.playerName).toBe('Legolas');
@@ -409,7 +435,7 @@ describe('API Client', () => {
 
       await sendCommand(gameId, command);
 
-      const call = mockFetch.mock.calls[0];
+      const call = mockFetch.mock.calls[0]!;
       const body = JSON.parse(call[1]?.body as string);
       expect(body).toEqual(command);
     });
@@ -421,7 +447,7 @@ describe('API Client', () => {
 
       await restoreGame(serializedState);
 
-      const call = mockFetch.mock.calls[0];
+      const call = mockFetch.mock.calls[0]!;
       const body = JSON.parse(call[1]?.body as string);
       expect(body.serializedState).toBe(serializedState);
     });
@@ -438,8 +464,8 @@ describe('API Client', () => {
 
       expect(result).toHaveProperty('gameId', gameId);
       expect(result).toHaveProperty('player');
-      expect(result.player).toHaveProperty('id');
-      expect(result.player).toHaveProperty('stats');
+      expect(result.player).toHaveProperty('name');
+      expect(result.player).toHaveProperty('health');
     });
 
     it('parses CommandResponse with multiple fields', async () => {

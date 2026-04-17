@@ -43,7 +43,6 @@ function makeAiState(
       seed: 42,
     },
     enemies: new Map([[posKey(enemy.position), enemy]]),
-    items: new Map(),
     turnCount: 0,
     isActive: true,
     floorHistory: [],
