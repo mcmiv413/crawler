@@ -35,7 +35,7 @@ import { GameCommandSchema, WEAPON_TYPES } from '@dungeon/contracts';
 
 describe('Ability Registry Contract', () => {
   it('all abilities have required fields (id, name, cooldown, requiresTarget)', () => {
-    const abilities = Object.values(ABILITY_DEFINITIONS);
+    const abilities = Object.values(ABILITY_DEFINITIONS) as any[];
     expect(abilities.length).toBeGreaterThan(0);
 
     for (const ability of abilities) {
@@ -60,7 +60,7 @@ describe('Ability Registry Contract', () => {
   });
 
   it('ability stats are in valid ranges (cooldown 0-100, unlockLevel 0-100)', () => {
-    const abilities = Object.values(ABILITY_DEFINITIONS);
+    const abilities = Object.values(ABILITY_DEFINITIONS) as any[];
 
     for (const ability of abilities) {
       // Cooldown ranges: 0-100 is reasonable for a game
@@ -86,7 +86,7 @@ describe('Ability Registry Contract', () => {
   });
 
   it('no duplicate ability IDs and weapon types are valid', () => {
-    const abilities = Object.values(ABILITY_DEFINITIONS);
+    const abilities = Object.values(ABILITY_DEFINITIONS) as any[];
     const ids = new Set<string>();
 
     const validWeaponTypes = new Set(WEAPON_TYPES);
@@ -115,7 +115,7 @@ describe('Ability Registry Contract', () => {
 
 describe('Enemy Templates Contract', () => {
   it('all enemies have required stats (health, attack, defense)', () => {
-    const enemies = Array.from(ENEMY_TEMPLATES.values());
+    const enemies = Array.from(ENEMY_TEMPLATES.values()) as any[];
     expect(enemies.length).toBeGreaterThan(0);
 
     for (const enemy of enemies) {
@@ -134,7 +134,7 @@ describe('Enemy Templates Contract', () => {
   });
 
   it('all enemy stats are positive integers (or zero for optional stats)', () => {
-    const enemies = Array.from(ENEMY_TEMPLATES.values());
+    const enemies = Array.from(ENEMY_TEMPLATES.values()) as any[];
 
     for (const enemy of enemies) {
       const { maxHealth, health, attack, defense, accuracy, evasion, speed } = enemy.stats;
@@ -174,7 +174,7 @@ describe('Enemy Templates Contract', () => {
   });
 
   it('no duplicate enemy template IDs', () => {
-    const enemies = Array.from(ENEMY_TEMPLATES.values());
+    const enemies = Array.from(ENEMY_TEMPLATES.values()) as any[];
     const ids = new Set<string>();
 
     for (const enemy of enemies) {
@@ -197,7 +197,7 @@ describe('Item Definitions Contract', () => {
     const validRarities = new Set(['common', 'uncommon', 'rare', 'epic', 'legendary']);
     const validItemClasses = new Set(['weapon', 'armor', 'consumable']);
 
-    for (const item of ALL_ITEMS) {
+    for (const item of ALL_ITEMS as any[]) {
       expect(item.itemId, 'Item missing itemId').toBeDefined();
       expect(typeof item.itemId).toBe('string');
       expect(item.itemId.length).toBeGreaterThan(0);
@@ -237,7 +237,7 @@ describe('Item Definitions Contract', () => {
     const seenIds = new Set<string>();
 
     // Check ALL_ITEMS consistency
-    for (const item of ALL_ITEMS) {
+    for (const item of ALL_ITEMS as any[]) {
       // Check map contains this item
       const mapItem = ITEM_BY_ID.get(item.itemId);
       expect(
@@ -257,7 +257,7 @@ describe('Item Definitions Contract', () => {
     expect(ITEM_BY_ID.size).toBe(ALL_ITEMS.length);
 
     // Rarity distribution check: every rarity tier should be represented
-    const rarityCount = new Set(ALL_ITEMS.map((i) => i.rarity));
+    const rarityCount = new Set(ALL_ITEMS.map((i: any) => i.rarity));
     expect(rarityCount.size).toBeGreaterThanOrEqual(2); // At least 2 rarity tiers
   });
 });
@@ -392,7 +392,7 @@ describe('Cross-Reference Validation Contract', () => {
   it('all config collections are non-empty and accessible', () => {
     // Verify ABILITY_DEFINITIONS can be iterated and is not empty
     let abilityCount = 0;
-    for (const ability of Object.values(ABILITY_DEFINITIONS)) {
+    for (const ability of Object.values(ABILITY_DEFINITIONS) as any[]) {
       expect(ability.id).toBeDefined();
       abilityCount++;
     }
@@ -400,7 +400,7 @@ describe('Cross-Reference Validation Contract', () => {
 
     // Verify ENEMY_TEMPLATES map can be iterated and is not empty
     let enemyCount = 0;
-    for (const [id, enemy] of ENEMY_TEMPLATES) {
+    for (const [id, enemy] of ENEMY_TEMPLATES as unknown as any[]) {
       expect(id).toBe(enemy.templateId);
       enemyCount++;
     }
@@ -408,7 +408,7 @@ describe('Cross-Reference Validation Contract', () => {
 
     // Verify ALL_ITEMS can be iterated and is not empty
     let itemCount = 0;
-    for (const item of ALL_ITEMS) {
+    for (const item of ALL_ITEMS as any[]) {
       expect(item.itemId).toBeDefined();
       itemCount++;
     }
@@ -420,7 +420,7 @@ describe('Cross-Reference Validation Contract', () => {
 
   it('config collections have consistent data across references', () => {
     // Every item in ALL_ITEMS should be findable by ID
-    for (const item of ALL_ITEMS) {
+    for (const item of ALL_ITEMS as any[]) {
       const foundItem = ITEM_BY_ID.get(item.itemId);
       expect(foundItem).toBeDefined();
       expect(foundItem?.itemId).toBe(item.itemId);
@@ -431,7 +431,7 @@ describe('Cross-Reference Validation Contract', () => {
     expect(abilityIds.size).toBe(Object.keys(ABILITY_DEFINITIONS).length);
 
     // Every enemy template should have matching key and templateId
-    for (const [key, enemy] of ENEMY_TEMPLATES) {
+    for (const [key, enemy] of ENEMY_TEMPLATES as unknown as any[]) {
       expect(key).toBe(enemy.templateId);
     }
   });
