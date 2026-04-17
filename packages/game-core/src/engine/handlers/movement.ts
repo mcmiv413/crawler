@@ -11,7 +11,7 @@ import { computeFov } from '../../systems/fov.js';
 import { moveInDirection } from '../../utils/grid.js';
 import { processEnemyTurns } from '../turn-scheduler.js';
 import { tickAbilityCooldowns } from '../../systems/abilities.js';
-import { rollChestLoot } from '../../systems/loot.js';
+import { rollChestLoot, rollRareLoot } from '../../systems/loot.js';
 import { addItemToInventory } from '../../systems/inventory.js';
 import { handleAttack } from './combat.js';
 import { handlePlayerDeath } from '../../systems/death.js';
@@ -168,8 +168,22 @@ export function handleInteract(
   let events: DomainEvent[] = [];
   let gotLoot = false;
 
-  // Apply health delta if any
-  if (template.healthDelta !== 0) {
+  // Apply health delta if any (percentage-based takes precedence over fixed)
+  if (template.healthDeltaPercent !== undefined && template.healthDeltaPercent !== 0) {
+    const healthBefore = newState.player.stats.health;
+    const percentChange = Math.round(newState.player.stats.maxHealth * (template.healthDeltaPercent / 100));
+    const newHealth = Math.max(0, Math.min(newState.player.stats.maxHealth, healthBefore + percentChange));
+    newState = {
+      ...newState,
+      player: {
+        ...newState.player,
+        stats: {
+          ...newState.player.stats,
+          health: newHealth,
+        },
+      },
+    };
+  } else if (template.healthDelta !== 0) {
     const healthBefore = newState.player.stats.health;
     const newHealth = Math.max(0, healthBefore + template.healthDelta);
     newState = {
@@ -186,7 +200,9 @@ export function handleInteract(
 
   // Roll loot if object has lootTableId
   if (template.lootTableId !== undefined && template.lootTableId !== '') {
-    const lootItemId = rollChestLoot(newState.run!.floor.depth, rng);
+    const lootItemId = template.lootTableId === 'loot_rare'
+      ? rollRareLoot(rng)
+      : rollChestLoot(newState.run!.floor.depth, rng);
     if (lootItemId !== null) {
       const itemTemplate = ITEM_BY_ID.get(lootItemId);
       if (itemTemplate !== undefined) {

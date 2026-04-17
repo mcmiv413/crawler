@@ -10,6 +10,8 @@ export interface ObjectTemplate {
   readonly spriteName?: string;
   /** Effect on player health when interacted with. Negative = damage, positive = heal, 0 = no effect */
   readonly healthDelta: number;
+  /** Percentage-based health change (e.g. 20 = heal 20% of max health, -50 = damage 50% of max health). Overrides healthDelta if set */
+  readonly healthDeltaPercent?: number;
   /** If true, object is removed from the map after one interaction */
   readonly consumable: boolean;
   /** If true, the player cannot walk through this object */
