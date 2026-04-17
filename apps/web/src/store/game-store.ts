@@ -25,7 +25,7 @@ interface GameStore {
   clearError: () => void;
   startAutoWalk: (path: Position[]) => void;
   cancelAutoWalk: () => void;
-  toggleDebugLogging: () => void;
+  toggleDebugLogging: () => Promise<void>;
 }
 
 export const useGameStore = create<GameStore>((set, get) => ({
