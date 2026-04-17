@@ -471,30 +471,30 @@ describe('Property-Based Schema Validation', () => {
       ),
     ));
 
-  it(
-    'generated items always have valid rarity and value',
-    fc.property(
-      fc.record({
-        itemId: fc.string({ minLength: 5, maxLength: 20 }).map((s) => `item_${s.replace(/[^a-z0-9]/g, '')}`),
-        name: fc.string({ minLength: 1, maxLength: 50 }),
-        rarity: fc.constantFrom('common', 'uncommon', 'rare', 'epic', 'legendary' as const),
-        value: fc.integer({ min: 0, max: 10000 }),
-        itemClass: fc.constantFrom('weapon', 'armor', 'consumable' as const),
-      }),
-      (generatedItem) => {
-        // Verify rarity is valid
-        const validRarities = ['common', 'uncommon', 'rare', 'epic', 'legendary'];
-        expect(validRarities).toContain(generatedItem.rarity);
+  it('generated items always have valid rarity and value', () =>
+    fc.assert(
+      fc.property(
+        fc.record({
+          itemId: fc.string({ minLength: 5, maxLength: 20 }).map((s) => `item_${s.replace(/[^a-z0-9]/g, '')}`),
+          name: fc.string({ minLength: 1, maxLength: 50 }),
+          rarity: fc.constantFrom('common', 'uncommon', 'rare', 'epic', 'legendary' as const),
+          value: fc.integer({ min: 0, max: 10000 }),
+          itemClass: fc.constantFrom('weapon', 'armor', 'consumable' as const),
+        }),
+        (generatedItem) => {
+          // Verify rarity is valid
+          const validRarities = ['common', 'uncommon', 'rare', 'epic', 'legendary'];
+          expect(validRarities).toContain(generatedItem.rarity);
 
-        // Verify value is non-negative
-        expect(generatedItem.value).toBeGreaterThanOrEqual(0);
+          // Verify value is non-negative
+          expect(generatedItem.value).toBeGreaterThanOrEqual(0);
 
-        // Verify item class is valid
-        const validClasses = ['weapon', 'armor', 'consumable'];
-        expect(validClasses).toContain(generatedItem.itemClass);
+          // Verify item class is valid
+          const validClasses = ['weapon', 'armor', 'consumable'];
+          expect(validClasses).toContain(generatedItem.itemClass);
 
-        return true;
-      },
-    ),
-  );
+          return true;
+        },
+      ),
+    ));
 });
