@@ -1,12 +1,12 @@
 {
   "extends": "../tsconfig.base.json",
   "compilerOptions": {
-    "baseUrl": ".",
+    "baseUrl": "..",
     "rootDir": ".",
     "skipLibCheck": true,
     "noUnusedLocals": false,
     "noUnusedParameters": false,
-    "lib": ["ES2022", "DOM"],
+    "lib": ["ES2022", "DOM", "DOM.Iterable"],
     "noEmit": true,
     "composite": false,
     "declaration": false,
