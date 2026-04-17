@@ -15,6 +15,7 @@ import { rollChestLoot } from '../../systems/loot.js';
 import { addItemToInventory } from '../../systems/inventory.js';
 import { handleAttack } from './combat.js';
 import { handlePlayerDeath } from '../../systems/death.js';
+import { calculateHazardDamage } from '../../systems/hazard-damage.js';
 
 export function handleMove(
   state: GameState,
@@ -63,10 +64,11 @@ export function handleMove(
     const objAtPos = newState.run.objects.get(objKey);
     if (objAtPos !== undefined) {
       const template = OBJECT_TEMPLATES.get(objAtPos.templateId);
-      if (template !== undefined && template.healthDelta < 0) {
-        // Trap triggered - apply damage to player
+      if (template !== undefined && template.isHazard === true) {
+        // Trap triggered - calculate and apply damage to player
         const healthBefore = newState.player.stats.health;
-        const healthAfter = Math.max(0, healthBefore + template.healthDelta);
+        const damage = calculateHazardDamage(template, newState.player.stats.maxHealth);
+        const healthAfter = Math.max(0, healthBefore - damage);
         newState = {
           ...newState,
           player: {
@@ -78,13 +80,16 @@ export function handleMove(
           },
         };
 
-        // Emit trap triggered event
+        // Emit trap triggered event with enriched data
         events = [...events, {
           type: 'TRAP_TRIGGERED',
           trapId: objAtPos.id,
           trapName: template.name,
           position: newPos,
-          damage: Math.abs(template.healthDelta),
+          damage,
+          rarity: template.rarity,
+          hazardType: template.hazardType,
+          statusEffect: template.statusEffect,
           timestamp: Date.now(),
           turnNumber: state.turnNumber,
         }];
@@ -97,7 +102,7 @@ export function handleMove(
               type: 'TRAP_HAZARD',
               hazardId: objAtPos.id,
               hazardName: template.name,
-              damage: Math.abs(template.healthDelta),
+              damage,
             },
           );
           newState = deathResult.state;

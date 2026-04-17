@@ -42,7 +42,7 @@ function makeRunState(depth: number, playerOnStairsUp: boolean, hasHistory: bool
     turnCount: 1,
     isActive: true,
     floorHistory: storedFloor,
-    weaponMastery: { blade: 0, bludgeon: 0, axe: 0, ranged: 0 },
+    weaponMastery: { blade: 0, bludgeon: 0, axe: 0, ranged: 0, dagger: 0 },
     speedAccumulators: {},
   };
 }
@@ -1526,7 +1526,7 @@ describe('Map view stairs sprites (Phase 1a)', () => {
         turnCount: 1,
         isActive: true,
         floorHistory: [],
-        weaponMastery: { blade: 0, bludgeon: 0, axe: 0, ranged: 0 },
+        weaponMastery: { blade: 0, bludgeon: 0, axe: 0, ranged: 0, dagger: 0 },
         speedAccumulators: {},
       },
     });

@@ -67,8 +67,12 @@ export const DAWNLIKE_NAME_MAP: Record<string, string> = {
   'object:chest': 'closed chest',
   'object:healing_fountain': 'fountain',
   'object:arcane_altar': 'altar',
-  'object:fire_pit': 'brass lantern',
+  'object:fire_pit': 'fire beam h',
+  'object:inferno_pit': 'big flame',
   'object:trap_spikes': 'spiked pit tile',
+  'object:poison_trap': 'bear trap tile',
+  'object:frost_trap': 'bright ice wall center',
+  'object:lightning_trap': 'electric eel',
 };
 
 export function resolveSprite(gameKey: string): SpriteRect | undefined {

@@ -71,6 +71,17 @@ export const EnchantArmorCommandSchema = z.object({
   enchantmentId: z.string(),
 });
 
+export const DisarmTrapCommandSchema = z.object({
+  type: z.literal('DISARM_TRAP'),
+  direction: DirectionSchema,
+});
+
+export const SetTrapCommandSchema = z.object({
+  type: z.literal('SET_TRAP'),
+  direction: DirectionSchema,
+  itemEntityId: z.string(),
+});
+
 export const ToggleDebugCommandSchema = z.object({
   type: z.literal('TOGGLE_DEBUG'),
 });
@@ -89,6 +100,8 @@ export const GameCommandSchema = z.discriminatedUnion('type', [
   AscendCommandSchema,
   UseAbilityCommandSchema,
   EnchantArmorCommandSchema,
+  DisarmTrapCommandSchema,
+  SetTrapCommandSchema,
   ToggleDebugCommandSchema,
 ]);
 

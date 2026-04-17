@@ -72,4 +72,9 @@ export interface ConsumableTemplate extends ItemTemplate {
   readonly consumable: ConsumableData;
 }
 
-export type AnyItemTemplate = WeaponTemplate | ArmorTemplate | ConsumableTemplate | ItemTemplate;
+export interface TrapItemTemplate extends ItemTemplate {
+  readonly itemClass: 'trap';
+  readonly trapTemplateId: string;
+}
+
+export type AnyItemTemplate = WeaponTemplate | ArmorTemplate | ConsumableTemplate | TrapItemTemplate | ItemTemplate;

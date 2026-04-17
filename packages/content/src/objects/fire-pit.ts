@@ -1,6 +1,5 @@
 import type { ObjectTemplate } from '@dungeon/contracts';
 
-
 export const firePit: ObjectTemplate = {
   templateId: 'fire_pit',
   name: 'Fire Pit',
@@ -11,5 +10,8 @@ export const firePit: ObjectTemplate = {
   healthDelta: -10,
   consumable: false,
   blocksMovement: false,
+  isHazard: true,
+  statusEffect: 'burn',
+  hazardType: 'fire',
   biomes: [{ biomeId: 'goblin_warrens' }],
 };

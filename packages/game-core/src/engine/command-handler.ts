@@ -10,6 +10,8 @@ import type {
   InteractCommand,
   UseAbilityCommand,
   EnchantArmorCommand,
+  DisarmTrapCommand,
+  SetTrapCommand,
   EntityId,
 } from '@dungeon/contracts';
 import { entityId } from '@dungeon/contracts';
@@ -28,6 +30,8 @@ import {
   handleUseItem,
   handleTownAction,
   handleRetreatCommand,
+  handleDisarmTrap,
+  handleSetTrap,
 } from './handlers/index.js';
 import { processEnchantArmor } from '../systems/town.js';
 
@@ -47,6 +51,8 @@ const isTownActionCommand = (cmd: GameCommand): cmd is TownActionCommand => cmd.
 const isInteractCommand = (cmd: GameCommand): cmd is InteractCommand => cmd.type === 'INTERACT';
 const isUseAbilityCommand = (cmd: GameCommand): cmd is UseAbilityCommand => cmd.type === 'USE_ABILITY';
 const isEnchantArmorCommand = (cmd: GameCommand): cmd is EnchantArmorCommand => cmd.type === 'ENCHANT_ARMOR';
+const isDisarmTrapCommand = (cmd: GameCommand): cmd is DisarmTrapCommand => cmd.type === 'DISARM_TRAP';
+const isSetTrapCommand = (cmd: GameCommand): cmd is SetTrapCommand => cmd.type === 'SET_TRAP';
 
 /** Handle a game command, returning new state + events */
 export function handleCommand(
@@ -100,6 +106,14 @@ export function handleCommand(
       if (state.phase !== 'town') return { state, events: [], runEnded: false };
       const result = processEnchantArmor(state, command.equipSlot, command.enchantmentId);
       return { state: result.state, events: result.events, runEnded: false };
+    }
+    case 'DISARM_TRAP': {
+      if (!isDisarmTrapCommand(command)) return { state, events: [], runEnded: false };
+      return handleDisarmTrap(state, command.direction, rng);
+    }
+    case 'SET_TRAP': {
+      if (!isSetTrapCommand(command)) return { state, events: [], runEnded: false };
+      return handleSetTrap(state, command.direction, entityId(command.itemEntityId), rng);
     }
     case 'TOGGLE_DEBUG':
       return {
