@@ -706,7 +706,7 @@ describe('useGameStore (Zustand)', () => {
 
       // Call toggleDebugLogging
       act(() => {
-        result.current.toggleDebugLogging();
+        void result.current.toggleDebugLogging();
       });
 
       // Verify sendCommand was called with TOGGLE_DEBUG
