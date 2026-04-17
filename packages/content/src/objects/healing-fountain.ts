@@ -12,5 +12,6 @@ export const healingFountain: ObjectTemplate = {
   healthDeltaPercent: 20,
   consumable: true,
   blocksMovement: false,
-  biomes: [{ biomeId: 'stone_crypt' }, { biomeId: 'moss_caverns' }],
+  rarity: 'uncommon',
+  objectCategory: 'healing',
 };

@@ -20,10 +20,15 @@ export interface ObjectTemplate {
   readonly isHazard?: boolean;
   /** If set, object dispenses loot on interaction (like a chest) */
   readonly lootTableId?: string;
-  /** Which biomes this object can spawn in */
+  /** Which biomes this object can spawn in. Undefined = all biomes */
   readonly biomes?: ReadonlyArray<BiomeMembership>;
   /** For traps: rarity determines damage scaling (percentage of max health) */
   readonly rarity?: ItemRarity;
+  /** Object category for pool distribution: trap, chest, healing, or misc */
+  readonly objectCategory: 'trap' | 'chest' | 'healing' | 'misc';
+  /** Gold range for gold object (consumable coins). Actual amount: random(min, max) * depth / 2 */
+  readonly goldDeltaMin?: number;
+  readonly goldDeltaMax?: number;
   /** For traps: status effect applied when triggered */
   readonly statusEffect?: StatusId;
   /** For traps: type identifier for matching trap items to hazards (spike, fire, poison, etc.) */

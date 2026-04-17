@@ -64,15 +64,18 @@ export const DAWNLIKE_NAME_MAP: Record<string, string> = {
   'item:iron_sword': 'dwarvish short sword',
 
   // Objects
-  'object:chest': 'closed chest',
+  'object:chest': 'closed big chest',
   'object:healing_fountain': 'fountain',
-  'object:arcane_altar': 'altar',
-  'object:fire_pit': 'fire beam h',
+  'object:healing_pond': 'blue puddle',
+  'object:healing_altar': 'basin',
+  'object:arcane_altar': 'bloodied altar',
+  'object:gold_coins': 'pile of gold coins',
+  'object:fire_pit': 'fire icon',
   'object:inferno_pit': 'big flame',
-  'object:trap_spikes': 'spiked pit tile',
-  'object:poison_trap': 'bear trap tile',
-  'object:frost_trap': 'bright ice wall center',
-  'object:lightning_trap': 'electric eel',
+  'object:trap_spikes': 'spikes',
+  'object:poison_trap': 'acid pool center',
+  'object:frost_trap': 'ice icon',
+  'object:lightning_trap': 'lightning icon',
 };
 
 export function resolveSprite(gameKey: string): SpriteRect | undefined {

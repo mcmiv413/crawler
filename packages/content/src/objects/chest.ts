@@ -6,15 +6,10 @@ export const chest: ObjectTemplate = {
   description: 'A locked chest containing dungeon spoils.',
   ascii: '!',
   color: '#ff0',
-  spriteName: 'closed chest',
+  spriteName: 'closed big chest',
   healthDelta: 0,
   consumable: true,
   blocksMovement: false,
+  objectCategory: 'chest',
   lootTableId: 'loot_chest',
-  biomes: [
-    { biomeId: 'stone_crypt' },
-    { biomeId: 'goblin_warrens' },
-    { biomeId: 'moss_caverns' },
-    { biomeId: 'frozen_depths' },
-  ],
 };
