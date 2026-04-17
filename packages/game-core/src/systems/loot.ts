@@ -34,6 +34,17 @@ export function rollChestLoot(depth: number, rng: SeededRNG): string | null {
   return rng.pick(weighted).itemId;
 }
 
+/** Roll for rare or better loot (used by special objects like arcane altar) */
+export function rollRareLoot(rng: SeededRNG): string | null {
+  const eligible = ALL_ITEMS.filter(item =>
+    (item.rarity === 'rare' || item.rarity === 'epic' || item.rarity === 'legendary') &&
+    item.itemClass !== 'trap'
+  );
+  if (eligible.length === 0) return null;
+  const weighted = eligible.flatMap(item => item.itemClass === 'consumable' ? [item] : [item, item]);
+  return rng.pick(weighted).itemId;
+}
+
 /** Generate gold drop for a killed enemy (optional nemesis multiplier) */
 export function rollGoldDrop(enemy: EnemyInstance, rng: SeededRNG, nemesisRank?: number): number {
   const tierGold = ECONOMY.goldPerTier[enemy.tier];
