@@ -1,6 +1,6 @@
 /** Generate a UUID — works in Node 19+, modern browsers, and falls back to manual */
 export function generateId(): string {
-  if (typeof (globalThis.crypto as Crypto | undefined)?.randomUUID === 'function') {
+  if (typeof globalThis.crypto.randomUUID === 'function') {
     return globalThis.crypto.randomUUID();
   }
   // Fallback for Node 18 where crypto.randomUUID isn't on globalThis
