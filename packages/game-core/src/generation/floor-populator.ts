@@ -1,7 +1,7 @@
 import type { DungeonFloor, EnemyInstance, ObjectInstance, Position } from '@dungeon/contracts';
 import { entityId, posKey } from '@dungeon/contracts';
 import type { EnemyTemplate, ObjectTemplate } from '@dungeon/contracts';
-import { MAP_GENERATION, getFloorScalingMultipliers, ENEMY_TEMPLATES, ENEMIES_BY_BIOME, OBJECT_TEMPLATES, OBJECTS_BY_BIOME, AMBIENT_PROFILES } from '@dungeon/content';
+import { MAP_GENERATION, getFloorScalingMultipliers, ENEMY_TEMPLATES, ENEMIES_BY_BIOME, OBJECT_TEMPLATES, AMBIENT_PROFILES, OBJECT_POOL } from '@dungeon/content';
 import type { BiomeDefinition } from '@dungeon/content';
 import type { SeededRNG } from '../utils/rng.js';
 import { generateId } from '../utils/id.js';
@@ -64,10 +64,10 @@ export function populateFloor(
   const objectPositions = shuffled.slice(enemyCount);
   const objects = new Map<string, ObjectInstance>();
 
-  // Place biome-aware objects
+  // Place objects with category/rarity weighting
   for (let i = 0; i < maxObjects && i < objectPositions.length; i++) {
     const pos = objectPositions[i]!;
-    const objectTemplate = pickObject(biome, rng);
+    const objectTemplate = pickObject(rng, floor.depth);
     if (objectTemplate === undefined) continue;
 
     objects.set(posKey(pos), {
@@ -206,10 +206,37 @@ function pickEnemy(biome: BiomeDefinition, rng: SeededRNG, depth: number, worldM
   return ENEMY_TEMPLATES.get(templateId) ?? null;
 }
 
-function pickObject(biome: BiomeDefinition, rng: SeededRNG): ObjectTemplate | undefined {
-  const biomePool = OBJECTS_BY_BIOME.get(biome.biomeId) ?? [];
-  if (biomePool.length === 0) return OBJECT_TEMPLATES.get('chest');
-  return rng.pick(biomePool);
+function pickObject(rng: SeededRNG, depth: number): ObjectTemplate | undefined {
+  // Select category based on weights
+  const categoryPool = Object.entries(OBJECT_POOL.categoryWeights).flatMap(([category, weight]) =>
+    Array.from({ length: weight }, () => category),
+  );
+  const selectedCategory = rng.pick(categoryPool) as 'trap' | 'chest' | 'healing' | 'misc';
+
+  // Filter objects by category
+  const categoryObjects = Array.from(OBJECT_TEMPLATES.values()).filter(
+    (obj): obj is ObjectTemplate & { objectCategory: typeof selectedCategory } =>
+      obj.objectCategory === selectedCategory,
+  );
+
+  if (categoryObjects.length === 0) return OBJECT_TEMPLATES.get('chest');
+
+  // Filter by rarity: rare+ objects blocked on floors < 3
+  const rarityGate = depth < OBJECT_POOL.rareMinDepth ? ['common', 'uncommon'] : Object.keys(OBJECT_POOL.rarityWeights);
+  const gatedObjects = categoryObjects.filter(
+    (obj): obj is ObjectTemplate => obj.rarity !== undefined && rarityGate.includes(obj.rarity),
+  );
+
+  if (gatedObjects.length === 0) return OBJECT_TEMPLATES.get('chest');
+
+  // Weight by rarity
+  const rarityPool = gatedObjects.flatMap((obj) => {
+    const rarity = obj.rarity || 'common';
+    const weight = (OBJECT_POOL.rarityWeights as Record<string, number>)[rarity] ?? 1;
+    return Array.from({ length: weight }, () => obj);
+  });
+
+  return rng.pick(rarityPool);
 }
 
 function instantiateEnemy(

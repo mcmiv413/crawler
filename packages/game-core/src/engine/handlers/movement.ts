@@ -198,6 +198,33 @@ export function handleInteract(
     };
   }
 
+  // Handle gold pickup with depth scaling
+  if (template.goldDeltaMin !== undefined && template.goldDeltaMax !== undefined) {
+    const baseGold = rng.int(template.goldDeltaMin, template.goldDeltaMax);
+    const depth = newState.run!.floor.depth;
+    const scaledGold = Math.floor(baseGold * depth / 2);
+    const goldBefore = newState.player.gold;
+    const goldAfter = goldBefore + scaledGold;
+
+    newState = {
+      ...newState,
+      player: {
+        ...newState.player,
+        gold: goldAfter,
+      },
+    };
+
+    events = [...events, {
+      type: 'GOLD_CHANGED',
+      playerId: newState.player.id,
+      amount: scaledGold,
+      newTotal: goldAfter,
+      reason: template.name,
+      timestamp: Date.now(),
+      turnNumber: state.turnNumber,
+    }];
+  }
+
   // Roll loot if object has lootTableId
   if (template.lootTableId !== undefined && template.lootTableId !== '') {
     const lootItemId = template.lootTableId === 'loot_rare'

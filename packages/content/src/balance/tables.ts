@@ -108,6 +108,16 @@ export const ECONOMY = {
   goldPerTier: [0, 8, 16, 30, 60, 120],
 } as const;
 
+/** Object pool distribution: weights for spawning objects on floors */
+export const OBJECT_POOL = {
+  /** Category weights: trap, chest, healing, misc */
+  categoryWeights: { trap: 40, chest: 35, healing: 15, misc: 10 } as const,
+  /** Rarity distribution: common, uncommon, rare, epic, legendary */
+  rarityWeights: { common: 50, uncommon: 30, rare: 15, epic: 4, legendary: 1 } as const,
+  /** Minimum floor depth for rare+ rarity objects (floor < this uses common/uncommon only) */
+  rareMinDepth: 3,
+} as const;
+
 /** Nemesis system promotion thresholds */
 export const NEMESIS_PROMOTION = {
   maxActiveNemeses: 3,

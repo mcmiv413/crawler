@@ -4,6 +4,8 @@ import { SeededRNG } from '../../utils/rng.js';
 import { entityId, posKey } from '@dungeon/contracts';
 import type { GameState, ObjectInstance } from '@dungeon/contracts';
 import { createTestGameStateInCombat } from '../../test-utils.js';
+import { OBJECT_TEMPLATES } from '@dungeon/content';
+import { calculateHazardDamage } from '../../systems/hazard-damage.js';
 
 describe('handleMove - Trap Damage on Walk', () => {
   /**
@@ -33,13 +35,17 @@ describe('handleMove - Trap Damage on Walk', () => {
     const healthBefore = stateWithTrap.player.stats.health;
     const rng = new SeededRNG(42);
 
+    // Calculate expected damage from trap rarity
+    const trapTemplate = OBJECT_TEMPLATES.get('trap_spikes')!;
+    const expectedDamage = calculateHazardDamage(trapTemplate, stateWithTrap.player.stats.maxHealth);
+
     // Move player to trap location
     const result = handleMove(stateWithTrap, 'E', rng);
 
     // Player should take damage from trap
     const healthAfter = result.state.player.stats.health;
     expect(healthAfter).toBeLessThan(healthBefore);
-    expect(healthAfter).toBe(healthBefore - 15); // trap_spikes deals 15 damage
+    expect(healthAfter).toBe(healthBefore - expectedDamage); // trap damage scales with rarity
   });
 
   /**
@@ -65,6 +71,10 @@ describe('handleMove - Trap Damage on Walk', () => {
       run: { ...state.run!, objects },
     };
 
+    // Calculate expected damage from trap rarity
+    const trapTemplate = OBJECT_TEMPLATES.get('trap_spikes')!;
+    const expectedDamage = calculateHazardDamage(trapTemplate, stateWithTrap.player.stats.maxHealth);
+
     const rng = new SeededRNG(42);
     const result = handleMove(stateWithTrap, 'E', rng);
 
@@ -72,7 +82,7 @@ describe('handleMove - Trap Damage on Walk', () => {
     const trapEvent = result.events.find((e) => e.type === 'TRAP_TRIGGERED');
     expect(trapEvent).toBeDefined();
     expect((trapEvent as any).trapName).toBe('Spike Trap');
-    expect((trapEvent as any).damage).toBe(15);
+    expect((trapEvent as any).damage).toBe(expectedDamage); // damage scales with rarity
     expect((trapEvent as any).position).toEqual(trapPosition);
   });
 

@@ -18,8 +18,8 @@ export function calculateHazardDamage(template: ObjectTemplate, targetMaxHealth:
     common: 0.1,
     uncommon: 0.15,
     rare: 0.2,
-    epic: 0.25,
-    legendary: 0.3,
+    epic: 0.3,
+    legendary: 0.4,
   };
 
   const percentage = percentageMap[template.rarity] ?? 0.1;
