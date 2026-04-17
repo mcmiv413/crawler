@@ -11,7 +11,7 @@ describe('CombatIndicators', () => {
   it('should render without crashing', () => {
     const { container } = render(
       <CombatIndicators
-        entities={[{ id: 'enemy1', x: 5, y: 5, ascii: 'G', color: '#f00' }]}
+        entities={[{ id: 'enemy1', x: 5, y: 5, ascii: 'G', color: '#f00', name: 'Goblin', type: 'enemy' as const, templateId: 'goblin' }]}
         vpLeft={0}
         vpTop={0}
         cellSize={24}
@@ -24,7 +24,7 @@ describe('CombatIndicators', () => {
   it('should render floating labels when indicators are emitted', async () => {
     render(
       <CombatIndicators
-        entities={[{ id: 'enemy1', x: 5, y: 5, ascii: 'G', color: '#f00' }]}
+        entities={[{ id: 'enemy1', x: 5, y: 5, ascii: 'G', color: '#f00', name: 'Goblin', type: 'enemy' as const, templateId: 'goblin' }]}
         vpLeft={0}
         vpTop={0}
         cellSize={24}

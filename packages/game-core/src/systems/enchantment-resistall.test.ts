@@ -3,7 +3,7 @@ import { calculateEquippedStats } from './equipment.js';
 import { ENCHANTMENT_BY_ID } from '@dungeon/content';
 import { BASE_PLAYER_STATS } from '@dungeon/content';
 import { entityId } from '@dungeon/contracts';
-import type { Equipment, AnyItemTemplate } from '@dungeon/contracts';
+import type { Equipment, AnyItemTemplate, EntityId } from '@dungeon/contracts';
 
 describe('Enchantment resistAll field', () => {
   describe('resistAll is defined on enchantments', () => {
@@ -28,7 +28,7 @@ describe('Enchantment resistAll field', () => {
     it('applies arcane_ward resistance to protected elements', () => {
       // Mock item registry with a chest armor that has arcane_ward
       const chestId = entityId('chest_with_arcane');
-      const registry = new Map<string, AnyItemTemplate>([
+      const registry = new Map<EntityId, AnyItemTemplate>([
         [
           chestId,
           {
@@ -74,7 +74,7 @@ describe('Enchantment resistAll field', () => {
 
     it('applies blight_ward resistance to poison/corruption', () => {
       const chestId = entityId('chest_with_blight');
-      const registry = new Map<string, AnyItemTemplate>([
+      const registry = new Map<EntityId, AnyItemTemplate>([
         [
           chestId,
           {
@@ -123,7 +123,7 @@ describe('Enchantment resistAll field', () => {
 
     it('stacks resistAll with item-level resistance', () => {
       const chestId = entityId('chest_combo');
-      const registry = new Map<string, AnyItemTemplate>([
+      const registry = new Map<EntityId, AnyItemTemplate>([
         [
           chestId,
           {
@@ -169,7 +169,7 @@ describe('Enchantment resistAll field', () => {
 
     it('caps resistance at reasonable maximum when stacking', () => {
       const chestId = entityId('chest_overflow');
-      const registry = new Map<string, AnyItemTemplate>([
+      const registry = new Map<EntityId, AnyItemTemplate>([
         [
           chestId,
           {

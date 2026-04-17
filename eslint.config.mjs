@@ -280,6 +280,7 @@ export default tseslint.config(
       "@typescript-eslint/no-unnecessary-type-assertion": "error",
       "vitest/no-focused-tests": "error",
       "vitest/no-disabled-tests": "warn",
+      "no-console": "off",
     },
   },
 

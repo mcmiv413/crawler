@@ -48,13 +48,14 @@ function makeTurnState(
       cells, entrance: { x: 0, y: 0 }, exit: { x: 9, y: 9 }, seed: 42,
     },
     enemies: enemyMap,
-    items: new Map(),
+    objects: new Map(),
     turnCount: 0,
     isActive: true,
     runMetrics: EMPTY_RUN_METRICS,
     floorHistory: [],
     floorCache: new Map(),
     weaponMastery: EMPTY_WEAPON_MASTERY,
+    speedAccumulators: {},
   };
 
   const base = createTestGameState({ phase: 'dungeon' });
@@ -247,7 +248,7 @@ describe('processEnemyTurns', () => {
 
     // There should be a status tick event (or damage event)
     const damageOrStatusEvent = events.some((e) =>
-      e.type === 'DAMAGE_TAKEN' || e.type === 'STATUS_TICKED' || e.type === 'ENEMY_DAMAGED'
+      (e as any).type === 'DAMAGE_TAKEN' || (e as any).type === 'STATUS_TICKED' || (e as any).type === 'ENEMY_DAMAGED'
     );
     expect(damageOrStatusEvent || updatedEnemy!.stats.health < healthBefore).toBe(true);
   });
@@ -277,7 +278,7 @@ describe('processEnemyTurns', () => {
       ...state,
       player: {
         ...state.player,
-        equipment: { ...state.player.equipment, chest: 'spiked_leather' },
+        equipment: { ...state.player.equipment, chest: entityId('spiked_leather') },
       },
     };
 
@@ -319,7 +320,7 @@ describe('processEnemyTurns', () => {
       ...state,
       player: {
         ...state.player,
-        equipment: { ...state.player.equipment, ring1: 'shadow_ring' }, // shadow_ring has blink
+        equipment: { ...state.player.equipment, ring1: entityId('shadow_ring') }, // shadow_ring has blink
       },
     };
 

@@ -72,7 +72,7 @@ describe('GameEngine floor navigation', () => {
     const snapshot: StoredFloor = {
       floor: dungeonState.run!.floor,
       enemies: new Map(),
-      items: new Map(),
+      objects: new Map(),
       playerPosition: priorPosition,
     };
 
@@ -103,7 +103,7 @@ describe('GameEngine floor navigation', () => {
     const snapshot: StoredFloor = {
       floor: dungeonState.run!.floor,
       enemies: new Map(),
-      items: new Map(),
+      objects: new Map(),
       playerPosition: { x: 1, y: 1 },
     };
 
@@ -169,7 +169,7 @@ describe('GameEngine floor cache', () => {
     const clearedFloor2Snapshot: StoredFloor = {
       floor: { ...dungeonState.run!.floor, depth: 2 },
       enemies: new Map(),   // cleared — no enemies
-      items: new Map(),
+      objects: new Map(),
       playerPosition: dungeonState.run!.floor.entrance,
     };
 
@@ -222,7 +222,7 @@ describe('GameEngine floor cache', () => {
           {
             floor: dungeonState.run!.floor,
             enemies: new Map(),
-            items: new Map(),
+            objects: new Map(),
             playerPosition: dungeonState.run!.floor.entrance,
           },
         ],
@@ -248,7 +248,7 @@ describe('GameEngine floor cache', () => {
     const cachedSnapshot: StoredFloor = {
       floor: { ...dungeonState.run!.floor, depth: 2 },
       enemies: clearedEnemies,
-      items: new Map(),
+      objects: new Map(),
       playerPosition: dungeonState.run!.floor.entrance,
     };
 
@@ -280,7 +280,7 @@ describe('GameEngine floor cache', () => {
           {
             floor: dungeonState.run!.floor,
             enemies: dungeonState.run!.enemies,
-            items: dungeonState.run!.items,
+            objects: new Map(),
             playerPosition: dungeonState.run!.floor.entrance,
           },
         ],
@@ -314,7 +314,7 @@ describe('GameEngine ranged combat', () => {
       player: {
         ...dungeonState.player,
         position: { x: 5, y: 5 },
-        equipment: { weapon: null, armor: null, accessory: null },
+        equipment: { weapon: null, secondaryWeapon: null, chest: null, head: null, gloves: null, boots: null, ring1: null, ring2: null },
       },
       run: {
         ...dungeonState.run!,
@@ -606,7 +606,7 @@ describe('GameEngine floor persistence (Phase A2)', () => {
     const floor1Snapshot: StoredFloor = {
       floor: state.run!.floor,
       enemies: state.run!.enemies,
-      items: state.run!.items,
+      objects: new Map(),
       playerPosition: state.run!.floor.entrance,
     };
     state = {
@@ -672,7 +672,7 @@ describe('GameEngine floor persistence (Phase A2)', () => {
     const cachedFloor1: StoredFloor = {
       floor: state.run!.floor,
       enemies: new Map(),
-      items: new Map(),
+      objects: new Map(),
       playerPosition: state.run!.floor.entrance,
     };
     state = {
@@ -682,8 +682,8 @@ describe('GameEngine floor persistence (Phase A2)', () => {
     };
 
     // Kill player: create a lethal enemy
-    const lethalEnemy = makeEnemy('lethal', 0, 1);
-    lethalEnemy.stats.attack = 9999;
+    const lethalEnemyBase = makeEnemy('lethal', 0, 1);
+    const lethalEnemy = { ...lethalEnemyBase, stats: { ...lethalEnemyBase.stats, attack: 9999 } };
     state = {
       ...state,
       run: {

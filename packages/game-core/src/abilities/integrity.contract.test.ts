@@ -221,8 +221,8 @@ describe('Unlock Level Consistency', () => {
     // Verify no gaps in unlock levels (max gap is 1 level)
     const sortedLevels = Array.from(minLevels.values()).sort((a, b) => a - b);
     for (let i = 1; i < sortedLevels.length; i++) {
-      const gap = sortedLevels[i] - sortedLevels[i - 1];
-      expect(gap, `Large gap in ability unlock levels: ${sortedLevels[i - 1]} -> ${sortedLevels[i]}`).toBeLessThanOrEqual(2);
+      const gap = sortedLevels[i]! - sortedLevels[i - 1]!;
+      expect(gap, `Large gap in ability unlock levels: ${sortedLevels[i - 1]!} -> ${sortedLevels[i]!}`).toBeLessThanOrEqual(2);
     }
   });
 

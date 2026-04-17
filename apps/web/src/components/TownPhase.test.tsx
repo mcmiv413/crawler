@@ -29,9 +29,17 @@ const createMockGameView = (overrides?: Partial<GameView>): GameView => ({
     gold: 200,
     floor: 1,
     experience: 0,
+    experienceForNextLevel: 100,
+    biomeId: null,
+    biomeColor: '#888888',
     statuses: [],
     abilities: [],
     weaponMastery: null,
+    equippedItems: [],
+    statBreakdowns: {},
+    activeQuests: [],
+    nemesisInfo: null,
+    factionStandings: [],
   },
   map: null,
   combatLog: [],
@@ -60,7 +68,7 @@ const createMockGameView = (overrides?: Partial<GameView>): GameView => ({
       equipmentLost: [],
     },
     prepAdvice: ['Stock up on potions'],
-    lastRetreatFloor: null,
+    lastRetreatFloor: undefined,
     factions: [
       {
         id: 'goblin_warband',
@@ -70,6 +78,8 @@ const createMockGameView = (overrides?: Partial<GameView>): GameView => ({
         trend: 'stable',
       },
     ] as FactionView[],
+    rumors: [],
+    slainNemeses: [],
     nemeses: [],
     npcs: [
       {
@@ -92,11 +102,14 @@ const createMockGameView = (overrides?: Partial<GameView>): GameView => ({
           name: 'Health Potion',
           description: 'Restores health',
           rarity: 'common',
+          rarityColor: '#a0a0a0',
           price: 10,
           effectivePrice: 10,
           stock: 5,
+          itemClass: 'consumable',
         } as ShopItemView,
       ],
+      canUndo: false,
     },
     unlockedBlueprints: [],
   },
@@ -117,6 +130,10 @@ const createMockGameView = (overrides?: Partial<GameView>): GameView => ({
   runResult: null,
   deathStashFloor: null,
   deathSummary: null,
+  deathContext: null,
+  inspectableEntities: [],
+  recentlyDefeatedNemesis: null,
+  debugMode: false,
   ...overrides,
 });
 
@@ -124,7 +141,7 @@ describe('TownPhase Component', () => {
   describe('Shop Rendering', () => {
     it('displays shop section when items exist', () => {
       const view = createMockGameView();
-      const { user } = render(
+      render(
         <TownPhase
           view={view}
           combatLog={[]}
@@ -135,7 +152,6 @@ describe('TownPhase Component', () => {
           npcDialogue={null}
           setNpcDialogue={vi.fn()}
           talkingTo={null}
-          isMobile={false}
         />
       );
 
@@ -148,7 +164,7 @@ describe('TownPhase Component', () => {
       const view = createMockGameView({
         town: {
           ...createMockGameView().town!,
-          shop: { items: [] },
+          shop: { items: [], canUndo: false },
         },
       });
 
@@ -163,7 +179,6 @@ describe('TownPhase Component', () => {
           npcDialogue={null}
           setNpcDialogue={vi.fn()}
           talkingTo={null}
-          isMobile={false}
         />
       );
 
@@ -185,7 +200,6 @@ describe('TownPhase Component', () => {
           npcDialogue={null}
           setNpcDialogue={vi.fn()}
           talkingTo={null}
-          isMobile={false}
         />
       );
 
@@ -206,7 +220,6 @@ describe('TownPhase Component', () => {
           npcDialogue={null}
           setNpcDialogue={vi.fn()}
           talkingTo={null}
-          isMobile={false}
         />
       );
 
@@ -233,7 +246,6 @@ describe('TownPhase Component', () => {
           npcDialogue={null}
           setNpcDialogue={vi.fn()}
           talkingTo={null}
-          isMobile={false}
         />
       );
 
@@ -256,7 +268,6 @@ describe('TownPhase Component', () => {
           npcDialogue={null}
           setNpcDialogue={vi.fn()}
           talkingTo={null}
-          isMobile={false}
         />
       );
 
@@ -283,7 +294,6 @@ describe('TownPhase Component', () => {
           npcDialogue={null}
           setNpcDialogue={vi.fn()}
           talkingTo={null}
-          isMobile={false}
         />
       );
 
@@ -304,7 +314,6 @@ describe('TownPhase Component', () => {
           npcDialogue={null}
           setNpcDialogue={vi.fn()}
           talkingTo={null}
-          isMobile={false}
         />
       );
 
@@ -327,7 +336,6 @@ describe('TownPhase Component', () => {
           npcDialogue={null}
           setNpcDialogue={vi.fn()}
           talkingTo={null}
-          isMobile={false}
         />
       );
 
@@ -351,7 +359,6 @@ describe('TownPhase Component', () => {
           npcDialogue={null}
           setNpcDialogue={vi.fn()}
           talkingTo={null}
-          isMobile={false}
         />
       );
 
@@ -372,7 +379,6 @@ describe('TownPhase Component', () => {
           npcDialogue={null}
           setNpcDialogue={vi.fn()}
           talkingTo={null}
-          isMobile={false}
         />
       );
 
@@ -398,7 +404,6 @@ describe('TownPhase Component', () => {
           npcDialogue={null}
           setNpcDialogue={vi.fn()}
           talkingTo={null}
-          isMobile={false}
         />
       );
 
@@ -429,7 +434,6 @@ describe('TownPhase Component', () => {
           npcDialogue={null}
           setNpcDialogue={vi.fn()}
           talkingTo={null}
-          isMobile={false}
         />
       );
 
@@ -458,7 +462,6 @@ describe('TownPhase Component', () => {
           npcDialogue={null}
           setNpcDialogue={vi.fn()}
           talkingTo={null}
-          isMobile={false}
         />
       );
 
@@ -487,7 +490,6 @@ describe('TownPhase Component', () => {
           npcDialogue={null}
           setNpcDialogue={vi.fn()}
           talkingTo={null}
-          isMobile={false}
         />
       );
 
@@ -510,12 +512,11 @@ describe('TownPhase Component', () => {
           npcDialogue={null}
           setNpcDialogue={vi.fn()}
           talkingTo={null}
-          isMobile={false}
         />
       );
 
       const healButtons = screen.getAllByRole('button', { name: /Heal/i });
-      fireEvent.click(healButtons[0]);
+      fireEvent.click(healButtons[0]!);
 
       expect(sendCommand).toHaveBeenCalledWith({
         type: 'TOWN_ACTION',
@@ -538,7 +539,6 @@ describe('TownPhase Component', () => {
           npcDialogue={null}
           setNpcDialogue={vi.fn()}
           talkingTo={null}
-          isMobile={false}
         />
       );
 
@@ -559,7 +559,6 @@ describe('TownPhase Component', () => {
           npcDialogue={null}
           setNpcDialogue={vi.fn()}
           talkingTo={null}
-          isMobile={false}
         />
       );
 
@@ -595,7 +594,6 @@ describe('TownPhase Component', () => {
           npcDialogue={null}
           setNpcDialogue={vi.fn()}
           talkingTo={null}
-          isMobile={false}
         />
       );
 
@@ -632,7 +630,6 @@ describe('TownPhase Component', () => {
           npcDialogue={null}
           setNpcDialogue={vi.fn()}
           talkingTo={null}
-          isMobile={false}
         />
       );
 
@@ -656,7 +653,6 @@ describe('TownPhase Component', () => {
           npcDialogue={null}
           setNpcDialogue={vi.fn()}
           talkingTo={null}
-          isMobile={true}
         />
       );
 
@@ -677,7 +673,6 @@ describe('TownPhase Component', () => {
           npcDialogue={null}
           setNpcDialogue={vi.fn()}
           talkingTo={null}
-          isMobile={true}
         />
       );
 
@@ -698,7 +693,6 @@ describe('TownPhase Component', () => {
           npcDialogue={null}
           setNpcDialogue={vi.fn()}
           talkingTo={null}
-          isMobile={true}
         />
       );
 
@@ -722,7 +716,6 @@ describe('TownPhase Component', () => {
           npcDialogue={null}
           setNpcDialogue={vi.fn()}
           talkingTo={null}
-          isMobile={true}
         />
       );
 
@@ -763,7 +756,6 @@ describe('TownPhase Component', () => {
           npcDialogue={null}
           setNpcDialogue={vi.fn()}
           talkingTo={null}
-          isMobile={false}
         />
       );
 

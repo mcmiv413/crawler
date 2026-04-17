@@ -37,9 +37,17 @@ const createMockGameView = (overrides?: Partial<GameView>): GameView => ({
     gold: 100,
     floor: 1,
     experience: 0,
+    experienceForNextLevel: 100,
+    biomeId: null,
+    biomeColor: '#888888',
     statuses: [],
     abilities: [],
     weaponMastery: null,
+    equippedItems: [],
+    statBreakdowns: {},
+    activeQuests: [],
+    nemesisInfo: null,
+    factionStandings: [],
   },
   map: {
     width: 20,
@@ -86,6 +94,10 @@ const createMockGameView = (overrides?: Partial<GameView>): GameView => ({
   runResult: null,
   deathStashFloor: null,
   deathSummary: null,
+  deathContext: null,
+  inspectableEntities: [],
+  recentlyDefeatedNemesis: null,
+  debugMode: false,
   ...overrides,
 });
 

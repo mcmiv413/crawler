@@ -442,34 +442,34 @@ describe('Cross-Reference Validation Contract', () => {
 // =============================================================================
 
 describe('Property-Based Schema Validation', () => {
-  it(
-    'generated abilities always have valid structure',
-    fc.property(
-      fc.record({
-        id: fc.string({ minLength: 5, maxLength: 20 }).map((s) => `ability_${s.replace(/[^a-z0-9]/g, '')}`),
-        name: fc.string({ minLength: 1, maxLength: 50 }),
-        cooldown: fc.integer({ min: 0, max: 100 }),
-        requiresTarget: fc.boolean(),
-        unlockLevel: fc.integer({ min: 0, max: 100 }),
-      }),
-      (generatedAbility) => {
-        // Verify all required fields are present
-        expect(generatedAbility.id).toBeDefined();
-        expect(generatedAbility.name).toBeDefined();
-        expect(typeof generatedAbility.cooldown).toBe('number');
-        expect(typeof generatedAbility.requiresTarget).toBe('boolean');
-        expect(typeof generatedAbility.unlockLevel).toBe('number');
+  it('generated abilities always have valid structure', () =>
+    fc.assert(
+      fc.property(
+        fc.record({
+          id: fc.string({ minLength: 5, maxLength: 20 }).map((s) => `ability_${s.replace(/[^a-z0-9]/g, '')}`),
+          name: fc.string({ minLength: 1, maxLength: 50 }),
+          cooldown: fc.integer({ min: 0, max: 100 }),
+          requiresTarget: fc.boolean(),
+          unlockLevel: fc.integer({ min: 0, max: 100 }),
+        }),
+        (generatedAbility) => {
+          // Verify all required fields are present
+          expect(generatedAbility.id).toBeDefined();
+          expect(generatedAbility.name).toBeDefined();
+          expect(typeof generatedAbility.cooldown).toBe('number');
+          expect(typeof generatedAbility.requiresTarget).toBe('boolean');
+          expect(typeof generatedAbility.unlockLevel).toBe('number');
 
-        // Verify ranges
-        expect(generatedAbility.cooldown).toBeGreaterThanOrEqual(0);
-        expect(generatedAbility.cooldown).toBeLessThanOrEqual(100);
-        expect(generatedAbility.unlockLevel).toBeGreaterThanOrEqual(0);
-        expect(generatedAbility.unlockLevel).toBeLessThanOrEqual(100);
+          // Verify ranges
+          expect(generatedAbility.cooldown).toBeGreaterThanOrEqual(0);
+          expect(generatedAbility.cooldown).toBeLessThanOrEqual(100);
+          expect(generatedAbility.unlockLevel).toBeGreaterThanOrEqual(0);
+          expect(generatedAbility.unlockLevel).toBeLessThanOrEqual(100);
 
-        return true;
-      },
-    ),
-  );
+          return true;
+        },
+      ),
+    ));
 
   it(
     'generated items always have valid rarity and value',
