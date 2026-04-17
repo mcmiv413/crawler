@@ -6,7 +6,7 @@ import { entityId } from '@dungeon/contracts';
 import type { EnemyInstance } from '@dungeon/contracts';
 
 const createEnemy = (tier: number): EnemyInstance => ({
-  tier,
+  tier: tier as 1 | 2 | 3 | 4 | 5,
   id: entityId(`enemy-${tier}`),
   templateId: 'test',
   name: 'Test',

@@ -1,5 +1,5 @@
 import { describe, it, expect } from 'vitest';
-import { SPRITE_MAP, type SpriteRect } from './sprite-map.js';
+import { SPRITE_MAP } from './sprite-map.js';
 import { ENEMY_TEMPLATES, BIOMES, OBJECT_TEMPLATES } from '@dungeon/content';
 
 describe('SPRITE_MAP', () => {
@@ -30,13 +30,12 @@ describe('SPRITE_MAP', () => {
 
   it('all rects have non-negative integer coordinates and 16×16 dimensions', () => {
     for (const [key, rect] of Object.entries(SPRITE_MAP)) {
-      const r = rect as SpriteRect;
-      expect(r.x, `${key}.x`).toBeGreaterThanOrEqual(0);
-      expect(r.y, `${key}.y`).toBeGreaterThanOrEqual(0);
-      expect(r.w, `${key}.w`).toBe(16);
-      expect(r.h, `${key}.h`).toBe(16);
-      expect(Number.isInteger(r.x), `${key}.x is integer`).toBe(true);
-      expect(Number.isInteger(r.y), `${key}.y is integer`).toBe(true);
+      expect(rect.x, `${key}.x`).toBeGreaterThanOrEqual(0);
+      expect(rect.y, `${key}.y`).toBeGreaterThanOrEqual(0);
+      expect(rect.w, `${key}.w`).toBe(16);
+      expect(rect.h, `${key}.h`).toBe(16);
+      expect(Number.isInteger(rect.x), `${key}.x is integer`).toBe(true);
+      expect(Number.isInteger(rect.y), `${key}.y is integer`).toBe(true);
     }
   });
 

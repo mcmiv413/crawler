@@ -19,6 +19,7 @@ import fc from 'fast-check';
 import { SeededRNG } from '../utils/rng.js';
 import { resolveAttack } from './combat.js';
 import { createDefaultBalanceConfig } from '@dungeon/content';
+import { entityId } from '@dungeon/contracts';
 import type { CombatContext } from '@dungeon/contracts';
 
 // ============================================================================
@@ -100,8 +101,8 @@ describe('Balance Simulation - Damage Output Distributions', () => {
     // Simulate 150 attacks with different player powers
     const damages = runSeededSimulation(42, 150, (rng) => {
       const ctx: CombatContext = {
-        attackerId: 'player',
-        defenderId: 'enemy',
+        attackerId: entityId('player'),
+        defenderId: entityId('enemy'),
         attackerAttack: 50, // Moderate attack
         attackerAccuracy: 90,
         defenderDefense: 10,
@@ -141,8 +142,8 @@ describe('Balance Simulation - Damage Output Distributions', () => {
     scenarios.forEach((scenario) => {
       const damages = runSeededSimulation(123, 100, (rng) => {
         const ctx: CombatContext = {
-          attackerId: 'enemy',
-          defenderId: 'player',
+          attackerId: entityId('enemy'),
+          defenderId: entityId('player'),
           attackerAttack: scenario.attack,
           attackerAccuracy: 80,
           defenderDefense: scenario.defense,
@@ -170,8 +171,8 @@ describe('Balance Simulation - Damage Output Distributions', () => {
     // Run many attacks to collect critical hit statistics
     const crits = runSeededSimulation(456, 500, (rng) => {
       const ctx: CombatContext = {
-        attackerId: 'player',
-        defenderId: 'enemy',
+        attackerId: entityId('player'),
+        defenderId: entityId('enemy'),
         attackerAttack: 50,
         attackerAccuracy: 100, // Guarantee hits
         defenderDefense: 10,
@@ -201,8 +202,8 @@ describe('Balance Simulation - Damage Output Distributions', () => {
     // Test scenarios with different player vs enemy stats
     const baseDamages = runSeededSimulation(789, 100, (rng) => {
       const ctx: CombatContext = {
-        attackerId: 'player',
-        defenderId: 'enemy',
+        attackerId: entityId('player'),
+        defenderId: entityId('enemy'),
         attackerAttack: 30,
         attackerAccuracy: 90,
         defenderDefense: 10,
@@ -217,8 +218,8 @@ describe('Balance Simulation - Damage Output Distributions', () => {
 
     const enhancedDamages = runSeededSimulation(789, 100, (rng) => {
       const ctx: CombatContext = {
-        attackerId: 'player',
-        defenderId: 'enemy',
+        attackerId: entityId('player'),
+        defenderId: entityId('enemy'),
         attackerAttack: 50, // +20 attack
         attackerAccuracy: 90,
         defenderDefense: 5, // -5 enemy defense
@@ -254,8 +255,8 @@ describe('Balance Simulation - Ability Effectiveness', () => {
     accuracyLevels.forEach((accuracy) => {
       const hits = runSeededSimulation(111, 200, (rng) => {
         const ctx: CombatContext = {
-          attackerId: 'player',
-          defenderId: 'enemy',
+          attackerId: entityId('player'),
+          defenderId: entityId('enemy'),
           attackerAttack: 40,
           attackerAccuracy: accuracy,
           defenderDefense: 10,
@@ -285,8 +286,8 @@ describe('Balance Simulation - Ability Effectiveness', () => {
     // Simulate status effect application with 100% application chance
     const statusApplications = runSeededSimulation(222, 200, (rng) => {
       const ctx: CombatContext = {
-        attackerId: 'player',
-        defenderId: 'enemy',
+        attackerId: entityId('player'),
+        defenderId: entityId('enemy'),
         attackerAttack: 40,
         attackerAccuracy: 100,
         defenderDefense: 10,
@@ -371,8 +372,8 @@ describe('Balance Simulation - Combat Outcome Distributions', () => {
         while (playerHealth > 0 && enemyHealth > 0 && rounds < maxRounds) {
           // Player attacks
           const playerCtx: CombatContext = {
-            attackerId: 'player',
-            defenderId: 'enemy',
+            attackerId: entityId('player'),
+            defenderId: entityId('enemy'),
             attackerAttack: difficulty.playerAttack,
             attackerAccuracy: 85,
             defenderDefense: 15,
@@ -390,8 +391,8 @@ describe('Balance Simulation - Combat Outcome Distributions', () => {
 
           // Enemy attacks
           const enemyCtx: CombatContext = {
-            attackerId: 'enemy',
-            defenderId: 'player',
+            attackerId: entityId('enemy'),
+            defenderId: entityId('player'),
             attackerAttack: difficulty.enemyAttack,
             attackerAccuracy: 80,
             defenderDefense: 10,
@@ -589,8 +590,8 @@ describe('Balance Simulation - Edge Cases', () => {
 
       const scenario = rng.pick(scenarios);
       const ctx: CombatContext = {
-        attackerId: 'attacker',
-        defenderId: 'defender',
+        attackerId: entityId('attacker'),
+        defenderId: entityId('defender'),
         attackerAttack: scenario.attack,
         attackerAccuracy: 100,
         defenderDefense: scenario.defense,

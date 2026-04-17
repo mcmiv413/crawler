@@ -8,6 +8,7 @@ services:
       - "3000:3000"
     environment:
       NODE_ENV: production
+      SAVE_SIGNING_SECRET: ${SAVE_SIGNING_SECRET:-dev-save-secret-12345678901234567890}
     restart: unless-stopped
   web:
     build:

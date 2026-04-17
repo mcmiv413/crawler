@@ -49,6 +49,14 @@ function createMockGameView(overrides?: Partial<GameView>): GameView {
       statuses: [],
       abilities: [],
       weaponMastery: null,
+      experienceForNextLevel: 100,
+      biomeId: null,
+      biomeColor: '#888888',
+      equippedItems: [],
+      statBreakdowns: {},
+      activeQuests: [],
+      nemesisInfo: null,
+      factionStandings: [],
     },
     map: {
       width: 20,
@@ -71,9 +79,18 @@ function createMockGameView(overrides?: Partial<GameView>): GameView {
         head: null,
         gloves: null,
         boots: null,
-        accessories: [],
+        ring1: null,
+        ring2: null,
       },
     },
+    activeQuests: [],
+    runResult: null,
+    deathStashFloor: null,
+    deathSummary: null,
+    deathContext: null,
+    inspectableEntities: [],
+    recentlyDefeatedNemesis: null,
+    debugMode: false,
   };
 
   return { ...baseView, ...overrides };
@@ -82,7 +99,7 @@ function createMockGameView(overrides?: Partial<GameView>): GameView {
 // Helper to create a mock log entry
 function createMockLogEntry(text: string = 'Test log entry'): CombatLogEntry {
   return {
-    timestamp: new Date().toISOString(),
+    timestamp: Date.now(),
     text,
     type: 'info',
   };
@@ -191,7 +208,7 @@ describe('useGameStore (Zustand)', () => {
 
       const { sendCommand: mockSendCommand } = await import('../api/client.js');
       vi.mocked(mockSendCommand).mockResolvedValueOnce({
-        view: updatedView,
+        view: updatedView as unknown as GameView & { combatLog: CombatLogEntry[] },
         events: [],
         runEnded: false,
         serializedState: 'state-cmd-123',
@@ -242,7 +259,7 @@ describe('useGameStore (Zustand)', () => {
       vi.mocked(mockSendCommand)
         .mockRejectedValueOnce(new GameNotFoundError(mockGameId))
         .mockResolvedValueOnce({
-          view: recoveredView,
+          view: recoveredView as unknown as GameView & { combatLog: CombatLogEntry[] },
           events: [],
           runEnded: false,
           serializedState,
@@ -514,7 +531,7 @@ describe('useGameStore (Zustand)', () => {
   // ============================================================================
 
   describe('autoWalk', () => {
-    it('startAutoWalk creates Set from map entities, cancelAutoWalk clears it', async () => {
+    it('startAutoWalk creates Set from map entities, cancelAutoWalk clears it', () => {
       const { result } = renderHook(() => useGameStore());
 
       // Create a view with multiple enemies
@@ -527,9 +544,9 @@ describe('useGameStore (Zustand)', () => {
           biomeId: 'dungeon',
           cells: [],
           entities: [
-            { id: 'enemy-1', type: 'enemy', x: 10, y: 5, ascii: 'E', color: '#f00' },
-            { id: 'enemy-2', type: 'enemy', x: 12, y: 6, ascii: 'E', color: '#f00' },
-            { id: 'ally-1', type: 'npc', x: 8, y: 7, ascii: 'A', color: '#0f0' },
+            { id: 'enemy-1', type: 'enemy' as const, x: 10, y: 5, ascii: 'E', color: '#f00', name: 'Enemy', templateId: 'enemy' },
+            { id: 'enemy-2', type: 'enemy' as const, x: 12, y: 6, ascii: 'E', color: '#f00', name: 'Enemy', templateId: 'enemy' },
+            { id: 'ally-1', type: 'object' as const, x: 8, y: 7, ascii: 'A', color: '#0f0', name: 'Ally', templateId: null },
           ],
         },
       });
@@ -681,15 +698,15 @@ describe('useGameStore (Zustand)', () => {
       // Mock sendCommand
       const { sendCommand: mockSendCommand } = await import('../api/client.js');
       vi.mocked(mockSendCommand).mockResolvedValueOnce({
-        view: createMockGameView(),
+        view: createMockGameView() as unknown as GameView & { combatLog: CombatLogEntry[] },
         events: [],
         runEnded: false,
         serializedState: 'state',
       });
 
       // Call toggleDebugLogging
-      await act(async () => {
-        await result.current.toggleDebugLogging();
+      act(() => {
+        result.current.toggleDebugLogging();
       });
 
       // Verify sendCommand was called with TOGGLE_DEBUG

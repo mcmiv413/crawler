@@ -162,7 +162,7 @@ describe('Combat damage type correctness', () => {
         ...dungeonState.player,
         position: { x: 5, y: 5 },
         stats: { ...dungeonState.player.stats, attack: 100, accuracy: 200 },
-        equipment: { weapon: null, armor: null, accessory: null },
+        equipment: { weapon: null, secondaryWeapon: null, chest: null, head: null, gloves: null, boots: null, ring1: null, ring2: null },
       },
       run: {
         ...dungeonState.run!,

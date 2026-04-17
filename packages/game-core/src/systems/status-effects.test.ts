@@ -7,6 +7,7 @@ import {
   hasStatus
 } from './status-effects.js';
 import { createTestPlayer, createTestEnemy } from '../test-utils.js';
+import type { StatusId } from '@dungeon/contracts';
 
 describe('status-effects', () => {
   it('applies a new status to player', () => {
@@ -137,7 +138,7 @@ describe('Enemy status ticking', () => {
   it('Bug 2: tickEnemyStatuses handles enemy status duration and damage', () => {
     const initialDuration = 2;
     const enemy = createTestEnemy();
-    const burnEnemy = { ...enemy, statuses: [{ id: 'burn', turnsRemaining: initialDuration, magnitude: 3, sourceId: null }] };
+    const burnEnemy = { ...enemy, statuses: [{ id: 'burn' as StatusId, turnsRemaining: initialDuration, magnitude: 3, sourceId: null }] };
     const healthBefore = burnEnemy.stats.health;
 
     const { enemy: ticked } = tickEnemyStatuses(burnEnemy, 1);
@@ -152,7 +153,7 @@ describe('Enemy status ticking', () => {
 
   it('enemy status expires after duration reaches 0', () => {
     const enemy = createTestEnemy();
-    const burnEnemy = { ...enemy, statuses: [{ id: 'burn', turnsRemaining: 1, magnitude: 3, sourceId: null }] };
+    const burnEnemy = { ...enemy, statuses: [{ id: 'burn' as StatusId, turnsRemaining: 1, magnitude: 3, sourceId: null }] };
 
     const { enemy: ticked } = tickEnemyStatuses(burnEnemy, 1);
 
@@ -165,8 +166,8 @@ describe('Enemy status ticking', () => {
     const multiStatus = {
       ...enemy,
       statuses: [
-        { id: 'burn', turnsRemaining: 2, magnitude: 3, sourceId: null },
-        { id: 'poison', turnsRemaining: 1, magnitude: 5, sourceId: null },
+        { id: 'burn' as StatusId, turnsRemaining: 2, magnitude: 3, sourceId: null },
+        { id: 'poison' as StatusId, turnsRemaining: 1, magnitude: 5, sourceId: null },
       ],
     };
 

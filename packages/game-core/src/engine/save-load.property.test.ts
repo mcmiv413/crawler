@@ -111,8 +111,8 @@ describe('save/load roundtrip property tests', () => {
           // floorHistory should roundtrip
           expect(restored.run.floorHistory.length).toBe(original.run.floorHistory.length);
           for (let i = 0; i < original.run.floorHistory.length; i++) {
-            const origSf = original.run.floorHistory[i];
-            const restSf = restored.run.floorHistory[i];
+            const origSf = original.run.floorHistory[i]!;
+            const restSf = restored.run.floorHistory[i]!;
             expect(restSf.floor.cells).toBeInstanceOf(Map);
             expect(restSf.enemies).toBeInstanceOf(Map);
             expect(restSf.floor.cells.size).toBe(origSf.floor.cells.size);

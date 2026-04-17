@@ -82,6 +82,10 @@ describe('populateFloor', () => {
       preferredArchetypes: [],
       preferredDamageTypes: [],
       preferredTemplates: [],
+      enemyHealthMultiplier: 1.0,
+      tierUpgradeChance: 0,
+      bossFloorAdjust: 0,
+      nemesesToSpawn: [],
     });
 
     expect(extraEnemies.size).toBeGreaterThanOrEqual(baseEnemies.size);
@@ -101,6 +105,10 @@ describe('populateFloor', () => {
         preferredArchetypes: [],
         preferredDamageTypes: [],
         preferredTemplates: ['goblin_archer'],
+        enemyHealthMultiplier: 1.0,
+        tierUpgradeChance: 0,
+        bossFloorAdjust: 0,
+        nemesesToSpawn: [],
       });
       for (const enemy of enemies.values()) {
         templateCounts.set(enemy.templateId, (templateCounts.get(enemy.templateId) ?? 0) + 1);
@@ -123,6 +131,10 @@ describe('populateFloor', () => {
         preferredArchetypes: [],
         preferredDamageTypes: [],
         preferredTemplates: ['goblin_archer'],
+        enemyHealthMultiplier: 1.0,
+        tierUpgradeChance: 0,
+        bossFloorAdjust: 0,
+        nemesesToSpawn: [],
       });
       for (const enemy of enemies.values()) {
         templateCounts.set(enemy.templateId, (templateCounts.get(enemy.templateId) ?? 0) + 1);

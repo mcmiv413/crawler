@@ -1,4 +1,5 @@
-import { test, expect, Page } from '@playwright/test';
+import { test, expect } from '@playwright/test';
+import type { Page } from '@playwright/test';
 
 /**
  * Page Object Model for common game UI interactions
@@ -919,7 +920,7 @@ test.describe('Character Panel - Clickable Stats & Breakdowns', () => {
 
       // Find and click on HP stat button
       const statButtons = page.locator('button').filter({ hasText: /^HP|ATK|DEF|SPD|ACC|EVA|Gold|XP/ });
-      const firstButton = await statButtons.first();
+      const firstButton = statButtons.first();
       
       if (await firstButton.isVisible({ timeout: 500 }).catch(() => false)) {
         await firstButton.click();

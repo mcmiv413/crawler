@@ -91,7 +91,7 @@ describe('Command Validation: State Validation', () => {
     const state = createTestGameState(); // Town state, no active run
     const rng = new SeededRNG(42);
 
-    const result = handleCommand(state, { type: 'MOVE', direction: 'NORTH' }, rng);
+    const result = handleCommand(state, { type: 'MOVE', direction: 'N' }, rng);
 
     // Command should be rejected (no run active)
     expect(result.events.length).toBe(0);
@@ -110,11 +110,11 @@ describe('Command Validation: State Validation', () => {
     const rng = new SeededRNG(42);
 
     // Dead player cannot move
-    const moveResult = handleCommand(deadState, { type: 'MOVE', direction: 'NORTH' }, rng);
+    const moveResult = handleCommand(deadState, { type: 'MOVE', direction: 'N' }, rng);
     expect(moveResult.events.length).toBe(0);
 
     // Dead player cannot attack
-    const target = Array.from(deadState.run!.enemies.values())[0];
+    const target = Array.from(deadState.run!.enemies.values())[0]!;
     const attackResult = handleCommand(deadState, { type: 'ATTACK', targetId: target.id }, rng);
     expect(attackResult.events.length).toBe(0);
   });
@@ -164,7 +164,7 @@ describe('Command Validation: Combat Validation', () => {
 
     if (!state.run) throw new Error('No run in state');
 
-    const target = Array.from(state.run.enemies.values())[0];
+    const target = Array.from(state.run.enemies.values())[0]!;
 
     const result = handleCommand(
       state,
@@ -211,12 +211,12 @@ describe('Command Validation: Context-Specific Rules', () => {
 
     // In town: MOVE is invalid (no run)
     const townState = createTestGameState();
-    const townResult = handleCommand(townState, { type: 'MOVE', direction: 'NORTH' }, rng);
+    const townResult = handleCommand(townState, { type: 'MOVE', direction: 'N' }, rng);
     expect(townResult.events.length).toBe(0);
 
     // In combat: MOVE is valid
     const combatState = createTestGameStateInCombat();
-    const combatResult = handleCommand(combatState, { type: 'MOVE', direction: 'NORTH' }, rng);
+    const combatResult = handleCommand(combatState, { type: 'MOVE', direction: 'N' }, rng);
     // May have PLAYER_MOVED or turn-skip events
     expect(combatResult.state).toBeDefined();
   });
@@ -228,8 +228,8 @@ describe('Command Validation: Context-Specific Rules', () => {
     const state = createTestGameStateInCombat();
 
     // Same command, same state → should produce same result
-    const result1 = handleCommand(state, { type: 'MOVE', direction: 'NORTH' }, rng1);
-    const result2 = handleCommand(state, { type: 'MOVE', direction: 'NORTH' }, rng2);
+    const result1 = handleCommand(state, { type: 'MOVE', direction: 'N' }, rng1);
+    const result2 = handleCommand(state, { type: 'MOVE', direction: 'N' }, rng2);
 
     // Results should match
     expect(result1.runEnded).toBe(result2.runEnded);
@@ -244,7 +244,7 @@ describe('Command Validation: Context-Specific Rules', () => {
         const rng1 = new SeededRNG(seed);
         const rng2 = new SeededRNG(seed);
 
-        const target = Array.from(state.run!.enemies.values())[0];
+        const target = Array.from(state.run!.enemies.values())[0]!;
 
         // Use deterministic ATTACK command
         const result1 = handleCommand(state, { type: 'ATTACK', targetId: target.id }, rng1);
@@ -276,7 +276,7 @@ describe('Command Validation: Property-Based Tests', () => {
         const originalTurnNumber = state.turnNumber;
 
         // Any command should not mutate original state
-        handleCommand(state, { type: 'MOVE', direction: 'NORTH' }, rng);
+        handleCommand(state, { type: 'MOVE', direction: 'N' }, rng);
 
         expect(state.player.position).toEqual(originalPlayerPos);
         expect(state.player.stats.health).toBe(originalHealth);
@@ -292,7 +292,7 @@ describe('Command Validation: Property-Based Tests', () => {
         const rng = new SeededRNG(seed);
 
         // Commands on town state should not end run
-        const result = handleCommand(state, { type: 'MOVE', direction: 'NORTH' }, rng);
+        const result = handleCommand(state, { type: 'MOVE', direction: 'N' }, rng);
 
         expect(result.runEnded).toBe(false);
       }),

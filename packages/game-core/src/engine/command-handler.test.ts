@@ -279,7 +279,7 @@ describe('handleUseAbility', () => {
       // Get the primary and adjacent enemy IDs from the initial setup
       const enemyIds = Array.from(beforeEnemies.values()).map(e => e.id).sort();
       if (enemyIds.length >= 1) {
-        const primaryId = enemyIds[0];
+        const primaryId = enemyIds[0]!;
         const primaryBefore = beforeById.get(primaryId);
         const primaryAfter = afterById.get(primaryId);
         if (primaryBefore && primaryAfter && primaryAfter.health < primaryBefore.health) {
@@ -288,7 +288,7 @@ describe('handleUseAbility', () => {
       }
 
       if (enemyIds.length >= 2) {
-        const adjacentId = enemyIds[1];
+        const adjacentId = enemyIds[1]!;
         const adjacentBefore = beforeById.get(adjacentId);
         const adjacentAfter = afterById.get(adjacentId);
         if (adjacentBefore && adjacentAfter && adjacentAfter.health < adjacentBefore.health) {

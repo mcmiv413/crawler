@@ -5,8 +5,8 @@ import type { GameState, RunState, NpcState } from '@dungeon/contracts';
 import { createTestGameStateInCombat, createTestEnemy } from '@dungeon/core/testing';
 
 function makeFloor(depth: number, playerOnStairsUp = false) {
-  const stairsTile = {
-    type: (playerOnStairsUp ? 'stairs_up' : 'floor') as 'stairs_up' | 'floor',
+  const stairsTile: { type: 'stairs_up' | 'floor'; walkable: boolean; blocksVision: boolean; ascii: string; color: string } = {
+    type: playerOnStairsUp ? 'stairs_up' : 'floor',
     walkable: true,
     blocksVision: false,
     ascii: playerOnStairsUp ? '<' : '.',
@@ -869,10 +869,10 @@ describe('buildInventoryView item stacking', () => {
     // The entityId IS the itemId in this game (items.get(entityId) returns template)
     const registry = new Map<string, any>();
     for (const id of inventoryIds) {
-      registry.set(entityId(id), items.get(id)!);
+      registry.set(entityId(id), items.get(id));
     }
     if (equippedWeaponId) {
-      registry.set(entityId(equippedWeaponId), items.get(equippedWeaponId)!);
+      registry.set(entityId(equippedWeaponId), items.get(equippedWeaponId));
     }
 
     return makeState({

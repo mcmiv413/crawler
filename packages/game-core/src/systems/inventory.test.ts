@@ -9,35 +9,38 @@ import type { RunState } from '@dungeon/contracts';
 import { BASE_TEST_STATS, createTestGameState, createTestEnemy } from '../test-utils.js';
 
 const swordTemplate = {
-  id: entityId('sword'),
+  itemId: 'sword',
   name: 'Sword',
   itemClass: 'weapon' as const,
   description: 'A sword',
   rarity: 'common' as const,
   value: 10,
-  weight: 5,
-  weapon: { damageType: 'physical' as const, attackBonus: 5, critChance: 0.05 },
+  stackable: false,
+  maxStack: 1,
+  weapon: { damage: 10, damageType: 'physical' as const, accuracy: 5, speed: 3, slot: 'weapon' as const, weaponRange: 1, weaponType: 'blade' as const },
 };
 
 const potionTemplate = {
-  id: entityId('health_potion'),
+  itemId: 'health_potion',
   name: 'Health Potion',
   itemClass: 'consumable' as const,
   description: 'Heals 30 HP',
   rarity: 'common' as const,
   value: 5,
-  weight: 0.5,
-  consumable: { effect: 'heal' as const, magnitude: 30, targetStatus: undefined },
+  stackable: true,
+  maxStack: 10,
+  consumable: { effect: 'heal' as const, magnitude: 30 },
 };
 
 const antidoteTemplate = {
-  id: entityId('antidote'),
+  itemId: 'antidote',
   name: 'Antidote',
   itemClass: 'consumable' as const,
   description: 'Cures poison',
   rarity: 'common' as const,
   value: 5,
-  weight: 0.5,
+  stackable: true,
+  maxStack: 10,
   consumable: { effect: 'cure' as const, magnitude: 0, targetStatus: 'poison' as const },
 };
 
@@ -113,7 +116,7 @@ describe('Inventory System', () => {
     let state = createTestGameState();
     // Add more items than the old MAX_INVENTORY of 20
     for (let i = 0; i < 50; i++) {
-      const template = { ...potionTemplate, id: entityId(`potion${i}`) };
+      const template = { ...potionTemplate, itemId: `potion${i}` };
       const result = addItemToInventory(state, template);
       state = result.state;
     }
@@ -127,13 +130,14 @@ describe('Inventory System', () => {
     const initialEnemyHealth = enemy.stats.health;
     const runState: RunState = {
       runId: entityId('run1'),
-      floor: { depth: 1, width: 10, height: 10, cells: new Map(), entrance: { x: 0, y: 0 }, exit: { x: 9, y: 9 }, biomeId: 'crypt' },
+      floor: { depth: 1, width: 10, height: 10, cells: new Map(), entrance: { x: 0, y: 0 }, exit: { x: 9, y: 9 }, biomeId: 'crypt', seed: 42 },
       enemies: new Map([['1,0', enemy]]),
-      items: new Map(),
+      objects: new Map(),
       turnCount: 1,
       isActive: true,
       floorHistory: [],
       weaponMastery: EMPTY_WEAPON_MASTERY,
+      speedAccumulators: {},
     };
     const stateWithRun = { ...state, phase: 'dungeon' as const, run: runState };
     const { state: stateWithBomb } = addItemToInventory(stateWithRun, bombTemplate);
@@ -193,13 +197,14 @@ describe('Inventory System', () => {
 
     const runState: RunState = {
       runId: entityId('run1'),
-      floor: { depth: 1, width: 10, height: 10, cells: new Map(), entrance: { x: 0, y: 0 }, exit: { x: 9, y: 9 }, biomeId: 'crypt' },
+      floor: { depth: 1, width: 10, height: 10, cells: new Map(), entrance: { x: 0, y: 0 }, exit: { x: 9, y: 9 }, biomeId: 'crypt', seed: 42 },
       enemies: new Map([['1,0', adjacentEnemy], ['4,0', farEnemy]]),
-      items: new Map(),
+      objects: new Map(),
       turnCount: 1,
       isActive: true,
       floorHistory: [],
       weaponMastery: EMPTY_WEAPON_MASTERY,
+      speedAccumulators: {},
     };
 
     // Player is at (0, 0) by default

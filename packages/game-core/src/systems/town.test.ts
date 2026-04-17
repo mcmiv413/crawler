@@ -295,7 +295,7 @@ describe('processEnchantArmor', () => {
       ...createTestGameState({ player: { gold: initialGold } }),
       player: {
         ...createTestGameState({ player: { gold: initialGold } }).player,
-        equipment: { weapon: null, chest: armorId, head: null, gloves: null, boots: null, ring1: null, ring2: null },
+        equipment: { weapon: null, secondaryWeapon: null, chest: armorId, head: null, gloves: null, boots: null, ring1: null, ring2: null },
       },
       world: { ...createTestGameState().world, unlockedBlueprints: ['hp_regen'] },
       itemRegistry: { items: new Map([[armorId, commonArmor]]) as any },
@@ -315,7 +315,7 @@ describe('processEnchantArmor', () => {
       ...createTestGameState({ player: { gold: initialGold } }),
       player: {
         ...createTestGameState({ player: { gold: initialGold } }).player,
-        equipment: { weapon: null, chest: armorId, head: null, gloves: null, boots: null, ring1: null, ring2: null },
+        equipment: { weapon: null, secondaryWeapon: null, chest: armorId, head: null, gloves: null, boots: null, ring1: null, ring2: null },
       },
       world: { ...createTestGameState().world, unlockedBlueprints: ['hp_regen', 'thorns'] },
       itemRegistry: { items: new Map([[armorId, fullArmor]]) as any },
@@ -335,7 +335,7 @@ describe('processEnchantArmor', () => {
       ...createTestGameState({ player: { gold: initialGold } }),
       player: {
         ...createTestGameState({ player: { gold: initialGold } }).player,
-        equipment: { weapon: null, chest: armorId, head: null, gloves: null, boots: null, ring1: null, ring2: null },
+        equipment: { weapon: null, secondaryWeapon: null, chest: armorId, head: null, gloves: null, boots: null, ring1: null, ring2: null },
       },
       world: { ...createTestGameState().world, unlockedBlueprints: ['hp_regen'] },
       itemRegistry: { items: new Map([[armorId, alreadyEnchanted]]) as any },
@@ -375,7 +375,7 @@ describe('processEnchantArmor', () => {
       ...createTestGameState({ player: { gold: 500 } }),
       player: {
         ...createTestGameState({ player: { gold: 500 } }).player,
-        equipment: { weapon: null, chest: armorId, head: null, gloves: null, boots: null, ring1: null, ring2: null },
+        equipment: { weapon: null, secondaryWeapon: null, chest: armorId, head: null, gloves: null, boots: null, ring1: null, ring2: null },
       },
       world: { ...createTestGameState().world, unlockedBlueprints: ['hp_regen', 'thorns', 'resist_fire', 'evasion_boost', 'defense_boost'] },
       itemRegistry: { items: new Map([[armorId, twoSlotArmor]]) as any },

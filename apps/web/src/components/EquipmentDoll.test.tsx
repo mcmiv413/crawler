@@ -107,7 +107,7 @@ describe('EquipmentDoll Component', () => {
       const onSlotClick = vi.fn();
       render(<EquipmentDoll equipped={emptyEquipped} onSlotClick={onSlotClick} />);
 
-      const emptySlot = screen.getAllByText(/\[empty\]/i)[0];
+      const emptySlot = screen.getAllByText(/\[empty\]/i)[0]!;
       fireEvent.click(emptySlot);
 
       expect(onSlotClick).not.toHaveBeenCalled();

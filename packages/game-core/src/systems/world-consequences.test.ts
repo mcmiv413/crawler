@@ -122,8 +122,12 @@ describe('evaluateEventChains', () => {
     const deathEvent = {
       type: 'PLAYER_DIED' as const,
       killerId: null,
+      killerName: null,
+      killerSpriteName: null,
       floor: 1,
       cause: 'test',
+      goldLost: 0,
+      overkillDamage: 0,
       timestamp: Date.now(),
       turnNumber: 1,
     };
@@ -141,8 +145,12 @@ describe('evaluateEventChains', () => {
     const deathEvent = {
       type: 'PLAYER_DIED' as const,
       killerId: null,
+      killerName: null,
+      killerSpriteName: null,
       floor: 1,
       cause: 'test',
+      goldLost: 0,
+      overkillDamage: 0,
       timestamp: Date.now(),
       turnNumber: 1,
     };
