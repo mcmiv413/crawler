@@ -235,21 +235,14 @@ export default tseslint.config(
     },
   },
 
-  // Tests (untyped for speed)
+  // Tests (typed) - type-aware rules enforced
   {
     files: [
-      "**/*.test.ts",
-      "**/*.test.tsx",
-      "**/*.property.test.ts",
-      "tests/e2e/**/*.ts",
+      "apps/*/src/**/*.test.ts",
+      "apps/*/src/**/*.test.tsx",
+      "packages/*/src/**/*.test.ts",
+      "packages/*/src/**/*.property.test.ts",
       "tests/**/*.ts",
-      "*.test.ts",
-      "vitest.workspace.ts",
-      "apps/*/vitest.config.ts",
-      "apps/*/vite.config.ts",
-      "apps/*/vitest.setup.ts",
-      "packages/*/vitest.config.ts",
-      "playwright.config.ts",
     ],
     plugins: {
       "@typescript-eslint": tseslint.plugin,
@@ -257,7 +250,15 @@ export default tseslint.config(
       dungeon: pluginDungeon,
     },
     languageOptions: {
-      ...untypedLanguageOptions,
+      parser: tseslint.parser,
+      parserOptions: {
+        project: [
+          "./apps/*/tsconfig.test.json",
+          "./packages/*/tsconfig.test.json",
+          "./tests/tsconfig.test.json",
+        ],
+        tsconfigRootDir: import.meta.dirname,
+      },
       globals: {
         ...pluginVitest.environments.env.globals,
       },
@@ -272,8 +273,38 @@ export default tseslint.config(
       "dungeon/no-implicit-boolean": "off",
       complexity: "off",
       "max-lines-per-function": "off",
+      "@typescript-eslint/no-floating-promises": "error",
+      "@typescript-eslint/await-thenable": "error",
+      "@typescript-eslint/no-misused-promises": "error",
+      "@typescript-eslint/require-await": "error",
+      "@typescript-eslint/no-unnecessary-type-assertion": "error",
       "vitest/no-focused-tests": "error",
       "vitest/no-disabled-tests": "warn",
+    },
+  },
+
+  // Runner configs (untyped for speed)
+  {
+    files: [
+      "vitest.workspace.ts",
+      "apps/*/vitest.config.ts",
+      "apps/*/vite.config.ts",
+      "apps/*/vitest.setup.ts",
+      "packages/*/vitest.config.ts",
+      "playwright.config.ts",
+      "scripts/**/*.ts",
+    ],
+    plugins: {
+      "@typescript-eslint": tseslint.plugin,
+      dungeon: pluginDungeon,
+    },
+    languageOptions: {
+      ...untypedLanguageOptions,
+    },
+    rules: {
+      "@typescript-eslint/no-explicit-any": "warn",
+      "dungeon/no-array-mutation": "off",
+      "no-console": "off",
     },
   },
 
