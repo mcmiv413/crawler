@@ -98,8 +98,8 @@ export function handleSetTrap(
     // Update cache to persist modified floor state
     newState = updateFloorCacheForCurrentFloor(newState);
 
-    // Process enemy turns
-    const enemyResult = processEnemyTurns(newState, rng);
+    // Process enemy turns with player speed for speed-based action accumulation
+    const enemyResult = processEnemyTurns(newState, rng, newState.player.stats.speed);
     newState = enemyResult.state;
 
     const events = enemyResult.events;
