@@ -8,6 +8,7 @@ import { updateRunMetrics } from './shared.js';
 import { executeAbility } from '../../abilities/runtime/execute-ability.js';
 import { resolveAttack } from '../../systems/combat.js';
 import { getEffectiveStat, applyStatusToEnemy } from '../../systems/status-effects.js';
+import { applyDamageToEnemy } from '../../systems/damage.js';
 import { processEnemyLoot } from '../../systems/loot.js';
 import { checkLevelUp } from '../../systems/progression.js';
 import { slayNemesis } from '../../systems/nemesis.js';
@@ -348,10 +349,24 @@ export function handleAttack(
   }
 
   if (result.hit === true) {
-    const newHealth = Math.max(0, targetEnemy.stats.health - result.damage);
-    let updatedEnemy = { ...targetEnemy, stats: { ...targetEnemy.stats, health: newHealth } };
+    // Apply damage through central damage system (bypassing defense/resistance since resolveAttack already applied them)
+    const damageResult = applyDamageToEnemy(newState, targetEnemy.id, {
+      amount: result.damage,
+      damageType: result.damageType,
+      source: 'attack',
+      bypassDefense: true,
+      bypassResistance: true,
+      isCritical: result.criticalHit,
+    });
+    newState = damageResult.state;
+    const killed = damageResult.killed;
 
     // Apply on-hit statuses
+    let updatedEnemy = newState.run?.enemies.get(targetKey);
+    if (updatedEnemy === undefined) {
+      updatedEnemy = targetEnemy;  // Fallback if enemy not found
+    }
+
     let statusEvents: DomainEvent[] = [];
     for (const statusId of result.statusesApplied) {
       const defaults = STATUS_DEFAULTS[statusId];
@@ -369,13 +384,13 @@ export function handleAttack(
     }
     events = [...events, ...statusEvents];
 
-    if (newHealth <= 0) {
+    if (killed === true) {
       // Enemy died — use shared kill handling logic
       const killResult = processEnemyKill(newState, targetEnemy, targetKey, rng);
       newState = killResult.state;
       events = [...events, ...killResult.events];
     } else {
-      // Enemy survived
+      // Enemy survived — update with on-hit status changes
       const newEnemies = new Map(newState.run!.enemies);
       newEnemies.set(targetKey, updatedEnemy);
       newState = {
