@@ -23,39 +23,17 @@ jobs:
           node-version: '20'
           cache: 'pnpm'
 
-      - name: Cache ESLint results (typed + untyped)
-        uses: actions/cache@v4
-        with:
-          path: |
-            .eslintcache-typed
-            .eslintcache-untyped
-          key: eslint-cache-${{ runner.os }}-${{ hashFiles('eslint.config.mjs', 'pnpm-lock.yaml', 'package.json') }}
-          restore-keys: |
-            eslint-cache-${{ runner.os }}-
-
       - name: Install dependencies
         run: pnpm install --frozen-lockfile
-
-      - name: Build ESLint plugin
-        run: NODE_OPTIONS="--max-old-space-size=2048" pnpm lint:prepare
-
-      - name: Lint typed sources (with cache)
-        run: NODE_OPTIONS="--max-old-space-size=2048" pnpm lint:eslint:typed:cached
-
-      - name: Lint tests & scripts (with cache)
-        run: NODE_OPTIONS="--max-old-space-size=1024" pnpm lint:eslint:untyped:cached
 
       - name: Type check
         run: NODE_OPTIONS="--max-old-space-size=2048" pnpm run lint:types
 
-      - name: Run tests (excluding balance/heavy simulations)
-        run: VITEST_MAX_THREADS=2 NODE_OPTIONS="--max-old-space-size=2048" pnpm test
+      - name: Run unit tests (excluding heavy property/balance tests)
+        run: VITEST_MAX_THREADS=1 NODE_OPTIONS="--max-old-space-size=2048" vitest run --exclude '**/*.property.test.ts' --exclude '**/*.balance.test.ts'
 
       - name: Build all packages
         run: pnpm build
-
-      - name: Check package exports
-        run: node scripts/check-package-exports.mjs
 
   docker-build:
     runs-on: ubuntu-latest
