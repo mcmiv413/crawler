@@ -62,7 +62,7 @@ export function finalizeAction(
 
   // Don't process enemy turns in town
   const isInTown = outcome.state.run === null;
-  if (isInTown) {
+  if (isInTown === true) {
     return {
       state: outcome.state,
       events: outcome.events,
