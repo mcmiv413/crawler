@@ -12,7 +12,8 @@ import { applyThornsToAttacker, applyBlinkOnHit, getEnchantmentRegenBonus, getTo
 import { updateRunMetrics } from './command-handler.js';
 import { resolveEnemyAbility } from '../systems/enemy-abilities.js';
 import { COMBAT, AMBIENT_PROFILES, OBJECT_TEMPLATES } from '@dungeon/content';
-import { calculateHazardDamage } from '../systems/hazard-damage.js';
+import { calculateHazardDamage, hazardTypeToDamageType } from '../systems/hazard-damage.js';
+import { applyDamageToEnemy } from '../systems/damage.js';
 
 /** Process all enemy turns after a player action */
 export function processEnemyTurns(
@@ -297,25 +298,24 @@ function executeEnemyAction(
       if (hazardAtPos !== undefined) {
         const hazardTemplate = OBJECT_TEMPLATES.get(hazardAtPos.templateId);
         if (hazardTemplate !== undefined && hazardTemplate.isHazard === true) {
-          const damage = calculateHazardDamage(hazardTemplate, movedEnemy.stats.maxHealth);
-          const newHealth = Math.max(0, movedEnemy.stats.health - damage);
+          const trapDamage = calculateHazardDamage(hazardTemplate, movedEnemy.stats.maxHealth);
+          const damageType = hazardTemplate.hazardType !== undefined ? hazardTypeToDamageType(hazardTemplate.hazardType) : 'physical';
 
-          const updatedEnemy: EnemyInstance = {
-            ...movedEnemy,
-            stats: { ...movedEnemy.stats, health: newHealth },
-          };
-          newEnemies.set(objKey, updatedEnemy);
-          newState = {
-            ...newState,
-            run: { ...newState.run, enemies: newEnemies },
-          };
+          // Apply damage through central function (applies defense and resistance)
+          const damageResult = applyDamageToEnemy(newState as GameState, movedEnemy.id, {
+            amount: trapDamage,
+            damageType,
+            source: 'trap',
+            sourceId: hazardAtPos.id,
+          });
+          newState = damageResult.state;
 
           events = [...events, {
             type: 'TRAP_TRIGGERED',
             trapId: hazardAtPos.id,
             trapName: hazardTemplate.name,
             position: action.targetPosition,
-            damage,
+            damage: damageResult.finalDamage,
             rarity: hazardTemplate.rarity,
             hazardType: hazardTemplate.hazardType,
             statusEffect: hazardTemplate.statusEffect,
@@ -323,18 +323,13 @@ function executeEnemyAction(
             turnNumber: state.turnNumber,
           }];
 
-          // Handle enemy death from hazard
-          if (newHealth <= 0) {
-            newEnemies.delete(objKey);
-            newState = {
-              ...newState,
-              run: { ...newState.run, enemies: newEnemies },
-            };
+          // Handle enemy death from hazard (if killed by trap)
+          if (damageResult.killed === true) {
             events = [...events, {
               type: 'ENTITY_DIED',
-              entityId: updatedEnemy.id,
+              entityId: movedEnemy.id,
               killerId: null,
-              entityName: updatedEnemy.name,
+              entityName: movedEnemy.name,
               timestamp: Date.now(),
               turnNumber: state.turnNumber,
             }];
