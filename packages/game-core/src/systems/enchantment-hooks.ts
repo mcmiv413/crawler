@@ -1,5 +1,6 @@
 import type { GameState, EnemyInstance, ArmorTemplate } from '@dungeon/contracts';
 import { ENCHANTMENT_BY_ID } from '@dungeon/content';
+import { applyDamageToEnemy } from './damage.js';
 
 const ARMOR_SLOTS = ['chest', 'head', 'gloves', 'boots', 'ring1', 'ring2'] as const;
 
@@ -42,19 +43,24 @@ export function getExpBonusMultiplier(state: GameState): number {
 }
 
 /**
- * Apply thorns/spikes reflect damage to an attacker.
- * Returns the new enemy health and how much was reflected.
+ * Apply thorns/spikes reflect damage to an attacker via central damage system.
+ * Thorns bypass both defense and resistance (pure reflect damage).
  */
 export function applyThornsToAttacker(
-  _state: GameState,
+  state: GameState,
   enemy: EnemyInstance,
   thornsAmount: number,
-): { newEnemyHealth: number; thornsApplied: number } {
+): { state: GameState; finalDamage: number; killed: boolean } {
   if (thornsAmount <= 0) {
-    return { newEnemyHealth: enemy.stats.health, thornsApplied: 0 };
+    return { state, finalDamage: 0, killed: false };
   }
-  const newHealth = Math.max(0, enemy.stats.health - thornsAmount);
-  return { newEnemyHealth: newHealth, thornsApplied: thornsAmount };
+  return applyDamageToEnemy(state, enemy.id, {
+    amount: thornsAmount,
+    damageType: 'physical',
+    source: 'thorns',
+    bypassDefense: true,
+    bypassResistance: true,
+  });
 }
 
 /**

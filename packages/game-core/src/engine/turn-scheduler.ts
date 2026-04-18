@@ -308,7 +308,7 @@ function executeEnemyAction(
             source: 'trap',
             sourceId: hazardAtPos.id,
           });
-          newState = damageResult.state;
+          newState = damageResult.state as typeof newState;
 
           events = [...events, {
             type: 'TRAP_TRIGGERED',
@@ -446,31 +446,21 @@ function executeEnemyAction(
         };
         newState = updateRunMetrics(newState, { damageTaken: result.damage });
 
-        // Thorns: reflect damage to attacker
+        // Thorns: reflect damage to attacker (bypasses defense and resistance)
         const thornsAmount = getTotalThornsReflect(newState);
         if (thornsAmount > 0) {
-          const thornsResult = applyThornsToAttacker(newState, enemy, thornsAmount);
+          const thornsResult = applyThornsToAttacker(newState as GameState, enemy, thornsAmount);
+          newState = thornsResult.state;
           const thornsEvent: DomainEvent = {
             type: 'THORNS_REFLECTED',
             targetId: enemy.id,
             targetName: enemy.name,
-            damageAmount: thornsResult.thornsApplied,
+            damageAmount: thornsResult.finalDamage,
             byPlayerId: state.player.id,
             timestamp: Date.now(),
             turnNumber: state.turnNumber,
           };
           resultEvents = [...resultEvents, thornsEvent];
-
-          const newEnemies = new Map(newState.run!.enemies);
-          if (thornsResult.newEnemyHealth <= 0) {
-            newEnemies.delete(posKey(enemy.position));
-          } else {
-            newEnemies.set(posKey(enemy.position), {
-              ...enemy,
-              stats: { ...enemy.stats, health: thornsResult.newEnemyHealth },
-            });
-          }
-          newState = { ...newState, run: { ...newState.run!, enemies: newEnemies } };
         }
 
         if (newHealth <= 0) {

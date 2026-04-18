@@ -108,21 +108,45 @@ describe('getExpBonusMultiplier', () => {
 });
 
 describe('applyThornsToAttacker', () => {
-  it('reduces enemy health from thorns damage', () => {
-    const state = makeStateWithEnchantedArmor(['thorns']);
+  it('applies thorns damage to enemy via central damage system', () => {
+    let state = createTestGameState();
     const enemy = createTestEnemy({ stats: { ...createTestEnemy().stats, health: 30 } });
-    const result = applyThornsToAttacker(state, enemy, 3);
-    expect(result.newEnemyHealth).toBeLessThan(30);
-    expect(result.newEnemyHealth).toBeGreaterThanOrEqual(0);
-    expect(result.thornsApplied).toBeGreaterThanOrEqual(0);
+    state = { ...state, run: { ...state.run!, enemies: new Map([[`${enemy.id}`, enemy]]) } };
+    const result = applyThornsToAttacker(state, enemy, 5);
+    expect(result.finalDamage).toBeGreaterThan(0);
+    expect(result.finalDamage).toBeLessThanOrEqual(5);
+    expect(result.killed).toBe(false);
   });
 
-  it('returns unmodified enemy health if no thorns', () => {
-    const state = createTestGameState();
+  it('kills enemy when thorns damage exceeds health', () => {
+    let state = createTestGameState();
+    const enemy = createTestEnemy({ stats: { ...createTestEnemy().stats, health: 3 } });
+    state = { ...state, run: { ...state.run!, enemies: new Map([[`${enemy.id}`, enemy]]) } };
+    const result = applyThornsToAttacker(state, enemy, 10);
+    expect(result.killed).toBe(true);
+  });
+
+  it('returns zero damage if thorns amount <= 0', () => {
+    let state = createTestGameState();
     const enemy = createTestEnemy({ stats: { ...createTestEnemy().stats, health: 30 } });
+    state = { ...state, run: { ...state.run!, enemies: new Map([[`${enemy.id}`, enemy]]) } };
     const result = applyThornsToAttacker(state, enemy, 0);
-    expect(result.newEnemyHealth).toBeLessThanOrEqual(30);
-    expect(result.thornsApplied).toBeLessThanOrEqual(0);
+    expect(result.finalDamage).toBe(0);
+    expect(result.killed).toBe(false);
+  });
+
+  it('thorns bypass both defense and resistance', () => {
+    let state = createTestGameState();
+    const highDefenseEnemy = createTestEnemy({
+      stats: {
+        ...createTestEnemy().stats,
+        health: 50,
+        defense: 100,
+      },
+    });
+    state = { ...state, run: { ...state.run!, enemies: new Map([[`${highDefenseEnemy.id}`, highDefenseEnemy]]) } };
+    const result = applyThornsToAttacker(state, highDefenseEnemy, 10);
+    expect(result.finalDamage).toBe(10);
   });
 });
 
