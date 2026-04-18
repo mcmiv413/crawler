@@ -17,7 +17,24 @@ export function handleUnequip(state: GameState, itemId: string): CommandResult {
   return { state: result.state, events: result.events, runEnded: false };
 }
 
-export function handleSwapWeapons(state: GameState): CommandResult {
+export function handleSwapWeapons(state: GameState, rng: SeededRNG): CommandResult {
+  if (state.phase === 'dungeon' && state.run) {
+    const result = swapWeaponSets(state);
+    let newState = result.state;
+    let events = [...result.events];
+
+    // Weapon swap is a free action, but still consumes a turn for enemies
+    newState = updateRunMetrics(newState, { turnsElapsed: 1 });
+
+    // Enemy turns with player speed for speed-based action accumulation
+    const enemyResult = processEnemyTurns(newState, rng, newState.player.stats.speed);
+    newState = enemyResult.state;
+    events = [...events, ...enemyResult.events];
+    newState = tickAbilityCooldowns(newState);
+
+    const runEnded = newState.phase === 'town' || newState.phase === 'game_over';
+    return { state: newState, events, runEnded };
+  }
   const result = swapWeaponSets(state);
   return { state: result.state, events: result.events, runEnded: false };
 }
@@ -34,8 +51,8 @@ export function handleUseItem(
     let events = [...result.events];
     newState = updateRunMetrics(newState, { itemsUsed: 1, turnsElapsed: 1 });
 
-    // Enemy turns
-    const enemyResult = processEnemyTurns(newState, rng);
+    // Enemy turns with player speed for speed-based action accumulation
+    const enemyResult = processEnemyTurns(newState, rng, newState.player.stats.speed);
     newState = enemyResult.state;
     events = [...events, ...enemyResult.events];
     newState = tickAbilityCooldowns(newState);

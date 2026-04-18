@@ -404,8 +404,8 @@ export function handleAttack(
     }
   }
 
-  // Process enemy turns, then tick ability cooldowns
-  const enemyResult = processEnemyTurns(newState, rng);
+  // Process enemy turns with player speed for speed-based action accumulation, then tick ability cooldowns
+  const enemyResult = processEnemyTurns(newState, rng, newState.player.stats.speed);
   newState = enemyResult.state;
   events = [...events, ...enemyResult.events];
   newState = tickAbilityCooldowns(newState);
@@ -459,8 +459,8 @@ export function handleUseAbility(
   let resultState = abilityResult.state;
   let resultEvents: DomainEvent[] = [...abilityResult.events];
 
-  // Enemy turns, then tick cooldowns
-  const enemyResult = processEnemyTurns(resultState, rng);
+  // Enemy turns with player speed for speed-based action accumulation, then tick cooldowns
+  const enemyResult = processEnemyTurns(resultState, rng, resultState.player.stats.speed);
   resultState = enemyResult.state;
   resultEvents = [...resultEvents, ...enemyResult.events];
   resultState = tickAbilityCooldowns(resultState);

@@ -45,113 +45,136 @@ export function processEnemyTurns(
   const enemies = mutableEnemiesBySpeed;
 
   for (const enemy of enemies) {
-    if (currentState.player.stats.health <= 0) break;
-    if (currentState.run === null) break;
+    // Inner loop: enemy may act multiple times if speed is high enough
+    // eslint-disable-next-line @typescript-eslint/no-unnecessary-condition
+    while (true) {
+      if (currentState.player.stats.health <= 0) break;
+      if (currentState.run === null) break;
 
-    // Get fresh reference — state may have changed
-    const currentEnemy = currentState.run.enemies.get(posKey(enemy.position));
-    if (currentEnemy === undefined || currentEnemy.id !== enemy.id) continue;
+      // Check speed accumulator — skip enemy if below threshold when playerSpeed provided
+      if (playerSpeed !== undefined) {
+        const accumulator = currentState.run.speedAccumulators[enemy.id] ?? 0;
+        if (accumulator < 1) break; // Enemy skips this turn (player is relatively faster)
+      }
 
-    // Alert check
-    let updatedEnemy = currentEnemy;
-    if (currentEnemy.isAlerted !== true) {
-      const dist = chebyshevDistance(currentEnemy.position, currentState.player.position);
-      if (dist <= 5) {
-        updatedEnemy = { ...currentEnemy, isAlerted: true, lastKnownPlayerPos: currentState.player.position };
-        const newEnemies = new Map(currentState.run.enemies);
-        newEnemies.delete(posKey(currentEnemy.position));
-        newEnemies.set(posKey(updatedEnemy.position), updatedEnemy);
-        currentState = {
-          ...currentState,
-          run: { ...currentState.run, enemies: newEnemies },
-        };
-        let alertEvents: DomainEvent[] = [{
-          type: 'ENEMY_ALERTED',
-          enemyId: updatedEnemy.id,
-          enemyName: updatedEnemy.name,
-          timestamp: Date.now(),
-          turnNumber: currentState.turnNumber,
-        }];
+      // Get fresh reference — state may have changed during previous action
+      const currentEnemy = currentState.run.enemies.get(posKey(enemy.position));
+      if (currentEnemy === undefined || currentEnemy.id !== enemy.id) break; // Enemy dead or moved away
 
-        // Fire nemesis encountered event if this is a nemesis
-        if (updatedEnemy.nemesisId !== undefined) {
-          alertEvents = [...alertEvents, {
-            type: 'NEMESIS_ENCOUNTERED',
-            nemesisId: updatedEnemy.nemesisId,
-            nemesisName: updatedEnemy.name,
-            floor: currentState.run!.floor.depth,
-            timestamp: Date.now(),
-            turnNumber: currentState.turnNumber,
-          }];
-
-          // Increment encounter count on the nemesis record
-          const updatedNemeses = currentState.world.nemeses.map(n =>
-            n.id === updatedEnemy.nemesisId
-              ? { ...n, encounterCount: n.encounterCount + 1 }
-              : n,
-          );
+      // Alert check
+      let updatedEnemy = currentEnemy;
+      if (currentEnemy.isAlerted !== true) {
+        const dist = chebyshevDistance(currentEnemy.position, currentState.player.position);
+        if (dist <= 5) {
+          updatedEnemy = { ...currentEnemy, isAlerted: true, lastKnownPlayerPos: currentState.player.position };
+          const newEnemies = new Map(currentState.run.enemies);
+          newEnemies.delete(posKey(currentEnemy.position));
+          newEnemies.set(posKey(updatedEnemy.position), updatedEnemy);
           currentState = {
             ...currentState,
-            world: { ...currentState.world, nemeses: updatedNemeses },
+            run: { ...currentState.run, enemies: newEnemies },
           };
-        }
-
-        // Alert propagation: notify nearby un-alerted enemies
-        const neighborsToAlert = Array.from(currentState.run!.enemies.values())
-          .filter(neighbor => !neighbor.isAlerted && chebyshevDistance(neighbor.position, updatedEnemy.position) <= 4);
-
-        let updatedRunState = currentState.run!;
-        let neighborAlertEvents: DomainEvent[] = [];
-        for (const neighbor of neighborsToAlert) {
-          const alertedNeighbor = { ...neighbor, isAlerted: true, lastKnownPlayerPos: currentState.player.position };
-          const newEnemies = new Map(updatedRunState.enemies);
-          newEnemies.delete(posKey(neighbor.position));
-          newEnemies.set(posKey(alertedNeighbor.position), alertedNeighbor);
-          updatedRunState = { ...updatedRunState, enemies: newEnemies };
-          neighborAlertEvents = [...neighborAlertEvents, {
+          let alertEvents: DomainEvent[] = [{
             type: 'ENEMY_ALERTED',
-            enemyId: alertedNeighbor.id,
-            enemyName: alertedNeighbor.name,
+            enemyId: updatedEnemy.id,
+            enemyName: updatedEnemy.name,
             timestamp: Date.now(),
             turnNumber: currentState.turnNumber,
           }];
+
+          // Fire nemesis encountered event if this is a nemesis
+          if (updatedEnemy.nemesisId !== undefined) {
+            alertEvents = [...alertEvents, {
+              type: 'NEMESIS_ENCOUNTERED',
+              nemesisId: updatedEnemy.nemesisId,
+              nemesisName: updatedEnemy.name,
+              floor: currentState.run!.floor.depth,
+              timestamp: Date.now(),
+              turnNumber: currentState.turnNumber,
+            }];
+
+            // Increment encounter count on the nemesis record
+            const updatedNemeses = currentState.world.nemeses.map(n =>
+              n.id === updatedEnemy.nemesisId
+                ? { ...n, encounterCount: n.encounterCount + 1 }
+                : n,
+            );
+            currentState = {
+              ...currentState,
+              world: { ...currentState.world, nemeses: updatedNemeses },
+            };
+          }
+
+          // Alert propagation: notify nearby un-alerted enemies
+          const neighborsToAlert = Array.from(currentState.run!.enemies.values())
+            .filter(neighbor => !neighbor.isAlerted && chebyshevDistance(neighbor.position, updatedEnemy.position) <= 4);
+
+          let updatedRunState = currentState.run!;
+          let neighborAlertEvents: DomainEvent[] = [];
+          for (const neighbor of neighborsToAlert) {
+            const alertedNeighbor = { ...neighbor, isAlerted: true, lastKnownPlayerPos: currentState.player.position };
+            const newEnemies = new Map(updatedRunState.enemies);
+            newEnemies.delete(posKey(neighbor.position));
+            newEnemies.set(posKey(alertedNeighbor.position), alertedNeighbor);
+            updatedRunState = { ...updatedRunState, enemies: newEnemies };
+            neighborAlertEvents = [...neighborAlertEvents, {
+              type: 'ENEMY_ALERTED',
+              enemyId: alertedNeighbor.id,
+              enemyName: alertedNeighbor.name,
+              timestamp: Date.now(),
+              turnNumber: currentState.turnNumber,
+            }];
+          }
+          currentState = { ...currentState, run: updatedRunState };
+          allEvents = [...allEvents, ...alertEvents, ...neighborAlertEvents];
         }
-        currentState = { ...currentState, run: updatedRunState };
-        allEvents = [...allEvents, ...alertEvents, ...neighborAlertEvents];
       }
-    }
 
-    // Stun check (applies to both alerted and ambient behaviors)
-    if (updatedEnemy.statuses.some(s => s.id === 'stun')) continue;
+      // Stun check (applies to both alerted and ambient behaviors)
+      if (updatedEnemy.statuses.some(s => s.id === 'stun')) break;
 
-    // Decide action based on alert state
-    let action: EnemyAction;
-    let ambientStateChangeEvent: DomainEvent | null = null;
+      // Decide action based on alert state
+      let action: EnemyAction;
+      let ambientStateChangeEvent: DomainEvent | null = null;
 
-    if (updatedEnemy.isAlerted === true) {
-      // Combat behavior
-      action = decideEnemyAction(updatedEnemy, currentState);
-    } else {
-      // Ambient behavior
-      const profileId = updatedEnemy.ambientBehaviorProfile;
-      const profile = profileId !== undefined ? AMBIENT_PROFILES.get(profileId) : undefined;
-      if (profile !== undefined) {
-        const ambientResult = decideAmbientAction(updatedEnemy, profile, currentState, rng);
-        action = ambientResult.action;
-        updatedEnemy = ambientResult.updatedEnemy;
-        ambientStateChangeEvent = ambientResult.stateChangeEvent;
+      if (updatedEnemy.isAlerted === true) {
+        // Combat behavior
+        action = decideEnemyAction(updatedEnemy, currentState);
       } else {
-        action = { type: 'wait', enemyId: updatedEnemy.id };
-        // Still age the state even without a profile
-        updatedEnemy = { ...updatedEnemy, ambientStateAge: (updatedEnemy.ambientStateAge ?? 0) + 1 };
+        // Ambient behavior
+        const profileId = updatedEnemy.ambientBehaviorProfile;
+        const profile = profileId !== undefined ? AMBIENT_PROFILES.get(profileId) : undefined;
+        if (profile !== undefined) {
+          const ambientResult = decideAmbientAction(updatedEnemy, profile, currentState, rng);
+          action = ambientResult.action;
+          updatedEnemy = ambientResult.updatedEnemy;
+          ambientStateChangeEvent = ambientResult.stateChangeEvent;
+        } else {
+          action = { type: 'wait', enemyId: updatedEnemy.id };
+          // Still age the state even without a profile
+          updatedEnemy = { ...updatedEnemy, ambientStateAge: (updatedEnemy.ambientStateAge ?? 0) + 1 };
+        }
       }
-    }
 
-    const result = executeEnemyAction(action, updatedEnemy, currentState, rng);
-    currentState = result.state;
-    allEvents = [...allEvents, ...result.events];
-    if (ambientStateChangeEvent !== null) {
-      allEvents = [...allEvents, ambientStateChangeEvent];
+      const result = executeEnemyAction(action, updatedEnemy, currentState, rng);
+      currentState = result.state;
+      allEvents = [...allEvents, ...result.events];
+      if (ambientStateChangeEvent !== null) {
+        allEvents = [...allEvents, ambientStateChangeEvent];
+      }
+
+      // Decrement speed accumulator after this action
+      if (playerSpeed !== undefined && currentState.run !== null) {
+        const newAccumulators = { ...currentState.run.speedAccumulators };
+        newAccumulators[enemy.id] = (newAccumulators[enemy.id] ?? 0) - 1;
+        currentState = {
+          ...currentState,
+          run: {
+            ...currentState.run,
+            speedAccumulators: newAccumulators,
+          },
+        };
+      }
     }
   }
 

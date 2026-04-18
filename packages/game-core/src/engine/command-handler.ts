@@ -90,7 +90,7 @@ export function handleCommand(
       return handleUnequip(state, command.itemId);
     }
     case 'SWAP_WEAPONS':
-      return handleSwapWeapons(state);
+      return handleSwapWeapons(state, rng);
     case 'INTERACT': {
       if (!isInteractCommand(command)) return { state, events: [], runEnded: false };
       return handleInteract(state, command.targetPosition, rng);
