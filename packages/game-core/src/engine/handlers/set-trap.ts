@@ -2,7 +2,7 @@ import type { GameState, Direction, EntityId, ObjectInstance } from '@dungeon/co
 import { posKey } from '@dungeon/contracts';
 import { OBJECT_TEMPLATES } from '@dungeon/content';
 import type { CommandResult } from './shared.js';
-import { updateRunMetrics } from './shared.js';
+import { updateRunMetrics, updateFloorCacheForCurrentFloor } from './shared.js';
 import { moveInDirection } from '../../utils/grid.js';
 import { processEnemyTurns } from '../turn-scheduler.js';
 import { tickAbilityCooldowns } from '../../systems/abilities.js';
@@ -94,6 +94,9 @@ export function handleSetTrap(
 
     // Update metrics
     newState = updateRunMetrics(newState, { turnsElapsed: 1 });
+
+    // Update cache to persist modified floor state
+    newState = updateFloorCacheForCurrentFloor(newState);
 
     // Process enemy turns
     const enemyResult = processEnemyTurns(newState, rng);

@@ -1,4 +1,4 @@
-import type { GameState, DomainEvent, RunMetrics } from '@dungeon/contracts';
+import type { GameState, DomainEvent, RunMetrics, StoredFloor } from '@dungeon/contracts';
 import { EMPTY_RUN_METRICS } from '@dungeon/contracts';
 
 export interface CommandResult {
@@ -29,6 +29,26 @@ export function updateRunMetrics(
         causeOfEnd: updates.causeOfEnd ?? current.causeOfEnd,
         consecutiveMisses: updates.consecutiveMisses ?? current.consecutiveMisses,
       },
+    },
+  };
+}
+
+export function updateFloorCacheForCurrentFloor(state: GameState): GameState {
+  if (state.run === null) return state;
+  const currentDepth = state.run.floor.depth;
+  const floorSnapshot: StoredFloor = {
+    floor: state.run.floor,
+    enemies: state.run.enemies,
+    objects: state.run.objects,
+    playerPosition: state.player.position,
+  };
+  const newCache = new Map(state.run.floorCache ?? []);
+  newCache.set(currentDepth, floorSnapshot);
+  return {
+    ...state,
+    run: {
+      ...state.run,
+      floorCache: newCache,
     },
   };
 }
