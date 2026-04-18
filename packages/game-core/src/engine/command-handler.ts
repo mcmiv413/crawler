@@ -16,9 +16,9 @@ import type {
 } from '@dungeon/contracts';
 import { entityId } from '@dungeon/contracts';
 import type { SeededRNG } from '../utils/rng.js';
-import type { CommandResult } from './handlers/index.js';
+import type { CommandResult } from './handlers/shared.js';
+import { updateRunMetrics } from './handlers/shared.js';
 import {
-  updateRunMetrics,
   handleMove,
   handleWait,
   handleInteract,
