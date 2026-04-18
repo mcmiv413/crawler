@@ -6,6 +6,7 @@ import { decideAmbientAction } from '../systems/ambient-behavior-engine.js';
 import { resolveAttack } from '../systems/combat.js';
 import { getEffectiveStat, tickPlayerStatuses, tickEnemyStatuses } from '../systems/status-effects.js';
 import { handlePlayerDeath } from '../systems/death.js';
+import { applyDamageToPlayer } from '../systems/damage.js';
 import { chebyshevDistance } from '../utils/grid.js';
 import type { SeededRNG } from '../utils/rng.js';
 import { applyThornsToAttacker, applyBlinkOnHit, getEnchantmentRegenBonus, getTotalThornsReflect } from '../systems/enchantment-hooks.js';
@@ -434,14 +435,18 @@ function executeEnemyAction(
       }
 
       if (result.hit === true) {
-        const newHealth = Math.max(0, state.player.stats.health - result.damage);
-        newState = {
-          ...state,
-          player: {
-            ...state.player,
-            stats: { ...state.player.stats, health: newHealth },
-          },
-        };
+        // Apply damage through central damage system (bypassing defense/resistance since resolveAttack already applied them)
+        const damageResult = applyDamageToPlayer(newState, {
+          amount: result.damage,
+          damageType: result.damageType,
+          source: 'attack',
+          bypassDefense: true,
+          bypassResistance: true,
+          isCritical: result.criticalHit,
+        });
+        newState = damageResult.state;
+        const playerKilled = damageResult.killed;
+
         newState = updateRunMetrics(newState, { damageTaken: result.damage });
 
         // Thorns: reflect damage to attacker (bypasses defense and resistance)
@@ -461,7 +466,7 @@ function executeEnemyAction(
           resultEvents = [...resultEvents, thornsEvent];
         }
 
-        if (newHealth <= 0) {
+        if (playerKilled === true) {
           const rawHealth = state.player.stats.health - result.damage;
           const deathResult = handlePlayerDeath(newState, enemy.id, `Killed by ${enemy.name}`, rng, Math.abs(rawHealth));
           return {
