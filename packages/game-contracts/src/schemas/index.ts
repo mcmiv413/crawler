@@ -54,6 +54,7 @@ export const UseAbilityCommandSchema = z.object({
   type: z.literal('USE_ABILITY'),
   abilityId: z.string(),
   targetId: z.string().optional(),
+  direction: DirectionSchema.optional(),
 });
 
 export const UnequipCommandSchema = z.object({

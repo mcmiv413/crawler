@@ -1,5 +1,5 @@
 import type {
-  GameState, EntityId, DamageType, DomainEvent, WeaponType, WeaponTemplate, EnemyInstance, StatusId, ItemTemplate,
+  GameState, EntityId, DamageType, DomainEvent, WeaponType, WeaponTemplate, EnemyInstance, StatusId, ItemTemplate, Direction,
 } from '@dungeon/contracts';
 import type { CommandResult } from './shared.js';
 import type { SeededRNG } from '../../utils/rng.js';
@@ -19,6 +19,8 @@ import { ABILITY_DEFINITIONS, STATUS_DEFAULTS } from '@dungeon/content';
 import { chebyshevDistance } from '../../utils/grid.js';
 import { processEnemyTurns } from '../turn-scheduler.js';
 import { tickAbilityCooldowns } from '../../systems/abilities.js';
+import { handleDisarmTrap } from './disarm-trap.js';
+import { handleSetTrap } from './set-trap.js';
 
 /** Returns the WeaponType of the currently equipped weapon, or null if none/unknown */
 export function getEquippedWeaponType(state: GameState): WeaponType | null {
@@ -417,6 +419,7 @@ export function handleUseAbility(
   abilityId: string,
   rng: SeededRNG,
   targetId?: EntityId,
+  direction?: Direction,
 ): CommandResult {
   if (state.run === null) return { state, events: [], runEnded: false };
   if (canUseAbility(state, abilityId) !== true) return { state, events: [], runEnded: false };
@@ -428,6 +431,14 @@ export function handleUseAbility(
   if (def.requiresWeaponTypes && def.requiresWeaponTypes.length > 0) {
     const equippedType = getEquippedWeaponType(state);
     if (!equippedType || !def.requiresWeaponTypes.includes(equippedType)) return { state, events: [], runEnded: false };
+  }
+
+  // Route directional abilities to their handlers
+  if (abilityId === 'dagger_disarm' && direction) {
+    return handleDisarmTrap(state, direction as Direction, rng);
+  }
+  if (abilityId === 'dagger_set_trap' && direction && targetId) {
+    return handleSetTrap(state, direction as Direction, targetId, rng);
   }
 
   // Pre-set cooldown and turn tracking

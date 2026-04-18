@@ -99,7 +99,7 @@ export function handleCommand(
       return { state, events: [], runEnded: false }; // handled by game engine
     case 'USE_ABILITY': {
       if (!isUseAbilityCommand(command)) return { state, events: [], runEnded: false };
-      return handleUseAbility(state, command.abilityId, rng, command.targetId !== undefined ? entityId(command.targetId) : undefined);
+      return handleUseAbility(state, command.abilityId, rng, command.targetId !== undefined ? entityId(command.targetId) : undefined, command.direction);
     }
     case 'ENCHANT_ARMOR': {
       if (!isEnchantArmorCommand(command)) return { state, events: [], runEnded: false };
