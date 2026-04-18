@@ -15,7 +15,8 @@ import { rollChestLoot, rollRareLoot } from '../../systems/loot.js';
 import { addItemToInventory } from '../../systems/inventory.js';
 import { handleAttack } from './combat.js';
 import { handlePlayerDeath } from '../../systems/death.js';
-import { calculateHazardDamage } from '../../systems/hazard-damage.js';
+import { calculateHazardDamage, hazardTypeToDamageType } from '../../systems/hazard-damage.js';
+import { applyDamageToPlayer } from '../../systems/damage.js';
 
 export function handleMove(
   state: GameState,
@@ -65,20 +66,18 @@ export function handleMove(
     if (objAtPos !== undefined) {
       const template = OBJECT_TEMPLATES.get(objAtPos.templateId);
       if (template !== undefined && template.isHazard === true) {
-        // Trap triggered - calculate and apply damage to player
-        const healthBefore = newState.player.stats.health;
-        const damage = calculateHazardDamage(template, newState.player.stats.maxHealth);
-        const healthAfter = Math.max(0, healthBefore - damage);
-        newState = {
-          ...newState,
-          player: {
-            ...newState.player,
-            stats: {
-              ...newState.player.stats,
-              health: healthAfter,
-            },
-          },
-        };
+        // Trap triggered - calculate damage and route through central damage function
+        const trapDamage = calculateHazardDamage(template, newState.player.stats.maxHealth);
+        const damageType = template.hazardType !== undefined ? hazardTypeToDamageType(template.hazardType) : 'physical';
+
+        // Apply damage through central function (applies defense and resistance)
+        const damageResult = applyDamageToPlayer(newState, {
+          amount: trapDamage,
+          damageType,
+          source: 'trap',
+          sourceId: objAtPos.id,
+        });
+        newState = damageResult.state;
 
         // Emit trap triggered event with enriched data
         events = [...events, {
@@ -86,7 +85,7 @@ export function handleMove(
           trapId: objAtPos.id,
           trapName: template.name,
           position: newPos,
-          damage,
+          damage: damageResult.finalDamage,
           rarity: template.rarity,
           hazardType: template.hazardType,
           statusEffect: template.statusEffect,
@@ -95,14 +94,14 @@ export function handleMove(
         }];
 
         // Check if trap damage is lethal
-        if (healthAfter <= 0) {
+        if (damageResult.killed === true) {
           const deathResult = handlePlayerDeath(
             newState,
             {
               type: 'TRAP_HAZARD',
               hazardId: objAtPos.id,
               hazardName: template.name,
-              damage,
+              damage: damageResult.finalDamage,
             },
           );
           newState = deathResult.state;

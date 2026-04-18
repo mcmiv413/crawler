@@ -1,4 +1,4 @@
-import type { ObjectTemplate } from '@dungeon/contracts';
+import type { ObjectTemplate, DamageType } from '@dungeon/contracts';
 
 /**
  * Calculate hazard damage based on target's max health and hazard rarity.
@@ -24,4 +24,16 @@ export function calculateHazardDamage(template: ObjectTemplate, targetMaxHealth:
 
   const percentage = percentageMap[template.rarity] ?? 0.1;
   return Math.max(1, Math.floor(targetMaxHealth * percentage));
+}
+
+/** Map hazard types to damage types for resistance calculations */
+export function hazardTypeToDamageType(hazardType: NonNullable<ObjectTemplate['hazardType']>): DamageType {
+  const map: Record<NonNullable<ObjectTemplate['hazardType']>, DamageType> = {
+    spike: 'physical',
+    fire: 'fire',
+    poison: 'poison',
+    frost: 'frost',
+    lightning: 'shock',
+  };
+  return map[hazardType] ?? 'physical';
 }
