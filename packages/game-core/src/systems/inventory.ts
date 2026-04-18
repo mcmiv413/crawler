@@ -7,6 +7,7 @@ import { generateId } from '../utils/id.js';
 import type { DomainEvent } from '@dungeon/contracts';
 import { applyStatusToPlayer } from './status-effects.js';
 import { chebyshevDistance } from '../utils/grid.js';
+import { applyDamageToEnemy } from './damage.js';
 
 const RARITY_RANK: Record<string, number> = {
   common: 0, uncommon: 1, rare: 2, epic: 3, legendary: 4,
@@ -149,30 +150,30 @@ export function useConsumable(
           }
           if (targetKey !== null) {
             const enemy = newState.run.enemies.get(targetKey)!;
-            const newHealth = Math.max(0, enemy.stats.health - consumable.magnitude);
-            const newEnemies = new Map(newState.run.enemies);
-            if (newHealth <= 0) {
-              newEnemies.delete(targetKey);
-            } else {
-              newEnemies.set(targetKey, { ...enemy, stats: { ...enemy.stats, health: newHealth } });
-            }
-            newState = { ...newState, run: { ...newState.run, enemies: newEnemies } };
+            // Apply damage through central function (applies defense and resistance)
+            const damageResult = applyDamageToEnemy(newState, enemy.id, {
+              amount: consumable.magnitude,
+              damageType: 'physical',
+              source: 'consumable',
+              sourceId: itemId,
+            });
+            newState = damageResult.state;
           }
         } else {
           // AOE: apply damage to all adjacent enemies (within Chebyshev distance 1)
-          const newEnemies = new Map(newState.run.enemies);
-          for (const [key, enemy] of newState.run.enemies) {
+          for (const [, enemy] of newState.run.enemies) {
             const distance = chebyshevDistance(enemy.position, newState.player.position);
             if (distance <= 1) {
-              const newHealth = Math.max(0, enemy.stats.health - consumable.magnitude);
-              if (newHealth <= 0) {
-                newEnemies.delete(key);
-              } else {
-                newEnemies.set(key, { ...enemy, stats: { ...enemy.stats, health: newHealth } });
-              }
+              // Apply damage through central function (applies defense and resistance)
+              const damageResult = applyDamageToEnemy(newState, enemy.id, {
+                amount: consumable.magnitude,
+                damageType: 'physical',
+                source: 'consumable',
+                sourceId: itemId,
+              });
+              newState = damageResult.state;
             }
           }
-          newState = { ...newState, run: { ...newState.run, enemies: newEnemies } };
         }
       }
       break;
