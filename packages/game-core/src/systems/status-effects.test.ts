@@ -6,7 +6,8 @@ import {
   getEffectiveStat,
   hasStatus
 } from './status-effects.js';
-import { createTestPlayer, createTestEnemy } from '../test-utils.js';
+import { createTestPlayer, createTestEnemy, createTestGameState } from '../test-utils.js';
+import { posKey } from '@dungeon/contracts';
 import type { StatusId } from '@dungeon/contracts';
 
 describe('status-effects', () => {
@@ -28,55 +29,61 @@ describe('status-effects', () => {
   });
 
   it('ticks reduce status duration and expire after zero', () => {
-    const player = createTestPlayer();
-    const withWeaken = applyStatusToPlayer(player, 'weaken', 1, 1, null);
-    const { player: ticked, events } = tickPlayerStatuses(withWeaken, 1);
-    expect(hasStatus(ticked.statuses, 'weaken')).toBe(false);
+    let state = createTestGameState();
+    const withWeaken = applyStatusToPlayer(state.player, 'weaken', 1, 1, null);
+    state = { ...state, player: withWeaken };
+    const { state: tickedState, events } = tickPlayerStatuses(state, 1);
+    expect(hasStatus(tickedState.player.statuses, 'weaken')).toBe(false);
     expect(events.some((e: any) => e.type === 'STATUS_EXPIRED' && e.statusId === 'weaken')).toBe(true);
   });
 
   it('poison deals damage on each tick', () => {
-    const player = createTestPlayer();
-    const withPoison = applyStatusToPlayer(player, 'poison', 2, 5, null);
-    expect(withPoison.statuses.some(s => s.id === 'poison')).toBe(true);
+    let state = createTestGameState();
+    const withPoison = applyStatusToPlayer(state.player, 'poison', 2, 5, null);
+    state = { ...state, player: withPoison };
+    const healthBefore = state.player.stats.health;
 
-    const { player: ticked1 } = tickPlayerStatuses(withPoison, 1);
+    const { state: tickedState1 } = tickPlayerStatuses(state, 1);
     // Poison does damage per turn
-    expect(ticked1.stats.health).toBeLessThan(player.stats.health);
-    expect(ticked1.stats.health).toBeGreaterThanOrEqual(0);
+    expect(tickedState1.player.stats.health).toBeLessThan(healthBefore);
+    expect(tickedState1.player.stats.health).toBeGreaterThanOrEqual(0);
 
-    const { player: ticked2 } = tickPlayerStatuses(ticked1, 2);
+    const { state: tickedState2 } = tickPlayerStatuses(tickedState1, 2);
     // After second tick, health should be even lower
-    expect(ticked2.stats.health).toBeLessThan(ticked1.stats.health);
-    expect(ticked2.stats.health).toBeGreaterThanOrEqual(0);
+    expect(tickedState2.player.stats.health).toBeLessThan(tickedState1.player.stats.health);
+    expect(tickedState2.player.stats.health).toBeGreaterThanOrEqual(0);
   });
 
   it('weaken reduces attack stat while active', () => {
-    const player = createTestPlayer();
-    const withWeaken = applyStatusToPlayer(player, 'weaken', 2, 1, null);
-    expect(getEffectiveStat(player.stats.attack, 'attack', withWeaken.statuses))
-      .toBeLessThan(player.stats.attack);
-    const { player: ticked } = tickPlayerStatuses(withWeaken, 1);
-    expect(getEffectiveStat(ticked.stats.attack, 'attack', ticked.statuses))
-      .toBeLessThan(player.stats.attack);
-    const { player: expired } = tickPlayerStatuses(ticked, 2);
+    let state = createTestGameState();
+    const withWeaken = applyStatusToPlayer(state.player, 'weaken', 2, 1, null);
+    state = { ...state, player: withWeaken };
+    const originalAttack = state.player.stats.attack;
+    expect(getEffectiveStat(originalAttack, 'attack', withWeaken.statuses))
+      .toBeLessThan(originalAttack);
+    const { state: tickedState } = tickPlayerStatuses(state, 1);
+    expect(getEffectiveStat(tickedState.player.stats.attack, 'attack', tickedState.player.statuses))
+      .toBeLessThan(originalAttack);
+    const { state: expiredState } = tickPlayerStatuses(tickedState, 2);
     // After expiration, attack should recover
-    expect(getEffectiveStat(expired.stats.attack, 'attack', expired.statuses))
-      .toBeGreaterThanOrEqual(player.stats.attack * 0.8);
+    expect(getEffectiveStat(expiredState.player.stats.attack, 'attack', expiredState.player.statuses))
+      .toBeGreaterThanOrEqual(originalAttack * 0.8);
   });
 
   it('slow reduces speed stat while active', () => {
-    const player = createTestPlayer();
-    const withSlow = applyStatusToPlayer(player, 'slow', 2, 1, null);
-    expect(getEffectiveStat(player.stats.speed, 'speed', withSlow.statuses))
-      .toBeLessThan(player.stats.speed);
-    const { player: ticked } = tickPlayerStatuses(withSlow, 1);
-    expect(getEffectiveStat(ticked.stats.speed, 'speed', ticked.statuses))
-      .toBeLessThan(player.stats.speed);
-    const { player: expired } = tickPlayerStatuses(ticked, 2);
+    let state = createTestGameState();
+    const withSlow = applyStatusToPlayer(state.player, 'slow', 2, 1, null);
+    state = { ...state, player: withSlow };
+    const originalSpeed = state.player.stats.speed;
+    expect(getEffectiveStat(originalSpeed, 'speed', withSlow.statuses))
+      .toBeLessThan(originalSpeed);
+    const { state: tickedState } = tickPlayerStatuses(state, 1);
+    expect(getEffectiveStat(tickedState.player.stats.speed, 'speed', tickedState.player.statuses))
+      .toBeLessThan(originalSpeed);
+    const { state: expiredState } = tickPlayerStatuses(tickedState, 2);
     // After expiration, speed should recover
-    expect(getEffectiveStat(expired.stats.speed, 'speed', expired.statuses))
-      .toBeGreaterThanOrEqual(player.stats.speed * 0.8);
+    expect(getEffectiveStat(expiredState.player.stats.speed, 'speed', expiredState.player.statuses))
+      .toBeGreaterThanOrEqual(originalSpeed * 0.8);
   });
 });
 
@@ -92,16 +99,17 @@ describe('simultaneous statuses', () => {
   });
 
   it('tick removes expired status while leaving non-expired one intact', () => {
-    const player = createTestPlayer();
+    let state = createTestGameState();
     // poison for 3 turns, slow for 1 turn
-    const withPoison = applyStatusToPlayer(player, 'poison', 3, 5, null);
+    const withPoison = applyStatusToPlayer(state.player, 'poison', 3, 5, null);
     const withBoth = applyStatusToPlayer(withPoison, 'slow', 1, 1, null);
+    state = { ...state, player: withBoth };
 
     // After 1 tick, slow should expire but poison should remain
-    const { player: ticked } = tickPlayerStatuses(withBoth, 1);
+    const { state: tickedState } = tickPlayerStatuses(state, 1);
 
-    expect(hasStatus(ticked.statuses, 'slow')).toBe(false);
-    expect(hasStatus(ticked.statuses, 'poison')).toBe(true);
+    expect(hasStatus(tickedState.player.statuses, 'slow')).toBe(false);
+    expect(hasStatus(tickedState.player.statuses, 'poison')).toBe(true);
   });
 });
 
@@ -137,32 +145,41 @@ describe('magnitude/duration refresh', () => {
 describe('Enemy status ticking', () => {
   it('Bug 2: tickEnemyStatuses handles enemy status duration and damage', () => {
     const initialDuration = 2;
-    const enemy = createTestEnemy();
+    let state = createTestGameState();
+    const enemy = createTestEnemy({ position: { x: 1, y: 1 }, isAlerted: true, lastKnownPlayerPos: null });
     const burnEnemy = { ...enemy, statuses: [{ id: 'burn' as StatusId, turnsRemaining: initialDuration, magnitude: 3, sourceId: null }] };
     const healthBefore = burnEnemy.stats.health;
+    const enemyKey = posKey(burnEnemy.position);
+    state = { ...state, run: { ...state.run!, enemies: new Map([[enemyKey, burnEnemy]]) } };
 
-    const { enemy: ticked } = tickEnemyStatuses(burnEnemy, 1);
+    const { state: tickedState } = tickEnemyStatuses(state, burnEnemy, 1);
+    const ticked = tickedState.run?.enemies.get(enemyKey);
 
     // Burn should have dealt damage
-    expect(ticked.stats.health).toBeLessThan(healthBefore);
+    expect(ticked?.stats.health).toBeLessThan(healthBefore);
 
     // Duration should have decremented
-    const burnStatus = ticked.statuses.find((s: any) => s.id === 'burn');
+    const burnStatus = ticked?.statuses.find((s: any) => s.id === 'burn');
     expect(burnStatus?.turnsRemaining ?? 0).toBeLessThan(initialDuration);
   });
 
   it('enemy status expires after duration reaches 0', () => {
-    const enemy = createTestEnemy();
+    let state = createTestGameState();
+    const enemy = createTestEnemy({ position: { x: 1, y: 1 }, isAlerted: true, lastKnownPlayerPos: null });
     const burnEnemy = { ...enemy, statuses: [{ id: 'burn' as StatusId, turnsRemaining: 1, magnitude: 3, sourceId: null }] };
+    const enemyKey = posKey(burnEnemy.position);
+    state = { ...state, run: { ...state.run!, enemies: new Map([[enemyKey, burnEnemy]]) } };
 
-    const { enemy: ticked } = tickEnemyStatuses(burnEnemy, 1);
+    const { state: tickedState } = tickEnemyStatuses(state, burnEnemy, 1);
+    const ticked = tickedState.run?.enemies.get(enemyKey);
 
     // Burn should have expired
-    expect(ticked.statuses.some((s: any) => s.id === 'burn')).toBe(false);
+    expect(ticked?.statuses).toHaveLength(0);
   });
 
   it('multiple enemy statuses tick independently', () => {
-    const enemy = createTestEnemy();
+    let state = createTestGameState();
+    const enemy = createTestEnemy({ position: { x: 1, y: 1 }, isAlerted: true, lastKnownPlayerPos: null });
     const multiStatus = {
       ...enemy,
       statuses: [
@@ -170,11 +187,15 @@ describe('Enemy status ticking', () => {
         { id: 'poison' as StatusId, turnsRemaining: 1, magnitude: 5, sourceId: null },
       ],
     };
+    const enemyKey = posKey(multiStatus.position);
+    state = { ...state, run: { ...state.run!, enemies: new Map([[enemyKey, multiStatus]]) } };
 
-    const { enemy: ticked } = tickEnemyStatuses(multiStatus, 1);
+    const { state: tickedState } = tickEnemyStatuses(state, multiStatus, 1);
+    const ticked = tickedState.run?.enemies.get(enemyKey);
 
     // Poison should expire, burn should remain
-    expect(ticked.statuses.some((s: any) => s.id === 'poison')).toBe(false);
-    expect(ticked.statuses.some((s: any) => s.id === 'burn')).toBe(true);
+    expect(ticked?.statuses).toHaveLength(1);
+    expect(ticked?.statuses[0]?.id).toBe('burn');
+    expect(ticked?.statuses[0]?.turnsRemaining).toBe(1);
   });
 });

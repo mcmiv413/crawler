@@ -179,12 +179,12 @@ export function processEnemyTurns(
     }
   }
 
-  // Tick player statuses at end of round
+  // Tick player statuses at end of round (DoT damage routed through central damage system)
   const healthBeforeStatus = currentState.player.stats.health;
-  const statusResult = tickPlayerStatuses(currentState.player, currentState.turnNumber);
-  currentState = { ...currentState, player: statusResult.player };
+  const statusResult = tickPlayerStatuses(currentState, currentState.turnNumber);
+  currentState = statusResult.state;
   allEvents = [...allEvents, ...statusResult.events];
-  const statusDamage = healthBeforeStatus - statusResult.player.stats.health;
+  const statusDamage = healthBeforeStatus - currentState.player.stats.health;
   if (statusDamage > 0) {
     currentState = updateRunMetrics(currentState, { damageTaken: statusDamage });
   }
@@ -208,14 +208,12 @@ export function processEnemyTurns(
 
   // Tick enemy statuses at end of round
   if (currentState.run !== null) {
-    const newEnemies = new Map(currentState.run.enemies);
     let statusEvents: DomainEvent[] = [];
-    for (const [key, enemy] of newEnemies) {
-      const statusResult = tickEnemyStatuses(enemy, currentState.turnNumber);
-      newEnemies.set(key, statusResult.enemy);
+    for (const enemy of currentState.run.enemies.values()) {
+      const statusResult = tickEnemyStatuses(currentState, enemy, currentState.turnNumber);
+      currentState = statusResult.state;
       statusEvents = [...statusEvents, ...statusResult.events];
     }
-    currentState = { ...currentState, run: { ...currentState.run, enemies: newEnemies } };
     allEvents = [...allEvents, ...statusEvents];
   }
 

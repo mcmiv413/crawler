@@ -1,7 +1,25 @@
-import type { Player, EnemyInstance, EntityId, StatusId } from '@dungeon/contracts';
+import type { Player, EnemyInstance, EntityId, StatusId, GameState, DamageType } from '@dungeon/contracts';
 import type { StatusEffect } from '@dungeon/contracts';
 import type { DomainEvent } from '@dungeon/contracts';
+import { posKey } from '@dungeon/contracts';
 import { STATUS_DEFAULTS } from '@dungeon/content';
+import { applyDamageToPlayer, applyDamageToEnemy } from './damage.js';
+
+/** Map status IDs that deal damage to their damage types */
+function statusToDamageType(statusId: StatusId): DamageType | null {
+  const map: Record<StatusId, DamageType | null> = {
+    poison: 'poison',
+    burn: 'fire',
+    bleed: 'physical',
+    slow: null,
+    stun: null,
+    weaken: null,
+    vulnerability: null,
+    strength: null,
+    regeneration: null,
+  };
+  return map[statusId] ?? null;
+}
 
 function applyStatusEffect<T extends { readonly statuses: readonly StatusEffect[] }>(
   entity: T,
@@ -51,34 +69,51 @@ export function applyStatusToEnemy(
 
 /** Tick all status effects on the player, returning updated player + events */
 export function tickPlayerStatuses(
-  player: Player,
+  state: GameState,
   turnNumber: number,
-): { player: Player; events: DomainEvent[] } {
-  let events: DomainEvent[] = [];
-  let currentHealth = player.stats.health;
+): { state: GameState; events: DomainEvent[] } {
+  let currentState = state;
+  let allEvents: DomainEvent[] = [];
 
-  for (const status of player.statuses) {
+  // Apply damage from damaging statuses via central damage system
+  for (const status of state.player.statuses) {
     const defaults = STATUS_DEFAULTS[status.id];
     if ('damagePerTurn' in defaults) {
-      currentHealth -= (defaults as { damagePerTurn: number }).damagePerTurn;
+      const damageAmount = (defaults as { damagePerTurn: number }).damagePerTurn;
+      const damageType = statusToDamageType(status.id);
+      // DoT only applies resistance, not defense
+      const damageResult = applyDamageToPlayer(currentState, {
+        amount: damageAmount,
+        damageType: damageType ?? 'physical',
+        source: 'dot',
+        bypassDefense: true,
+        bypassResistance: false,
+      });
+      currentState = damageResult.state;
     }
     if ('healPerTurn' in defaults) {
-      currentHealth = Math.min(
-        player.stats.maxHealth,
-        currentHealth + (defaults as { healPerTurn: number }).healPerTurn,
-      );
+      const healAmount = (defaults as { healPerTurn: number }).healPerTurn;
+      currentState = {
+        ...currentState,
+        player: {
+          ...currentState.player,
+          stats: {
+            ...currentState.player.stats,
+            health: Math.min(currentState.player.stats.maxHealth, currentState.player.stats.health + healAmount),
+          },
+        },
+      };
     }
   }
 
   // Decrement durations, remove expired
   let remaining: StatusEffect[] = [];
-  for (const status of player.statuses) {
+  for (const status of state.player.statuses) {
     const newDuration = status.turnsRemaining - 1;
     if (newDuration <= 0) {
-      // Status effects now handled via getEffectiveStat; no manual undo needed
-      events = [...events, {
+      allEvents = [...allEvents, {
         type: 'STATUS_EXPIRED',
-        targetId: player.id,
+        targetId: state.player.id,
         statusId: status.id,
         timestamp: Date.now(),
         turnNumber,
@@ -89,12 +124,11 @@ export function tickPlayerStatuses(
   }
 
   return {
-    player: {
-      ...player,
-      stats: { ...player.stats, health: Math.max(0, currentHealth) },
-      statuses: remaining,
+    state: {
+      ...currentState,
+      player: { ...currentState.player, statuses: remaining },
     },
-    events,
+    events: allEvents,
   };
 }
 
@@ -130,33 +164,57 @@ export function getEffectiveStat(
   return value;
 }
 
-/** Tick all status effects on an enemy, returning updated enemy + events */
+/** Tick all status effects on an enemy, returning updated state + events */
 export function tickEnemyStatuses(
+  state: GameState,
   enemy: EnemyInstance,
   turnNumber: number,
-): { enemy: EnemyInstance; events: DomainEvent[] } {
-  let events: DomainEvent[] = [];
-  let currentHealth = enemy.stats.health;
+): { state: GameState; events: DomainEvent[] } {
+  let currentState = state;
+  let allEvents: DomainEvent[] = [];
 
-  for (const status of enemy.statuses) {
+  // Cache initial statuses before any state updates
+  const initialStatuses = enemy.statuses;
+
+  // Apply damage from damaging statuses via central damage system
+  for (const status of initialStatuses) {
     const defaults = STATUS_DEFAULTS[status.id];
     if ('damagePerTurn' in defaults) {
-      currentHealth -= (defaults as { damagePerTurn: number }).damagePerTurn;
+      const damageAmount = (defaults as { damagePerTurn: number }).damagePerTurn;
+      const damageType = statusToDamageType(status.id);
+      // DoT only applies resistance, not defense
+      const damageResult = applyDamageToEnemy(currentState, enemy.id, {
+        amount: damageAmount,
+        damageType: damageType ?? 'physical',
+        source: 'dot',
+        bypassDefense: true,
+        bypassResistance: false,
+      });
+      currentState = damageResult.state;
     }
     if ('healPerTurn' in defaults) {
-      currentHealth = Math.min(
-        enemy.stats.maxHealth,
-        currentHealth + (defaults as { healPerTurn: number }).healPerTurn,
-      );
+      const healAmount = (defaults as { healPerTurn: number }).healPerTurn;
+      const updatedEnemy = currentState.run?.enemies.get(`${enemy.id}`);
+      if (updatedEnemy !== undefined) {
+        const newEnemies = new Map(currentState.run!.enemies);
+        newEnemies.set(`${enemy.id}`, {
+          ...updatedEnemy,
+          stats: {
+            ...updatedEnemy.stats,
+            health: Math.min(updatedEnemy.stats.maxHealth, updatedEnemy.stats.health + healAmount),
+          },
+        });
+        currentState = { ...currentState, run: { ...currentState.run!, enemies: newEnemies } };
+      }
     }
   }
 
   // Decrement durations, remove expired
   let remaining: StatusEffect[] = [];
-  for (const status of enemy.statuses) {
+  for (const status of initialStatuses) {
     const newDuration = status.turnsRemaining - 1;
     if (newDuration <= 0) {
-      events = [...events, {
+      allEvents = [...allEvents, {
         type: 'STATUS_EXPIRED',
         targetId: enemy.id,
         statusId: status.id,
@@ -168,13 +226,18 @@ export function tickEnemyStatuses(
     }
   }
 
+  // Update the enemy's statuses in the state (enemies are keyed by position)
+  const enemyKey = posKey(enemy.position);
+  const finalEnemy = currentState.run?.enemies.get(enemyKey);
+  if (finalEnemy !== undefined && currentState.run !== null) {
+    const newEnemies = new Map(currentState.run.enemies);
+    newEnemies.set(enemyKey, { ...finalEnemy, statuses: remaining });
+    currentState = { ...currentState, run: { ...currentState.run, enemies: newEnemies } };
+  }
+
   return {
-    enemy: {
-      ...enemy,
-      stats: { ...enemy.stats, health: Math.max(0, currentHealth) },
-      statuses: remaining,
-    },
-    events,
+    state: currentState,
+    events: allEvents,
   };
 }
 
