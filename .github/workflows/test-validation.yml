@@ -30,7 +30,7 @@ jobs:
         run: NODE_OPTIONS="--max-old-space-size=2048" pnpm run lint:types
 
       - name: Run unit tests (excluding heavy property/balance tests)
-        run: VITEST_MAX_THREADS=1 NODE_OPTIONS="--max-old-space-size=2048" vitest run --exclude '**/*.property.test.ts' --exclude '**/*.balance.test.ts'
+        run: VITEST_MAX_THREADS=1 NODE_OPTIONS="--max-old-space-size=2048" pnpm vitest run --exclude '**/*.property.test.ts' --exclude '**/*.balance.test.ts'
 
       - name: Build all packages
         run: pnpm build
