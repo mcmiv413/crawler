@@ -6,7 +6,7 @@
  */
 
 import { useReducer } from 'react';
-import type { GameCommand } from '@dungeon/contracts';
+import type { GameCommand, Direction } from '@dungeon/contracts';
 import type {
   AvailableAction,
   EntityView,
@@ -127,11 +127,12 @@ export function UnifiedActionPanel({
         break;
       }
       case 'ABILITY': {
-        const abilitySelection = selection as { abilityId: string; targetId?: string };
+        const abilitySelection = selection as { abilityId: string; targetId?: string; direction?: Direction };
         onSendCommand({
           type: 'USE_ABILITY',
           abilityId: abilitySelection.abilityId,
           targetId: abilitySelection.targetId,
+          direction: abilitySelection.direction,
         });
         break;
       }

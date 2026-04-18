@@ -98,6 +98,7 @@ export function buildPlayerHud(state: GameState): PlayerHudView {
         ready: a.cooldownRemaining === 0,
         cooldownRemaining: a.cooldownRemaining,
         requiresTarget: def?.requiresTarget ?? false,
+        requiresDirection: a.id === 'dagger_disarm' || a.id === 'dagger_set_trap',
       } satisfies AbilityView;
     });
 

@@ -2,7 +2,7 @@ import type { GameState, Direction, DomainEvent } from '@dungeon/contracts';
 import { posKey } from '@dungeon/contracts';
 import { OBJECT_TEMPLATES, ITEM_BY_ID } from '@dungeon/content';
 import type { CommandResult } from './shared.js';
-import { updateRunMetrics } from './shared.js';
+import { updateRunMetrics, updateFloorCacheForCurrentFloor } from './shared.js';
 import { addItemToInventory } from '../../systems/inventory.js';
 import { moveInDirection } from '../../utils/grid.js';
 import { processEnemyTurns } from '../turn-scheduler.js';
@@ -81,6 +81,9 @@ export function handleDisarmTrap(
 
     // Update metrics
     newState = updateRunMetrics(newState, { turnsElapsed: 1 });
+
+    // Update cache to persist modified floor state
+    newState = updateFloorCacheForCurrentFloor(newState);
 
     // Process enemy turns
     const enemyResult = processEnemyTurns(newState, rng);
