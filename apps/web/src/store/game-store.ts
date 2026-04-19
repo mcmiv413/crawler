@@ -90,6 +90,7 @@ export const useGameStore = create<GameStore>((set, get) => ({
       saveSession(gameId, result.serializedState);
       if (debugLogging && result.view.combatLog.length > 0) {
         const lastEntry = result.view.combatLog[result.view.combatLog.length - 1];
+        // eslint-disable-next-line no-console
         console.log('[DEBUG] Combat Result:', {
           lastLogEntry: lastEntry?.text,
           playerHealth: result.view.player.health,

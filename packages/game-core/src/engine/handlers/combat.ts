@@ -8,7 +8,8 @@ import { updateRunMetrics } from './shared.js';
 import { executeAbility } from '../../abilities/runtime/execute-ability.js';
 import { resolveAttack } from '../../systems/combat.js';
 import { getEffectiveStat, applyStatusToEnemy } from '../../systems/status-effects.js';
-import { applyDamageToEnemy, createDamageDebugEvent } from '../../systems/damage.js';
+import { applyDamageToEnemy } from '../../systems/damage.js';
+import { applyDefense } from '../../utils/dice.js';
 import { processEnemyLoot } from '../../systems/loot.js';
 import { checkLevelUp } from '../../systems/progression.js';
 import { slayNemesis } from '../../systems/nemesis.js';
@@ -361,12 +362,33 @@ export function handleAttack(
     newState = damageResult.state;
     const killed = damageResult.killed;
 
-    // Add debug damage event if debug mode enabled
+    // Add debug damage event if debug mode enabled.
+    // resolveAttack already applied defense/resistance, so damageResult's debugInfo
+    // shows a bypassed breakdown. Reconstruct the full breakdown from ctx + result.
     if (newState.debugMode === true) {
-      const debugEvent = createDamageDebugEvent(targetEnemy.name, damageResult, 'attack');
-      if (debugEvent) {
-        events = [...events, { ...debugEvent, turnNumber: newState.turnNumber }];
-      }
+      const rawDamage = result.damage + result.mitigated;
+      const postDefense = applyDefense(rawDamage, targetEnemy.stats.defense, COMBAT.defenseDivisor);
+      const postResistance = resistance > 0
+        ? Math.max(COMBAT.minDamage, Math.round(postDefense * (1 - resistance)))
+        : postDefense;
+      const debugEvent: DomainEvent = {
+        type: 'DEBUG_DAMAGE_CALC',
+        targetName: targetEnemy.name,
+        source: 'attack',
+        rawDamage,
+        postDefense,
+        postResistance,
+        finalDamage: result.damage,
+        defense: targetEnemy.stats.defense,
+        resistance,
+        bypassDefense: false,
+        bypassResistance: false,
+        isCrit: result.criticalHit,
+        critMultiplier: result.criticalHit ? COMBAT.critMultiplier : 1,
+        timestamp: Date.now(),
+        turnNumber: newState.turnNumber,
+      };
+      events = [...events, debugEvent];
     }
 
     // Apply on-hit statuses

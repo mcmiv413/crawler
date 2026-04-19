@@ -14,8 +14,8 @@ export function useCombatIndicators(
   useEffect(() => {
     const previous = previousRef.current;
 
-    // Emit all indicators that are new or different from the previous array
-    // We compare by content since server may create new array instances each time
+    // Emit indicators new or different from the previous array.
+    // Server may create new array instances each tick, so compare by content.
     for (const indicator of indicators) {
       const wasAlreadyEmitted = previous.some(
         p => p.x === indicator.x && p.y === indicator.y && p.text === indicator.text && p.type === indicator.type
