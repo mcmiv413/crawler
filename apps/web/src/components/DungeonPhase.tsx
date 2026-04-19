@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useMemo } from 'react';
 import type { GameView, CombatIndicatorEntry } from '@dungeon/presenter';
 import { VP_WIDTH, VP_HEIGHT } from '../utils/viewport.js';
 import { TAB_BAR_HEIGHT, COMBAT_INDICATOR_DURATION_MS } from '../config/ui-config.js';
@@ -74,8 +74,6 @@ function MapDisplay({
 }) {
   const [vpTilesWidth, setVpTilesWidth] = useState(VP_WIDTH);
   const [vpTilesHeight, setVpTilesHeight] = useState(VP_HEIGHT);
-  const [vpLeft, setVpLeft] = useState(0);
-  const [vpTop, setVpTop] = useState(0);
   const displayContainerRef = React.useRef<HTMLDivElement>(null);
 
   useEffect(() => {
@@ -108,18 +106,15 @@ function MapDisplay({
     };
   }, []);
 
-  // Calculate viewport position for indicator positioning
-  useEffect(() => {
-    if (!map) return;
-    const minX = Math.min(...map.cells.map((c: any) => c.x));
-    const maxX = Math.max(...map.cells.map((c: any) => c.x));
-    const minY = Math.min(...map.cells.map((c: any) => c.y));
-    
-    const newVpLeft = Math.max(minX, map.playerPosition.x - Math.floor(vpTilesWidth / 2));
-    const newVpTop = Math.max(minY, map.playerPosition.y - Math.floor(vpTilesHeight / 2));
-    
-    setVpLeft(newVpLeft);
-    setVpTop(newVpTop);
+  // Viewport top-left derived synchronously from map so indicators always align with canvas
+  const { vpLeft, vpTop } = useMemo(() => {
+    if (!map) return { vpLeft: 0, vpTop: 0 };
+    const minX = Math.min(...map.cells.map((c: { x: number; y: number }) => c.x));
+    const minY = Math.min(...map.cells.map((c: { x: number; y: number }) => c.y));
+    return {
+      vpLeft: Math.max(minX, map.playerPosition.x - Math.floor(vpTilesWidth / 2)),
+      vpTop: Math.max(minY, map.playerPosition.y - Math.floor(vpTilesHeight / 2)),
+    };
   }, [map, vpTilesWidth, vpTilesHeight]);
 
   // Hook to track combat indicators

@@ -11,8 +11,11 @@ export interface CombatIndicatorEntry {
 function getPos(id: EntityId, state: GameState): { x: number; y: number } | null {
   if (state.run == null) return null;
   if (id === state.player.id) return state.player.position;
-  const enemy = state.run.enemies.get(id);
-  return enemy?.position ?? null;
+  // state.run.enemies is keyed by position string, not entityId — must iterate
+  for (const enemy of state.run.enemies.values()) {
+    if (enemy.id === id) return enemy.position;
+  }
+  return null;
 }
 
 function addIndicator(

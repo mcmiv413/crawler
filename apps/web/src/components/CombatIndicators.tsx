@@ -26,26 +26,26 @@ export function CombatIndicators({
   const [labels, setLabels] = useState<FloatingLabel[]>([]);
   const [nextId, setNextId] = useState(0);
 
-  // Expose method to add labels from parent
   useEffect(() => {
     const handleAddLabel = (event: CustomEvent<Omit<FloatingLabel, 'id' | 'startTime'>>) => {
       const label = {
         ...event.detail,
-        id: `label-${nextId}`,
+        id: `label-${nextId}-${Date.now()}-${Math.random()}`,
         startTime: Date.now(),
       };
-      
+
       setLabels(prev => [...prev, label]);
       setNextId(prev => prev + 1);
 
-      // Remove label after fade
       setTimeout(() => {
         setLabels(prev => prev.filter(l => l.id !== label.id));
       }, fadeOutDuration);
     };
 
     window.addEventListener('combat-indicator', handleAddLabel as EventListener);
-    return () => window.removeEventListener('combat-indicator', handleAddLabel as EventListener);
+    return () => {
+      window.removeEventListener('combat-indicator', handleAddLabel as EventListener);
+    };
   }, [nextId, fadeOutDuration]);
 
   return (
@@ -79,7 +79,6 @@ export function CombatIndicators({
             key={label.id}
             style={{
               position: 'absolute',
-              right: 0,
               left: `${screenX}px`,
               top: `${screenY + stackOffset - upDrift}px`,
               transform: 'translateX(-100%)',
