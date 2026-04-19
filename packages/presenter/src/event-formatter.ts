@@ -262,12 +262,12 @@ const EVENT_FORMATTERS = {
 
   'DEBUG_DAMAGE_CALC': (event) => {
     const resistancePct = Math.round(event.resistance * 100);
-    const details = [];
+    let details: string[] = [];
     if (!event.bypassDefense && event.defense > 0) {
-      details.push(`def ${event.defense}`);
+      details = [...details, `def ${event.defense}`];
     }
     if (!event.bypassResistance && event.resistance > 0) {
-      details.push(`${resistancePct}% res`);
+      details = [...details, `${resistancePct}% res`];
     }
     const detailsText = details.length > 0 ? ` [${details.join(', ')}]` : '';
     return {
