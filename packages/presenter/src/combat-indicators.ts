@@ -16,13 +16,13 @@ function getPos(id: EntityId, state: GameState): { x: number; y: number } | null
 }
 
 function addIndicator(
-  indicators: CombatIndicatorEntry[],
+  mutableIndicators: CombatIndicatorEntry[],
   text: string,
   type: CombatIndicatorEntry['type'],
   x: number,
   y: number,
 ): void {
-  indicators.push({ text, type, x, y });
+  mutableIndicators.push({ text, type, x, y });
 }
 
 function handleAttackPerformed(
