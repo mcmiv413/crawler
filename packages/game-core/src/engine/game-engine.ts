@@ -274,7 +274,11 @@ export class GameEngine implements IGameEngine {
     const newHistory = [...state.run!.floorHistory, snapshot].slice(-3);
 
     const existingCache = state.run!.floorCache ?? new Map<number, StoredFloor>();
-    const cached = existingCache.get(newDepth);
+    // Check persisted cache first (floors from previous runs), then in-run cache
+    let cached = state.persistedFloorCache?.get(newDepth);
+    if (cached === undefined) {
+      cached = existingCache.get(newDepth);
+    }
 
     let fovFloor: DungeonFloor;
     let finalEnemies: ReadonlyMap<string, EnemyInstance>;
