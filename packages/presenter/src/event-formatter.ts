@@ -261,17 +261,25 @@ const EVENT_FORMATTERS = {
   }),
 
   'DEBUG_DAMAGE_CALC': (event) => {
-    const resistancePct = Math.round(event.resistance * 100);
-    let details: string[] = [];
+    let breakdown = `base:${event.rawDamage}`;
+
+    if (event.isCrit && event.critMultiplier !== 1) {
+      const postCrit = Math.round(event.rawDamage * event.critMultiplier);
+      breakdown += ` crit:×${event.critMultiplier}→${postCrit}`;
+    }
+
     if (!event.bypassDefense && event.defense > 0) {
-      details = [...details, `def ${event.defense}`];
+      const defReduction = event.rawDamage - event.postDefense;
+      breakdown += ` def:-${defReduction}→${event.postDefense}`;
     }
+
     if (!event.bypassResistance && event.resistance > 0) {
-      details = [...details, `${resistancePct}% res`];
+      const resMultiplier = (1 - event.resistance).toFixed(2);
+      breakdown += ` res:×${resMultiplier}→${event.postResistance}`;
     }
-    const detailsText = details.length > 0 ? ` [${details.join(', ')}]` : '';
+
     return {
-      text: `[DEBUG] ${event.source}: ${event.targetName} took ${event.finalDamage}/${event.rawDamage}${detailsText}`,
+      text: `[DEBUG] ${event.targetName} took ${event.finalDamage} dmg\n  ${breakdown}`,
       type: 'info',
       timestamp: event.timestamp,
     };

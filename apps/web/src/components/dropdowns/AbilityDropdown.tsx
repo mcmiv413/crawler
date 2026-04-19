@@ -55,6 +55,12 @@ export function AbilityDropdown({
       return;
     }
 
+    // Self-targeted abilities never get a targetId
+    if (!ability?.requiresTarget) {
+      onSelect({ abilityId });
+      return;
+    }
+
     // If only one enemy in range, auto-target it
     if (enemiesInRange.length === 1) {
       const target = enemiesInRange[0];
@@ -69,7 +75,7 @@ export function AbilityDropdown({
         onSelect({ abilityId, targetId: target.id });
       }
     } else {
-      // No targets in range, still send ability (may be self-target)
+      // No targets in range, still send ability
       onSelect({ abilityId });
     }
   };
