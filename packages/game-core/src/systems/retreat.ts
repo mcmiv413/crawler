@@ -62,7 +62,14 @@ export function executeRetreat(state: GameState, rng: SeededRNG): { state: GameS
     lastSimulatedTurn: state.run!.turnCount,
   };
 
+  // Merge all floors from in-run floorCache into persisted cache
   const updatedCache = new Map(state.persistedFloorCache ?? []);
+  if (state.run!.floorCache) {
+    for (const [depth, floor] of state.run!.floorCache) {
+      updatedCache.set(depth, floor);
+    }
+  }
+  // Save current floor (highest priority, overwrites any cached version)
   updatedCache.set(currentFloorDepth, currentFloorSnapshot);
 
   return {
