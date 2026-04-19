@@ -9,24 +9,23 @@ import { emitCombatIndicator } from '../components/CombatIndicators.js';
 export function useCombatIndicators(
   indicators: readonly CombatIndicatorEntry[],
 ): void {
-  const previousArrayRef = useRef<readonly CombatIndicatorEntry[]>(indicators);
+  const previousRef = useRef<readonly CombatIndicatorEntry[]>([]);
 
   useEffect(() => {
-    const previousArray = previousArrayRef.current;
-    const currentArray = indicators;
+    const previous = previousRef.current;
 
-    // Detect if array changed (new reference or different content)
-    if (previousArray !== currentArray) {
-      // Find new indicators by comparing lengths
-      // (We emit all new ones since last check)
-      const startIdx = Math.min(previousArray.length, currentArray.length);
-      
-      for (let i = startIdx; i < currentArray.length; i++) {
-        const indicator = currentArray[i]!;
+    // Emit all indicators that are new or different from the previous array
+    // We compare by content since server may create new array instances each time
+    for (const indicator of indicators) {
+      const wasAlreadyEmitted = previous.some(
+        p => p.x === indicator.x && p.y === indicator.y && p.text === indicator.text && p.type === indicator.type
+      );
+
+      if (!wasAlreadyEmitted) {
         emitCombatIndicator(indicator.x, indicator.y, indicator.text, indicator.type);
       }
     }
 
-    previousArrayRef.current = currentArray;
+    previousRef.current = indicators;
   }, [indicators]);
 }
