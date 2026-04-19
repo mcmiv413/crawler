@@ -327,11 +327,15 @@ export interface DebugDamageCalcEvent extends BaseEvent {
   readonly targetName: string;
   readonly source: string;
   readonly rawDamage: number;
+  readonly postDefense: number;
+  readonly postResistance: number;
   readonly finalDamage: number;
   readonly defense: number;
   readonly resistance: number;
   readonly bypassDefense: boolean;
   readonly bypassResistance: boolean;
+  readonly isCrit: boolean;
+  readonly critMultiplier: number;
 }
 
 export type DomainEvent =

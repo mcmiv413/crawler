@@ -15,11 +15,15 @@ export function createDamageDebugEvent(targetName: string, outcome: DamageOutcom
     targetName,
     source,
     rawDamage: info.rawAmount,
+    postDefense: info.postDefense,
+    postResistance: info.postResistance,
     finalDamage: outcome.finalDamage,
     defense: info.defense,
     resistance: info.resistance,
     bypassDefense: info.bypassDefense,
     bypassResistance: info.bypassResistance,
+    isCrit: info.isCrit,
+    critMultiplier: info.critMultiplier,
     timestamp: Date.now(),
     turnNumber: 0, // Will be set by caller if needed
   } as DomainEvent;
@@ -41,10 +45,14 @@ export interface DamageOutcome {
   readonly killed: boolean;
   readonly debugInfo?: {
     readonly rawAmount: number;
+    readonly postDefense: number;
+    readonly postResistance: number;
     readonly defense: number;
     readonly resistance: number;
     readonly bypassDefense: boolean;
     readonly bypassResistance: boolean;
+    readonly isCrit: boolean;
+    readonly critMultiplier: number;
   };
 }
 
@@ -90,6 +98,8 @@ export function applyDamageToPlayer(state: GameState, input: DamageInput): Damag
   const rawAmount = input.amount;
   let defense = 0;
   let resistance = 0;
+  let postDefense = rawAmount;
+  let postResistance = rawAmount;
 
   log('initial damage', { damage, bypassDefense, bypassResistance });
 
@@ -97,7 +107,10 @@ export function applyDamageToPlayer(state: GameState, input: DamageInput): Damag
   if (bypassDefense !== true) {
     defense = state.player.stats.defense;
     damage = applyDefense(damage, defense, COMBAT.defenseDivisor);
+    postDefense = damage;
     log('after defense', { defense, damage });
+  } else {
+    postDefense = damage;
   }
 
   // Apply resistance
@@ -105,7 +118,10 @@ export function applyDamageToPlayer(state: GameState, input: DamageInput): Damag
     resistance = state.player.stats.resistances?.[input.damageType] ?? 0;
     const mitigated = damage * (1 - resistance);
     damage = Math.round(mitigated);
+    postResistance = damage;
     log('after resistance', { resistance, mitigated, damage });
+  } else {
+    postResistance = damage;
   }
 
   // Apply minimum damage clamp
@@ -137,10 +153,14 @@ export function applyDamageToPlayer(state: GameState, input: DamageInput): Damag
     killed,
     debugInfo: {
       rawAmount,
+      postDefense,
+      postResistance,
       defense,
       resistance,
       bypassDefense,
       bypassResistance,
+      isCrit: input.isCritical ?? false,
+      critMultiplier: 1.0,
     },
   };
 }
@@ -189,18 +209,26 @@ export function applyDamageToEnemy(state: GameState, enemyId: string, input: Dam
   const rawAmount = input.amount;
   let defense = 0;
   let resistance = 0;
+  let postDefense = rawAmount;
+  let postResistance = rawAmount;
 
   // Calculate damage with tracking for debug info
   damage = input.amount;
   if (bypassDefense !== true) {
     defense = targetEnemy.stats.defense;
     damage = applyDefense(damage, defense, COMBAT.defenseDivisor);
+    postDefense = damage;
+  } else {
+    postDefense = damage;
   }
 
   if (bypassResistance !== true) {
     resistance = targetEnemy.affinities[input.damageType] ?? 0;
     const mitigated = damage * (1 - resistance);
     damage = Math.round(mitigated);
+    postResistance = damage;
+  } else {
+    postResistance = damage;
   }
 
   const finalDamage = Math.max(COMBAT.minDamage, damage);
@@ -241,10 +269,14 @@ export function applyDamageToEnemy(state: GameState, enemyId: string, input: Dam
     killed,
     debugInfo: {
       rawAmount,
+      postDefense,
+      postResistance,
       defense,
       resistance,
       bypassDefense,
       bypassResistance,
+      isCrit: input.isCritical ?? false,
+      critMultiplier: 1.0,
     },
   };
 }

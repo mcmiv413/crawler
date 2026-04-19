@@ -159,7 +159,7 @@ export function buildMapView(state: GameState): MapView | null {
     width: floor.width,
     height: floor.height,
     cells: cellArray,
-    entities: [playerEntity, ...enemyEntities, ...objectEntities],
+    entities: [...objectEntities, ...enemyEntities, playerEntity],
     playerPosition: state.player.position,
     biomeId: floor.biomeId,
     dangerLevel: computeDangerLevel(floor.depth, state.player.level),
