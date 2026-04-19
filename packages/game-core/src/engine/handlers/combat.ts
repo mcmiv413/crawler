@@ -8,7 +8,7 @@ import { updateRunMetrics } from './shared.js';
 import { executeAbility } from '../../abilities/runtime/execute-ability.js';
 import { resolveAttack } from '../../systems/combat.js';
 import { getEffectiveStat, applyStatusToEnemy } from '../../systems/status-effects.js';
-import { applyDamageToEnemy } from '../../systems/damage.js';
+import { applyDamageToEnemy, createDamageDebugEvent } from '../../systems/damage.js';
 import { processEnemyLoot } from '../../systems/loot.js';
 import { checkLevelUp } from '../../systems/progression.js';
 import { slayNemesis } from '../../systems/nemesis.js';
@@ -360,6 +360,14 @@ export function handleAttack(
     });
     newState = damageResult.state;
     const killed = damageResult.killed;
+
+    // Add debug damage event if debug mode enabled
+    if (newState.debugMode === true) {
+      const debugEvent = createDamageDebugEvent(targetEnemy.name, damageResult, 'attack');
+      if (debugEvent) {
+        events = [...events, { ...debugEvent, turnNumber: newState.turnNumber }];
+      }
+    }
 
     // Apply on-hit statuses
     let updatedEnemy = newState.run?.enemies.get(targetKey);
