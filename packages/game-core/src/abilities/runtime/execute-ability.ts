@@ -78,9 +78,11 @@ export function executeAbility(
   }
 
   // Emit ability used event
+  // For self-targeted abilities (no targets resolved), use player ID for heal indicators
+  const eventTargetId = targets[0]?.enemy.id ?? (resultData.healAmount !== undefined ? newContext.player.id : undefined);
   const abilityEvent = buildAbilityUsedEvent(newContext, definition.id, definition.name, {
     ...resultData,
-    targetId: targets[0]?.enemy.id,
+    targetId: eventTargetId,
     targetName: targets[0]?.enemy.name,
   });
   accumulatedEvents = [...accumulatedEvents, ...abilityEvent];
