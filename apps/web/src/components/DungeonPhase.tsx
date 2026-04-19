@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from 'react';
-import type { GameView } from '@dungeon/presenter';
+import type { GameView, CombatIndicatorEntry } from '@dungeon/presenter';
 import { VP_WIDTH, VP_HEIGHT } from '../utils/viewport.js';
-import { TAB_BAR_HEIGHT } from '../config/ui-config.js';
+import { TAB_BAR_HEIGHT, COMBAT_INDICATOR_DURATION_MS } from '../config/ui-config.js';
 import { PlayerHud } from './PlayerHud.js';
 import { DungeonView } from './DungeonView.js';
 import { DungeonCanvas } from './DungeonCanvas.js';
@@ -65,12 +65,12 @@ function MapDisplay({
   map,
   useSprites,
   containerRef,
-  combatLog,
+  combatIndicators,
 }: {
   map: any;
   useSprites: boolean;
   containerRef?: React.RefObject<HTMLDivElement | null>;
-  combatLog?: readonly { text: string; type: string }[];
+  combatIndicators?: readonly CombatIndicatorEntry[];
 }) {
   const [vpTilesWidth, setVpTilesWidth] = useState(VP_WIDTH);
   const [vpTilesHeight, setVpTilesHeight] = useState(VP_HEIGHT);
@@ -123,7 +123,7 @@ function MapDisplay({
   }, [map, vpTilesWidth, vpTilesHeight]);
 
   // Hook to track combat indicators
-  useCombatIndicators(map?.entities || [], combatLog || [], map?.playerPosition || { x: 0, y: 0 });
+  useCombatIndicators(combatIndicators ?? []);
 
   if (!map) return null;
 
@@ -139,12 +139,11 @@ function MapDisplay({
       <div ref={displayContainerRef} style={{ flex: 1, minHeight: 0, overflow: 'hidden', marginBottom: 8, imageRendering: 'pixelated' as const, display: 'flex', alignItems: 'center', justifyContent: 'center', background: '#0a0a0a', position: 'relative' }}>
         <div style={{ width: canvasPxWidth, height: canvasPxHeight, position: 'relative' }}>
           {useSprites ? <DungeonCanvas map={map} vpTilesWidth={vpTilesWidth} vpTilesHeight={vpTilesHeight} /> : <DungeonView map={map} vpTilesWidth={vpTilesWidth} vpTilesHeight={vpTilesHeight} />}
-          <CombatIndicators 
-            entities={map.entities || []} 
-            vpLeft={vpLeft} 
-            vpTop={vpTop} 
+          <CombatIndicators
+            vpLeft={vpLeft}
+            vpTop={vpTop}
             cellSize={CELL_SIZE}
-            fadeOutDuration={500}
+            fadeOutDuration={COMBAT_INDICATOR_DURATION_MS}
           />
         </div>
       </div>
@@ -200,7 +199,7 @@ export function DungeonPhase({
 
         {/* Dungeon map: dynamically sized above combat log */}
         <div ref={mapContainerRef} style={{ flex: 1, minHeight: 0, display: 'flex', flexDirection: 'column', marginBottom: 6 }}>
-          <MapDisplay map={view.map} useSprites={useSprites} containerRef={mapContainerRef} combatLog={combatLog} />
+          <MapDisplay map={view.map} useSprites={useSprites} containerRef={mapContainerRef} combatIndicators={view.combatIndicators ?? []} />
         </div>
 
         {/* Combat log: fixed 4 lines, always visible above action panel */}
@@ -264,7 +263,7 @@ export function DungeonPhase({
 
       {/* Dungeon map: dynamically sized above combat log */}
       <div ref={mapContainerRef} style={{ flex: 1, minHeight: 0, display: 'flex', flexDirection: 'column', marginBottom: 8 }}>
-        <MapDisplay map={view.map} useSprites={useSprites} containerRef={mapContainerRef} combatLog={combatLog} />
+        <MapDisplay map={view.map} useSprites={useSprites} containerRef={mapContainerRef} combatIndicators={view.combatIndicators ?? []} />
       </div>
 
       {/* Combat log: fixed 4 lines, always visible above action panel */}

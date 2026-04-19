@@ -57,6 +57,9 @@ export const COMBAT_LOG_MAX_HEIGHT = 250;
 /** Number of combat log entries shown in the dungeon mini-log. */
 export const COMBAT_LOG_MINI_ENTRIES = 4;
 
+/** Duration (ms) a combat indicator floats before fading out. */
+export const COMBAT_INDICATOR_DURATION_MS = 1500;
+
 // ── Buttons & Touch Targets ─────────────────────────────────────
 /** Minimum height (px) of standard buttons — meets WCAG touch target guidelines. */
 export const BTN_MIN_HEIGHT = 44;

@@ -1,7 +1,7 @@
 import Fastify, { type FastifyInstance } from 'fastify';
 import cors from '@fastify/cors';
 import { GameEngine } from '@dungeon/core';
-import { buildGameView, formatEvents } from '@dungeon/presenter';
+import { buildGameView, formatEvents, buildCombatIndicators } from '@dungeon/presenter';
 import { GameCommandSchema, CreateGameSchema, SchemaVersionMismatchError, SchemaParseError, getSchemaVersionErrorMessage } from '@dungeon/contracts';
 import type { GameCommand, EntityId, GameState, RunMetrics } from '@dungeon/contracts';
 import { InMemoryRepository } from './in-memory-repository.js';
@@ -248,10 +248,11 @@ export async function buildApp(): Promise<FastifyInstance> {
     await repo.commitTick(request.params.id as EntityId, prevVersion, finalState, result.events);
     const view = buildGameView(finalState);
     const combatLog = formatEvents(result.events);
+    const combatIndicators = buildCombatIndicators(result.events, finalState);
     const serializedState = serializeState(finalState);
 
     return {
-      view: { ...view, combatLog },
+      view: { ...view, combatLog, combatIndicators },
       events: result.events,
       runEnded: result.runEnded,
       serializedState,
@@ -411,8 +412,9 @@ export async function buildApp(): Promise<FastifyInstance> {
       const view = buildGameView(state);
       const events = await repo.getRecentEvents(request.params.id as EntityId, 20);
       const combatLog = formatEvents(events);
+      const combatIndicators = buildCombatIndicators(events, state);
 
-      return { ...view, combatLog };
+      return { ...view, combatLog, combatIndicators };
     } catch (error) {
       if (error instanceof SchemaVersionMismatchError) {
         return reply.code(400).send({

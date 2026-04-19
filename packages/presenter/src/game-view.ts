@@ -66,6 +66,7 @@ export interface GameView {
   readonly player: PlayerHudView;
   readonly map: MapView | null;
   readonly combatLog: readonly CombatLogEntry[];
+  readonly combatIndicators: readonly CombatIndicatorEntry[];
   readonly availableActions: readonly AvailableAction[];
   readonly town: TownView | null;
   readonly inventory: InventoryView;
@@ -230,6 +231,13 @@ export interface CombatLogEntry {
   readonly text: string;
   readonly type: 'attack' | 'damage' | 'death' | 'status' | 'loot' | 'info' | 'move';
   readonly timestamp: number;
+}
+
+export interface CombatIndicatorEntry {
+  readonly text: string;
+  readonly type: 'damage' | 'heal' | 'status' | 'gold';
+  readonly x: number;
+  readonly y: number;
 }
 
 export interface AvailableAction {
