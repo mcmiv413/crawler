@@ -268,14 +268,25 @@ const EVENT_FORMATTERS = {
       breakdown += ` crit:×${event.critMultiplier}→${postCrit}`;
     }
 
-    if (!event.bypassDefense && event.defense > 0) {
+    // Always show defense step if not bypassed (even if 0)
+    if (!event.bypassDefense) {
       const defReduction = event.rawDamage - event.postDefense;
-      breakdown += ` def:-${defReduction}→${event.postDefense}`;
+      if (defReduction !== 0) {
+        breakdown += ` def:-${defReduction}→${event.postDefense}`;
+      } else {
+        breakdown += ` def:0→${event.postDefense}`;
+      }
     }
 
-    if (!event.bypassResistance && event.resistance > 0) {
-      const resMultiplier = (1 - event.resistance).toFixed(2);
-      breakdown += ` res:×${resMultiplier}→${event.postResistance}`;
+    // Always show resistance step if not bypassed (even if 0)
+    if (!event.bypassResistance) {
+      if (event.resistance > 0) {
+        const resMultiplier = (1 - event.resistance).toFixed(2);
+        breakdown += ` res:×${resMultiplier}→${event.postResistance}`;
+      } else {
+        // No resistance, but show the step for clarity
+        breakdown += ` res:×1.00→${event.postResistance}`;
+      }
     }
 
     return {
