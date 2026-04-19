@@ -6,7 +6,7 @@ import { decideAmbientAction } from '../systems/ambient-behavior-engine.js';
 import { resolveAttack } from '../systems/combat.js';
 import { getEffectiveStat, tickPlayerStatuses, tickEnemyStatuses } from '../systems/status-effects.js';
 import { handlePlayerDeath } from '../systems/death.js';
-import { applyDamageToPlayer } from '../systems/damage.js';
+import { applyDamageToPlayer, createDamageDebugEvent } from '../systems/damage.js';
 import { chebyshevDistance } from '../utils/grid.js';
 import type { SeededRNG } from '../utils/rng.js';
 import { applyThornsToAttacker, applyBlinkOnHit, getEnchantmentRegenBonus, getTotalThornsReflect } from '../systems/enchantment-hooks.js';
@@ -447,6 +447,14 @@ function executeEnemyAction(
         newState = damageResult.state;
         const playerKilled = damageResult.killed;
 
+        // Add debug damage event if debug mode enabled
+        if (newState.debugMode === true) {
+          const debugEvent = createDamageDebugEvent(state.player.name, damageResult, 'attack');
+          if (debugEvent) {
+            resultEvents = [...resultEvents, { ...debugEvent, turnNumber: newState.turnNumber }];
+          }
+        }
+
         newState = updateRunMetrics(newState, { damageTaken: result.damage });
 
         // Thorns: reflect damage to attacker (bypasses defense and resistance)
@@ -464,6 +472,14 @@ function executeEnemyAction(
             turnNumber: state.turnNumber,
           };
           resultEvents = [...resultEvents, thornsEvent];
+
+          // Add debug damage event if debug mode enabled
+          if (newState.debugMode === true) {
+            const debugEvent = createDamageDebugEvent(enemy.name, thornsResult, 'thorns');
+            if (debugEvent) {
+              resultEvents = [...resultEvents, { ...debugEvent, turnNumber: newState.turnNumber }];
+            }
+          }
         }
 
         if (playerKilled === true) {

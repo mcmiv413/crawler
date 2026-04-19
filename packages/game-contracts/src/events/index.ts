@@ -322,6 +322,18 @@ export interface DebugMissStreakEvent extends BaseEvent {
   readonly streakLength: number;
 }
 
+export interface DebugDamageCalcEvent extends BaseEvent {
+  readonly type: 'DEBUG_DAMAGE_CALC';
+  readonly targetName: string;
+  readonly source: string;
+  readonly rawDamage: number;
+  readonly finalDamage: number;
+  readonly defense: number;
+  readonly resistance: number;
+  readonly bypassDefense: boolean;
+  readonly bypassResistance: boolean;
+}
+
 export type DomainEvent =
   | PlayerMovedEvent
   | EnemyMovedEvent
@@ -362,6 +374,7 @@ export type DomainEvent =
   | ThornsReflectedEvent
   | BlinkDodgedEvent
   | LifeStealEvent
-  | DebugMissStreakEvent;
+  | DebugMissStreakEvent
+  | DebugDamageCalcEvent;
 
 export type EventType = DomainEvent['type'];

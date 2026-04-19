@@ -1,9 +1,29 @@
-import type { GameState, DamageType, EnemyInstance } from '@dungeon/contracts';
+import type { GameState, DamageType, EnemyInstance, DomainEvent } from '@dungeon/contracts';
 import { posKey } from '@dungeon/contracts';
 import { applyDefense } from '../utils/dice.js';
 import { COMBAT } from '@dungeon/content';
 
 export type DamageSource = 'attack' | 'ability' | 'trap' | 'dot' | 'consumable' | 'thorns' | 'environment';
+
+/** Create a debug damage calculation event if debug info is available */
+export function createDamageDebugEvent(targetName: string, outcome: DamageOutcome, source: DamageSource): DomainEvent | null {
+  const info = outcome.debugInfo;
+  if (!info) return null;
+
+  return {
+    type: 'DEBUG_DAMAGE_CALC',
+    targetName,
+    source,
+    rawDamage: info.rawAmount,
+    finalDamage: outcome.finalDamage,
+    defense: info.defense,
+    resistance: info.resistance,
+    bypassDefense: info.bypassDefense,
+    bypassResistance: info.bypassResistance,
+    timestamp: Date.now(),
+    turnNumber: 0, // Will be set by caller if needed
+  } as DomainEvent;
+}
 
 export interface DamageInput {
   readonly amount: number;
@@ -19,6 +39,13 @@ export interface DamageOutcome {
   readonly state: GameState;
   readonly finalDamage: number;
   readonly killed: boolean;
+  readonly debugInfo?: {
+    readonly rawAmount: number;
+    readonly defense: number;
+    readonly resistance: number;
+    readonly bypassDefense: boolean;
+    readonly bypassResistance: boolean;
+  };
 }
 
 /** Default bypass flags by source */
@@ -60,18 +87,22 @@ export function applyDamageToPlayer(state: GameState, input: DamageInput): Damag
   const bypassResistance = input.bypassResistance ?? defaults.bypassResistance;
 
   let damage = input.amount;
+  const rawAmount = input.amount;
+  let defense = 0;
+  let resistance = 0;
+
   log('initial damage', { damage, bypassDefense, bypassResistance });
 
   // Apply defense
   if (bypassDefense !== true) {
-    const defense = state.player.stats.defense;
+    defense = state.player.stats.defense;
     damage = applyDefense(damage, defense, COMBAT.defenseDivisor);
     log('after defense', { defense, damage });
   }
 
   // Apply resistance
   if (bypassResistance !== true) {
-    const resistance = state.player.stats.resistances?.[input.damageType] ?? 0;
+    resistance = state.player.stats.resistances?.[input.damageType] ?? 0;
     const mitigated = damage * (1 - resistance);
     damage = Math.round(mitigated);
     log('after resistance', { resistance, mitigated, damage });
@@ -104,6 +135,13 @@ export function applyDamageToPlayer(state: GameState, input: DamageInput): Damag
     state: resultState,
     finalDamage,
     killed,
+    debugInfo: {
+      rawAmount,
+      defense,
+      resistance,
+      bypassDefense,
+      bypassResistance,
+    },
   };
 }
 
@@ -116,37 +154,6 @@ function findEnemyById(state: GameState, enemyId: string): EnemyInstance | undef
     }
   }
   return undefined;
-}
-
-/** Calculate damage with defense and resistance applied */
-function calculateEnemyDamage(
-  baseAmount: number,
-  enemy: EnemyInstance,
-  damageType: DamageType,
-  bypassDefense: boolean,
-  bypassResistance: boolean,
-): number {
-  let damage = baseAmount;
-  log('initial damage', { damage, bypassDefense, bypassResistance });
-
-  if (bypassDefense !== true) {
-    damage = applyDefense(damage, enemy.stats.defense, COMBAT.defenseDivisor);
-    log('after defense', { defense: enemy.stats.defense, damage });
-  }
-
-  if (bypassResistance !== true) {
-    const resistance = enemy.affinities[damageType] ?? 0;
-    const mitigated = damage * (1 - resistance);
-    damage = Math.round(mitigated);
-    log('after resistance', { resistance, mitigated, damage });
-  }
-
-  const finalDamage = Math.max(COMBAT.minDamage, damage);
-  if (finalDamage !== damage) {
-    log('clamped to minimum', { wasLower: damage, finalDamage });
-  }
-
-  return finalDamage;
 }
 
 /**
@@ -178,13 +185,25 @@ export function applyDamageToEnemy(state: GameState, enemyId: string, input: Dam
   const bypassDefense = input.bypassDefense ?? defaults.bypassDefense;
   const bypassResistance = input.bypassResistance ?? defaults.bypassResistance;
 
-  const finalDamage = calculateEnemyDamage(
-    input.amount,
-    targetEnemy,
-    input.damageType,
-    bypassDefense,
-    bypassResistance,
-  );
+  let damage = input.amount;
+  const rawAmount = input.amount;
+  let defense = 0;
+  let resistance = 0;
+
+  // Calculate damage with tracking for debug info
+  damage = input.amount;
+  if (bypassDefense !== true) {
+    defense = targetEnemy.stats.defense;
+    damage = applyDefense(damage, defense, COMBAT.defenseDivisor);
+  }
+
+  if (bypassResistance !== true) {
+    resistance = targetEnemy.affinities[input.damageType] ?? 0;
+    const mitigated = damage * (1 - resistance);
+    damage = Math.round(mitigated);
+  }
+
+  const finalDamage = Math.max(COMBAT.minDamage, damage);
 
   const newHealth = targetEnemy.stats.health - finalDamage;
   const killed = newHealth <= 0;
@@ -220,5 +239,12 @@ export function applyDamageToEnemy(state: GameState, enemyId: string, input: Dam
     state: resultState,
     finalDamage,
     killed,
+    debugInfo: {
+      rawAmount,
+      defense,
+      resistance,
+      bypassDefense,
+      bypassResistance,
+    },
   };
 }

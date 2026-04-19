@@ -3,7 +3,7 @@ import type { StatusEffect } from '@dungeon/contracts';
 import type { DomainEvent } from '@dungeon/contracts';
 import { posKey } from '@dungeon/contracts';
 import { STATUS_DEFAULTS } from '@dungeon/content';
-import { applyDamageToPlayer, applyDamageToEnemy } from './damage.js';
+import { applyDamageToPlayer, applyDamageToEnemy, createDamageDebugEvent } from './damage.js';
 
 /** Map status IDs that deal damage to their damage types */
 function statusToDamageType(statusId: StatusId): DamageType | null {
@@ -90,6 +90,14 @@ export function tickPlayerStatuses(
         bypassResistance: false,
       });
       currentState = damageResult.state;
+
+      // Add debug event if debug mode enabled
+      if (currentState.debugMode === true) {
+        const debugEvent = createDamageDebugEvent(currentState.player.name, damageResult, 'dot');
+        if (debugEvent) {
+          allEvents = [...allEvents, { ...debugEvent, turnNumber }];
+        }
+      }
     }
     if ('healPerTurn' in defaults) {
       const healAmount = (defaults as { healPerTurn: number }).healPerTurn;
@@ -191,6 +199,14 @@ export function tickEnemyStatuses(
         bypassResistance: false,
       });
       currentState = damageResult.state;
+
+      // Add debug event if debug mode enabled
+      if (currentState.debugMode === true) {
+        const debugEvent = createDamageDebugEvent(enemy.name, damageResult, 'dot');
+        if (debugEvent) {
+          allEvents = [...allEvents, { ...debugEvent, turnNumber }];
+        }
+      }
     }
     if ('healPerTurn' in defaults) {
       const healAmount = (defaults as { healPerTurn: number }).healPerTurn;

@@ -260,6 +260,23 @@ const EVENT_FORMATTERS = {
     timestamp: event.timestamp,
   }),
 
+  'DEBUG_DAMAGE_CALC': (event) => {
+    const resistancePct = Math.round(event.resistance * 100);
+    const details = [];
+    if (!event.bypassDefense && event.defense > 0) {
+      details.push(`def ${event.defense}`);
+    }
+    if (!event.bypassResistance && event.resistance > 0) {
+      details.push(`${resistancePct}% res`);
+    }
+    const detailsText = details.length > 0 ? ` [${details.join(', ')}]` : '';
+    return {
+      text: `[DEBUG] ${event.source}: ${event.targetName} took ${event.finalDamage}/${event.rawDamage}${detailsText}`,
+      type: 'info',
+      timestamp: event.timestamp,
+    };
+  },
+
   'ENEMY_AMBIENT_STATE_CHANGED': (event) => {
     const ambientEvent = event as EnemyAmbientStateChangedEvent;
     return {
