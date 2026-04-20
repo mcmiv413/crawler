@@ -20,6 +20,7 @@ scripts/node_modules/
 playwright-report/
 test-results/
 .eslintcache
+.validate-logs/
 
 # markdown policy if you truly want this going forward
 *.md
