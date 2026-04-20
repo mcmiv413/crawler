@@ -130,12 +130,7 @@ function MapDisplay({
       <div ref={displayContainerRef} style={{ flex: 1, minHeight: 0, overflow: 'hidden', marginBottom: 8, imageRendering: 'pixelated' as const, display: 'flex', alignItems: 'center', justifyContent: 'center', background: '#0a0a0a', position: 'relative' }}>
         <div style={{ width: canvasPxWidth, height: canvasPxHeight, position: 'relative' }}>
           {useSprites ? <DungeonCanvas map={map} vpTilesWidth={vpTilesWidth} vpTilesHeight={vpTilesHeight} /> : <DungeonView map={map} vpTilesWidth={vpTilesWidth} vpTilesHeight={vpTilesHeight} />}
-          <BumpAnimations
-            vpLeft={vpLeft}
-            vpTop={vpTop}
-            cellSize={CELL_SIZE}
-            duration={BUMP_ANIMATION_DURATION_MS}
-          />
+          <BumpAnimations />
           <CombatIndicators
             vpLeft={vpLeft}
             vpTop={vpTop}

@@ -5,7 +5,9 @@ import { renderMap } from '../sprites/canvas-renderer.js';
 import { screenToGrid } from '../utils/screen-to-grid.js';
 import { findPath } from '../utils/pathfinding.js';
 import { useGameStore } from '../store/game-store.js';
-import { VP_WIDTH, VP_HEIGHT, CELL_SIZE } from '../utils/viewport.js';
+import { useBumpAnimationState } from '../hooks/useBumpAnimationState.js';
+import { BUMP_ANIMATION_DURATION_MS } from '../config/ui-config.js';
+import { VP_WIDTH, VP_HEIGHT } from '../utils/viewport.js';
 
 interface Props {
   map: MapView;
@@ -17,7 +19,8 @@ export function DungeonCanvas({ map, vpTilesWidth, vpTilesHeight }: Props) {
   const canvasRef = useRef<HTMLCanvasElement>(null);
   const [spritesReady, setSpritesReady] = useState(spriteRegistry.isReady());
   const vpRef = useRef({ left: 0, top: 0 });
-  
+  const { animations: bumpAnimations } = useBumpAnimationState(BUMP_ANIMATION_DURATION_MS);
+
   // Use provided dimensions or fall back to constants
   const vp_width = vpTilesWidth || VP_WIDTH;
   const vp_height = vpTilesHeight || VP_HEIGHT;
@@ -58,8 +61,8 @@ export function DungeonCanvas({ map, vpTilesWidth, vpTilesHeight }: Props) {
 
     vpRef.current = { left: vpLeft, top: vpTop };
 
-    renderMap(ctx, map, vpLeft, vpTop, vp_width, vp_height);
-  }, [map, spritesReady, vp_width, vp_height]);
+    renderMap(ctx, map, vpLeft, vpTop, vp_width, vp_height, bumpAnimations);
+  }, [map, spritesReady, vp_width, vp_height, bumpAnimations]);
 
   const handleClick = useCallback((e: React.MouseEvent<HTMLCanvasElement>) => {
     const canvas = canvasRef.current;
