@@ -131,6 +131,7 @@ describe('applyThornsToAttacker', () => {
     const enemy = createTestEnemy({ stats: { ...createTestEnemy().stats, health: 30 } });
     state = { ...state, run: { ...state.run!, enemies: new Map([[`${enemy.id}`, enemy]]) } };
     const result = applyThornsToAttacker(state, enemy, 0);
+    // eslint-disable-next-line dungeon/no-numeric-toBe
     expect(result.finalDamage).toBe(0);
     expect(result.killed).toBe(false);
   });
@@ -146,6 +147,7 @@ describe('applyThornsToAttacker', () => {
     });
     state = { ...state, run: { ...state.run!, enemies: new Map([[`${highDefenseEnemy.id}`, highDefenseEnemy]]) } };
     const result = applyThornsToAttacker(state, highDefenseEnemy, 10);
+    // eslint-disable-next-line dungeon/no-numeric-toBe
     expect(result.finalDamage).toBe(10);
   });
 });

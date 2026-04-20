@@ -32,9 +32,7 @@ export function ActionButton({
   if (!renderedIcon && icon.spriteName) {
     renderedIcon = <ItemSpriteIcon spriteName={icon.spriteName} size={16} />;
   }
-  if (!renderedIcon) {
-    renderedIcon = icon.emoji;
-  }
+  renderedIcon ??= icon.emoji;
 
   return (
     <button

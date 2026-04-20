@@ -46,21 +46,16 @@ export function buildAnimationSequence(
   const batchId = `batch-${Date.now()}-${Math.random().toString(36).slice(2)}`;
 
   // Extract attack events with their speeds
-  const attacksWithSpeeds: AttackerWithSpeed[] = [];
-  for (const event of events) {
-    if (event.type === 'ATTACK_PERFORMED') {
-      const attackEvent = event as Extract<DomainEvent, { type: 'ATTACK_PERFORMED' }>;
-      const speed = getEntitySpeed(attackEvent.attackerId, state);
-      attacksWithSpeeds.push({
-        attackerId: attackEvent.attackerId,
-        speed,
-        event: attackEvent,
-      });
-    }
-  }
+  const unsortedAttacks = events
+    .filter((event): event is Extract<DomainEvent, { type: 'ATTACK_PERFORMED' }> => event.type === 'ATTACK_PERFORMED')
+    .map((attackEvent) => ({
+      attackerId: attackEvent.attackerId,
+      speed: getEntitySpeed(attackEvent.attackerId, state),
+      event: attackEvent,
+    }));
 
   // Sort by speed descending (highest speed first)
-  attacksWithSpeeds.sort((a, b) => b.speed - a.speed);
+  const attacksWithSpeeds = [...unsortedAttacks].sort((a, b) => b.speed - a.speed);
 
   // Create animation entries with timing
   const mutableAnimations: AnimatedEvent[] = [];

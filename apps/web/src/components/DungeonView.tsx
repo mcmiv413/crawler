@@ -15,8 +15,8 @@ const buildPositionMap = <T extends { x: number; y: number }>(items: readonly T[
 
 export function DungeonView({ map, vpTilesWidth, vpTilesHeight }: Props) {
   // Use provided dimensions or fall back to constants
-  const vp_width = vpTilesWidth || VP_WIDTH;
-  const vp_height = vpTilesHeight || VP_HEIGHT;
+  const vp_width = vpTilesWidth ?? VP_WIDTH;
+  const vp_height = vpTilesHeight ?? VP_HEIGHT;
   
   const entityMap = buildPositionMap(map.entities);
 
