@@ -69,7 +69,7 @@ function renderPanel(
 }
 
 export function App() {
-  const { view, gameId, combatLog, loading, error, createGame, sendCommand, clearError, restoreSession, resetGame } = useGameStore();
+  const { view, gameId, combatLog, loading, error, deathTransitioning, createGame, sendCommand, clearError, restoreSession, resetGame } = useGameStore();
   const { isMobile } = useBreakpoint();
   const [playerName, setPlayerName] = useState('Adventurer');
   const [npcDialogue, setNpcDialogue] = useState<{ name: string; text: string } | null>(null);
@@ -308,6 +308,28 @@ export function App() {
         {isMobile && visiblePanels.length > 0 && visiblePanels.map(p => renderPanel(p, view, combatLog, sendCommand, isMobile, () => handleNavClick(p)))}
       </div>
       <MobileNav activeScreen={activeNavScreen} onScreenChange={handleNavClick} phase={view.phase as 'town' | 'dungeon'} onNewGame={resetGame} />
+      {deathTransitioning && (
+        <div
+          style={{
+            position: 'fixed',
+            top: 0,
+            left: 0,
+            right: 0,
+            bottom: 0,
+            backgroundColor: 'rgba(139, 0, 0, 0.5)',
+            zIndex: 9999,
+            pointerEvents: 'auto',
+            animation: 'fadeIn 0.5s ease-in',
+          }}
+        >
+          <style>{`
+            @keyframes fadeIn {
+              from { opacity: 0; }
+              to { opacity: 0.5; }
+            }
+          `}</style>
+        </div>
+      )}
     </div>
   );
 }
