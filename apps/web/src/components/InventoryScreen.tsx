@@ -43,7 +43,7 @@ export function InventoryScreen({
   // Helper to find the currently equipped item in a slot for comparison
   const getEquippedInSlot = (item: InventoryItemView): InventoryItemView | null => {
     if (item.weaponStats) {
-      return inventory.equipped.weapon || null;
+      return inventory.equipped.weapon ?? null;
     }
     if (item.armorStats) {
       const slot = item.armorStats.slot;
@@ -52,7 +52,7 @@ export function InventoryScreen({
       if (slot === 'gloves') return inventory.equipped.gloves;
       if (slot === 'boots') return inventory.equipped.boots;
       if (slot === 'ring') {
-        return inventory.equipped.ring1 || inventory.equipped.ring2 || null;
+        return inventory.equipped.ring1 ?? inventory.equipped.ring2 ?? null;
       }
     }
     return null;
