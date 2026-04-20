@@ -29,6 +29,7 @@ export interface AttackPerformedEvent extends BaseEvent {
   readonly damageType: DamageType;
   readonly hit: boolean;
   readonly critical: boolean;
+  readonly position: Position; // Defender's position at time of attack (needed for damage indicators when entity dies)
   readonly reason?: string;
   readonly missReason?: 'accuracy' | 'evasion';  // reason for miss if hit=false
 }

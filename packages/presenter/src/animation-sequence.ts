@@ -73,8 +73,10 @@ export function buildAnimationSequence(
     const baseDelay = sequenceIndex * 500;
 
     // Get attacker and defender positions
+    // For defender, use position from event (captured at attack time) as fallback
+    // This ensures damage numbers show even when entity dies and is removed from state
     const attackerPos = getEntityPosition(attack.event.attackerId, state);
-    const defenderPos = getEntityPosition(attack.event.defenderId, state);
+    const defenderPos = getEntityPosition(attack.event.defenderId, state) || attack.event.position;
     if (!attackerPos || !defenderPos) continue;
 
     // Bump animation (starts immediately for this attack in sequence)
