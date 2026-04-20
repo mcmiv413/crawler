@@ -126,10 +126,13 @@ export const useGameStore = create<GameStore>((set, get) => ({
           deathTransitionTimeout = null;
         }, 2000);
       } else {
+        if (deathTransitionTimeout) clearTimeout(deathTransitionTimeout);
+        deathTransitionTimeout = null;
         set({
           view: result.view,
           combatLog: [...get().combatLog, ...result.view.combatLog].slice(-50),
           loading: false,
+          deathTransitioning: false,
         });
       }
     } catch (err) {
