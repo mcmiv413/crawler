@@ -1,5 +1,5 @@
 import { useState, useEffect } from 'react';
-import { COMBAT_INDICATOR_DURATION_MS } from '../config/ui-config.js';
+import { COMBAT_INDICATOR_FADEOUT_MS } from '../config/ui-config.js';
 
 interface FloatingLabel {
   id: string;
@@ -21,7 +21,7 @@ export function CombatIndicators({
   vpLeft,
   vpTop,
   cellSize,
-  fadeOutDuration = COMBAT_INDICATOR_DURATION_MS,
+  fadeOutDuration = COMBAT_INDICATOR_FADEOUT_MS,
 }: CombatIndicatorsProps) {
   const [labels, setLabels] = useState<FloatingLabel[]>([]);
   const [nextId, setNextId] = useState(0);

@@ -191,8 +191,7 @@ export function buildGameView(state: GameState): GameView {
     player: buildPlayerHud(state),
     map: state.run ? buildMapView(state) : null,
     combatLog: [], // Filled by caller with formatted events
-    combatIndicators: [], // Filled by caller with buildCombatIndicators
-    bumpAnimations: [], // Filled by caller with buildBumpAnimations
+    animatedEvents: [], // Filled by caller with buildAnimationSequence
     availableActions: buildAvailableActions(state),
     town: state.phase === 'town' ? buildTownView(state) : null,
     inventory: buildInventoryView(state),
