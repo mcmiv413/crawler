@@ -19,6 +19,7 @@ describe('formatEvent', () => {
       damageType: 'physical',
       hit: true,
       critical: false,
+      position: { x: 10, y: 10 },
     };
     const result = formatEvent(event);
     expect(result).toEqual({
@@ -40,6 +41,7 @@ describe('formatEvent', () => {
       damageType: 'physical',
       hit: true,
       critical: true,
+      position: { x: 10, y: 10 },
     };
     const result = formatEvent(event);
     expect(result).toEqual({
@@ -61,6 +63,7 @@ describe('formatEvent', () => {
       damageType: 'physical',
       hit: false,
       critical: false,
+      position: { x: 10, y: 10 },
     };
     const result = formatEvent(event);
     expect(result).toEqual({
@@ -498,6 +501,7 @@ describe('formatEvents', () => {
         damageType: 'physical',
         hit: true,
         critical: false,
+        position: { x: 10, y: 10 },
       },
       {
         ...base,

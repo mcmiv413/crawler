@@ -264,7 +264,8 @@ describe('buildBumpAnimations', () => {
       const animations = buildBumpAnimations(events, mockGameState);
 
       expect(animations).toHaveLength(1);
-      expect(animations[0].attackerPos).toEqual({ x: 50, y: 50 });
+      expect(animations[0]).toBeDefined();
+      expect(animations[0]!.attackerPos).toEqual({ x: 50, y: 50 });
     });
 
     it('creates animations for multiple attacks', () => {
@@ -300,8 +301,10 @@ describe('buildBumpAnimations', () => {
       const animations = buildBumpAnimations(events, mockGameState);
 
       expect(animations).toHaveLength(2);
-      expect(animations[0].attackerId).toBe('player-1');
-      expect(animations[1].attackerId).toBe('enemy-1');
+      expect(animations[0]).toBeDefined();
+      expect(animations[1]).toBeDefined();
+      expect(animations[0]!.attackerId).toBe('player-1');
+      expect(animations[1]!.attackerId).toBe('enemy-1');
     });
   });
 

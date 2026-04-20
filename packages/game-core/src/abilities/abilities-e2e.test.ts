@@ -41,10 +41,7 @@ describe('All Abilities E2E', () => {
           enemyId: firstEnemy.id,
         });
       }
-      expect(result.events.length).toBeGreaterThan(
-        0,
-        `Ability ${ability.id} silently failed (no events emitted)`
-      );
+      expect(result.events.length, `Ability ${ability.id} silently failed (no events emitted)`).toBeGreaterThan(0);
 
       // Verify at least ABILITY_USED is present
       const hasEvent = result.events.some((e) => e.type === 'ABILITY_USED');

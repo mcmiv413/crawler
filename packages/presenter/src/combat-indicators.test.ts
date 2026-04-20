@@ -240,10 +240,11 @@ describe('buildCombatIndicators', () => {
       const indicators = buildCombatIndicators(events, mockGameState);
 
       expect(indicators).toHaveLength(1);
-      expect(indicators[0].type).toBe('status');
-      expect(indicators[0].x).toBe(51);
-      expect(indicators[0].y).toBe(50);
-      expect(indicators[0].text).toBeTruthy(); // status name
+      expect(indicators[0]).toBeDefined();
+      expect(indicators[0]!.type).toBe('status');
+      expect(indicators[0]!.x).toBe(51);
+      expect(indicators[0]!.y).toBe(50);
+      expect(indicators[0]!.text).toBeTruthy(); // status name
     });
 
     it('skips status indicator if target position is not found', () => {
@@ -517,8 +518,10 @@ describe('buildCombatIndicators', () => {
       const indicators = buildCombatIndicators(events, mockGameState);
 
       expect(indicators).toHaveLength(2); // attack + gold, not level up
-      expect(indicators[0].type).toBe('damage');
-      expect(indicators[1].type).toBe('gold');
+      expect(indicators[0]).toBeDefined();
+      expect(indicators[1]).toBeDefined();
+      expect(indicators[0]!.type).toBe('damage');
+      expect(indicators[1]!.type).toBe('gold');
     });
   });
 

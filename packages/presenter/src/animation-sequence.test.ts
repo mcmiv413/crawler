@@ -223,9 +223,15 @@ describe('buildAnimationSequence', () => {
 
       // Should be ordered: enemy-2 (speed 15), player-1 (speed 12), enemy-1 (speed 8)
       const bumps = sequence.filter(a => a.type === 'bump');
-      expect(bumps[0].data.attackerId).toBe('enemy-2');
-      expect(bumps[1].data.attackerId).toBe('player-1');
-      expect(bumps[2].data.attackerId).toBe('enemy-1');
+      const bump0 = bumps[0];
+      const bump1 = bumps[1];
+      const bump2 = bumps[2];
+      expect(bump0).toBeDefined();
+      expect(bump1).toBeDefined();
+      expect(bump2).toBeDefined();
+      if (bump0 && 'attackerId' in bump0.data) expect(bump0.data.attackerId).toBe('enemy-2');
+      if (bump1 && 'attackerId' in bump1.data) expect(bump1.data.attackerId).toBe('player-1');
+      if (bump2 && 'attackerId' in bump2.data) expect(bump2.data.attackerId).toBe('enemy-1');
     });
 
     it('assigns sequential indices based on speed order', () => {
@@ -248,7 +254,8 @@ describe('buildAnimationSequence', () => {
       const sequence = buildAnimationSequence(events, mockGameState);
 
       const bumps = sequence.filter(a => a.type === 'bump');
-      expect(bumps[0].sequenceIndex).toBe(0);
+      expect(bumps[0]).toBeDefined();
+      expect(bumps[0]!.sequenceIndex).toBe(0);
     });
   });
 
@@ -286,8 +293,10 @@ describe('buildAnimationSequence', () => {
       const sequence = buildAnimationSequence(events, mockGameState);
 
       const bumps = sequence.filter(a => a.type === 'bump');
-      expect(bumps[0].delayMs).toBe(0); // index 0 * 500
-      expect(bumps[1].delayMs).toBe(500); // index 1 * 500
+      expect(bumps[0]).toBeDefined();
+      expect(bumps[1]).toBeDefined();
+      expect(bumps[0]!.delayMs).toBe(0); // index 0 * 500
+      expect(bumps[1]!.delayMs).toBe(500); // index 1 * 500
     });
 
     it('calculates damage indicator delay as sequenceIndex * 500 + 150ms', () => {
@@ -310,7 +319,8 @@ describe('buildAnimationSequence', () => {
       const sequence = buildAnimationSequence(events, mockGameState);
 
       const damages = sequence.filter(a => a.type === 'damage');
-      expect(damages[0].delayMs).toBe(150); // 0 * 500 + 150
+      expect(damages[0]).toBeDefined();
+      expect(damages[0]!.delayMs).toBe(150); // 0 * 500 + 150
     });
 
     it('handles multiple attacks with proper spacing', () => {
@@ -346,15 +356,21 @@ describe('buildAnimationSequence', () => {
       const sequence = buildAnimationSequence(events, mockGameState);
 
       // Bump 0 at 0ms, Damage 0 at 150ms, Bump 1 at 500ms, Damage 1 at 650ms
-      const ordered = sequence.sort((a, b) => a.delayMs - b.delayMs);
-      expect(ordered[0].delayMs).toBe(0);
-      expect(ordered[0].type).toBe('bump');
-      expect(ordered[1].delayMs).toBe(150);
-      expect(ordered[1].type).toBe('damage');
-      expect(ordered[2].delayMs).toBe(500);
-      expect(ordered[2].type).toBe('bump');
-      expect(ordered[3].delayMs).toBe(650);
-      expect(ordered[3].type).toBe('damage');
+      // eslint-disable-next-line dungeon/no-array-mutation
+      const ordered = [...sequence].sort((a, b) => a.delayMs - b.delayMs);
+      expect(ordered).toHaveLength(4);
+      expect(ordered[0]).toBeDefined();
+      expect(ordered[1]).toBeDefined();
+      expect(ordered[2]).toBeDefined();
+      expect(ordered[3]).toBeDefined();
+      expect(ordered[0]!.delayMs).toBe(0);
+      expect(ordered[0]!.type).toBe('bump');
+      expect(ordered[1]!.delayMs).toBe(150);
+      expect(ordered[1]!.type).toBe('damage');
+      expect(ordered[2]!.delayMs).toBe(500);
+      expect(ordered[2]!.type).toBe('bump');
+      expect(ordered[3]!.delayMs).toBe(650);
+      expect(ordered[3]!.type).toBe('damage');
     });
   });
 
