@@ -382,4 +382,86 @@ describe('buildAnimationSequence', () => {
       expect(sequence).toHaveLength(0);
     });
   });
+
+  describe('batch deduplication', () => {
+    it('includes batchId in animated events', () => {
+      const events: DomainEvent[] = [
+        {
+          type: 'ATTACK_PERFORMED',
+          timestamp: 1000,
+          turnNumber: 1,
+          attackerId: 'player-1' as any,
+          defenderId: 'enemy-1' as any,
+          attackerName: 'Hero',
+          defenderName: 'Goblin',
+          damage: 8,
+          damageType: 'physical',
+          hit: true,
+          critical: false,
+        } as any,
+      ];
+
+      const animations = buildAnimationSequence(events, mockGameState);
+
+      expect(animations.length).toBeGreaterThan(0);
+      expect((animations[0] as any).batchId).toBeDefined();
+    });
+
+    it('generates same batchId for all events in same sequence', () => {
+      const events: DomainEvent[] = [
+        {
+          type: 'ATTACK_PERFORMED',
+          timestamp: 1000,
+          turnNumber: 1,
+          attackerId: 'player-1' as any,
+          defenderId: 'enemy-1' as any,
+          attackerName: 'Hero',
+          defenderName: 'Goblin',
+          damage: 8,
+          damageType: 'physical',
+          hit: true,
+          critical: false,
+        } as any,
+      ];
+
+      const animations = buildAnimationSequence(events, mockGameState);
+
+      // Should have bump and damage animations
+      expect(animations.length).toBeGreaterThanOrEqual(2);
+
+      // All should have same batchId
+      const batchId = (animations[0] as any).batchId;
+      for (const anim of animations) {
+        expect((anim as any).batchId).toBe(batchId);
+      }
+    });
+
+    it('generates different batchId for different animation sequences', () => {
+      const events: DomainEvent[] = [
+        {
+          type: 'ATTACK_PERFORMED',
+          timestamp: 1000,
+          turnNumber: 1,
+          attackerId: 'player-1' as any,
+          defenderId: 'enemy-1' as any,
+          attackerName: 'Hero',
+          defenderName: 'Goblin',
+          damage: 8,
+          damageType: 'physical',
+          hit: true,
+          critical: false,
+        } as any,
+      ];
+
+      // Build first sequence
+      const animations1 = buildAnimationSequence(events, mockGameState);
+      const batchId1 = (animations1[0] as any).batchId;
+
+      // Build second sequence (simulating next turn)
+      const animations2 = buildAnimationSequence(events, mockGameState);
+      const batchId2 = (animations2[0] as any).batchId;
+
+      expect(batchId1).not.toBe(batchId2);
+    });
+  });
 });

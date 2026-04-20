@@ -25,6 +25,7 @@ export function useAnimationOrchestrator(animatedEvents: readonly AnimatedEvent[
     for (const animEvent of animatedEvents) {
       const wasAlreadyEmitted = previous.some(
         p =>
+          p.batchId === animEvent.batchId &&
           p.type === animEvent.type &&
           p.sequenceIndex === animEvent.sequenceIndex &&
           p.delayMs === animEvent.delayMs &&
