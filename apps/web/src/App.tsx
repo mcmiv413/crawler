@@ -320,8 +320,18 @@ export function App() {
             zIndex: 9999,
             pointerEvents: 'auto',
             animation: 'fadeIn 0.5s ease-in',
+            display: 'flex',
+            alignItems: 'center',
+            justifyContent: 'center',
+            color: '#ccc',
+            fontSize: '18px',
+            fontFamily: 'monospace',
           }}
+          onKeyDown={(e) => e.preventDefault()}
+          onKeyUp={(e) => e.preventDefault()}
+          tabIndex={0}
         >
+          You died...
           <style>{`
             @keyframes fadeIn {
               from { opacity: 0; }
