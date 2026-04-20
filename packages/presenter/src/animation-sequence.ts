@@ -5,6 +5,7 @@ export interface AnimatedEvent {
   type: 'bump' | 'damage' | 'heal' | 'status';
   sequenceIndex: number;
   delayMs: number;
+  batchId: string;
   data: BumpAnimationEntry | CombatIndicatorEntry;
 }
 
@@ -40,6 +41,9 @@ export function buildAnimationSequence(
   state: GameState,
 ): readonly AnimatedEvent[] {
   if (state.run == null) return [];
+
+  // Generate unique batchId for this animation sequence
+  const batchId = `batch-${Date.now()}-${Math.random().toString(36).slice(2)}`;
 
   // Extract attack events with their speeds
   const attacksWithSpeeds: AttackerWithSpeed[] = [];
@@ -85,6 +89,7 @@ export function buildAnimationSequence(
       type: 'bump',
       sequenceIndex,
       delayMs: baseDelay,
+      batchId,
       data: bumpEntry,
     });
 
@@ -101,6 +106,7 @@ export function buildAnimationSequence(
       type: 'damage',
       sequenceIndex,
       delayMs: baseDelay + 100,
+      batchId,
       data: damageEntry,
     });
   }
