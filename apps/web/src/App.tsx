@@ -3,8 +3,6 @@ import { useGameStore } from './store/game-store.js';
 import { useKeyboard } from './hooks/useKeyboard.js';
 import { useAutoWalk } from './hooks/useAutoWalk.js';
 import { useBreakpoint } from './hooks/useBreakpoint.js';
-import { useDelayedVisibility } from './hooks/useDelayedVisibility.js';
-import { useDelayedPhaseTransition } from './hooks/useDelayedPhaseTransition.js';
 import { TAB_BAR_HEIGHT } from './config/ui-config.js';
 import { StartScreen } from './components/StartScreen.js';
 import { TownPhase } from './components/TownPhase.js';
@@ -69,7 +67,7 @@ function renderPanel(
 }
 
 export function App() {
-  const { view, gameId, combatLog, loading, error, deathTransitioning, createGame, sendCommand, clearError, restoreSession, resetGame } = useGameStore();
+  const { view, gameId, combatLog, loading, error, deathTransitioning, nemesisSlainTransitioning, createGame, sendCommand, clearError, restoreSession, resetGame } = useGameStore();
   const { isMobile } = useBreakpoint();
   const [playerName, setPlayerName] = useState('Adventurer');
   const [npcDialogue, setNpcDialogue] = useState<{ name: string; text: string } | null>(null);
@@ -81,22 +79,17 @@ export function App() {
   const [shownQuestIds, setShownQuestIds] = useState<Set<string>>(new Set());
   const [sessionChecked, setSessionChecked] = useState(false);
 
-  // Delay phase transitions to keep dungeon/town visible while overlays appear
-  const { displayPhase } = useDelayedPhaseTransition(view?.phase ?? 'dungeon', 2000);
-
-  // Delayed visibility for overlay screens (2 second delay to show final combat state)
-  const { isVisible: showDeathNotification } = useDelayedVisibility(
-    !!(view?.phase === 'town' && view?.deathContext && !view?.town?.runSummaryStats?.nemesisPromoted),
-    2000
+  // All run-ending / nemesis-kill modals are gated by store-level transition flags.
+  // During the 2s transition the player sees a themed overlay (red for death, green for slain);
+  // the modal appears once the transition completes.
+  const showDeathNotification = !!(
+    view?.phase === 'town' &&
+    view?.deathContext &&
+    !view?.town?.runSummaryStats?.nemesisPromoted &&
+    !nemesisSlainTransitioning
   );
-  const { isVisible: showNemesisRisen } = useDelayedVisibility(
-    !!(view?.phase === 'town' && view?.town?.runSummaryStats?.nemesisPromoted),
-    2000
-  );
-  const { isVisible: showNemesisSlain } = useDelayedVisibility(
-    !!view?.recentlyDefeatedNemesis,
-    2000
-  );
+  const showNemesisRisen = !!(view?.phase === 'town' && view?.town?.runSummaryStats?.nemesisPromoted);
+  const showNemesisSlain = !!view?.recentlyDefeatedNemesis && !nemesisSlainTransitioning;
 
   useEffect(() => {
     if (!gameId) {
@@ -164,12 +157,12 @@ export function App() {
   }
 
   // Game over phase (full screen, no mobile nav)
-  if (displayPhase === 'game_over') {
+  if (view.phase === 'game_over') {
     return <GameOverPhase view={view} combatLog={combatLog} error={error} onNewGame={() => { resetGame(); createGame(undefined, view.player.name); }} />;
   }
 
   // Nemesis risen screen (when a new nemesis is created from your death) — with 2s delay
-  if (showNemesisRisen && displayPhase === 'town' && view.town?.runSummaryStats?.nemesisPromoted) {
+  if (showNemesisRisen && view.phase === 'town' && view.town?.runSummaryStats?.nemesisPromoted) {
     // Extract nemesis name from combat log entry: "A nemesis rises: <Name> <Title> — ..."
     const nemesisRisenEntry = combatLog.find(e => e.text.includes('A nemesis rises:'));
     let promotedNemesis: typeof view.town.nemeses[0] | undefined;
@@ -211,13 +204,18 @@ export function App() {
         nemesis={defeatedNemesis}
         onDismiss={() => {
           setShownSlainNemesisIds(new Set([...shownSlainNemesisIds, defeatedNemesis.id]));
+          // Mutual exclusion: if the slain turn also ended in death (e.g. bleed/poison),
+          // the player has already seen the celebration — skip the death modal.
+          if (view.deathContext) {
+            setShownRisenNemesisIds(new Set([...shownRisenNemesisIds, 'death-notification']));
+          }
         }}
       />
     );
   }
 
   // Death notification modal (when you die without nemesis promotion) — with 2s delay
-  if (showDeathNotification && displayPhase === 'town' && view.deathContext && !view.town?.runSummaryStats?.nemesisPromoted) {
+  if (showDeathNotification && view.phase === 'town' && view.deathContext && !view.town?.runSummaryStats?.nemesisPromoted) {
     const notShownDeaths = view.deathContext ? 1 : 0; // Track if we've shown this death
     if (notShownDeaths > 0 && !shownRisenNemesisIds.has('death-notification')) {
       return (
@@ -232,7 +230,7 @@ export function App() {
   }
 
   // Quest assigned screen (when an NPC gives you a quest)
-  if (displayPhase === 'town') {
+  if (view.phase === 'town') {
     // Find the most recent QUEST_ASSIGNED log entry that hasn't been shown
     const newQuestLog = combatLog.find(
       entry =>
@@ -279,7 +277,7 @@ export function App() {
       <div style={{ flex: 1, minHeight: 0, display: 'flex', flexDirection: isMobile ? 'column' : 'row' }}>
         {showMainContent && (
           <>
-            {displayPhase === 'town' ? (
+            {view.phase === 'town' ? (
               <TownPhase
                 view={view}
                 combatLog={combatLog}
@@ -338,6 +336,34 @@ export function App() {
               to { opacity: 0.5; }
             }
           `}</style>
+        </div>
+      )}
+      {nemesisSlainTransitioning && (
+        <div
+          style={{
+            position: 'fixed',
+            top: 0,
+            left: 0,
+            right: 0,
+            bottom: 0,
+            backgroundColor: 'rgba(0, 120, 40, 0.5)',
+            zIndex: 9999,
+            pointerEvents: 'auto',
+            animation: 'fadeIn 0.5s ease-in',
+            display: 'flex',
+            alignItems: 'center',
+            justifyContent: 'center',
+            color: '#fff',
+            fontSize: '22px',
+            fontFamily: 'monospace',
+            fontWeight: 'bold',
+            textShadow: '0 0 8px rgba(0, 255, 80, 0.8)',
+          }}
+          onKeyDown={(e) => e.preventDefault()}
+          onKeyUp={(e) => e.preventDefault()}
+          tabIndex={0}
+        >
+          🎉 Nemesis Slain! 🎉
         </div>
       )}
     </div>
