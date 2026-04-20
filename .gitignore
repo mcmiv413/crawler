@@ -1,7 +1,7 @@
 node_modules/
 dist/
 .turbo/
-*.tsbuildinfo
+*.tsbuildinfo*
 *.d.ts
 *.js.map
 coverage/
@@ -19,8 +19,21 @@ scripts/node_modules/
 .fossil/
 playwright-report/
 test-results/
-.eslintcache
+.eslintcache*
 .validate-logs/
+
+# Log files
+*.log
+
+# Misc text artifacts
+*.txt
+
+# Ad-hoc debug scripts (root level)
+/check-balance.*
+/test-*.mjs
+
+# Local tool config
+mcp-config.json
 
 # markdown policy if you truly want this going forward
 *.md
