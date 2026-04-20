@@ -64,7 +64,8 @@ export function executeRetreat(state: GameState, rng: SeededRNG): { state: GameS
 
   // Merge all floors from in-run floorCache into persisted cache
   const updatedCache = new Map(state.persistedFloorCache ?? []);
-  if (state.run!.floorCache !== null && state.run!.floorCache !== undefined) {
+  // eslint-disable-next-line dungeon/no-implicit-boolean
+  if (state.run!.floorCache) {
     for (const [depth, floor] of state.run!.floorCache) {
       updatedCache.set(depth, floor);
     }

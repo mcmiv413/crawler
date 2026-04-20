@@ -8,7 +8,8 @@ export type DamageSource = 'attack' | 'ability' | 'trap' | 'dot' | 'consumable' 
 /** Create a debug damage calculation event if debug info is available */
 export function createDamageDebugEvent(targetName: string, outcome: DamageOutcome, source: DamageSource): DomainEvent | null {
   const info = outcome.debugInfo;
-  if (info === null || info === undefined) return null;
+  // eslint-disable-next-line dungeon/no-implicit-boolean
+  if (!info) return null;
 
   return {
     type: 'DEBUG_DAMAGE_CALC',
