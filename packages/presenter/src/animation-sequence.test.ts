@@ -253,7 +253,7 @@ describe('buildAnimationSequence', () => {
   });
 
   describe('timing delays', () => {
-    it('calculates bump animation delay as sequenceIndex * 300ms', () => {
+    it('calculates bump animation delay as sequenceIndex * 500ms', () => {
       const events: DomainEvent[] = [
         {
           type: 'ATTACK_PERFORMED',
@@ -286,11 +286,11 @@ describe('buildAnimationSequence', () => {
       const sequence = buildAnimationSequence(events, mockGameState);
 
       const bumps = sequence.filter(a => a.type === 'bump');
-      expect(bumps[0].delayMs).toBe(0); // index 0 * 300
-      expect(bumps[1].delayMs).toBe(300); // index 1 * 300
+      expect(bumps[0].delayMs).toBe(0); // index 0 * 500
+      expect(bumps[1].delayMs).toBe(500); // index 1 * 500
     });
 
-    it('calculates damage indicator delay as sequenceIndex * 300 + 100ms', () => {
+    it('calculates damage indicator delay as sequenceIndex * 500 + 150ms', () => {
       const events: DomainEvent[] = [
         {
           type: 'ATTACK_PERFORMED',
@@ -310,7 +310,7 @@ describe('buildAnimationSequence', () => {
       const sequence = buildAnimationSequence(events, mockGameState);
 
       const damages = sequence.filter(a => a.type === 'damage');
-      expect(damages[0].delayMs).toBe(100); // 0 * 300 + 100
+      expect(damages[0].delayMs).toBe(150); // 0 * 500 + 150
     });
 
     it('handles multiple attacks with proper spacing', () => {
@@ -345,15 +345,15 @@ describe('buildAnimationSequence', () => {
 
       const sequence = buildAnimationSequence(events, mockGameState);
 
-      // Bump 0 at 0ms, Damage 0 at 100ms, Bump 1 at 300ms, Damage 1 at 400ms
+      // Bump 0 at 0ms, Damage 0 at 150ms, Bump 1 at 500ms, Damage 1 at 650ms
       const ordered = sequence.sort((a, b) => a.delayMs - b.delayMs);
       expect(ordered[0].delayMs).toBe(0);
       expect(ordered[0].type).toBe('bump');
-      expect(ordered[1].delayMs).toBe(100);
+      expect(ordered[1].delayMs).toBe(150);
       expect(ordered[1].type).toBe('damage');
-      expect(ordered[2].delayMs).toBe(300);
+      expect(ordered[2].delayMs).toBe(500);
       expect(ordered[2].type).toBe('bump');
-      expect(ordered[3].delayMs).toBe(400);
+      expect(ordered[3].delayMs).toBe(650);
       expect(ordered[3].type).toBe('damage');
     });
   });

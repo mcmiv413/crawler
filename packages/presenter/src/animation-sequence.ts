@@ -70,7 +70,7 @@ export function buildAnimationSequence(
     if (!attack) continue;
 
     const sequenceIndex = i;
-    const baseDelay = sequenceIndex * 300;
+    const baseDelay = sequenceIndex * 500;
 
     // Get attacker and defender positions
     const attackerPos = getEntityPosition(attack.event.attackerId, state);
@@ -105,7 +105,7 @@ export function buildAnimationSequence(
     mutableAnimations.push({
       type: 'damage',
       sequenceIndex,
-      delayMs: baseDelay + 100,
+      delayMs: baseDelay + 150,
       batchId,
       data: damageEntry,
     });
