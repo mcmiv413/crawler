@@ -45,17 +45,18 @@ export function buildAnimationSequence(
   // Generate unique batchId for this animation sequence
   const batchId = `batch-${Date.now()}-${Math.random().toString(36).slice(2)}`;
 
-  // Extract attack events with their speeds
-  const unsortedAttacks = events
+  // Extract attack events with their speeds and sort by speed descending (highest speed first)
+  let attacksWithSpeeds = events
     .filter((event): event is Extract<DomainEvent, { type: 'ATTACK_PERFORMED' }> => event.type === 'ATTACK_PERFORMED')
     .map((attackEvent) => ({
       attackerId: attackEvent.attackerId,
       speed: getEntitySpeed(attackEvent.attackerId, state),
       event: attackEvent,
     }));
-
-  // Sort by speed descending (highest speed first)
-  const attacksWithSpeeds = [...unsortedAttacks].sort((a, b) => b.speed - a.speed);
+  // Use spread to create a copy before sorting (mutable operation for performance)
+  // eslint-disable-next-line dungeon/no-array-mutation
+  const mutableSorted = [...attacksWithSpeeds].sort((a, b) => b.speed - a.speed);
+  attacksWithSpeeds = mutableSorted;
 
   // Create animation entries with timing
   const mutableAnimations: AnimatedEvent[] = [];
