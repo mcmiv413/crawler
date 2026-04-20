@@ -67,7 +67,7 @@ export function StatDetailModal({ breakdown, onClose }: StatDetailModalProps) {
       )}
 
       <div style={{ fontSize: 10, color: '#aaa', lineHeight: 1.4, borderTop: '1px solid #333', paddingTop: 6 }}>
-        {statDescriptions[breakdown.stat] || 'No description available.'}
+        {statDescriptions[breakdown.stat] ?? 'No description available.'}
       </div>
     </div>
   );
