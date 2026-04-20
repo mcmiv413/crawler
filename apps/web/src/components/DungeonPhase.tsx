@@ -1,7 +1,7 @@
 import React, { useState, useEffect, useMemo } from 'react';
-import type { GameView, CombatIndicatorEntry } from '@dungeon/presenter';
+import type { GameView, CombatIndicatorEntry, BumpAnimationEntry } from '@dungeon/presenter';
 import { VP_WIDTH, VP_HEIGHT } from '../utils/viewport.js';
-import { TAB_BAR_HEIGHT, COMBAT_INDICATOR_DURATION_MS } from '../config/ui-config.js';
+import { TAB_BAR_HEIGHT, COMBAT_INDICATOR_DURATION_MS, BUMP_ANIMATION_DURATION_MS } from '../config/ui-config.js';
 import { PlayerHud } from './PlayerHud.js';
 import { DungeonView } from './DungeonView.js';
 import { DungeonCanvas } from './DungeonCanvas.js';
@@ -14,6 +14,8 @@ import { ItemSpriteIcon } from './ItemSpriteIcon.js';
 import { useBreakpoint } from '../hooks/useBreakpoint.js';
 import { CombatIndicators } from './CombatIndicators.js';
 import { useCombatIndicators } from '../hooks/useCombatIndicators.js';
+import { BumpAnimations } from './BumpAnimations.js';
+import { useBumpAnimations } from '../hooks/useBumpAnimations.js';
 
 interface DungeonPhaseProps {
   view: GameView;
@@ -66,11 +68,13 @@ function MapDisplay({
   useSprites,
   containerRef,
   combatIndicators,
+  bumpAnimations,
 }: {
   map: any;
   useSprites: boolean;
   containerRef?: React.RefObject<HTMLDivElement | null>;
   combatIndicators?: readonly CombatIndicatorEntry[];
+  bumpAnimations?: readonly BumpAnimationEntry[];
 }) {
   const [vpTilesWidth, setVpTilesWidth] = useState(VP_WIDTH);
   const [vpTilesHeight, setVpTilesHeight] = useState(VP_HEIGHT);
@@ -120,6 +124,9 @@ function MapDisplay({
   // Hook to track combat indicators
   useCombatIndicators(combatIndicators ?? []);
 
+  // Hook to track bump animations
+  useBumpAnimations(bumpAnimations ?? []);
+
   if (!map) return null;
 
   const canvasPxWidth = vpTilesWidth * 24;
@@ -134,6 +141,12 @@ function MapDisplay({
       <div ref={displayContainerRef} style={{ flex: 1, minHeight: 0, overflow: 'hidden', marginBottom: 8, imageRendering: 'pixelated' as const, display: 'flex', alignItems: 'center', justifyContent: 'center', background: '#0a0a0a', position: 'relative' }}>
         <div style={{ width: canvasPxWidth, height: canvasPxHeight, position: 'relative' }}>
           {useSprites ? <DungeonCanvas map={map} vpTilesWidth={vpTilesWidth} vpTilesHeight={vpTilesHeight} /> : <DungeonView map={map} vpTilesWidth={vpTilesWidth} vpTilesHeight={vpTilesHeight} />}
+          <BumpAnimations
+            vpLeft={vpLeft}
+            vpTop={vpTop}
+            cellSize={CELL_SIZE}
+            duration={BUMP_ANIMATION_DURATION_MS}
+          />
           <CombatIndicators
             vpLeft={vpLeft}
             vpTop={vpTop}
@@ -194,7 +207,7 @@ export function DungeonPhase({
 
         {/* Dungeon map: dynamically sized above combat log */}
         <div ref={mapContainerRef} style={{ flex: 1, minHeight: 0, display: 'flex', flexDirection: 'column', marginBottom: 6 }}>
-          <MapDisplay map={view.map} useSprites={useSprites} containerRef={mapContainerRef} combatIndicators={view.combatIndicators ?? []} />
+          <MapDisplay map={view.map} useSprites={useSprites} containerRef={mapContainerRef} combatIndicators={view.combatIndicators ?? []} bumpAnimations={view.bumpAnimations ?? []} />
         </div>
 
         {/* Combat log: fixed 4 lines, always visible above action panel */}
@@ -258,7 +271,7 @@ export function DungeonPhase({
 
       {/* Dungeon map: dynamically sized above combat log */}
       <div ref={mapContainerRef} style={{ flex: 1, minHeight: 0, display: 'flex', flexDirection: 'column', marginBottom: 8 }}>
-        <MapDisplay map={view.map} useSprites={useSprites} containerRef={mapContainerRef} combatIndicators={view.combatIndicators ?? []} />
+        <MapDisplay map={view.map} useSprites={useSprites} containerRef={mapContainerRef} combatIndicators={view.combatIndicators ?? []} bumpAnimations={view.bumpAnimations ?? []} />
       </div>
 
       {/* Combat log: fixed 4 lines, always visible above action panel */}
