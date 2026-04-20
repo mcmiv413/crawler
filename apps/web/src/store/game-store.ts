@@ -16,6 +16,7 @@ interface GameStore {
   autoWalkPath: Position[];
   autoWalkKnownEnemyIds: Set<string>;
   debugLogging: boolean;
+  deathTransitioning: boolean;
 
   createGame: (seed?: number, playerName?: string) => Promise<void>;
   sendCommand: (command: unknown) => Promise<void>;
@@ -28,6 +29,8 @@ interface GameStore {
   toggleDebugLogging: () => Promise<void>;
 }
 
+let deathTransitionTimeout: ReturnType<typeof setTimeout> | null = null;
+
 export const useGameStore = create<GameStore>((set, get) => ({
   gameId: null,
   view: null,
@@ -37,6 +40,7 @@ export const useGameStore = create<GameStore>((set, get) => ({
   autoWalkPath: [],
   autoWalkKnownEnemyIds: new Set(),
   debugLogging: false,
+  deathTransitioning: false,
 
   createGame: async (seed, playerName) => {
     set({ loading: true, error: null });
@@ -98,11 +102,36 @@ export const useGameStore = create<GameStore>((set, get) => ({
           timestamp: new Date().toISOString(),
         });
       }
-      set({
-        view: result.view,
-        combatLog: [...get().combatLog, ...result.view.combatLog].slice(-50),
-        loading: false,
-      });
+      const currentView = get().view;
+      const viewWithOptionalFields = result.view as Partial<typeof result.view>;
+      const isDeath =
+        currentView?.phase === 'dungeon' &&
+        result.view.phase === 'town' &&
+        (viewWithOptionalFields.deathContext?.killerName || viewWithOptionalFields.runResult === 'permadeath');
+
+      if (isDeath) {
+        if (deathTransitionTimeout) clearTimeout(deathTransitionTimeout);
+
+        set({
+          combatLog: [...get().combatLog, ...result.view.combatLog].slice(-50),
+          deathTransitioning: true,
+          loading: false,
+        });
+
+        deathTransitionTimeout = setTimeout(() => {
+          set({
+            view: result.view,
+            deathTransitioning: false,
+          });
+          deathTransitionTimeout = null;
+        }, 2000);
+      } else {
+        set({
+          view: result.view,
+          combatLog: [...get().combatLog, ...result.view.combatLog].slice(-50),
+          loading: false,
+        });
+      }
     } catch (err) {
       set({ error: (err as Error).message, loading: false });
     }
@@ -151,8 +180,10 @@ export const useGameStore = create<GameStore>((set, get) => ({
   },
 
   resetGame: () => {
+    if (deathTransitionTimeout) clearTimeout(deathTransitionTimeout);
+    deathTransitionTimeout = null;
     clearSession();
-    set({ gameId: null, view: null, combatLog: [], error: null, autoWalkPath: [], autoWalkKnownEnemyIds: new Set() });
+    set({ gameId: null, view: null, combatLog: [], error: null, autoWalkPath: [], autoWalkKnownEnemyIds: new Set(), deathTransitioning: false });
   },
 
   startAutoWalk: (path) => {
