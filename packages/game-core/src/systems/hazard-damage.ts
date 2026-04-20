@@ -35,5 +35,5 @@ export function hazardTypeToDamageType(hazardType: NonNullable<ObjectTemplate['h
     frost: 'frost',
     lightning: 'shock',
   };
-  return map[hazardType] ?? 'physical';
+  return map[hazardType];
 }

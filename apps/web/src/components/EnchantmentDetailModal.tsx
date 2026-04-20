@@ -14,7 +14,7 @@ export function EnchantmentDetailModal({ player, onClose }: EnchantmentDetailMod
 
   for (const item of player.equippedItems) {
     for (const ench of item.enchantments) {
-      const existing = enchantmentMap.get(ench.id) || [];
+      const existing = enchantmentMap.get(ench.id) ?? [];
       enchantmentMap.set(ench.id, [...existing, { name: item.name, spriteName: item.spriteName }]);
     }
   }

@@ -11,7 +11,7 @@ interface CombatLogViewProps {
 
 export function CombatLogView({ entries, debugMode, maxHeight, isMobile = false }: CombatLogViewProps) {
   // On mobile, fill available vertical space; on desktop, cap at COMBAT_LOG_MAX_HEIGHT
-  const computedMaxHeight = maxHeight !== undefined ? maxHeight : (isMobile ? 'none' : COMBAT_LOG_MAX_HEIGHT);
+  const computedMaxHeight = maxHeight ?? (isMobile ? 'none' : COMBAT_LOG_MAX_HEIGHT);
   const scrollRef = useRef<HTMLDivElement>(null);
   const { toggleDebugLogging } = useGameStore();
 

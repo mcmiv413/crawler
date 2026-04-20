@@ -94,7 +94,7 @@ export function tickPlayerStatuses(
       // Add debug event if debug mode enabled
       if (currentState.debugMode === true) {
         const debugEvent = createDamageDebugEvent(currentState.player.name, damageResult, 'dot');
-        if (debugEvent) {
+        if (debugEvent !== null) {
           allEvents = [...allEvents, { ...debugEvent, turnNumber }];
         }
       }
@@ -203,7 +203,7 @@ export function tickEnemyStatuses(
       // Add debug event if debug mode enabled
       if (currentState.debugMode === true) {
         const debugEvent = createDamageDebugEvent(enemy.name, damageResult, 'dot');
-        if (debugEvent) {
+        if (debugEvent !== null) {
           allEvents = [...allEvents, { ...debugEvent, turnNumber }];
         }
       }

@@ -350,7 +350,6 @@ function executeEnemyAction(
       const damageType = enemy.equipment?.weapon?.damageType ?? 'physical';
 
       // Player resistance from enchantments/armor (safe access)
-      // eslint-disable-next-line @typescript-eslint/no-unnecessary-condition
       const resistance = (state.player.stats.resistances ?? {})[damageType] ?? 0;
 
       // Check blink before resolving damage
@@ -451,7 +450,7 @@ function executeEnemyAction(
         // Add debug damage event if debug mode enabled
         if (newState.debugMode === true) {
           const debugEvent = createDamageDebugEvent(state.player.name, damageResult, 'attack');
-          if (debugEvent) {
+          if (debugEvent !== null) {
             resultEvents = [...resultEvents, { ...debugEvent, turnNumber: newState.turnNumber }];
           }
         }
@@ -477,7 +476,7 @@ function executeEnemyAction(
           // Add debug damage event if debug mode enabled
           if (newState.debugMode === true) {
             const debugEvent = createDamageDebugEvent(enemy.name, thornsResult, 'thorns');
-            if (debugEvent) {
+            if (debugEvent !== null) {
               resultEvents = [...resultEvents, { ...debugEvent, turnNumber: newState.turnNumber }];
             }
           }

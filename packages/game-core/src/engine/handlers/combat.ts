@@ -386,7 +386,7 @@ export function handleAttack(
         bypassDefense: false,
         bypassResistance: false,
         isCrit: result.criticalHit,
-        critMultiplier: result.criticalHit ? COMBAT.critMultiplier : 1,
+        critMultiplier: result.criticalHit === true ? COMBAT.critMultiplier : 1,
         timestamp: Date.now(),
         turnNumber: newState.turnNumber,
       };

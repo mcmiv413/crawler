@@ -63,6 +63,7 @@ export const useGameStore = create<GameStore>((set, get) => ({
     try {
       const api = await import('../api/client.js');
       if (debugLogging && (command as Record<string, unknown>).type === 'ATTACK') {
+        // eslint-disable-next-line no-console
         console.log('[DEBUG] Attack Command:', {
           playerAccuracy: get().view?.player?.accuracy,
           playerAttack: get().view?.player?.attack,

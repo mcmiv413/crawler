@@ -196,6 +196,7 @@ describe('Enemy status ticking', () => {
     // Poison should expire, burn should remain
     expect(ticked?.statuses).toHaveLength(1);
     expect(ticked?.statuses[0]?.id).toBe('burn');
+    // eslint-disable-next-line dungeon/no-numeric-toBe
     expect(ticked?.statuses[0]?.turnsRemaining).toBe(1);
   });
 });

@@ -22,8 +22,8 @@ export function DungeonCanvas({ map, vpTilesWidth, vpTilesHeight }: Props) {
   const { animations: bumpAnimations } = useBumpAnimationState(BUMP_ANIMATION_DURATION_MS);
 
   // Use provided dimensions or fall back to constants
-  const vp_width = vpTilesWidth || VP_WIDTH;
-  const vp_height = vpTilesHeight || VP_HEIGHT;
+  const vp_width = vpTilesWidth ?? VP_WIDTH;
+  const vp_height = vpTilesHeight ?? VP_HEIGHT;
   const cellSize = 24; // Fixed tile size
 
   useEffect(() => {

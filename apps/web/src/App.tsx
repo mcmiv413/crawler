@@ -44,7 +44,7 @@ function renderPanel(
   if (panelType === 'inventory') {
     return (
       <div key="inventory" style={panelStyle}>
-        <InventoryScreen inventory={view.inventory} phase={view.phase} sendCommand={sendCommand} onClose={onClosePanel || (() => {})} gold={view.player.gold} />
+        <InventoryScreen inventory={view.inventory} phase={view.phase} sendCommand={sendCommand} onClose={onClosePanel ?? (() => {})} gold={view.player.gold} />
       </div>
     );
   }
@@ -185,7 +185,7 @@ export function App() {
     }
 
     // Fallback to last active if we can't parse the log
-    const activeNemesis = promotedNemesis || view.town.nemeses.filter(n => n.isActive).pop();
+    const activeNemesis = promotedNemesis ?? view.town.nemeses.filter(n => n.isActive).pop();
 
     if (activeNemesis && !shownRisenNemesisIds.has(activeNemesis.id)) {
       return (
@@ -248,7 +248,7 @@ export function App() {
       // Find the quest that matches this log entry
       const newQuest = view.activeQuests.find(
         q => !shownQuestIds.has(q.id) && newQuestLog.text.includes(q.title),
-      ) || view.activeQuests.find(q => !shownQuestIds.has(q.id));
+      ) ?? view.activeQuests.find(q => !shownQuestIds.has(q.id));
 
       if (newQuest) {
         const giverNpc = view.town?.npcs.find(n => n.id === newQuest.giverNpcId);

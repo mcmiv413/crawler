@@ -22,7 +22,7 @@ import { simulatePersistedFloorTimeElapsed } from '../systems/enemy-respawn.js';
 /** D1: Check and complete quests that require reaching a specific floor depth */
 function completeFloorDepthQuests(
   state: GameState,
-  _newDepth: number, // eslint-disable-line @typescript-eslint/no-unused-vars
+  _newDepth: number,
 ): { state: GameState; events: DomainEvent[] } {
   // D1: Check for quests that require reaching this floor depth
   // TODO: Implement quest targetFloorDepth in Quest type (requires contracts update)

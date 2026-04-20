@@ -41,7 +41,7 @@ export function EquipmentOverview({ player }: EquipmentOverviewProps) {
           >
             <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: 2 }}>
               <div style={{ fontWeight: 'bold', color: '#6af', textTransform: 'capitalize' }}>
-                {slotLabels[item.slot] || item.slot}
+                {slotLabels[item.slot] ?? item.slot}
               </div>
               <div style={{ color: '#888', fontSize: 10 }}>{item.rarity}</div>
             </div>
