@@ -9,12 +9,6 @@ export interface AnimatedEvent {
   data: BumpAnimationEntry | CombatIndicatorEntry;
 }
 
-interface AttackerWithSpeed {
-  attackerId: EntityId;
-  speed: number;
-  event: Extract<DomainEvent, { type: 'ATTACK_PERFORMED' }>;
-}
-
 function getEntitySpeed(id: EntityId, state: GameState): number {
   if (state.run == null) return 0;
   if (id === state.player.id) return state.player.stats.speed;
