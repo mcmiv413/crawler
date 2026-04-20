@@ -2,6 +2,15 @@ import type { MapView, MapCellView, EntityView } from '@dungeon/presenter';
 import { CELL_SIZE } from '../config/ui-config.js';
 import { spriteRegistry } from './sprite-registry.js';
 
+interface BumpAnimationState {
+  id: string;
+  attackerId: string;
+  defenderId: string;
+  attackerPos: { x: number; y: number };
+  defenderPos: { x: number; y: number };
+  progress: number;
+}
+
 /** Draw a single tile sprite or ASCII fallback onto the canvas. */
 function drawCell(
   ctx: CanvasRenderingContext2D,
@@ -40,13 +49,18 @@ function drawCell(
   }
 }
 
-/** Draw an entity sprite or ASCII fallback. */
+/** Draw an entity sprite or ASCII fallback, with optional animation offset. */
 function drawEntity(
   ctx: CanvasRenderingContext2D,
   entity: EntityView,
   screenX: number,
   screenY: number,
+  offsetX: number = 0,
+  offsetY: number = 0,
 ): void {
+  const finalX = screenX + offsetX;
+  const finalY = screenY + offsetY;
+
   // Use entity's atlas name if available (enemies, items, objects)
   let sprite = null;
   if ('spriteName' in entity && entity.spriteName) {
@@ -58,14 +72,14 @@ function drawEntity(
 
   if (sprite) {
     const { image, rect } = sprite;
-    ctx.drawImage(image, rect.x, rect.y, rect.w, rect.h, screenX, screenY, CELL_SIZE, CELL_SIZE);
+    ctx.drawImage(image, rect.x, rect.y, rect.w, rect.h, finalX, finalY, CELL_SIZE, CELL_SIZE);
   } else {
     // ASCII fallback
     ctx.fillStyle = entity.color;
     ctx.font = `${CELL_SIZE - 2}px monospace`;
     ctx.textAlign = 'center';
     ctx.textBaseline = 'middle';
-    ctx.fillText(entity.ascii, screenX + CELL_SIZE / 2, screenY + CELL_SIZE / 2);
+    ctx.fillText(entity.ascii, finalX + CELL_SIZE / 2, finalY + CELL_SIZE / 2);
   }
 }
 
@@ -77,6 +91,7 @@ export function renderMap(
   vpTop: number,
   vpWidth: number,
   vpHeight: number,
+  bumpAnimations: BumpAnimationState[] = [],
 ): void {
   // Clear canvas
   ctx.clearRect(0, 0, vpWidth * CELL_SIZE, vpHeight * CELL_SIZE);
@@ -92,6 +107,12 @@ export function renderMap(
   const entityLookup = new Map<string, EntityView>();
   for (const entity of map.entities) {
     entityLookup.set(`${entity.x},${entity.y}`, entity);
+  }
+
+  // Build bump animation lookup by attackerId
+  const bumpLookup = new Map<string, BumpAnimationState>();
+  for (const anim of bumpAnimations) {
+    bumpLookup.set(anim.attackerId, anim);
   }
 
   // Draw cells then entities
@@ -110,13 +131,26 @@ export function renderMap(
       if (cell.visibility === 'visible') {
         const entity = entityLookup.get(key);
         if (entity) {
-          drawEntity(ctx, entity, screenX, screenY);
+          // Check if entity is in a bump animation
+          const bump = bumpLookup.get(entity.id);
+          let offsetX = 0;
+          let offsetY = 0;
+
+          if (bump) {
+            // Lunge 50% of the way toward the target, then snap back
+            const distance = 0.5;
+            const easeProgress = bump.progress < 0.5 ? bump.progress * 2 : 2 - bump.progress * 2;
+            offsetX = (bump.defenderPos.x - bump.attackerPos.x) * CELL_SIZE * distance * easeProgress;
+            offsetY = (bump.defenderPos.y - bump.attackerPos.y) * CELL_SIZE * distance * easeProgress;
+          }
+
+          drawEntity(ctx, entity, screenX, screenY, offsetX, offsetY);
 
           // Draw gold border for nemesis enemies
           if (entity.isNemesis) {
             ctx.strokeStyle = '#ffd700';
             ctx.lineWidth = 2;
-            ctx.strokeRect(screenX + 1, screenY + 1, CELL_SIZE - 2, CELL_SIZE - 2);
+            ctx.strokeRect(screenX + offsetX + 1, screenY + offsetY + 1, CELL_SIZE - 2, CELL_SIZE - 2);
           }
         }
       }
