@@ -198,6 +198,7 @@ export function resolveEnemyAbility(
       damageType: result.damageType,
       hit: result.hit,
       critical: result.criticalHit,
+      position: state.player.position,
       timestamp: Date.now(),
       turnNumber: state.turnNumber,
     }];

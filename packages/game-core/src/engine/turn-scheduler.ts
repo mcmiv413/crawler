@@ -387,6 +387,7 @@ function executeEnemyAction(
         damageType: result.damageType,
         hit: result.hit,
         critical: result.criticalHit,
+        position: state.player.position,
         reason: debugReason,
         missReason: result.missReason,
         timestamp: Date.now(),
