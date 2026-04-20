@@ -66,8 +66,7 @@ export interface GameView {
   readonly player: PlayerHudView;
   readonly map: MapView | null;
   readonly combatLog: readonly CombatLogEntry[];
-  readonly combatIndicators: readonly CombatIndicatorEntry[];
-  readonly bumpAnimations: readonly BumpAnimationEntry[];
+  readonly animatedEvents: readonly import('./animation-sequence.js').AnimatedEvent[];
   readonly availableActions: readonly AvailableAction[];
   readonly town: TownView | null;
   readonly inventory: InventoryView;

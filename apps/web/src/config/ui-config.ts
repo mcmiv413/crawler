@@ -57,8 +57,8 @@ export const COMBAT_LOG_MAX_HEIGHT = 250;
 /** Number of combat log entries shown in the dungeon mini-log. */
 export const COMBAT_LOG_MINI_ENTRIES = 4;
 
-/** Duration (ms) a combat indicator floats before fading out. */
-export const COMBAT_INDICATOR_DURATION_MS = 1500;
+/** Duration (ms) a combat indicator floats and is visible before fading out. */
+export const COMBAT_INDICATOR_FADEOUT_MS = 1500;
 
 /** Duration (ms) of bump attack animation (attacker lunges toward target). */
 export const BUMP_ANIMATION_DURATION_MS = 150;
