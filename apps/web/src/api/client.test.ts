@@ -97,6 +97,7 @@ class GameViewBuilder {
       inspectableEntities: [],
       recentlyDefeatedNemesis: null,
       debugMode: false,
+      animatedEvents: [],
     };
   }
 }

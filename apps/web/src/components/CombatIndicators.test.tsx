@@ -1,5 +1,6 @@
 import { render, screen, waitFor } from '@testing-library/react';
 import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest';
+import { act } from '@testing-library/react';
 import React from 'react';
 import { CombatIndicators, emitCombatIndicator } from './CombatIndicators.js';
 
@@ -11,7 +12,6 @@ describe('CombatIndicators', () => {
   it('should render without crashing', () => {
     const { container } = render(
       <CombatIndicators
-        entities={[{ id: 'enemy1', x: 5, y: 5, ascii: 'G', color: '#f00', name: 'Goblin', type: 'enemy' as const, templateId: 'goblin' }]}
         vpLeft={0}
         vpTop={0}
         cellSize={24}
@@ -24,7 +24,6 @@ describe('CombatIndicators', () => {
   it('should render floating labels when indicators are emitted', async () => {
     render(
       <CombatIndicators
-        entities={[{ id: 'enemy1', x: 5, y: 5, ascii: 'G', color: '#f00', name: 'Goblin', type: 'enemy' as const, templateId: 'goblin' }]}
         vpLeft={0}
         vpTop={0}
         cellSize={24}
@@ -47,7 +46,6 @@ describe('CombatIndicators', () => {
   it('should apply correct styling for damage indicators', async () => {
     render(
       <CombatIndicators
-        entities={[]}
         vpLeft={0}
         vpTop={0}
         cellSize={24}
@@ -69,7 +67,6 @@ describe('CombatIndicators', () => {
   it('should apply correct styling for heal indicators', async () => {
     render(
       <CombatIndicators
-        entities={[]}
         vpLeft={0}
         vpTop={0}
         cellSize={24}
@@ -91,7 +88,6 @@ describe('CombatIndicators', () => {
   it('should apply correct styling for status indicators', async () => {
     render(
       <CombatIndicators
-        entities={[]}
         vpLeft={0}
         vpTop={0}
         cellSize={24}
@@ -113,7 +109,6 @@ describe('CombatIndicators', () => {
   it('should position labels correctly based on viewport', async () => {
     render(
       <CombatIndicators
-        entities={[]}
         vpLeft={2}
         vpTop={2}
         cellSize={24}
@@ -121,15 +116,17 @@ describe('CombatIndicators', () => {
       />,
     );
 
-    emitCombatIndicator(5, 5, '-15', 'damage');
+    act(() => {
+      emitCombatIndicator(5, 5, '-15', 'damage');
+    });
 
     await waitFor(
       () => {
         const label = screen.getByText('-15');
-        // Label should be positioned at (5-2)*24 + 12 = 84px from left, same for top
+        // Label should be positioned at (5-2)*24 + 24 = 96px from left, same for top
         const style = label.getAttribute('style');
         expect(style).toContain('left');
-        expect(style).toContain('84px');
+        expect(style).toContain('96px');
       },
       { timeout: 2000 },
     );
@@ -138,7 +135,6 @@ describe('CombatIndicators', () => {
   it('should handle multiple concurrent indicators', async () => {
     render(
       <CombatIndicators
-        entities={[]}
         vpLeft={0}
         vpTop={0}
         cellSize={24}
@@ -163,7 +159,6 @@ describe('CombatIndicators', () => {
   it('should have correct text shadow styling', async () => {
     render(
       <CombatIndicators
-        entities={[]}
         vpLeft={0}
         vpTop={0}
         cellSize={24}
@@ -171,12 +166,14 @@ describe('CombatIndicators', () => {
       />,
     );
 
-    emitCombatIndicator(5, 5, '-15', 'damage');
+    act(() => {
+      emitCombatIndicator(5, 5, '-15', 'damage');
+    });
 
     await waitFor(
       () => {
         const label = screen.getByText('-15');
-        expect(label).toHaveStyle({ textShadow: '0 0 2px #000, 0 0 4px #000' });
+        expect(label).toHaveStyle({ textShadow: '0 0 3px #000, 0 0 6px #000, 0 0 2px rgba(0,0,0,0.8)' });
       },
       { timeout: 2000 },
     );
@@ -185,7 +182,6 @@ describe('CombatIndicators', () => {
   it('should not allow pointer events on labels', async () => {
     render(
       <CombatIndicators
-        entities={[]}
         vpLeft={0}
         vpTop={0}
         cellSize={24}
@@ -227,7 +223,6 @@ describe('CombatIndicators', () => {
   it('should use monospace font for labels', async () => {
     render(
       <CombatIndicators
-        entities={[]}
         vpLeft={0}
         vpTop={0}
         cellSize={24}

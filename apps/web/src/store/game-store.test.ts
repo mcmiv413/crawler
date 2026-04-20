@@ -91,6 +91,7 @@ function createMockGameView(overrides?: Partial<GameView>): GameView {
     inspectableEntities: [],
     recentlyDefeatedNemesis: null,
     debugMode: false,
+    animatedEvents: [],
   };
 
   return { ...baseView, ...overrides };
