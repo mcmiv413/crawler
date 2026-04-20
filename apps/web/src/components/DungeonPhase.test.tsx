@@ -98,6 +98,7 @@ const createMockGameView = (overrides?: Partial<GameView>): GameView => ({
   inspectableEntities: [],
   recentlyDefeatedNemesis: null,
   debugMode: false,
+  animatedEvents: [],
   ...overrides,
 });
 

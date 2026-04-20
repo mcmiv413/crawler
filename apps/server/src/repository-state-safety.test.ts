@@ -194,6 +194,7 @@ describe('Repository: State Safety', () => {
           damageType: 'physical' as const,
           hit: true,
           critical: false,
+          position: { x: 0, y: 0 },
         },
       ];
       const eventsB: DomainEvent[] = [
@@ -299,6 +300,7 @@ describe('Repository: State Safety', () => {
           damageType: 'physical' as const,
           hit: true,
           critical: false,
+          position: { x: 0, y: 0 },
         },
         {
           type: 'ENTITY_DIED' as const,
@@ -346,6 +348,7 @@ describe('Repository: State Safety', () => {
         damageType: 'physical' as const,
         hit: true,
         critical: false,
+        position: { x: 0, y: 0 },
       }));
 
       await repo.appendEvents(gameId, manyEvents);
@@ -378,6 +381,7 @@ describe('Repository: State Safety', () => {
           damageType: 'physical' as const,
           hit: true,
           critical: false,
+          position: { x: 0, y: 0 },
         },
       ];
       const batch2: DomainEvent[] = [
@@ -568,6 +572,7 @@ describe('Repository: State Safety', () => {
           damageType: 'physical' as const,
           hit: true,
           critical: false,
+          position: { x: 0, y: 0 },
         },
       ];
       const batch2: DomainEvent[] = [
@@ -691,6 +696,7 @@ describe('Repository: State Safety', () => {
         damageType: 'physical' as const,
         hit: true,
         critical: false,
+        position: { x: 0, y: 0 },
       }));
 
       await repo.appendEvents(gameId, manyEvents);

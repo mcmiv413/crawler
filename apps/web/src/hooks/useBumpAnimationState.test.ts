@@ -35,8 +35,8 @@ describe('useBumpAnimationState', () => {
     });
 
     expect(result.current.animations).toHaveLength(1);
-    expect(result.current.animations[0].attackerId).toBe('player-1');
-    expect(result.current.animations[0].defenderId).toBe('enemy-1');
+    expect(result.current.animations[0]!.attackerId).toBe('player-1');
+    expect(result.current.animations[0]!.defenderId).toBe('enemy-1');
   });
 
   it('removes animation after duration expires', () => {
@@ -80,7 +80,7 @@ describe('useBumpAnimationState', () => {
       window.dispatchEvent(event);
     });
 
-    const animation = result.current.animations[0];
+    const animation = result.current.animations[0]!;
     expect(animation.progress).toBeDefined();
     expect(animation.progress).toBeGreaterThanOrEqual(0);
     expect(animation.progress).toBeLessThanOrEqual(1);
@@ -102,13 +102,13 @@ describe('useBumpAnimationState', () => {
       window.dispatchEvent(event);
     });
 
-    const initialProgress = result.current.animations[0].progress;
+    const initialProgress = result.current.animations[0]!.progress;
 
     act(() => {
       vi.advanceTimersByTime(100);
     });
 
-    const midProgress = result.current.animations[0].progress;
+    const midProgress = result.current.animations[0]!.progress;
     expect(midProgress).toBeGreaterThan(initialProgress);
   });
 
