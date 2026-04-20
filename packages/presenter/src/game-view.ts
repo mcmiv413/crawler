@@ -67,6 +67,7 @@ export interface GameView {
   readonly map: MapView | null;
   readonly combatLog: readonly CombatLogEntry[];
   readonly combatIndicators: readonly CombatIndicatorEntry[];
+  readonly bumpAnimations: readonly BumpAnimationEntry[];
   readonly availableActions: readonly AvailableAction[];
   readonly town: TownView | null;
   readonly inventory: InventoryView;
@@ -238,6 +239,13 @@ export interface CombatIndicatorEntry {
   readonly type: 'damage' | 'heal' | 'status' | 'gold';
   readonly x: number;
   readonly y: number;
+}
+
+export interface BumpAnimationEntry {
+  readonly attackerId: import('@dungeon/contracts').EntityId;
+  readonly defenderId: import('@dungeon/contracts').EntityId;
+  readonly attackerPos: { readonly x: number; readonly y: number };
+  readonly defenderPos: { readonly x: number; readonly y: number };
 }
 
 export interface AvailableAction {

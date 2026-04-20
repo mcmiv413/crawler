@@ -1,7 +1,7 @@
 import Fastify, { type FastifyInstance } from 'fastify';
 import cors from '@fastify/cors';
 import { GameEngine } from '@dungeon/core';
-import { buildGameView, formatEvents, buildCombatIndicators } from '@dungeon/presenter';
+import { buildGameView, formatEvents, buildCombatIndicators, buildBumpAnimations } from '@dungeon/presenter';
 import { GameCommandSchema, CreateGameSchema, SchemaVersionMismatchError, SchemaParseError, getSchemaVersionErrorMessage } from '@dungeon/contracts';
 import type { GameCommand, EntityId, GameState, RunMetrics } from '@dungeon/contracts';
 import { InMemoryRepository } from './in-memory-repository.js';
@@ -249,10 +249,11 @@ export async function buildApp(): Promise<FastifyInstance> {
     const view = buildGameView(finalState);
     const combatLog = formatEvents(result.events);
     const combatIndicators = buildCombatIndicators(result.events, finalState);
+    const bumpAnimations = buildBumpAnimations(result.events, finalState);
     const serializedState = serializeState(finalState);
 
     return {
-      view: { ...view, combatLog, combatIndicators },
+      view: { ...view, combatLog, combatIndicators, bumpAnimations },
       events: result.events,
       runEnded: result.runEnded,
       serializedState,
@@ -413,8 +414,9 @@ export async function buildApp(): Promise<FastifyInstance> {
       const events = await repo.getRecentEvents(request.params.id as EntityId, 20);
       const combatLog = formatEvents(events);
       const combatIndicators = buildCombatIndicators(events, state);
+      const bumpAnimations = buildBumpAnimations(events, state);
 
-      return { ...view, combatLog, combatIndicators };
+      return { ...view, combatLog, combatIndicators, bumpAnimations };
     } catch (error) {
       if (error instanceof SchemaVersionMismatchError) {
         return reply.code(400).send({
