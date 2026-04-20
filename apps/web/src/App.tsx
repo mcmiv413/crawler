@@ -4,6 +4,7 @@ import { useKeyboard } from './hooks/useKeyboard.js';
 import { useAutoWalk } from './hooks/useAutoWalk.js';
 import { useBreakpoint } from './hooks/useBreakpoint.js';
 import { useDelayedVisibility } from './hooks/useDelayedVisibility.js';
+import { useDelayedPhaseTransition } from './hooks/useDelayedPhaseTransition.js';
 import { TAB_BAR_HEIGHT } from './config/ui-config.js';
 import { StartScreen } from './components/StartScreen.js';
 import { TownPhase } from './components/TownPhase.js';
@@ -79,6 +80,9 @@ export function App() {
   const [shownSlainNemesisIds, setShownSlainNemesisIds] = useState<Set<string>>(new Set());
   const [shownQuestIds, setShownQuestIds] = useState<Set<string>>(new Set());
   const [sessionChecked, setSessionChecked] = useState(false);
+
+  // Delay phase transitions to keep dungeon/town visible while overlays appear
+  const { displayPhase } = useDelayedPhaseTransition(view?.phase ?? 'dungeon', 2000);
 
   // Delayed visibility for overlay screens (2 second delay to show final combat state)
   const { isVisible: showDeathNotification } = useDelayedVisibility(
@@ -160,12 +164,12 @@ export function App() {
   }
 
   // Game over phase (full screen, no mobile nav)
-  if (view.phase === 'game_over') {
+  if (displayPhase === 'game_over') {
     return <GameOverPhase view={view} combatLog={combatLog} error={error} onNewGame={() => { resetGame(); createGame(undefined, view.player.name); }} />;
   }
 
   // Nemesis risen screen (when a new nemesis is created from your death) — with 2s delay
-  if (showNemesisRisen && view.phase === 'town' && view.town?.runSummaryStats?.nemesisPromoted) {
+  if (showNemesisRisen && displayPhase === 'town' && view.town?.runSummaryStats?.nemesisPromoted) {
     // Extract nemesis name from combat log entry: "A nemesis rises: <Name> <Title> — ..."
     const nemesisRisenEntry = combatLog.find(e => e.text.includes('A nemesis rises:'));
     let promotedNemesis: typeof view.town.nemeses[0] | undefined;
@@ -213,7 +217,7 @@ export function App() {
   }
 
   // Death notification modal (when you die without nemesis promotion) — with 2s delay
-  if (showDeathNotification && view.phase === 'town' && view.deathContext && !view.town?.runSummaryStats?.nemesisPromoted) {
+  if (showDeathNotification && displayPhase === 'town' && view.deathContext && !view.town?.runSummaryStats?.nemesisPromoted) {
     const notShownDeaths = view.deathContext ? 1 : 0; // Track if we've shown this death
     if (notShownDeaths > 0 && !shownRisenNemesisIds.has('death-notification')) {
       return (
@@ -228,7 +232,7 @@ export function App() {
   }
 
   // Quest assigned screen (when an NPC gives you a quest)
-  if (view.phase === 'town') {
+  if (displayPhase === 'town') {
     // Find the most recent QUEST_ASSIGNED log entry that hasn't been shown
     const newQuestLog = combatLog.find(
       entry =>
@@ -275,7 +279,7 @@ export function App() {
       <div style={{ flex: 1, minHeight: 0, display: 'flex', flexDirection: isMobile ? 'column' : 'row' }}>
         {showMainContent && (
           <>
-            {view.phase === 'town' ? (
+            {displayPhase === 'town' ? (
               <TownPhase
                 view={view}
                 combatLog={combatLog}
