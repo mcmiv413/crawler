@@ -3,6 +3,7 @@ import { useGameStore } from './store/game-store.js';
 import { useKeyboard } from './hooks/useKeyboard.js';
 import { useAutoWalk } from './hooks/useAutoWalk.js';
 import { useBreakpoint } from './hooks/useBreakpoint.js';
+import { useDelayedVisibility } from './hooks/useDelayedVisibility.js';
 import { TAB_BAR_HEIGHT } from './config/ui-config.js';
 import { StartScreen } from './components/StartScreen.js';
 import { TownPhase } from './components/TownPhase.js';
@@ -79,6 +80,20 @@ export function App() {
   const [shownQuestIds, setShownQuestIds] = useState<Set<string>>(new Set());
   const [sessionChecked, setSessionChecked] = useState(false);
 
+  // Delayed visibility for overlay screens (2 second delay to show final combat state)
+  const { isVisible: showDeathNotification } = useDelayedVisibility(
+    !!(view?.phase === 'town' && view?.deathContext && !view?.town?.runSummaryStats?.nemesisPromoted),
+    2000
+  );
+  const { isVisible: showNemesisRisen } = useDelayedVisibility(
+    !!(view?.phase === 'town' && view?.town?.runSummaryStats?.nemesisPromoted),
+    2000
+  );
+  const { isVisible: showNemesisSlain } = useDelayedVisibility(
+    !!view?.recentlyDefeatedNemesis,
+    2000
+  );
+
   useEffect(() => {
     if (!gameId) {
       restoreSession().finally(() => setSessionChecked(true));
@@ -149,8 +164,8 @@ export function App() {
     return <GameOverPhase view={view} combatLog={combatLog} error={error} onNewGame={() => { resetGame(); createGame(undefined, view.player.name); }} />;
   }
 
-  // Nemesis risen screen (when a new nemesis is created from your death)
-  if (view.phase === 'town' && view.town?.runSummaryStats?.nemesisPromoted) {
+  // Nemesis risen screen (when a new nemesis is created from your death) — with 2s delay
+  if (showNemesisRisen && view.phase === 'town' && view.town?.runSummaryStats?.nemesisPromoted) {
     // Extract nemesis name from combat log entry: "A nemesis rises: <Name> <Title> — ..."
     const nemesisRisenEntry = combatLog.find(e => e.text.includes('A nemesis rises:'));
     let promotedNemesis: typeof view.town.nemeses[0] | undefined;
@@ -182,9 +197,9 @@ export function App() {
     }
   }
 
-  // Nemesis slain screen (when you defeat a nemesis in dungeon)
-  // Show immediately when nemesis is defeated, in any phase
-  if (view.recentlyDefeatedNemesis && !shownSlainNemesisIds.has(view.recentlyDefeatedNemesis.id)) {
+  // Nemesis slain screen (when you defeat a nemesis in dungeon) — with 2s delay
+  // Show after delay when nemesis is defeated, in any phase
+  if (showNemesisSlain && view.recentlyDefeatedNemesis && !shownSlainNemesisIds.has(view.recentlyDefeatedNemesis.id)) {
     const defeatedNemesis = view.recentlyDefeatedNemesis;
     return (
       <NemesisSlainScreen
@@ -197,8 +212,8 @@ export function App() {
     );
   }
 
-  // Death notification modal (when you die without nemesis promotion)
-  if (view.phase === 'town' && view.deathContext && !view.town?.runSummaryStats?.nemesisPromoted) {
+  // Death notification modal (when you die without nemesis promotion) — with 2s delay
+  if (showDeathNotification && view.phase === 'town' && view.deathContext && !view.town?.runSummaryStats?.nemesisPromoted) {
     const notShownDeaths = view.deathContext ? 1 : 0; // Track if we've shown this death
     if (notShownDeaths > 0 && !shownRisenNemesisIds.has('death-notification')) {
       return (
