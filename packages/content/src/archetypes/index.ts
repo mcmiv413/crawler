@@ -1,24 +1,23 @@
+// Auto-generated — do not edit manually
 import type { ArchetypeDefinition } from '@dungeon/contracts';
-import { AGGRESSIVE_MELEE } from './aggressive-melee.js';
-import { SKITTISH_RANGED } from './skittish-ranged.js';
-import { CAUTIOUS_DEFENSIVE } from './cautious-defensive.js';
-import { AMBUSHER } from './ambusher.js';
-import { HAZARD_CREATOR } from './hazard-creator.js';
+import { aggressiveMelee } from './aggressive-melee.js';
+import { ambusher } from './ambusher.js';
+import { cautiousDefensive } from './cautious-defensive.js';
+import { hazardCreator } from './hazard-creator.js';
+import { skittishRanged } from './skittish-ranged.js';
 
-const archetypes: [string, ArchetypeDefinition][] = [
-  [AGGRESSIVE_MELEE.id, AGGRESSIVE_MELEE],
-  [SKITTISH_RANGED.id, SKITTISH_RANGED],
-  [CAUTIOUS_DEFENSIVE.id, CAUTIOUS_DEFENSIVE],
-  [AMBUSHER.id, AMBUSHER],
-  [HAZARD_CREATOR.id, HAZARD_CREATOR],
+const items: [string, ArchetypeDefinition][] = [
+  [aggressiveMelee.id, aggressiveMelee],
+  [ambusher.id, ambusher],
+  [cautiousDefensive.id, cautiousDefensive],
+  [hazardCreator.id, hazardCreator],
+  [skittishRanged.id, skittishRanged],
 ];
 
-export const ARCHETYPES: ReadonlyMap<string, ArchetypeDefinition> = new Map(archetypes);
+export const ARCHETYPES: ReadonlyMap<string, ArchetypeDefinition> = new Map(items);
 
 export {
-  AGGRESSIVE_MELEE,
-  SKITTISH_RANGED,
-  CAUTIOUS_DEFENSIVE,
-  AMBUSHER,
-  HAZARD_CREATOR,
+  aggressiveMelee, ambusher, cautiousDefensive, hazardCreator, skittishRanged,
 };
+
+// Add custom utilities below this line ↓
