@@ -41,4 +41,5 @@ mcp-config.json
 !readme.md
 !README.MD
 !readme.MD
+!docs/**/*.md
 .vercel
