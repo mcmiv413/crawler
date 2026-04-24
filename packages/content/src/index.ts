@@ -2,7 +2,7 @@ export * from './enemies/index.js';
 export * from './items/index.js';
 export * from './objects/index.js';
 export * from './biomes/index.js';
-export * from './statuses/definitions.js';
+export * from './statuses/index.js';
 export * from './balance/tables.js';
 export * from './fallback-text/combat-log.js';
 export * from './fallback-text/town.js';

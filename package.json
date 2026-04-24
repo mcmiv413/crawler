@@ -13,7 +13,7 @@
     "dev:server": "LM_HOST=192.168.1.38 LM_PORT=1234 pnpm --filter @dungeon/server dev",
     "dev:web": "pnpm --filter @dungeon/web dev",
     "dev": "pnpm run dev:server & pnpm run dev:web",
-    "validate": "pnpm lint && pnpm test && pnpm build",
+    "validate": "pnpm generate:indexes && pnpm lint && pnpm test && pnpm build",
     "validate:quick": "pnpm lint:eslint:cached --quiet && pnpm test:changed && pnpm build",
     "lint": "pnpm lint:prepare && pnpm lint:eslint:cached && pnpm run lint:types:all",
     "lint:prepare": "pnpm --filter eslint-plugin-dungeon build",
@@ -44,7 +44,8 @@
     "docker:up": "docker-compose up -d",
     "docker:down": "docker-compose down",
     "docker:restart": "docker-compose down && docker-compose up -d --build",
-    "parse-atlas": "tsx --tsconfig scripts/tsconfig.json scripts/parse-dawnlike-atlas.ts"
+    "parse-atlas": "tsx --tsconfig scripts/tsconfig.json scripts/parse-dawnlike-atlas.ts",
+    "generate:indexes": "tsx --tsconfig scripts/tsconfig.json scripts/generate-indexes.ts"
   },
   "devDependencies": {
     "@fast-check/vitest": "^0.1.0",

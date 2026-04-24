@@ -1,12 +1,19 @@
+// Auto-generated — do not edit manually
 import type { AmbientBehaviorProfile } from '@dungeon/contracts';
-import { WANDERER_PROFILE } from './wanderer.js';
-import { WALL_LURKER_PROFILE } from './wall-lurker.js';
-import { SWARMER_PROFILE } from './swarmer.js';
+import { swarmer } from './swarmer.js';
+import { wallLurker } from './wall-lurker.js';
+import { wanderer } from './wanderer.js';
 
-export const AMBIENT_PROFILES = new Map<string, AmbientBehaviorProfile>([
-  [WANDERER_PROFILE.id, WANDERER_PROFILE],
-  [WALL_LURKER_PROFILE.id, WALL_LURKER_PROFILE],
-  [SWARMER_PROFILE.id, SWARMER_PROFILE],
-]);
+const items: [string, AmbientBehaviorProfile][] = [
+  [swarmer.id, swarmer],
+  [wallLurker.id, wallLurker],
+  [wanderer.id, wanderer],
+];
 
-export { WANDERER_PROFILE, WALL_LURKER_PROFILE, SWARMER_PROFILE };
+export const AMBIENT_PROFILES: ReadonlyMap<string, AmbientBehaviorProfile> = new Map(items);
+
+export {
+  swarmer, wallLurker, wanderer,
+};
+
+// Add custom utilities below this line ↓
