@@ -51,6 +51,31 @@ assertFeatureChain(result, before, { eventType: 'ATTACK_PERFORMED' });
 ### AP-6: Comparative Tests
 Use high-vs-low comparisons instead of exact assertions for config-dependent values.
 
+### AP-7: Unvalidated Content References ❌
+```typescript
+// WRONG — quest template references item that doesn't exist
+export const myQuest: QuestTemplate = {
+  id: 'my_quest',
+  targetItemId: 'leather_armor',  // ❌ doesn't exist in ITEM_BY_ID
+  rewardGold: 50,
+};
+
+// RIGHT — verify item exists, or add contract test
+// 1. Check that item exists in packages/content/src/items/
+// 2. Add contract test validating all quest target IDs exist
+// See tests/contracts/content-cross-references.contract.test.ts for example
+```
+
+**When this matters:**
+- Your feature references content IDs (item IDs, enemy template IDs, ability IDs, etc.)
+- You use data from other packages (`@dungeon/content`, `@dungeon/contracts`)
+- Your feature would be "invisible" or "uncompletable" if a referenced ID doesn't exist
+
+**Prevention:**
+- Add a contract test validating all IDs exist (live config, not mocks)
+- Check the relevant `*_BY_ID` map or collection before merge
+- Use exact names from the source files (e.g., `plate_armor` not `leather_armor`)
+
 ---
 
 ## Key Helpers
@@ -106,6 +131,25 @@ dist.percentageInRange(80, 10, 40); // Check percentage in range
    - Balance: `tests/balance/my-balance.balance.test.ts`
 3. **Use correct imports** — builders for unit, live config for contract/integration/balance
 4. **Run** `pnpm test` to verify
+
+## When to Write Contract Tests
+
+Contract tests validate **config structure and integrity** using live configuration (not mocks).
+
+**Write a contract test when:**
+- Your feature references content IDs (items, enemies, abilities, biomes, etc.)
+- You want to catch broken references at CI time (not production)
+- You need to validate that all IDs in a feature actually exist in `@dungeon/content`
+- You're adding content that has dependencies (e.g., quest targets, enchantment IDs)
+
+**Example:** See `tests/contracts/content-cross-references.contract.test.ts` for how to validate that every quest's `targetItemId` and `targetEnemyTemplateId` actually exist.
+
+**Don't use contract tests for:**
+- Testing game logic (that's integration/unit)
+- Testing exact balance values (that's balance tests)
+- Testing behavior under different conditions (that's property tests)
+
+---
 
 ---
 

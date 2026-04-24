@@ -125,8 +125,34 @@ Before marking done:
 - [ ] **Format** — `formatEvent()` returns non-null, readable text
 - [ ] **View** — `buildGameView()` exposes data to frontend
 - [ ] **UI** — React component renders the view data
-- [ ] **Test** — `assertFeatureChain()` validates the chain
+- [ ] **Cross-Reference Validation** — All content IDs (items, enemies, abilities) actually exist
+- [ ] **Test** — `assertFeatureChain()` validates all 6 hops (including `entryCheck` and `uiCheck` if applicable)
 - [ ] **Validate** — `pnpm validate` passes
+- [ ] **Contract Test** — If your feature references content IDs, add a contract test to verify they exist
+
+---
+
+## Common Incomplete Feature Patterns
+
+**How the quest system shipped incomplete and how to avoid it:**
+
+| Symptom | Root Cause | Prevention |
+|---------|-----------|-----------|
+| "Quest works but player can't find items to complete it" | Quest targets non-existent item IDs (e.g., `leather_armor` instead of `plate_armor`) | Add cross-reference validation test: verify all IDs exist before merge |
+| "Feature works in test but crashes in production" | Test mocks data, doesn't validate references | Use contract tests to validate all IDs exist in live config |
+| "Player can't see how to trigger the feature" | Missing entry point validation in test | Use `entryCheck` in `assertFeatureChain()` to prove player can trigger it |
+| "Event emits but never shows in UI" | Missing UI render or view data | Use `uiCheck` in `assertFeatureChain()` to verify view data flows to UI |
+
+**Lesson from quest system failure:**
+The quest system shipped with 3 uncompletable quests because:
+- Guide had broken example IDs (`leather_armor` doesn't exist)
+- Test manually set quest status instead of validating gameplay
+- No contract test verified target IDs actually existed
+- `assertFeatureChain()` couldn't validate entry/UI hops
+
+**Fix**: See [adding-quest.md](./adding-quest.md) validation checklist for example of proper guards.
+
+---
 
 ---
 
