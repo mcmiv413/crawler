@@ -1,4 +1,3 @@
-import type { Quest } from '@dungeon/contracts';
 import type { QuestTemplate } from './types.js';
 
 export const huntDangerousEnemy: QuestTemplate = {

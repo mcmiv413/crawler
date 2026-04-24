@@ -31,3 +31,5 @@ export const AMBUSHER = {
     { abilityId: 'ambush', weight: 3, usageHp: 'anytime' },
   ],
 } as const satisfies ArchetypeDefinition;
+
+export const ambusher = AMBUSHER;

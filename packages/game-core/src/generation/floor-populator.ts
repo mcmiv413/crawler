@@ -1,7 +1,7 @@
 import type { DungeonFloor, EnemyInstance, ObjectInstance, Position } from '@dungeon/contracts';
 import { entityId, posKey } from '@dungeon/contracts';
 import type { EnemyTemplate, ObjectTemplate } from '@dungeon/contracts';
-import { MAP_GENERATION, getFloorScalingMultipliers, ENEMY_TEMPLATES, ENEMIES_BY_BIOME, OBJECT_TEMPLATES, AMBIENT_PROFILES, OBJECT_POOL } from '@dungeon/content';
+import { MAP_GENERATION, getFloorScalingMultipliers, ENEMY_TEMPLATES, ENEMIES_BY_BIOME, OBJECT_TEMPLATES, AMBIENT_PROFILES, OBJECT_POOL, dungeonOgre } from '@dungeon/content';
 import type { BiomeDefinition } from '@dungeon/content';
 import type { SeededRNG } from '../utils/rng.js';
 import { generateId } from '../utils/id.js';
@@ -81,7 +81,7 @@ export function populateFloor(
   // C3: Guarantee high-tier enemy on floor 5+ (adjusted by corruption modifier)
   const bossSpawnFloor = 5 + (worldMods?.bossFloorAdjust ?? 0);
   if (floor.depth >= bossSpawnFloor && !Array.from(enemies.values()).some(e => e.tier >= 3)) {
-    const bossTemplate = ENEMY_TEMPLATES.get('dungeon_ogre');
+    const bossTemplate = ENEMY_TEMPLATES.get(dungeonOgre.templateId);
     if (bossTemplate !== undefined) {
       const occupiedPositions = new Set(enemies.keys());
       const availablePositions = spawnPositions.filter(pos => !occupiedPositions.has(posKey(pos)));

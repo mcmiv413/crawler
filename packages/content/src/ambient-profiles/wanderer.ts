@@ -33,3 +33,5 @@ export const WANDERER_PROFILE: AmbientBehaviorProfile = {
     },
   ],
 };
+
+export const wanderer = WANDERER_PROFILE;

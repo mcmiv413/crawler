@@ -34,3 +34,5 @@ export const SWARMER_PROFILE: AmbientBehaviorProfile = {
     },
   ],
 };
+
+export const swarmer = SWARMER_PROFILE;

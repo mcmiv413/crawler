@@ -1,213 +1,336 @@
-# Testing Guide
+# RPG Testing Guide
 
-## Test Layers
+## Purpose
 
-| Layer | Location | Purpose | Config imports? |
-|-------|----------|---------|-----------------|
-| **Unit** | `src/**/*.test.ts` (colocated) | Single function/module | ❌ Use builders |
-| **Property** | `src/**/*.property.test.ts` | Prove contracts across random states | ❌ Use builders |
-| **Contract** | `tests/contracts/*.test.ts` | Config structure/integrity | ✅ Live config |
-| **Integration** | `tests/integration/*.test.ts` | Multi-step game flows | ✅ Real engine |
-| **Balance** | `tests/balance/*.test.ts` | Outcome distributions (100+ trials) | ✅ Real config |
-| **E2E** | `tests/e2e/*.spec.ts` | Critical user journeys | ✅ Real server+UI |
+Tests define required behavior, not current implementation.
 
----
+AI assistants are allowed to generate test scaffolding, but every test must be reviewed for:
+- correct layer
+- deterministic setup
+- meaningful assertions
+- player-visible outcome validation
+- no accidental coupling to tunable config
+
+## Test Layer Decision
+
+| Question | Layer | Location |
+|---|---|---|
+| Testing one pure function or module? | Unit | `src/**/*.test.ts` |
+| Testing invariants across many inputs? | Property | `src/**/*.property.test.ts` |
+| Validating live content/config integrity? | Contract | `tests/contracts/*.contract.test.ts` |
+| Testing multi-step engine behavior? | Integration | `tests/integration/*.integration.test.ts` |
+| Testing statistical tuning outcomes? | Balance | `tests/balance/*.balance.test.ts` |
+| Testing browser/user journeys? | E2E | `tests/e2e/*.spec.ts` |
+
+## Layer Rules
+
+| Layer | Live config? | Real engine? | Assert |
+|---|---:|---:|---|
+| Unit | No | No | Function behavior |
+| Property | No | No | Always-true invariants |
+| Contract | Yes | No | IDs, schemas, references |
+| Integration | Yes | Yes | Game-flow outcomes |
+| Balance | Yes | Yes | Distributions/ranges |
+| E2E | Yes | Yes | User-visible behavior |
+
+## Hard Rules
+
+1. No `Math.random()` in tests. Use `SeededRng`.
+2. No live config imports in unit/property tests. Use builders.
+3. No exact assertions on tunable values.
+4. No weak assertions such as `toBeDefined()` unless existence is the actual requirement.
+5. No state-only assertions for player-facing behavior.
+6. Any state change the player should notice must verify the full chain:
+   `state change → event emitted → event formatted → view exposes data`
+7. Any feature referencing content IDs must have contract coverage.
+8. Tests must validate intended behavior, not mirror implementation details.
+9. Do not mix layers. If a test needs `GameEngine`, it is not a unit test.
+10. Prefer one clear requirement per test.
 
 ## Anti-Patterns
 
-### AP-1: Exact Value Assertions ❌
-```typescript
-// WRONG — breaks on any tuning
+### Exact Tunable Values
+
+```ts
+// Wrong
 expect(calculateDamage(player, enemy)).toBe(25);
 
-// RIGHT — survives tuning
+// Right
 expect(calculateDamage(player, enemy)).toBeGreaterThan(0);
-```
+````
 
-### AP-2: Config Imports in Unit Tests ❌
-```typescript
-// WRONG — tight coupling to live config
+### Live Config in Unit Tests
+
+```ts
+// Wrong
 import { PLAYER_STATS } from '@dungeon/content';
 
-// RIGHT — use builders
+// Right
 const player = new PlayerBuilder().build();
 ```
 
-### AP-3: Mixed Test Layers ❌
-Don't use `GameEngine` in unit tests (that's integration). Don't test single functions in integration tests.
+### Unseeded Randomness
 
-### AP-4: Unseeded Randomness ❌
-Always use `SeededRng` — never `Math.random()`.
+```ts
+// Wrong
+const roll = Math.random();
 
-### AP-5: Missing Event Verification ❌
-```typescript
-// WRONG — state changes but player never sees it
-expect(result.state.player.health).toBeLessThan(before.health);
+// Right
+const rng = new SeededRng(42);
+```
 
-// RIGHT — verify full chain
+### Weak Assertions
+
+```ts
+// Wrong
+expect(result).toBeDefined();
+
+// Right
+expect(result.events).toContainEqual(
+  expect.objectContaining({ type: 'ATTACK_PERFORMED' }),
+);
+```
+
+### State Without Player-Visible Output
+
+```ts
+// Wrong
+expect(result.state.player.health).toBeLessThan(before.player.health);
+
+// Right
 assertFeatureChain(result, before, { eventType: 'ATTACK_PERFORMED' });
 ```
 
-### AP-6: Comparative Tests
-Use high-vs-low comparisons instead of exact assertions for config-dependent values.
+### Missing Content Contract
 
-### AP-7: Unvalidated Content References ❌
-```typescript
-// WRONG — quest template references item that doesn't exist
-export const myQuest: QuestTemplate = {
-  id: 'my_quest',
-  targetItemId: 'leather_armor',  // ❌ doesn't exist in ITEM_BY_ID
-  rewardGold: 50,
-};
+```ts
+// Wrong
+targetItemId: 'leather_armor'; // not verified
 
-// RIGHT — verify item exists, or add contract test
-// 1. Check that item exists in packages/content/src/items/
-// 2. Add contract test validating all quest target IDs exist
-// See tests/contracts/content-cross-references.contract.test.ts for example
+// Right
+expect(ITEM_BY_ID[quest.targetItemId]).toBeDefined();
 ```
 
-**When this matters:**
-- Your feature references content IDs (item IDs, enemy template IDs, ability IDs, etc.)
-- You use data from other packages (`@dungeon/content`, `@dungeon/contracts`)
-- Your feature would be "invisible" or "uncompletable" if a referenced ID doesn't exist
+## Required Helpers
 
-**Prevention:**
-- Add a contract test validating all IDs exist (live config, not mocks)
-- Check the relevant `*_BY_ID` map or collection before merge
-- Use exact names from the source files (e.g., `plate_armor` not `leather_armor`)
+### Builders
 
----
+Use builders for unit/property tests.
 
-## Key Helpers
+```ts
+const player = new PlayerBuilder()
+  .withStats({ attack: 15 })
+  .withLevel(5)
+  .build();
 
-### Builders (`tests/support/builders/`)
-```typescript
-const player = new PlayerBuilder().withStats({ attack: 15 }).withLevel(5).build();
-const enemy = new EnemyBuilder().withStats({ defense: 10 }).build();
+const enemy = new EnemyBuilder()
+  .withStats({ defense: 10 })
+  .build();
 ```
 
-### Seeded RNG (`tests/support/mocks/`)
-```typescript
-const rng = new SeededRng(42);  // Deterministic
+### Seeded RNG
+
+```ts
+const rng = new SeededRng(42);
 ```
 
-### Feature Chain Helper (`packages/presenter/src/testing/feature-chain-helpers.ts`)
-```typescript
-assertFeatureChain(result, beforeState, { eventType: 'ITEM_USED' });
-// Validates: state change → event emitted → event formatted → view exposes data
+### Feature Chain
+
+Use when behavior should be visible to the player.
+
+```ts
+assertFeatureChain(result, beforeState, {
+  eventType: 'ITEM_USED',
+});
 ```
 
-Additional helpers:
-- `expectEventEmitted()` — assert specific event types
-- `expectFormattedEvent()` — verify event formats to text
-- `expectStatChanged()` — verify stat changes
-- `expectAllEventsFormatted()` — all events can format
+Expected chain:
 
-### Balance Simulation (`tests/support/helpers/balance-simulator.ts`)
-```typescript
-const results = runSeededSuccessSimulation((rng) => playerWon(rng), 100);
+* state changed
+* event emitted
+* event formatted
+* view exposes the result
+
+### Balance Simulation
+
+```ts
+const results = runSeededSuccessSimulation(
+  (rng) => playerWon(rng),
+  100,
+);
+
 const winRate = successPercentage(results.trials);
+
 expect(winRate).toBeGreaterThanOrEqual(40);
 expect(winRate).toBeLessThanOrEqual(60);
 ```
 
-Distribution analysis:
-```typescript
+### Distribution Assertions
+
+```ts
 const dist = assertDistribution(values);
-dist.meanInRange(20, 30);           // Check mean
-dist.allInRange(5, 50);             // Check all values
-dist.percentageInRange(80, 10, 40); // Check percentage in range
+
+dist.meanInRange(20, 30);
+dist.allInRange(5, 50);
+dist.percentageInRange(80, 10, 40);
 ```
-
----
-
-## Writing a Test — Quick Start
-
-1. **Choose layer** based on what you're testing
-2. **Create file** in correct location:
-   - Unit: `src/my-module.test.ts` (colocated with source)
-   - Contract: `tests/contracts/my-contract.contract.test.ts`
-   - Integration: `tests/integration/my-flow.integration.test.ts`
-   - Balance: `tests/balance/my-balance.balance.test.ts`
-3. **Use correct imports** — builders for unit, live config for contract/integration/balance
-4. **Run** `pnpm test` to verify
 
 ## When to Write Contract Tests
 
-Contract tests validate **config structure and integrity** using live configuration (not mocks).
+Write a contract test when:
 
-**Write a contract test when:**
-- Your feature references content IDs (items, enemies, abilities, biomes, etc.)
-- You want to catch broken references at CI time (not production)
-- You need to validate that all IDs in a feature actually exist in `@dungeon/content`
-- You're adding content that has dependencies (e.g., quest targets, enchantment IDs)
+* a feature references item IDs, enemy IDs, ability IDs, biome IDs, quest IDs, or faction IDs
+* content in one package references content in another package
+* invalid references would make a feature invisible, broken, or impossible to complete
+* AI generated or modified content references
 
-**Example:** See `tests/contracts/content-cross-references.contract.test.ts` for how to validate that every quest's `targetItemId` and `targetEnemyTemplateId` actually exist.
+Contract tests should use live config.
 
-**Don't use contract tests for:**
-- Testing game logic (that's integration/unit)
-- Testing exact balance values (that's balance tests)
-- Testing behavior under different conditions (that's property tests)
+Contract tests should not test:
 
----
+* game logic
+* exact tuning values
+* multi-step player behavior
+* UI behavior
 
----
+## Templates
 
-## Unit Test Template
+### Unit Test
 
-```typescript
-import { describe, it, expect } from 'vitest';
+```ts
+import { describe, expect, it } from 'vitest';
 import { myFunction } from './my-module.js';
-import { PlayerBuilder, EnemyBuilder } from 'tests/support/builders';
+import { PlayerBuilder } from 'tests/support/builders';
 import { SeededRng } from 'tests/support/mocks';
 
 describe('myFunction', () => {
-  it('handles normal case', () => {
+  it('produces a valid outcome', () => {
     const player = new PlayerBuilder().build();
     const rng = new SeededRng(42);
+
     const result = myFunction(player, rng);
+
     expect(result).toBeGreaterThan(0);
   });
 });
 ```
 
-## Balance Test Template
+### Contract Test
 
-```typescript
-import { describe, it, expect } from 'vitest';
-import { runSeededSuccessSimulation, successPercentage } from 'tests/support/helpers';
+```ts
+import { describe, expect, it } from 'vitest';
+import { ITEM_BY_ID, ALL_QUESTS } from '@dungeon/content';
 
-describe('Balance: Combat', () => {
-  it('player wins 40-60% of tier-1 encounters', () => {
+describe('quest content references', () => {
+  it('all quest target item IDs exist', () => {
+    for (const quest of ALL_QUESTS) {
+      if (quest.targetItemId !== undefined) {
+        expect(ITEM_BY_ID[quest.targetItemId]).toBeDefined();
+      }
+    }
+  });
+});
+```
+
+### Integration Test
+
+```ts
+import { describe, it } from 'vitest';
+import { assertFeatureChain } from '@dungeon/presenter/testing';
+
+describe('combat flow', () => {
+  it('attacking an enemy produces a player-visible event', () => {
+    const before = createTestState();
+    const result = engine.attack(before, enemyId);
+
+    assertFeatureChain(result, before, {
+      eventType: 'ATTACK_PERFORMED',
+    });
+  });
+});
+```
+
+### Balance Test
+
+```ts
+import { describe, expect, it } from 'vitest';
+import {
+  runSeededSuccessSimulation,
+  successPercentage,
+} from 'tests/support/helpers';
+
+describe('balance: tier-1 combat', () => {
+  it('player win rate stays within expected bounds', () => {
     const results = runSeededSuccessSimulation(
       (rng) => simulateEncounter(rng),
       100,
     );
+
     const winRate = successPercentage(results.trials);
+
     expect(winRate).toBeGreaterThanOrEqual(40);
     expect(winRate).toBeLessThanOrEqual(60);
   });
 });
 ```
 
----
+### E2E Test
 
-## Before Committing a Test
+```ts
+import { expect, test } from '@playwright/test';
+import { GamePage } from './support/GamePage';
 
-- Uses correct layer (unit/contract/integration/balance)
-- No `Math.random()` — use SeededRng
-- No exact value assertions on config-dependent values
-- No live config imports in unit tests
-- Uses builders/fixtures for test objects
-- Asserts behavior, not implementation
-- `pnpm test` passes consistently
+test('player can complete a basic encounter', async ({ page }) => {
+  const game = new GamePage(page);
 
----
+  await game.start();
+  await game.attack();
 
-## E2E Tests
+  await expect(game.log).toContainText('ATTACK');
+});
+```
 
-**Location:** `tests/e2e/*.spec.ts` — Playwright
-**Pattern:** Page Object Model — `GamePage` class centralizes UI interactions
-**Run:** `pnpm test:e2e` (auto-starts server + web)
+## AI Assistant Rules
 
-See `tests/e2e/README.md` for E2E-specific patterns.
+When asking an AI assistant to write or modify tests, require it to:
+
+1. State the selected test layer.
+2. Explain why that layer is correct.
+3. Avoid live config unless the layer allows it.
+4. Use builders for unit/property tests.
+5. Use seeded RNG for all randomness.
+6. Avoid exact assertions on tunable values.
+7. Verify player-visible output for player-facing behavior.
+8. Add contract tests for new content references.
+9. Strengthen weak assertions.
+10. Run or name the exact validation command.
+
+Reject AI-generated tests that:
+
+* only assert existence
+* duplicate implementation logic
+* import live config in unit tests
+* pass with broken behavior
+* rely on random outcomes
+* freeze balance values unnecessarily
+
+## Validation Commands
+
+```bash
+pnpm test
+pnpm test:e2e
+pnpm validate
+```
+
+## Pre-Commit Checklist
+
+* Correct layer selected
+* No mixed-layer tests
+* No `Math.random()`
+* No live config in unit/property tests
+* Builders used where required
+* Assertions verify behavior
+* No exact assertions on tunable values
+* Player-visible behavior validates events/output
+* Content references covered by contract tests
+* Tests pass consistently

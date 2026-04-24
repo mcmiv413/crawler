@@ -1,5 +1,3 @@
-import type { Quest } from '@dungeon/contracts';
-
 export interface QuestTemplate {
   readonly id: string;
   readonly title: string;

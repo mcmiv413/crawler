@@ -426,7 +426,7 @@ export function decideAmbientAction(
  */
 export function preSimulateAmbientBehavior(
   enemies: Map<string, EnemyInstance>,
-  profiles: Map<string, AmbientBehaviorProfile>,
+  profiles: ReadonlyMap<string, AmbientBehaviorProfile>,
   rounds: number,
   seed: number,
 ): Map<string, EnemyInstance> {

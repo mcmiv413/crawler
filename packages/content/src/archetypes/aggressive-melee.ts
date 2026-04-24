@@ -39,3 +39,5 @@ export const AGGRESSIVE_MELEE = {
     { abilityId: 'crushing_blow', weight: 3, usageHp: 'critical' },
   ],
 } as const satisfies ArchetypeDefinition;
+
+export const aggressiveMelee = AGGRESSIVE_MELEE;

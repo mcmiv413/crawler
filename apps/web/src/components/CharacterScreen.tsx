@@ -81,7 +81,7 @@ function AbilityDetailPanel({
   player: PlayerHudView;
   onClose: () => void;
 }) {
-  const def = ABILITY_DEFINITIONS[abilityId as keyof typeof ABILITY_DEFINITIONS];
+  const def = ABILITY_DEFINITIONS.get(abilityId);
   if (!def) return null;
 
   // Check weapon requirement status
