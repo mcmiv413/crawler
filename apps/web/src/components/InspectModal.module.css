@@ -1,19 +1,17 @@
 /**
- * InspectModal.module.css - Styles for entity inspection overlay
- * Covers action bar and combat log space with close button
+ * InspectModal.module.css — Styles for entity inspection overlay.
+ * Colour values follow the DESIGN.md token palette. Keep in sync with
+ * `styles.ts` `colors` and DESIGN.md § Colour System.
  */
 
 .modalBackdrop {
   position: fixed;
-  top: 0;
-  left: 0;
-  right: 0;
-  bottom: 0;
+  inset: 0;
   background-color: rgba(0, 0, 0, 0.7);
   display: flex;
   align-items: flex-end;
   justify-content: center;
-  z-index: 2000;
+  z-index: 1000;
   animation: fadeIn 0.2s ease;
 }
 
@@ -27,17 +25,18 @@
 }
 
 .modalContainer {
-  background-color: #1a2a4a;
-  border: 1px solid #4a5a8a;
-  border-radius: 8px 8px 0 0;
+  /* colors.panel + colors.border */
+  background-color: #111318;
+  border: 1px solid #252830;
+  border-radius: 2px 2px 0 0;
   display: flex;
   flex-direction: column;
   width: 100%;
   max-width: 100%;
   height: 60vh;
   max-height: 80vh;
-  box-shadow: 0 -4px 16px rgba(0, 0, 0, 0.5);
   animation: slideInUp 0.3s ease-out;
+  font-family: 'IBM Plex Mono', 'Courier New', monospace;
 }
 
 @keyframes slideInUp {
@@ -55,37 +54,35 @@
   display: flex;
   justify-content: space-between;
   align-items: center;
-  padding: 1rem;
-  border-bottom: 1px solid #3a4a6a;
+  padding: 7px 12px;
+  /* colors.inset background, colors.border bottom */
+  background-color: #0a0b0e;
+  border-bottom: 1px solid #252830;
   flex-shrink: 0;
 }
 
 .title {
   margin: 0;
-  font-size: 1.125rem;
+  font-size: 11px;
   font-weight: 600;
-  color: #e0e8f0;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+  /* colors.label */
+  color: #7b8090;
 }
 
 .closeButton {
-  background: none;
-  border: 1px solid #4a5a8a;
-  border-radius: 4px;
-  color: #e0e8f0;
-  font-size: 1.25rem;
-  width: 2rem;
-  height: 2rem;
-  padding: 0;
+  background: transparent;
+  border: none;
+  color: #5a5e6b;
+  font-size: 14px;
+  padding: 2px 6px;
   cursor: pointer;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  transition: all 0.2s ease;
+  font-family: inherit;
 }
 
 .closeButton:hover {
-  background-color: #2a3a5a;
-  border-color: #6a7aaa;
+  color: #cdd0d6;
 }
 
 .content {
@@ -97,9 +94,10 @@
 
 .entityList {
   flex: 0 0 220px;
-  border-right: 1px solid #3a4a6a;
+  /* colors.border2 divider */
+  border-right: 1px solid #1e2228;
   overflow-y: auto;
-  background-color: #1a2a4a;
+  background-color: #111318;
 }
 
 .entityListItem {
@@ -110,22 +108,25 @@
   padding: 8px;
   border: none;
   background: transparent;
-  color: #ccc;
+  color: #cdd0d6;
   cursor: pointer;
-  border-bottom: 1px solid #2a3a5a;
+  /* colors.border2 row divider */
+  border-bottom: 1px solid #1e2228;
   transition: background-color 0.15s ease;
   text-align: left;
-  font-family: monospace;
-  font-size: 12px;
+  font-family: inherit;
+  font-size: 11px;
 }
 
 .entityListItem:hover {
-  background-color: #2a3a5a;
+  /* colors.card */
+  background-color: #181c23;
 }
 
 .entityListItem.selected {
-  background-color: #3a4a6a;
-  border-left: 3px solid #4af;
+  background-color: #181c23;
+  /* colors.steel accent for selection */
+  border-left: 3px solid #5a8fc7;
   padding-left: 5px;
 }
 
@@ -139,16 +140,16 @@
 }
 
 .entityName {
-  font-weight: bold;
+  font-weight: 600;
   white-space: nowrap;
   overflow: hidden;
   text-overflow: ellipsis;
-  color: #e0e8f0;
+  color: #cdd0d6;
 }
 
 .entityHealth {
   font-size: 10px;
-  color: #999;
+  color: #5a5e6b;
   margin-top: 2px;
 }
 
@@ -156,9 +157,9 @@
   flex: 1;
   padding: 12px;
   overflow-y: auto;
-  background-color: #1a2a4a;
-  color: #ccc;
-  font-family: monospace;
+  background-color: #111318;
+  color: #cdd0d6;
+  font-family: inherit;
   font-size: 12px;
 }
 
@@ -167,8 +168,9 @@
   align-items: center;
   justify-content: center;
   height: 100%;
-  color: #666;
+  color: #5a5e6b;
   text-align: center;
+  font-family: inherit;
 }
 
 .spriteSection {
@@ -177,19 +179,19 @@
   align-items: center;
   margin-bottom: 16px;
   padding-bottom: 16px;
-  border-bottom: 1px solid #2a3a5a;
+  border-bottom: 1px solid #1e2228;
 }
 
 .entityTitle {
   font-size: 14px;
-  font-weight: bold;
-  color: #e0e8f0;
+  font-weight: 600;
+  color: #cdd0d6;
   margin-top: 8px;
   text-align: center;
 }
 
 .description {
-  color: #999;
+  color: #7b8090;
   margin-bottom: 16px;
   line-height: 1.4;
   font-size: 11px;
@@ -198,13 +200,16 @@
 .statSection {
   margin-bottom: 12px;
   padding: 8px;
-  background-color: #0f1a2e;
+  /* colors.inset */
+  background-color: #0a0b0e;
+  border: 1px solid #1e2228;
   border-radius: 2px;
 }
 
 .statLabel {
-  color: #999;
-  font-size: 11px;
+  color: #7b8090;
+  font-size: 10px;
+  letter-spacing: 0.1em;
   text-transform: uppercase;
 }
 
@@ -216,15 +221,15 @@
 }
 
 .statBox {
-  background-color: #0f1a2e;
+  background-color: #0a0b0e;
   padding: 8px;
   border-radius: 2px;
-  border: 1px solid #2a3a5a;
+  border: 1px solid #1e2228;
 }
 
 .statValue {
-  color: #e0e8f0;
-  font-weight: bold;
+  color: #cdd0d6;
+  font-weight: 600;
   margin-top: 4px;
   font-size: 14px;
 }
@@ -233,16 +238,19 @@
   margin-bottom: 12px;
   font-size: 11px;
   padding: 6px 8px;
-  background-color: #0f1a2e;
+  background-color: #0a0b0e;
+  border: 1px solid #1e2228;
   border-radius: 2px;
 }
 
 .speedComparison.faster {
-  color: #ff6644;
+  /* colors.blood */
+  color: #c85a4a;
 }
 
 .speedComparison.slower {
-  color: #44ff44;
+  /* colors.lime */
+  color: #7dc940;
 }
 
 .infoRow {
@@ -251,16 +259,16 @@
   margin-bottom: 8px;
   font-size: 11px;
   padding: 6px 0;
-  border-bottom: 1px solid #2a3a5a;
+  border-bottom: 1px solid #1e2228;
 }
 
 .label {
-  color: #999;
+  color: #7b8090;
   min-width: 60px;
   flex-shrink: 0;
 }
 
 .value {
-  color: #ccc;
+  color: #cdd0d6;
   flex: 1;
 }

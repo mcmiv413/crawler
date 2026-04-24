@@ -1,4 +1,6 @@
 import React from 'react';
+import { btnPrimaryStyle, colors, FONT_STACK } from '../styles.js';
+import { ScreenOverlay } from './ui/index.js';
 
 interface StartScreenProps {
   playerName: string;
@@ -8,29 +10,50 @@ interface StartScreenProps {
   error: string | null;
 }
 
-export function StartScreen({ playerName, setPlayerName, onCreateGame, loading, error }: StartScreenProps) {
+export function StartScreen({
+  playerName,
+  setPlayerName,
+  onCreateGame,
+  loading,
+  error,
+}: StartScreenProps) {
   return (
-    <div style={{ padding: 20, fontFamily: 'monospace', color: '#ccc', background: '#111', minHeight: '100vh' }}>
-      <h1 style={{ color: '#ff8800' }}>Dungeon Crawler</h1>
-      <p>A turn-based dungeon crawler with persistent consequences.</p>
-      <div style={{ marginTop: 20 }}>
-        <label>
-          Name:{' '}
-          <input
-            value={playerName}
-            onChange={e => setPlayerName(e.target.value)}
-            style={{ background: '#222', color: '#ccc', border: '1px solid #444', padding: 4 }}
-          />
-        </label>
+    <ScreenOverlay>
+      <div style={{ maxWidth: 420, width: '100%' }}>
+        <h1 style={{ color: colors.gold, marginBottom: 8, fontSize: 24 }}>Dungeon Crawler</h1>
+        <p style={{ color: colors.muted, fontSize: 12, marginBottom: 20 }}>
+          A turn-based dungeon crawler with persistent consequences.
+        </p>
+
+        <div style={{ marginBottom: 12 }}>
+          <label style={{ fontSize: 12, color: colors.text }}>
+            Name:{' '}
+            <input
+              value={playerName}
+              onChange={(e) => setPlayerName(e.target.value)}
+              style={{
+                background: colors.inset,
+                color: colors.text,
+                border: `1px solid ${colors.border}`,
+                borderRadius: '2px',
+                padding: '6px 8px',
+                fontFamily: FONT_STACK,
+                fontSize: 12,
+              }}
+            />
+          </label>
+        </div>
+
         <button
           onClick={() => onCreateGame(undefined, playerName)}
           disabled={loading}
-          style={{ marginLeft: 10, padding: '4px 16px', background: '#333', color: '#ccc', border: '1px solid #666', cursor: 'pointer' }}
+          style={{ ...btnPrimaryStyle, minWidth: 160 }}
         >
           {loading ? 'Creating...' : 'New Game'}
         </button>
+
+        {error && <p style={{ color: colors.blood, marginTop: 12, fontSize: 12 }}>{error}</p>}
       </div>
-      {error && <p style={{ color: '#f44' }}>{error}</p>}
-    </div>
+    </ScreenOverlay>
   );
 }

@@ -41,32 +41,32 @@ describe('CombatLogView Component', () => {
   describe('Event Type Styling', () => {
     it('applies death color to death events', () => {
       const entries = [{ text: 'You died!', type: 'death' }];
-      const { container } = render(<CombatLogView entries={entries} debugMode={false} />);
-      const entry = container.querySelector('div[style*="color"]');
-      // Death color is #f44
-      expect(entry).toHaveStyle('color: #f44');
+      render(<CombatLogView entries={entries} debugMode={false} />);
+      const entry = screen.getByText('You died!');
+      // Death color is colors.blood (#c85a4a)
+      expect(entry).toHaveStyle('color: #c85a4a');
     });
 
     it('applies loot color to loot events', () => {
       const entries = [{ text: 'Gold acquired!', type: 'loot' }];
-      const { container } = render(<CombatLogView entries={entries} debugMode={false} />);
-      const entry = container.querySelector('div[style*="color"]');
-      // Loot color is #4f4
-      expect(entry).toHaveStyle('color: #4f4');
+      render(<CombatLogView entries={entries} debugMode={false} />);
+      const entry = screen.getByText('Gold acquired!');
+      // Loot color is colors.lime (#7dc940)
+      expect(entry).toHaveStyle('color: #7dc940');
     });
 
     it('applies info color to info events', () => {
       const entries = [{ text: 'Level up!', type: 'info' }];
-      const { container } = render(<CombatLogView entries={entries} debugMode={false} />);
-      const entry = container.querySelector('div[style*="color"]');
-      // Info color is #8cf
-      expect(entry).toHaveStyle('color: #8cf');
+      render(<CombatLogView entries={entries} debugMode={false} />);
+      const entry = screen.getByText('Level up!');
+      // Info color is colors.steel (#5a8fc7)
+      expect(entry).toHaveStyle('color: #5a8fc7');
     });
 
     it('applies default color to unknown event types', () => {
       const entries = [{ text: 'Something happened', type: 'unknown' }];
-      const { container } = render(<CombatLogView entries={entries} debugMode={false} />);
-      const entry = container.querySelector('div[style*="color"]');
+      render(<CombatLogView entries={entries} debugMode={false} />);
+      const entry = screen.getByText('Something happened');
       // Default color is #aaa
       expect(entry).toHaveStyle('color: #aaa');
     });
@@ -126,24 +126,20 @@ describe('CombatLogView Component', () => {
 
     it('renders death event visually distinct', () => {
       const entries = [{ text: 'Goblin Skirmisher defeated!', type: 'death' }];
-      const { container } = render(<CombatLogView entries={entries} debugMode={false} />);
+      render(<CombatLogView entries={entries} debugMode={false} />);
 
-      const entry = container.querySelector('div[style*="color"]');
-      expect(entry).toHaveStyle('color: #f44'); // Death color
-      expect(screen.getByText('Goblin Skirmisher defeated!')).toBeInTheDocument();
+      const entry = screen.getByText('Goblin Skirmisher defeated!');
+      expect(entry).toHaveStyle('color: #c85a4a'); // Death color (colors.blood)
     });
 
     it('renders loot event with green color', () => {
       const entries = [
         { text: 'Common sword found! (You gained 1 item)', type: 'loot' },
       ];
-      const { container } = render(<CombatLogView entries={entries} debugMode={false} />);
+      render(<CombatLogView entries={entries} debugMode={false} />);
 
-      const entry = container.querySelector('div[style*="color"]');
-      expect(entry).toHaveStyle('color: #4f4'); // Loot color
-      expect(
-        screen.getByText('Common sword found! (You gained 1 item)'),
-      ).toBeInTheDocument();
+      const entry = screen.getByText('Common sword found! (You gained 1 item)');
+      expect(entry).toHaveStyle('color: #7dc940'); // Loot color (colors.lime)
     });
 
     it('renders multiple events in order', () => {

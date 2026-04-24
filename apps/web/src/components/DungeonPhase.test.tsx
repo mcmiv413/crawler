@@ -268,7 +268,8 @@ describe('DungeonPhase Component', () => {
 
       expect(screen.getByText(/Dungeon/)).toBeInTheDocument();
       expect(screen.getByText(/Hero/)).toBeInTheDocument();
-      expect(screen.getByText(/HP:/i)).toBeInTheDocument();
+      // PlayerHud renders bars with short labels (HP, XP) — match "HP" without colon.
+      expect(screen.getAllByText(/^HP$/i).length).toBeGreaterThan(0);
     });
   });
 
