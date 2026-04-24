@@ -1,6 +1,7 @@
 import React, { useRef, useEffect } from 'react';
 import { COMBAT_LOG_MAX_HEIGHT } from '../config/ui-config.js';
 import { useGameStore } from '../store/game-store.js';
+import { colors, logEntryColor, FONT_STACK } from '../styles.js';
 
 interface CombatLogViewProps {
   entries: readonly { text: string; type: string }[];
@@ -10,7 +11,6 @@ interface CombatLogViewProps {
 }
 
 export function CombatLogView({ entries, debugMode, maxHeight, isMobile = false }: CombatLogViewProps) {
-  // On mobile, fill available vertical space; on desktop, cap at COMBAT_LOG_MAX_HEIGHT
   const computedMaxHeight = maxHeight ?? (isMobile ? 'none' : COMBAT_LOG_MAX_HEIGHT);
   const scrollRef = useRef<HTMLDivElement>(null);
   const { toggleDebugLogging } = useGameStore();
@@ -22,20 +22,11 @@ export function CombatLogView({ entries, debugMode, maxHeight, isMobile = false 
   }, [entries]);
 
   const filteredEntries = entries.filter(entry => {
-    if (!debugMode && entry.text.startsWith('[DEBUG]')) {
-      return false;
-    }
+    if (!debugMode && entry.text.startsWith('[DEBUG]')) return false;
     return true;
   });
 
   if (filteredEntries.length === 0) return null;
-
-  function logColor(entry: { text: string; type: string }): string {
-    if (entry.type === 'death') return '#f44';
-    if (entry.type === 'loot') return '#4f4';
-    if (entry.type === 'info') return '#8cf';
-    return '#aaa';
-  }
 
   return (
     <div
@@ -44,36 +35,73 @@ export function CombatLogView({ entries, debugMode, maxHeight, isMobile = false 
         marginTop: 10,
         maxHeight: computedMaxHeight,
         overflowY: 'auto',
-        border: '1px solid #333',
+        border: `1px solid ${colors.border}`,
         padding: 5,
-        background: '#0a0a0a',
+        background: colors.inset,
         display: 'flex',
         flexDirection: 'column',
         flex: computedMaxHeight === 'none' ? 1 : undefined,
         minHeight: 0,
+        fontFamily: FONT_STACK,
       }}
     >
-      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 5, flexShrink: 0 }}>
-        <h4 style={{ margin: 0, color: '#888' }}>Log</h4>
+      {/* Header */}
+      <div
+        style={{
+          display: 'flex',
+          justifyContent: 'space-between',
+          alignItems: 'center',
+          marginBottom: 6,
+          paddingBottom: 5,
+          borderBottom: `1px solid ${colors.border2}`,
+          flexShrink: 0,
+        }}
+      >
+        <span
+          style={{
+            fontSize: 10,
+            fontWeight: 600,
+            letterSpacing: '0.1em',
+            textTransform: 'uppercase',
+            color: colors.muted,
+          }}
+        >
+          Log
+        </span>
         <button
           onClick={toggleDebugLogging}
           style={{
+            fontFamily: FONT_STACK,
             padding: '2px 8px',
             fontSize: 10,
-            background: debugMode ? '#f44' : '#444',
-            color: '#fff',
-            border: 'none',
-            borderRadius: 3,
+            background: debugMode ? colors.blood : '#2a2a2a',
+            color: debugMode ? '#fff' : '#666',
+            border: `1px solid ${debugMode ? colors.blood : '#444'}`,
             cursor: 'pointer',
+            borderRadius: '2px',
           }}
           title="Toggle game debug mode to see ambient behavior transitions"
         >
           {debugMode ? '🐛 DEBUG ON' : 'DEBUG'}
         </button>
       </div>
+
+      {/* Entries */}
       <div style={{ overflow: 'auto', flex: 1, minHeight: 0 }}>
         {filteredEntries.map((entry, index) => (
-          <div key={`${index}-${entry.type}-${entry.text}`} style={{ fontSize: 11, color: logColor(entry), padding: '1px 0' }}>
+          <div
+            key={`${index}-${entry.type}-${entry.text}`}
+            style={{
+              fontSize: 11,
+              lineHeight: 1.4,
+              color: logEntryColor(entry.type),
+              fontWeight: entry.type === 'death' ? 600 : 400,
+              padding: '2px 0',
+              borderBottom: index < filteredEntries.length - 1
+                ? `1px solid ${colors.border2}`
+                : 'none',
+            }}
+          >
             {entry.text}
           </div>
         ))}

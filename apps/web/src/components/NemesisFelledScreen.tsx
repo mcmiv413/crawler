@@ -1,90 +1,78 @@
 import React from 'react';
-import type { GameView, NemesisView } from '@dungeon/presenter';
-import { btnStyle } from '../styles.js';
+import type { GameView } from '@dungeon/presenter';
+import { btnStashStyle, colors } from '../styles.js';
+import { ScreenOverlay, InfoCard, SectionLabel } from './ui/index.js';
 
 interface NemesisFelledScreenProps {
   view: GameView;
   onDismiss: () => void;
 }
 
-export function NemesisFelledScreen({ view, onDismiss }: NemesisFelledScreenProps) {
-  // Find the most recently promoted nemesis (last in array with isActive: true)
-  const nemesis = view.town?.nemeses.filter(n => n.isActive).pop();
+function rankLabel(rank: number): string {
+  return rank === 1 ? 'Initiate' : rank === 2 ? 'Veteran' : 'Legendary';
+}
 
-  if (!nemesis) {
-    // Should not happen, but fall back to dismiss
-    return null;
-  }
+export function NemesisFelledScreen({ view, onDismiss }: NemesisFelledScreenProps) {
+  const nemesis = view.town?.nemeses.filter((n) => n.isActive).pop();
+  if (!nemesis) return null;
 
   return (
-    <div
-      style={{
-        padding: 20,
-        fontFamily: 'monospace',
-        color: '#ccc',
-        background: '#111',
-        minHeight: '100vh',
-        display: 'flex',
-        flexDirection: 'column',
-        justifyContent: 'center',
-        alignItems: 'center',
-        textAlign: 'center',
-      }}
-    >
-      <h2 style={{ color: '#f44', fontSize: 32, marginBottom: 10 }}>You Have Been Felled</h2>
+    <ScreenOverlay>
+      <div style={{ textAlign: 'center', maxWidth: 500, width: '100%' }}>
+        <h2 style={{ color: colors.blood, fontSize: 28, marginBottom: 10 }}>
+          You Have Been Felled
+        </h2>
 
-      <div style={{ color: '#cc8844', fontSize: 14, marginBottom: 20, maxWidth: 500 }}>
-        Your fall has not been forgotten. From your ashes rises a new nemesis, born of the very dungeon itself.
-      </div>
-
-      <div
-        style={{
-          marginBottom: 20,
-          padding: 16,
-          border: '2px solid #4a1a1a',
-          background: '#1a0a0a',
-          borderRadius: 4,
-          maxWidth: 500,
-        }}
-      >
-        <h3 style={{ margin: 0, marginBottom: 8, color: '#cc4444', fontSize: 18 }}>A New Nemesis Rises</h3>
-
-        <div style={{ textAlign: 'left', fontSize: 12, color: '#aaa', lineHeight: 1.8 }}>
-          <div style={{ marginBottom: 6 }}>
-            <strong style={{ color: '#cc6666' }}>
-              {nemesis.name} {nemesis.title}
-            </strong>
-          </div>
-
-          <div style={{ marginBottom: 6 }}>
-            <span style={{ color: '#888' }}>Tier:</span> {nemesis.tier}
-            {' | '}
-            <span style={{ color: '#888' }}>Rank:</span> {nemesis.rank === 1 ? 'Initiate' : nemesis.rank === 2 ? 'Veteran' : 'Legendary'}
-          </div>
-
-          <div style={{ marginBottom: 6 }}>
-            <span style={{ color: '#888' }}>First seen:</span> Floor {nemesis.floorOfAscension}
-          </div>
-
-          <div style={{ marginBottom: 6 }}>
-            <span style={{ color: '#888' }}>Kills:</span> {nemesis.killCount}
-          </div>
-
-          {nemesis.weaknesses && nemesis.weaknesses.length > 0 && (
-            <div style={{ marginTop: 8, paddingTop: 8, borderTop: '1px solid #333' }}>
-              <span style={{ color: '#888' }}>Weaknesses:</span> {nemesis.weaknesses.join(', ')}
-            </div>
-          )}
+        <div style={{ color: colors.gold, fontSize: 13, marginBottom: 20 }}>
+          Your fall has not been forgotten. From your ashes rises a new nemesis, born of the very
+          dungeon itself.
         </div>
-      </div>
 
-      <div style={{ color: '#aaa', fontSize: 11, marginBottom: 20, maxWidth: 500, fontStyle: 'italic' }}>
-        This nemesis will haunt the dungeon, growing stronger with each passing run. Only by slaying this foe can you find peace.
-      </div>
+        <InfoCard borderColor={colors.blood} marginBottom={20} style={{ padding: 14 }}>
+          <SectionLabel label="A New Nemesis Rises" color={colors.blood} />
+          <div style={{ textAlign: 'left', fontSize: 12, color: colors.text, lineHeight: 1.8 }}>
+            <div style={{ marginBottom: 6 }}>
+              <strong style={{ color: colors.blood }}>
+                {nemesis.name} {nemesis.title}
+              </strong>
+            </div>
+            <div style={{ marginBottom: 6 }}>
+              <span style={{ color: colors.muted }}>Tier:</span> {nemesis.tier}
+              {' | '}
+              <span style={{ color: colors.muted }}>Rank:</span> {rankLabel(nemesis.rank)}
+            </div>
+            <div style={{ marginBottom: 6 }}>
+              <span style={{ color: colors.muted }}>First seen:</span> Floor{' '}
+              {nemesis.floorOfAscension}
+            </div>
+            <div style={{ marginBottom: 6 }}>
+              <span style={{ color: colors.muted }}>Kills:</span> {nemesis.killCount}
+            </div>
+            {nemesis.weaknesses && nemesis.weaknesses.length > 0 && (
+              <div style={{ marginTop: 8, paddingTop: 8, borderTop: `1px solid ${colors.border2}` }}>
+                <span style={{ color: colors.muted }}>Weaknesses:</span>{' '}
+                {nemesis.weaknesses.join(', ')}
+              </div>
+            )}
+          </div>
+        </InfoCard>
 
-      <button onClick={onDismiss} style={{ ...btnStyle, background: '#442200', color: '#cc8844', minWidth: 200 }}>
-        Return to Town
-      </button>
-    </div>
+        <div
+          style={{
+            color: colors.muted,
+            fontSize: 11,
+            marginBottom: 20,
+            fontStyle: 'italic',
+          }}
+        >
+          This nemesis will haunt the dungeon, growing stronger with each passing run. Only by
+          slaying this foe can you find peace.
+        </div>
+
+        <button onClick={onDismiss} style={{ ...btnStashStyle, minWidth: 200 }}>
+          Return to Town
+        </button>
+      </div>
+    </ScreenOverlay>
   );
 }

@@ -1,5 +1,7 @@
 import React, { useState } from 'react';
 import type { QuestView } from '@dungeon/presenter';
+import { colors, FONT_STACK, btnStyle } from '../styles.js';
+import { ModalBackdrop, ModalCard, SectionLabel } from './ui/index.js';
 
 interface QuestDetailModalProps {
   quests: readonly QuestView[];
@@ -7,77 +9,54 @@ interface QuestDetailModalProps {
 }
 
 export function QuestDetailModal({ quests, onClose }: QuestDetailModalProps) {
-  const [selectedQuestId, setSelectedQuestId] = useState<string>(quests.length > 0 ? quests[0]!.id : '');
-  const selectedQuest = selectedQuestId ? quests.find(q => q.id === selectedQuestId) : null;
+  const [selectedQuestId, setSelectedQuestId] = useState<string>(
+    quests.length > 0 ? quests[0]!.id : '',
+  );
+  const selectedQuest = selectedQuestId ? quests.find((q) => q.id === selectedQuestId) : null;
 
   return (
-    <div
-      style={{
-        position: 'fixed',
-        top: 0,
-        left: 0,
-        right: 0,
-        bottom: 0,
-        background: 'rgba(0,0,0,0.7)',
-        display: 'flex',
-        alignItems: 'center',
-        justifyContent: 'center',
-        zIndex: 1000,
-      }}
-      onClick={onClose}
-    >
-      <div
-        style={{
-          background: '#1a1a2a',
-          border: '2px solid #4a7a8a',
-          borderRadius: '4px',
-          padding: '16px',
-          maxWidth: '500px',
-          color: '#ccc',
-          fontFamily: 'monospace',
-          display: 'flex',
-          flexDirection: 'column',
-          maxHeight: '80vh',
-        }}
-        onClick={(e) => e.stopPropagation()}
-      >
-        <div style={{ fontSize: 16, fontWeight: 'bold', color: '#6af', marginBottom: 12 }}>QUESTS</div>
-
-        <div style={{ display: 'flex', gap: '12px', flex: 1, minHeight: 0 }}>
+    <ModalBackdrop onClose={onClose}>
+      <ModalCard title="QUESTS" onClose={onClose} accentColor={colors.steel}>
+        <div style={{ display: 'flex', gap: 12, flex: 1, minHeight: 0 }}>
           {/* Quest List */}
           <div
             style={{
               display: 'flex',
               flexDirection: 'column',
-              gap: '6px',
+              gap: 4,
               flex: '0 0 150px',
               overflowY: 'auto',
-              borderRight: '1px solid #333',
-              paddingRight: '12px',
+              borderRight: `1px solid ${colors.border2}`,
+              paddingRight: 10,
             }}
           >
-            {quests.map((q) => (
-              <button
-                key={q.id}
-                onClick={() => setSelectedQuestId(q.id)}
-                style={{
-                  padding: '6px 8px',
-                  background: selectedQuestId === q.id ? '#2a4a7a' : '#1a2a3a',
-                  color: q.status === 'complete' ? '#4f4' : '#6af',
-                  border: `1px solid ${selectedQuestId === q.id ? '#4a8aaf' : '#2a4a6a'}`,
-                  fontSize: 10,
-                  cursor: 'pointer',
-                  textAlign: 'left',
-                  textOverflow: 'ellipsis',
-                  overflow: 'hidden',
-                  whiteSpace: 'nowrap',
-                  transition: 'all 0.2s',
-                }}
-                title={q.title}
-              >
-                {q.title}
-              </button>
-            ))}
+            {quests.map((q) => {
+              const isSelected = selectedQuestId === q.id;
+              const isComplete = q.status === 'complete';
+              return (
+                <button
+                  key={q.id}
+                  onClick={() => setSelectedQuestId(q.id)}
+                  style={{
+                    padding: '6px 8px',
+                    background: isSelected ? colors.card : colors.inset,
+                    color: isComplete ? colors.lime : colors.steel,
+                    border: `1px solid ${isSelected ? colors.border : colors.border2}`,
+                    borderRadius: '2px',
+                    fontSize: 10,
+                    cursor: 'pointer',
+                    textAlign: 'left',
+                    textOverflow: 'ellipsis',
+                    overflow: 'hidden',
+                    whiteSpace: 'nowrap',
+                    fontFamily: FONT_STACK,
+                  }}
+                  title={q.title}
+                >
+                  {q.title}
+                </button>
+              );
+            })}
           </div>
 
           {/* Quest Details */}
@@ -85,55 +64,50 @@ export function QuestDetailModal({ quests, onClose }: QuestDetailModalProps) {
             {selectedQuest ? (
               <>
                 <div style={{ marginBottom: 12 }}>
-                  <div style={{ fontSize: 14, fontWeight: 'bold', color: '#6af', marginBottom: 4 }}>
+                  <div style={{ fontSize: 14, fontWeight: 600, color: colors.steel, marginBottom: 4 }}>
                     {selectedQuest.title}
                   </div>
-                  <div style={{ fontSize: 10, color: '#888', marginBottom: 2 }}>
-                    Status: {selectedQuest.status === 'complete' ? (
-                      <span style={{ color: '#4f4' }}>✓ Completed</span>
+                  <div style={{ fontSize: 10, color: colors.muted }}>
+                    Status:{' '}
+                    {selectedQuest.status === 'complete' ? (
+                      <span style={{ color: colors.lime }}>✓ Completed</span>
                     ) : (
-                      <span style={{ color: '#ff8' }}>In Progress</span>
+                      <span style={{ color: colors.gold }}>In Progress</span>
                     )}
                   </div>
                 </div>
 
                 {selectedQuest.description && (
                   <div style={{ marginBottom: 12 }}>
-                    <div style={{ fontSize: 11, color: '#888', marginBottom: 4, fontWeight: 'bold' }}>DESCRIPTION</div>
-                    <div style={{ fontSize: 11, color: '#aaa', lineHeight: 1.4 }}>
+                    <SectionLabel label="Description" />
+                    <div style={{ fontSize: 11, color: colors.text, lineHeight: 1.4 }}>
                       {selectedQuest.description}
                     </div>
                   </div>
                 )}
 
                 <div style={{ marginBottom: 12 }}>
-                  <div style={{ fontSize: 11, color: '#888', marginBottom: 4, fontWeight: 'bold' }}>REWARD</div>
-                  <div style={{ fontSize: 12, color: '#cc8', fontWeight: 'bold' }}>
+                  <SectionLabel label="Reward" />
+                  <div style={{ fontSize: 12, color: colors.gold, fontWeight: 600 }}>
                     {selectedQuest.rewardGold}g
                   </div>
                 </div>
               </>
             ) : (
-              <div style={{ color: '#888', fontSize: 11 }}>Select a quest to view details</div>
+              <div style={{ color: colors.muted, fontSize: 11 }}>
+                Select a quest to view details
+              </div>
             )}
           </div>
         </div>
 
         <button
           onClick={onClose}
-          style={{
-            marginTop: 16,
-            padding: '6px 12px',
-            background: '#2a2a3a',
-            color: '#ccc',
-            border: '1px solid #444',
-            cursor: 'pointer',
-            fontSize: 11,
-          }}
+          style={{ ...btnStyle, marginTop: 16, padding: '6px 12px', fontSize: 11 }}
         >
           Close
         </button>
-      </div>
-    </div>
+      </ModalCard>
+    </ModalBackdrop>
   );
 }

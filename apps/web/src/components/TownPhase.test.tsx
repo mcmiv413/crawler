@@ -363,8 +363,9 @@ describe('TownPhase Component', () => {
         />
       );
 
-      expect(screen.getByText(/\(healer\)/)).toBeVisible();
-      expect(screen.getByText(/\(shopkeeper\)/)).toBeVisible();
+      // NPC role is rendered as a capitalized sub-line below the name (no parens).
+      expect(screen.getByText(/^healer$/i)).toBeVisible();
+      expect(screen.getByText(/^shopkeeper$/i)).toBeVisible();
     });
 
     it('displays Talk buttons for all NPCs', () => {

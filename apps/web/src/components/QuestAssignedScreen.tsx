@@ -1,6 +1,7 @@
 import React from 'react';
 import type { GameView, NpcView } from '@dungeon/presenter';
-import { btnStyle } from '../styles.js';
+import { btnPrimaryStyle, colors } from '../styles.js';
+import { ScreenOverlay, InfoCard, SectionLabel } from './ui/index.js';
 
 interface QuestAssignedScreenProps {
   view: GameView;
@@ -12,7 +13,6 @@ interface QuestAssignedScreenProps {
 }
 
 export function QuestAssignedScreen({
-  view,
   questTitle,
   questDescription,
   rewardGold,
@@ -20,60 +20,47 @@ export function QuestAssignedScreen({
   onDismiss,
 }: QuestAssignedScreenProps) {
   return (
-    <div
-      style={{
-        padding: 20,
-        fontFamily: 'monospace',
-        color: '#ccc',
-        background: '#111',
-        minHeight: '100vh',
-        display: 'flex',
-        flexDirection: 'column',
-        justifyContent: 'center',
-        alignItems: 'center',
-        textAlign: 'center',
-      }}
-    >
-      <h2 style={{ color: '#88f', fontSize: 32, marginBottom: 10 }}>New Quest</h2>
+    <ScreenOverlay>
+      <div style={{ textAlign: 'center', maxWidth: 500, width: '100%' }}>
+        <h2 style={{ color: colors.steel, fontSize: 28, marginBottom: 10 }}>New Quest</h2>
 
-      <div style={{ color: '#8899ff', fontSize: 14, marginBottom: 20, maxWidth: 500 }}>
-        {giverNpc ? `${giverNpc.name} has a task for you.` : 'A new opportunity awaits.'}
-      </div>
-
-      <div
-        style={{
-          marginBottom: 20,
-          padding: 16,
-          border: '2px solid #1a3a5a',
-          background: '#0a1a2a',
-          borderRadius: 4,
-          maxWidth: 500,
-        }}
-      >
-        <h3 style={{ margin: 0, marginBottom: 8, color: '#6688ff', fontSize: 18 }}>{questTitle}</h3>
-
-        <div style={{ textAlign: 'left', fontSize: 12, color: '#aaa', lineHeight: 1.8, marginBottom: 12 }}>
-          {questDescription}
+        <div style={{ color: colors.steel, fontSize: 13, marginBottom: 20 }}>
+          {giverNpc ? `${giverNpc.name} has a task for you.` : 'A new opportunity awaits.'}
         </div>
 
-        <div style={{ borderTop: '1px solid #1a3a5a', paddingTop: 12, marginTop: 12, textAlign: 'center' }}>
-          <div style={{ color: '#88dd88', fontSize: 14, fontWeight: 'bold' }}>Reward: {rewardGold}g</div>
-        </div>
-      </div>
+        <InfoCard borderColor={colors.steel} marginBottom={20} style={{ padding: 14 }}>
+          <SectionLabel label={questTitle} color={colors.steel} />
+          <div
+            style={{
+              textAlign: 'left',
+              fontSize: 12,
+              color: colors.text,
+              lineHeight: 1.8,
+              marginBottom: 12,
+            }}
+          >
+            {questDescription}
+          </div>
+          <div
+            style={{
+              borderTop: `1px solid ${colors.border2}`,
+              paddingTop: 12,
+              textAlign: 'center',
+            }}
+          >
+            <div style={{ color: colors.gold, fontSize: 13, fontWeight: 600 }}>
+              Reward: {rewardGold}g
+            </div>
+          </div>
+        </InfoCard>
 
-      <button
-        onClick={onDismiss}
-        style={{
-          ...btnStyle,
-          background: '#004488',
-          color: '#88ddff',
-          border: '2px solid #0066aa',
-          padding: '12px 24px',
-          fontSize: 14,
-        }}
-      >
-        Accept Quest
-      </button>
-    </div>
+        <button
+          onClick={onDismiss}
+          style={{ ...btnPrimaryStyle, minWidth: 200, padding: '10px 24px' }}
+        >
+          Accept Quest
+        </button>
+      </div>
+    </ScreenOverlay>
   );
 }
