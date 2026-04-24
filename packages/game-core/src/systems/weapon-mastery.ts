@@ -19,7 +19,7 @@ export function checkWeaponMasteryUnlocks(
       const alreadyOwned = newState.player.abilities.some(a => a.id === abilityId);
       if (alreadyOwned !== true) {
         newState = grantAbility(newState, abilityId);
-        const def = ABILITY_DEFINITIONS[abilityId];
+        const def = ABILITY_DEFINITIONS.get(abilityId);
         events = [...events, {
           type: 'MASTERY_UNLOCKED',
           playerId: newState.player.id,

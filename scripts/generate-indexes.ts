@@ -100,6 +100,45 @@ const configs: ContentTypeConfig[] = [
     typeImport: 'local',
     exportType: 'array',
   },
+  // Items sub-categories
+  {
+    sourceDir: 'items/weapons',
+    indexPath: 'items/weapons/index.ts',
+    exportName: 'WEAPONS',
+    itemType: 'WeaponTemplate',
+    exportType: 'array',
+  },
+  {
+    sourceDir: 'items/armor',
+    indexPath: 'items/armor/index.ts',
+    exportName: 'ARMOR',
+    itemType: 'ArmorTemplate',
+    exportType: 'array',
+  },
+  {
+    sourceDir: 'items/consumables',
+    indexPath: 'items/consumables/index.ts',
+    exportName: 'CONSUMABLES',
+    itemType: 'ConsumableTemplate',
+    exportType: 'array',
+  },
+  {
+    sourceDir: 'items/traps',
+    indexPath: 'items/traps/index.ts',
+    exportName: 'TRAPS',
+    itemType: 'TrapItemTemplate',
+    exportType: 'array',
+  },
+  // Abilities
+  {
+    sourceDir: 'abilities',
+    indexPath: 'abilities/index.ts',
+    exportName: 'ABILITY_DEFINITIONS',
+    itemType: 'AbilityDefinition',
+    typeImport: 'local',
+    exportType: 'map',
+    keyField: 'id',
+  },
 ];
 
 function getExportName(filename: string): string {
@@ -123,6 +162,8 @@ function scanDirectory(dirPath: string): string[] {
           !f.name.startsWith('index') &&
           !f.name.startsWith('types') &&
           !f.name.startsWith('definitions') &&
+          !f.name.startsWith('mastery') &&
+          !f.name.startsWith('utils') &&
           !f.name.endsWith('.test.ts')
       )
       .map(f => f.name.replace(/\.ts$/, ''));

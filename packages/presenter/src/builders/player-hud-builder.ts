@@ -72,7 +72,7 @@ export function buildPlayerHud(state: GameState): PlayerHudView {
   }
 
   const statusList: StatusView[] = p.statuses.map(s => {
-    const def = STATUS_DEFINITIONS[s.id];
+    const def = STATUS_DEFINITIONS.get(s.id);
     return {
       id: s.id,
       name: def?.name ?? s.id,
@@ -83,14 +83,14 @@ export function buildPlayerHud(state: GameState): PlayerHudView {
 
   const abilityList: AbilityView[] = (p.abilities ?? [])
     .filter(a => {
-      const def = ABILITY_DEFINITIONS[a.id];
+      const def = ABILITY_DEFINITIONS.get(a.id);
       if (!def) return true; // Include unknown abilities
       if (!def.requiresWeaponTypes || def.requiresWeaponTypes.length === 0) return true; // Include abilities without weapon requirements
       if (!equippedWeaponType) return false; // Hide weapon-specific abilities if no weapon is equipped
       return def.requiresWeaponTypes.includes(equippedWeaponType as WeaponType); // Only include if weapon type matches
     })
     .map(a => {
-      const def = ABILITY_DEFINITIONS[a.id];
+      const def = ABILITY_DEFINITIONS.get(a.id);
       return {
         id: a.id,
         name: def?.name ?? a.id,

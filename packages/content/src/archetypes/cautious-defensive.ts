@@ -41,3 +41,5 @@ export const CAUTIOUS_DEFENSIVE = {
     { abilityId: 'roar', weight: 2, usageHp: 'healthy' },
   ],
 } as const satisfies ArchetypeDefinition;
+
+export const cautiousDefensive = CAUTIOUS_DEFENSIVE;

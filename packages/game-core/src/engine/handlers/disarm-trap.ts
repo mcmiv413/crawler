@@ -1,6 +1,6 @@
 import type { GameState, Direction, DomainEvent } from '@dungeon/contracts';
 import { posKey } from '@dungeon/contracts';
-import { OBJECT_TEMPLATES, ITEM_BY_ID } from '@dungeon/content';
+import { OBJECT_TEMPLATES, ITEM_BY_ID, woodenSpikeTrap, ironSpikeTrap, steelSpikeTrap, fireTrap, infernoTrap, blazingTrap, poisonGasTrap, toxicTrap, lethalPoisonTrap, frostTrapItem as frostTrap, frozenTrap, absoluteZeroTrap, lightningTrapItem as lightningTrap, thunderTrap } from '@dungeon/content';
 import type { CommandResult } from './shared.js';
 import { updateRunMetrics, updateFloorCacheForCurrentFloor } from './shared.js';
 import { addItemToInventory } from '../../systems/inventory.js';
@@ -102,30 +102,30 @@ export function handleDisarmTrap(
 function findTrapItemForHazard(hazardType: string, rarity: string): string | null {
   const trapMap: Record<string, Record<string, string>> = {
     spike: {
-      common: 'wooden_spike_trap',
-      uncommon: 'iron_spike_trap',
-      rare: 'steel_spike_trap',
-      epic: 'steel_spike_trap',
+      common: woodenSpikeTrap.itemId,
+      uncommon: ironSpikeTrap.itemId,
+      rare: steelSpikeTrap.itemId,
+      epic: steelSpikeTrap.itemId,
     },
     fire: {
-      common: 'fire_trap',
-      uncommon: 'inferno_trap',
-      rare: 'blazing_trap',
-      epic: 'blazing_trap',
+      common: fireTrap.itemId,
+      uncommon: infernoTrap.itemId,
+      rare: blazingTrap.itemId,
+      epic: blazingTrap.itemId,
     },
     poison: {
-      uncommon: 'poison_gas_trap',
-      rare: 'toxic_trap',
-      epic: 'lethal_poison_trap',
+      uncommon: poisonGasTrap.itemId,
+      rare: toxicTrap.itemId,
+      epic: lethalPoisonTrap.itemId,
     },
     frost: {
-      uncommon: 'frost_trap',
-      rare: 'frozen_trap',
-      epic: 'absolute_zero_trap',
+      uncommon: frostTrap.itemId,
+      rare: frozenTrap.itemId,
+      epic: absoluteZeroTrap.itemId,
     },
     lightning: {
-      rare: 'lightning_trap',
-      epic: 'thunder_trap',
+      rare: lightningTrap.itemId,
+      epic: thunderTrap.itemId,
     },
   };
 

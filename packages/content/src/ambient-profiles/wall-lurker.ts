@@ -33,3 +33,5 @@ export const WALL_LURKER_PROFILE: AmbientBehaviorProfile = {
     },
   ],
 };
+
+export const wallLurker = WALL_LURKER_PROFILE;

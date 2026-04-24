@@ -29,3 +29,5 @@ export const HAZARD_CREATOR = {
     { abilityId: 'fire_bolt', weight: 2, usageHp: 'anytime' },
   ],
 } as const satisfies ArchetypeDefinition;
+
+export const hazardCreator = HAZARD_CREATOR;

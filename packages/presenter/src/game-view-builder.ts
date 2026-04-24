@@ -61,7 +61,7 @@ function buildInspectableEntities(state: GameState): readonly InspectableEntityV
       archetype: template.archetype,
       isFasterThanPlayer: enemy.stats.speed > state.player.stats.speed,
       affinities: template.affinities && Object.keys(template.affinities).length > 0 ? template.affinities : undefined,
-      statuses: enemy.statuses.map(s => STATUS_DEFINITIONS[s.id]?.name ?? s.id),
+      statuses: enemy.statuses.map(s => STATUS_DEFINITIONS.get(s.id)?.name ?? s.id),
     });
   }
 

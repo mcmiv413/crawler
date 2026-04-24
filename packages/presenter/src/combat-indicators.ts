@@ -46,7 +46,7 @@ function handleStatusApplied(
 ): void {
   const pos = getPos(event.targetId, state);
   if (!pos) return;
-  const statusName = STATUS_DEFINITIONS[event.statusId]?.name ?? event.statusId;
+  const statusName = STATUS_DEFINITIONS.get(event.statusId)?.name ?? event.statusId;
   addIndicator(indicators, statusName, 'status', pos.x, pos.y);
 }
 

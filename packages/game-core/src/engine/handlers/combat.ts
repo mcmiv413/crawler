@@ -17,7 +17,7 @@ import { updateFactionOnKill } from '../../systems/factions.js';
 import { canUseAbility, setAbilityCooldown } from '../../systems/abilities.js';
 import { applyLifeStealOnKill, getExpBonusMultiplier } from '../../systems/enchantment-hooks.js';
 import { checkWeaponMasteryUnlocks } from '../../systems/weapon-mastery.js';
-import { ABILITY_DEFINITIONS, STATUS_DEFAULTS } from '@dungeon/content';
+import { ABILITY_DEFINITIONS, STATUS_DEFAULTS, daggerDisarm, daggerSetTrap } from '@dungeon/content';
 import { chebyshevDistance } from '../../utils/grid.js';
 import { processEnemyTurns } from '../turn-scheduler.js';
 import { tickAbilityCooldowns } from '../../systems/abilities.js';
@@ -471,20 +471,20 @@ export function handleUseAbility(
   if (state.run === null) return { state, events: [], runEnded: false };
   if (canUseAbility(state, abilityId) !== true) return { state, events: [], runEnded: false };
 
-  const def = ABILITY_DEFINITIONS[abilityId];
+  const def = ABILITY_DEFINITIONS.get(abilityId);
   if (def === undefined) return { state, events: [], runEnded: false };
 
   // Check weapon type requirement for mastery abilities
-  if (def.requiresWeaponTypes && def.requiresWeaponTypes.length > 0) {
+  if (Array.isArray(def.requiresWeaponTypes) && def.requiresWeaponTypes.length > 0) {
     const equippedType = getEquippedWeaponType(state);
     if (!equippedType || !def.requiresWeaponTypes.includes(equippedType)) return { state, events: [], runEnded: false };
   }
 
   // Route directional abilities to their handlers
-  if (abilityId === 'dagger_disarm' && direction) {
+  if (abilityId === daggerDisarm.id && direction) {
     return handleDisarmTrap(state, direction as Direction, rng);
   }
-  if (abilityId === 'dagger_set_trap' && direction && targetId) {
+  if (abilityId === daggerSetTrap.id && direction && targetId) {
     return handleSetTrap(state, direction as Direction, targetId, rng);
   }
 

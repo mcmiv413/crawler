@@ -1,7 +1,7 @@
 import { describe, it, expect } from 'vitest';
 import { DAWNLIKE_SPRITE_MAP } from './dawnlike-sprite-map.js';
 import { DAWNLIKE_NAME_MAP, resolveSprite } from './dawnlike-name-map.js';
-import { ENEMY_TEMPLATES, BIOMES, OBJECT_TEMPLATES } from '../index.js';
+import { ENEMY_TEMPLATES, BIOME_DEFINITIONS, OBJECT_TEMPLATES } from '../index.js';
 
 const ATLAS_WIDTH = 2048;
 const ATLAS_HEIGHT = 1024;
@@ -36,7 +36,7 @@ describe('DawnLike Sprite Map', () => {
 
   it('biome floor overrides differ from one another', () => {
     const floors: string[] = [];
-    for (const [biomeId] of BIOMES) {
+    for (const [biomeId] of BIOME_DEFINITIONS.entries()) {
       const r = DAWNLIKE_SPRITE_MAP[`tile:floor:${biomeId}`];
       if (r) floors.push(`${r.x},${r.y}`);
     }
@@ -46,7 +46,7 @@ describe('DawnLike Sprite Map', () => {
 
   it('biome wall overrides differ from one another', () => {
     const walls: string[] = [];
-    for (const [biomeId] of BIOMES) {
+    for (const [biomeId] of BIOME_DEFINITIONS.entries()) {
       const r = DAWNLIKE_SPRITE_MAP[`tile:wall:${biomeId}`];
       if (r) walls.push(`${r.x},${r.y}`);
     }

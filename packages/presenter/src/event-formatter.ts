@@ -48,7 +48,7 @@ const EVENT_FORMATTERS = {
   }),
 
   'STATUS_APPLIED': (event) => {
-    const statusName = STATUS_DEFINITIONS[event.statusId]?.name ?? event.statusId;
+    const statusName = STATUS_DEFINITIONS.get(event.statusId)?.name ?? event.statusId;
     return {
       text: `${statusName} applied for ${event.duration} turns.`,
       type: 'status',
@@ -57,7 +57,7 @@ const EVENT_FORMATTERS = {
   },
 
   'STATUS_EXPIRED': (event) => {
-    const statusName = STATUS_DEFINITIONS[event.statusId]?.name ?? event.statusId;
+    const statusName = STATUS_DEFINITIONS.get(event.statusId)?.name ?? event.statusId;
     return {
       text: `${statusName} has worn off.`,
       type: 'status',

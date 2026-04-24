@@ -126,7 +126,7 @@ export function buildAvailableActions(state: GameState): AvailableAction[] {
     // Ability actions (show ALL abilities, with cooldown/target info) - Phase B
     const abilityActions = (state.player.abilities ?? [])
       .filter(ability => {
-        const def = ABILITY_DEFINITIONS[ability.id];
+        const def = ABILITY_DEFINITIONS.get(ability.id);
         // Filter out abilities that require specific weapon types if player doesn't have a matching one
         if (def?.requiresWeaponTypes && def.requiresWeaponTypes.length > 0) {
           if (!state.player.equipment.weapon) return false;
@@ -138,7 +138,7 @@ export function buildAvailableActions(state: GameState): AvailableAction[] {
         return true;
       })
       .map(ability => {
-        const def = ABILITY_DEFINITIONS[ability.id];
+        const def = ABILITY_DEFINITIONS.get(ability.id);
         const isReady = ability.cooldownRemaining === 0;
 
         // B2: Add cooldown label suffix if on cooldown
