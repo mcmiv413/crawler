@@ -7,24 +7,31 @@ import { expect } from 'vitest';
 /**
  * Feature Completeness Testing Helpers
  *
- * Each feature must complete the 4-link chain:
- *   1. Entry: player/engine triggers the command
- *   2. State: GameState changes correctly and immutably
- *   3. Event: DomainEvent emitted so presenter can react
- *   4. View: buildGameView() exposes the change to frontend
+ * Each feature must complete the 6-hop chain:
+ *   1. Entry: Player can trigger it (UI action or game event)
+ *   2. State: GameState updates immutably
+ *   3. Event: DomainEvent emitted
+ *   4. Presenter: buildGameView() exposes data
+ *   5. UI: React renders it
+ *   6. Test: assertFeatureChain() proves the chain
  *
- * These helpers make it easy to assert all 4 links in ~2 lines.
+ * These helpers make it easy to assert all 6 hops. See CLAUDE.md for the full checklist.
  */
 
 export interface FeatureChainAssertion {
-  /** Event type that must be emitted (e.g., 'ATTACK_PERFORMED') */
+  /** Hop 1: Event type that must be emitted (e.g., 'ATTACK_PERFORMED') */
   eventType?: string;
   /** Optional: verify specific event count (default 1+) */
   eventCount?: number;
-  /** Optional: verify state changed correctly */
+  /** Hop 1: Optional — verify player can trigger this entry point (UI action or game event) */
+  entryCheck?: (before: GameState) => boolean;
+  /** Hop 2: Optional — verify state changed correctly */
   stateChanges?: (before: GameState, after: GameState) => boolean;
-  /** Optional: verify presenter output contains the change */
+  /** Hop 3: Event emission is validated via eventType */
+  /** Hop 4: Presenter output — verify view contains the change */
   viewChecks?: (before: GameView, after: GameView) => boolean;
+  /** Hop 5: Optional — verify UI renders the feature (can be tested via E2E or manual inspection) */
+  uiCheck?: (view: GameView) => boolean;
   /** Optional: verify event can be formatted for display */
   formattingCheck?: (event: DomainEvent) => boolean;
   /** Optional: verify run metrics updated */
@@ -34,20 +41,26 @@ export interface FeatureChainAssertion {
 /**
  * Assert a complete feature chain in one call.
  *
+ * Validates all 6 hops of the feature completeness chain. See CLAUDE.md "Feature Completeness" section.
+ *
  * Usage:
  *   const result = handleCommand(state, { type: 'ATTACK', targetId }, rng());
- *   assertFeatureChain(result, {
+ *   assertFeatureChain(result, beforeState, {
+ *     entryCheck: (s) => /* player can trigger this */,
  *     eventType: 'ATTACK_PERFORMED',
  *     stateChanges: (before, after) =>
  *       (after.run?.runMetrics?.damageDealt ?? 0) > (before.run?.runMetrics?.damageDealt ?? 0),
- *     formattingCheck: (e) => formatEvent(e) !== null,
+ *     viewChecks: (before, after) => /* view updated */,
+ *     uiCheck: (view) => /* UI would render this */,
  *   });
  *
  * This validates:
- *   - Link 3: Event was emitted
- *   - Link 2: State changed as expected
- *   - Link 5: Event can be formatted (will show in UI)
- *   - Link 4: View metrics updated
+ *   - Hop 1 (Entry): entryCheck passes (optional)
+ *   - Hop 2 (State): State changed as expected via stateChanges
+ *   - Hop 3 (Event): Event was emitted via eventType
+ *   - Hop 4 (Presenter): View updated via viewChecks
+ *   - Hop 5 (UI): UI can render via uiCheck (optional)
+ *   - Hop 6 (Test): This function proves the chain
  */
 export function assertFeatureChain(
   result: { state: GameState; events: readonly DomainEvent[] },
@@ -56,17 +69,35 @@ export function assertFeatureChain(
 ): void {
   const { state: afterState, events } = result;
 
-  // Link 3: Event emission
-  if (assertions.eventType) {
-    expectEventEmitted(events, assertions.eventType, assertions.eventCount ?? 1);
+  // Hop 1: Entry point can be triggered
+  if (assertions.entryCheck) {
+    expect(assertions.entryCheck(beforeState)).toBe(true);
   }
 
-  // Link 2: State changes
+  // Hop 2: State changes
   if (assertions.stateChanges) {
     expect(assertions.stateChanges(beforeState, afterState)).toBe(true);
   }
 
-  // Link 5: Formatter handles the event
+  // Hop 3: Event emission
+  if (assertions.eventType) {
+    expectEventEmitted(events, assertions.eventType, assertions.eventCount ?? 1);
+  }
+
+  // Hop 4: Presenter exposes data (view updated)
+  if (assertions.viewChecks) {
+    const beforeView = buildGameView(beforeState);
+    const afterView = buildGameView(afterState);
+    expect(assertions.viewChecks(beforeView, afterView)).toBe(true);
+  }
+
+  // Hop 5: UI can render the feature
+  if (assertions.uiCheck) {
+    const afterView = buildGameView(afterState);
+    expect(assertions.uiCheck(afterView)).toBe(true);
+  }
+
+  // Hop 5 (formatting): Event formatter handles the event for UI display
   if (assertions.formattingCheck && assertions.eventType) {
     const matchingEvents = events.filter((e) => e.type === assertions.eventType);
     for (const event of matchingEvents) {
@@ -74,14 +105,7 @@ export function assertFeatureChain(
     }
   }
 
-  // Link 4: View updated (optional detailed check)
-  if (assertions.viewChecks) {
-    const beforeView = buildGameView(beforeState);
-    const afterView = buildGameView(afterState);
-    expect(assertions.viewChecks(beforeView, afterView)).toBe(true);
-  }
-
-  // Metrics updated (optional)
+  // Optional: Metrics updated
   if (assertions.metricsCheck) {
     expect(assertions.metricsCheck(beforeState, afterState)).toBe(true);
   }

@@ -55,7 +55,7 @@ You can combine multiple quest objectives:
   id: 'find_enchanted_armor',
   title: 'Seek the Warden\'s Cloak',
   description: 'Find enchanted armor hidden in the depths.',
-  targetItemId: 'leather_armor',
+  targetItemId: 'plate_armor',  // Valid item ID — check packages/content/src/items/armor.ts
   rewardGold: 85,
 }
 
@@ -75,17 +75,20 @@ You can combine multiple quest objectives:
 
 When a player meets a quest objective, they can return to the NPC to complete it:
 
-```typescript
-// Quest completion checks in game-core/systems/quest-system.ts
-- Player has the required item
-- Player defeated the required enemy
-- Player reached the required floor depth
-```
+Quest completion logic is handled in **game-core** systems:
+- `packages/game-core/src/systems/npc.ts` — NPC quest assignment and tracking
+- `packages/game-core/src/systems/loot.ts` — Item drop tracking
+- `packages/game-core/src/engine/command-handler.ts` — Command routing
+
+The system checks:
+- Player has the required item (tracked in inventory)
+- Player defeated the required enemy (tracked in metrics)
+- Player reached the required floor depth (tracked in run state)
 
 Upon completion:
 - Player receives gold reward
-- NPC dialogue changes
-- Disposition may shift (handled in quest reward system)
+- NPC disposition updated
+- Quest marked as complete
 
 ---
 
@@ -102,12 +105,33 @@ To ensure fair distribution, keep reward values balanced across quest difficulty
 
 ---
 
+## Validation Checklist
+
+Before committing a new quest, verify:
+
+- [ ] **Target ID exists**: If using `targetItemId`, confirm it exists in `packages/content/src/items/` (check `ITEM_BY_ID`)
+- [ ] **Enemy ID exists**: If using `targetEnemyTemplateId`, confirm it exists in `packages/content/src/enemies/` (check `ENEMY_TEMPLATES`)
+- [ ] **Has at least one target**: Every quest must have `targetItemId`, `targetEnemyTemplateId`, or `targetFloorDepth` set
+- [ ] **Reward is positive**: `rewardGold` should be > 0
+- [ ] **Description is clear**: Player understands what they need to do
+- [ ] **Index is generated**: Run `pnpm generate:indexes` to update `packages/content/src/quests/index.ts`
+- [ ] **Contract test passes**: Run `pnpm test` to verify cross-references are valid
+
+**Common mistakes:**
+- Using non-existent item IDs (especially typos like `leather_armor` instead of `plate_armor`)
+- Using non-existent enemy template IDs
+- Forgetting to run `pnpm generate:indexes` after creating a new quest file
+- Not verifying that targets actually exist in the game
+
+---
+
 ## Key Files Reference
 
 | Purpose | File |
 |---------|------|
-| Definitions | `packages/content/src/quests/` (individual files) |
-| Completion logic | `packages/game-core/src/systems/quest-system.ts` |
-| NPC integration | `packages/game-core/src/systems/npc-system.ts` |
+| Quest Templates | `packages/content/src/quests/` (individual files, auto-indexed) |
+| NPC & Quest Logic | `packages/game-core/src/systems/npc.ts` |
+| Item Tracking | `packages/content/src/items/index.ts` |
+| Enemy Templates | `packages/content/src/enemies/index.ts` |
 | UI display | `apps/web/src/components/QuestDetailModal.tsx` |
-| Types | `packages/game-contracts/src/types/index.ts` (Quest) |
+| Quest Types | `packages/game-contracts/src/types/index.ts` |
