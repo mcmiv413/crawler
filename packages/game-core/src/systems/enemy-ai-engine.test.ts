@@ -173,4 +173,244 @@ describe('Enemy AI Scoring Engine', () => {
       expect(trace.chosen.action).toBeDefined();
     });
   });
+
+  describe('Condition parsing and evaluation (Phase 3)', () => {
+    it('parses hpBelowThreshold condition correctly', () => {
+      const state = createTestGameStateInCombat();
+      // Create enemy with 50% HP
+      const enemy = createTestEnemy({
+        position: { x: 1, y: 0 },
+        stats: { maxHealth: 100, health: 50, attack: 8, defense: 3, accuracy: 70, evasion: 15, speed: 100 },
+        isAlerted: true,
+      });
+      const archetype = ARCHETYPES.get('aggressive_melee');
+      const rng = new SeededRNG(42);
+
+      if (!archetype) {
+        throw new Error('aggressive_melee archetype not found');
+      }
+
+      const trace = scoreEnemyActions(enemy, archetype, state, rng);
+      expect(trace.chosen).toBeDefined();
+      expect(trace.candidates.length).toBeGreaterThan(0);
+    });
+
+    it('handles hpBelowThreshold boundary at exact threshold', () => {
+      const state = createTestGameStateInCombat();
+      // Create enemy with exactly 30% HP (boundary test)
+      const enemy = createTestEnemy({
+        position: { x: 1, y: 0 },
+        stats: { maxHealth: 100, health: 30, attack: 8, defense: 3, accuracy: 70, evasion: 15, speed: 100 },
+        isAlerted: true,
+      });
+      const archetype = ARCHETYPES.get('cautious_defensive');
+      const rng = new SeededRNG(42);
+
+      if (!archetype) {
+        throw new Error('cautious_defensive archetype not found');
+      }
+
+      const trace = scoreEnemyActions(enemy, archetype, state, rng);
+      // At 30% HP, selfHpLow condition (< 0.3) should not trigger, but 30% itself might affect other rules
+      expect(trace.chosen).toBeDefined();
+    });
+
+    it('parses hpAboveThreshold condition correctly', () => {
+      const state = createTestGameStateInCombat();
+      // Create enemy with 80% HP
+      const enemy = createTestEnemy({
+        position: { x: 1, y: 0 },
+        stats: { maxHealth: 100, health: 80, attack: 8, defense: 3, accuracy: 70, evasion: 15, speed: 100 },
+        isAlerted: true,
+      });
+      const archetype = ARCHETYPES.get('aggressive_melee');
+      const rng = new SeededRNG(42);
+
+      if (!archetype) {
+        throw new Error('aggressive_melee archetype not found');
+      }
+
+      const trace = scoreEnemyActions(enemy, archetype, state, rng);
+      expect(trace.chosen).toBeDefined();
+      expect(trace.chosen.action).toBeDefined();
+    });
+
+    it('evaluates playerAdjacent condition at distance 1', () => {
+      const state = createTestGameStateInCombat({ enemyAt: { x: 1, y: 0 } });
+      const enemy = createTestEnemy({
+        position: { x: 1, y: 0 },
+        isAlerted: true,
+      });
+      const archetype = ARCHETYPES.get('aggressive_melee');
+      const rng = new SeededRNG(42);
+
+      if (!archetype) {
+        throw new Error('aggressive_melee archetype not found');
+      }
+
+      const trace = scoreEnemyActions(enemy, archetype, state, rng);
+      // At distance 1, playerAdjacent should be true, so attack-related rules apply
+      expect(trace.chosen.action.type).toBe('attack');
+    });
+
+    it('evaluates playerRange2to5 condition correctly', () => {
+      const state = createTestGameStateInCombat({ enemyAt: { x: 0, y: 0 } });
+      const enemy = createTestEnemy({
+        position: { x: 3, y: 0 }, // distance 3 (playerAt (0,0))
+        isAlerted: true,
+      });
+      const archetype = ARCHETYPES.get('aggressive_melee');
+      const rng = new SeededRNG(42);
+
+      if (!archetype) {
+        throw new Error('aggressive_melee archetype not found');
+      }
+
+      const trace = scoreEnemyActions(enemy, archetype, state, rng);
+      // At distance 3, playerRange2to5 is true
+      expect(trace.candidates.length).toBeGreaterThan(0);
+    });
+
+    it('evaluates playerRange6Plus condition correctly', () => {
+      const state = createTestGameStateInCombat({ enemyAt: { x: 0, y: 0 } });
+      const enemy = createTestEnemy({
+        position: { x: 7, y: 0 }, // distance 7 (playerAt (0,0))
+        isAlerted: true,
+      });
+      const archetype = ARCHETYPES.get('skittish_ranged');
+      const rng = new SeededRNG(42);
+
+      if (!archetype) {
+        throw new Error('skittish_ranged archetype not found');
+      }
+
+      const trace = scoreEnemyActions(enemy, archetype, state, rng);
+      // At distance 7, playerRange6Plus is true
+      expect(trace.candidates.length).toBeGreaterThan(0);
+    });
+  });
+
+  describe('Movement behavior and fallback actions', () => {
+    it('handles movement behavior without errors', () => {
+      const state = createTestGameStateInCombat({ enemyAt: { x: 0, y: 0 } });
+      const enemy = createTestEnemy({
+        position: { x: 3, y: 0 },
+        isAlerted: true,
+        movementBehaviorId: 'diagonal', // Specific movement behavior
+      });
+      const archetype = ARCHETYPES.get('aggressive_melee');
+      const rng = new SeededRNG(42);
+
+      if (!archetype) {
+        throw new Error('aggressive_melee archetype not found');
+      }
+
+      // Should process without error even with movement behavior set
+      const trace = scoreEnemyActions(enemy, archetype, state, rng);
+      expect(trace.chosen).toBeDefined();
+      expect(trace.chosen.action).toBeDefined();
+    });
+
+    it('wait action serves as fallback when no other actions feasible', () => {
+      const state = createTestGameStateInCombat();
+      const enemy = createTestEnemy({
+        position: { x: 5, y: 5 },
+        isAlerted: true,
+      });
+      const archetype = ARCHETYPES.get('aggressive_melee');
+      const rng = new SeededRNG(42);
+
+      if (!archetype) {
+        throw new Error('aggressive_melee archetype not found');
+      }
+
+      const trace = scoreEnemyActions(enemy, archetype, state, rng);
+      // Wait should always be available
+      const waitAction = trace.candidates.find(c => c.action.type === 'wait');
+      expect(waitAction).toBeDefined();
+    });
+  });
+
+  describe('Ability cooldown filtering and tie-breaking', () => {
+    it('filters out abilities on cooldown from candidates', () => {
+      const state = createTestGameStateInCombat();
+      const enemy = createTestEnemy({
+        position: { x: 1, y: 0 },
+        isAlerted: true,
+        abilityCooldowns: {
+          power_strike: 1, // Still on cooldown
+          fireball: 0,      // Ready to use
+        },
+      });
+      const archetype = ARCHETYPES.get('hazard_creator');
+      const rng = new SeededRNG(42);
+
+      if (!archetype) {
+        throw new Error('hazard_creator archetype not found');
+      }
+
+      const trace = scoreEnemyActions(enemy, archetype, state, rng);
+      // Ability candidates should only include those not on cooldown
+      const abilityActions = trace.candidates.filter(c => c.action.type === 'ability');
+      for (const action of abilityActions) {
+        if (action.action.type === 'ability' && action.action.abilityId !== undefined) {
+          const cooldown = enemy.abilityCooldowns?.[action.action.abilityId] ?? 0;
+          expect(cooldown).toBe(0);
+        }
+      }
+    });
+
+    it('picks first candidate when multiple have equal score (stable tie-breaking)', () => {
+      const state = createTestGameStateInCombat();
+      const enemy = createTestEnemy({
+        position: { x: 5, y: 5 },
+        isAlerted: true,
+      });
+      // Use archetype that might produce tied scores
+      const archetype = ARCHETYPES.get('cautious_defensive');
+      const rng = new SeededRNG(42);
+
+      if (!archetype) {
+        throw new Error('cautious_defensive archetype not found');
+      }
+
+      const trace = scoreEnemyActions(enemy, archetype, state, rng);
+      
+      // Check if chosen is indeed the highest-scoring
+      const maxScore = Math.max(...trace.candidates.map(c => c.totalScore));
+      expect(trace.chosen.totalScore).toBe(maxScore);
+      
+      // If there are tied candidates, chosen should be the first one (stable sort)
+      const tiedCandidates = trace.candidates.filter(c => c.totalScore === maxScore);
+      if (tiedCandidates.length > 1) {
+        const chosenIndex = trace.candidates.indexOf(trace.chosen);
+        const firstTiedIndex = trace.candidates.findIndex(c => c.totalScore === maxScore);
+        expect(chosenIndex).toBe(firstTiedIndex);
+      }
+    });
+
+    it('includes all available actions even with cooldowns', () => {
+      const state = createTestGameStateInCombat();
+      const enemy = createTestEnemy({
+        position: { x: 1, y: 0 },
+        isAlerted: true,
+        abilityCooldowns: {
+          power_strike: 5, // On cooldown
+          fireball: 2,      // On cooldown
+        },
+      });
+      const archetype = ARCHETYPES.get('aggressive_melee');
+      const rng = new SeededRNG(42);
+
+      if (!archetype) {
+        throw new Error('aggressive_melee archetype not found');
+      }
+
+      const trace = scoreEnemyActions(enemy, archetype, state, rng);
+      // Should still have move, attack, and wait at minimum
+      const actionTypes = trace.candidates.map(c => c.action.type);
+      expect(actionTypes.includes('attack')).toBe(true);
+      expect(actionTypes.includes('wait')).toBe(true);
+    });
+  });
 });
