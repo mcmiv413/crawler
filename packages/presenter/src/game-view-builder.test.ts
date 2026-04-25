@@ -1,7 +1,7 @@
 import { describe, it, expect } from 'vitest';
 import { buildGameView } from './game-view-builder.js';
 import { entityId, posKey, EMPTY_RUN_METRICS } from '@dungeon/contracts';
-import type { GameState, RunState, NpcState } from '@dungeon/contracts';
+import type { GameState, RunState, NpcState, EnemyInstance } from '@dungeon/contracts';
 import { createTestGameStateInCombat, createTestEnemy } from '@dungeon/core/testing';
 
 function makeFloor(depth: number, playerOnStairsUp = false) {
@@ -1563,7 +1563,7 @@ describe('Entity deduplication and sorting', () => {
   });
 
   it('sorts entities by distance from player', () => {
-    const state = createTestGameStateInCombat();
+    let state = createTestGameStateInCombat();
     if (!state.run) throw new Error('No run');
 
     // Create multiple enemies at different distances
@@ -1571,13 +1571,18 @@ describe('Entity deduplication and sorting', () => {
     const enemy2 = createTestEnemy({ id: entityId('e2'), position: { x: 5, y: 0 } });
     const enemy3 = createTestEnemy({ id: entityId('e3'), position: { x: 3, y: 0 } });
 
-    state.run.enemies.set('1,0', enemy1);
-    state.run.enemies.set('5,0', enemy2);
-    state.run.enemies.set('3,0', enemy3);
+    const enemiesMap = new Map(state.run.enemies);
+    enemiesMap.set('1,0', enemy1);
+    enemiesMap.set('5,0', enemy2);
+    enemiesMap.set('3,0', enemy3);
+    state = {
+      ...state,
+      run: { ...state.run, enemies: enemiesMap },
+    };
 
     const view = buildGameView(state);
     const entities = view.map?.entities ?? [];
-    const enemyEntities = entities.filter(e => e.entityType === 'enemy');
+    const enemyEntities = entities.filter(e => e.type === 'enemy');
 
     // Should be sorted by distance (closer first)
     for (let i = 1; i < enemyEntities.length; i++) {
@@ -1588,14 +1593,18 @@ describe('Entity deduplication and sorting', () => {
   });
 
   it('renders nemesis with special coloring', () => {
-    const state = createTestGameStateInCombat({ enemyAt: { x: 1, y: 0 } });
+    let state = createTestGameStateInCombat({ enemyAt: { x: 1, y: 0 } });
     if (!state.run) throw new Error('No run');
 
     // Get the enemy and set nemesis ID
     const enemy = Array.from(state.run.enemies.values())[0]!;
     const nemesisEnemy = { ...enemy, nemesisId: entityId('nemesis1') };
-    state.run.enemies.clear();
-    state.run.enemies.set('1,0', nemesisEnemy);
+    const nemesisMap = new Map<string, EnemyInstance>();
+    nemesisMap.set('1,0', nemesisEnemy);
+    state = {
+      ...state,
+      run: { ...state.run, enemies: nemesisMap },
+    };
 
     const view = buildGameView(state);
     const mapEntities = view.map?.entities ?? [];
@@ -1610,15 +1619,22 @@ describe('Entity deduplication and sorting', () => {
 
 describe('Quest view and death context', () => {
   it('builds quest view with active quests', () => {
-    const state = createTestGameStateInCombat();
-    state.activeQuests = [
-      {
-        id: entityId('q1'),
-        questType: 'hunt_dangerous_enemy',
-        status: 'in_progress',
-        progress: { enemiesKilled: 2, enemiesRequired: 5 },
-      },
-    ];
+    let state = createTestGameStateInCombat();
+    state = {
+      ...state,
+      activeQuests: [
+        {
+          id: 'q1',
+          title: 'Hunt the Dangerous Enemy',
+          description: 'Hunt down a dangerous enemy',
+          status: 'active',
+          targetEnemyTemplateId: 'goblin',
+          targetFloorDepth: 5,
+          giverNpcId: entityId('npc1'),
+          rewardGold: 100,
+        },
+      ],
+    };
 
     const view = buildGameView(state);
     expect(view.activeQuests).toBeDefined();
@@ -1626,11 +1642,14 @@ describe('Quest view and death context', () => {
   });
 
   it('sets phase to game_over when player is dead', () => {
-    const state = createTestGameStateInCombat();
-    state.phase = 'game_over';
-    state.player = {
-      ...state.player,
-      stats: { ...state.player.stats, health: 0 },
+    let state = createTestGameStateInCombat();
+    state = {
+      ...state,
+      phase: 'game_over',
+      player: {
+        ...state.player,
+        stats: { ...state.player.stats, health: 0 },
+      },
     };
 
     const view = buildGameView(state);
@@ -1639,8 +1658,11 @@ describe('Quest view and death context', () => {
   });
 
   it('handles no active quests gracefully', () => {
-    const state = createTestGameStateInCombat();
-    state.activeQuests = [];
+    let state = createTestGameStateInCombat();
+    state = {
+      ...state,
+      activeQuests: [],
+    };
 
     const view = buildGameView(state);
     expect(view.activeQuests).toBeDefined();
@@ -1658,10 +1680,13 @@ describe('Quest view and death context', () => {
   });
 
   it('handles run progression data showing dungeon phase', () => {
-    const state = createTestGameStateInCombat();
+    let state = createTestGameStateInCombat();
     if (!state.run) throw new Error('No run');
 
-    state.run.turnCount = 50;
+    state = {
+      ...state,
+      run: { ...state.run, turnCount: 50 },
+    };
     const view = buildGameView(state);
     
     // Combat log entries reflect game progression

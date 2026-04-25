@@ -212,7 +212,7 @@ describe('state validators', () => {
 
     it('rejects enemy with negative tier', () => {
       const enemy = createTestEnemy();
-      const invalid = { ...enemy, tier: -1 };
+      const invalid = { ...enemy, tier: -1 } as any;
       const errors = validateEnemy(invalid);
       expect(errors.some(e => e.path === 'tier')).toBe(true);
     });
@@ -288,7 +288,7 @@ describe('state validators', () => {
     });
 
     it('validates enemies in run', () => {
-      const enemy = createTestEnemy({ tier: -1 });
+      const enemy = createTestEnemy({ tier: -1 as any });
       const run = createTestRunState({
         enemies: new Map([['0,0', enemy]]),
       });
@@ -423,8 +423,8 @@ describe('state validators', () => {
     });
 
     it('detects multiple invalid enemies in run', () => {
-      const enemy1 = createTestEnemy({ id: entityId('e1'), tier: -1 });
-      const enemy2 = createTestEnemy({ id: entityId('e2'), level: -5 as any });
+      const enemy1 = createTestEnemy({ id: entityId('e1'), tier: -1 as any });
+      const enemy2 = createTestEnemy({ id: entityId('e2'), tier: -5 as any });
 
       const state = createTestGameState({ phase: 'dungeon' });
       const invalid = {

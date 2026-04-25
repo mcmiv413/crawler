@@ -195,12 +195,13 @@ describe('guaranteed boss spawn on deep floors', () => {
 
 describe('nemesis replacement and world modifiers', () => {
   it('nemesis replaces matching template enemy when available', () => {
-    const nemesis = {
+    const nemesis: any = {
       id: 'nemesis_1' as any,
       name: 'The Archer King',
+      title: 'the Archer King',
       sourceTemplateId: 'goblin_archer',
       rank: 1,
-      tier: 2,
+      tier: 2 as const,
       stats: { maxHealth: 100, health: 100, attack: 15, defense: 5, accuracy: 80, evasion: 20, speed: 120 },
       traits: [],
       weaknesses: [],

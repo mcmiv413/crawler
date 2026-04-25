@@ -468,8 +468,8 @@ describe('processEnemyTurns', () => {
       // Verify accumulators update
       expect(result1.state.run?.speedAccumulators).toBeDefined();
       if (result1.state.run !== null) {
-        const fastAccum = result1.state.run.speedAccumulators.fast ?? 0;
-        const slowAccum = result1.state.run.speedAccumulators.slow ?? 0;
+        const fastAccum = result1.state.run.speedAccumulators[fast.id] ?? 0;
+        const slowAccum = result1.state.run.speedAccumulators[slow.id] ?? 0;
         // After fast acts once, fast accum should be ~0.2, slow ~0.6
         expect(fastAccum).toBeLessThan(1);
         expect(slowAccum).toBeGreaterThanOrEqual(0);
@@ -560,10 +560,15 @@ describe('processEnemyTurns', () => {
         nemesisId: entityId('nemesis_1'),
       });
 
-      const state = makeTurnState({ x: 0, y: 0 }, [nemesisEnemy]);
-      state.world.nemeses = [{
+      let state = makeTurnState({ x: 0, y: 0 }, [nemesisEnemy]);
+      state = {
+        ...state,
+        world: {
+          ...state.world,
+          nemeses: [{
         id: entityId('nemesis_1'),
         name: 'Test Nemesis',
+        title: 'the Fierce',
         sourceTemplateId: 'goblin',
         rank: 1,
         tier: 2,
@@ -572,11 +577,14 @@ describe('processEnemyTurns', () => {
         weaknesses: [],
         killEventId: null,
         encounterCount: 0,
-        promotionStage: 0,
-        lastSeenFloor: null,
-        nextPossibleFloor: 2,
-        title: 'the Fierce',
-      }];
+        isActive: true,
+        killCount: 0,
+        killedByWeaponType: null,
+        floorOfAscension: 2,
+        biomeOfAscension: 'dungeon',
+      }],
+        },
+      };
 
       const rng = new SeededRNG(1);
       const result = processEnemyTurns(state, rng);
@@ -593,7 +601,7 @@ describe('processEnemyTurns', () => {
         id: entityId('stunned'), position: { x: 1, y: 0 },
         stats: { maxHealth: 30, health: 30, attack: 8, defense: 3, accuracy: 70, evasion: 15, speed: 100 },
         isAlerted: true,
-        statuses: [{ id: 'stun', durationTurns: 1, source: 'test', isCritical: false }],
+        statuses: [{ id: 'stun', turnsRemaining: 1, magnitude: 1, sourceId: entityId('test') }],
       });
 
       const state = makeTurnState({ x: 0, y: 0 }, [stunned]);
@@ -642,7 +650,7 @@ describe('processEnemyTurns', () => {
         [enemy],
         {
           playerHealth: 100,
-          playerStatuses: [{ id: 'burn', durationTurns: 2, source: 'trap', isCritical: false }],
+          playerStatuses: [{ id: 'burn', turnsRemaining: 2, magnitude: 5, sourceId: entityId('trap') }],
         },
       );
       const rng = new SeededRNG(1);
@@ -667,7 +675,7 @@ describe('processEnemyTurns', () => {
         [enemy],
         {
           playerHealth: 5,
-          playerStatuses: [{ id: 'burn', durationTurns: 2, source: 'trap', isCritical: false }],
+          playerStatuses: [{ id: 'burn', turnsRemaining: 2, magnitude: 5, sourceId: entityId('trap') }],
         },
       );
       const rng = new SeededRNG(1);
@@ -683,7 +691,7 @@ describe('processEnemyTurns', () => {
         id: entityId('burning'), position: { x: 1, y: 0 },
         stats: { maxHealth: 30, health: 30, attack: 8, defense: 3, accuracy: 70, evasion: 15, speed: 100 },
         isAlerted: true,
-        statuses: [{ id: 'burn', durationTurns: 2, source: 'test', isCritical: false }],
+        statuses: [{ id: 'burn', turnsRemaining: 2, magnitude: 5, sourceId: entityId('test') }],
       });
 
       const state = makeTurnState({ x: 0, y: 0 }, [withStatus]);

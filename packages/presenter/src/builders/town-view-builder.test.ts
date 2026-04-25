@@ -116,8 +116,11 @@ describe('buildTownView', () => {
 
       const view = buildTownView(state);
       expect(view.factions).toHaveLength(1);
-      expect(view.factions[0].name).toBe('Guild of Thieves');
-      expect(view.factions[0].power).toBe(50);
+      const faction = view.factions[0];
+      if (faction) {
+        expect(faction.name).toBe('Guild of Thieves');
+        expect(faction.power).toBe(50);
+      }
     });
 
     it('shows no factions when none exist', () => {
@@ -147,6 +150,11 @@ describe('buildTownView', () => {
               killedByWeaponType: null,
               sourceTemplateId: 'goblin',
               weaknesses: [],
+              stats: { maxHealth: 100, health: 100, attack: 20, defense: 10, accuracy: 75, evasion: 20, speed: 10 },
+              traits: [],
+              killEventId: null,
+              encounterCount: 5,
+              biomeOfAscension: 'cavern',
             },
             {
               id: entityId('nemesis2'),
@@ -160,6 +168,11 @@ describe('buildTownView', () => {
               killedByWeaponType: 'blade',
               sourceTemplateId: 'orc',
               weaknesses: [],
+              stats: { maxHealth: 80, health: 0, attack: 15, defense: 8, accuracy: 60, evasion: 15, speed: 8 },
+              traits: [],
+              killEventId: entityId('kill1'),
+              encounterCount: 3,
+              biomeOfAscension: 'forest',
             },
           ],
         },
@@ -167,9 +180,15 @@ describe('buildTownView', () => {
 
       const view = buildTownView(state);
       expect(view.nemeses).toHaveLength(1);
-      expect(view.nemeses[0].name).toBe('Dread Goblin');
+      const activeNemesis = view.nemeses[0];
+      if (activeNemesis) {
+        expect(activeNemesis.name).toBe('Dread Goblin');
+      }
       expect(view.slainNemeses).toHaveLength(1);
-      expect(view.slainNemeses[0].name).toBe('Slain Orc');
+      const slainNemesis = view.slainNemeses[0];
+      if (slainNemesis) {
+        expect(slainNemesis.name).toBe('Slain Orc');
+      }
     });
 
     it('shows empty nemesis lists when none exist', () => {
@@ -193,10 +212,8 @@ describe('buildTownView', () => {
               name: 'Blacksmith',
               role: 'blacksmith',
               available: true,
-              type: 'blacksmith',
               disposition: 50,
-              stats: { maxHealth: 100, health: 100, attack: 10, defense: 10, accuracy: 50, evasion: 20 },
-              position: { x: 5, y: 5 },
+              dialogueKey: 'blacksmith_greeting',
             },
           ],
         },
@@ -204,8 +221,11 @@ describe('buildTownView', () => {
 
       const view = buildTownView(state);
       expect(view.npcs).toHaveLength(1);
-      expect(view.npcs[0].name).toBe('Blacksmith');
-      expect(view.npcs[0].available).toBe(true);
+      const npc = view.npcs[0];
+      if (npc) {
+        expect(npc.name).toBe('Blacksmith');
+        expect(npc.available).toBe(true);
+      }
     });
   });
 
@@ -221,10 +241,8 @@ describe('buildTownView', () => {
               name: 'Shopkeeper',
               role: 'shopkeeper',
               available: true,
-              type: 'shopkeeper',
               disposition: 50,
-              stats: { maxHealth: 100, health: 100, attack: 5, defense: 5, accuracy: 50, evasion: 20 },
-              position: { x: 5, y: 5 },
+              dialogueKey: 'shopkeeper_greeting',
             },
           ],
           shop: {
@@ -235,7 +253,7 @@ describe('buildTownView', () => {
                 stock: 5,
               },
             ],
-            lastTransaction: null,
+            buybackMultiplier: 0.4,
           },
           highestRarityFound: 'common',
         },
@@ -262,7 +280,7 @@ describe('buildTownView', () => {
               { itemId: 'leather_vest', price: 200, stock: 2 },
               { itemId: 'health_potion', price: 250, stock: 1 },
             ],
-            lastTransaction: null,
+            buybackMultiplier: 0.4,
           },
           highestRarityFound: 'common',
         },
@@ -283,7 +301,7 @@ describe('buildTownView', () => {
               { itemId: 'common_dagger', price: 100, stock: 5 },
               { itemId: 'iron_mace', price: 150, stock: 3 },
             ],
-            lastTransaction: null,
+            buybackMultiplier: 0.4,
           },
           highestRarityFound: 'common',
         },
@@ -303,7 +321,7 @@ describe('buildTownView', () => {
               { itemId: entityId('item1'), price: 100, stock: 0 },
               { itemId: entityId('item2'), price: 150, stock: 3 },
             ],
-            lastTransaction: null,
+            buybackMultiplier: 0.4,
           },
           highestRarityFound: 'common',
         },
