@@ -15,6 +15,6 @@
     "tsBuildInfoFile": "./.tsbuildinfo-tests",
     "types": ["node", "vitest/globals"]
   },
-  "include": ["**/*.ts", "**/*.tsx"],
-  "exclude": ["node_modules"]
+  "include": ["./**/*.ts", "./**/*.tsx", "../packages/**/**.test.ts"],
+  "exclude": ["node_modules", "../vite-helpers.ts"]
 }

@@ -671,20 +671,22 @@ test.describe('Complete Game Loop Journey', () => {
 
     let combatOccurred = false;
     let inventoryOpened = false;
+    const explorationPattern = ['up', 'right', 'down', 'left'] as const;
 
     // 2. Explore and interact
     for (let i = 0; i < 50; i++) {
-      // Randomly explore
-      const direction = (['up', 'down', 'left', 'right'][Math.floor(Math.random() * 4)] as any);
-      try {
-        await gamePage.movePlayer(direction);
-      } catch (e) {
-        // Skip
+      const direction = explorationPattern[i % explorationPattern.length];
+      if (direction) {
+        try {
+          await gamePage.movePlayer(direction);
+        } catch {
+          // Skip blocked moves while keeping the exploration pattern deterministic.
+        }
       }
 
       // Check for enemies and engage in combat
       const enemies = await gamePage.getVisibleEnemies();
-      if (enemies.length > 0 && Math.random() > 0.5) {
+      if (enemies.length > 0 && i % 2 === 0) {
         await gamePage.attackNearestEnemy();
         combatOccurred = true;
         await page.waitForTimeout(300);
