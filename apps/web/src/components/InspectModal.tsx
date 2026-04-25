@@ -72,6 +72,11 @@ export function InspectModal({
                       {entity.health}/{entity.maxHealth}
                     </div>
                   )}
+                  {entity.threatRating && (
+                    <div className={styles.entityThreat} data-threat={entity.threatRating}>
+                      {entity.threatRating}
+                    </div>
+                  )}
                 </div>
               </button>
             ))}
@@ -89,6 +94,15 @@ export function InspectModal({
 
               {selectedEntity.entityType === 'enemy' && (
                 <>
+                  {selectedEntity.threatRating && (
+                    <div className={styles.threatSection}>
+                      <div className={styles.threatLabel}>Threat Level</div>
+                      <div className={styles.threatValue} data-threat={selectedEntity.threatRating}>
+                        {selectedEntity.threatRating}
+                      </div>
+                    </div>
+                  )}
+
                   {selectedEntity.health !== undefined && (
                     <div className={styles.statSection}>
                       <div className={styles.statLabel}>Health</div>

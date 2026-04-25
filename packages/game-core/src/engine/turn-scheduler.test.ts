@@ -424,20 +424,31 @@ describe('processEnemyTurns', () => {
       let currentState = state;
       let allEvents: any[] = [];
 
-      for (let i = 0; i < 5; i++) {
+      for (let i = 0; i < 20; i++) {
         const result = processEnemyTurns(currentState, rng, playerSpeed);
         currentState = result.state;
         allEvents = [...allEvents, ...result.events];
       }
 
       // Fast enemy should act more often than slow enemy
-      const fastActions = allEvents.filter((e) => e.attackerId === 'fast').length;
-      const slowActions = allEvents.filter((e) => e.attackerId === 'slow').length;
-      const veryFastActions = allEvents.filter((e) => e.attackerId === 'very_fast').length;
+      // Count all actions (attacks, moves, abilities, etc.) involving each enemy
+      const veryFastAllActions = allEvents.filter((e) => {
+        const event = e as Record<string, unknown>;
+        return event.attackerId === veryFast.id || event.enemyId === veryFast.id;
+      }).length;
+      const fastAllActions = allEvents.filter((e) => {
+        const event = e as Record<string, unknown>;
+        return event.attackerId === fast.id || event.enemyId === fast.id;
+      }).length;
+      const slowAllActions = allEvents.filter((e) => {
+        const event = e as Record<string, unknown>;
+        return event.attackerId === slow.id || event.enemyId === slow.id;
+      }).length;
 
       // Speed ratio: very_fast (150) > fast (100) > slow (50)
-      expect(veryFastActions).toBeGreaterThanOrEqual(fastActions);
-      expect(fastActions).toBeGreaterThanOrEqual(slowActions);
+      // With 20 iterations, very_fast should act more than fast, and fast more than slow
+      expect(veryFastAllActions).toBeGreaterThanOrEqual(fastAllActions);
+      expect(fastAllActions).toBeGreaterThanOrEqual(slowAllActions);
     });
 
     it('accumulates speed ratios correctly each round', () => {

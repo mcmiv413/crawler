@@ -153,6 +153,35 @@
   margin-top: 2px;
 }
 
+.entityThreat {
+  font-size: 10px;
+  margin-top: 4px;
+  font-weight: 600;
+  padding: 2px 4px;
+  border-radius: 2px;
+  display: inline-block;
+}
+
+.entityThreat[data-threat='Low'] {
+  color: #7dc940;
+  background-color: rgba(125, 201, 64, 0.15);
+}
+
+.entityThreat[data-threat='Moderate'] {
+  color: #f0c960;
+  background-color: rgba(240, 201, 96, 0.15);
+}
+
+.entityThreat[data-threat='High'] {
+  color: #f08a54;
+  background-color: rgba(240, 138, 84, 0.15);
+}
+
+.entityThreat[data-threat='Deadly'] {
+  color: #c85a4a;
+  background-color: rgba(200, 90, 74, 0.15);
+}
+
 .detailsPanel {
   flex: 1;
   padding: 12px;
@@ -195,6 +224,52 @@
   margin-bottom: 16px;
   line-height: 1.4;
   font-size: 11px;
+}
+
+.threatSection {
+  margin-bottom: 16px;
+  padding: 12px;
+  /* colors.inset */
+  background-color: #0a0b0e;
+  border: 1px solid #1e2228;
+  border-radius: 2px;
+  border-left: 3px solid #5a8fc7;
+}
+
+.threatLabel {
+  color: #7b8090;
+  font-size: 10px;
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+  margin-bottom: 6px;
+}
+
+.threatValue {
+  font-weight: 600;
+  font-size: 14px;
+  padding: 6px 8px;
+  border-radius: 2px;
+  display: inline-block;
+}
+
+.threatValue[data-threat='Low'] {
+  color: #7dc940;
+  background-color: rgba(125, 201, 64, 0.1);
+}
+
+.threatValue[data-threat='Moderate'] {
+  color: #f0c960;
+  background-color: rgba(240, 201, 96, 0.1);
+}
+
+.threatValue[data-threat='High'] {
+  color: #f08a54;
+  background-color: rgba(240, 138, 84, 0.1);
+}
+
+.threatValue[data-threat='Deadly'] {
+  color: #c85a4a;
+  background-color: rgba(200, 90, 74, 0.1);
 }
 
 .statSection {

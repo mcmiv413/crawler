@@ -191,7 +191,9 @@ export function ShopPanel({ view, loading, sendCommand }: ShopPanelProps) {
                     {item.weaponData && (
                       <div style={{ fontSize: 9, color: colors.steel }}>
                         <div>
-                          Dmg: {item.weaponData.damage} ({item.weaponData.damageType})
+                          Dmg: {item.weaponData.damageMin && item.weaponData.damageMax
+                            ? `${item.weaponData.damageMin}-${item.weaponData.damageMax}`
+                            : item.weaponData.damage} ({item.weaponData.damageType})
                         </div>
                         {item.weaponData.accuracy > 0 && <div>Acc: +{item.weaponData.accuracy}</div>}
                       </div>

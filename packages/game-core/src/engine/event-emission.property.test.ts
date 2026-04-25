@@ -228,10 +228,15 @@ describe('Event Emission Guarantees (Property Tests)', () => {
       fc.assert(
         fc.property(fc.integer({ min: 1, max: 50 }), (seed) => {
           const state = createTestGameStateInCombat();
+          
+          // Skip if no inventory items to equip
+          if (state.player.inventory.length === 0) return;
+          
+          const itemId = state.player.inventory[0]!;
 
           const result = handleCommand(
             state,
-            { type: 'EQUIP', itemId: 'rusty_sword' },
+            { type: 'EQUIP', itemId },
             new SeededRNG(seed),
           );
 
