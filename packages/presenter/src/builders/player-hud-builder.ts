@@ -175,7 +175,7 @@ export function buildPlayerHud(state: GameState): PlayerHudView {
     speed: p.stats.speed,
     resistances: p.stats.resistances ?? {},
     gold: p.gold,
-    floor: p.floor,
+    floor: state.run?.floor.depth ?? p.floor,
     experience: p.experience,
     experienceForNextLevel,
     biomeId: state.run?.floor.biomeId ?? null,

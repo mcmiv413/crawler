@@ -211,7 +211,6 @@ describe('buildTownView', () => {
 
   describe('shop', () => {
     it('applies shopkeeper discount', () => {
-      const itemId = entityId('potion1');
       state = {
         ...state,
         world: {
@@ -231,7 +230,7 @@ describe('buildTownView', () => {
           shop: {
             items: [
               {
-                itemId,
+                itemId: 'common_dagger',
                 price: 100,
                 stock: 5,
               },
@@ -258,10 +257,10 @@ describe('buildTownView', () => {
           town: { ...state.world.town, prosperity: 20 },
           shop: {
             items: [
-              { itemId: entityId('item1'), price: 100, stock: 5 },
-              { itemId: entityId('item2'), price: 150, stock: 3 },
-              { itemId: entityId('item3'), price: 200, stock: 2 },
-              { itemId: entityId('item4'), price: 250, stock: 1 },
+              { itemId: 'common_dagger', price: 100, stock: 5 },
+              { itemId: 'iron_mace', price: 150, stock: 3 },
+              { itemId: 'leather_vest', price: 200, stock: 2 },
+              { itemId: 'health_potion', price: 250, stock: 1 },
             ],
             lastTransaction: null,
           },
@@ -281,8 +280,8 @@ describe('buildTownView', () => {
           town: { ...state.world.town, prosperity: 80 },
           shop: {
             items: [
-              { itemId: entityId('item1'), price: 100, stock: 5 },
-              { itemId: entityId('item2'), price: 150, stock: 3 },
+              { itemId: 'common_dagger', price: 100, stock: 5 },
+              { itemId: 'iron_mace', price: 150, stock: 3 },
             ],
             lastTransaction: null,
           },
