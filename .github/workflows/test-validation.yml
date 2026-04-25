@@ -13,6 +13,8 @@ jobs:
 
     steps:
       - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
 
       - uses: pnpm/action-setup@v2
         with:
@@ -29,8 +31,22 @@ jobs:
       - name: Type check
         run: NODE_OPTIONS="--max-old-space-size=2048" pnpm run lint:types
 
-      - name: Run unit tests (excluding heavy property/balance tests)
-        run: VITEST_MAX_THREADS=1 NODE_OPTIONS="--max-old-space-size=2048" pnpm vitest run --exclude '**/*.property.test.ts' --exclude '**/*.balance.test.ts'
+      - name: Run unit tests (PR — changed files only)
+        if: github.event_name == 'pull_request'
+        run: >
+          VITEST_MAX_THREADS=1 NODE_OPTIONS="--max-old-space-size=2048"
+          pnpm test
+          --exclude '**/*.property.test.ts'
+          --exclude '**/*.balance.test.ts'
+          --changed "origin/${{ github.base_ref }}"
+
+      - name: Run unit tests (push — full suite)
+        if: github.event_name == 'push'
+        run: >
+          VITEST_MAX_THREADS=1 NODE_OPTIONS="--max-old-space-size=2048"
+          pnpm test
+          --exclude '**/*.property.test.ts'
+          --exclude '**/*.balance.test.ts'
 
       - name: Build all packages
         run: pnpm build

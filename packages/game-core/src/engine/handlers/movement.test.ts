@@ -81,7 +81,7 @@ describe('handleMove - Trap Damage on Walk', () => {
     // Find TRAP_TRIGGERED event
     const trapEvent = result.events.find((e) => e.type === 'TRAP_TRIGGERED');
     expect(trapEvent).toBeDefined();
-    expect((trapEvent as any).trapName).toBe('Spike Trap');
+    expect((trapEvent as any).trapName).toBe(OBJECT_TEMPLATES.get('trap_spikes')!.name);
     expect((trapEvent as any).damage).toBe(expectedDamage); // damage scales with rarity
     expect((trapEvent as any).position).toEqual(trapPosition);
   });

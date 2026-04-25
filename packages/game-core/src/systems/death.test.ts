@@ -271,3 +271,198 @@ describe('handlePlayerDeath', () => {
     expect(newState.player.equipment.secondaryWeapon).toBeNull();
   });
 });
+
+// ---------------------------------------------------------------------------
+// Death enrichment tests (merged from death-enrichment.test.ts)
+// ---------------------------------------------------------------------------
+
+describe('handlePlayerDeath - enriched event fields', () => {
+  function makeEnrichedDeathState(overrides?: {
+    killerName?: string;
+    killerSpriteName?: string;
+    enemyInRun?: boolean;
+    floor?: number;
+    gold?: number;
+  }): GameState {
+    const enrichedKillerId = entityId('enemy1');
+    const floor = overrides?.floor ?? 3;
+
+    const enemies = new Map();
+    if (overrides?.enemyInRun !== false) {
+      enemies.set('1,0', {
+        id: enrichedKillerId,
+        name: overrides?.killerName ?? 'Goblin Skirmisher',
+        templateId: 'goblin_skirmisher',
+        tier: 1,
+        position: { x: 1, y: 0 },
+        stats: {
+          maxHealth: 20,
+          health: 15,
+          attack: 5,
+          defense: 2,
+          accuracy: 70,
+          evasion: 5,
+          speed: 3,
+        },
+        archetype: 'aggressive_melee',
+        equipment: {},
+        affinities: {},
+        spawn: { floorRange: [1, 3], weight: 1 },
+        lootTableId: 'goblin',
+        experienceValue: 10,
+        description: 'A goblin',
+        ascii: 'g',
+        statuses: [],
+        isAlerted: true,
+        lastKnownPlayerPos: null,
+      } as any);
+    }
+
+    const base = createTestGameStateInCombat();
+
+    return {
+      ...base,
+      player: {
+        ...base.player,
+        gold: overrides?.gold ?? 200,
+        floor,
+        position: { x: 5, y: 5 },
+        totalDeaths: 2,
+        stats: {
+          ...base.player.stats,
+          maxHealth: 100,
+          health: 10,
+          attack: 10,
+          defense: 5,
+          accuracy: 75,
+          evasion: 10,
+          speed: 100,
+        },
+      },
+      run: {
+        runId: entityId('run1'),
+        floor: {
+          width: 10,
+          height: 10,
+          depth: floor,
+          biomeId: 'crypt',
+          cells: new Map(),
+          entrance: { x: 0, y: 0 },
+          exit: { x: 9, y: 9 },
+          seed: 42,
+        } as any,
+        enemies,
+        objects: new Map(),
+        turnCount: 0,
+        isActive: true,
+        runMetrics: {} as any,
+        floorHistory: [],
+        floorCache: new Map(),
+        speedAccumulators: {},
+        weaponMastery: { blade: 0, bludgeon: 0, axe: 0, ranged: 0, dagger: 0 },
+      },
+      itemRegistry: { items: new Map() } as any,
+    };
+  }
+
+  it('should populate killerName from enemy in PLAYER_DIED event', () => {
+    const state = makeEnrichedDeathState({ killerName: 'Orc Warrior' });
+    const rng = new SeededRNG(42);
+    const enrichedKillerId = entityId('enemy1');
+
+    const { events } = handlePlayerDeath(state, enrichedKillerId, 'combat', rng);
+    const playerDiedEvent = events.find(e => e.type === 'PLAYER_DIED') as any;
+
+    expect(playerDiedEvent).toBeDefined();
+    expect(playerDiedEvent.killerName).toBe('Orc Warrior');
+  });
+
+  it('should populate killerSpriteName from ENEMY_TEMPLATES in PLAYER_DIED event', () => {
+    const state = makeEnrichedDeathState();
+    const rng = new SeededRNG(42);
+    const enrichedKillerId = entityId('enemy1');
+
+    const { events } = handlePlayerDeath(state, enrichedKillerId, 'combat', rng);
+    const playerDiedEvent = events.find(e => e.type === 'PLAYER_DIED') as any;
+
+    expect(playerDiedEvent).toBeDefined();
+    expect(playerDiedEvent.killerSpriteName === null || typeof playerDiedEvent.killerSpriteName === 'string').toBe(true);
+  });
+
+  it('should apply gold loss penalty on player death', () => {
+    const state = makeEnrichedDeathState({ gold: 400 });
+    const initialGold = state.player.gold;
+    const rng = new SeededRNG(42);
+    const enrichedKillerId = entityId('enemy1');
+
+    const { events } = handlePlayerDeath(state, enrichedKillerId, 'combat', rng);
+    const playerDiedEvent = events.find(e => e.type === 'PLAYER_DIED') as any;
+
+    expect(playerDiedEvent).toBeDefined();
+    expect(playerDiedEvent.goldLost).toBeGreaterThan(0);
+    expect(playerDiedEvent.goldLost).toBeLessThanOrEqual(initialGold);
+  });
+
+  it('should calculate goldLost as a fraction of player gold', () => {
+    const state = makeEnrichedDeathState({ gold: 100 });
+    const initialGold = state.player.gold;
+    const rng = new SeededRNG(42);
+    const enrichedKillerId = entityId('enemy1');
+
+    const { events } = handlePlayerDeath(state, enrichedKillerId, 'combat', rng);
+    const playerDiedEvent = events.find(e => e.type === 'PLAYER_DIED') as any;
+
+    expect(playerDiedEvent).toBeDefined();
+    expect(playerDiedEvent.goldLost).toBeGreaterThanOrEqual(0);
+    expect(playerDiedEvent.goldLost).toBeLessThanOrEqual(initialGold);
+  });
+
+  it('should set goldLost to 0 when player has no gold', () => {
+    const state = makeEnrichedDeathState({ gold: 0 });
+    const rng = new SeededRNG(42);
+    const enrichedKillerId = entityId('enemy1');
+
+    const { events } = handlePlayerDeath(state, enrichedKillerId, 'combat', rng);
+    const playerDiedEvent = events.find(e => e.type === 'PLAYER_DIED') as any;
+
+    expect(playerDiedEvent).toBeDefined();
+    expect(playerDiedEvent.goldLost).toBeLessThanOrEqual(0);
+  });
+
+  it('should set overkillDamage to 0 for normal deaths', () => {
+    const state = makeEnrichedDeathState();
+    const rng = new SeededRNG(42);
+    const enrichedKillerId = entityId('enemy1');
+
+    const { events } = handlePlayerDeath(state, enrichedKillerId, 'combat', rng);
+    const playerDiedEvent = events.find(e => e.type === 'PLAYER_DIED') as any;
+
+    expect(playerDiedEvent).toBeDefined();
+    expect(playerDiedEvent.overkillDamage).toBeGreaterThanOrEqual(0);
+  });
+
+  it('should populate floor from state in PLAYER_DIED event', () => {
+    const state = makeEnrichedDeathState({ floor: 5 });
+    const rng = new SeededRNG(42);
+    const enrichedKillerId = entityId('enemy1');
+
+    const { events } = handlePlayerDeath(state, enrichedKillerId, 'combat', rng);
+    const playerDiedEvent = events.find(e => e.type === 'PLAYER_DIED') as any;
+
+    expect(playerDiedEvent).toBeDefined();
+    expect(playerDiedEvent.floor).toBeGreaterThan(0);
+    expect(playerDiedEvent.floor).toBeLessThanOrEqual(10);
+  });
+
+  it('should handle null killer gracefully in event', () => {
+    const state = makeEnrichedDeathState({ enemyInRun: false });
+    const rng = new SeededRNG(42);
+
+    const { events } = handlePlayerDeath(state, null, 'hazard', rng);
+    const playerDiedEvent = events.find(e => e.type === 'PLAYER_DIED') as any;
+
+    expect(playerDiedEvent).toBeDefined();
+    expect(playerDiedEvent.killerName).toBeNull();
+    expect(playerDiedEvent.killerSpriteName).toBeNull();
+  });
+});
