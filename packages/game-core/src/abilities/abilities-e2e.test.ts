@@ -8,11 +8,26 @@ import { SeededRNG } from '../utils/rng.js';
  * E2E test for all abilities: Ensures no ability silently fails or becomes a no-op.
  * This catches cases like Bug 1 where self-targeted abilities fail when enemies are in range.
  */
+// Sample weapon IDs for each weapon type (used to satisfy weapon_type requirements)
+const WEAPON_BY_TYPE: Record<string, string> = {
+  blade: 'rusty_sword',
+  bludgeon: 'iron_mace',
+  axe: 'hand_axe',
+  ranged: 'short_bow',
+  dagger: 'common_dagger',
+};
+
 describe('All Abilities E2E', () => {
   for (const ability of ALL_ABILITY_DEFINITIONS) {
     it(`${ability.id} emits event when executed`, () => {
+      // If ability requires a specific weapon type, equip an appropriate weapon
+      const weaponReq = ability.requirements.find(r => r.kind === 'weapon_type');
+      const equippedWeaponId = weaponReq && 'weaponType' in weaponReq
+        ? WEAPON_BY_TYPE[weaponReq.weaponType]
+        : undefined;
+
       // Create combat state and grant ability
-      let state = createTestGameStateInCombat();
+      let state = createTestGameStateInCombat(equippedWeaponId ? { equippedWeaponId } : undefined);
       if (state.run === null || !state.run.enemies.size) {
         throw new Error('test setup failed: no combat');
       }
@@ -22,7 +37,7 @@ describe('All Abilities E2E', () => {
         ...state,
         player: {
           ...state.player,
-          abilities: [...state.player.abilities, ability.id as any],
+          abilities: [...state.player.abilities, { id: ability.id, cooldownRemaining: 0 }],
         },
       };
 
@@ -31,8 +46,12 @@ describe('All Abilities E2E', () => {
       const firstEnemy = [...state.run.enemies.values()][0];
       if (!firstEnemy) throw new Error('no enemies in combat');
 
+      // Self-targeted abilities (e.g. second_wind) should not receive an enemy target
+      const isSelfTargeted = ability.requirements.some(r => r.kind === 'no_target');
+      const targetArg = isSelfTargeted ? undefined : firstEnemy.id;
+
       // Try using ability - this is the core test: no silent failures
-      const result = handleUseAbility(state, ability.id, rng, firstEnemy.id);
+      const result = handleUseAbility(state, ability.id, rng, targetArg);
 
       // CRITICAL: Events must be non-empty (catches silent no-ops like Bug 1)
       if (result.events.length === 0) {

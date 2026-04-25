@@ -1,9 +1,6 @@
 import type { BiomeDefinition } from './stone-crypt.js';
-import { BIOME_DEFINITIONS, stoneCrypt } from './index.js';
-
-export type { BiomeDefinition } from './stone-crypt.js';
-
-export const BIOMES = BIOME_DEFINITIONS;
+import { stoneCrypt } from './stone-crypt.js';
+import { BIOME_DEFINITIONS } from './index.js';
 
 export function BIOME_BY_FLOOR(depth: number, rng?: { next(): number }): BiomeDefinition {
   const candidates = Array.from(BIOME_DEFINITIONS.values()).filter(

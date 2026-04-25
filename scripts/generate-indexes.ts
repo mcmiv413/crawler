@@ -259,6 +259,19 @@ export const ${di.name} = ${di.generator}(${config.exportName});`;
     lines.push(`\nexport const ENCHANTMENT_BY_ID: ReadonlyMap<string, ${config.itemType}> = new Map(\n  ${config.exportName}.map(e => [e.id, e]),\n);`);
   }
 
+  // Special handling for biomes: create BIOMES alias and re-export BiomeDefinition type
+  if (config.sourceDir === 'biomes' && config.exportType === 'map') {
+    lines.push(`\nexport const BIOMES = ${config.exportName};`);
+    lines.push(`export type { ${config.itemType} } from '${config.typeImport}';`);
+  }
+
+  // Special handling for factions: create FACTIONS alias and INITIAL_FACTIONS array
+  if (config.sourceDir === 'factions' && config.exportType === 'map') {
+    lines.push(`\nimport type { FactionState } from '@dungeon/contracts';`);
+    lines.push(`export const FACTIONS = ${config.exportName};`);
+    lines.push(`export const INITIAL_FACTIONS: readonly FactionState[] = Array.from(${config.exportName}.values()).map(f => ({\n  id: f.id,\n  name: f.name,\n  power: f.initialPower,\n  disposition: f.initialDisposition,\n}));`);
+  }
+
   lines.push(`\nexport {\n  ${reExports},\n};`);
 
   // Re-export utilities if utilities.ts exists
