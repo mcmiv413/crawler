@@ -2,7 +2,7 @@ import { describe, it, expect } from 'vitest';
 import { applyRunConsequences, evaluateEventChains } from './world-consequences.js';
 import type { RunMetrics, NpcState } from '@dungeon/contracts';
 import { entityId, EMPTY_RUN_METRICS } from '@dungeon/contracts';
-import { createTestGameState } from '../test-utils.js';
+import { createTestGameState, createTestNemesis } from '../test-utils.js';
 
 const metrics = (overrides: Partial<RunMetrics> = {}): RunMetrics => ({
   ...EMPTY_RUN_METRICS,
@@ -118,6 +118,52 @@ describe('applyRunConsequences shopkeeper availability', () => {
 });
 
 describe('evaluateEventChains', () => {
+  it('rewards recent NEMESIS_SLAIN history when no nemeses remain active', () => {
+    const slainNemesis = createTestNemesis({ isActive: false });
+    const nemesisSlainEvent = {
+      type: 'NEMESIS_SLAIN' as const,
+      nemesisId: slainNemesis.id,
+      nemesisName: slainNemesis.name,
+      blueprintUnlocked: null,
+      lootItemName: null,
+      floor: 2,
+      timestamp: Date.now(),
+      turnNumber: 1,
+    };
+    const state = createTestGameState({
+      world: {
+        nemeses: [slainNemesis],
+        eventHistory: [nemesisSlainEvent],
+      },
+    });
+
+    const { state: newState } = evaluateEventChains(state);
+
+    expect(newState.world.town.prosperity).toBeGreaterThan(state.world.town.prosperity);
+    expect(newState.world.town.corruption).toBeLessThan(state.world.town.corruption);
+  });
+
+  it('does not reward generic ENTITY_DIED history when no nemeses are active', () => {
+    const deathEvent = {
+      type: 'ENTITY_DIED' as const,
+      entityId: entityId('enemy_1'),
+      killerId: entityId('player_1'),
+      entityName: 'Goblin',
+      timestamp: Date.now(),
+      turnNumber: 1,
+    };
+    const state = createTestGameState({
+      world: {
+        eventHistory: [deathEvent],
+      },
+    });
+
+    const { state: newState } = evaluateEventChains(state);
+
+    expect(newState.world.town.prosperity).toBe(state.world.town.prosperity);
+    expect(newState.world.town.corruption).toBe(state.world.town.corruption);
+  });
+
   it('triggers fear spike when 3+ deaths in recent history', () => {
     const deathEvent = {
       type: 'PLAYER_DIED' as const,

@@ -4,8 +4,10 @@
  * Type-check test files across all packages/apps.
  *
  * Runs tsc for each tsconfig.test.json in parallel.
- * Suppresses TS6059 (rootDir validation) errors - real type errors are reported.
- * Exits with failure on first error.
+ * Ignores TS6059 (cross-package rootDir) warnings from monorepo imports.
+ * These warnings are expected in monorepos and don't indicate type errors.
+ * Real type errors (TS1-TS5999, TS7000+) are reported and fail the check.
+ * Exits with failure on first real error.
  */
 
 import { spawn } from 'child_process';
@@ -83,17 +85,21 @@ async function main() {
       console.log(`  ✓ ${configName}`);
     } else {
       const lines = result.output.split('\n');
+      // TS6059: cross-package rootDir warnings are expected in monorepos with path aliases
       const realErrors = lines.filter((line) => !line.includes('TS6059'));
+      const realErrorCount = realErrors.filter((line) => line.includes('error TS')).length;
 
-      if (realErrors.some((line) => line.includes('error TS'))) {
-        console.error(`  ✗ ${configName} — errors found`);
+      if (realErrorCount > 0) {
+        console.error(`  ✗ ${configName} — ${realErrorCount} error(s)`);
         failures.push({ configName, errors: realErrors });
-        totalErrors += realErrors.filter((line) => line.includes('error TS')).length;
+        totalErrors += realErrorCount;
         failed = true;
         allOutput.push(`\n[${configName}]`);
         allOutput.push(...realErrors.filter((line) => line.trim()));
       } else {
-        console.log(`  ✓ ${configName} (only rootDir validation warnings)`);
+        const ts6059Count = lines.filter((line) => line.includes('TS6059')).length;
+        const suffix = ts6059Count > 0 ? ` (${ts6059Count} cross-package TS6059 ignored)` : '';
+        console.log(`  ✓ ${configName}${suffix}`);
       }
     }
   }

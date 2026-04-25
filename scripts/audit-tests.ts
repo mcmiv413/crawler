@@ -1,12 +1,13 @@
 /**
+/**
  * audit-tests.ts
  * Automated test audit script to classify all tests by layer and identify anti-patterns.
- * Run with: npx tsx audit-tests.ts > tests/AUDIT.md
+ * Run with: pnpm exec tsx scripts/audit-tests.ts > tests/AUDIT.md
  */
 
 import * as fs from 'fs';
 import * as path from 'path';
-import { analyzeTestFile } from './packages/game-core/src/testing/test-layer-advisor.js';
+import { analyzeTestFile } from '../packages/game-core/src/testing/test-layer-advisor.js';
 
 interface AuditResult {
   filePath: string;

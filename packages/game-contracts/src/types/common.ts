@@ -68,7 +68,7 @@ export type EquipSlot = 'weapon' | 'chest' | 'head' | 'gloves' | 'boots' | 'ring
 export type GamePhase = 'town' | 'dungeon' | 'combat' | 'game_over';
 
 /** Town action types */
-export type TownActionType = 'shop_buy' | 'shop_sell' | 'shop_undo' | 'rest' | 'talk_npc' | 'prepare' | 'enter_dungeon' | 'enchant_armor';
+export type TownActionType = 'shop_buy' | 'shop_sell' | 'shop_undo' | 'rest' | 'talk_npc' | 'enter_dungeon' | 'enchant_armor';
 
 /** Create a branded EntityId from a string */
 export function entityId(id: string): EntityId {

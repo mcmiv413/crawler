@@ -47,6 +47,31 @@ function makeEnemy(id: string, x: number, y: number): EnemyInstance {
 // ---------------------------------------------------------------------------
 
 describe('GameEngine floor navigation', () => {
+  it('entering the dungeon completes floor-depth quests that target depth 1', () => {
+    const engine = new GameEngine();
+    const townState = engine.createNewGame(42);
+    const quest = {
+      id: 'reach_depth_1',
+      title: 'Take the first step',
+      description: 'Enter the dungeon and reach floor 1.',
+      status: 'active' as const,
+      targetFloorDepth: 1,
+      giverNpcId: entityId('npc_informant'),
+      rewardGold: 25,
+    };
+
+    const stateWithQuest: GameState = {
+      ...townState,
+      activeQuests: [quest],
+    };
+
+    const result = engine.submitCommand(stateWithQuest, { type: 'TOWN_ACTION', action: 'enter_dungeon' });
+
+    expect(result.state.activeQuests[0]!.status).toBe('complete');
+    expect(result.state.player.gold).toBe(stateWithQuest.player.gold + quest.rewardGold);
+    expect(result.events.some(event => event.type === 'QUEST_COMPLETED' && event.questId === quest.id)).toBe(true);
+  });
+
   it('floor 1 run starts with empty floor history', () => {
     const engine = new GameEngine();
     const state = enterDungeon(engine);
@@ -94,6 +119,43 @@ describe('GameEngine floor navigation', () => {
     expect(result.state.player.floor).toBeLessThanOrEqual(2);
     expect(result.state.player.position).toEqual(priorPosition);
     expect(result.state.run!.floorHistory).toHaveLength(0);
+  });
+
+  it('ascending to a matching floor depth completes the quest and awards gold', () => {
+    const engine = new GameEngine();
+    const dungeonState = enterDungeon(engine);
+    const floor2Snapshot: StoredFloor = {
+      floor: { ...dungeonState.run!.floor, depth: 2 },
+      enemies: new Map(),
+      objects: new Map(),
+      playerPosition: { x: 2, y: 2 },
+    };
+    const quest = {
+      id: 'reach_depth_2',
+      title: 'Return to the upper halls',
+      description: 'Ascend back to floor 2.',
+      status: 'active' as const,
+      targetFloorDepth: 2,
+      giverNpcId: entityId('npc_informant'),
+      rewardGold: 40,
+    };
+
+    const stateOnFloor3: GameState = {
+      ...dungeonState,
+      activeQuests: [quest],
+      player: { ...dungeonState.player, floor: 3 },
+      run: {
+        ...dungeonState.run!,
+        floor: { ...dungeonState.run!.floor, depth: 3 },
+        floorHistory: [floor2Snapshot],
+      },
+    };
+
+    const result = engine.submitCommand(stateOnFloor3, { type: 'ASCEND' });
+
+    expect(result.state.activeQuests[0]!.status).toBe('complete');
+    expect(result.state.player.gold).toBe(stateOnFloor3.player.gold + quest.rewardGold);
+    expect(result.events.some(event => event.type === 'QUEST_COMPLETED' && event.questId === quest.id)).toBe(true);
   });
 
   it('ASCEND with 2 floors of history leaves 1 floor in history', () => {

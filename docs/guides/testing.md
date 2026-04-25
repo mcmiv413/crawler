@@ -314,6 +314,19 @@ Reject AI-generated tests that:
 * rely on random outcomes
 * freeze balance values unnecessarily
 
+## Type-Checking in Monorepos
+
+TypeScript's `rootDir` validation in monorepos with cross-package path aliases produces TS6059 warnings when test files import from modules in sibling packages. This is expected and not an error.
+
+**Convention:** The validation script (`scripts/typecheck-tests.mjs`) ignores TS6059 warnings and only reports real type errors. Test `tsconfig.test.json` files use `rootDir: "."` to validate test-package-local files, and cross-package imports via path aliases are excluded from validation.
+
+If `pnpm validate` shows a warning like:
+```
+✓ packages/content (21 cross-package TS6059 ignored)
+```
+
+This is normal and expected. It means 21 diagnostic messages about cross-package imports were filtered out, but no actual type errors exist.
+
 ## Validation Commands
 
 ```bash

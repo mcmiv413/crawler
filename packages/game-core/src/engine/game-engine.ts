@@ -18,17 +18,7 @@ import { buildWorldModifiers } from '../systems/world-modifiers.js';
 import { executeRetreat } from '../systems/retreat.js';
 import { applyRunConsequences } from '../systems/world-consequences.js';
 import { simulatePersistedFloorTimeElapsed } from '../systems/enemy-respawn.js';
-
-/** D1: Check and complete quests that require reaching a specific floor depth */
-function completeFloorDepthQuests(
-  state: GameState,
-  _newDepth: number,
-): { state: GameState; events: DomainEvent[] } {
-  // D1: Check for quests that require reaching this floor depth
-  // TODO: Implement quest targetFloorDepth in Quest type (requires contracts update)
-  // For now, skip this logic - will be implemented in Phase D
-  return { state, events: [] };
-}
+import { completeFloorDepthQuests } from '../systems/quests.js';
 
 export class GameEngine implements IGameEngine {
   createNewGame(seed?: number): GameState {
