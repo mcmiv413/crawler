@@ -1,5 +1,5 @@
 import type { GameState, EnemyInstance, ArmorTemplate } from '@dungeon/contracts';
-import { ENCHANTMENT_BY_ID } from '@dungeon/content';
+import { ENCHANTMENT_BY_ID, thorns, hpRegen, expBonus, blink, lifeSteal } from '@dungeon/content';
 import { applyDamageToEnemy } from './damage.js';
 
 const ARMOR_SLOTS = ['chest', 'head', 'gloves', 'boots', 'ring1', 'ring2'] as const;
@@ -32,14 +32,14 @@ function sumEnchantmentEffect(state: GameState, effectType: string): number {
 }
 
 /** Sum total thorns/spikes reflect damage from all equipped armor */
-export const getTotalThornsReflect = (state: GameState): number => sumEnchantmentEffect(state, 'thorns');
+export const getTotalThornsReflect = (state: GameState): number => sumEnchantmentEffect(state, thorns.id);
 
 /** Get HP regen bonus per turn from enchantments */
-export const getEnchantmentRegenBonus = (state: GameState): number => sumEnchantmentEffect(state, 'regen');
+export const getEnchantmentRegenBonus = (state: GameState): number => sumEnchantmentEffect(state, hpRegen.id);
 
 /** Get XP multiplier from exp_bonus enchantments (stacks additively) */
 export function getExpBonusMultiplier(state: GameState): number {
-  return 1.0 + sumEnchantmentEffect(state, 'exp_bonus');
+  return 1.0 + sumEnchantmentEffect(state, expBonus.id);
 }
 
 /**
@@ -70,7 +70,7 @@ export function applyThornsToAttacker(
  */
 export function applyBlinkOnHit(state: GameState, rngNext: () => number): boolean {
   const enchantments = getEquippedEnchantments(state);
-  if (!enchantments.includes('blink')) return false;
+  if (!enchantments.includes(blink.id)) return false;
   const roll = rngNext();
   return roll < 0.3;
 }
@@ -78,4 +78,4 @@ export function applyBlinkOnHit(state: GameState, rngNext: () => number): boolea
 /**
  * Get HP healed on kill from life_steal enchantments.
  */
-export const applyLifeStealOnKill = (state: GameState): number => sumEnchantmentEffect(state, 'life_steal');
+export const applyLifeStealOnKill = (state: GameState): number => sumEnchantmentEffect(state, lifeSteal.id);

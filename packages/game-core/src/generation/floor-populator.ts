@@ -1,7 +1,7 @@
 import type { DungeonFloor, EnemyInstance, ObjectInstance, Position } from '@dungeon/contracts';
 import { entityId, posKey } from '@dungeon/contracts';
 import type { EnemyTemplate, ObjectTemplate } from '@dungeon/contracts';
-import { MAP_GENERATION, getFloorScalingMultipliers, ENEMY_TEMPLATES, ENEMIES_BY_BIOME, OBJECT_TEMPLATES, AMBIENT_PROFILES, OBJECT_POOL, dungeonOgre } from '@dungeon/content';
+import { MAP_GENERATION, getFloorScalingMultipliers, ENEMY_TEMPLATES, ENEMIES_BY_BIOME, OBJECT_TEMPLATES, AMBIENT_PROFILES, OBJECT_POOL, dungeonOgre, chest } from '@dungeon/content';
 import type { BiomeDefinition } from '@dungeon/content';
 import type { SeededRNG } from '../utils/rng.js';
 import { generateId } from '../utils/id.js';
@@ -219,7 +219,7 @@ function pickObject(rng: SeededRNG, depth: number): ObjectTemplate | undefined {
       obj.objectCategory === selectedCategory,
   );
 
-  if (categoryObjects.length === 0) return OBJECT_TEMPLATES.get('chest');
+  if (categoryObjects.length === 0) return OBJECT_TEMPLATES.get(chest.templateId);
 
   // Filter by rarity: rare+ objects blocked on floors < 3
   const rarityGate = depth < OBJECT_POOL.rareMinDepth ? ['common', 'uncommon'] : Object.keys(OBJECT_POOL.rarityWeights);
