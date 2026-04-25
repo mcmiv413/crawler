@@ -48,6 +48,8 @@ export function processEnemyTurns(
 
   for (const enemy of enemies) {
     // Inner loop: enemy may act multiple times if speed is high enough
+    // When playerSpeed is undefined, each enemy acts exactly once (no speed system)
+    let actionsThisTurn = 0;
     // eslint-disable-next-line @typescript-eslint/no-unnecessary-condition
     while (true) {
       if (currentState.player.stats.health <= 0) break;
@@ -57,6 +59,8 @@ export function processEnemyTurns(
       if (playerSpeed !== undefined) {
         const accumulator = currentState.run.speedAccumulators[enemy.id] ?? 0;
         if (accumulator < 1) break; // Enemy skips this turn (player is relatively faster)
+      } else {
+        if (actionsThisTurn >= 1) break; // Without speed system, each enemy acts once
       }
 
       // Get fresh reference — state may have changed during previous action
@@ -164,6 +168,7 @@ export function processEnemyTurns(
       if (ambientStateChangeEvent !== null) {
         allEvents = [...allEvents, ambientStateChangeEvent];
       }
+      actionsThisTurn++;
 
       // Decrement speed accumulator after this action
       if (playerSpeed !== undefined && currentState.run !== null) {
