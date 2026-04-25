@@ -10,5 +10,5 @@ export const handAxe: WeaponTemplate = {
   value: 16,
   stackable: false,
   maxStack: 1,
-  weapon: { damage: 4, damageType: 'physical', accuracy: 0, speed: 0, slot: 'weapon', weaponRange: 1, weaponType: 'axe' },
+  weapon: { damage: 8, damageType: 'physical', accuracy: 0, speed: -2, slot: 'weapon', weaponRange: 1, weaponType: 'axe' },
 };

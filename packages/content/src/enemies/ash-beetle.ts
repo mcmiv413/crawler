@@ -6,13 +6,13 @@ export const ashBeetle = {
   archetype: 'ambusher',
   tier: 2,
   stats: {
-    maxHealth: 38,
-    health: 38,
-    attack: 14,
-    defense: 5,
-    accuracy: 68,
-    evasion: 16,
-    speed: 95,
+    maxHealth: 28,
+    health: 28,
+    attack: 8,
+    defense: 4,
+    accuracy: 5,
+    evasion: 5,
+    speed: 92,
   },
   equipment: {
     weapon: {

@@ -6,13 +6,13 @@ export const mossGolem = {
   archetype: 'aggressive_melee',
   tier: 2,
   stats: {
-    maxHealth: 60,
-    health: 60,
-    attack: 15,
-    defense: 10,
-    accuracy: 55,
+    maxHealth: 50,
+    health: 50,
+    attack: 10,
+    defense: 8,
+    accuracy: 3,
     evasion: 0,
-    speed: 60,
+    speed: 58,
   },
   equipment: {
     weapon: {

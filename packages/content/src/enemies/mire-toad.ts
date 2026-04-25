@@ -6,13 +6,13 @@ export const mireToad = {
   archetype: 'ambusher',
   tier: 2,
   stats: {
-    maxHealth: 32,
-    health: 32,
-    attack: 13,
-    defense: 3,
-    accuracy: 70,
-    evasion: 18,
-    speed: 105,
+    maxHealth: 26,
+    health: 26,
+    attack: 8,
+    defense: 2,
+    accuracy: 5,
+    evasion: 6,
+    speed: 100,
   },
   equipment: {
     weapon: {

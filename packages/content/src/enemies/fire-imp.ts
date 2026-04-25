@@ -6,13 +6,13 @@ export const fireImp = {
   archetype: 'hazard_creator',
   tier: 2,
   stats: {
-    maxHealth: 25,
-    health: 25,
-    attack: 12,
-    defense: 2,
-    accuracy: 70,
-    evasion: 20,
-    speed: 110,
+    maxHealth: 18,
+    health: 18,
+    attack: 7,
+    defense: 1,
+    accuracy: 6,
+    evasion: 8,
+    speed: 108,
   },
   equipment: {
     weapon: {

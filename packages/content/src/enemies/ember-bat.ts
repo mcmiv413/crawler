@@ -6,13 +6,13 @@ export const emberBat = {
   archetype: 'skittish_ranged',
   tier: 2,
   stats: {
-    maxHealth: 28,
-    health: 28,
-    attack: 12,
-    defense: 2,
-    accuracy: 76,
-    evasion: 22,
-    speed: 125,
+    maxHealth: 20,
+    health: 20,
+    attack: 6,
+    defense: 1,
+    accuracy: 7,
+    evasion: 10,
+    speed: 128,
   },
   equipment: {
     weapon: {

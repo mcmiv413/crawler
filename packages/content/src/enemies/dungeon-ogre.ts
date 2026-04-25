@@ -6,13 +6,13 @@ export const dungeonOgre = {
   archetype: 'aggressive_melee',
   tier: 4,
   stats: {
-    maxHealth: 120,
-    health: 120,
-    attack: 22,
-    defense: 12,
-    accuracy: 60,
-    evasion: 5,
-    speed: 70,
+    maxHealth: 78,
+    health: 78,
+    attack: 15,
+    defense: 10,
+    accuracy: 4,
+    evasion: 2,
+    speed: 68,
   },
   equipment: {
     weapon: {

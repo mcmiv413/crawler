@@ -100,6 +100,13 @@ export function buildAvailableActions(state: GameState): AvailableAction[] {
       actions = [...actions, { id: 'ascend', label: 'Ascend (<)', type: 'ascend', enabled: true }];
     }
 
+    // Swap weapons (enabled when either slot is occupied, allows single-weapon swap)
+    const hasPrimaryWeapon = state.player.equipment.weapon !== null;
+    const hasSecondaryWeapon = state.player.equipment.secondaryWeapon !== null;
+    if (hasPrimaryWeapon || hasSecondaryWeapon) {
+      actions = [...actions, { id: 'swap_weapons', label: 'Swap Weapon', type: 'swap', enabled: true }];
+    }
+
     // Object interactions: check player's current position and 8 neighbors
     const playerPos = state.player.position;
     let objectActions: AvailableAction[] = [];

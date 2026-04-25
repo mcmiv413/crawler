@@ -6,13 +6,13 @@ export const goblinArcher = {
   archetype: 'skittish_ranged',
   tier: 1,
   stats: {
-    maxHealth: 20,
-    health: 20,
-    attack: 10,
-    defense: 2,
-    accuracy: 75,
-    evasion: 15,
-    speed: 100,
+    maxHealth: 16,
+    health: 16,
+    attack: 5,
+    defense: 1,
+    accuracy: 7,
+    evasion: 6,
+    speed: 95,
   },
   equipment: {
     weapon: {

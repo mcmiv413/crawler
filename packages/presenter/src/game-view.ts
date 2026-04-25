@@ -225,6 +225,7 @@ export interface InspectableEntityView {
   readonly isFasterThanPlayer?: boolean;
   readonly affinities?: Readonly<Record<string, number>>;
   readonly statuses?: readonly string[];
+  readonly threatRating?: 'Low' | 'Moderate' | 'High' | 'Deadly'; // Enemy threat assessment
 }
 
 export interface CombatLogEntry {
@@ -250,7 +251,7 @@ export interface BumpAnimationEntry {
 export interface AvailableAction {
   readonly id: string;
   readonly label: string;
-  readonly type: 'move' | 'attack' | 'item' | 'interact' | 'retreat' | 'wait' | 'town' | 'ascend' | 'ability';
+  readonly type: 'move' | 'attack' | 'item' | 'interact' | 'retreat' | 'wait' | 'town' | 'ascend' | 'ability' | 'swap';
   readonly enabled: boolean;
   readonly targetId?: string;
   readonly targetPosition?: { readonly x: number; readonly y: number };
@@ -326,7 +327,7 @@ export interface ShopItemView {
   readonly stock: number;
   readonly itemClass: string;  // weapon | armor | consumable
   readonly spriteName?: string;  // Atlas sprite name for rendering
-  readonly weaponData?: { readonly damage: number; readonly damageType: string; readonly accuracy: number; readonly speed: number; readonly weaponRange: number; readonly minRange?: number };
+  readonly weaponData?: { readonly damage: number; readonly damageMin?: number; readonly damageMax?: number; readonly damageType: string; readonly accuracy: number; readonly speed: number; readonly weaponRange: number; readonly minRange?: number };
   readonly armorData?: { readonly defense: number; readonly evasionPenalty: number; readonly slot: string; readonly enchantmentSlots: number };
 }
 

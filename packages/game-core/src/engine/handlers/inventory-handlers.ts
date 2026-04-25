@@ -6,13 +6,24 @@ import { useConsumable } from '../../systems/inventory.js';
 import { equipItem, unequipItem, swapWeaponSets } from '../../systems/equipment.js';
 import { processEnemyTurns } from '../turn-scheduler.js';
 import { tickAbilityCooldowns } from '../../systems/abilities.js';
+import { isPlayerThreatened } from '../../systems/threat.js';
 
 export function handleEquip(state: GameState, itemId: string): CommandResult {
+  // Block equip if player is threatened (under immediate attack range)
+  if (state.phase === 'dungeon' && isPlayerThreatened(state)) {
+    return { state, events: [], runEnded: false };
+  }
+
   const result = equipItem(state, itemId as EntityId);
   return { state: result.state, events: result.events, runEnded: false };
 }
 
 export function handleUnequip(state: GameState, itemId: string): CommandResult {
+  // Block unequip if player is threatened (under immediate attack range)
+  if (state.phase === 'dungeon' && isPlayerThreatened(state)) {
+    return { state, events: [], runEnded: false };
+  }
+
   const result = unequipItem(state, itemId as EntityId);
   return { state: result.state, events: result.events, runEnded: false };
 }

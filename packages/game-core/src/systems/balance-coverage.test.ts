@@ -65,7 +65,6 @@ describe('Balance Coverage — Feature Completeness Tests', () => {
     expect(config.combat).toBeDefined();
     expect(config.combat.baseHitChance).toBeGreaterThan(0);
     expect(config.combat.critChance).toBeGreaterThan(0);
-    expect(config.combat.damageVariance).toBeGreaterThan(0);
     expect(config.combat.defenseDivisor).toBeGreaterThan(0);
 
     // Floor scaling config

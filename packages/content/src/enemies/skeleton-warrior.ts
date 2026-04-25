@@ -6,12 +6,12 @@ export const skeletonWarrior = {
   archetype: 'aggressive_melee',
   tier: 1,
   stats: {
-    maxHealth: 50,
-    health: 50,
-    attack: 14,
-    defense: 8,
-    accuracy: 65,
-    evasion: 5,
+    maxHealth: 34,
+    health: 34,
+    attack: 9,
+    defense: 6,
+    accuracy: 4,
+    evasion: 2,
     speed: 80,
   },
   equipment: {

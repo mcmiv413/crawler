@@ -6,13 +6,13 @@ export const caveRat = {
   archetype: 'skittish_ranged',
   tier: 1,
   stats: {
-    maxHealth: 30,
-    health: 30,
-    attack: 10,
-    defense: 3,
-    accuracy: 70,
-    evasion: 25,
-    speed: 130,
+    maxHealth: 18,
+    health: 18,
+    attack: 5,
+    defense: 1,
+    accuracy: 6,
+    evasion: 10,
+    speed: 125,
   },
   equipment: {
     weapon: {

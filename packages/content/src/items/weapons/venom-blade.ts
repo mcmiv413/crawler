@@ -10,5 +10,5 @@ export const venomBlade: WeaponTemplate = {
   value: 50,
   stackable: false,
   maxStack: 1,
-  weapon: { damage: 6, damageType: 'physical', accuracy: 5, speed: 5, slot: 'weapon', weaponRange: 1, weaponType: 'blade', onHitStatus: 'poison', onHitChance: 25 },
+  weapon: { damage: 9, damageType: 'physical', accuracy: 3, speed: 5, slot: 'weapon', weaponRange: 1, weaponType: 'blade', onHitStatus: 'poison', onHitChance: 25 },
 };

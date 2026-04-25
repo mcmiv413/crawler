@@ -6,13 +6,13 @@ export const shardPriest = {
   archetype: 'cautious_defensive',
   tier: 3,
   stats: {
-    maxHealth: 40,
-    health: 40,
-    attack: 12,
-    defense: 4,
-    accuracy: 80,
-    evasion: 20,
-    speed: 85,
+    maxHealth: 30,
+    health: 30,
+    attack: 8,
+    defense: 3,
+    accuracy: 8,
+    evasion: 7,
+    speed: 84,
   },
   equipment: {
     weapon: {
