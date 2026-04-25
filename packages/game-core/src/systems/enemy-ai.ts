@@ -3,7 +3,7 @@ import { posKey } from '@dungeon/contracts';
 import { chebyshevDistance } from '../utils/grid.js';
 import { isWalkable } from './movement.js';
 import { Path } from 'rot-js';
-import { ARCHETYPES } from '@dungeon/content';
+import { ARCHETYPES, aggressiveMelee, skittishRanged, cautiousDefensive, hazardCreator, ambusher } from '@dungeon/content';
 import { scoreEnemyActions } from './enemy-ai-engine.js';
 import { SeededRNG } from '../utils/rng.js';
 
@@ -25,7 +25,7 @@ export function decideEnemyAction(
   // If not alerted, check if player is in detection range
   if (enemy.isAlerted !== true) {
     // Default trigger distance is 5, ambushers at 2
-    const triggerDist = enemy.archetype === 'ambusher' ? 2 : 5;
+    const triggerDist = enemy.archetype === ambusher.id ? 2 : 5;
     if (dist <= triggerDist) {
       // Should become alerted — handled by caller
       return computeApproach(enemy, playerPos, state);
@@ -43,13 +43,13 @@ export function decideEnemyAction(
 
   // Backward compatibility: map old archetype names to new ones
   const archetypeMap: Record<string, string> = {
-    'melee_bruiser': 'aggressive_melee',
-    'fast_skirmisher': 'skittish_ranged',
-    'ranged_attacker': 'skittish_ranged',
-    'support_buffer': 'cautious_defensive',
-    'hazard_creator': 'hazard_creator',
-    'elite': 'aggressive_melee',
-    'boss': 'aggressive_melee',
+    'melee_bruiser': aggressiveMelee.id,
+    'fast_skirmisher': skittishRanged.id,
+    'ranged_attacker': skittishRanged.id,
+    'support_buffer': cautiousDefensive.id,
+    'hazard_creator': hazardCreator.id,
+    'elite': aggressiveMelee.id,
+    'boss': aggressiveMelee.id,
   };
 
   if (!ARCHETYPES.has(archetypeId)) {

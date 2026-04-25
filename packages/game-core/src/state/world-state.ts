@@ -1,6 +1,8 @@
 import type { WorldState, TownState, NpcState, ShopInventory } from '@dungeon/contracts';
 import { entityId } from '@dungeon/contracts';
-import { ECONOMY, CONSUMABLES, WEAPONS, ARMOR, INITIAL_FACTIONS } from '@dungeon/content';
+import { ECONOMY, CONSUMABLES, WEAPONS, ARMOR, INITIAL_FACTIONS, rustySword, ironMace, shortBow,
+  handAxe, flameDagger, venomBlade, warBow, stoneHammer, frostAxe, ironSword, leatherVest,
+  leatherCap, leatherGloves, leatherBoots, copperRing, chainShirt, ironHelm, chainGauntlets } from '@dungeon/content';
 import type { SeededRNG } from '../utils/rng.js';
 
 /** Create initial world state for a new game */
@@ -84,11 +86,11 @@ function createInitialNpcs(): NpcState[] {
 
 // Curated shop IDs covering all equipment slots with all rarities.
 // Rarity gating is applied at display/buy time, not at stock time.
-const SHOP_WEAPON_IDS = ['rusty_sword', 'iron_mace', 'short_bow', 'hand_axe',
-  'flame_dagger', 'venom_blade', 'war_bow', 'stone_hammer',
-  'frost_axe', 'iron_sword'];
-const SHOP_ARMOR_IDS = ['leather_vest', 'leather_cap', 'leather_gloves', 'leather_boots', 'copper_ring',
-  'chain_shirt', 'iron_helm', 'chain_gauntlets'];
+const SHOP_WEAPON_IDS = [rustySword, ironMace, shortBow, handAxe,
+  flameDagger, venomBlade, warBow, stoneHammer,
+  frostAxe, ironSword].map(w => w.itemId);
+const SHOP_ARMOR_IDS = [leatherVest, leatherCap, leatherGloves, leatherBoots, copperRing,
+  chainShirt, ironHelm, chainGauntlets].map(a => a.itemId);
 
 function createInitialShop(rng: SeededRNG): ShopInventory {
   const allItems = [...WEAPONS, ...ARMOR];

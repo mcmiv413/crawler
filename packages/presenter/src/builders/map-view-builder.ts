@@ -1,5 +1,5 @@
 import type { GameState, EnemyInstance, DamageType } from '@dungeon/contracts';
-import { OBJECT_TEMPLATES, ENEMY_TEMPLATES, BIOMES } from '@dungeon/content';
+import { OBJECT_TEMPLATES, ENEMY_TEMPLATES, BIOMES, forest, mossCaverns, crystalCave, frozenDepths } from '@dungeon/content';
 import type { MapView, EntityView } from '../game-view.js';
 
 // Sprite names for map rendering - using left-facing variants for map consistency
@@ -68,16 +68,16 @@ export function buildMapView(state: GameState): MapView | null {
           const variation = (x! + y! * 7) % 2;
           if (variation === 1) {
             switch (biome.biomeId) {
-              case 'forest':
+              case forest.biomeId:
                 spriteName = 'trunk b';
                 break;
-              case 'moss_caverns':
+              case mossCaverns.biomeId:
                 spriteName = 'bright rock wall flat';
                 break;
-              case 'crystal_cave':
+              case crystalCave.biomeId:
                 spriteName = 'bright blue wall flat';
                 break;
-              case 'frozen_depths':
+              case frozenDepths.biomeId:
                 spriteName = 'bright ice wall flat';
                 break;
             }

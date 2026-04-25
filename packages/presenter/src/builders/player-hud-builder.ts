@@ -1,5 +1,5 @@
 import type { GameState, WeaponType } from '@dungeon/contracts';
-import { STATUS_DEFINITIONS, ABILITY_DEFINITIONS, ENCHANTMENT_BY_ID, XP_TABLE, FACTIONS, getRarityColor, BIOMES } from '@dungeon/content';
+import { STATUS_DEFINITIONS, ABILITY_DEFINITIONS, ENCHANTMENT_BY_ID, XP_TABLE, FACTIONS, getRarityColor, BIOMES, daggerDisarm, daggerSetTrap } from '@dungeon/content';
 import type { PlayerHudView, StatusView, AbilityView, EquippedItemView, EnchantmentView, NemesisInfo, FactionStanding } from '../game-view.js';
 import { calculateStatBreakdown } from './stat-breakdown-builder.js';
 
@@ -98,7 +98,7 @@ export function buildPlayerHud(state: GameState): PlayerHudView {
         ready: a.cooldownRemaining === 0,
         cooldownRemaining: a.cooldownRemaining,
         requiresTarget: def?.requiresTarget ?? false,
-        requiresDirection: a.id === 'dagger_disarm' || a.id === 'dagger_set_trap',
+        requiresDirection: a.id === daggerDisarm.id || a.id === daggerSetTrap.id,
       } satisfies AbilityView;
     });
 
