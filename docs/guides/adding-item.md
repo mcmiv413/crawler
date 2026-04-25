@@ -14,9 +14,26 @@ Items are equipment (weapons, armor) and consumables the player collects. Items 
    - Consumables: `packages/content/src/items/consumables.ts`
    - Traps: `packages/content/src/items/traps.ts`
 2. Run `pnpm generate:indexes` — the index is auto-generated
-3. Test and commit
+3. Verify the item is in the generated index
+4. Test and commit
 
-**That's it!** No manual index registration needed.
+**That's it!** No manual index registration needed. 
+
+### Important: Always Run `pnpm generate:indexes`
+
+After adding new content (items, enemies, abilities, biomes, etc.), **always run**:
+
+```bash
+pnpm generate:indexes
+```
+
+This automatically:
+- Scans your content directory for new files
+- Generates index files (`packages/content/src/{type}/index.ts`)
+- Makes your content accessible via `@dungeon/content` exports
+- Is safe to run anytime — it only updates generated files
+
+**Do not manually edit generated index files** — they will be overwritten next run.
 
 ---
 
