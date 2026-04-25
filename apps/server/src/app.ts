@@ -1,12 +1,12 @@
 import Fastify, { type FastifyInstance } from 'fastify';
 import cors from '@fastify/cors';
-import { GameEngine } from '@dungeon/core';
+import { GameEngine, serializeState, deserializeState } from '@dungeon/core';
 import { buildGameView, formatEvents, buildAnimationSequence } from '@dungeon/presenter';
 import { GameCommandSchema, CreateGameSchema, SchemaVersionMismatchError, SchemaParseError, getSchemaVersionErrorMessage } from '@dungeon/contracts';
 import type { GameCommand, EntityId, GameState, RunMetrics } from '@dungeon/contracts';
-import { InMemoryRepository } from './in-memory-repository.js';
 import { CompositeAiService } from './ai/ai-service-composite.js';
-import { applyRunConsequences, rollNemesisLoot, addItemToInventory, serializeState, deserializeState } from '@dungeon/core';
+import { processGameCommand } from './game-command/process-command.js';
+import { InMemoryRepository } from './in-memory-repository.js';
 import { registerDebugRoutes } from './routes/debug.js';
 
 export async function buildApp(): Promise<FastifyInstance> {
@@ -105,158 +105,15 @@ export async function buildApp(): Promise<FastifyInstance> {
     }
 
     const command = parsed.data as GameCommand;
-    const result = engine.submitCommand(state, command);
-
-    let finalState = result.state;
-
-    // Patch any newly promoted nemesis with an AI-generated name
-    const newNemesis = result.events.find(e => e.type === 'NEMESIS_PROMOTED');
-    if (newNemesis && newNemesis.type === 'NEMESIS_PROMOTED') {
-      const promoted = finalState.world.nemeses.find(n => n.id === newNemesis.nemesisId);
-      if (promoted) {
-        const aiName = await ai.generateNemesisName({
-          enemyTemplateName: promoted.sourceTemplateId,
-          tier: promoted.tier,
-          floor: promoted.floorOfAscension,
-          biome: promoted.biomeOfAscension,
-        });
-        finalState = {
-          ...finalState,
-          world: {
-            ...finalState.world,
-            nemeses: finalState.world.nemeses.map(n =>
-              n.id === promoted.id
-                ? { ...n, name: aiName.name, title: aiName.title }
-                : n,
-            ),
-          },
-        };
-      }
-    }
-
-    // Generate unique loot for slain nemesis
-    const slainEvent = result.events.find(e => e.type === 'NEMESIS_SLAIN');
-    if (slainEvent && slainEvent.type === 'NEMESIS_SLAIN') {
-      const slainNemesis = finalState.world.nemeses.find(n => n.id === slainEvent.nemesisId);
-      if (slainNemesis) {
-        try {
-          const lootData = await ai.generateNemesisLoot({
-            nemesisName: slainNemesis.name,
-            nemesisTitle: slainNemesis.title,
-            tier: slainNemesis.tier,
-            floor: slainNemesis.floorOfAscension,
-            traits: slainNemesis.traits,
-            weaponType: slainNemesis.killedByWeaponType,
-            rank: slainNemesis.rank,
-          });
-
-          // Create the unique item and add to inventory
-          const lootTemplate = rollNemesisLoot(
-            lootData,
-            slainNemesis.rank,
-            slainNemesis.tier,
-            finalState.player.floor,
-            slainNemesis.killedByWeaponType,
-          );
-
-          const lootResult = addItemToInventory(finalState, lootTemplate);
-          finalState = lootResult.state;
-
-          // Update the NEMESIS_SLAIN event with the loot item name by creating new array
-          const updatedEvents = result.events.map(e =>
-            e.type === 'NEMESIS_SLAIN'
-              ? { ...e, lootItemName: lootData.name }
-              : e,
-          );
-          // Update result events (create new object to avoid mutation)
-          Object.defineProperty(result, 'events', {
-            value: updatedEvents,
-            writable: true,
-            enumerable: true,
-            configurable: true,
-          });
-        } catch (error) {
-          // If loot generation fails, continue without the unique item
-          // Silently fail - nemesis loot generation is non-critical
-        }
-      }
-    }
-
-    // Record telemetry and generate run summary if run ended
-    if (result.runEnded && finalState.run?.runMetrics) {
-      const metrics = finalState.run.runMetrics;
-      repo.recordRunMetrics(metrics, request.params.id as EntityId);
-
-      // Archive overflow events before trim (only if history exceeds cap)
-      const historyLength = finalState.world.eventHistory.length;
-      if (historyLength > 100) {
-        const overflow = finalState.world.eventHistory.slice(0, historyLength - 100);
-        if (overflow.length > 0) {
-          await repo.appendEvents(request.params.id as EntityId, overflow);
-        }
-      }
-
-      // Apply world consequences (town axes, faction ticks, event chains)
-      const consequenceResult = applyRunConsequences(finalState, metrics);
-      finalState = consequenceResult.state;
-
-      // Generate run summary
-      const summary = await ai.generateRunSummary({
-        runMetrics: metrics,
-        recentEvents: result.events,
-        playerName: finalState.player.name,
-        floor: finalState.player.floor,
-      });
-
-      finalState = {
-        ...finalState,
-        world: {
-          ...finalState.world,
-          town: {
-            ...finalState.world.town,
-            lastRunSummary: summary,
-          },
-        },
-      };
-
-      // Generate rumors on return to town
-      try {
-        finalState = await generateRumors(finalState, ai);
-      } catch {
-        // rumors are non-critical; continue without them
-      }
-    }
-
-    // Add events to state's event history so presenter can see them
-    if (result.events.length > 0) {
-      finalState = {
-        ...finalState,
-        world: {
-          ...finalState.world,
-          eventHistory: [...finalState.world.eventHistory, ...result.events],
-        },
-      };
-    }
-
-    // Atomically save state and events in a single transaction (prevents torn event logs).
-    // commitTick enforces all-or-nothing semantics:
-    // - If version mismatch (concurrent write), throws before any mutations
-    // - If success, both state and events persist together
-    // - No intermediate state where one is saved but the other is lost
-    // Uses OCC (Optimistic Concurrency Control) to detect concurrent modifications
-    const prevVersion = state.version; // Version before this command was processed
-    await repo.commitTick(request.params.id as EntityId, prevVersion, finalState, result.events);
-    const view = buildGameView(finalState);
-    const combatLog = formatEvents(result.events);
-    const animatedEvents = buildAnimationSequence(result.events, finalState);
-    const serializedState = serializeState(finalState);
-
-    return {
-      view: { ...view, combatLog, animatedEvents },
-      events: result.events,
-      runEnded: result.runEnded,
-      serializedState,
-    };
+    return processGameCommand({
+      ai,
+      command,
+      engine,
+      gameId: request.params.id as EntityId,
+      log: app.log,
+      repo,
+      state,
+    });
   });
 
   // GET /api/games/:id/npc/:npcId/dialogue — get NPC dialogue
@@ -461,27 +318,3 @@ export async function buildApp(): Promise<FastifyInstance> {
   return app;
 }
 
-async function generateRumors(state: GameState, ai: CompositeAiService): Promise<GameState> {
-  const rumorCount = 3;
-  const rumorArgs = {
-    townState: state.world.town,
-    deepestFloor: state.world.deepestFloor,
-    totalRuns: state.world.totalRuns,
-    recentEvents: state.world.eventHistory.slice(-10),
-  };
-
-  const rumors = await Promise.all(
-    Array.from({ length: rumorCount }, () => ai.generateRumor(rumorArgs)),
-  );
-
-  return {
-    ...state,
-    world: {
-      ...state.world,
-      town: {
-        ...state.world.town,
-        rumors,
-      },
-    },
-  };
-}

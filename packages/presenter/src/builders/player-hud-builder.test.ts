@@ -1,6 +1,6 @@
 import { describe, it, expect, beforeEach } from 'vitest';
 import { buildPlayerHud } from './player-hud-builder.js';
-import { createTestGameState, createTestRunState } from '@dungeon/core/testing';
+import { createTestGameState, createTestRunState, createTestGameStateWithAbility, createTestNemesis } from '@dungeon/core/testing';
 import { entityId } from '@dungeon/contracts';
 import type { GameState } from '@dungeon/contracts';
 
@@ -147,7 +147,7 @@ describe('buildPlayerHud', () => {
         ...state,
         player: {
           ...state.player,
-          equipment: { weapon: null, chest: null, head: null, gloves: null, boots: null, ring1: null, ring2: null },
+          equipment: { weapon: null, secondaryWeapon: null, chest: null, head: null, gloves: null, boots: null, ring1: null, ring2: null },
         },
       };
 
@@ -163,16 +163,16 @@ describe('buildPlayerHud', () => {
         player: {
           ...state.player,
           statuses: [
-            { id: 'poison', turnsRemaining: 3 },
-            { id: 'bleed', turnsRemaining: 1 },
+            { id: 'poison', turnsRemaining: 3, magnitude: 1, sourceId: null },
+            { id: 'bleed', turnsRemaining: 1, magnitude: 1, sourceId: null },
           ],
         },
       };
 
       const hud = buildPlayerHud(state);
       expect(hud.statuses).toHaveLength(2);
-      expect(hud.statuses[0].id).toBe('poison');
-      expect(hud.statuses[0].turnsRemaining).toBe(3);
+      expect(hud.statuses[0]?.id).toBe('poison');
+      expect(hud.statuses[0]?.turnsRemaining).toBe(3);
     });
 
     it('shows no statuses when player is healthy', () => {
@@ -185,6 +185,7 @@ describe('buildPlayerHud', () => {
 
   describe('abilities', () => {
     it('displays available abilities', () => {
+      state = createTestGameStateWithAbility('power_strike');
       state = {
         ...state,
         player: {
@@ -198,16 +199,17 @@ describe('buildPlayerHud', () => {
 
       const hud = buildPlayerHud(state);
       expect(hud.abilities).toHaveLength(2);
-      expect(hud.abilities[0].id).toBe('power_strike');
-      expect(hud.abilities[0].ready).toBe(true);
-      expect(hud.abilities[1].ready).toBe(false);
-      expect(hud.abilities[1].cooldownRemaining).toBe(2);
+      expect(hud.abilities[0]?.id).toBe('power_strike');
+      expect(hud.abilities[0]?.ready).toBe(true);
+      expect(hud.abilities[1]?.id).toBe('second_wind');
+      expect(hud.abilities[1]?.ready).toBe(false);
+      expect(hud.abilities[1]?.cooldownRemaining).toBe(2);
     });
 
     it('filters abilities based on equipped weapon type', () => {
       const rangedWeaponId = entityId('bow1');
       state = {
-        ...state,
+        ...createTestGameState(),
         player: {
           ...state.player,
           equipment: { ...state.player.equipment, weapon: rangedWeaponId },
@@ -217,15 +219,16 @@ describe('buildPlayerHud', () => {
           ],
         },
         itemRegistry: {
-          ...state.itemRegistry,
           items: new Map([
             [
               rangedWeaponId,
               {
                 id: rangedWeaponId,
                 name: 'Bow',
+                rarity: 'common',
+                spriteName: 'bow',
                 itemClass: 'weapon',
-                weapon: { weaponType: 'ranged' },
+                weapon: { damage: 6, weaponType: 'ranged', weaponRange: 3 },
               } as any,
             ],
           ]),
@@ -233,7 +236,7 @@ describe('buildPlayerHud', () => {
       };
 
       const hud = buildPlayerHud(state);
-      expect(hud.abilities.length).toBeGreaterThan(0);
+      expect(hud.abilities.map(ability => ability.id)).toEqual(['second_wind']);
     });
   });
 
@@ -255,7 +258,7 @@ describe('buildPlayerHud', () => {
 
       const hud = buildPlayerHud(state);
       expect(hud.activeQuests).toHaveLength(1);
-      expect(hud.activeQuests[0].title).toBe('Slay the Dragon');
+      expect(hud.activeQuests[0]?.title).toBe('Slay the Dragon');
     });
 
     it('shows no quests when none are active', () => {
@@ -273,7 +276,7 @@ describe('buildPlayerHud', () => {
         world: {
           ...state.world,
           nemeses: [
-            {
+            createTestNemesis({
               id: entityId('nemesis1'),
               name: 'Dread Goblin',
               title: 'The Feared',
@@ -282,7 +285,7 @@ describe('buildPlayerHud', () => {
               killCount: 5,
               rank: 2,
               floorOfAscension: 8,
-            },
+            }),
           ],
         },
       };
@@ -323,8 +326,8 @@ describe('buildPlayerHud', () => {
 
       const hud = buildPlayerHud(state);
       expect(hud.factionStandings).toHaveLength(1);
-      expect(hud.factionStandings[0].name).toBe('Guild of Thieves');
-      expect(hud.factionStandings[0].standing).toBe(120);
+      expect(hud.factionStandings[0]?.name).toBe('Guild of Thieves');
+      expect(hud.factionStandings[0]?.standing).toBe(120);
     });
   });
 
@@ -357,8 +360,10 @@ describe('buildPlayerHud', () => {
           ...state.run!,
           weaponMastery: {
             blade: 5,
+            bludgeon: 0,
             axe: 2,
             ranged: 1,
+            dagger: 0,
           },
         },
       };

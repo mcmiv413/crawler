@@ -453,7 +453,7 @@ describe('buildAnimationSequence', () => {
     });
 
     it('generates different batchId for different animation sequences', () => {
-      const events: DomainEvent[] = [
+      const firstTurnEvents: DomainEvent[] = [
         {
           type: 'ATTACK_PERFORMED',
           timestamp: 1000,
@@ -468,13 +468,25 @@ describe('buildAnimationSequence', () => {
           critical: false,
         } as any,
       ];
+      const secondTurnEvents: DomainEvent[] = [
+        {
+          type: 'ATTACK_PERFORMED',
+          timestamp: 1001,
+          turnNumber: 2,
+          attackerId: 'player-1' as any,
+          defenderId: 'enemy-1' as any,
+          attackerName: 'Hero',
+          defenderName: 'Goblin',
+          damage: 8,
+          damageType: 'physical',
+          hit: true,
+          critical: false,
+        } as any,
+      ];
 
-      // Build first sequence
-      const animations1 = buildAnimationSequence(events, mockGameState);
+      const animations1 = buildAnimationSequence(firstTurnEvents, mockGameState);
       const batchId1 = (animations1[0] as any).batchId;
-
-      // Build second sequence (simulating next turn)
-      const animations2 = buildAnimationSequence(events, mockGameState);
+      const animations2 = buildAnimationSequence(secondTurnEvents, mockGameState);
       const batchId2 = (animations2[0] as any).batchId;
 
       expect(batchId1).not.toBe(batchId2);

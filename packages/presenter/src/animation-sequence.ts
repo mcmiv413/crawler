@@ -30,14 +30,50 @@ function getEntityPosition(
   return null;
 }
 
+function hashString(value: string): string {
+  let hash = 0;
+  for (let i = 0; i < value.length; i += 1) {
+    hash = ((hash << 5) - hash) + value.charCodeAt(i);
+    hash |= 0;
+  }
+  return Math.abs(hash).toString(36);
+}
+
+function buildAnimationBatchId(
+  events: readonly DomainEvent[],
+  state: GameState,
+): string {
+  if (events.length === 0) {
+    return `batch-${state.gameId}-${state.turnNumber}-empty`;
+  }
+
+  const signature = events.map((event, index) => {
+    if (event.type === 'ATTACK_PERFORMED') {
+      return [
+        index,
+        event.type,
+        event.turnNumber,
+        event.attackerId,
+        event.defenderId,
+        event.damage,
+        event.hit,
+        event.critical,
+      ].join(':');
+    }
+
+    return [index, event.type, event.turnNumber, event.timestamp].join(':');
+  }).join('|');
+
+  return `batch-${state.gameId}-${state.turnNumber}-${hashString(signature)}`;
+}
+
 export function buildAnimationSequence(
   events: readonly DomainEvent[],
   state: GameState,
 ): readonly AnimatedEvent[] {
   if (state.run == null) return [];
 
-  // Generate unique batchId for this animation sequence
-  const batchId = `batch-${Date.now()}-${Math.random().toString(36).slice(2)}`;
+  const batchId = buildAnimationBatchId(events, state);
 
   // Extract attack events with their speeds and sort by speed descending (highest speed first)
   let attacksWithSpeeds = events

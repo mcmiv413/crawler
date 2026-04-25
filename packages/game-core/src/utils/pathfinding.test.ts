@@ -1,6 +1,39 @@
 import { describe, it, expect } from 'vitest';
 import { findPath } from './pathfinding.js';
-import type { MapView, MapCellView, EntityView } from '@dungeon/presenter';
+
+interface MapCellView {
+  readonly x: number;
+  readonly y: number;
+  readonly ascii: string;
+  readonly color: string;
+  readonly bgColor: string;
+  readonly visibility: 'visible' | 'remembered' | 'hidden';
+  readonly walkable: boolean;
+  readonly tileType: 'floor';
+}
+
+interface EntityView {
+  readonly id: string;
+  readonly x: number;
+  readonly y: number;
+  readonly ascii: string;
+  readonly color: string;
+  readonly name: string;
+  readonly type: 'enemy';
+  readonly health: number;
+  readonly maxHealth: number;
+  readonly templateId: string;
+}
+
+interface MapView {
+  readonly width: number;
+  readonly height: number;
+  readonly cells: readonly MapCellView[];
+  readonly entities: readonly EntityView[];
+  readonly playerPosition: { readonly x: number; readonly y: number };
+  readonly biomeId: string;
+  readonly dangerLevel: 'moderate';
+}
 
 function makeCell(x: number, y: number, walkable = true, visibility: 'visible' | 'remembered' | 'hidden' = 'visible'): MapCellView {
   return { x, y, ascii: '.', color: '#fff', bgColor: '#000', visibility, walkable, tileType: 'floor' };

@@ -14,6 +14,10 @@ A browser-based, turn-based dungeon crawler with persistent world consequences, 
 # 1. Install dependencies
 pnpm install
 
+# Optional: enable LM Studio-driven dialogue/summaries
+# cp .env.example .env
+# export $(grep -v '^#' .env | xargs)
+
 # 2. Start dev servers (Fastify :3000, Vite :5173 concurrently)
 pnpm dev
 
@@ -21,7 +25,7 @@ pnpm dev
 # → http://localhost:5173
 ```
 
-The game is **fully playable without LM Studio**. If LM Studio is running locally and reachable at `localhost:8000`, the game will use it for dynamic NPC dialogue and narrative flavor. If unavailable, the game falls back to static content after a 2-second timeout.
+The game is **fully playable without LM Studio**. To enable LM Studio locally, set `LM_HOST` (and optionally `LM_PORT`, default `1234`) in your shell before starting the server. If those variables are unset or unreachable, the game falls back to static content after a 2-second timeout.
 
 ---
 

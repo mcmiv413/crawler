@@ -61,7 +61,6 @@
   "dependencies": {
     "@dungeon/contracts": "workspace:*",
     "@dungeon/content": "workspace:*",
-    "@dungeon/presenter": "workspace:*",
     "rot-js": "^2.2.0"
   },
   "devDependencies": {

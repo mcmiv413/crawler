@@ -1,6 +1,8 @@
 import { describe, it, expect, beforeEach, afterEach } from 'vitest';
 import type { FastifyInstance } from 'fastify';
 import { buildApp } from '../app.js';
+import { deserializeState, serializeState } from '@dungeon/core';
+import { createTestEnemy, createTestGameStateInCombat } from '@dungeon/core/testing';
 import type { EntityId, GameCommand } from '@dungeon/contracts';
 
 describe('Game Routes', () => {
@@ -201,6 +203,69 @@ describe('Game Routes', () => {
       const viewBody = JSON.parse(getResponse.body);
       expect(viewBody).toHaveProperty('player');
       expect(viewBody.player).toBeDefined();
+    });
+
+    it('applies run consequences exactly once on victory', async () => {
+      const baseState = createTestGameStateInCombat({ enemyAt: { x: 1, y: 0 } });
+      const boss = createTestEnemy({
+        position: { x: 1, y: 0 },
+        tier: 4,
+        stats: {
+          maxHealth: 1,
+          health: 1,
+          attack: 8,
+          defense: 0,
+          accuracy: 70,
+          evasion: 0,
+          speed: 120,
+        },
+      });
+
+      const victoryState = {
+        ...baseState,
+        player: {
+          ...baseState.player,
+          position: { x: 0, y: 0 },
+          floor: 5,
+          stats: {
+            ...baseState.player.stats,
+            attack: 9999,
+          },
+        },
+        run: {
+          ...baseState.run!,
+          floor: {
+            ...baseState.run!.floor,
+            depth: 5,
+          },
+          enemies: new Map([['1,0', boss]]),
+        },
+      };
+
+      const restoreResponse = await app.inject({
+        method: 'POST',
+        url: '/api/games/restore',
+        payload: { serializedState: serializeState(victoryState) },
+      });
+      expect(restoreResponse.statusCode).toBe(200);
+
+      const attackResponse = await app.inject({
+        method: 'POST',
+        url: `/api/games/${victoryState.gameId}/commands`,
+        payload: {
+          type: 'ATTACK',
+          targetId: boss.id,
+        },
+      });
+
+      expect(attackResponse.statusCode).toBe(200);
+      const attackBody = JSON.parse(attackResponse.body);
+      const finalState = deserializeState(attackBody.serializedState);
+
+      expect(attackBody.runEnded).toBe(true);
+      expect(finalState.phase).toBe('game_over');
+      expect(finalState.run?.runMetrics?.causeOfEnd).toBe('victory');
+      expect(finalState.world.totalRuns).toBe(1);
     });
   });
 

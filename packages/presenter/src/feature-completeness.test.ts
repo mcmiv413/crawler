@@ -34,7 +34,6 @@ import { buildGameView } from './game-view-builder.js';
 import { formatEvent } from './event-formatter.js';
 import { entityId, EMPTY_RUN_METRICS } from '@dungeon/contracts';
 import type { NpcState, GameState } from '@dungeon/contracts';
-import { ITEM_BY_ID } from '@dungeon/content';
 import {
   assertFeatureChain,
   expectEventEmitted,
@@ -43,6 +42,40 @@ import {
   expectViewShowsData,
   expectAllEventsFormatted,
 } from './testing/feature-chain-helpers.js';
+
+const RUSTY_SWORD_TEMPLATE = {
+  itemId: 'rusty_sword',
+  name: 'Rusty Sword',
+  description: 'A worn but functional blade.',
+  itemClass: 'weapon',
+  rarity: 'common',
+  value: 15,
+  stackable: false,
+  maxStack: 1,
+  spriteName: 'dwarvish short sword',
+  weapon: {
+    damage: 3,
+    damageType: 'physical',
+    accuracy: 5,
+    speed: 0,
+    slot: 'weapon',
+    weaponRange: 1,
+    weaponType: 'blade',
+  },
+} as const;
+
+const HEALTH_POTION_TEMPLATE = {
+  itemId: 'health_potion',
+  name: 'Health Potion',
+  description: 'Restores 30 health.',
+  itemClass: 'consumable',
+  rarity: 'common',
+  value: 10,
+  stackable: true,
+  maxStack: 5,
+  spriteName: 'purple red potion',
+  consumable: { effect: 'heal', magnitude: 30 },
+} as const;
 
 function rng(seed = 42) {
   return new SeededRNG(seed);
@@ -111,8 +144,7 @@ describe('Feature Completeness: Equipment (EQUIP)', () => {
     });
     // Add item to registry
     const registry = new Map(state.itemRegistry.items);
-    const template = ITEM_BY_ID.get('rusty_sword');
-    if (template) registry.set(weaponId, template as any);
+    registry.set(weaponId, RUSTY_SWORD_TEMPLATE as any);
     const stateWithItem: GameState = { ...state, itemRegistry: { items: registry } };
 
     const result = handleCommand(stateWithItem, { type: 'EQUIP', itemId: weaponId }, rng());
@@ -128,9 +160,8 @@ describe('Feature Completeness: Equipment (EQUIP)', () => {
 describe('Feature Completeness: Item Use (USE_ITEM)', () => {
   it('full chain: use potion → health restored → event emitted → metric tracked', () => {
     const potionId = entityId('health_potion');
-    const template = ITEM_BY_ID.get('health_potion');
     const registry = new Map<any, any>();
-    if (template) registry.set(potionId, template);
+    registry.set(potionId, HEALTH_POTION_TEMPLATE);
 
     const state: GameState = {
       ...createTestGameState({
@@ -510,8 +541,7 @@ describe('Feature Completeness: Equipment (UNEQUIP)', () => {
     });
     // Add item to registry so stats can be calculated
     const registry = new Map(state.itemRegistry.items);
-    const template = ITEM_BY_ID.get('rusty_sword');
-    if (template) registry.set(weaponId, template as any);
+    registry.set(weaponId, RUSTY_SWORD_TEMPLATE as any);
     const stateWithItem: GameState = { ...state, itemRegistry: { items: registry } };
 
     const result = handleCommand(stateWithItem, createUnequipCommand(weaponId), rng());

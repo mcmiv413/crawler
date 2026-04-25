@@ -43,7 +43,7 @@ describe('Content Cross-References', () => {
         const hasTarget =
           quest.targetItemId || quest.targetEnemyTemplateId || quest.targetFloorDepth;
         expect(
-          hasTarget,
+          Boolean(hasTarget),
           `Quest "${quest.id}" has no target (missing targetItemId, targetEnemyTemplateId, or targetFloorDepth)`,
         ).toBe(true);
       }

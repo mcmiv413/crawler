@@ -2,8 +2,8 @@ import type { QuestTemplate } from './types.js';
 
 export const gatherRareMaterials: QuestTemplate = {
   id: 'gather_rare_materials',
-  title: 'Collect Luminous Crystals',
-  description: 'We need rare materials to craft new defenses. Retrieve luminous crystals from the depths.',
-  targetItemId: 'mana_crystal',
+  title: 'Reach the Crystal Veins',
+  description: 'We need rare materials to craft new defenses. Reach the lower crystal veins where the best materials can be recovered.',
+  targetFloorDepth: 5,
   rewardGold: 60,
 };
