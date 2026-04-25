@@ -1,7 +1,9 @@
 import { describe, it, expect } from 'vitest';
 import { ENEMY_ABILITY_DEFINITIONS, resolveEnemyAbility } from './enemy-abilities.js';
-import { createTestGameStateInCombat, createTestEnemy } from '../test-utils.js';
+import type { EnemyAction } from './enemy-ai.js';
+import { createTestGameState, createTestGameStateInCombat, createTestEnemy } from '../test-utils.js';
 import { SeededRNG } from '../utils/rng.js';
+import { posKey } from '@dungeon/contracts';
 
 describe('Enemy Abilities', () => {
   describe('ENEMY_ABILITY_DEFINITIONS', () => {
@@ -30,6 +32,57 @@ describe('Enemy Abilities', () => {
     });
   });
 
+  describe('EnemyAction with abilities', () => {
+    it('should support ability action type', () => {
+      const action: EnemyAction = {
+        type: 'ability',
+        enemyId: 'e1' as any,
+        abilityId: 'crushing_blow',
+      };
+
+      expect(action.type).toBe('ability');
+      expect((action as any).abilityId).toBe('crushing_blow');
+    });
+
+    it('should have optional targetPosition for ability actions', () => {
+      const action: EnemyAction = {
+        type: 'ability',
+        enemyId: 'e1' as any,
+        abilityId: 'fire_bolt',
+        targetPosition: { x: 5, y: 5 },
+      };
+
+      expect(action.targetPosition).toEqual({ x: 5, y: 5 });
+    });
+
+    it('should allow ability action without targetPosition', () => {
+      const action: EnemyAction = {
+        type: 'ability',
+        enemyId: 'e1' as any,
+        abilityId: 'roar',
+      };
+
+      expect(action.type).toBe('ability');
+      expect((action as any).abilityId).toBe('roar');
+    });
+  });
+
+  describe('EnemyInstance with ability cooldowns', () => {
+    it('should track ability cooldowns', () => {
+      const enemy = {
+        ...createTestEnemy(),
+        abilityCooldowns: {
+          crushing_blow: 3,
+          fire_bolt: 0,
+        },
+      };
+
+      expect(enemy.abilityCooldowns.crushing_blow).toBeGreaterThan(0);
+      expect(enemy.abilityCooldowns.crushing_blow).toBeLessThan(5);
+      expect(enemy.abilityCooldowns.fire_bolt).toBeLessThanOrEqual(0);
+    });
+  });
+
   describe('resolveEnemyAbility', () => {
     it('resolves crushing_blow ability', () => {
       const state = createTestGameStateInCombat();
@@ -38,9 +91,7 @@ describe('Enemy Abilities', () => {
 
       const result = resolveEnemyAbility('crushing_blow', enemy, state, rng);
 
-      // Should have events
       expect(result.events.length).toBeGreaterThan(0);
-      // Should have attack event for damage ability
       expect(result.events.some(e => e.type === 'ATTACK_PERFORMED')).toBe(true);
     });
 
@@ -51,7 +102,6 @@ describe('Enemy Abilities', () => {
 
       const result = resolveEnemyAbility('frost_bolt', enemy, state, rng);
 
-      // Should have events
       expect(result.events.length).toBeGreaterThan(0);
     });
 
@@ -62,7 +112,6 @@ describe('Enemy Abilities', () => {
 
       const result = resolveEnemyAbility('roar', enemy, state, rng);
 
-      // Roar applies status effect
       expect(result.events.some(e => e.type === 'STATUS_APPLIED')).toBe(true);
     });
 
@@ -76,19 +125,16 @@ describe('Enemy Abilities', () => {
       expect(result.state === state || JSON.stringify(result.state) === JSON.stringify(state)).toBe(true);
       expect(result.events).toHaveLength(0);
     });
-  });
 
-    it('crushing_blow deals 2x damage', () => {
+    it('crushing_blow deals damage', () => {
       const state = createTestGameStateInCombat();
       const enemy = createTestEnemy({ stats: { ...createTestEnemy().stats, attack: 10 } });
       const rng = new SeededRNG(42);
 
       const result = resolveEnemyAbility('crushing_blow', enemy, state, rng);
 
-      // Should have ATTACK_PERFORMED event
       const attackEvent = result.events.find(e => e.type === 'ATTACK_PERFORMED') as any;
       expect(attackEvent).toBeDefined();
-      // crushing_blow deals damage
       if (attackEvent) {
         expect(attackEvent.damage).toBeGreaterThan(0);
       }
@@ -101,7 +147,6 @@ describe('Enemy Abilities', () => {
 
       const result = resolveEnemyAbility('fire_bolt', enemy, state, rng);
 
-      // Should have ATTACK_PERFORMED event with fire damage type
       const attackEvent = result.events.find(e => e.type === 'ATTACK_PERFORMED') as any;
       expect(attackEvent).toBeDefined();
       if (attackEvent) {
@@ -116,7 +161,6 @@ describe('Enemy Abilities', () => {
 
       const result = resolveEnemyAbility('flame_trail', enemy, state, rng);
 
-      // Should have STATUS_APPLIED event for burn
       const statusEvent = result.events.find(e => e.type === 'STATUS_APPLIED' && (e as any).statusId === 'burn');
       expect(statusEvent).toBeDefined();
     });
@@ -128,11 +172,9 @@ describe('Enemy Abilities', () => {
 
       const result = resolveEnemyAbility('frost_bolt', enemy, state, rng);
 
-      // Should have ATTACK_PERFORMED event (hits first)
       const attackEvent = result.events.find(e => e.type === 'ATTACK_PERFORMED');
       expect(attackEvent).toBeDefined();
 
-      // If hit, should have slow status applied
       if (attackEvent && (attackEvent as any).hit) {
         const slowEvent = result.events.find(e => e.type === 'STATUS_APPLIED' && (e as any).statusId === 'slow');
         expect(slowEvent).toBeDefined();
@@ -146,48 +188,39 @@ describe('Enemy Abilities', () => {
 
       const result = resolveEnemyAbility('chilling_aura', enemy, state, rng);
 
-      // Should NOT have ATTACK_PERFORMED event (no damage)
       const attackEvent = result.events.find(e => e.type === 'ATTACK_PERFORMED');
       expect(attackEvent).toBeUndefined();
 
-      // Should have STATUS_APPLIED event for slow on player
       const slowEvent = result.events.find(e => e.type === 'STATUS_APPLIED' && (e as any).statusId === 'slow');
       expect(slowEvent).toBeDefined();
       if (slowEvent) {
         expect((slowEvent as any).targetId).toBe(state.player.id);
       }
 
-      // Verify player has slow status
       expect(result.state.player.statuses.some(s => s.id === 'slow')).toBe(true);
     });
 
     it('roar applies strength to self, no damage', () => {
       const state = createTestGameStateInCombat();
-      // Use the enemy that's actually in the state, not a new one
       const enemy = Array.from(state.run!.enemies.values())[0]!;
       const rng = new SeededRNG(42);
 
-      // First verify the roar ability definition
       const roarDef = ENEMY_ABILITY_DEFINITIONS.get('roar');
       expect(roarDef).toBeDefined();
       expect(roarDef?.targetSelf).toBe(true);
 
       const result = resolveEnemyAbility('roar', enemy, state, rng);
 
-      // Should NOT have ATTACK_PERFORMED event (no damage)
       const attackEvent = result.events.find(e => e.type === 'ATTACK_PERFORMED');
       expect(attackEvent).toBeUndefined();
 
-      // Should have STATUS_APPLIED event
       const statusEvent = result.events.find(e => e.type === 'STATUS_APPLIED');
       expect(statusEvent).toBeDefined();
       if (statusEvent) {
         expect((statusEvent as any).statusId).toBe('strength');
-        // CRITICAL: Status should be applied to the caster (enemy), not the player
         expect((statusEvent as any).targetId).toBe(enemy.id);
       }
 
-      // Verify enemy has strength status in updated state
       if (result.state.run) {
         let updatedEnemy: any | null = null;
         for (const e of result.state.run.enemies.values()) {
@@ -203,7 +236,6 @@ describe('Enemy Abilities', () => {
         }
       }
 
-      // Verify player does NOT have strength status
       expect(result.state.player.statuses.some(s => s.id === 'strength')).toBe(false);
     });
 
@@ -214,8 +246,6 @@ describe('Enemy Abilities', () => {
 
       const result = resolveEnemyAbility('crushing_blow', enemy, state, rng);
 
-      // Check if enemy cooldown was set
-      // Find the updated enemy in the result state
       if (result.state.run) {
         let updatedEnemy: any | null = null;
         for (const e of result.state.run.enemies.values()) {
@@ -224,7 +254,6 @@ describe('Enemy Abilities', () => {
             break;
           }
         }
-        // If cooldown is tracked, it should be > 0 for the used ability
         if (updatedEnemy && updatedEnemy.abilityCooldowns) {
           expect(updatedEnemy.abilityCooldowns['crushing_blow'] || 0).toBeGreaterThan(0);
         }
@@ -239,23 +268,134 @@ describe('Enemy Abilities', () => {
 
       const result = resolveEnemyAbility('crushing_blow', enemy, stateNoRun, rng);
 
-      // State should be unchanged (or deeply equal)
       expect(result.state === stateNoRun || JSON.stringify(result.state) === JSON.stringify(stateNoRun)).toBe(true);
       expect(result.events).toHaveLength(0);
     });
 
-    it('Bug 4: resolveEnemyAbility returns without calling engine updateRunMetrics', () => {
+    it('resolveEnemyAbility returns without calling engine updateRunMetrics', () => {
       const state = createTestGameStateInCombat();
       const enemy = createTestEnemy();
       const rng = new SeededRNG(42);
 
-      // This test ensures resolveEnemyAbility is pure and doesn't have
-      // inverted dependency on command-handler (engine layer)
       const result = resolveEnemyAbility('crushing_blow', enemy, state, rng);
 
-      // Result should be well-formed (state + events)
       expect(result).toHaveProperty('state');
       expect(result).toHaveProperty('events');
       expect(Array.isArray(result.events)).toBe(true);
     });
+  });
+
+  describe('resolveEnemyAbility with cooldowns', () => {
+    it('should set ability cooldown after use', () => {
+      const state = createTestGameState({ phase: 'dungeon' });
+      const enemy = {
+        ...createTestEnemy(),
+        position: { x: 5, y: 5 },
+        abilities: ['roar'],
+        abilityCooldowns: {},
+      };
+
+      const stateWithEnemy = {
+        ...state,
+        run: {
+          ...state.run!,
+          enemies: new Map([[posKey(enemy.position), enemy]]),
+        },
+      };
+
+      const rng = new SeededRNG(42);
+      const result = resolveEnemyAbility('roar', enemy, stateWithEnemy, rng);
+
+      const updatedEnemy = result.state.run!.enemies.get(posKey(enemy.position));
+      expect(updatedEnemy?.abilityCooldowns?.roar).toBeGreaterThan(0);
+    });
+
+    it('should apply damage when ability has damageMultiplier', () => {
+      const state = createTestGameState({ phase: 'dungeon' });
+      const enemy = {
+        ...createTestEnemy(),
+        position: { x: 5, y: 5 },
+        abilities: ['crushing_blow'],
+        stats: {
+          ...createTestEnemy().stats,
+          attack: 20,
+        },
+        abilityCooldowns: {},
+      };
+
+      const stateWithEnemy = {
+        ...state,
+        run: {
+          ...state.run!,
+          enemies: new Map([[posKey(enemy.position), enemy]]),
+        },
+      };
+
+      const rng = new SeededRNG(42);
+      const result = resolveEnemyAbility('crushing_blow', enemy, stateWithEnemy, rng);
+
+      const damageEvent = result.events.find(e => e.type === 'ATTACK_PERFORMED');
+      expect(damageEvent).toBeDefined();
+      expect(result.state.player.stats.health).toBeLessThan(state.player.stats.health);
+    });
+
+    it('should apply status effect when ability has statusId', () => {
+      const state = createTestGameState({ phase: 'dungeon' });
+      const enemy = {
+        ...createTestEnemy(),
+        position: { x: 5, y: 5 },
+        abilities: ['roar'],
+        damageType: 'physical' as const,
+        abilityCooldowns: {},
+      };
+
+      const stateWithEnemy = {
+        ...state,
+        run: {
+          ...state.run!,
+          enemies: new Map([[posKey(enemy.position), enemy]]),
+        },
+      };
+
+      const rng = new SeededRNG(42);
+      const result = resolveEnemyAbility('roar', enemy, stateWithEnemy, rng);
+
+      const statusEvent = result.events.find(e => e.type === 'STATUS_APPLIED');
+      expect(statusEvent?.type).toBe('STATUS_APPLIED');
+      if (statusEvent?.type === 'STATUS_APPLIED') {
+        expect(statusEvent.statusId).toBe('strength');
+      }
+    });
+
+    it('should handle zero damage abilities without damage events', () => {
+      const state = createTestGameState({ phase: 'dungeon' });
+      const initialHealth = state.player.stats.health;
+      const enemy = {
+        ...createTestEnemy(),
+        position: { x: 5, y: 5 },
+        abilities: ['roar'],
+        damageType: 'physical' as const,
+        abilityCooldowns: {},
+      };
+
+      const stateWithEnemy = {
+        ...state,
+        run: {
+          ...state.run!,
+          enemies: new Map([[posKey(enemy.position), enemy]]),
+        },
+      };
+
+      const rng = new SeededRNG(42);
+      const result = resolveEnemyAbility('roar', enemy, stateWithEnemy, rng);
+
+      const attackEvent = result.events.find(e => e.type === 'ATTACK_PERFORMED');
+      expect(attackEvent).toBeUndefined();
+
+      expect(result.state.player.stats.health).toBe(initialHealth);
+
+      const statusEvent = result.events.find(e => e.type === 'STATUS_APPLIED');
+      expect(statusEvent).toBeDefined();
+    });
+  });
 });
