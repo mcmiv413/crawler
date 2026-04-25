@@ -6,13 +6,13 @@ export const frostWraith = {
   archetype: 'cautious_defensive',
   tier: 3,
   stats: {
-    maxHealth: 45,
-    health: 45,
-    attack: 10,
-    defense: 5,
-    accuracy: 80,
-    evasion: 25,
-    speed: 90,
+    maxHealth: 34,
+    health: 34,
+    attack: 7,
+    defense: 4,
+    accuracy: 8,
+    evasion: 9,
+    speed: 92,
   },
   equipment: {
     weapon: {

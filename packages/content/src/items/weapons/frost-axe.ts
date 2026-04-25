@@ -10,5 +10,5 @@ export const frostAxe: WeaponTemplate = {
   value: 80,
   stackable: false,
   maxStack: 1,
-  weapon: { damage: 10, damageType: 'frost', accuracy: 0, speed: 0, slot: 'weapon', weaponRange: 1, weaponType: 'axe', onHitStatus: 'slow', onHitChance: 30 },
+  weapon: { damage: 12, damageType: 'frost', accuracy: -1, speed: -2, slot: 'weapon', weaponRange: 1, weaponType: 'axe', onHitStatus: 'slow', onHitChance: 30 },
 };

@@ -10,5 +10,5 @@ export const stoneHammer: WeaponTemplate = {
   value: 40,
   stackable: false,
   maxStack: 1,
-  weapon: { damage: 7, damageType: 'physical', accuracy: -5, speed: -5, slot: 'weapon', weaponRange: 1, weaponType: 'bludgeon', onHitStatus: 'weaken', onHitChance: 20 },
+  weapon: { damage: 11, damageType: 'physical', accuracy: -3, speed: -6, slot: 'weapon', weaponRange: 1, weaponType: 'bludgeon', onHitStatus: 'weaken', onHitChance: 20 },
 };

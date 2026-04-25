@@ -10,5 +10,5 @@ export const flameDagger: WeaponTemplate = {
   value: 45,
   stackable: false,
   maxStack: 1,
-  weapon: { damage: 5, damageType: 'fire', accuracy: 10, speed: 10, slot: 'weapon', weaponRange: 1, weaponType: 'blade', onHitStatus: 'burn', onHitChance: 20 },
+  weapon: { damage: 8, damageType: 'fire', accuracy: 5, speed: 10, slot: 'weapon', weaponRange: 1, weaponType: 'blade', onHitStatus: 'burn', onHitChance: 20 },
 };

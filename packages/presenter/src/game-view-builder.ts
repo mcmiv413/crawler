@@ -24,6 +24,51 @@ import { buildInventoryView } from './builders/inventory-view-builder.js';
 import { buildDeathSummary } from './builders/death-summary-builder.js';
 import type { NemesisView } from './game-view.js';
 
+function computeThreatRating(enemy: EnemyInstance, state: GameState): 'Low' | 'Moderate' | 'High' | 'Deadly' {
+  const playerStats = state.player.stats;
+  const enemyStats = enemy.stats;
+
+  // Estimate mid-band damage
+  const enemyMidBand = Math.round(enemyStats.attack * 1);
+  const playerMidBand = Math.round(playerStats.attack * 1);
+
+  // Calculate hits to kill
+  const hitsToKillPlayer = Math.ceil(playerStats.health / Math.max(1, enemyMidBand));
+  const hitsToKillEnemy = Math.ceil(enemyStats.health / Math.max(1, playerMidBand));
+
+  // Get range info
+  const enemyRange = enemy.equipment?.weapon?.range ?? 1;
+  const playerRange = (() => {
+    if (state.player.equipment.weapon === null) return 1;
+    const wt = state.itemRegistry.items.get(state.player.equipment.weapon);
+    if (wt && wt.itemClass === 'weapon') {
+      const weapon = (wt as { weapon: { weaponRange: number } }).weapon;
+      return weapon.weaponRange ?? 1;
+    }
+    return 1;
+  })();
+
+  // Speed comparison
+  const enemyFaster = enemyStats.speed > playerStats.speed;
+
+  // Deadly conditions
+  if (hitsToKillPlayer <= 2) return 'Deadly';
+  if (enemyFaster && enemyRange > playerRange) return 'Deadly';
+
+  // High conditions
+  if (hitsToKillPlayer === 3) return 'High';
+  if (enemyFaster && enemyRange > 1) return 'High';
+  if (hitsToKillEnemy >= 5) return 'High';
+
+  // Moderate conditions
+  if (hitsToKillPlayer >= 4 && hitsToKillPlayer <= 5) return 'Moderate';
+  if (enemyRange > playerRange) return 'Moderate';
+  if (enemyFaster) return 'Moderate';
+
+  // Low condition
+  return 'Low';
+}
+
 function buildInspectableEntities(state: GameState): readonly InspectableEntityView[] {
   if (!state.run) return [];
 
@@ -62,6 +107,7 @@ function buildInspectableEntities(state: GameState): readonly InspectableEntityV
       isFasterThanPlayer: enemy.stats.speed > state.player.stats.speed,
       affinities: template.affinities && Object.keys(template.affinities).length > 0 ? template.affinities : undefined,
       statuses: enemy.statuses.map(s => STATUS_DEFINITIONS.get(s.id)?.name ?? s.id),
+      threatRating: computeThreatRating(enemy, state),
     });
   }
 

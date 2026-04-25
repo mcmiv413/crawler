@@ -133,8 +133,9 @@ function generateFeasibleActions(
     }
   }
 
-  // Attack if adjacent
-  if (dist === 1) {
+  // Attack if within weapon range (melee or ranged)
+  const weaponRange = enemy.equipment.weapon.range;
+  if (dist <= weaponRange) {
     mutableActions.push({ type: 'attack', enemyId: enemy.id });
   }
 

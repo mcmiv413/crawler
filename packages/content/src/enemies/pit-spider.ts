@@ -6,13 +6,13 @@ export const pitSpider = {
   archetype: 'ambusher',
   tier: 1,
   stats: {
-    maxHealth: 35,
-    health: 35,
-    attack: 12,
-    defense: 4,
-    accuracy: 72,
-    evasion: 20,
-    speed: 115,
+    maxHealth: 24,
+    health: 24,
+    attack: 7,
+    defense: 3,
+    accuracy: 6,
+    evasion: 8,
+    speed: 110,
   },
   equipment: {
     weapon: {

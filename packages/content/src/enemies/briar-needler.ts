@@ -6,12 +6,12 @@ export const briarNeedler = {
   archetype: 'skittish_ranged',
   tier: 2,
   stats: {
-    maxHealth: 25,
-    health: 25,
-    attack: 11,
-    defense: 2,
-    accuracy: 75,
-    evasion: 20,
+    maxHealth: 18,
+    health: 18,
+    attack: 6,
+    defense: 1,
+    accuracy: 7,
+    evasion: 8,
     speed: 110,
   },
   equipment: {

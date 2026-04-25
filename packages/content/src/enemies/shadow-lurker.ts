@@ -6,12 +6,12 @@ export const shadowLurker = {
   archetype: 'ambusher',
   tier: 2,
   stats: {
-    maxHealth: 35,
-    health: 35,
-    attack: 14,
-    defense: 3,
-    accuracy: 80,
-    evasion: 30,
+    maxHealth: 24,
+    health: 24,
+    attack: 9,
+    defense: 2,
+    accuracy: 8,
+    evasion: 12,
     speed: 120,
   },
   equipment: {

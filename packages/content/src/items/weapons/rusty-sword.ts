@@ -10,5 +10,5 @@ export const rustySword: WeaponTemplate = {
   stackable: false,
   maxStack: 1,
   spriteName: 'dwarvish short sword',
-  weapon: { damage: 3, damageType: 'physical', accuracy: 5, speed: 0, slot: 'weapon', weaponRange: 1, weaponType: 'blade' },
+  weapon: { damage: 7, damageType: 'physical', accuracy: 2, speed: 0, slot: 'weapon', weaponRange: 1, weaponType: 'blade' },
 };

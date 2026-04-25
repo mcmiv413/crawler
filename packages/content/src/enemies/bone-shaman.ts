@@ -6,13 +6,13 @@ export const boneShaman = {
   archetype: 'cautious_defensive',
   tier: 3,
   stats: {
-    maxHealth: 42,
-    health: 42,
-    attack: 13,
-    defense: 5,
-    accuracy: 78,
-    evasion: 25,
-    speed: 88,
+    maxHealth: 32,
+    health: 32,
+    attack: 7,
+    defense: 3,
+    accuracy: 8,
+    evasion: 8,
+    speed: 86,
   },
   equipment: {
     weapon: {

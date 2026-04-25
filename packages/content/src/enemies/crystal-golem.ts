@@ -6,13 +6,13 @@ export const crystalGolem = {
   archetype: 'aggressive_melee',
   tier: 3,
   stats: {
-    maxHealth: 65,
-    health: 65,
-    attack: 16,
-    defense: 11,
-    accuracy: 60,
-    evasion: 2,
-    speed: 65,
+    maxHealth: 56,
+    health: 56,
+    attack: 11,
+    defense: 9,
+    accuracy: 4,
+    evasion: 1,
+    speed: 64,
   },
   equipment: {
     weapon: {

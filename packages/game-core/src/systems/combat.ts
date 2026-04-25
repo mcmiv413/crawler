@@ -66,7 +66,7 @@ export function resolveAttack(
 
   // Step 4: Damage calculation
   const criticalHit = rng.chance(combatConfig.critChance);
-  let baseDamage = rollDamage(ctx.attackerAttack, combatConfig.damageVariance, rng);
+  let baseDamage = rollDamage(ctx.attackerAttack, 0.15, rng);
   if (criticalHit === true) {
     baseDamage = Math.round(baseDamage * combatConfig.critMultiplier);
   }

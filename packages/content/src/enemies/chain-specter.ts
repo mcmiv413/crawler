@@ -6,13 +6,13 @@ export const chainSpecter = {
   archetype: 'ambusher',
   tier: 3,
   stats: {
-    maxHealth: 40,
-    health: 40,
-    attack: 15,
-    defense: 4,
-    accuracy: 82,
-    evasion: 28,
-    speed: 115,
+    maxHealth: 30,
+    health: 30,
+    attack: 10,
+    defense: 3,
+    accuracy: 8,
+    evasion: 11,
+    speed: 112,
   },
   equipment: {
     weapon: {

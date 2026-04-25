@@ -2,22 +2,22 @@
 
 /** Base player stats at level 1 (50% health reduction for harder difficulty) */
 export const BASE_PLAYER_STATS = {
-  maxHealth: 30,
-  health: 30,
-  attack: 30,
-  defense: 5,
-  accuracy: 90,
-  evasion: 25,
+  maxHealth: 36,
+  health: 36,
+  attack: 4,
+  defense: 4,
+  accuracy: 6,
+  evasion: 8,
   speed: 100,
 } as const;
 
 /** Per-level stat gains */
 export const LEVEL_UP_GAINS = {
-  maxHealth: 20,
-  attack: 5,
-  defense: 3,
+  maxHealth: 10,
+  attack: 1,
+  defense: 2,
   accuracy: 1,
-  evasion: 2,
+  evasion: 1,
   speed: 0,
 } as const;
 
@@ -29,7 +29,7 @@ export const XP_TABLE: readonly number[] = [
 /** Damage formula constants */
 export const COMBAT = {
   /** Base hit chance before accuracy/evasion */
-  baseHitChance: 80,
+  baseHitChance: 65,
   /** Minimum hit chance (%) */
   minHitChance: 15,
   /** Maximum hit chance (%) */
@@ -38,19 +38,49 @@ export const COMBAT = {
   critChance: 5,
   /** Critical hit damage multiplier */
   critMultiplier: 1.5,
-  /** Damage variance: final = base * (1 ± variance) */
-  damageVariance: 0.15,
   /** Minimum damage after all mitigation */
   minDamage: 1,
   /** Defense mitigation formula: reduction = defense / (defense + constant) */
-  defenseDivisor: 50,
+  defenseDivisor: 35,
 } as const;
+
+/** Damage band profiles: spread values for damage range calculation */
+export const DAMAGE_BAND_PROFILES = {
+  player_unarmed: { spread: 0.15 },
+  weapon_dagger: { spread: 0.18 },
+  weapon_blade: { spread: 0.22 },
+  weapon_axe: { spread: 0.30 },
+  weapon_bludgeon: { spread: 0.34 },
+  weapon_short_bow: { spread: 0.18 },
+  weapon_war_bow: { spread: 0.20 },
+  enemy_skirmisher: { spread: 0.18 },
+  enemy_ambusher: { spread: 0.24 },
+  enemy_bruiser: { spread: 0.28 },
+  enemy_tank: { spread: 0.22 },
+  enemy_caster: { spread: 0.16 },
+} as const;
+
+/**
+ * Compute damage range from center value and profile spread.
+ * min = round(center * (1 - spread))
+ * max = round(center * (1 + spread))
+ */
+export function getDamageBand(
+  center: number,
+  profile: keyof typeof DAMAGE_BAND_PROFILES,
+): { min: number; max: number } {
+  const { spread } = DAMAGE_BAND_PROFILES[profile];
+  return {
+    min: Math.round(center * (1 - spread)),
+    max: Math.round(center * (1 + spread)),
+  };
+}
 
 /** Floor scaling: enemy stats multiply by this per floor depth */
 export const FLOOR_SCALING = {
-  healthMultiplier: 1.2,
-  attackMultiplier: 1.2,
-  defenseMultiplier: 1.2,
+  healthMultiplier: 1.1,
+  attackMultiplier: 1.08,
+  defenseMultiplier: 1.05,
   experienceMultiplier: 1,
 } as const;
 
@@ -128,7 +158,7 @@ export const NEMESIS_PROMOTION = {
 
 export const DEATH_CONSEQUENCES = {
   goldLossPercent: 0.25,
-  overkillPermadeathThreshold: 0.50,  // fraction of maxHP
+  overkillPermadeathThreshold: 0.75,  // fraction of maxHP
 } as const;
 
 /** FOV radius */
@@ -284,7 +314,6 @@ export function createDefaultBalanceConfig(): {
     readonly maxHitChance: number;
     readonly critChance: number;
     readonly critMultiplier: number;
-    readonly damageVariance: number;
     readonly defenseDivisor: number;
     readonly minDamage: number;
   };
@@ -294,6 +323,9 @@ export function createDefaultBalanceConfig(): {
     readonly defenseMultiplier: number;
     readonly experienceMultiplier: number;
   };
+  readonly deathConsequences: {
+    readonly overkillPermadeathThreshold: number;
+  };
 } {
   return {
     combat: {
@@ -302,7 +334,6 @@ export function createDefaultBalanceConfig(): {
       maxHitChance: COMBAT.maxHitChance,
       critChance: COMBAT.critChance,
       critMultiplier: COMBAT.critMultiplier,
-      damageVariance: COMBAT.damageVariance,
       defenseDivisor: COMBAT.defenseDivisor,
       minDamage: COMBAT.minDamage,
     },
@@ -311,6 +342,9 @@ export function createDefaultBalanceConfig(): {
       attackMultiplier: FLOOR_SCALING.attackMultiplier,
       defenseMultiplier: FLOOR_SCALING.defenseMultiplier,
       experienceMultiplier: FLOOR_SCALING.experienceMultiplier,
+    },
+    deathConsequences: {
+      overkillPermadeathThreshold: DEATH_CONSEQUENCES.overkillPermadeathThreshold,
     },
   };
 }

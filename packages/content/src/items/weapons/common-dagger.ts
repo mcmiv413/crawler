@@ -10,5 +10,5 @@ export const commonDagger: WeaponTemplate = {
   stackable: false,
   maxStack: 1,
   spriteName: 'elven dagger',
-  weapon: { damage: 2, damageType: 'physical', accuracy: 10, speed: 5, slot: 'weapon', weaponRange: 1, weaponType: 'dagger' },
+  weapon: { damage: 5, damageType: 'physical', accuracy: 4, speed: 10, slot: 'weapon', weaponRange: 1, weaponType: 'dagger' },
 };
