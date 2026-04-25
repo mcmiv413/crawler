@@ -1,5 +1,5 @@
 import { describe, it, expect } from 'vitest';
-import { ARMOR } from './armor.js';
+import { ARMOR } from './armor/index.js';
 import { ENCHANTMENT_SLOTS_BY_RARITY } from '../balance/tables.js';
 import { ENCHANTMENT_BY_ID } from '../enchantments/index.js';
 

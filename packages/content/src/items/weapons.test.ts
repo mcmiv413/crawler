@@ -1,5 +1,5 @@
 import { describe, it, expect } from 'vitest';
-import { WEAPONS } from './weapons.js';
+import { WEAPONS } from './weapons/index.js';
 import { WEAPON_TYPES } from '@dungeon/contracts';
 
 describe('WEAPONS', () => {

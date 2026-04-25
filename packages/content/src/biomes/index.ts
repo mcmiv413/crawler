@@ -20,6 +20,9 @@ const items: [string, BiomeDefinition][] = [
 
 export const BIOME_DEFINITIONS: ReadonlyMap<string, BiomeDefinition> = new Map(items);
 
+export const BIOMES = BIOME_DEFINITIONS;
+export type { BiomeDefinition } from './stone-crypt.js';
+
 export {
   crystalCave, forest, frozenDepths, goblinWarrens, mossCaverns, stoneCrypt, volcanic,
 };

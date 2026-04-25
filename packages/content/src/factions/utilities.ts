@@ -1,15 +1,4 @@
-import type { FactionState } from '@dungeon/contracts';
-import { FACTION_DEFINITIONS } from './index.js';
 import { ENEMY_TEMPLATES } from '../enemies/index.js';
-
-export const FACTIONS = FACTION_DEFINITIONS;
-
-export const INITIAL_FACTIONS: readonly FactionState[] = Array.from(FACTION_DEFINITIONS.values()).map(f => ({
-  id: f.id,
-  name: f.name,
-  power: f.initialPower,
-  disposition: f.initialDisposition,
-}));
 
 export function getPrimaryFactionId(templateId: string): string | undefined {
   const template = ENEMY_TEMPLATES.get(templateId);

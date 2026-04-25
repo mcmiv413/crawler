@@ -14,6 +14,15 @@ const items: [string, FactionDefinition][] = [
 
 export const FACTION_DEFINITIONS: ReadonlyMap<string, FactionDefinition> = new Map(items);
 
+import type { FactionState } from '@dungeon/contracts';
+export const FACTIONS = FACTION_DEFINITIONS;
+export const INITIAL_FACTIONS: readonly FactionState[] = Array.from(FACTION_DEFINITIONS.values()).map(f => ({
+  id: f.id,
+  name: f.name,
+  power: f.initialPower,
+  disposition: f.initialDisposition,
+}));
+
 export {
   beastSwarm, goblinWarband, shadowCult, undeadLegion,
 };
