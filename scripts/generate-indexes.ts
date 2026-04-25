@@ -1,4 +1,4 @@
-import { readdirSync, readFileSync, writeFileSync } from 'fs';
+import { readdirSync, readFileSync, writeFileSync, existsSync } from 'fs';
 import { join } from 'path';
 
 interface ContentTypeConfig {
@@ -41,8 +41,9 @@ const configs: ContentTypeConfig[] = [
     indexPath: 'biomes/index.ts',
     exportName: 'BIOME_DEFINITIONS',
     itemType: 'BiomeDefinition',
+    typeImport: './stone-crypt.js',
     exportType: 'map',
-    keyField: 'id',
+    keyField: 'biomeId',
   },
   {
     sourceDir: 'objects',
@@ -90,7 +91,8 @@ const configs: ContentTypeConfig[] = [
     exportName: 'FACTION_DEFINITIONS',
     itemType: 'FactionDefinition',
     typeImport: 'local',
-    exportType: 'array',
+    exportType: 'map',
+    keyField: 'id',
   },
   {
     sourceDir: 'quests',
@@ -164,6 +166,7 @@ function scanDirectory(dirPath: string): string[] {
           !f.name.startsWith('definitions') &&
           !f.name.startsWith('mastery') &&
           !f.name.startsWith('utils') &&
+          !f.name.startsWith('utilities') &&
           !f.name.endsWith('.test.ts')
       )
       .map(f => f.name.replace(/\.ts$/, ''));
@@ -251,7 +254,19 @@ export const ${di.name} = ${di.generator}(${config.exportName});`;
     lines.push(derivedIndexesCode);
   }
 
+  // Special handling for enchantments: create ENCHANTMENT_BY_ID map
+  if (config.sourceDir === 'enchantments' && config.exportType === 'array') {
+    lines.push(`\nexport const ENCHANTMENT_BY_ID: ReadonlyMap<string, ${config.itemType}> = new Map(\n  ${config.exportName}.map(e => [e.id, e]),\n);`);
+  }
+
   lines.push(`\nexport {\n  ${reExports},\n};`);
+
+  // Re-export utilities if utilities.ts exists
+  const utilitiesPath = join(contentPath, 'utilities.ts');
+  if (existsSync(utilitiesPath)) {
+    lines.push('\nexport * from \'./utilities.js\';');
+  }
+
   lines.push('\n// Add custom utilities below this line ↓');
 
   return lines.filter(l => l.trim()).join('\n') + '\n';

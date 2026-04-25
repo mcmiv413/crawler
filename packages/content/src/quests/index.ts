@@ -18,4 +18,6 @@ export {
   findEnchantedArmor, gatherRareMaterials, huntDangerousEnemy, rescueExpedition, retrieveRareWeapon,
 };
 
+export * from './utilities.js';
+
 // Add custom utilities below this line ↓

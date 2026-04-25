@@ -32,8 +32,14 @@ export const ENCHANTMENTS: readonly EnchantmentDefinition[] = [
   thorns,
 ];
 
+export const ENCHANTMENT_BY_ID: ReadonlyMap<string, EnchantmentDefinition> = new Map(
+  ENCHANTMENTS.map(e => [e.id, e]),
+);
+
 export {
   arcaneWard, blightWard, blink, defenseBoost, evasionBoost, expBonus, hpRegen, lifeSteal, resistFire, resistFrost, resistPoison, speedBoost, spikes, thorns,
 };
+
+export * from './utilities.js';
 
 // Add custom utilities below this line ↓
