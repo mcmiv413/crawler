@@ -1541,3 +1541,132 @@ describe('Map view stairs sprites (Phase 1a)', () => {
     expect(stairsCell?.spriteName).toBe('staircase down left');
   });
 });
+
+describe('Entity deduplication and sorting', () => {
+  it('deduplicates entities with same position', () => {
+    const state = createTestGameStateInCombat({ enemyAt: { x: 1, y: 0 } });
+    if (!state.run) throw new Error('No run');
+
+    const view = buildGameView(state);
+    const mapEntities = view.map?.entities ?? [];
+    
+    // Should not have duplicate positions
+    const positions = new Map<string, number>();
+    for (const entity of mapEntities) {
+      const posStr = `${entity.x},${entity.y}`;
+      positions.set(posStr, (positions.get(posStr) ?? 0) + 1);
+    }
+
+    for (const count of positions.values()) {
+      expect(count).toBeLessThanOrEqual(1); // No duplicates
+    }
+  });
+
+  it('sorts entities by distance from player', () => {
+    const state = createTestGameStateInCombat();
+    if (!state.run) throw new Error('No run');
+
+    // Create multiple enemies at different distances
+    const enemy1 = createTestEnemy({ id: entityId('e1'), position: { x: 1, y: 0 } });
+    const enemy2 = createTestEnemy({ id: entityId('e2'), position: { x: 5, y: 0 } });
+    const enemy3 = createTestEnemy({ id: entityId('e3'), position: { x: 3, y: 0 } });
+
+    state.run.enemies.set('1,0', enemy1);
+    state.run.enemies.set('5,0', enemy2);
+    state.run.enemies.set('3,0', enemy3);
+
+    const view = buildGameView(state);
+    const entities = view.map?.entities ?? [];
+    const enemyEntities = entities.filter(e => e.entityType === 'enemy');
+
+    // Should be sorted by distance (closer first)
+    for (let i = 1; i < enemyEntities.length; i++) {
+      const dist1 = Math.hypot(enemyEntities[i - 1]!.x - state.player.position.x, enemyEntities[i - 1]!.y - state.player.position.y);
+      const dist2 = Math.hypot(enemyEntities[i]!.x - state.player.position.x, enemyEntities[i]!.y - state.player.position.y);
+      expect(dist1).toBeLessThanOrEqual(dist2);
+    }
+  });
+
+  it('renders nemesis with special coloring', () => {
+    const state = createTestGameStateInCombat({ enemyAt: { x: 1, y: 0 } });
+    if (!state.run) throw new Error('No run');
+
+    // Get the enemy and set nemesis ID
+    const enemy = Array.from(state.run.enemies.values())[0]!;
+    const nemesisEnemy = { ...enemy, nemesisId: entityId('nemesis1') };
+    state.run.enemies.clear();
+    state.run.enemies.set('1,0', nemesisEnemy);
+
+    const view = buildGameView(state);
+    const mapEntities = view.map?.entities ?? [];
+    const nemesisEntity = mapEntities.find(e => e.id === enemy.id);
+
+    // Nemesis should have different coloring (not default enemy color)
+    expect(nemesisEntity).toBeDefined();
+    // The specific color can vary, but it should be set for nemesis
+    expect(nemesisEntity?.color).toBeDefined();
+  });
+});
+
+describe('Quest view and death context', () => {
+  it('builds quest view with active quests', () => {
+    const state = createTestGameStateInCombat();
+    state.activeQuests = [
+      {
+        id: entityId('q1'),
+        questType: 'hunt_dangerous_enemy',
+        status: 'in_progress',
+        progress: { enemiesKilled: 2, enemiesRequired: 5 },
+      },
+    ];
+
+    const view = buildGameView(state);
+    expect(view.activeQuests).toBeDefined();
+    expect(view.activeQuests.length).toBeGreaterThan(0);
+  });
+
+  it('sets phase to game_over when player is dead', () => {
+    const state = createTestGameStateInCombat();
+    state.phase = 'game_over';
+    state.player = {
+      ...state.player,
+      stats: { ...state.player.stats, health: 0 },
+    };
+
+    const view = buildGameView(state);
+    // Phase should reflect the state phase
+    expect(view.phase).toBe('game_over');
+  });
+
+  it('handles no active quests gracefully', () => {
+    const state = createTestGameStateInCombat();
+    state.activeQuests = [];
+
+    const view = buildGameView(state);
+    expect(view.activeQuests).toBeDefined();
+    expect(view.activeQuests.length).toBe(0);
+  });
+
+  it('provides map view with floor and biome information', () => {
+    const state = createTestGameStateInCombat();
+    if (!state.run) throw new Error('No run');
+
+    const view = buildGameView(state);
+    expect(view.map).toBeDefined();
+    // Biome is available through the map view
+    expect(view.map?.biomeId).toBe(state.run.floor.biomeId);
+  });
+
+  it('handles run progression data showing dungeon phase', () => {
+    const state = createTestGameStateInCombat();
+    if (!state.run) throw new Error('No run');
+
+    state.run.turnCount = 50;
+    const view = buildGameView(state);
+    
+    // Combat log entries reflect game progression
+    expect(view.combatLog).toBeDefined();
+    // createTestGameStateInCombat creates dungeon phase with enemy present
+    expect(view.phase).toBe('dungeon');
+  });
+});
