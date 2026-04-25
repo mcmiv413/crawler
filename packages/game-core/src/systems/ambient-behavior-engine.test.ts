@@ -9,6 +9,7 @@ import {
   createTestGameState,
   createTestRunState,
   createTestEnemy,
+  resetTestEnemyCounter,
 } from '../test-utils.js';
 import { SeededRNG } from '../utils/rng.js';
 import type { AmbientBehaviorProfile, EnemyInstance } from '@dungeon/contracts';
@@ -19,6 +20,7 @@ describe('ambient-behavior-engine', () => {
   let rng: SeededRNG;
 
   beforeEach(() => {
+    resetTestEnemyCounter();
     const run = createTestRunState();
     state = { ...createTestGameState({ phase: 'dungeon' }), run };
     rng = new SeededRNG(42);
@@ -325,7 +327,7 @@ describe('ambient-behavior-engine', () => {
     });
 
     it('transitions on no_allies when alone', () => {
-      const enemy = createTestEnemy({ archetype: 'aggressive-melee' });
+      const enemy = createTestEnemy({ archetype: 'aggressive-melee', ambientState: 'regrouping' });
 
       const newState = {
         ...state,
@@ -388,11 +390,11 @@ describe('ambient-behavior-engine', () => {
     });
 
     it('increments ambient state age', () => {
-      const enemy = createTestEnemy({ ambientStateAge: 5 });
+      const enemy = createTestEnemy({ ambientStateAge: 3 });
 
       const result = decideAmbientAction(enemy, profile, state, rng);
 
-      expect(result.updatedEnemy.ambientStateAge).toBe(6);
+      expect(result.updatedEnemy.ambientStateAge).toBe(4);
     });
 
     it('decides roaming action', () => {

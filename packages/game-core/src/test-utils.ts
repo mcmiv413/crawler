@@ -9,6 +9,12 @@ import { ALL_ABILITY_DEFINITIONS } from './abilities/definitions/index.js';
 
 export const BASE_TEST_STATS: PlayerStats = { ...BASE_PLAYER_STATS };
 
+let testEnemyCounter = 1;
+
+export function resetTestEnemyCounter(): void {
+  testEnemyCounter = 1;
+}
+
 export function createTestPlayer(overrides?: Partial<Player>): Player {
   return {
     id: entityId('p1'),
@@ -33,8 +39,10 @@ export function createTestPlayer(overrides?: Partial<Player>): Player {
 }
 
 export function createTestEnemy(overrides?: Partial<EnemyInstance>): EnemyInstance {
+  const id = entityId(`e${testEnemyCounter}`);
+  testEnemyCounter++;
   return {
-    id: entityId('e1'),
+    id,
     templateId: 'goblin_archer',
     name: 'Goblin Archer',
     archetype: 'ranged',
@@ -62,6 +70,8 @@ export function createTestEnemy(overrides?: Partial<EnemyInstance>): EnemyInstan
     statuses: [],
     isAlerted: true,
     lastKnownPlayerPos: null,
+    ambientState: 'roaming',
+    ambientStateAge: 0,
     ...overrides,
   };
 }
