@@ -2,6 +2,22 @@
 
 Reference docs for this codebase. Load these on-demand when working on specific tasks.
 
+---
+
+## ⚠️ Important: Auto-Index Generator
+
+After adding new content (items, enemies, abilities, biomes, enchantments, quests, etc.), **always run**:
+
+```bash
+pnpm generate:indexes
+```
+
+This scans your content directories and automatically generates index files that make your content accessible via `@dungeon/content` exports. **Do not manually edit generated index files** — run the generator instead.
+
+Each guide below includes a "Quick Start" section that reminds you to run this command.
+
+---
+
 | Guide | When to read |
 |-------|-------------|
 | [Architecture](guides/architecture.md) | Understanding the codebase, data flow, package responsibilities |

@@ -6,18 +6,122 @@ Abilities are **data-driven** — define the ability as a declarative structure 
 
 ---
 
-## Files to Touch
+## Quick Start (Content Abilities)
 
-| Step | File | What to do |
-|------|------|-----------|
-| 1. Define | `packages/game-core/src/abilities/definitions/my-ability.ts` | Create `AbilityDefinition` |
-| 2. Register | `packages/game-core/src/abilities/definitions/index.ts` | Add to `ALL_ABILITY_DEFINITIONS` |
-| 3. (Optional) Legacy | `packages/content/src/abilities/index.ts` | Add to `ABILITY_DEFINITIONS` for backward compat |
-| 4. Test | `packages/game-core/src/abilities/definitions/my-ability.test.ts` | Unit test the definition |
+For abilities defined in the content package:
+
+1. Create `packages/content/src/abilities/my-ability.ts`
+2. Run `pnpm generate:indexes` — the index is auto-generated
+3. Reference in level progression or weapon mastery
+4. Test and commit
+
+**That's it!** No manual index registration needed.
 
 ---
 
-## Step 1: Create the Definition
+## Two Paths: Content vs Game-Core
+
+**Use `packages/content/src/abilities/`** for:
+- Ability definitions you want to version control as data
+- Abilities granted by level progression or weapon mastery
+- Abilities referenced in content (enemies, loot, NPCs)
+
+**Use `packages/game-core/src/abilities/definitions/`** for:
+- Core engine abilities with complex logic
+- Abilities needing tight integration with combat systems
+- Internal/system abilities not meant for content iteration
+
+This guide focuses on **content abilities** (the common path).
+
+---
+
+## Step 1: Create the Definition (Content Abilities)
+
+Create a new file in `packages/content/src/abilities/`:
+
+```typescript
+import type { AbilityDefinition } from './types.js';
+
+export const myAbility: AbilityDefinition = {
+  id: 'my_ability',
+  name: 'My Ability',
+  description: 'Deals fire damage to a single target.',
+  tier: 1,  // 1, 2, 3, or 'unique'
+  
+  // Define what this ability does
+  // Implementation depends on your game mechanics
+};
+```
+
+---
+
+## Step 2: Run the Generator
+
+After creating your ability file, run:
+
+```bash
+pnpm generate:indexes
+```
+
+This automatically updates `packages/content/src/abilities/index.ts` to include your ability. The index is **auto-generated** — do not edit it manually.
+
+---
+
+## Step 3: Grant the Ability
+
+Decide how the player gets this ability:
+
+### By Level Progression
+
+In `packages/content/src/abilities/mastery.ts`:
+
+```typescript
+export const ABILITY_UNLOCK_BY_LEVEL: Readonly<Record<number, string>> = {
+  2: powerStrike.id,
+  4: secondWind.id,
+  // Add your ability at a specific level
+  6: myAbility.id,
+};
+```
+
+### By Weapon Mastery
+
+In `packages/content/src/abilities/mastery.ts`:
+
+```typescript
+export const MASTERY_ABILITIES: Record<WeaponType, Record<1 | 2, string>> = {
+  blade:    { 1: bladeBleed.id,      2: bladeRiposte.id    },
+  bludgeon: { 1: bludgeonStagger.id, 2: bludgeonShatter.id },
+  axe:      { 1: axeCleave.id,       2: myAbility.id       },  // Tier 2
+  // ...
+};
+```
+
+---
+
+## Key Files Reference
+
+| Purpose | File |
+|---------|------|\n| Content abilities | `packages/content/src/abilities/` |
+| Ability granting | `packages/content/src/abilities/mastery.ts` |
+| Type definitions | `packages/content/src/abilities/types.ts` |
+| Auto-generated index | `packages/content/src/abilities/index.ts` |
+| Game-core abilities | `packages/game-core/src/abilities/definitions/` |
+
+---
+
+## Game-Core Abilities (Advanced)
+
+If you need to create an ability in `packages/game-core/src/abilities/definitions/`:
+
+### Files to Touch
+
+| Step | File | What to do |
+|------|------|-----------|\n| 1. Define | `packages/game-core/src/abilities/definitions/my-ability.ts` | Create `AbilityDefinition` |
+| 2. Register | `packages/game-core/src/abilities/definitions/index.ts` | Add to `ALL_ABILITY_DEFINITIONS` |
+| 3. Test | `packages/game-core/src/abilities/definitions/my-ability.test.ts` | Unit test the definition |
+
+### Step 1: Create the Definition
 
 Create a new file in `packages/game-core/src/abilities/definitions/`:
 
@@ -62,7 +166,7 @@ export const MY_ABILITY: AbilityDefinition = {
 
 ---
 
-## Step 2: Register in Index
+## Step 2: Register in Index (Game-Core)
 
 Add to `packages/game-core/src/abilities/definitions/index.ts`:
 
@@ -94,7 +198,7 @@ Once registered, the runtime handles:
 
 ## How Abilities Are Granted
 
-- **By level** — `ABILITY_UNLOCK_BY_LEVEL` in `packages/content/src/abilities/index.ts`
+- **By level** — `ABILITY_UNLOCK_BY_LEVEL` in `packages/content/src/abilities/mastery.ts`
 - **By weapon mastery** — `MASTERY_ABILITIES` in same file
 - **Programmatically** — `grantAbility(state, abilityId)` in `packages/game-core/src/systems/abilities.ts`
 
@@ -105,7 +209,7 @@ Once registered, the runtime handles:
 Located in `packages/game-core/src/abilities/effects/`:
 
 | Effect | Handler | What it does |
-|--------|---------|-------------|
+|--------|---------|---------|
 | `attack` | `apply-attack.ts` | Damage with multiplier, damage type |
 | `heal` | `apply-heal.ts` | Restore HP |
 | `status` | `apply-status.ts` | Apply status effect with duration |
