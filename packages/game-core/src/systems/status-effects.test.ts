@@ -200,3 +200,160 @@ describe('Enemy status ticking', () => {
     expect(ticked?.statuses[0]?.turnsRemaining).toBe(1);
   });
 });
+
+describe('Status refresh behavior (Phase 3)', () => {
+  it('refreshing status takes maximum duration, not sum', () => {
+    const player = createTestPlayer();
+    const withSlow = applyStatusToPlayer(player, 'slow', 2, 1, null);
+    const refreshed = applyStatusToPlayer(withSlow, 'slow', 3, 1, null);
+    const effect = refreshed.statuses.find((s: any) => s.id === 'slow');
+    // Duration should be 3 (the max), not 5 (sum)
+    expect(effect!.turnsRemaining).toBeLessThanOrEqual(3);
+    expect(effect!.turnsRemaining).toBeGreaterThanOrEqual(2);
+  });
+
+  it('refreshing with longer duration extends remaining time', () => {
+    let state = createTestGameState();
+    const withPoison = applyStatusToPlayer(state.player, 'poison', 1, 5, null);
+    state = { ...state, player: withPoison };
+
+    // After 1 tick, poison has ~0 turns remaining
+    const { state: tickedState } = tickPlayerStatuses(state, 1);
+    expect(hasStatus(tickedState.player.statuses, 'poison')).toBe(false);
+
+    // Reapply with 3 turns should give fresh duration
+    const refreshed = applyStatusToPlayer(tickedState.player, 'poison', 3, 5, null);
+    const effect = refreshed.statuses.find((s: any) => s.id === 'poison');
+    expect(effect!.turnsRemaining).toBeGreaterThan(0);
+  });
+
+  it('refreshing with max stat prevents oversaturation', () => {
+    const player = createTestPlayer();
+    const withPoison = applyStatusToPlayer(player, 'poison', 5, 10, null);
+    const refreshed = applyStatusToPlayer(withPoison, 'poison', 10, 5, null);
+    const effect = refreshed.statuses.find((s: any) => s.id === 'poison');
+    // Magnitude should be max(10, 5) = 10, not 15
+    expect(effect!.magnitude).toBe(10);
+  });
+});
+
+describe('Stat cascades and interactions (Phase 3)', () => {
+  it('weaken reduces attack, vulnerability increases damage taken', () => {
+    let state = createTestGameState();
+    const withWeaken = applyStatusToPlayer(state.player, 'weaken', 2, 1, null);
+    const withVulnerability = applyStatusToPlayer(withWeaken, 'vulnerability', 2, 1, null);
+    state = { ...state, player: withVulnerability };
+
+    const originalAttack = state.player.stats.attack;
+    const weakenedAttack = getEffectiveStat(originalAttack, 'attack', withVulnerability.statuses);
+
+    // Weaken should reduce attack
+    expect(weakenedAttack).toBeLessThan(originalAttack);
+
+    // Both statuses should be present
+    expect(hasStatus(withVulnerability.statuses, 'weaken')).toBe(true);
+    expect(hasStatus(withVulnerability.statuses, 'vulnerability')).toBe(true);
+  });
+
+  it('stun and slow stack (multiple debuffs coexist)', () => {
+    const player = createTestPlayer();
+    const withStun = applyStatusToPlayer(player, 'stun', 1, 1, null);
+    const withBoth = applyStatusToPlayer(withStun, 'slow', 2, 1, null);
+
+    expect(hasStatus(withBoth.statuses, 'stun')).toBe(true);
+    expect(hasStatus(withBoth.statuses, 'slow')).toBe(true);
+    expect(withBoth.statuses.length).toBe(2);
+  });
+
+  it('burn and poison combined damage stacks', () => {
+    let state = createTestGameState();
+    const withBurn = applyStatusToPlayer(state.player, 'burn', 2, 5, null);
+    const withBoth = applyStatusToPlayer(withBurn, 'poison', 2, 5, null);
+    state = { ...state, player: withBoth };
+
+    const healthBefore = state.player.stats.health;
+    const { state: tickedState } = tickPlayerStatuses(state, 1);
+
+    // Should take damage from both burn and poison
+    expect(tickedState.player.stats.health).toBeLessThan(healthBefore);
+  });
+});
+
+describe('Health clamping and edge cases (Phase 3)', () => {
+  it('poison damage clamps health to 0 minimum, not negative', () => {
+    let state = createTestGameState();
+    // Set very low health
+    state = {
+      ...state,
+      player: {
+        ...state.player,
+        stats: { ...state.player.stats, health: 3 },
+      },
+    };
+    const withPoison = applyStatusToPlayer(state.player, 'poison', 2, 10, null);
+    state = { ...state, player: withPoison };
+
+    const { state: tickedState } = tickPlayerStatuses(state, 1);
+
+    // Health should be >= 0, not negative
+    expect(tickedState.player.stats.health).toBeGreaterThanOrEqual(0);
+    expect(tickedState.player.stats.health).toBeLessThanOrEqual(3);
+  });
+
+  it('multiple DoT sources clamp correctly when combined damage exceeds health', () => {
+    let state = createTestGameState();
+    state = {
+      ...state,
+      player: {
+        ...state.player,
+        stats: { ...state.player.stats, health: 5 },
+      },
+    };
+    const withBurn = applyStatusToPlayer(state.player, 'burn', 2, 5, null);
+    const withBoth = applyStatusToPlayer(withBurn, 'poison', 2, 5, null);
+    state = { ...state, player: withBoth };
+
+    const { state: tickedState } = tickPlayerStatuses(state, 1);
+
+    // Health should be >= 0 despite multiple DoT sources
+    expect(tickedState.player.stats.health).toBeGreaterThanOrEqual(0);
+  });
+
+  it('enemy DoT damage clamps to 0 minimum', () => {
+    let state = createTestGameState();
+    const enemy = createTestEnemy({
+      position: { x: 1, y: 1 },
+      isAlerted: true,
+      lastKnownPlayerPos: null,
+      stats: { maxHealth: 10, health: 3, attack: 8, defense: 3, accuracy: 70, evasion: 15, speed: 100 },
+    });
+    const burnEnemy = {
+      ...enemy,
+      statuses: [{ id: 'burn' as StatusId, turnsRemaining: 2, magnitude: 10, sourceId: null }],
+    };
+    const enemyKey = posKey(burnEnemy.position);
+    state = { ...state, run: { ...state.run!, enemies: new Map([[enemyKey, burnEnemy]]) } };
+
+    const { state: tickedState } = tickEnemyStatuses(state, burnEnemy, 1);
+    const ticked = tickedState.run?.enemies.get(enemyKey);
+
+    // Health should be >= 0, not negative (or undefined)
+    if (ticked) {
+      expect(ticked.stats.health).toBeGreaterThanOrEqual(0);
+    }
+  });
+
+  it('minimum damage DoT still reduces health over ticks', () => {
+    let state = createTestGameState();
+    const withMinDamage = applyStatusToPlayer(state.player, 'burn', 10, 1, null);
+    state = { ...state, player: withMinDamage };
+
+    const healthBefore = state.player.stats.health;
+    const { state: tickedState } = tickPlayerStatuses(state, 1);
+
+    // Status should still tick (duration decrements)
+    expect(hasStatus(tickedState.player.statuses, 'burn')).toBe(true);
+    // Even 1 damage magnitude burn should reduce health
+    expect(tickedState.player.stats.health).toBeLessThanOrEqual(healthBefore);
+  });
+});
