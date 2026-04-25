@@ -28,28 +28,8 @@ jobs:
       - name: Install dependencies
         run: pnpm install --frozen-lockfile
 
-      - name: Type check
-        run: NODE_OPTIONS="--max-old-space-size=2048" pnpm run lint:types
-
-      - name: Run unit tests (PR — changed files only)
-        if: github.event_name == 'pull_request'
-        run: >
-          VITEST_MAX_THREADS=1 NODE_OPTIONS="--max-old-space-size=2048"
-          pnpm test
-          --exclude '**/*.property.test.ts'
-          --exclude '**/*.balance.test.ts'
-          --changed "origin/${{ github.base_ref }}"
-
-      - name: Run unit tests (push — full suite)
-        if: github.event_name == 'push'
-        run: >
-          VITEST_MAX_THREADS=1 NODE_OPTIONS="--max-old-space-size=2048"
-          pnpm test
-          --exclude '**/*.property.test.ts'
-          --exclude '**/*.balance.test.ts'
-
-      - name: Build all packages
-        run: pnpm build
+      - name: Run repository validation gate
+        run: pnpm validate
 
   docker-build:
     runs-on: ubuntu-latest

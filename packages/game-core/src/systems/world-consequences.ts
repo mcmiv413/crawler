@@ -133,9 +133,8 @@ export function evaluateEventChains(
     if (result.event !== null) events = [...events, result.event];
   }
 
-  // A7: Chain 2: Nemesis killed → prosperity boost, corruption drop
-  // TODO: Track nemesis kills properly (currently ENTITY_DIED is emitted for all enemies including nemeses)
-  const recentNemesisKills = history.slice(-10).filter(e => e.type === 'ENTITY_DIED').length;
+  // A7: Chain 2: recent nemesis kill → prosperity boost, corruption drop
+  const recentNemesisKills = history.slice(-10).filter(e => e.type === 'NEMESIS_SLAIN').length;
   const activeNemeses = state.world.nemeses.filter(n => n.isActive).length;
   if (recentNemesisKills > 0 && activeNemeses === 0) {
     // All nemeses are slain — reward

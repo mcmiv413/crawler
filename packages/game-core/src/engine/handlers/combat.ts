@@ -23,6 +23,7 @@ import { processEnemyTurns } from '../turn-scheduler.js';
 import { tickAbilityCooldowns } from '../../systems/abilities.js';
 import { handleDisarmTrap } from './disarm-trap.js';
 import { handleSetTrap } from './set-trap.js';
+import { completeQuest } from '../../systems/quests.js';
 
 /** Returns the WeaponType of the currently equipped weapon, or null if none/unknown */
 export function getEquippedWeaponType(state: GameState): WeaponType | null {
@@ -517,24 +518,3 @@ export function handleUseAbility(
 }
 
 /** Helper: Complete a quest and emit event. Returns updated state and event. */
-function completeQuest(
-  state: GameState,
-  quest: GameState['activeQuests'][number],
-): { state: GameState; event: DomainEvent } {
-  const updatedState = {
-    ...state,
-    activeQuests: state.activeQuests.map(q =>
-      q.id === quest.id ? { ...q, status: 'complete' as const } : q,
-    ),
-    player: { ...state.player, gold: state.player.gold + quest.rewardGold },
-  };
-  const event: DomainEvent = {
-    type: 'QUEST_COMPLETED',
-    questId: quest.id,
-    questTitle: quest.title,
-    rewardGold: quest.rewardGold,
-    timestamp: Date.now(),
-    turnNumber: state.turnNumber,
-  };
-  return { state: updatedState, event };
-}

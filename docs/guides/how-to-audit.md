@@ -19,6 +19,30 @@ Do NOT summarize. Do NOT praise. Only surface issues that matter.
 - Prefer contradictions over observations
 - If docs and code disagree → this is a finding
 - If a guardrail exists but is unenforced → this is a finding
+- Do NOT treat lead-generation tool output as proof until source-level verification is complete
+
+---
+
+## TOOLING PROTOCOL
+
+- **Serena is the default proof surface.** Use Serena for repository navigation, symbol lookup, references, and pattern search. If a claim depends on repo code, verify it with Serena-backed reads/searches instead of raw grep output.
+- **Fossil CLI is for lead generation, not final evidence.** Run Fossil from the CLI, prefer JSON output, and treat dead-code / clone / scaffolding hits as leads that must be verified in source before they become findings.
+- **External semantics need explicit sources.** When a finding depends on Vitest, ESLint, Fastify, or other tool/framework behavior, confirm it with the relevant CLI or authoritative docs/web lookup. Distinguish repo facts from external contract facts.
+- **Keep one-off artifacts out of `docs/`.** Store raw audit outputs in session artifacts or ignored files. Commit only durable protocol updates and confirmed bug logs.
+- **Log confirmed bugs before fix work.** When the audit proves a real bug, add a `docs/bugs/BUG-*.md` entry before proposing implementation changes.
+
+## CLI PATHS
+
+- **Serena CLI:** `/home/michael/.local/bin/serena`
+- **Fossil CLI:** `/home/michael/.local/bin/fossil-mcp`
+- **Resolve paths safely on the current machine:** `command -v serena` and `command -v fossil-mcp`
+- **External semantics fallback:** there is no stable `context7-mcp` binary in `PATH` here, so use authoritative docs/web lookup unless that changes
+
+## TOOL GUIDES
+
+- [Serena audit workflow](./audit-tooling.md#serena-cli)
+- [Fossil CLI audit workflow](./audit-tooling.md#fossil-cli)
+- [External semantics fallback](./audit-tooling.md#external-semantics-fallback)
 
 ---
 

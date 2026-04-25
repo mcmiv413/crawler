@@ -117,8 +117,6 @@ export function processTownAction(
       return { state, events: [] }; // Handled separately by engine
     case 'talk_npc':
       return processTalkNpc(state, targetId, rng);
-    case 'prepare':
-      return { state, events: [] }; // Phase 0 stub
     case 'enchant_armor':
       return { state, events: [] }; // Handled by ENCHANT_ARMOR command directly
   }
@@ -336,4 +334,3 @@ function processShopUndo(
     events: [],
   };
 }
-
