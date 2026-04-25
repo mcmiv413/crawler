@@ -280,7 +280,27 @@ export default tseslint.config(
       "@typescript-eslint/no-unnecessary-type-assertion": "error",
       "vitest/no-focused-tests": "error",
       "vitest/no-disabled-tests": "warn",
+      "no-restricted-syntax": ["error", NO_MATH_RANDOM],
       "no-console": "off",
+    },
+  },
+
+  // Presenter tests: keep unit fixtures local instead of pulling live content registries
+  {
+    files: ["packages/presenter/src/**/*.test.ts"],
+    rules: {
+      "no-restricted-imports": [
+        "error",
+        {
+          paths: [
+            {
+              name: "@dungeon/content",
+              message:
+                "Presenter tests should use local fixtures or presenter-level builders instead of live content registries.",
+            },
+          ],
+        },
+      ],
     },
   },
 

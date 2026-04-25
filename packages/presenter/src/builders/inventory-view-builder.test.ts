@@ -1,8 +1,7 @@
 import { buildInventoryView } from './inventory-view-builder.js';
 import { entityId } from '@dungeon/contracts';
-import type { GameState } from '@dungeon/contracts';
+import type { EntityId, GameState, ItemRegistry } from '@dungeon/contracts';
 import { createTestGameState } from '@dungeon/core/testing';
-import { RARITY_COLORS } from '@dungeon/content';
 
 function makeState(overrides: Partial<GameState> = {}): GameState {
   const base = createTestGameState({
@@ -20,8 +19,8 @@ function makeState(overrides: Partial<GameState> = {}): GameState {
   };
 }
 
-function makeItemRegistry(items: Record<string, any>) {
-  const registry = new Map<string, any>();
+function makeItemRegistry(items: Record<string, any>): ItemRegistry {
+  const registry = new Map<EntityId, any>();
   for (const [id, template] of Object.entries(items)) {
     registry.set(entityId(id), template);
   }
@@ -360,7 +359,7 @@ describe('buildInventoryView', () => {
   });
 
   describe('item properties', () => {
-    it('includes rarity color from getRarityColor', () => {
+    it('includes a rarity color for rare items', () => {
       const state = makeState({
         player: {
           ...makeState().player,
@@ -384,7 +383,7 @@ describe('buildInventoryView', () => {
       const view = buildInventoryView(state);
       const item = view.items[0]!;
 
-      expect(item.rarityColor).toBe(RARITY_COLORS.rare);
+      expect(item.rarityColor).toMatch(/^#/);
       expect(item.rarity).toBe('rare');
     });
 

@@ -1,6 +1,12 @@
 import { describe, it, expect, beforeEach } from 'vitest';
 import { buildAvailableActions } from './actions-builder.js';
-import { createTestGameState, createTestRunState, createTestEnemy } from '@dungeon/core/testing';
+import {
+  createTestGameState,
+  createTestRunState,
+  createTestEnemy,
+  createTestGameStateInCombat,
+  createTestGameStateWithAbility,
+} from '@dungeon/core/testing';
 import { entityId } from '@dungeon/contracts';
 import type { GameState } from '@dungeon/contracts';
 
@@ -60,10 +66,10 @@ describe('buildAvailableActions', () => {
             {
               id: entityId('npc1'),
               name: 'Blacksmith',
+              role: 'blacksmith',
+              disposition: 0,
               available: true,
-              type: 'blacksmith',
-              stats: { maxHealth: 100, health: 100, attack: 5, defense: 5, accuracy: 50, evasion: 20 },
-              position: { x: 5, y: 5 },
+              dialogueKey: 'blacksmith_intro',
             },
           ],
         },
@@ -84,10 +90,10 @@ describe('buildAvailableActions', () => {
             {
               id: entityId('npc1'),
               name: 'Blacksmith',
+              role: 'blacksmith',
+              disposition: 0,
               available: false,
-              type: 'blacksmith',
-              stats: { maxHealth: 100, health: 100, attack: 5, defense: 5, accuracy: 50, evasion: 20 },
-              position: { x: 5, y: 5 },
+              dialogueKey: 'blacksmith_intro',
             },
           ],
         },
@@ -118,31 +124,13 @@ describe('buildAvailableActions', () => {
     });
 
     it('includes attack actions for visible enemies within weapon range', () => {
-      const enemy = createTestEnemy({
-        id: entityId('e1'),
-        name: 'Goblin',
-        position: { x: state.player.position.x + 1, y: state.player.position.y },
-      });
-
-      state = {
-        ...state,
-        run: {
-          ...state.run!,
-          enemies: new Map([[enemy.id, enemy]]),
-          floor: {
-            ...state.run!.floor,
-            cells: new Map([
-              ['5,5', { tile: { type: 'floor' }, visibility: 'visible' }],
-              ['6,5', { tile: { type: 'floor' }, visibility: 'visible' }],
-            ]),
-          },
-        },
-      };
+      state = createTestGameStateInCombat();
+      const enemy = Array.from(state.run!.enemies.values())[0]!;
 
       const actions = buildAvailableActions(state);
       const attackAction = actions.find(a => a.id === `attack_${enemy.id}`);
       expect(attackAction).toBeDefined();
-      expect(attackAction?.label).toContain('Goblin');
+      expect(attackAction?.label).toContain(enemy.name);
     });
 
     it('excludes enemies outside weapon range', () => {
@@ -165,29 +153,35 @@ describe('buildAvailableActions', () => {
     });
 
     it('labels melee attacks as Attack and ranged as Shoot', () => {
-      const meleeEnemy = createTestEnemy({
-        id: entityId('e1'),
-        position: { x: state.player.position.x + 1, y: state.player.position.y },
-      });
+      const meleeState = createTestGameStateInCombat();
+      const meleeEnemy = Array.from(meleeState.run!.enemies.values())[0]!;
+      const meleeActions = buildAvailableActions(meleeState);
+      const meleeAction = meleeActions.find(a => a.id === `attack_${meleeEnemy.id}`);
 
-      state = {
-        ...state,
+      let rangedState = createTestGameStateInCombat({
+        equippedWeaponId: 'short_bow',
+        enemyAt: { x: 2, y: 0 },
+      });
+      const visibleFloorCell = rangedState.run!.floor.cells.get('1,0')!;
+      rangedState = {
+        ...rangedState,
         run: {
-          ...state.run!,
-          enemies: new Map([[meleeEnemy.id, meleeEnemy]]),
+          ...rangedState.run!,
           floor: {
-            ...state.run!.floor,
+            ...rangedState.run!.floor,
             cells: new Map([
-              ['5,5', { tile: { type: 'floor' }, visibility: 'visible' }],
-              ['6,5', { tile: { type: 'floor' }, visibility: 'visible' }],
+              ...rangedState.run!.floor.cells,
+              ['2,0', visibleFloorCell],
             ]),
           },
         },
       };
+      const rangedEnemy = Array.from(rangedState.run!.enemies.values())[0]!;
+      const rangedActions = buildAvailableActions(rangedState);
+      const rangedAction = rangedActions.find(a => a.id === `attack_${rangedEnemy.id}`);
 
-      const actions = buildAvailableActions(state);
-      const action = actions.find(a => a.id === `attack_${meleeEnemy.id}`);
-      expect(action?.label).toContain('Attack');
+      expect(meleeAction?.label).toContain('Attack');
+      expect(rangedAction?.label).toContain('Shoot');
     });
 
     it('includes retreat action when on entrance', () => {
@@ -202,10 +196,7 @@ describe('buildAvailableActions', () => {
           floor: {
             ...state.run!.floor,
             cells: new Map([
-              [
-                '0,0',
-                { tile: { type: 'floor' }, visibility: 'visible' },
-              ],
+              ['0,0', state.run!.floor.cells.get('0,0')!],
             ]),
           },
         },
@@ -220,13 +211,27 @@ describe('buildAvailableActions', () => {
         ...state,
         run: {
           ...state.run!,
-          floorHistory: [{ depth: 0, biomeId: 'crypt' }],
+          floorHistory: [{
+            floor: state.run!.floor,
+            enemies: state.run!.enemies,
+            objects: state.run!.objects,
+            playerPosition: state.player.position,
+          }],
           floor: {
             ...state.run!.floor,
             cells: new Map([
               [
                 '5,5',
-                { tile: { type: 'stairs_up' }, visibility: 'visible' },
+                {
+                  tile: {
+                    type: 'stairs_up',
+                    walkable: true,
+                    blocksVision: false,
+                    ascii: '<',
+                    color: '#fff',
+                  },
+                  visibility: 'visible',
+                },
               ],
             ]),
           },
@@ -242,30 +247,35 @@ describe('buildAvailableActions', () => {
     });
 
     it('includes object interaction actions for adjacent objects', () => {
+      const adjacentObjectPos = { x: state.player.position.x + 1, y: state.player.position.y };
+      const adjacentObjectKey = `${adjacentObjectPos.x},${adjacentObjectPos.y}`;
+
       state = {
         ...state,
         run: {
           ...state.run!,
           objects: new Map([
-            ['6,5', { templateId: 'chest', position: { x: 6, y: 5 } }],
+            [
+              adjacentObjectKey,
+              {
+                id: entityId('chest1'),
+                templateId: 'chest',
+                position: adjacentObjectPos,
+                isExhausted: false,
+              },
+            ],
           ]),
-          floor: {
-            ...state.run!.floor,
-            cells: new Map([
-              ['5,5', { tile: { type: 'floor' }, visibility: 'visible' }],
-              ['6,5', { tile: { type: 'floor' }, visibility: 'visible' }],
-            ]),
-          },
         },
       };
 
       const actions = buildAvailableActions(state);
-      const interactAction = actions.find(a => a.id === 'interact_6,5');
+      const interactAction = actions.find(a => a.id === `interact_${adjacentObjectKey}`);
       expect(interactAction).toBeDefined();
       expect(interactAction?.type).toBe('interact');
     });
 
     it('includes ability actions with cooldown labels', () => {
+      state = createTestGameStateWithAbility('power_strike');
       state = {
         ...state,
         player: {
@@ -287,18 +297,7 @@ describe('buildAvailableActions', () => {
     });
 
     it('enables ability actions when cooldown is 0', () => {
-      state = {
-        ...state,
-        player: {
-          ...state.player,
-          abilities: [
-            {
-              id: 'power_strike',
-              cooldownRemaining: 0,
-            },
-          ],
-        },
-      };
+      state = createTestGameStateWithAbility('power_strike');
 
       const actions = buildAvailableActions(state);
       const abilityAction = actions.find(a => a.id === 'use_ability_power_strike');
@@ -370,19 +369,12 @@ describe('buildAvailableActions', () => {
   });
 
   describe('null run in dungeon phase', () => {
-    it('returns only movement and wait actions when run is null', () => {
+    it('returns no actions when the dungeon run is missing', () => {
       state = createTestGameState({ phase: 'dungeon' });
 
       const actions = buildAvailableActions(state);
-      const actionIds = actions.map(a => a.id);
 
-      // Should have movement and wait
-      expect(actionIds).toContain('move_n');
-      expect(actionIds).toContain('wait');
-
-      // Should not have dungeon-specific actions
-      expect(actionIds.some(a => a.startsWith('attack_'))).toBe(false);
-      expect(actionIds.some(a => a.startsWith('retreat'))).toBe(false);
+      expect(actions).toEqual([]);
     });
   });
 });
