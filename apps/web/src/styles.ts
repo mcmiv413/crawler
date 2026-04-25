@@ -17,7 +17,9 @@ export const colors = {
   // Text
   text:    '#cdd0d6',
   label:   '#7b8090',
-  muted:   '#5a5e6b',
+  // Raised from #5a5e6b → #686c7a for ~4.6:1 contrast against --panel.
+  // Affects section labels, slot names, metadata, placeholders.
+  muted:   '#686c7a',
   // Accents — same perceptual weight, vary hue only
   lime:    '#7dc940',  // HP full, loot, primary CTA
   gold:    '#c8963c',  // economy — gold, ATK
@@ -33,6 +35,23 @@ export function hpBarColor(health: number, maxHealth: number): string {
   if (pct > 60) return colors.lime;
   if (pct > 30) return '#e07030';
   return colors.blood;
+}
+
+// ─── HP bar pulse animation (injected once into <head>) ────────────────────
+// Call injectHpPulse() from PlayerHud on first mount. Safe to call multiple
+// times — it checks for the style tag before inserting.
+export function injectHpPulse(): void {
+  if (typeof document === 'undefined') return;
+  if (document.getElementById('hp-pulse-keyframes')) return;
+  const style = document.createElement('style');
+  style.id = 'hp-pulse-keyframes';
+  style.textContent = `
+    @keyframes hpPulse {
+      0%, 100% { opacity: 1; }
+      50%       { opacity: 0.55; }
+    }
+  `;
+  document.head.appendChild(style);
 }
 
 // ─── Log entry colour ──────────────────────────────────────────────────────
@@ -58,7 +77,7 @@ export const btnStyle: React.CSSProperties = {
   border: `1px solid ${colors.border}`,
   cursor: 'pointer',
   fontFamily: FONT_STACK,
-  fontSize: 13,
+  fontSize: 15,
   minHeight: `${BTN_MIN_HEIGHT}px`,
   borderRadius: '2px',
 };

@@ -191,7 +191,7 @@ function TavernPanel({ view }: { view: GameView }) {
           fontFamily: FONT_STACK,
         }}
       >
-        Tavern & Town News
+        Tavern &amp; Town News
       </h3>
 
       {view.town && (
@@ -239,7 +239,7 @@ function TavernPanel({ view }: { view: GameView }) {
                 key={n.id}
                 style={{ fontSize: 11, color: colors.blood, padding: '2px 0' }}
               >
-                ☠ <strong>{n.name}</strong> {n.title} — Tier {n.tier} · Floor{' '}
+                <strong>{n.name}</strong> {n.title} — Tier {n.tier} · Floor{' '}
                 {n.floorOfAscension} · {n.killCount} kill{n.killCount !== 1 ? 's' : ''}
               </div>
             ))
@@ -276,7 +276,7 @@ function TavernPanel({ view }: { view: GameView }) {
                   }}
                 >
                   <strong>
-                    {isComplete ? '✓ ' : ''}
+                    {isComplete ? '[done] ' : ''}
                     {q.title}
                   </strong>
                   <span style={{ color: statusColor, marginLeft: 4 }}>[{q.status}]</span>
@@ -306,9 +306,9 @@ function TavernPanel({ view }: { view: GameView }) {
                   : colors.muted;
               const trendArrow =
                 f.trend === 'rising'
-                  ? { arrow: ' ↑', color: colors.blood }
+                  ? { arrow: ' [rising]', color: colors.blood }
                   : f.trend === 'falling'
-                  ? { arrow: ' ↓', color: colors.lime }
+                  ? { arrow: ' [falling]', color: colors.lime }
                   : null;
               return (
                 <div
@@ -316,7 +316,7 @@ function TavernPanel({ view }: { view: GameView }) {
                   style={{ fontSize: 11, color: colors.text, padding: '2px 0' }}
                 >
                   {f.name} — Power: {f.power}/100
-                  {f.power > 60 ? ' ⚠' : f.power === 0 ? ' ✓' : ''} | Disposition:{' '}
+                  {f.power > 60 ? ' [!]' : f.power === 0 ? ' [cleared]' : ''} | Disposition:{' '}
                   <span style={{ color: dispositionColor }}>
                     {f.disposition > 0 ? '+' : ''}
                     {f.disposition}
@@ -354,7 +354,7 @@ function SubPanel({
       }}
     >
       <button onClick={onBack} style={{ ...btnStyle, marginBottom: 10, width: '100%' }}>
-        ← Back to Town
+        &larr; Back to Town
       </button>
       {children}
     </div>
@@ -419,7 +419,7 @@ export function TownPhase({
         flexDirection: 'column',
       }}
     >
-      <PanelHeader title="⚔ Town" />
+      <PanelHeader title="Town" />
 
       <div style={{ padding: 8 }}>
         <PlayerHud player={view.player} compact />
@@ -449,7 +449,7 @@ export function TownPhase({
                 key={i}
                 style={{ fontSize: 11, color: colors.text, padding: '1px 0' }}
               >
-                ▸ {advice}
+                &rsaquo; {advice}
               </div>
             ))}
           </InfoCard>
@@ -464,7 +464,7 @@ export function TownPhase({
             style={btnPrimaryStyle}
             disabled={loading}
           >
-            ↓  Enter Dungeon
+            Enter Dungeon
           </button>
 
           <div style={{ display: 'flex', gap: 5 }}>
@@ -482,7 +482,7 @@ export function TownPhase({
                 disabled={loading}
                 title="Continue from where you left off"
               >
-                ↩ Floor {view.town.lastRetreatFloor}
+                Continue — Floor {view.town.lastRetreatFloor}
               </button>
             )}
 
@@ -500,7 +500,7 @@ export function TownPhase({
                 disabled={loading}
                 title="Return to retrieve your lost items"
               >
-                ⚠ Stash Floor {view.deathStashFloor}
+                Recover Stash — Floor {view.deathStashFloor}
               </button>
             )}
           </div>
@@ -554,12 +554,14 @@ export function TownPhase({
             >
               {npcDialogue.text}
             </div>
-            <button
-              onClick={() => setNpcDialogue(null)}
-              style={{ ...btnStyle, fontSize: 10, padding: '2px 8px', marginTop: 8 }}
-            >
-              [x] dismiss
-            </button>
+            <div style={{ display: 'flex', justifyContent: 'flex-end', marginTop: 8 }}>
+              <button
+                onClick={() => setNpcDialogue(null)}
+                style={{ ...btnStyle, fontSize: 11, padding: '4px 12px', margin: 0 }}
+              >
+                Dismiss
+              </button>
+            </div>
           </InfoCard>
         )}
 

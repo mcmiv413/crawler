@@ -2,7 +2,7 @@
 
 // ── Tile & Canvas ───────────────────────────────────────────────
 /** Pixel size of each dungeon tile. Changing this scales the entire dungeon renderer. */
-export const CELL_SIZE = 24;
+export const CELL_SIZE = 26;
 
 /** Dungeon viewport width in tiles. Increase for a wider visible area. */
 export const VP_WIDTH = 30;
@@ -11,10 +11,10 @@ export const VP_WIDTH = 30;
 export const VP_HEIGHT = 22;
 
 /** Computed pixel width of the dungeon canvas. */
-export const VIEWPORT_PX_WIDTH = VP_WIDTH * CELL_SIZE;  // 480
+export const VIEWPORT_PX_WIDTH = VP_WIDTH * CELL_SIZE;  // 780
 
 /** Computed pixel height of the dungeon canvas. */
-export const VIEWPORT_PX_HEIGHT = VP_HEIGHT * CELL_SIZE; // 512
+export const VIEWPORT_PX_HEIGHT = VP_HEIGHT * CELL_SIZE; // 572
 
 // ── Map Zoom ────────────────────────────────────────────────────
 /** Maximum zoom level for the dungeon map on desktop. */
@@ -72,6 +72,13 @@ export const NAV_BTN_MIN_HEIGHT = 48;
 
 /** Size (px) of each DPad directional button. */
 export const DPAD_BTN_SIZE = 48;
+
+// ── HUD ─────────────────────────────────────────────────────────
+/** Height (px) of HP / XP stat bars. */
+export const STAT_BAR_HEIGHT = 8;
+
+/** Font size (px) for stat bar value labels (e.g. "42 / 80"). */
+export const HUD_VALUE_FONT_SIZE = 14;
 
 // ── Scrollable Areas ────────────────────────────────────────────
 /** Max height (px) of the consumables bar scroll container. */
