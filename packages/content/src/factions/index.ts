@@ -5,15 +5,19 @@ import { goblinWarband } from './goblin-warband.js';
 import { shadowCult } from './shadow-cult.js';
 import { undeadLegion } from './undead-legion.js';
 
-export const FACTION_DEFINITIONS: readonly FactionDefinition[] = [
-  beastSwarm,
-  goblinWarband,
-  shadowCult,
-  undeadLegion,
+const items: [string, FactionDefinition][] = [
+  [beastSwarm.id, beastSwarm],
+  [goblinWarband.id, goblinWarband],
+  [shadowCult.id, shadowCult],
+  [undeadLegion.id, undeadLegion],
 ];
+
+export const FACTION_DEFINITIONS: ReadonlyMap<string, FactionDefinition> = new Map(items);
 
 export {
   beastSwarm, goblinWarband, shadowCult, undeadLegion,
 };
+
+export * from './utilities.js';
 
 // Add custom utilities below this line ↓
