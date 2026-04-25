@@ -32,14 +32,14 @@ function sumEnchantmentEffect(state: GameState, effectType: string): number {
 }
 
 /** Sum total thorns/spikes reflect damage from all equipped armor */
-export const getTotalThornsReflect = (state: GameState): number => sumEnchantmentEffect(state, thorns.id);
+export const getTotalThornsReflect = (state: GameState): number => sumEnchantmentEffect(state, thorns.effect.type);
 
 /** Get HP regen bonus per turn from enchantments */
-export const getEnchantmentRegenBonus = (state: GameState): number => sumEnchantmentEffect(state, hpRegen.id);
+export const getEnchantmentRegenBonus = (state: GameState): number => sumEnchantmentEffect(state, hpRegen.effect.type);
 
 /** Get XP multiplier from exp_bonus enchantments (stacks additively) */
 export function getExpBonusMultiplier(state: GameState): number {
-  return 1.0 + sumEnchantmentEffect(state, expBonus.id);
+  return 1.0 + sumEnchantmentEffect(state, expBonus.effect.type);
 }
 
 /**
