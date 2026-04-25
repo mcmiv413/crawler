@@ -1,5 +1,7 @@
+import { useEffect } from 'react';
 import type { PlayerHudView } from '@dungeon/presenter';
-import { colors, hpBarColor, FONT_STACK } from '../styles.js';
+import { colors, hpBarColor, FONT_STACK, injectHpPulse } from '../styles.js';
+import { STAT_BAR_HEIGHT, HUD_VALUE_FONT_SIZE } from '../config/ui-config.js';
 
 interface PlayerHudProps {
   player: PlayerHudView;
@@ -17,11 +19,13 @@ function StatBar({
   fillColor,
   pct,
   valueLabel,
+  pulse = false,
 }: {
   label: string;
   fillColor: string;
   pct: number;
   valueLabel: string;
+  pulse?: boolean;
 }) {
   return (
     <div style={{ display: 'flex', alignItems: 'center', gap: 6, marginBottom: 4 }}>
@@ -31,7 +35,7 @@ function StatBar({
       <div
         style={{
           flex: 1,
-          height: 6,
+          height: STAT_BAR_HEIGHT,
           background: colors.inset,
           border: `1px solid ${colors.border2}`,
           overflow: 'hidden',
@@ -43,10 +47,11 @@ function StatBar({
             height: '100%',
             background: fillColor,
             transition: 'width 0.3s ease',
+            animation: pulse ? 'hpPulse 1.2s ease-in-out infinite' : 'none',
           }}
         />
       </div>
-      <span style={{ fontSize: 10, color: colors.text, width: 50, textAlign: 'right', flexShrink: 0 }}>
+      <span style={{ fontSize: HUD_VALUE_FONT_SIZE, color: colors.text, width: 50, textAlign: 'right', flexShrink: 0 }}>
         {valueLabel}
       </span>
     </div>
@@ -60,6 +65,10 @@ export function PlayerHud({ player, compact = false }: PlayerHudProps) {
     ? (player.experience / player.experienceForNextLevel) * 100
     : 0;
   const biomeName = formatBiomeName(player.biomeId);
+  const hpLow = hpPct <= 30;
+
+  // Inject @keyframes hpPulse once on first mount
+  useEffect(() => { injectHpPulse(); }, []);
 
   if (compact) {
     return (
@@ -82,7 +91,7 @@ export function PlayerHud({ player, compact = false }: PlayerHudProps) {
           }}
         >
           <div>
-            <strong style={{ fontSize: 13, fontWeight: 600, color: '#fff' }}>
+            <strong style={{ fontSize: 13, fontWeight: 600, color: colors.text }}>
               {player.name}
             </strong>
             <span style={{ fontSize: 10, color: colors.muted, marginLeft: 6 }}>
@@ -95,7 +104,7 @@ export function PlayerHud({ player, compact = false }: PlayerHudProps) {
             )}
             {player.biomeId && (
               <span style={{ fontSize: 10, color: player.biomeColor, marginLeft: 6 }}>
-                ⬤ {biomeName}
+                {biomeName}
               </span>
             )}
           </div>
@@ -110,9 +119,10 @@ export function PlayerHud({ player, compact = false }: PlayerHudProps) {
           fillColor={hpBarColor(player.health, player.maxHealth)}
           pct={hpPct}
           valueLabel={`${player.health} / ${player.maxHealth}`}
+          pulse={hpLow}
         />
 
-        {/* XP bar — only shown when experienceForNextLevel is available */}
+        {/* XP bar */}
         {player.experienceForNextLevel > 0 && (
           <StatBar
             label="XP"
@@ -131,9 +141,9 @@ export function PlayerHud({ player, compact = false }: PlayerHudProps) {
                 style={{
                   fontSize: 9,
                   padding: '1px 5px',
-                  background: s.beneficial ? '#1a4a1a' : '#4a1a1a',
-                  color: s.beneficial ? '#4f4' : '#f44',
-                  border: `1px solid ${s.beneficial ? '#2a6a2a' : '#6a2a2a'}`,
+                  background: s.beneficial ? '#1a4a1a' : '#3a1414',
+                  color: s.beneficial ? colors.lime : colors.blood,
+                  border: `1px solid ${s.beneficial ? '#2a6a2a' : '#5a2020'}`,
                 }}
               >
                 {s.name} ({s.turnsRemaining})
@@ -165,7 +175,7 @@ export function PlayerHud({ player, compact = false }: PlayerHudProps) {
         }}
       >
         <div>
-          <strong style={{ fontSize: 14, fontWeight: 600, color: '#fff' }}>
+          <strong style={{ fontSize: 14, fontWeight: 600, color: colors.text }}>
             {player.name}
           </strong>
           <span style={{ fontSize: 10, color: colors.muted, marginLeft: 6 }}>
@@ -182,6 +192,7 @@ export function PlayerHud({ player, compact = false }: PlayerHudProps) {
         fillColor={hpBarColor(player.health, player.maxHealth)}
         pct={hpPct}
         valueLabel={`${player.health} / ${player.maxHealth}`}
+        pulse={hpLow}
       />
 
       {player.experienceForNextLevel > 0 && (
@@ -204,7 +215,7 @@ export function PlayerHud({ player, compact = false }: PlayerHudProps) {
           <span>EVA <span style={{ color: colors.teal }}>{player.evasion}%</span></span>
         )}
         {player.biomeId && (
-          <span style={{ color: player.biomeColor }}>⬤ {biomeName}</span>
+          <span style={{ color: player.biomeColor }}>{biomeName}</span>
         )}
       </div>
 
@@ -217,9 +228,9 @@ export function PlayerHud({ player, compact = false }: PlayerHudProps) {
               style={{
                 fontSize: 9,
                 padding: '1px 5px',
-                background: s.beneficial ? '#1a4a1a' : '#4a1a1a',
-                color: s.beneficial ? '#4f4' : '#f44',
-                border: `1px solid ${s.beneficial ? '#2a6a2a' : '#6a2a2a'}`,
+                background: s.beneficial ? '#1a4a1a' : '#3a1414',
+                color: s.beneficial ? colors.lime : colors.blood,
+                border: `1px solid ${s.beneficial ? '#2a6a2a' : '#5a2020'}`,
               }}
             >
               {s.name} ({s.turnsRemaining})
@@ -238,9 +249,9 @@ export function PlayerHud({ player, compact = false }: PlayerHudProps) {
               style={{
                 fontSize: 9,
                 padding: '1px 5px',
-                background: a.ready ? '#1a2a4a' : '#2a2a2a',
-                color: a.ready ? colors.steel : '#666',
-                border: `1px solid ${a.ready ? '#2a4a7a' : '#444'}`,
+                background: a.ready ? '#0e1e2e' : '#1a1a22',
+                color: a.ready ? colors.steel : colors.muted,
+                border: `1px solid ${a.ready ? '#2a4a6a' : colors.border2}`,
               }}
             >
               {a.name}{!a.ready && ` (${a.cooldownRemaining})`}

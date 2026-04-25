@@ -50,7 +50,7 @@ function MiniCombatLog({ entries }: { entries: readonly { text: string; type: st
         <div
           key={`${index}-${e.type}-${e.text}`}
           style={{
-            fontSize: 10,
+            fontSize: 13,
             lineHeight: 1.3,
             color: e.type === 'loot' ? '#4f4' : e.type === 'death' ? '#f44' : '#aaa',
           }}
@@ -124,7 +124,7 @@ function MapDisplay({
 
   return (
     <>
-      <div style={{ fontSize: 11, color: dangerColor(map.dangerLevel), marginBottom: 4 }}>
+      <div style={{ fontSize: 13, color: dangerColor(map.dangerLevel), marginBottom: 4 }}>
         Danger: {map.dangerLevel.charAt(0).toUpperCase() + map.dangerLevel.slice(1)}
       </div>
       <div ref={displayContainerRef} style={{ flex: 1, minHeight: 0, overflow: 'hidden', marginBottom: 8, imageRendering: 'pixelated' as const, display: 'flex', alignItems: 'center', justifyContent: 'center', background: '#0a0a0a', position: 'relative' }}>
@@ -169,10 +169,10 @@ export function DungeonPhase({
         {/* Header: always visible */}
         <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 10, flexShrink: 0 }}>
           <div style={{ display: 'flex', gap: 8, alignItems: 'center' }}>
-            <h2 style={{ margin: 0, color: '#88cc44', fontSize: 16 }}>Dungeon</h2>
+            <h2 style={{ margin: 0, color: '#88cc44', fontSize: 18 }}>Dungeon</h2>
             <div style={{ display: 'flex', gap: 4, alignItems: 'center' }}>
               <ItemSpriteIcon spriteName={equippedWeapon?.spriteName} size={16} />
-              <span style={{ fontSize: 11, color: '#aaa' }}>{weaponDisplay}</span>
+              <span style={{ fontSize: 13, color: '#aaa' }}>{weaponDisplay}</span>
             </div>
           </div>
           {view.map && (
@@ -233,10 +233,10 @@ export function DungeonPhase({
       {/* Header: always visible */}
       <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 10, flexShrink: 0 }}>
         <div style={{ display: 'flex', gap: 8, alignItems: 'center' }}>
-          <h2 style={{ margin: 0, color: '#88cc44' }}>Dungeon</h2>
+          <h2 style={{ margin: 0, color: '#88cc44', fontSize: 20 }}>Dungeon</h2>
           <div style={{ display: 'flex', gap: 4, alignItems: 'center' }}>
             <ItemSpriteIcon spriteName={equippedWeapon?.spriteName} size={16} />
-            <span style={{ fontSize: 11, color: '#aaa' }}>{weaponDisplay}</span>
+            <span style={{ fontSize: 14, color: '#aaa' }}>{weaponDisplay}</span>
           </div>
         </div>
         {view.map && (

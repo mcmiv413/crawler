@@ -3,6 +3,7 @@ import type { MapView, EntityView, MapCellView } from '@dungeon/presenter';
 import { VP_WIDTH, VP_HEIGHT, CELL_SIZE } from '../utils/viewport.js';
 import { findPath } from '../utils/pathfinding.js';
 import { useGameStore } from '../store/game-store.js';
+import { FONT_STACK, colors } from '../styles.js';
 
 interface Props {
   map: MapView;
@@ -14,19 +15,16 @@ const buildPositionMap = <T extends { x: number; y: number }>(items: readonly T[
   new Map(items.map(i => [`${i.x},${i.y}`, i] as [string, T]));
 
 export function DungeonView({ map, vpTilesWidth, vpTilesHeight }: Props) {
-  // Use provided dimensions or fall back to constants
   const vp_width = vpTilesWidth ?? VP_WIDTH;
   const vp_height = vpTilesHeight ?? VP_HEIGHT;
-  
+
   const entityMap = buildPositionMap(map.entities);
 
-  // Only render visible/remembered cells
   const minX = Math.min(...map.cells.map((c: MapCellView) => c.x));
   const minY = Math.min(...map.cells.map((c: MapCellView) => c.y));
 
-  // Viewport centered on player
   const vpLeft = Math.max(minX, map.playerPosition.x - Math.floor(vp_width / 2));
-  const vpTop = Math.max(minY, map.playerPosition.y - Math.floor(vp_height / 2));
+  const vpTop  = Math.max(minY, map.playerPosition.y - Math.floor(vp_height / 2));
 
   const cellLookup = buildPositionMap(map.cells);
 
@@ -79,8 +77,8 @@ export function DungeonView({ map, vpTilesWidth, vpTilesHeight }: Props) {
             textAlign: 'center',
             color,
             backgroundColor: bgColor,
-            fontFamily: 'monospace',
-            fontSize: 14,
+            fontFamily: FONT_STACK,
+            fontSize: CELL_SIZE - 10,
             cursor: cell?.walkable && cell?.visibility !== 'hidden' ? 'pointer' : 'default',
           }}
           title={entity ? `${entity.name}${entity.health != null ? ` (${entity.health}/${entity.maxHealth})` : ''}` : undefined}
@@ -97,7 +95,7 @@ export function DungeonView({ map, vpTilesWidth, vpTilesHeight }: Props) {
   }
 
   return (
-    <div style={{ border: '1px solid #444', display: 'inline-block', background: '#000' }}>
+    <div style={{ border: `1px solid ${colors.border}`, display: 'inline-block', background: '#000' }}>
       {rows}
     </div>
   );

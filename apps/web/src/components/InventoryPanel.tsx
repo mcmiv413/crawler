@@ -1,15 +1,16 @@
 import React from 'react';
 import type { InventoryItemView, InventoryView } from '@dungeon/presenter';
 import { useGameStore } from '../store/game-store.js';
-import { btnStyle, compactBtnStyle } from '../styles.js';
+import { colors, FONT_STACK, btnStyle, btnEquipStyle, compactBtnStyle, compactBtnActiveStyle } from '../styles.js';
 import { useInventoryFilter } from '../hooks/useInventoryFilter.js';
+import { SectionLabel } from './ui/index.js';
 
 function itemStatText(item: InventoryItemView): string {
   let text = '';
   if (item.weaponStats) {
     text += `${item.weaponStats.damage} ${item.weaponStats.damageType} dmg`;
     if (item.weaponStats.weaponRange && item.weaponStats.weaponRange > 1) {
-      text += ` | Range: ${item.weaponStats.weaponRange}`;
+      text += ` | range: ${item.weaponStats.weaponRange}`;
     }
   }
   if (item.armorStats) {
@@ -40,38 +41,44 @@ export function InventoryPanel({ inventory, phase, gold }: InventoryPanelProps) 
   if (inventory.items.length === 0) return null;
 
   return (
-    <div style={{ marginTop: 10, border: '1px solid #333', padding: 5, background: '#1a1a1a' }}>
-      <h4 style={{ margin: 0, color: '#888' }}>Inventory</h4>
-      {gold !== undefined && <div style={{ marginBottom: 6, color: '#cc8', fontSize: 11 }}>Gold: {gold}g</div>}
-      {/* C4: Filter and sort controls */}
-      <div style={{ fontSize: 10, marginBottom: 6, display: 'flex', gap: 4, flexWrap: 'wrap' }}>
+    <div
+      style={{
+        marginTop: 10,
+        border: `1px solid ${colors.border}`,
+        padding: 8,
+        background: colors.panel,
+        fontFamily: FONT_STACK,
+      }}
+    >
+      <SectionLabel label="Inventory" />
+
+      {gold !== undefined && (
+        <div style={{ marginBottom: 6, color: colors.gold, fontSize: 11 }}>
+          {gold}g
+        </div>
+      )}
+
+      {/* Filter and sort controls */}
+      <div style={{ fontSize: 10, marginBottom: 8, display: 'flex', gap: 6, flexWrap: 'wrap', alignItems: 'center' }}>
         <div style={{ display: 'flex', gap: 2, flexWrap: 'wrap', alignItems: 'center' }}>
-          Filter: {['all', 'weapons', 'armor', 'consumables'].map(f => (
+          <span style={{ color: colors.muted, marginRight: 2 }}>Filter:</span>
+          {(['all', 'weapons', 'armor', 'consumables'] as const).map(f => (
             <button
               key={f}
-              onClick={() => setFilter(f as any)}
-              style={{
-                ...compactBtnStyle,
-                background: filter === f ? '#2a4a2a' : '#2a2a2a',
-                color: filter === f ? '#4f4' : '#666',
-              }}
-              title={f.charAt(0).toUpperCase() + f.slice(1)}
+              onClick={() => setFilter(f)}
+              style={filter === f ? compactBtnActiveStyle : compactBtnStyle}
             >
               {f.charAt(0).toUpperCase() + f.slice(1)}
             </button>
           ))}
         </div>
         <div style={{ display: 'flex', gap: 2, flexWrap: 'wrap', alignItems: 'center' }}>
-          Sort: {['name', 'rarity'].map(s => (
+          <span style={{ color: colors.muted, marginRight: 2 }}>Sort:</span>
+          {(['name', 'rarity'] as const).map(s => (
             <button
               key={s}
-              onClick={() => setSort(s as any)}
-              style={{
-                ...compactBtnStyle,
-                background: sort === s ? '#2a4a2a' : '#2a2a2a',
-                color: sort === s ? '#4f4' : '#666',
-              }}
-              title={s.charAt(0).toUpperCase() + s.slice(1)}
+              onClick={() => setSort(s)}
+              style={sort === s ? compactBtnActiveStyle : compactBtnStyle}
             >
               {s.charAt(0).toUpperCase() + s.slice(1)}
             </button>
@@ -80,31 +87,28 @@ export function InventoryPanel({ inventory, phase, gold }: InventoryPanelProps) 
         {inventory.equipped.secondaryWeapon && (
           <button
             onClick={() => sendCommand({ type: 'SWAP_WEAPONS' })}
-            style={{
-              ...compactBtnStyle,
-              color: '#fc3',
-            }}
+            style={{ ...compactBtnStyle, color: colors.gold, borderColor: '#4a380e' }}
             disabled={loading}
             title="Swap to secondary weapon"
           >
-            ⚔ Swap
+            Swap weapon
           </button>
         )}
       </div>
+
       {sorted.map((item, idx) => {
         const stats = itemStatText(item);
         const isEquipped = item.isEquipped ?? false;
         const quantity = item.quantity ?? 1;
         const actionItemId = item.stackEntityIds?.[0] ?? item.id;
 
-        // C3: Button layout to the left
         let buttonContent: React.ReactNode = null;
         if (item.itemClass === 'weapon' || item.itemClass === 'armor') {
           if (!isEquipped) {
             buttonContent = (
               <button
                 onClick={() => sendCommand({ type: 'EQUIP', itemId: actionItemId })}
-                style={{ ...btnStyle, fontSize: 10, padding: '1px 6px', width: 50 }}
+                style={btnEquipStyle}
                 disabled={loading}
               >
                 Equip
@@ -114,7 +118,7 @@ export function InventoryPanel({ inventory, phase, gold }: InventoryPanelProps) 
             buttonContent = (
               <button
                 onClick={() => sendCommand({ type: 'UNEQUIP', itemId: actionItemId })}
-                style={{ ...btnStyle, fontSize: 10, padding: '1px 6px', width: 50 }}
+                style={{ ...btnEquipStyle, color: colors.muted, borderColor: colors.border }}
                 disabled={loading}
               >
                 Unequip
@@ -125,7 +129,7 @@ export function InventoryPanel({ inventory, phase, gold }: InventoryPanelProps) 
           buttonContent = (
             <button
               onClick={() => sendCommand({ type: 'USE_ITEM', itemId: actionItemId })}
-              style={{ ...btnStyle, fontSize: 10, padding: '1px 6px', width: 50 }}
+              style={{ ...btnEquipStyle, color: colors.steel, borderColor: '#2a4a6a', background: '#0e1a2e' }}
               disabled={loading}
             >
               Use
@@ -137,7 +141,7 @@ export function InventoryPanel({ inventory, phase, gold }: InventoryPanelProps) 
           buttonContent = (
             <button
               onClick={() => sendCommand({ type: 'TOWN_ACTION', action: 'shop_sell', targetId: actionItemId })}
-              style={{ ...btnStyle, fontSize: 10, padding: '1px 6px', color: '#cc8', width: 70 }}
+              style={{ ...btnEquipStyle, color: colors.gold, borderColor: '#4a380e', background: '#1e1408' }}
               disabled={loading}
             >
               Sell {item.sellPrice}g
@@ -146,25 +150,44 @@ export function InventoryPanel({ inventory, phase, gold }: InventoryPanelProps) 
         }
 
         return (
-          <div key={`${item.id}-${idx}`} style={{ fontSize: 11, color: '#aaa', display: 'flex', alignItems: 'flex-start', gap: 8, padding: '2px 0' }}>
-            {/* Left: index and button column */}
-            <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'flex-start', gap: 2 }}>
-              <span style={{ color: '#666', width: 14 }}>{idx + 1}.</span>
+          <div
+            key={`${item.id}-${idx}`}
+            style={{
+              fontSize: 11,
+              color: colors.text,
+              display: 'flex',
+              alignItems: 'flex-start',
+              gap: 8,
+              padding: '3px 0',
+              borderBottom: idx < sorted.length - 1 ? `1px solid ${colors.border2}` : 'none',
+            }}
+          >
+            {/* Index + action button */}
+            <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'flex-start', gap: 2, flexShrink: 0 }}>
+              <span style={{ color: colors.muted, width: 14, fontSize: 10 }}>{idx + 1}.</span>
               {buttonContent}
             </div>
 
-            {/* Right: item info */}
+            {/* Item info */}
             <div style={{ flex: 1 }}>
               <div style={{ display: 'flex', alignItems: 'center', gap: 6, flexWrap: 'wrap' }}>
-                <span>{item.name}</span>
-                {quantity > 1 && <span style={{ color: '#8cf', fontSize: 10 }}>x{quantity}</span>}
-                {item.rarity && <span style={{ color: item.rarityColor, fontSize: 9 }}>[{item.rarity}]</span>}
-                {stats && <span style={{ color: '#888' }}>({stats})</span>}
+                <span style={{ color: isEquipped ? colors.lime : colors.text }}>{item.name}</span>
+                {quantity > 1 && (
+                  <span style={{ color: colors.steel, fontSize: 10 }}>x{quantity}</span>
+                )}
+                {item.rarity && (
+                  <span style={{ color: item.rarityColor, fontSize: 9 }}>[{item.rarity}]</span>
+                )}
+                {stats && (
+                  <span style={{ color: colors.muted }}>{stats}</span>
+                )}
                 {isEquipped && (
-                  <span style={{ color: '#4f4', fontSize: 10 }}>[Equipped]</span>
+                  <span style={{ color: colors.lime, fontSize: 10 }}>[equipped]</span>
                 )}
               </div>
-              {item.description && <span style={{ color: '#666', fontSize: 10 }}>{item.description}</span>}
+              {item.description && (
+                <div style={{ color: colors.muted, fontSize: 10 }}>{item.description}</div>
+              )}
             </div>
           </div>
         );

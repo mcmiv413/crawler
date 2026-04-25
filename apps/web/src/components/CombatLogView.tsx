@@ -74,15 +74,15 @@ export function CombatLogView({ entries, debugMode, maxHeight, isMobile = false 
             fontFamily: FONT_STACK,
             padding: '2px 8px',
             fontSize: 10,
-            background: debugMode ? colors.blood : '#2a2a2a',
-            color: debugMode ? '#fff' : '#666',
-            border: `1px solid ${debugMode ? colors.blood : '#444'}`,
+            background: debugMode ? colors.blood : colors.card,
+            color: debugMode ? colors.text : colors.muted,
+            border: `1px solid ${debugMode ? colors.blood : colors.border}`,
             cursor: 'pointer',
             borderRadius: '2px',
           }}
           title="Toggle game debug mode to see ambient behavior transitions"
         >
-          {debugMode ? '🐛 DEBUG ON' : 'DEBUG'}
+          {debugMode ? 'DEBUG ON' : 'DEBUG'}
         </button>
       </div>
 
