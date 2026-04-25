@@ -397,4 +397,303 @@ describe('processEnemyTurns', () => {
       expect(missStreakEvent.rngSeed).toBeDefined();
     });
   });
+
+  describe('Speed accumulator system (Phase 3)', () => {
+    it('fairly distributes turns among enemies with different speeds', () => {
+      const slow = createTestEnemy({
+        id: entityId('slow'), position: { x: 2, y: 0 },
+        stats: { maxHealth: 30, health: 30, attack: 8, defense: 3, accuracy: 70, evasion: 15, speed: 50 },
+        isAlerted: true,
+      });
+      const fast = createTestEnemy({
+        id: entityId('fast'), position: { x: 1, y: 0 },
+        stats: { maxHealth: 30, health: 30, attack: 8, defense: 3, accuracy: 70, evasion: 15, speed: 100 },
+        isAlerted: true,
+      });
+      const veryFast = createTestEnemy({
+        id: entityId('very_fast'), position: { x: 3, y: 0 },
+        stats: { maxHealth: 30, health: 30, attack: 8, defense: 3, accuracy: 70, evasion: 15, speed: 150 },
+        isAlerted: true,
+      });
+
+      const state = makeTurnState({ x: 0, y: 0 }, [slow, fast, veryFast]);
+      const rng = new SeededRNG(1);
+      const playerSpeed = 100; // Player moves at 100
+
+      // Process multiple turns with player speed
+      let currentState = state;
+      let allEvents: any[] = [];
+
+      for (let i = 0; i < 5; i++) {
+        const result = processEnemyTurns(currentState, rng, playerSpeed);
+        currentState = result.state;
+        allEvents = [...allEvents, ...result.events];
+      }
+
+      // Fast enemy should act more often than slow enemy
+      const fastActions = allEvents.filter((e) => e.attackerId === 'fast').length;
+      const slowActions = allEvents.filter((e) => e.attackerId === 'slow').length;
+      const veryFastActions = allEvents.filter((e) => e.attackerId === 'very_fast').length;
+
+      // Speed ratio: very_fast (150) > fast (100) > slow (50)
+      expect(veryFastActions).toBeGreaterThanOrEqual(fastActions);
+      expect(fastActions).toBeGreaterThanOrEqual(slowActions);
+    });
+
+    it('accumulates speed ratios correctly each round', () => {
+      const slow = createTestEnemy({
+        id: entityId('slow'), position: { x: 2, y: 0 },
+        stats: { maxHealth: 30, health: 30, attack: 8, defense: 3, accuracy: 70, evasion: 15, speed: 60 },
+        isAlerted: true,
+      });
+      const fast = createTestEnemy({
+        id: entityId('fast'), position: { x: 1, y: 0 },
+        stats: { maxHealth: 30, health: 30, attack: 8, defense: 3, accuracy: 70, evasion: 15, speed: 120 },
+        isAlerted: true,
+      });
+
+      const state = makeTurnState({ x: 0, y: 0 }, [slow, fast]);
+      const rng = new SeededRNG(1);
+      const playerSpeed = 100;
+
+      // After first round with playerSpeed:
+      // slow accumulator += 60/100 = 0.6
+      // fast accumulator += 120/100 = 1.2
+      const result1 = processEnemyTurns(state, rng, playerSpeed);
+      const fast1Actions = result1.events.filter((e) => e.type === 'ATTACK_PERFORMED' && e.attackerId === 'fast').length;
+
+      // Fast should have acted (1.2 >= 1)
+      expect(fast1Actions).toBeGreaterThan(0);
+
+      // Verify accumulators update
+      expect(result1.state.run?.speedAccumulators).toBeDefined();
+      if (result1.state.run !== null) {
+        const fastAccum = result1.state.run.speedAccumulators.fast ?? 0;
+        const slowAccum = result1.state.run.speedAccumulators.slow ?? 0;
+        // After fast acts once, fast accum should be ~0.2, slow ~0.6
+        expect(fastAccum).toBeLessThan(1);
+        expect(slowAccum).toBeGreaterThanOrEqual(0);
+      }
+    });
+
+    it('skips enemy turns when accumulator below threshold', () => {
+      const slow = createTestEnemy({
+        id: entityId('slow'), position: { x: 2, y: 0 },
+        stats: { maxHealth: 30, health: 30, attack: 8, defense: 3, accuracy: 70, evasion: 15, speed: 50 },
+        isAlerted: true,
+      });
+
+      const state = makeTurnState({ x: 0, y: 0 }, [slow]);
+      const rng = new SeededRNG(1);
+      const playerSpeed = 200; // Fast player
+
+      // slow (50) vs player (200) = 0.25 ratio per turn
+      // Slow enemy will accumulate very slowly and skip many turns
+      const result = processEnemyTurns(state, rng, playerSpeed);
+      const slowAttacks = result.events.filter((e) => e.type === 'ATTACK_PERFORMED' && e.attackerId === 'slow').length;
+
+      // With very fast player, slow enemy might not even act once
+      expect(slowAttacks).toBeLessThanOrEqual(1);
+    });
+  });
+
+  describe('Alert propagation and chain reactions', () => {
+    it('propagates alert to nearby enemies within range 4', () => {
+      const alertEnemy = createTestEnemy({
+        id: entityId('alert'), position: { x: 1, y: 0 },
+        stats: { maxHealth: 30, health: 30, attack: 8, defense: 3, accuracy: 70, evasion: 15, speed: 100 },
+        isAlerted: false,
+      });
+      const nearbyEnemy = createTestEnemy({
+        id: entityId('nearby'), position: { x: 3, y: 0 }, // dist=2 from alert
+        stats: { maxHealth: 30, health: 30, attack: 8, defense: 3, accuracy: 70, evasion: 15, speed: 100 },
+        isAlerted: false,
+      });
+      const farEnemy = createTestEnemy({
+        id: entityId('far'), position: { x: 7, y: 0 }, // dist=6 from alert
+        stats: { maxHealth: 30, health: 30, attack: 8, defense: 3, accuracy: 70, evasion: 15, speed: 100 },
+        isAlerted: false,
+      });
+
+      const state = makeTurnState({ x: 0, y: 0 }, [alertEnemy, nearbyEnemy, farEnemy]);
+      const rng = new SeededRNG(1);
+
+      // Process turns (alertEnemy within dist 5 of player gets alerted, triggers propagation)
+      const result = processEnemyTurns(state, rng);
+
+      // Find alert events
+      const alertEvents = result.events.filter((e) => e.type === 'ENEMY_ALERTED');
+
+      // Should have alerted the nearby enemy (within range 4) but not the far one
+      const nearbyAlerted = alertEvents.some((e) => e.enemyId === 'nearby');
+      const farAlerted = alertEvents.some((e) => e.enemyId === 'far');
+
+      expect(nearbyAlerted).toBe(true);
+      expect(farAlerted).toBe(false);
+    });
+
+    it('triggers NEMESIS_ENCOUNTERED event when nemesis becomes alerted', () => {
+      const nemesisEnemy = createTestEnemy({
+        id: entityId('nemesis'), position: { x: 2, y: 0 },
+        stats: { maxHealth: 30, health: 30, attack: 8, defense: 3, accuracy: 70, evasion: 15, speed: 100 },
+        isAlerted: false,
+        nemesisId: entityId('nemesis_1'),
+      });
+
+      const state = makeTurnState({ x: 0, y: 0 }, [nemesisEnemy]);
+      const rng = new SeededRNG(1);
+
+      const result = processEnemyTurns(state, rng);
+
+      // Should have NEMESIS_ENCOUNTERED event
+      const nemesisEvent = result.events.find((e) => e.type === 'NEMESIS_ENCOUNTERED');
+      expect(nemesisEvent).toBeDefined();
+      expect(nemesisEvent?.nemesisId).toBe('nemesis_1');
+      expect(nemesisEvent?.nemesisName).toBe(nemesisEnemy.name);
+    });
+
+    it('increments nemesis encounter count in world state', () => {
+      const nemesisEnemy = createTestEnemy({
+        id: entityId('nemesis'), position: { x: 2, y: 0 },
+        stats: { maxHealth: 30, health: 30, attack: 8, defense: 3, accuracy: 70, evasion: 15, speed: 100 },
+        isAlerted: false,
+        nemesisId: entityId('nemesis_1'),
+      });
+
+      const state = makeTurnState({ x: 0, y: 0 }, [nemesisEnemy]);
+      state.world.nemeses = [{
+        id: entityId('nemesis_1'),
+        name: 'Test Nemesis',
+        sourceTemplateId: 'goblin',
+        rank: 1,
+        tier: 2,
+        stats: { maxHealth: 100, health: 100, attack: 15, defense: 5, accuracy: 75, evasion: 20, speed: 100 },
+        traits: [],
+        weaknesses: [],
+        killEventId: null,
+        encounterCount: 0,
+        promotionStage: 0,
+        lastSeenFloor: null,
+        nextPossibleFloor: 2,
+        title: 'the Fierce',
+      }];
+
+      const rng = new SeededRNG(1);
+      const result = processEnemyTurns(state, rng);
+
+      // Check nemesis encounter count was incremented
+      const updatedNemesis = result.state.world.nemeses.find((n) => n.id === 'nemesis_1');
+      expect(updatedNemesis?.encounterCount).toBe(1);
+    });
+  });
+
+  describe('Stun and cooldown interactions', () => {
+    it('stun status prevents enemy from taking actions mid-turn', () => {
+      const stunned = createTestEnemy({
+        id: entityId('stunned'), position: { x: 1, y: 0 },
+        stats: { maxHealth: 30, health: 30, attack: 8, defense: 3, accuracy: 70, evasion: 15, speed: 100 },
+        isAlerted: true,
+        statuses: [{ id: 'stun', durationTurns: 1, source: 'test', isCritical: false }],
+      });
+
+      const state = makeTurnState({ x: 0, y: 0 }, [stunned]);
+      const rng = new SeededRNG(1);
+
+      const result = processEnemyTurns(state, rng);
+      const stunmedAttacks = result.events.filter((e) => e.type === 'ATTACK_PERFORMED' && e.attackerId === 'stunned').length;
+
+      // Stunned enemy should not attack
+      expect(stunmedAttacks).toBe(0);
+    });
+
+    it('cooldowns tick down at end of round', () => {
+      const withCooldown = createTestEnemy({
+        id: entityId('cooldown'), position: { x: 1, y: 0 },
+        stats: { maxHealth: 30, health: 30, attack: 8, defense: 3, accuracy: 70, evasion: 15, speed: 100 },
+        isAlerted: true,
+        abilityCooldowns: { power_strike: 3, fireball: 1 },
+      });
+
+      const state = makeTurnState({ x: 0, y: 0 }, [withCooldown]);
+      const rng = new SeededRNG(1);
+
+      const result = processEnemyTurns(state, rng);
+
+      // Check cooldowns were decremented
+      const updatedEnemy = result.state.run?.enemies.get(posKey(withCooldown.position));
+      expect(updatedEnemy?.abilityCooldowns).toBeDefined();
+      if (updatedEnemy?.abilityCooldowns) {
+        expect(updatedEnemy.abilityCooldowns.power_strike).toBe(2);
+        expect(updatedEnemy.abilityCooldowns.fireball).toBe(0);
+      }
+    });
+  });
+
+  describe('Status effects and damage during turn processing', () => {
+    it('ticks player status effects and applies DoT at end of round', () => {
+      const enemy = createTestEnemy({
+        id: entityId('attacker'), position: { x: 1, y: 0 },
+        stats: { maxHealth: 30, health: 30, attack: 8, defense: 3, accuracy: 70, evasion: 15, speed: 100 },
+        isAlerted: true,
+      });
+
+      const state = makeTurnState(
+        { x: 0, y: 0 },
+        [enemy],
+        {
+          playerHealth: 100,
+          playerStatuses: [{ id: 'burn', durationTurns: 2, source: 'trap', isCritical: false }],
+        },
+      );
+      const rng = new SeededRNG(1);
+      const healthBefore = state.player.stats.health;
+
+      const result = processEnemyTurns(state, rng);
+      const healthAfter = result.state.player.stats.health;
+
+      // Player should take DoT damage from burn
+      expect(healthAfter).toBeLessThan(healthBefore);
+    });
+
+    it('clamps player health to 0 minimum when taking status damage', () => {
+      const enemy = createTestEnemy({
+        id: entityId('attacker'), position: { x: 1, y: 0 },
+        stats: { maxHealth: 30, health: 30, attack: 8, defense: 3, accuracy: 70, evasion: 15, speed: 100 },
+        isAlerted: true,
+      });
+
+      const state = makeTurnState(
+        { x: 0, y: 0 },
+        [enemy],
+        {
+          playerHealth: 5,
+          playerStatuses: [{ id: 'burn', durationTurns: 2, source: 'trap', isCritical: false }],
+        },
+      );
+      const rng = new SeededRNG(1);
+
+      const result = processEnemyTurns(state, rng);
+
+      // Player health should not go negative (should be clamped to 0)
+      expect(result.state.player.stats.health).toBeGreaterThanOrEqual(0);
+    });
+
+    it('ticks enemy status effects at end of round', () => {
+      const withStatus = createTestEnemy({
+        id: entityId('burning'), position: { x: 1, y: 0 },
+        stats: { maxHealth: 30, health: 30, attack: 8, defense: 3, accuracy: 70, evasion: 15, speed: 100 },
+        isAlerted: true,
+        statuses: [{ id: 'burn', durationTurns: 2, source: 'test', isCritical: false }],
+      });
+
+      const state = makeTurnState({ x: 0, y: 0 }, [withStatus]);
+      const rng = new SeededRNG(1);
+
+      const result = processEnemyTurns(state, rng);
+
+      // Enemy should take damage from burn
+      const updatedEnemy = result.state.run?.enemies.get(posKey(withStatus.position));
+      expect(updatedEnemy?.stats.health).toBeLessThan(withStatus.stats.health);
+    });
+  });
 });
