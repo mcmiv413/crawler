@@ -51,6 +51,10 @@ export const COMBAT = {
   minDamage: 1,
   /** Defense mitigation formula: reduction = defense / (defense + constant) */
   defenseDivisor: 35,
+  /** Ranged accuracy drops 10% per tile beyond minimum range */
+  rangedAccuracyDropPerTile: 10,
+  /** Melee fallback damage for ranged units at tile 1: 65% of attack */
+  rangedMeleeFallbackMultiplier: 0.65,
 } as const;
 
 /** Damage band profiles: spread values for damage range calculation */
