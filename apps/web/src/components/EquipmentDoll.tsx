@@ -1,10 +1,30 @@
 import React from 'react';
 import type { InventoryItemView, InventoryView } from '@dungeon/presenter';
 import { ItemSpriteIcon } from './ItemSpriteIcon.js';
+import { colors } from '../styles.js';
 
 interface EquipmentDollProps {
   equipped: InventoryView['equipped'];
   onSlotClick: (item: InventoryItemView) => void;
+}
+
+function getItemStats(item: InventoryItemView): string {
+  let text = '';
+  if (item.weaponStats) {
+    const ws = item.weaponStats;
+    const dmg = ws.damageMin != null ? `${ws.damageMin}–${ws.damageMax}` : `${ws.damage}`;
+    text += `${dmg} ${ws.damageType} dmg`;
+    if (ws.weaponRange && ws.weaponRange > 1) {
+      text += ` | range: ${ws.weaponRange}`;
+    }
+  }
+  if (item.armorStats) {
+    text += `${item.armorStats.defense} def`;
+    if (item.armorStats.evasionPenalty) {
+      text += ` | eva penalty: -${item.armorStats.evasionPenalty}`;
+    }
+  }
+  return text;
 }
 
 const SLOT_LABELS: Record<keyof InventoryView['equipped'], string> = {
@@ -63,17 +83,23 @@ export function EquipmentDoll({ equipped, onSlotClick }: EquipmentDollProps) {
           >
             <div style={{ fontSize: 10, color: '#666', marginBottom: 2 }}>{label}</div>
             {item ? (
-              <div style={{ display: 'flex', gap: 4, alignItems: 'center' }}>
-                <ItemSpriteIcon spriteName={item.spriteName} size={24} />
-                <div
-                  style={{
-                    fontSize: 11,
-                    color: item.rarityColor,
-                    fontWeight: 'bold',
-                  }}
-                >
-                  {item.name}
+              <div style={{ display: 'flex', flexDirection: 'column', gap: 4 }}>
+                <div style={{ display: 'flex', gap: 4, alignItems: 'center' }}>
+                  <ItemSpriteIcon spriteName={item.spriteName} size={24} />
+                  <div
+                    style={{
+                      fontSize: 11,
+                      color: item.rarityColor,
+                      fontWeight: 'bold',
+                    }}
+                  >
+                    {item.name}
+                  </div>
                 </div>
+                {(() => {
+                  const stats = getItemStats(item);
+                  return stats ? <div style={{ fontSize: 9, color: colors.muted }}>{stats}</div> : null;
+                })()}
               </div>
             ) : (
               <div style={{ fontSize: 10, color: '#555' }}>[empty]</div>

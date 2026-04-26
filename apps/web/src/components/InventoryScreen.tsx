@@ -1,11 +1,30 @@
 import React, { useState } from 'react';
 import type { InventoryItemView, InventoryView } from '@dungeon/presenter';
-import { btnStyle, compactBtnStyle } from '../styles.js';
+import { btnStyle, compactBtnStyle, colors } from '../styles.js';
 import { EquipmentDoll } from './EquipmentDoll.js';
 import { ItemInspectModal } from './ItemInspectModal.js';
 import { ItemSpriteIcon } from './ItemSpriteIcon.js';
 import { useInventoryFilter } from '../hooks/useInventoryFilter.js';
 import { useBreakpoint } from '../hooks/useBreakpoint.js';
+
+function getItemStats(item: InventoryItemView): string {
+  let text = '';
+  if (item.weaponStats) {
+    const ws = item.weaponStats;
+    const dmg = ws.damageMin != null ? `${ws.damageMin}–${ws.damageMax}` : `${ws.damage}`;
+    text += `${dmg} ${ws.damageType} dmg`;
+    if (ws.weaponRange && ws.weaponRange > 1) {
+      text += ` | range: ${ws.weaponRange}`;
+    }
+  }
+  if (item.armorStats) {
+    text += `${item.armorStats.defense} def`;
+    if (item.armorStats.evasionPenalty) {
+      text += ` | eva penalty: -${item.armorStats.evasionPenalty}`;
+    }
+  }
+  return text;
+}
 
 interface InventoryScreenProps {
   inventory: InventoryView;
@@ -176,17 +195,22 @@ export function InventoryScreen({
                       alignItems: 'center',
                       gap: 8,
                       cursor: 'pointer',
+                      flexWrap: 'wrap',
                     }}
                   >
                     <span>{idx + 1}.</span>
                     <ItemSpriteIcon spriteName={item.spriteName} size={16} />
-                    <span style={{ flex: 1 }}>
+                    <span>
                       {item.name}
                       {quantity > 1 && <span style={{ color: '#8cf', fontSize: 10 }}> x{quantity}</span>}
                     </span>
                     <span style={{ color: item.rarityColor, fontSize: 10 }}>
                       [{item.rarity}]
                     </span>
+                    {(() => {
+                      const stats = getItemStats(item);
+                      return stats ? <span style={{ color: colors.muted, fontSize: 10 }}>{stats}</span> : null;
+                    })()}
                   </div>
 
                   {/* Quick equip button */}
