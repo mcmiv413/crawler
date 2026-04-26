@@ -5,6 +5,7 @@ import { decideEnemyAction, type EnemyAction } from '../systems/enemy-ai.js';
 import { decideAmbientAction } from '../systems/ambient-behavior-engine.js';
 import { resolveAttack } from '../systems/combat.js';
 import { getEffectiveStat, tickPlayerStatuses, tickEnemyStatuses } from '../systems/status-effects.js';
+import { applyRangeAccuracyPenalty } from '../utils/dice.js';
 import { handlePlayerDeath } from '../systems/death.js';
 import { applyDamageToPlayer, createDamageDebugEvent } from '../systems/damage.js';
 import { chebyshevDistance } from '../utils/grid.js';
@@ -346,9 +347,27 @@ function executeEnemyAction(
 
     case 'attack': {
       const effectiveAttack = getEffectiveStat(enemy.stats.attack, 'attack', enemy.statuses);
-      const effectiveAccuracy = getEffectiveStat(enemy.stats.accuracy, 'accuracy', enemy.statuses);
+      let effectiveAccuracy = getEffectiveStat(enemy.stats.accuracy, 'accuracy', enemy.statuses);
       const playerDefense = getEffectiveStat(state.player.stats.defense, 'defense', state.player.statuses);
       const playerEvasion = state.player.stats.evasion;
+
+      // Apply range accuracy penalty for ranged weapons
+      let weaponRange = 1;
+      let minRange = 0;
+      // eslint-disable-next-line @typescript-eslint/no-unnecessary-condition
+      if (enemy.equipment?.weapon !== undefined) {
+        weaponRange = enemy.equipment.weapon.weaponRange;
+        minRange = enemy.equipment.weapon.minRange ?? 0;
+      }
+      if (weaponRange > 1 || minRange > 0) {
+        const dist = chebyshevDistance(enemy.position, state.player.position);
+        effectiveAccuracy = applyRangeAccuracyPenalty(
+          effectiveAccuracy,
+          dist,
+          minRange,
+          COMBAT.rangedAccuracyDropPerTile,
+        );
+      }
 
       // Determine enemy damage type from equipment or default to physical
       // eslint-disable-next-line @typescript-eslint/no-unnecessary-condition

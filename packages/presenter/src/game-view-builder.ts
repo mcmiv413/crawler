@@ -1,6 +1,9 @@
 import type { GameState, EnemyInstance, PlayerDiedEvent, EquipmentDroppedEvent, DomainEvent } from '@dungeon/contracts';
 import type { GameView, QuestView, InspectableEntityView, DeathContext } from './game-view.js';
-import { ENEMY_TEMPLATES, STATUS_DEFINITIONS, OBJECT_TEMPLATES, DEATH_CONSEQUENCES } from '@dungeon/content';
+import { ENEMY_TEMPLATES, STATUS_DEFINITIONS, OBJECT_TEMPLATES, DEATH_CONSEQUENCES, COMBAT } from '@dungeon/content';
+import { calculateHitChance, applyRangeAccuracyPenalty } from '@dungeon/core/utils/dice.js';
+import { chebyshevDistance } from '@dungeon/core/utils/grid.js';
+import { getEffectiveStat } from '@dungeon/core/systems/status-effects.js';
 import { buildPlayerHud } from './builders/player-hud-builder.js';
 import { buildMapView } from './builders/map-view-builder.js';
 
@@ -98,6 +101,52 @@ function buildInspectableEntities(state: GameState): readonly InspectableEntityV
     // Only show instanceColor if there are 2+ of this templateId visible
     const showInstanceColor = templateIdCounts.get(enemy.templateId) ?? 0 >= 2;
 
+    // Calculate distance and hit chances
+    const dist = chebyshevDistance(state.player.position, enemy.position);
+    
+    // Player hit chance (with range penalty)
+    let playerAccuracy = getEffectiveStat(state.player.stats.accuracy, 'accuracy', state.player.statuses);
+    let playerWeaponRange = 1;
+    let playerMinRange = 0;
+    if (state.player.equipment.weapon !== null) {
+      const wt = state.itemRegistry.items.get(state.player.equipment.weapon);
+      if (wt?.itemClass === 'weapon') {
+        const weapon = (wt as { weapon: { weaponRange: number; minRange?: number } }).weapon;
+        playerWeaponRange = weapon.weaponRange;
+        playerMinRange = weapon.minRange ?? 0;
+      }
+    }
+    if (playerWeaponRange > 1 || playerMinRange > 0) {
+      playerAccuracy = applyRangeAccuracyPenalty(playerAccuracy, dist, playerMinRange, COMBAT.rangedAccuracyDropPerTile);
+    }
+    const playerHitChance = calculateHitChance(
+      COMBAT.baseHitChance,
+      playerAccuracy,
+      enemy.stats.evasion,
+      COMBAT.minHitChance,
+      COMBAT.maxHitChance,
+    );
+
+    // Enemy hit chance (with range penalty)
+    let enemyAccuracy = getEffectiveStat(enemy.stats.accuracy, 'accuracy', enemy.statuses);
+    let enemyWeaponRange = 1;
+    let enemyMinRange = 0;
+    // eslint-disable-next-line @typescript-eslint/no-unnecessary-condition
+    if (enemy.equipment?.weapon) {
+      enemyWeaponRange = enemy.equipment.weapon.weaponRange;
+      enemyMinRange = enemy.equipment.weapon.minRange ?? 0;
+    }
+    if (enemyWeaponRange > 1 || enemyMinRange > 0) {
+      enemyAccuracy = applyRangeAccuracyPenalty(enemyAccuracy, dist, enemyMinRange, COMBAT.rangedAccuracyDropPerTile);
+    }
+    const enemyHitChance = calculateHitChance(
+      COMBAT.baseHitChance,
+      enemyAccuracy,
+      state.player.stats.evasion,
+      COMBAT.minHitChance,
+      COMBAT.maxHitChance,
+    );
+
     mutableEntities.push({
       id: enemy.id,
       name: enemy.name,
@@ -118,6 +167,8 @@ function buildInspectableEntities(state: GameState): readonly InspectableEntityV
       statuses: enemy.statuses.map(s => STATUS_DEFINITIONS.get(s.id)?.name ?? s.id),
       threatRating: computeThreatRating(enemy, state),
       instanceColor: showInstanceColor ? enemy.instanceColor : undefined,
+      playerHitChance,
+      enemyHitChance,
     });
   }
 
