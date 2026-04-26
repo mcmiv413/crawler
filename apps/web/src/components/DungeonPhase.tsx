@@ -159,15 +159,9 @@ export function DungeonPhase({
   const [showInspectModal, setShowInspectModal] = useState(false);
   useAnimationOrchestrator(view.animatedEvents);
 
-  // Get equipped weapon and compute damage range
+  // Get equipped weapon and compute damage range (NEW: uses total damage with attack bonus)
   const equippedWeapon = view.inventory.equipped.weapon;
-  let dmgDisplay: string;
-  if (equippedWeapon?.weaponStats) {
-    dmgDisplay = `${equippedWeapon.weaponStats.damageMin}–${equippedWeapon.weaponStats.damageMax}`;
-  } else {
-    const { min, max } = getDamageBand(view.player.attack, 'player_unarmed');
-    dmgDisplay = `${min}–${max}`;
-  }
+  const dmgDisplay = `${view.player.totalDamageMin}–${view.player.totalDamageMax}`;
   const weaponDisplay = equippedWeapon ? `[${equippedWeapon.name}] ${dmgDisplay}` : `Unarmed ${dmgDisplay}`;
 
   // Mobile: same layout as desktop - action panel always visible with fixed combat log

@@ -29,8 +29,8 @@ export function ClickableStatGrid({ player }: ClickableStatGridProps) {
     },
     {
       key: 'attack',
-      label: 'ATK',
-      value: player.attack.toString(),
+      label: 'DMG',
+      value: `${player.totalDamageMin}–${player.totalDamageMax}`,
       sub: '',
     },
     {
