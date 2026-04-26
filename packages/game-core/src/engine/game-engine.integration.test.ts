@@ -23,7 +23,7 @@ function makeEnemy(id: string, x: number, y: number): EnemyInstance {
       weapon: {
         damageMultiplier: 1.0,
         damageType: 'physical',
-        range: 1,
+        weaponRange: 1,
       },
     },
     affinities: {},
@@ -503,7 +503,7 @@ describe('GameEngine victory condition', () => {
         weapon: {
           damageMultiplier: 1.3,
           damageType: 'physical',
-          range: 1,
+          weaponRange: 1,
         },
       },
       affinities: { physical: 0.15 },

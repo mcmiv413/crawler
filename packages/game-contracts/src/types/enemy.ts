@@ -15,7 +15,8 @@ export interface EnemyStats {
 export interface EnemyWeapon {
   readonly damageMultiplier: number;
   readonly damageType: DamageType;
-  readonly range: number;
+  readonly weaponRange: number;
+  readonly minRange?: number;
   readonly onHitStatus?: string;
   readonly onHitChance?: number;
 }

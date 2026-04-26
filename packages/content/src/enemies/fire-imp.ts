@@ -18,7 +18,7 @@ export const fireImp = {
     weapon: {
       damageMultiplier: 1.0,
       damageType: 'fire',
-      range: 2,
+      weaponRange: 2,
     },
   },
   affinities: { fire: 0.8, frost: -0.5 },

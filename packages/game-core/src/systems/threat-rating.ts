@@ -26,7 +26,7 @@ export function computeEnemyThreatRating(enemy: EnemyInstance, state: GameState)
   const hitsToKillEnemy = Math.ceil(enemyStats.health / Math.max(1, playerMidBand));
 
   // Get range info
-  const enemyRange = enemy.equipment.weapon.range;
+  const enemyRange = enemy.equipment.weapon.weaponRange;
   const playerRange = getPlayerWeaponRange(state);
 
   // Speed comparison

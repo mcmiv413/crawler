@@ -12,7 +12,7 @@ const createEnemy = (tier: number): EnemyInstance => ({
   name: 'Test',
   archetype: 'aggressive_melee',
   stats: { maxHealth: 10, health: 10, attack: 5, defense: 5, accuracy: 50, evasion: 10, speed: 10 },
-  equipment: { weapon: { damageMultiplier: 1.0, damageType: 'physical', range: 1 } },
+  equipment: { weapon: { damageMultiplier: 1.0, damageType: 'physical', weaponRange: 1 } },
   affinities: {},
   spawn: { floorRange: [1, 1], weight: 1 },
   lootTableId: 'test',

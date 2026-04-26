@@ -18,7 +18,7 @@ export const ashBeetle = {
     weapon: {
       damageMultiplier: 1.1,
       damageType: 'fire',
-      range: 1,
+      weaponRange: 1,
     },
   },
   affinities: { fire: 0.7, frost: -0.4 },

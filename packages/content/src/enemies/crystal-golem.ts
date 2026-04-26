@@ -18,7 +18,7 @@ export const crystalGolem = {
     weapon: {
       damageMultiplier: 1.2,
       damageType: 'physical',
-      range: 1,
+      weaponRange: 1,
     },
   },
   affinities: { physical: 0.3, arcane: 0.5 },
