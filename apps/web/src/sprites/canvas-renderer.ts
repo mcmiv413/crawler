@@ -256,6 +256,16 @@ export function renderMap(
         ctx.lineWidth = 2;
         ctx.strokeRect(screenX + offsetX + 1, screenY + offsetY + 1, CELL_SIZE - 2, CELL_SIZE - 2);
       }
+
+      // Instance color square for disambiguation when 2+ of same type visible
+      if (entity.instanceColor) {
+        // Dark backdrop: 5×6px at (CELL_SIZE - 5, 0)
+        ctx.fillStyle = 'rgba(0, 0, 0, 0.70)';
+        ctx.fillRect(screenX + CELL_SIZE - 5, screenY, 5, 6);
+        // Colored square: 3×4px at (CELL_SIZE - 4, 1)
+        ctx.fillStyle = entity.instanceColor;
+        ctx.fillRect(screenX + CELL_SIZE - 4, screenY + 1, 3, 4);
+      }
     }
   }
 }
