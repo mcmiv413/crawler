@@ -1,5 +1,5 @@
 import type { GameState, EntityId, WeaponTemplate, ArmorTemplate } from '@dungeon/contracts';
-import { getRarityColor } from '@dungeon/content';
+import { getRarityColor, getDamageBand, getWeaponDamageProfile } from '@dungeon/content';
 import type { InventoryView, InventoryItemView } from '../game-view.js';
 
 export function buildInventoryView(state: GameState): InventoryView {
@@ -35,7 +35,12 @@ export function buildInventoryView(state: GameState): InventoryView {
       templateId: template.itemId,
       spriteName: template.spriteName,
       weaponStats: template.itemClass === 'weapon'
-        ? { damage: (template as WeaponTemplate).weapon.damage, damageType: (template as WeaponTemplate).weapon.damageType, accuracy: (template as WeaponTemplate).weapon.accuracy, speed: (template as WeaponTemplate).weapon.speed, weaponRange: (template as WeaponTemplate).weapon.weaponRange, minRange: (template as WeaponTemplate).weapon.minRange }
+        ? (() => {
+          const weapon = (template as WeaponTemplate).weapon;
+          const profile = getWeaponDamageProfile(weapon.weaponType, weapon.weaponRange);
+          const { min, max } = getDamageBand(weapon.damage, profile);
+          return { damage: weapon.damage, damageMin: min, damageMax: max, damageType: weapon.damageType, accuracy: weapon.accuracy, speed: weapon.speed, weaponRange: weapon.weaponRange, minRange: weapon.minRange };
+        })()
         : undefined,
       armorStats: template.itemClass === 'armor'
         ? { defense: (template as ArmorTemplate).armor.defense, evasionPenalty: (template as ArmorTemplate).armor.evasionPenalty, slot: (template as ArmorTemplate).armor.slot, enchantmentSlots: (template as ArmorTemplate).armor.enchantmentSlots, enchantments: (template as ArmorTemplate).armor.enchantments }

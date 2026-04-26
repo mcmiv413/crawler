@@ -1,4 +1,5 @@
 import { describe, it, expect } from 'vitest';
+import { describe, it, expect } from 'vitest';
 import { ITEM_BY_ID } from '@dungeon/content';
 import { buildInventoryView } from '../../packages/presenter/src/builders/inventory-view-builder.js';
 import { buildTownView } from '../../packages/presenter/src/builders/town-view-builder.js';

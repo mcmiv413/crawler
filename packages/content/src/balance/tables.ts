@@ -76,6 +76,28 @@ export function getDamageBand(
   };
 }
 
+/** Get damage band profile key for a weapon based on type and range */
+export function getWeaponDamageProfile(
+  weaponType: string,
+  weaponRange: number,
+): keyof typeof DAMAGE_BAND_PROFILES {
+  // Ranged weapons (bows)
+  if (weaponType === 'ranged' || weaponRange > 1) {
+    // Distinguish between short and war bows based on range
+    // War bow has range 6, short bow has range 5 or less
+    return weaponRange > 5 ? 'weapon_war_bow' : 'weapon_short_bow';
+  }
+
+  // Melee weapons
+  const profileKey = `weapon_${weaponType}` as keyof typeof DAMAGE_BAND_PROFILES;
+  if (profileKey in DAMAGE_BAND_PROFILES) {
+    return profileKey;
+  }
+
+  // Fallback for unknown types
+  return 'weapon_blade';
+}
+
 /** Floor scaling: enemy stats multiply by this per floor depth */
 export const FLOOR_SCALING = {
   healthMultiplier: 1.1,
