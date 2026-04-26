@@ -363,7 +363,7 @@ export interface InventoryItemView {
   readonly stackEntityIds: readonly string[];  // all EntityIds in this stack
   readonly templateId: string;        // itemId from template, for grouping
   readonly spriteName?: string;       // Atlas sprite name for rendering
-  readonly weaponStats?: { damage: number; damageMin: number; damageMax: number; damageType: string; accuracy: number; speed: number; weaponRange: number; minRange?: number };
+  readonly weaponStats?: { damage: number; damageMin: number; damageMax: number; damageType: string; accuracy: number; speed: number; weaponRange: number; minRange?: number; onHitStatus?: string; onHitChance?: number };
   readonly armorStats?: { defense: number; evasionPenalty: number; slot: string; enchantmentSlots: number; enchantments: readonly (string | null)[] };
 }
 

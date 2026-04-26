@@ -97,6 +97,14 @@ export function ItemInspectModal({
                 <div>Accuracy: {(item as InventoryItemView).weaponStats!.accuracy}</div>
                 <div>Speed: {(item as InventoryItemView).weaponStats!.speed}</div>
                 <div>Range: {(item as InventoryItemView).weaponStats!.weaponRange}</div>
+                {(item as InventoryItemView).weaponStats!.onHitStatus && (
+                  <div style={{ marginTop: 6, paddingTop: 6, borderTop: `1px solid ${colors.border2}`, fontSize: 10, color: colors.teal }}>
+                    On hit: {(item as InventoryItemView).weaponStats!.onHitStatus}
+                    {(item as InventoryItemView).weaponStats!.onHitChance !== undefined && (
+                      <span> ({(item as InventoryItemView).weaponStats!.onHitChance}% chance)</span>
+                    )}
+                  </div>
+                )}
               </div>
             </InfoCard>
           )}

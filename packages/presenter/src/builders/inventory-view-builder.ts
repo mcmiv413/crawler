@@ -39,7 +39,18 @@ export function buildInventoryView(state: GameState): InventoryView {
           const weapon = (template as WeaponTemplate).weapon;
           const profile = getWeaponDamageProfile(weapon.weaponType, weapon.weaponRange);
           const { min, max } = getDamageBand(weapon.damage, profile);
-          return { damage: weapon.damage, damageMin: min, damageMax: max, damageType: weapon.damageType, accuracy: weapon.accuracy, speed: weapon.speed, weaponRange: weapon.weaponRange, minRange: weapon.minRange };
+          return { 
+            damage: weapon.damage, 
+            damageMin: min, 
+            damageMax: max, 
+            damageType: weapon.damageType, 
+            accuracy: weapon.accuracy, 
+            speed: weapon.speed, 
+            weaponRange: weapon.weaponRange, 
+            minRange: weapon.minRange,
+            onHitStatus: weapon.onHitStatus,
+            onHitChance: weapon.onHitChance,
+          };
         })()
         : undefined,
       armorStats: template.itemClass === 'armor'
