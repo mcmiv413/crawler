@@ -280,7 +280,7 @@ export function decideAmbientAction(
   if (state.run === null) {
     return {
       action: { type: 'wait', enemyId: enemy.id },
-      updatedEnemy: { ...enemy, ambientStateAge: (enemy.ambientStateAge ?? 0) + 1 },
+      updatedEnemy: { ...enemy, ambientStateAge: (enemy.ambientStateAge ?? 0) + 1, instanceColor: enemy.instanceColor },
       stateChangeEvent: null,
     };
   }
@@ -415,6 +415,7 @@ export function decideAmbientAction(
     ...enemy,
     ambientState: nextState,
     ambientStateAge: stateChangeEvent !== null ? 0 : (enemy.ambientStateAge ?? 0) + 1,
+    instanceColor: enemy.instanceColor,
   };
 
   return { action, updatedEnemy, stateChangeEvent };
@@ -455,6 +456,7 @@ export function preSimulateAmbientBehavior(
         ...enemy,
         ambientState: nextState as AmbientState,
         ambientStateAge: nextStateAge,
+        instanceColor: enemy.instanceColor,
       };
 
       // For pre-sim, just update state age and position slightly randomly
