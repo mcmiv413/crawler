@@ -6,7 +6,7 @@ import { SectionLabel } from './ui/index.js';
 
 const statDescriptions: Record<string, string> = {
   health: 'Maximum health. Determines how much damage you can take before dying.',
-  attack: 'Damage dealt to enemies in combat. Higher attack means more damage per hit.',
+  attack: 'Bonus damage added to your weapon. Combined with weapon damage range to determine total damage dealt per hit.',
   defense: 'Damage reduction. Each point of defense reduces incoming damage by a percentage.',
   accuracy: 'Chance to hit enemies in combat. Affects whether your attacks connect.',
   evasion: 'Chance to dodge incoming attacks. Higher evasion means you take less damage.',
