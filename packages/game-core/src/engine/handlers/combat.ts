@@ -9,7 +9,7 @@ import { executeAbility } from '../../abilities/runtime/execute-ability.js';
 import { resolveAttack } from '../../systems/combat.js';
 import { getEffectiveStat, applyStatusToEnemy } from '../../systems/status-effects.js';
 import { applyDamageToEnemy } from '../../systems/damage.js';
-import { applyDefense } from '../../utils/dice.js';
+import { applyDefense, applyRangeAccuracyPenalty } from '../../utils/dice.js';
 import { processEnemyLoot } from '../../systems/loot.js';
 import { checkLevelUp } from '../../systems/progression.js';
 import { slayNemesis } from '../../systems/nemesis.js';
@@ -273,7 +273,18 @@ export function handleAttack(
   const effectiveAttack = getEffectiveStat(state.player.stats.attack, 'attack', state.player.statuses);
 
   // Get effective accuracy (already includes weapon modifier via calculateEquippedStats)
-  const effectiveAccuracy = getEffectiveStat(state.player.stats.accuracy, 'accuracy', state.player.statuses);
+  let effectiveAccuracy = getEffectiveStat(state.player.stats.accuracy, 'accuracy', state.player.statuses);
+  
+  // Apply range accuracy penalty for ranged weapons
+  if (weaponRange > 1 || minRange > 0) {
+    effectiveAccuracy = applyRangeAccuracyPenalty(
+      effectiveAccuracy,
+      dist,
+      minRange,
+      COMBAT.rangedAccuracyDropPerTile,
+    );
+  }
+  
   const defenderDefense = getEffectiveStat(targetEnemy.stats.defense, 'defense', targetEnemy.statuses);
   const weaponDamageType = getEquippedWeaponDamageType(state);
   // eslint-disable-next-line @typescript-eslint/no-unnecessary-condition

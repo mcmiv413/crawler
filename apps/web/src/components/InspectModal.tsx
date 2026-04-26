@@ -160,6 +160,23 @@ export function InspectModal({
                     </div>
                   )}
 
+                  {(selectedEntity.playerHitChance !== undefined || selectedEntity.enemyHitChance !== undefined) && (
+                    <div className={styles.hitChanceSection}>
+                      {selectedEntity.playerHitChance !== undefined && (
+                        <div className={styles.infoRow}>
+                          <span className={styles.label}>Your hit chance:</span>
+                          <span className={styles.value}>{selectedEntity.playerHitChance}%</span>
+                        </div>
+                      )}
+                      {selectedEntity.enemyHitChance !== undefined && (
+                        <div className={styles.infoRow}>
+                          <span className={styles.label}>Their hit chance:</span>
+                          <span className={styles.value}>{selectedEntity.enemyHitChance}%</span>
+                        </div>
+                      )}
+                    </div>
+                  )}
+
                   {selectedEntity.archetype && (
                     <div className={styles.infoRow}>
                       <span className={styles.label}>Type:</span>

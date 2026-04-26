@@ -41,6 +41,36 @@
       "import": "./dist/utils/pathfinding.js",
       "default": "./dist/utils/pathfinding.js"
     },
+    "./utils/dice": {
+      "types": "./dist/utils/dice.d.ts",
+      "import": "./dist/utils/dice.js",
+      "default": "./dist/utils/dice.js"
+    },
+    "./utils/dice.js": {
+      "types": "./dist/utils/dice.d.ts",
+      "import": "./dist/utils/dice.js",
+      "default": "./dist/utils/dice.js"
+    },
+    "./utils/grid": {
+      "types": "./dist/utils/grid.d.ts",
+      "import": "./dist/utils/grid.js",
+      "default": "./dist/utils/grid.js"
+    },
+    "./utils/grid.js": {
+      "types": "./dist/utils/grid.d.ts",
+      "import": "./dist/utils/grid.js",
+      "default": "./dist/utils/grid.js"
+    },
+    "./systems/status-effects": {
+      "types": "./dist/systems/status-effects.d.ts",
+      "import": "./dist/systems/status-effects.js",
+      "default": "./dist/systems/status-effects.js"
+    },
+    "./systems/status-effects.js": {
+      "types": "./dist/systems/status-effects.d.ts",
+      "import": "./dist/systems/status-effects.js",
+      "default": "./dist/systems/status-effects.js"
+    },
     "./testing": {
       "types": "./dist/testing/index.d.ts",
       "import": "./dist/testing/index.js",
