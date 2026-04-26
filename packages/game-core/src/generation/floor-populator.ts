@@ -146,20 +146,16 @@ export function populateFloor(
 
   // Assign instance colors for disambiguating multiple enemies of the same type
   const colorsByTemplate = new Map<string, number>();
-  for (const enemy of enemies.values()) {
+  const coloredEnemies = new Map<string, EnemyInstance>();
+  for (const [key, enemy] of enemies) {
     const colorIndex = colorsByTemplate.get(enemy.templateId) ?? 0;
     const instanceColor = INSTANCE_COLORS[colorIndex % INSTANCE_COLORS.length];
     colorsByTemplate.set(enemy.templateId, colorIndex + 1);
-    // Mutate the enemy to add instanceColor (safe since we just created these objects)
-    Object.defineProperty(enemy, 'instanceColor', {
-      value: instanceColor,
-      writable: false,
-      configurable: true,
-    });
+    coloredEnemies.set(key, { ...enemy, instanceColor });
   }
 
   // Pre-simulate ambient behavior for 10 rounds to position enemies naturally
-  const simulatedEnemies = preSimulateAmbientBehavior(enemies, AMBIENT_PROFILES, 10, floor.seed);
+  const simulatedEnemies = preSimulateAmbientBehavior(coloredEnemies, AMBIENT_PROFILES, 10, floor.seed);
 
   return { enemies: simulatedEnemies, objects };
 }

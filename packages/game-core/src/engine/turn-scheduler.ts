@@ -247,7 +247,6 @@ export function tickEnemyCooldowns(state: GameState): GameState {
     newEnemies.set(key, {
       ...enemy,
       abilityCooldowns: updatedCooldowns,
-      instanceColor: enemy.instanceColor,
     });
   }
 
@@ -281,7 +280,6 @@ function executeEnemyAction(
         ...enemy,
         position: action.targetPosition,
         lastKnownPlayerPos: state.player.position,
-        instanceColor: enemy.instanceColor,
       };
       newEnemies.set(posKey(action.targetPosition), movedEnemy);
 

@@ -343,3 +343,43 @@ describe('nemesis replacement and world modifiers', () => {
     }
   });
 });
+
+describe('instanceColor assignment', () => {
+  it('every enemy has an instanceColor property', () => {
+    const floor = makeFloor(42);
+    const rng = new SeededRNG(42);
+    const { enemies } = populateFloor(floor, stoneCrypt, rng);
+    for (const enemy of enemies.values()) {
+      expect(enemy.instanceColor).toBeDefined();
+    }
+  });
+
+  it('instanceColor is an enumerable property (survives JSON round-trip)', () => {
+    const floor = makeFloor(42);
+    const rng = new SeededRNG(42);
+    const { enemies } = populateFloor(floor, stoneCrypt, rng);
+    for (const enemy of enemies.values()) {
+      const roundTripped = JSON.parse(JSON.stringify(enemy)) as typeof enemy;
+      expect(roundTripped.instanceColor).toBeDefined();
+    }
+  });
+
+  it('enemies of the same template get different instanceColors', () => {
+    const floor = makeFloor(42);
+    const rng = new SeededRNG(42);
+    const { enemies } = populateFloor(floor, stoneCrypt, rng);
+
+    const colorsByTemplate = new Map<string, string[]>();
+    for (const enemy of enemies.values()) {
+      const colors = colorsByTemplate.get(enemy.templateId) ?? [];
+      colors.push(enemy.instanceColor!);
+      colorsByTemplate.set(enemy.templateId, colors);
+    }
+
+    for (const [templateId, colors] of colorsByTemplate) {
+      if (colors.length >= 2) {
+        expect(new Set(colors).size, `template ${templateId} should have distinct colors`).toBe(colors.length);
+      }
+    }
+  });
+});
