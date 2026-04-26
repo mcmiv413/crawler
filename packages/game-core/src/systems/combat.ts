@@ -1,9 +1,9 @@
 import type {
   AttackResult, CombatContext, StatusId, BalanceConfig,
 } from '@dungeon/contracts';
-import { COMBAT } from '@dungeon/content';
+import { COMBAT, getDamageBand, DAMAGE_BAND_PROFILES } from '@dungeon/content';
 import type { RNG } from '@dungeon/contracts';
-import { rollDamage, calculateHitChance, applyDefense } from '../utils/dice.js';
+import { rollDamage, rollDamageBetween, calculateHitChance, applyDefense } from '../utils/dice.js';
 
 /**
  * 9-step combat resolution (SRD §8):
@@ -66,7 +66,21 @@ export function resolveAttack(
 
   // Step 4: Damage calculation
   const criticalHit = rng.chance(combatConfig.critChance);
-  let baseDamage = rollDamage(ctx.attackerAttack, 0.15, rng);
+  let baseDamage: number;
+
+  // Use weapon damage profile if available (NEW), otherwise fall back to old system
+  if (ctx.weaponDamageProfile !== undefined && ctx.weaponBaseDamage !== undefined) {
+    // NEW: weapon-based damage range
+    const profile = ctx.weaponDamageProfile as keyof typeof DAMAGE_BAND_PROFILES;
+    const band = getDamageBand(ctx.weaponBaseDamage, profile);
+    const totalMin = band.min + ctx.attackerAttack;
+    const totalMax = band.max + ctx.attackerAttack;
+    baseDamage = rollDamageBetween(totalMin, totalMax, rng);
+  } else {
+    // Backward compatibility: old 0.15 variance system
+    baseDamage = rollDamage(ctx.attackerAttack, 0.15, rng);
+  }
+
   if (criticalHit === true) {
     baseDamage = Math.round(baseDamage * combatConfig.critMultiplier);
   }

@@ -1,5 +1,5 @@
 import type { GameState, WeaponType } from '@dungeon/contracts';
-import { STATUS_DEFINITIONS, ABILITY_DEFINITIONS, ENCHANTMENT_BY_ID, XP_TABLE, FACTIONS, getRarityColor, BIOMES, daggerDisarm, daggerSetTrap } from '@dungeon/content';
+import { STATUS_DEFINITIONS, ABILITY_DEFINITIONS, ENCHANTMENT_BY_ID, XP_TABLE, FACTIONS, getRarityColor, BIOMES, daggerDisarm, daggerSetTrap, getDamageBand, getWeaponDamageProfile } from '@dungeon/content';
 import type { PlayerHudView, StatusView, AbilityView, EquippedItemView, EnchantmentView, NemesisInfo, FactionStanding } from '../game-view.js';
 import { calculateStatBreakdown } from './stat-breakdown-builder.js';
 
@@ -141,7 +141,7 @@ export function buildPlayerHud(state: GameState): PlayerHudView {
   // Build faction standings
   const factionStandings: FactionStanding[] = state.world.factions.map(f => {
     const factionDef = FACTIONS.get(f.id);
-    
+
     // Find enemies in current dungeon that belong to this faction
     const mutableEnemiesInCurrentDungeon: string[] = [];
     if (state.run) {
@@ -163,6 +163,20 @@ export function buildPlayerHud(state: GameState): PlayerHudView {
     };
   });
 
+  // Calculate total damage range (attack stat + weapon damage range)
+  let totalDamageMin = p.stats.attack;
+  let totalDamageMax = p.stats.attack;
+  if (p.equipment.weapon !== null) {
+    const weapon = state.itemRegistry.items.get(p.equipment.weapon);
+    if (weapon && 'weapon' in weapon) {
+      const w = weapon.weapon;
+      const profile = getWeaponDamageProfile(w.weaponType, w.weaponRange);
+      const band = getDamageBand(w.damage, profile);
+      totalDamageMin = band.min + p.stats.attack;
+      totalDamageMax = band.max + p.stats.attack;
+    }
+  }
+
   return {
     name: p.name,
     level: p.level,
@@ -173,6 +187,8 @@ export function buildPlayerHud(state: GameState): PlayerHudView {
     accuracy: p.stats.accuracy,
     evasion: p.stats.evasion,
     speed: p.stats.speed,
+    totalDamageMin,
+    totalDamageMax,
     resistances: p.stats.resistances ?? {},
     gold: p.gold,
     floor: state.run?.floor.depth ?? p.floor,
