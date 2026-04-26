@@ -127,7 +127,7 @@ export function resolveEnemyAbility(
   let events: DomainEvent[] = [];
 
   // Set ability cooldown after use
-  let updatedEnemy = { ...enemy, instanceColor: enemy.instanceColor };
+  let updatedEnemy = { ...enemy };
   if (updatedEnemy.abilityCooldowns === undefined) {
     updatedEnemy = { ...updatedEnemy, abilityCooldowns: {} };
   }
