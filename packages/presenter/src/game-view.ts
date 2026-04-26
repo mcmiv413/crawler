@@ -204,6 +204,7 @@ export interface EntityView {
   readonly isNemesis?: boolean;
   readonly nemesisName?: string;
   readonly spriteName?: string;  // Atlas sprite name for rendering
+  readonly instanceColor?: string;  // hex color for visual disambiguation when 2+ of same type visible
 }
 
 export interface InspectableEntityView {

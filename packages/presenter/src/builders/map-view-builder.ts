@@ -115,26 +115,36 @@ export function buildMapView(state: GameState): MapView | null {
   };
 
   // Build visible enemies
-  const enemyEntities = Array.from(state.run.enemies)
+  const visibleEnemies = Array.from(state.run.enemies)
     .filter(([key]) => floor.cells.get(key)?.visibility === 'visible')
-    .map(([, enemy]): EntityView => {
-      const template = ENEMY_TEMPLATES.get(enemy.templateId);
-      return {
-        id: enemy.id,
-        x: enemy.position.x,
-        y: enemy.position.y,
-        ascii: enemy.ascii,
-        color: getEnemyColor(enemy),
-        name: enemy.name,
-        type: 'enemy',
-        health: enemy.stats.health,
-        maxHealth: enemy.stats.maxHealth,
-        templateId: enemy.templateId,
-        isNemesis: !!enemy.nemesisId,
-        nemesisName: enemy.nemesisId ? enemy.name : undefined,
-        spriteName: template?.spriteName,
-      };
-    });
+    .map(([, enemy]) => enemy);
+
+  // Count visible enemies by templateId to determine which should show instance colors
+  const templateIdCounts = new Map<string, number>();
+  for (const enemy of visibleEnemies) {
+    templateIdCounts.set(enemy.templateId, (templateIdCounts.get(enemy.templateId) ?? 0) + 1);
+  }
+
+  const enemyEntities = visibleEnemies.map((enemy): EntityView => {
+    const template = ENEMY_TEMPLATES.get(enemy.templateId);
+    const showInstanceColor = (templateIdCounts.get(enemy.templateId) ?? 0) >= 2;
+    return {
+      id: enemy.id,
+      x: enemy.position.x,
+      y: enemy.position.y,
+      ascii: enemy.ascii,
+      color: getEnemyColor(enemy),
+      name: enemy.name,
+      type: 'enemy',
+      health: enemy.stats.health,
+      maxHealth: enemy.stats.maxHealth,
+      templateId: enemy.templateId,
+      isNemesis: !!enemy.nemesisId,
+      nemesisName: enemy.nemesisId ? enemy.name : undefined,
+      spriteName: template?.spriteName,
+      instanceColor: showInstanceColor ? enemy.instanceColor : undefined,
+    };
+  });
 
   // Build visible objects
   const objectEntities = Array.from(state.run.objects ?? new Map())
