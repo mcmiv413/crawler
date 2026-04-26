@@ -362,3 +362,25 @@ export interface InventoryItemView {
   readonly weaponStats?: { damage: number; damageType: string; accuracy: number; speed: number; weaponRange: number; minRange?: number };
   readonly armorStats?: { defense: number; evasionPenalty: number; slot: string; enchantmentSlots: number; enchantments: readonly (string | null)[] };
 }
+
+// ── Movement animation types ──────────────────────────────────────────────
+
+/**
+ * Visual style of a movement animation.
+ * Derived from EnemyTemplate.movementBehaviorId or archetype in buildAnimationSequence.
+ */
+export type MoveAnimStyle =
+  | 'step'    // Player — snappy ease-out cubic
+  | 'slide'   // Default enemy — ease-out quadratic
+  | 'dart'    // wall_stalker — ease-in cubic, explosive start
+  | 'drift'   // rearline_anchor — ease-in-out quintic, floaty
+  | 'stomp'   // chokepoint_holder — back ease-out, overshoots then settles
+  | 'lurch';  // ambush_idle — frozen for 25% then rushes
+
+export interface MoveAnimationEntry {
+  readonly entityId:   import('@dungeon/contracts').EntityId;
+  readonly fromPos:    { readonly x: number; readonly y: number };
+  readonly toPos:      { readonly x: number; readonly y: number };
+  readonly style:      MoveAnimStyle;
+  readonly durationMs: number;
+}

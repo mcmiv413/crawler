@@ -1,27 +1,25 @@
 import { useEffect, useRef } from 'react';
-import type { AnimatedEvent, BumpAnimationEntry, CombatIndicatorEntry } from '@dungeon/presenter';
-import { emitBumpAnimation } from '../components/BumpAnimations.js';
+import type { AnimatedEvent, BumpAnimationEntry, CombatIndicatorEntry, MoveAnimationEntry } from '@dungeon/presenter';
+import { emitBumpAnimation, emitMoveAnimation } from '../components/BumpAnimations.js';
 import { emitCombatIndicator } from '../components/CombatIndicators.js';
 
 /**
- * Central orchestrator for all combat animations.
+ * Central orchestrator for all combat and movement animations.
  * Takes sequenced animation events from the presenter and emits them
  * at the correct times to create a fluid, turn-based animation sequence.
  */
 export function useAnimationOrchestrator(animatedEvents: readonly AnimatedEvent[]): void {
   const previousRef = useRef<readonly AnimatedEvent[]>([]);
-  const timeoutsRef = useRef<NodeJS.Timeout[]>([]);
+  const timeoutsRef = useRef<ReturnType<typeof setTimeout>[]>([]);
 
   useEffect(() => {
     const previous = previousRef.current;
 
-    // Clear any pending timeouts from previous render
     for (const timeout of timeoutsRef.current) {
       clearTimeout(timeout);
     }
     timeoutsRef.current = [];
 
-    // Emit events new or different from the previous array
     for (const animEvent of animatedEvents) {
       const wasAlreadyEmitted = previous.some(
         p =>
@@ -33,11 +31,16 @@ export function useAnimationOrchestrator(animatedEvents: readonly AnimatedEvent[
       );
 
       if (!wasAlreadyEmitted) {
-        // Schedule the emission at the correct delay
         const timeout = setTimeout(() => {
           if (animEvent.type === 'bump') {
             emitBumpAnimation(animEvent.data as BumpAnimationEntry);
-          } else if (animEvent.type === 'damage' || animEvent.type === 'heal' || animEvent.type === 'status') {
+          } else if (animEvent.type === 'move') {
+            emitMoveAnimation(animEvent.data as MoveAnimationEntry);
+          } else if (
+            animEvent.type === 'damage' ||
+            animEvent.type === 'heal' ||
+            animEvent.type === 'status'
+          ) {
             emitCombatIndicator(
               (animEvent.data as CombatIndicatorEntry).x,
               (animEvent.data as CombatIndicatorEntry).y,
@@ -53,7 +56,6 @@ export function useAnimationOrchestrator(animatedEvents: readonly AnimatedEvent[
 
     previousRef.current = animatedEvents;
 
-    // Cleanup on unmount or dependency change
     return () => {
       for (const timeout of timeoutsRef.current) {
         clearTimeout(timeout);
@@ -64,32 +66,45 @@ export function useAnimationOrchestrator(animatedEvents: readonly AnimatedEvent[
 }
 
 function isSameAnimationData(
-  a: BumpAnimationEntry | CombatIndicatorEntry,
-  b: BumpAnimationEntry | CombatIndicatorEntry,
+  a: BumpAnimationEntry | CombatIndicatorEntry | MoveAnimationEntry,
+  b: BumpAnimationEntry | CombatIndicatorEntry | MoveAnimationEntry,
 ): boolean {
-  // Check if both are BumpAnimationEntry
-  if ('attackerId' in a && 'attackerId' in b) {
-    const bumpa = a as BumpAnimationEntry;
-    const bumpb = b as BumpAnimationEntry;
+  // MoveAnimationEntry — has entityId
+  if ('entityId' in a && 'entityId' in b) {
+    const ma = a as MoveAnimationEntry;
+    const mb = b as MoveAnimationEntry;
     return (
-      bumpa.attackerId === bumpb.attackerId &&
-      bumpa.defenderId === bumpb.defenderId &&
-      bumpa.attackerPos.x === bumpb.attackerPos.x &&
-      bumpa.attackerPos.y === bumpb.attackerPos.y &&
-      bumpa.defenderPos.x === bumpb.defenderPos.x &&
-      bumpa.defenderPos.y === bumpb.defenderPos.y
+      ma.entityId    === mb.entityId &&
+      ma.fromPos.x   === mb.fromPos.x &&
+      ma.fromPos.y   === mb.fromPos.y &&
+      ma.toPos.x     === mb.toPos.x &&
+      ma.toPos.y     === mb.toPos.y
     );
   }
 
-  // Both are CombatIndicatorEntry
-  if ('text' in a && 'text' in b) {
-    const indica = a as CombatIndicatorEntry;
-    const indicb = b as CombatIndicatorEntry;
+  // BumpAnimationEntry — has attackerId
+  if ('attackerId' in a && 'attackerId' in b) {
+    const ba = a as BumpAnimationEntry;
+    const bb = b as BumpAnimationEntry;
     return (
-      indica.x === indicb.x &&
-      indica.y === indicb.y &&
-      indica.text === indicb.text &&
-      indica.type === indicb.type
+      ba.attackerId     === bb.attackerId &&
+      ba.defenderId     === bb.defenderId &&
+      ba.attackerPos.x  === bb.attackerPos.x &&
+      ba.attackerPos.y  === bb.attackerPos.y &&
+      ba.defenderPos.x  === bb.defenderPos.x &&
+      ba.defenderPos.y  === bb.defenderPos.y
+    );
+  }
+
+  // CombatIndicatorEntry — has text
+  if ('text' in a && 'text' in b) {
+    const ia = a as CombatIndicatorEntry;
+    const ib = b as CombatIndicatorEntry;
+    return (
+      ia.x    === ib.x &&
+      ia.y    === ib.y &&
+      ia.text === ib.text &&
+      ia.type === ib.type
     );
   }
 
