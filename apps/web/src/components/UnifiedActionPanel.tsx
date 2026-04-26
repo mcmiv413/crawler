@@ -217,7 +217,7 @@ export function UnifiedActionPanel({
         });
       }
       case 'SWAP':
-        return !!view.inventory.equipped.secondaryWeapon; // Only enabled if secondary weapon exists
+        return !!view.inventory.equipped.weapon; // allows swap-to-unarmed
       case 'ABILITY':
         return view.player.abilities.some((a) => a.ready);
       case 'INTERACT':

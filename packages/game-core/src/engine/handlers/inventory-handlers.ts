@@ -11,7 +11,16 @@ import { isPlayerThreatened } from '../../systems/threat.js';
 export function handleEquip(state: GameState, itemId: string): CommandResult {
   // Block equip if player is threatened (under immediate attack range)
   if (state.phase === 'dungeon' && isPlayerThreatened(state)) {
-    return { state, events: [], runEnded: false };
+    return {
+      state,
+      events: [{
+        type: 'EQUIP_BLOCKED',
+        reason: 'Cannot change equipment while enemies are in threat range.',
+        timestamp: Date.now(),
+        turnNumber: state.turnNumber,
+      }],
+      runEnded: false,
+    };
   }
 
   const result = equipItem(state, itemId as EntityId);
@@ -21,7 +30,16 @@ export function handleEquip(state: GameState, itemId: string): CommandResult {
 export function handleUnequip(state: GameState, itemId: string): CommandResult {
   // Block unequip if player is threatened (under immediate attack range)
   if (state.phase === 'dungeon' && isPlayerThreatened(state)) {
-    return { state, events: [], runEnded: false };
+    return {
+      state,
+      events: [{
+        type: 'EQUIP_BLOCKED',
+        reason: 'Cannot change equipment while enemies are in threat range.',
+        timestamp: Date.now(),
+        turnNumber: state.turnNumber,
+      }],
+      runEnded: false,
+    };
   }
 
   const result = unequipItem(state, itemId as EntityId);

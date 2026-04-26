@@ -91,8 +91,11 @@ export function ItemInspectModal({
               <SectionLabel label="Weapon Stats" color={colors.gold} />
               <div style={{ fontSize: 11, color: colors.text, lineHeight: 1.6 }}>
                 <div>
-                  Damage: {(item as InventoryItemView).weaponStats!.damage}{' '}
-                  {(item as InventoryItemView).weaponStats!.damageType}
+                  Damage: {(() => {
+                    const ws = (item as InventoryItemView).weaponStats!;
+                    const dmg = ws.damageMin != null ? `${ws.damageMin}–${ws.damageMax}` : `${ws.damage}`;
+                    return `${dmg} ${ws.damageType}`;
+                  })()} 
                 </div>
                 <div>Accuracy: {(item as InventoryItemView).weaponStats!.accuracy}</div>
                 <div>Speed: {(item as InventoryItemView).weaponStats!.speed}</div>

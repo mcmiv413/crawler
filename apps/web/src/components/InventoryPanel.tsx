@@ -8,9 +8,11 @@ import { SectionLabel } from './ui/index.js';
 function itemStatText(item: InventoryItemView): string {
   let text = '';
   if (item.weaponStats) {
-    text += `${item.weaponStats.damage} ${item.weaponStats.damageType} dmg`;
-    if (item.weaponStats.weaponRange && item.weaponStats.weaponRange > 1) {
-      text += ` | range: ${item.weaponStats.weaponRange}`;
+    const ws = item.weaponStats;
+    const dmg = ws.damageMin != null ? `${ws.damageMin}–${ws.damageMax}` : `${ws.damage}`;
+    text += `${dmg} ${ws.damageType} dmg`;
+    if (ws.weaponRange && ws.weaponRange > 1) {
+      text += ` | range: ${ws.weaponRange}`;
     }
   }
   if (item.armorStats) {

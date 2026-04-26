@@ -1,5 +1,6 @@
 import React, { useState, useEffect, useMemo } from 'react';
 import type { GameView } from '@dungeon/presenter';
+import { getDamageBand } from '@dungeon/content';
 import { VP_WIDTH, VP_HEIGHT } from '../utils/viewport.js';
 import { TAB_BAR_HEIGHT, BUMP_ANIMATION_DURATION_MS, COMBAT_INDICATOR_FADEOUT_MS } from '../config/ui-config.js';
 import { PlayerHud } from './PlayerHud.js';
@@ -158,9 +159,16 @@ export function DungeonPhase({
   const [showInspectModal, setShowInspectModal] = useState(false);
   useAnimationOrchestrator(view.animatedEvents);
 
-  // Get equipped weapon
-  const equippedWeapon = (view.player.equippedItems ?? []).find(item => item.slot === 'weapon');
-  const weaponDisplay = equippedWeapon ? `[${equippedWeapon.name}]` : 'Unarmed';
+  // Get equipped weapon and compute damage range
+  const equippedWeapon = view.inventory.equipped.weapon;
+  let dmgDisplay: string;
+  if (equippedWeapon?.weaponStats) {
+    dmgDisplay = `${equippedWeapon.weaponStats.damageMin}–${equippedWeapon.weaponStats.damageMax}`;
+  } else {
+    const { min, max } = getDamageBand(view.player.attack, 'player_unarmed');
+    dmgDisplay = `${min}–${max}`;
+  }
+  const weaponDisplay = equippedWeapon ? `[${equippedWeapon.name}] ${dmgDisplay}` : `Unarmed ${dmgDisplay}`;
 
   // Mobile: same layout as desktop - action panel always visible with fixed combat log
   if (isMobile) {
@@ -221,6 +229,9 @@ export function DungeonPhase({
 
         {/* Error message */}
         {error && <p style={{ color: '#f44', fontSize: 10, margin: '4px 0 0 0' }}>{error}</p>}
+
+        {/* Notification (amber for info like EQUIP_BLOCKED) */}
+        {view.notification && <p style={{ color: '#fa0', fontSize: 10, margin: '4px 0 0 0' }}>{view.notification}</p>}
 
         {import.meta.env.VITE_DEBUG === 'true' && <DebugPanel />}
       </div>
@@ -285,6 +296,9 @@ export function DungeonPhase({
 
       {/* Error message */}
       {error && <p style={{ color: '#f44', flexShrink: 0, marginTop: 8 }}>{error}</p>}
+
+      {/* Notification (amber for info like EQUIP_BLOCKED) */}
+      {view.notification && <p style={{ color: '#fa0', flexShrink: 0, marginTop: 8 }}>{view.notification}</p>}
 
       {import.meta.env.VITE_DEBUG === 'true' && <DebugPanel />}
     </div>
