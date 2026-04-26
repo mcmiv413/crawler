@@ -127,6 +127,11 @@ export interface ItemUsedEvent extends BaseEvent {
   readonly effect: string;
 }
 
+export interface EquipBlockedEvent extends BaseEvent {
+  readonly type: 'EQUIP_BLOCKED';
+  readonly reason: string;
+}
+
 export interface EnemyAlertedEvent extends BaseEvent {
   readonly type: 'ENEMY_ALERTED';
   readonly enemyId: EntityId;
@@ -355,6 +360,7 @@ export type DomainEvent =
   | PhaseChangedEvent
   | TownStateChangedEvent
   | ItemUsedEvent
+  | EquipBlockedEvent
   | EnemyAlertedEvent
   | EnemyAmbientStateChangedEvent
   | LevelUpEvent

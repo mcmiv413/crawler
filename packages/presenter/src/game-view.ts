@@ -78,6 +78,7 @@ export interface GameView {
   readonly inspectableEntities: readonly InspectableEntityView[];
   readonly recentlyDefeatedNemesis: NemesisView | null;
   readonly debugMode: boolean;
+  readonly notification?: string;
 }
 
 export interface AbilityView {

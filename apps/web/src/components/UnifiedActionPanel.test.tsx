@@ -616,8 +616,32 @@ describe('UnifiedActionPanel', () => {
       expect(useButton).not.toBeDisabled();
     });
 
-    it('disables Swap button when no secondary weapon', () => {
+    it('enables Swap button when primary weapon exists', () => {
       const view = createMockGameView();
+
+      render(
+        <UnifiedActionPanel
+          view={view}
+          onSendCommand={mockSendCommand}
+          onInspectOpen={mockInspectOpen}
+        />
+      );
+
+      const swapButton = findActionButton('Swap');
+      expect(swapButton).toBeDefined();
+      expect(swapButton).not.toBeDisabled();
+    });
+
+    it('disables Swap button when no primary weapon', () => {
+      const view = createMockGameView({
+        inventory: {
+          ...createMockGameView().inventory,
+          equipped: {
+            ...createMockGameView().inventory.equipped,
+            weapon: null,
+          },
+        },
+      });
 
       render(
         <UnifiedActionPanel

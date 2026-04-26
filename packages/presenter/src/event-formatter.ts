@@ -92,6 +92,12 @@ const EVENT_FORMATTERS = {
     timestamp: event.timestamp,
   }),
 
+  'EQUIP_BLOCKED': (event) => ({
+    text: event.reason,
+    type: 'info',
+    timestamp: event.timestamp,
+  }),
+
   'ENEMY_ALERTED': (event) => ({
     text: `${event.enemyName} notices you!`,
     type: 'info',

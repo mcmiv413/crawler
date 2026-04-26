@@ -752,9 +752,13 @@ describe('handleWait', () => {
 
 describe('handleUnequip', () => {
   it('removes equipped item from slot and recalculates stats', () => {
-    const state = createTestGameStateInCombat({ equippedWeaponId: 'rusty_sword' });
-    const weaponId = state.player.equipment.weapon;
-    if (!weaponId) throw new Error('Expected weapon to be equipped in test setup');
+    const weaponId = entityId('rusty_sword');
+    const state = createTestGameState({
+      player: {
+        equipment: { weapon: weaponId, secondaryWeapon: null, chest: null, head: null, gloves: null, boots: null, ring1: null, ring2: null },
+      },
+      phase: 'town',
+    });
     const rng = new SeededRNG(1);
 
     const result = handleCommand(state, createUnequipCommand(weaponId), rng);
