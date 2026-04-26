@@ -43,3 +43,6 @@ mcp-config.json
 !readme.MD
 !docs/**/*.md
 .vercel
+
+# Windows zone identifier files
+*:Zone.Identifier
