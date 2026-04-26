@@ -347,3 +347,71 @@
   color: #cdd0d6;
   flex: 1;
 }
+
+.sectionLabel {
+  color: #7b8090;
+  font-size: 10px;
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+  margin-bottom: 8px;
+  margin-top: 12px;
+  font-weight: 600;
+}
+
+.affinitiesSection {
+  margin-bottom: 16px;
+}
+
+.affinitiesList {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+
+.affinityRow {
+  display: flex;
+  justify-content: space-between;
+  padding: 6px 8px;
+  background-color: #0a0b0e;
+  border: 1px solid #1e2228;
+  border-radius: 2px;
+  font-size: 11px;
+}
+
+.affinityType {
+  color: #cdd0d6;
+  text-transform: capitalize;
+}
+
+.affinityValue {
+  font-weight: 600;
+  color: #cdd0d6;
+}
+
+.affinityValue.resistance {
+  color: #7dc940;
+}
+
+.affinityValue.vulnerability {
+  color: #c85a4a;
+}
+
+.statusesSection {
+  margin-bottom: 16px;
+}
+
+.statusesList {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+
+.statusItem {
+  padding: 6px 8px;
+  background-color: #0a0b0e;
+  border: 1px solid #1e2228;
+  border-radius: 2px;
+  font-size: 11px;
+  color: #cdd0d6;
+  text-transform: capitalize;
+}

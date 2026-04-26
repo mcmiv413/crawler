@@ -14,29 +14,35 @@ interface CharacterScreenProps {
 
 function ResistancesSection({ player }: { player: PlayerHudView }) {
   if (!player.resistances) return null;
-  const hasResistances = Object.keys(player.resistances).some((r) => (player.resistances as Record<string, number>)[r]! > 0);
-  if (!hasResistances) return null;
+  const hasAffinities = Object.values(player.resistances).some((v) => v !== 0);
+  if (!hasAffinities) return null;
 
   return (
     <div style={{ marginBottom: 12 }}>
-      <div style={{ color: '#888', fontSize: 11, marginBottom: 4, fontWeight: 'bold' }}>RESISTANCES</div>
+      <div style={{ color: '#888', fontSize: 11, marginBottom: 4, fontWeight: 'bold' }}>AFFINITIES</div>
       <div style={{ display: 'flex', flexWrap: 'wrap', gap: '4px' }}>
-        {Object.entries(player.resistances).map(([type, value]) =>
-          value > 0 ? (
+        {Object.entries(player.resistances).map(([type, value]) => {
+          if (value === 0) return null;
+          const isResistance = value > 0;
+          const bgColor = isResistance ? '#1a2a2a' : '#2a1a1a';
+          const textColor = isResistance ? '#6f6' : '#f66';
+          const borderColor = isResistance ? '#2a4a2a' : '#4a2a2a';
+
+          return (
             <div
               key={type}
               style={{
                 padding: '2px 6px',
-                background: '#1a2a2a',
-                color: '#6f6',
-                border: '1px solid #2a4a2a',
+                background: bgColor,
+                color: textColor,
+                border: `1px solid ${borderColor}`,
                 fontSize: 11,
               }}
             >
-              {type}: +{Math.round(value * 100)}%
+              {type}: {value > 0 ? '+' : ''}{Math.round(value)}%
             </div>
-          ) : null,
-        )}
+          );
+        })}
       </div>
     </div>
   );

@@ -155,6 +155,35 @@ export function InspectModal({
                       <span className={styles.value}>{selectedEntity.archetype}</span>
                     </div>
                   )}
+
+                  {selectedEntity.affinities && Object.keys(selectedEntity.affinities).length > 0 && (
+                    <div className={styles.affinitiesSection}>
+                      <div className={styles.sectionLabel}>Affinities</div>
+                      <div className={styles.affinitiesList}>
+                        {Object.entries(selectedEntity.affinities).map(([damageType, value]) => (
+                          <div key={damageType} className={styles.affinityRow}>
+                            <span className={styles.affinityType}>{damageType}</span>
+                            <span className={`${styles.affinityValue} ${value > 0 ? styles.resistance : value < 0 ? styles.vulnerability : ''}`}>
+                              {value > 0 ? '+' : ''}{value}%
+                            </span>
+                          </div>
+                        ))}
+                      </div>
+                    </div>
+                  )}
+
+                  {selectedEntity.statuses && selectedEntity.statuses.length > 0 && (
+                    <div className={styles.statusesSection}>
+                      <div className={styles.sectionLabel}>Status Effects</div>
+                      <div className={styles.statusesList}>
+                        {selectedEntity.statuses.map((status, idx) => (
+                          <div key={`${status}-${idx}`} className={styles.statusItem}>
+                            {status}
+                          </div>
+                        ))}
+                      </div>
+                    </div>
+                  )}
                 </>
               )}
 
