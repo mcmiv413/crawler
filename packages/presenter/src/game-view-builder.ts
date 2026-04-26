@@ -73,21 +73,30 @@ function buildInspectableEntities(state: GameState): readonly InspectableEntityV
   if (!state.run) return [];
 
   const floor = state.run.floor;
-  const seenTemplateIds = new Set<string>();
   const seenObjectKeys = new Set<string>();
   const playerX = state.player.position.x;
   const playerY = state.player.position.y;
 
   const mutableEntities: InspectableEntityView[] = [];
 
-  // Build visible enemies — deduplicate by templateId (only show one of each type)
+  // Count visible enemies by templateId to determine when to show colors
+  const visibleEnemies = Array.from(state.run.enemies.values()).filter(
+    (e) => floor.cells.get(`${e.position.x},${e.position.y}`)?.visibility === 'visible'
+  );
+  const templateIdCounts = new Map<string, number>();
+  for (const enemy of visibleEnemies) {
+    templateIdCounts.set(enemy.templateId, (templateIdCounts.get(enemy.templateId) ?? 0) + 1);
+  }
+
+  // Build visible enemies — no deduplication, include instanceColor when 2+ of same type visible
   for (const [key, enemy] of state.run.enemies) {
     if (floor.cells.get(key)?.visibility !== 'visible') continue;
-    if (seenTemplateIds.has(enemy.templateId)) continue;
-    seenTemplateIds.add(enemy.templateId);
 
     const template = ENEMY_TEMPLATES.get(enemy.templateId);
     if (!template) continue;
+
+    // Only show instanceColor if there are 2+ of this templateId visible
+    const showInstanceColor = templateIdCounts.get(enemy.templateId) ?? 0 >= 2;
 
     mutableEntities.push({
       id: enemy.id,
@@ -108,6 +117,7 @@ function buildInspectableEntities(state: GameState): readonly InspectableEntityV
       affinities: template.affinities && Object.keys(template.affinities).length > 0 ? template.affinities : undefined,
       statuses: enemy.statuses.map(s => STATUS_DEFINITIONS.get(s.id)?.name ?? s.id),
       threatRating: computeThreatRating(enemy, state),
+      instanceColor: showInstanceColor ? enemy.instanceColor : undefined,
     });
   }
 

@@ -139,12 +139,27 @@
   min-width: 0;
 }
 
+.entityNameRow {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  width: 100%;
+}
+
 .entityName {
   font-weight: 600;
   white-space: nowrap;
   overflow: hidden;
   text-overflow: ellipsis;
   color: #cdd0d6;
+}
+
+.instanceColorSquare {
+  flex-shrink: 0;
+  width: 8px;
+  height: 8px;
+  border-radius: 1px;
+  display: inline-block;
 }
 
 .entityHealth {

@@ -1,5 +1,14 @@
 /** Balance tables — authoritative tuning constants for the game */
 
+/** Color pool for enemy instance disambiguation. Assigned in spawn order. */
+export const INSTANCE_COLORS = [
+  '#4A9EFF',  // blue
+  '#FF8C42',  // orange
+  '#4CAF50',  // green
+  '#9C27B0',  // purple
+  '#FFD700',  // yellow
+] as const;
+
 /** Base player stats at level 1 (50% health reduction for harder difficulty) */
 export const BASE_PLAYER_STATS = {
   maxHealth: 36,

@@ -111,4 +111,5 @@ export interface EnemyInstance extends EnemyTemplate {
   readonly ambientState?: AmbientState; // current state in state machine
   readonly ambientStateAge?: number; // turns in current state, for triggering transitions
   readonly anchorPosition?: Position; // spawn position, for guarding/patrolling
+  readonly instanceColor?: string; // hex color for visual disambiguation when 2+ of same type visible
 }

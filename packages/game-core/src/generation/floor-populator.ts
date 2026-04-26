@@ -1,7 +1,7 @@
 import type { DungeonFloor, EnemyInstance, ObjectInstance, Position } from '@dungeon/contracts';
 import { entityId, posKey } from '@dungeon/contracts';
 import type { EnemyTemplate, ObjectTemplate } from '@dungeon/contracts';
-import { MAP_GENERATION, getFloorScalingMultipliers, ENEMY_TEMPLATES, ENEMIES_BY_BIOME, OBJECT_TEMPLATES, AMBIENT_PROFILES, OBJECT_POOL, dungeonOgre, chest } from '@dungeon/content';
+import { MAP_GENERATION, getFloorScalingMultipliers, ENEMY_TEMPLATES, ENEMIES_BY_BIOME, OBJECT_TEMPLATES, AMBIENT_PROFILES, OBJECT_POOL, dungeonOgre, chest, INSTANCE_COLORS } from '@dungeon/content';
 import type { BiomeDefinition } from '@dungeon/content';
 import type { SeededRNG } from '../utils/rng.js';
 import { generateId } from '../utils/id.js';
@@ -142,6 +142,20 @@ export function populateFloor(
       enemies.set(posKey(nemesisPos), nemesisInstance);
       break; // Only spawn one nemesis per floor
     }
+  }
+
+  // Assign instance colors for disambiguating multiple enemies of the same type
+  const colorsByTemplate = new Map<string, number>();
+  for (const enemy of enemies.values()) {
+    const colorIndex = colorsByTemplate.get(enemy.templateId) ?? 0;
+    const instanceColor = INSTANCE_COLORS[colorIndex % INSTANCE_COLORS.length];
+    colorsByTemplate.set(enemy.templateId, colorIndex + 1);
+    // Mutate the enemy to add instanceColor (safe since we just created these objects)
+    Object.defineProperty(enemy, 'instanceColor', {
+      value: instanceColor,
+      writable: false,
+      configurable: true,
+    });
   }
 
   // Pre-simulate ambient behavior for 10 rounds to position enemies naturally

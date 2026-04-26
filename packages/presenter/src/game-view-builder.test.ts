@@ -1297,7 +1297,7 @@ describe('buildInspectableEntities', () => {
     expect(view.inspectableEntities).toEqual([]);
   });
 
-  it('deduplicates enemies by templateId', () => {
+  it('does NOT deduplicate enemies by templateId (Phase 3: each instance is inspectable)', () => {
     const enemy1 = createTestEnemy({ position: { x: 1, y: 0 } });
     const enemy2 = createTestEnemy({ id: entityId('e2'), position: { x: 2, y: 0 } });
 
@@ -1320,8 +1320,8 @@ describe('buildInspectableEntities', () => {
     const state = createTestGameStateInCombat();
     const state2 = { ...state, run: modifiedRun };
     const view = buildGameView(state2);
-    // Both have same templateId, so only one should appear
-    expect(view.inspectableEntities.filter(e => e.entityType === 'enemy')).toHaveLength(1);
+    // Both enemies should appear (not deduplicated) so player can inspect each instance at different distances
+    expect(view.inspectableEntities.filter(e => e.entityType === 'enemy')).toHaveLength(2);
   });
 
   it('sorts enemies before objects', () => {
