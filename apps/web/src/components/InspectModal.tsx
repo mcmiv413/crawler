@@ -66,7 +66,18 @@ export function InspectModal({
                   <EntitySpriteDisplay entity={entity} size="small" useSprites={useSprites} />
                 </div>
                 <div className={styles.listItemInfo}>
-                  <div className={styles.entityName}>{entity.name}</div>
+                  <div className={styles.entityNameRow}>
+                    {entity.instanceColor && (
+                      <span
+                        className={styles.instanceColorSquare}
+                        style={{
+                          backgroundColor: entity.instanceColor,
+                          boxShadow: '0 0 0 1px rgba(0, 0, 0, 0.4)',
+                        }}
+                      />
+                    )}
+                    <span className={styles.entityName}>{entity.name}</span>
+                  </div>
                   {entity.health !== undefined && (
                     <div className={styles.entityHealth}>
                       {entity.health}/{entity.maxHealth}

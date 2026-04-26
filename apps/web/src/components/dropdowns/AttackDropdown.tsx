@@ -3,11 +3,12 @@
  * Only shows enemies within weapon range and outside minimum range.
  */
 
-import type { EntityView } from '@dungeon/presenter';
+import type { EntityView, InspectableEntityView } from '@dungeon/presenter';
 import styles from './ActionDropdowns.module.css';
 
 export interface AttackDropdownProps {
   readonly enemies: readonly EntityView[];
+  readonly inspectableEntities: readonly InspectableEntityView[];
   readonly playerX: number;
   readonly playerY: number;
   readonly weaponRange: number;
@@ -21,6 +22,7 @@ function calculateDistance(x1: number, y1: number, x2: number, y2: number): numb
 
 export function AttackDropdown({
   enemies,
+  inspectableEntities,
   playerX,
   playerY,
   weaponRange,
@@ -58,6 +60,8 @@ export function AttackDropdown({
       {inRangeEnemies.map((enemy) => {
         const distance = calculateDistance(playerX, playerY, enemy.x, enemy.y);
         const healthPercent = enemy.maxHealth ? (enemy.health ?? 0) / enemy.maxHealth * 100 : 0;
+        const inspectableEntity = inspectableEntities.find((e) => e.id === enemy.id);
+        const instanceColor = inspectableEntity?.instanceColor;
 
         return (
           <button
@@ -66,6 +70,19 @@ export function AttackDropdown({
             onClick={() => onSelect(enemy.id)}
           >
             <div className={styles.targetName}>
+              {instanceColor && (
+                <span
+                  style={{
+                    display: 'inline-block',
+                    width: '8px',
+                    height: '8px',
+                    borderRadius: '1px',
+                    backgroundColor: instanceColor,
+                    boxShadow: '0 0 0 1px rgba(0, 0, 0, 0.4)',
+                    marginRight: '6px',
+                  }}
+                />
+              )}
               {enemy.nemesisName ? (
                 <>
                   <span className={styles.nemesisBadge}>⭐</span>

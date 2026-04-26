@@ -146,9 +146,11 @@ export function buildAnimationSequence(
 
   // Build ordered list: player first, then enemies by speed
   interface MoveEntry { entityId: EntityId; from: { x: number; y: number }; to: { x: number; y: number } }
+  // eslint-disable-next-line dungeon/no-array-mutation
   const orderedMoves: MoveEntry[] = [];
 
   if (playerMoveEvent) {
+    // eslint-disable-next-line dungeon/no-array-mutation
     orderedMoves.push({
       entityId: state.player.id,
       from: playerMoveEvent.from,
@@ -157,6 +159,7 @@ export function buildAnimationSequence(
   }
 
   for (const { event } of sortedEnemyMoves) {
+    // eslint-disable-next-line dungeon/no-array-mutation
     orderedMoves.push({
       entityId: event.enemyId,
       from: event.from,

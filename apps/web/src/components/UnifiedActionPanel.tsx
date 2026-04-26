@@ -287,6 +287,7 @@ export function UnifiedActionPanel({
             {dropdown.active === 'ATTACK' && (
               <AttackDropdown
                 enemies={enemies}
+                inspectableEntities={view.inspectableEntities}
                 playerX={playerPos.x}
                 playerY={playerPos.y}
                 weaponRange={weaponRange}
