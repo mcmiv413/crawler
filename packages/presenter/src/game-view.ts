@@ -145,6 +145,8 @@ export interface PlayerHudView {
   readonly accuracy: number;
   readonly evasion: number;
   readonly speed: number;
+  readonly totalDamageMin: number;  // Min damage with equipped weapon
+  readonly totalDamageMax: number;  // Max damage with equipped weapon
   readonly resistances: Record<string, number>;
   readonly gold: number;
   readonly floor: number;

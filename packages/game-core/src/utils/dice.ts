@@ -7,6 +7,13 @@ export function rollDamage(base: number, variance: number, rng: RNG): number {
   return Math.max(1, Math.round(base * multiplier));
 }
 
+/** Roll damage result between min and max values */
+export function rollDamageBetween(min: number, max: number, rng: RNG): number {
+  const range = max - min;
+  const roll = Math.round(min + rng.float(0, range));
+  return Math.max(1, roll);
+}
+
 /** Calculate hit chance: base + accuracy - evasion, clamped */
 export function calculateHitChance(
   baseHitChance: number,
