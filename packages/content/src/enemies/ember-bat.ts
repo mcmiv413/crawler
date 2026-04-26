@@ -18,7 +18,7 @@ export const emberBat = {
     weapon: {
       damageMultiplier: 1.0,
       damageType: 'fire',
-      range: 3,
+      weaponRange: 3,
     },
   },
   affinities: { fire: 0.7, frost: -0.4 },

@@ -18,7 +18,7 @@ export const dungeonOgre = {
     weapon: {
       damageMultiplier: 1.3,
       damageType: 'physical',
-      range: 1,
+      weaponRange: 1,
     },
   },
   affinities: { physical: 0.15 },

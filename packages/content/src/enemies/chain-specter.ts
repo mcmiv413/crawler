@@ -18,7 +18,7 @@ export const chainSpecter = {
     weapon: {
       damageMultiplier: 1.1,
       damageType: 'shadow',
-      range: 2,
+      weaponRange: 2,
     },
   },
   affinities: { shadow: 0.7, corruption: 0.4 },

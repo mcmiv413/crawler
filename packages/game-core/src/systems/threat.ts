@@ -25,7 +25,7 @@ export function isPlayerThreatened(state: GameState): boolean {
     const distance = chebyshevDistance(enemy.position, state.player.position);
 
     // Get weapon range from enemy equipment
-    const weaponRange = enemy.equipment.weapon.range;
+    const weaponRange = enemy.equipment.weapon.weaponRange;
 
     // Enemy can attack if within or at range
     if (distance <= weaponRange) {

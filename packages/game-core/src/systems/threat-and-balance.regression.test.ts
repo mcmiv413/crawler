@@ -83,7 +83,7 @@ describe('Regression Tests - Threat and Balance Rules', () => {
         ...enemy,
         isAlerted: true,
         position: { x: 99, y: 99 }, // Far from player at 0,0 (distance 99)
-        equipment: { ...enemy.equipment, weapon: { ...enemy.equipment.weapon, range: 1 } },
+        equipment: { ...enemy.equipment, weapon: { ...enemy.equipment.weapon, weaponRange: 1 } },
       };
 
       const updatedEnemies = new Map(state.run.enemies);
@@ -110,7 +110,7 @@ describe('Regression Tests - Threat and Balance Rules', () => {
         ...enemy,
         isAlerted: true,
         position: { x: 1, y: 0 }, // Adjacent to player at 0,0
-        equipment: { ...enemy.equipment, weapon: { ...enemy.equipment.weapon, range: 1 } },
+        equipment: { ...enemy.equipment, weapon: { ...enemy.equipment.weapon, weaponRange: 1 } },
       };
 
       const updatedEnemies = new Map(state.run.enemies);

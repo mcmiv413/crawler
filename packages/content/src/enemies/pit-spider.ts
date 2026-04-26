@@ -18,7 +18,7 @@ export const pitSpider = {
     weapon: {
       damageMultiplier: 1.0,
       damageType: 'poison',
-      range: 1,
+      weaponRange: 1,
       onHitStatus: 'poison',
       onHitChance: 0.3,
     },

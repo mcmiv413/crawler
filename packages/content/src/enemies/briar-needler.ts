@@ -18,7 +18,7 @@ export const briarNeedler = {
     weapon: {
       damageMultiplier: 1.0,
       damageType: 'poison',
-      range: 2,
+      weaponRange: 2,
       onHitStatus: 'poison',
       onHitChance: 0.4,
     },

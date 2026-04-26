@@ -18,7 +18,7 @@ export const shardPriest = {
     weapon: {
       damageMultiplier: 1.0,
       damageType: 'arcane',
-      range: 3,
+      weaponRange: 3,
     },
   },
   affinities: { arcane: 0.7 },

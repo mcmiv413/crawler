@@ -18,7 +18,7 @@ export const boneShaman = {
     weapon: {
       damageMultiplier: 1.0,
       damageType: 'shadow',
-      range: 2,
+      weaponRange: 2,
     },
   },
   affinities: { shadow: 0.6, poison: 0.3 },

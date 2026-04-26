@@ -52,7 +52,7 @@ export function createTestEnemy(overrides?: Partial<EnemyInstance>): EnemyInstan
       weapon: {
         damageMultiplier: 1.0,
         damageType: 'physical',
-        range: 1,
+        weaponRange: 1,
       },
     },
     affinities: {},

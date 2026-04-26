@@ -18,7 +18,7 @@ export const shadowLurker = {
     weapon: {
       damageMultiplier: 1.1,
       damageType: 'corruption',
-      range: 1,
+      weaponRange: 1,
     },
   },
   affinities: { corruption: 0.5 },

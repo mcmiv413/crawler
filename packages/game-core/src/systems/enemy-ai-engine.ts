@@ -134,7 +134,7 @@ function generateFeasibleActions(
   }
 
   // Attack if within weapon range (melee or ranged)
-  const weaponRange = enemy.equipment.weapon.range;
+  const weaponRange = enemy.equipment.weapon.weaponRange;
   if (dist <= weaponRange) {
     mutableActions.push({ type: 'attack', enemyId: enemy.id });
   }

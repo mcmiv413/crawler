@@ -18,7 +18,7 @@ export const goblinArcher = {
     weapon: {
       damageMultiplier: 1.0,
       damageType: 'physical',
-      range: 4,
+      weaponRange: 4,
     },
   },
   affinities: {},

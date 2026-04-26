@@ -40,7 +40,7 @@ function computeThreatRating(enemy: EnemyInstance, state: GameState): 'Low' | 'M
   const hitsToKillEnemy = Math.ceil(enemyStats.health / Math.max(1, playerMidBand));
 
   // Get range info
-  const enemyRange = enemy.equipment?.weapon?.range ?? 1;
+  const enemyRange = enemy.equipment?.weapon?.weaponRange ?? 1;
   const playerRange = (() => {
     if (state.player.equipment.weapon === null) return 1;
     const wt = state.itemRegistry.items.get(state.player.equipment.weapon);

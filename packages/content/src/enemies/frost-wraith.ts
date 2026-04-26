@@ -18,7 +18,7 @@ export const frostWraith = {
     weapon: {
       damageMultiplier: 1.0,
       damageType: 'frost',
-      range: 2,
+      weaponRange: 2,
     },
   },
   affinities: { frost: 0.8, fire: -0.5 },
