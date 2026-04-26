@@ -109,6 +109,18 @@ export function StatDetailModal({ breakdown, onClose }: StatDetailModalProps) {
         </div>
       )}
 
+      {breakdown.stat === 'defense' && (
+        <div style={{ marginBottom: 8, padding: 6, background: colors.border2, borderRadius: '2px' }}>
+          <div style={{ fontSize: 10, color: colors.muted, marginBottom: 4 }}>Damage Mitigation</div>
+          <div style={{ fontSize: 12, color: colors.text, fontWeight: 600 }}>
+            {Math.round((breakdown.total / (breakdown.total + 35)) * 100)}% damage reduction
+          </div>
+          <div style={{ fontSize: 9, color: colors.muted, marginTop: 2 }}>
+            Reduces incoming damage by {Math.round((breakdown.total / (breakdown.total + 35)) * 100)}%
+          </div>
+        </div>
+      )}
+
       <div
         style={{
           fontSize: 10,
