@@ -10,5 +10,5 @@ export const warBow: WeaponTemplate = {
   value: 55,
   stackable: false,
   maxStack: 1,
-  weapon: { damage: 9, damageType: 'physical', accuracy: 2, speed: 0, slot: 'weapon', weaponRange: 6, minRange: 2, weaponType: 'ranged' },
+  weapon: { damage: 9, damageType: 'physical', accuracy: 9, speed: 0, slot: 'weapon', weaponRange: 6, minRange: 2, weaponType: 'ranged' },
 };

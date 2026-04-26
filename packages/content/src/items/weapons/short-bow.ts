@@ -10,5 +10,5 @@ export const shortBow: WeaponTemplate = {
   value: 18,
   stackable: false,
   maxStack: 1,
-  weapon: { damage: 6, damageType: 'physical', accuracy: 4, speed: 5, slot: 'weapon', weaponRange: 5, minRange: 2, weaponType: 'ranged' },
+  weapon: { damage: 6, damageType: 'physical', accuracy: 14, speed: 5, slot: 'weapon', weaponRange: 5, minRange: 2, weaponType: 'ranged' },
 };

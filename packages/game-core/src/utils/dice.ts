@@ -24,3 +24,14 @@ export function applyDefense(damage: number, defense: number, divisor: number): 
   const reduction = defense / (defense + divisor);
   return Math.max(1, Math.round(damage * (1 - reduction)));
 }
+
+/** Apply range accuracy penalty: -dropPerTile% for each tile beyond minRange */
+export function applyRangeAccuracyPenalty(
+  accuracy: number,
+  distance: number,
+  minRange: number,
+  dropPerTile: number,
+): number {
+  const tilesOverMin = Math.max(0, distance - minRange);
+  return Math.max(0, accuracy - tilesOverMin * dropPerTile);
+}
