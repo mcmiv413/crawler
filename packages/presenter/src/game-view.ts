@@ -226,6 +226,9 @@ export interface InspectableEntityView {
   readonly affinities?: Readonly<Record<string, number>>;
   readonly statuses?: readonly string[];
   readonly threatRating?: 'Low' | 'Moderate' | 'High' | 'Deadly'; // Enemy threat assessment
+  readonly instanceColor?: string; // Hex color for disambiguating multiple enemies of same type
+  readonly playerHitChance?: number; // Hit % when player attacks this enemy (0-100)
+  readonly enemyHitChance?: number; // Hit % when enemy attacks player (0-100)
 }
 
 export interface CombatLogEntry {
@@ -327,7 +330,7 @@ export interface ShopItemView {
   readonly stock: number;
   readonly itemClass: string;  // weapon | armor | consumable
   readonly spriteName?: string;  // Atlas sprite name for rendering
-  readonly weaponData?: { readonly damage: number; readonly damageMin?: number; readonly damageMax?: number; readonly damageType: string; readonly accuracy: number; readonly speed: number; readonly weaponRange: number; readonly minRange?: number };
+  readonly weaponData?: { readonly damage: number; readonly damageMin: number; readonly damageMax: number; readonly damageType: string; readonly accuracy: number; readonly speed: number; readonly weaponRange: number; readonly minRange?: number };
   readonly armorData?: { readonly defense: number; readonly evasionPenalty: number; readonly slot: string; readonly enchantmentSlots: number };
 }
 
@@ -359,7 +362,7 @@ export interface InventoryItemView {
   readonly stackEntityIds: readonly string[];  // all EntityIds in this stack
   readonly templateId: string;        // itemId from template, for grouping
   readonly spriteName?: string;       // Atlas sprite name for rendering
-  readonly weaponStats?: { damage: number; damageType: string; accuracy: number; speed: number; weaponRange: number; minRange?: number };
+  readonly weaponStats?: { damage: number; damageMin: number; damageMax: number; damageType: string; accuracy: number; speed: number; weaponRange: number; minRange?: number };
   readonly armorStats?: { defense: number; evasionPenalty: number; slot: string; enchantmentSlots: number; enchantments: readonly (string | null)[] };
 }
 

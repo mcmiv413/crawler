@@ -1,5 +1,5 @@
 import type { GameState, TownState, NemesisRecord } from '@dungeon/contracts';
-import { ITEM_BY_ID, TOWN_DESCRIPTIONS, getFactionIdsForTemplate, isRarityBuyable, ENEMY_TEMPLATES, getRarityColor } from '@dungeon/content';
+import { ITEM_BY_ID, TOWN_DESCRIPTIONS, getFactionIdsForTemplate, isRarityBuyable, ENEMY_TEMPLATES, getRarityColor, getDamageBand, getWeaponDamageProfile } from '@dungeon/content';
 import type { TownView, FactionView, NemesisView, ShopItemView, RunSummaryStats } from '../game-view.js';
 
 function shopkeeperDiscountPct(state: GameState): number {
@@ -177,7 +177,14 @@ export function buildTownView(state: GameState): TownView {
             stock: si.stock,
             itemClass: template?.itemClass ?? 'unknown',
             spriteName: template?.spriteName,
-            weaponData: template?.itemClass === 'weapon' && 'weapon' in template ? template.weapon : undefined,
+            weaponData: template?.itemClass === 'weapon' && 'weapon' in template
+              ? (() => {
+                const weapon = template.weapon;
+                const profile = getWeaponDamageProfile(weapon.weaponType, weapon.weaponRange);
+                const { min, max } = getDamageBand(weapon.damage, profile);
+                return { damage: weapon.damage, damageMin: min, damageMax: max, damageType: weapon.damageType, accuracy: weapon.accuracy, speed: weapon.speed, weaponRange: weapon.weaponRange, minRange: weapon.minRange };
+              })()
+              : undefined,
             armorData: template?.itemClass === 'armor' && 'armor' in template ? template.armor : undefined,
           } satisfies ShopItemView;
         }),

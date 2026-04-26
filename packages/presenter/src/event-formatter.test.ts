@@ -671,6 +671,7 @@ describe('formatEvents', () => {
         'BLINK_DODGED',
         'LIFE_STEAL',
         'DEBUG_MISS_STREAK',
+        'DEBUG_DAMAGE_CALC',
         'ENEMY_AMBIENT_STATE_CHANGED',
         ...silentEventTypes,
       ];
@@ -759,6 +760,8 @@ describe('formatEvents', () => {
             return { ...base, type, hpRestored: 5, enemyName: 'Goblin' };
           case 'DEBUG_MISS_STREAK':
             return { ...base, type, playerAccuracy: 50, playerEvasion: 20, enemyAccuracy: 45, enemyEvasion: 15, rngSeed: 123, streakLength: 3 };
+          case 'DEBUG_DAMAGE_CALC':
+            return { ...base, type, attackerId: entityId('p1'), defenderId: entityId('e1'), baseDamage: 10, defenderDefense: 5, finalDamage: 8 };
           default:
             throw new Error(`Unhandled event type in test: ${type}`);
         }
