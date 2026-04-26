@@ -1,17 +1,18 @@
-import type { BumpAnimationEntry } from '@dungeon/presenter';
+import type { BumpAnimationEntry, MoveAnimationEntry } from '@dungeon/presenter';
 
 /**
- * BumpAnimations component is now a stub that only emits bump animation events.
- * The actual animation rendering happens on the canvas via useBumpAnimationState hook.
+ * BumpAnimations is a stub — animation rendering happens on the canvas.
  */
 export function BumpAnimations(): null {
   return null;
 }
 
-// Helper to emit bump animation events
-export function emitBumpAnimation(animation: BumpAnimationEntry) {
-  const event = new CustomEvent('bump-animation', {
-    detail: animation,
-  });
-  window.dispatchEvent(event);
+/** Emit a bump (attack lunge) animation event. */
+export function emitBumpAnimation(animation: BumpAnimationEntry): void {
+  window.dispatchEvent(new CustomEvent('bump-animation', { detail: animation }));
+}
+
+/** Emit a move (step) animation event. */
+export function emitMoveAnimation(animation: MoveAnimationEntry): void {
+  window.dispatchEvent(new CustomEvent('move-animation', { detail: animation }));
 }

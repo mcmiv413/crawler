@@ -2,7 +2,7 @@
 
 // ── Tile & Canvas ───────────────────────────────────────────────
 /** Pixel size of each dungeon tile. Changing this scales the entire dungeon renderer. */
-export const CELL_SIZE = 26;
+export const CELL_SIZE = 24
 
 /** Dungeon viewport width in tiles. Increase for a wider visible area. */
 export const VP_WIDTH = 30;

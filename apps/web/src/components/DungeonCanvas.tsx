@@ -5,6 +5,7 @@ import { renderMap } from '../sprites/canvas-renderer.js';
 import { findPath } from '../utils/pathfinding.js';
 import { useGameStore } from '../store/game-store.js';
 import { useBumpAnimationState } from '../hooks/useBumpAnimationState.js';
+import { useMoveAnimationState } from '../hooks/useMoveAnimationState.js';
 import { BUMP_ANIMATION_DURATION_MS } from '../config/ui-config.js';
 import { VP_WIDTH, VP_HEIGHT } from '../utils/viewport.js';
 
@@ -18,31 +19,24 @@ export function DungeonCanvas({ map, vpTilesWidth, vpTilesHeight }: Props) {
   const canvasRef = useRef<HTMLCanvasElement>(null);
   const [spritesReady, setSpritesReady] = useState(spriteRegistry.isReady());
   const { animations: bumpAnimations } = useBumpAnimationState(BUMP_ANIMATION_DURATION_MS);
+  const { animations: moveAnimations } = useMoveAnimationState();
 
   const vp_width  = vpTilesWidth  ?? VP_WIDTH;
   const vp_height = vpTilesHeight ?? VP_HEIGHT;
-  const cellSize  = 24; // Fixed tile size
+  const cellSize  = 24;
 
-  // ── Compute viewport origin synchronously during render ──────────────────
-  // Do NOT move this into a useEffect. Keeping it here ensures handleClick
-  // always reads the correct vpLeft/vpTop for the current map, even when
-  // React 18 defers effects until after the browser has painted.
   const minX = map.cells.length > 0 ? Math.min(...map.cells.map(c => c.x)) : 0;
   const minY = map.cells.length > 0 ? Math.min(...map.cells.map(c => c.y)) : 0;
   const vpLeft = Math.max(minX, map.playerPosition.x - Math.floor(vp_width / 2));
   const vpTop  = Math.max(minY, map.playerPosition.y - Math.floor(vp_height / 2));
 
-  // Stored in a ref so the canvas draw effect can read it without needing
-  // to be in its dependency array (it would cause an extra repaint every frame).
   const vpRef = useRef({ left: vpLeft, top: vpTop });
   vpRef.current = { left: vpLeft, top: vpTop };
 
   useEffect(() => {
     spriteRegistry.onReady(() => setSpritesReady(true));
     if (!spriteRegistry.isReady()) {
-      spriteRegistry.load().catch(() => {
-        // Silently fail — sprites are optional, ASCII fallback available
-      });
+      spriteRegistry.load().catch(() => {});
     }
   }, []);
 
@@ -63,24 +57,29 @@ export function DungeonCanvas({ map, vpTilesWidth, vpTilesHeight }: Props) {
     ctx.scale(dpr, dpr);
     ctx.imageSmoothingEnabled = false;
 
-    renderMap(ctx, map, vpRef.current.left, vpRef.current.top, vp_width, vp_height, bumpAnimations);
-  }, [map, spritesReady, vp_width, vp_height, bumpAnimations]);
+    renderMap(
+      ctx,
+      map,
+      vpRef.current.left,
+      vpRef.current.top,
+      vp_width,
+      vp_height,
+      bumpAnimations,
+      moveAnimations,
+    );
+  }, [map, spritesReady, vp_width, vp_height, bumpAnimations, moveAnimations]);
 
   const handleClick = useCallback((e: React.MouseEvent<HTMLCanvasElement>) => {
     const canvas = canvasRef.current;
     if (!canvas) return;
 
     const rect = canvas.getBoundingClientRect();
-
-    // Derive tile size from the actual rendered rect so this is correct
-    // even if the canvas element is CSS-scaled by a parent container.
     const renderedTileW = rect.width  / vp_width;
     const renderedTileH = rect.height / vp_height;
 
     const tileX = Math.floor((e.clientX - rect.left) / renderedTileW);
     const tileY = Math.floor((e.clientY - rect.top)  / renderedTileH);
 
-    // Clamp to viewport bounds before lookup
     if (tileX < 0 || tileX >= vp_width || tileY < 0 || tileY >= vp_height) return;
 
     const grid = {
