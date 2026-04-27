@@ -156,10 +156,10 @@ describe('handlePlayerDeath', () => {
   });
 
   it('permadeath: overkill triggers game over', () => {
-    // maxHP = 100, threshold = 50% = 50 overkill damage
+    // maxHP = 100, threshold = 75% = 75 overkill damage
     const state = makeDeathState({ maxHealth: 100 });
     const rng = new SeededRNG(42);
-    const overkillDamage = 60; // above 50 threshold
+    const overkillDamage = 80; // above 75 threshold
 
     const { state: newState, events } = handlePlayerDeath(state, killerId, cause, rng, overkillDamage);
 
