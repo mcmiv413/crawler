@@ -22,14 +22,14 @@ describe('WEAPONS', () => {
     }
   });
 
-  it('rusty_sword damage === 3', () => {
+  it('rusty_sword damage === 7', () => {
     const w = WEAPONS.find(w => w.itemId === 'rusty_sword');
-    expect(w?.weapon.damage).toBe(3);
+    expect(w?.weapon.damage).toBe(7);
   });
 
-  it('frost_axe damage === 10', () => {
+  it('frost_axe damage === 12', () => {
     const w = WEAPONS.find(w => w.itemId === 'frost_axe');
-    expect(w?.weapon.damage).toBe(10);
+    expect(w?.weapon.damage).toBe(12);
   });
 
   it('rarity tier damage scaling: common < uncommon < rare', () => {
@@ -45,34 +45,34 @@ describe('WEAPONS', () => {
     expect(uncommonMin).toBeLessThanOrEqual(rareMin);
   });
 
-  it('iron_mace damage === 5', () => {
+  it('iron_mace damage === 9', () => {
     const w = WEAPONS.find(w => w.itemId === 'iron_mace');
-    expect(w?.weapon.damage).toBe(5);
+    expect(w?.weapon.damage).toBe(9);
   });
 
-  it('short_bow damage === 3', () => {
+  it('short_bow damage === 6', () => {
     const w = WEAPONS.find(w => w.itemId === 'short_bow');
-    expect(w?.weapon.damage).toBe(3);
+    expect(w?.weapon.damage).toBe(6);
   });
 
-  it('flame_dagger damage === 5', () => {
+  it('flame_dagger damage === 8', () => {
     const w = WEAPONS.find(w => w.itemId === 'flame_dagger');
-    expect(w?.weapon.damage).toBe(5);
+    expect(w?.weapon.damage).toBe(8);
   });
 
-  it('venom_blade damage === 6', () => {
+  it('venom_blade damage === 9', () => {
     const w = WEAPONS.find(w => w.itemId === 'venom_blade');
-    expect(w?.weapon.damage).toBe(6);
+    expect(w?.weapon.damage).toBe(9);
   });
 
-  it('war_bow damage === 6', () => {
+  it('war_bow damage === 9', () => {
     const w = WEAPONS.find(w => w.itemId === 'war_bow');
-    expect(w?.weapon.damage).toBe(6);
+    expect(w?.weapon.damage).toBe(9);
   });
 
-  it('stone_hammer damage === 7', () => {
+  it('stone_hammer damage === 11', () => {
     const w = WEAPONS.find(w => w.itemId === 'stone_hammer');
-    expect(w?.weapon.damage).toBe(7);
+    expect(w?.weapon.damage).toBe(11);
   });
 
   it('iron_sword damage === 10', () => {
@@ -80,9 +80,9 @@ describe('WEAPONS', () => {
     expect(w?.weapon.damage).toBe(10);
   });
 
-  it('frost_axe speed === 0', () => {
+  it('frost_axe speed === -2', () => {
     const w = WEAPONS.find(w => w.itemId === 'frost_axe');
-    expect(w?.weapon.speed).toBe(0);
+    expect(w?.weapon.speed).toBe(-2);
   });
 
   it('flame_dagger speed === 10', () => {

@@ -6,7 +6,7 @@ export const ironMace: WeaponTemplate = {
   name: 'Iron Mace',
   description: 'A heavy mace that hits hard but slow.',
   itemClass: 'weapon',
-  rarity: 'common',
+  rarity: 'uncommon',
   value: 20,
   stackable: false,
   maxStack: 1,
