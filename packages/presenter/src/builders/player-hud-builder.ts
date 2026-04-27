@@ -1,5 +1,6 @@
 import type { GameState, WeaponType } from '@dungeon/contracts';
 import { STATUS_DEFINITIONS, ABILITY_DEFINITIONS, ENCHANTMENT_BY_ID, XP_TABLE, FACTIONS, getRarityColor, BIOMES, daggerDisarm, daggerSetTrap, getDamageBand, getWeaponDamageProfile } from '@dungeon/content';
+import { getEffectiveStat } from '@dungeon/core/systems/status-effects.js';
 import type { PlayerHudView, StatusView, AbilityView, EquippedItemView, EnchantmentView, NemesisInfo, FactionStanding } from '../game-view.js';
 import { calculateStatBreakdown } from './stat-breakdown-builder.js';
 
@@ -163,17 +164,18 @@ export function buildPlayerHud(state: GameState): PlayerHudView {
     };
   });
 
-  // Calculate total damage range (attack stat + weapon damage range)
-  let totalDamageMin = p.stats.attack;
-  let totalDamageMax = p.stats.attack;
+  // Calculate total damage range (effective attack stat + weapon damage range)
+  const effectiveAttack = getEffectiveStat(p.stats.attack, 'attack', p.statuses);
+  let totalDamageMin = effectiveAttack;
+  let totalDamageMax = effectiveAttack;
   if (p.equipment.weapon !== null) {
     const weapon = state.itemRegistry.items.get(p.equipment.weapon);
     if (weapon && 'weapon' in weapon) {
       const w = weapon.weapon;
       const profile = getWeaponDamageProfile(w.weaponType, w.weaponRange);
       const band = getDamageBand(w.damage, profile);
-      totalDamageMin = band.min + p.stats.attack;
-      totalDamageMax = band.max + p.stats.attack;
+      totalDamageMin = band.min + effectiveAttack;
+      totalDamageMax = band.max + effectiveAttack;
     }
   }
 
@@ -182,7 +184,7 @@ export function buildPlayerHud(state: GameState): PlayerHudView {
     level: p.level,
     health: p.stats.health,
     maxHealth: p.stats.maxHealth,
-    attack: p.stats.attack,
+    attack: effectiveAttack,
     defense: p.stats.defense,
     accuracy: p.stats.accuracy,
     evasion: p.stats.evasion,
@@ -198,7 +200,7 @@ export function buildPlayerHud(state: GameState): PlayerHudView {
     biomeColor: state.run?.floor.biomeId ? (BIOMES.get(state.run.floor.biomeId)?.ambientColor ?? '#666') : '#666',
     statuses: statusList,
     abilities: abilityList,
-    weaponMastery: state.run ? { ...state.run.weaponMastery } : null,
+    weaponMastery: { ...state.weaponMastery },
     equippedItems: mutableEquippedItems,
     statBreakdowns: calculateStatBreakdown(state),
     activeQuests,

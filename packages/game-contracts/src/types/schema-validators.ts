@@ -89,9 +89,6 @@ export function validateSchemaVersion(jsonString: string): {
   if (!('schemaVersion' in obj)) {
     // No version field: this is an old (v0) format save
     // For backward compatibility, treat as v0 and let deserialize handle it
-    // But log a warning for observability
-    // eslint-disable-next-line no-console
-    console.warn('Save file missing schemaVersion field; treating as v0 (legacy format)');
     return {
       schemaVersion: 0,
       parsed: obj,

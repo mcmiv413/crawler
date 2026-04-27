@@ -356,15 +356,12 @@ describe('buildPlayerHud', () => {
     it('displays weapon mastery progress', () => {
       state = {
         ...state,
-        run: {
-          ...state.run!,
-          weaponMastery: {
-            blade: 5,
-            bludgeon: 0,
-            axe: 2,
-            ranged: 1,
-            dagger: 0,
-          },
+        weaponMastery: {
+          blade: 5,
+          bludgeon: 0,
+          axe: 2,
+          ranged: 1,
+          dagger: 0,
         },
       };
 

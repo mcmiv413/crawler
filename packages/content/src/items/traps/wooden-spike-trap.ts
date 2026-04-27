@@ -11,4 +11,5 @@ export const woodenSpikeTrap: TrapItemTemplate = {
   stackable: true,
   maxStack: 5,
   trapTemplateId: 'trap_spikes',
+  spriteName: 'spikes',
 };

@@ -28,7 +28,6 @@ export interface RunState {
   readonly runMetrics?: RunMetrics;
   readonly floorHistory: readonly StoredFloor[];
   readonly floorCache?: ReadonlyMap<number, StoredFloor>;  // cleared floors by depth
-  readonly weaponMastery: WeaponMastery;
   readonly speedAccumulators: Readonly<Record<EntityId, number>>;  // fractional movement accumulation for speed-based kiting
 }
 
@@ -63,5 +62,6 @@ export interface GameState {
   readonly persistedFloorCache?: ReadonlyMap<number, StoredFloor>;  // Floors persisted across runs
   readonly lastRetreatFloor?: number;  // Track which floor player last retreated from
   readonly lastRunMetrics?: RunMetrics;  // Metrics from the most recent run (for town summary display)
+  readonly weaponMastery: WeaponMastery;  // Weapon mastery hit counts persist across deaths
   readonly debugMode?: boolean;  // Show debug information in UI
 }

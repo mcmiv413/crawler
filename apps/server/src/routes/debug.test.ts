@@ -234,7 +234,7 @@ describe('debug routes', () => {
 
     const savedState = vi.mocked(mockRepo.saveGame).mock.calls[0]?.[1];
     expect(savedState?.player.level).toBe(10);
-    expect(savedState?.run?.weaponMastery.blade).toBe(5);
+    expect(savedState?.weaponMastery.blade).toBe(5);
     expect(
       savedState?.player.abilities.some((a) => a.id === 'power_strike')
     ).toBe(true);
@@ -309,7 +309,7 @@ describe('debug routes', () => {
     expect(result.statusCode).toBe(200);
 
     const savedState = vi.mocked(mockRepo.saveGame).mock.calls[0]?.[1];
-    expect(savedState?.run?.weaponMastery).toBeDefined();
+    expect(savedState?.weaponMastery).toBeDefined();
   });
 
   it('handles empty patch body', async () => {

@@ -460,15 +460,12 @@ export function handleAttack(
     // Track mastery hit count
     const equippedWeaponType = getEquippedWeaponType(newState);
     if (newState.run !== null && equippedWeaponType !== null) {
-      const currentCount = newState.run.weaponMastery[equippedWeaponType];
+      const currentCount = newState.weaponMastery[equippedWeaponType];
       newState = {
         ...newState,
-        run: {
-          ...newState.run,
-          weaponMastery: {
-            ...newState.run.weaponMastery,
-            [equippedWeaponType]: currentCount + 1,
-          },
+        weaponMastery: {
+          ...newState.weaponMastery,
+          [equippedWeaponType]: currentCount + 1,
         },
       };
       const masteryResult = checkWeaponMasteryUnlocks(newState, equippedWeaponType);

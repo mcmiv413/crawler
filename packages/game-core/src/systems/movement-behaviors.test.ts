@@ -137,6 +137,7 @@ describe('Movement Behaviors', () => {
         turnNumber: 0,
         version: 1,
         activeQuests: [],
+        weaponMastery: { blade: 0, bludgeon: 0, axe: 0, ranged: 0, dagger: 0 },
       };
       const neighbors = getWalkableNeighbors({ x: 0, y: 0 }, state);
       expect(neighbors.length).toBeLessThanOrEqual(0);

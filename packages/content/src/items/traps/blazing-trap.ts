@@ -11,4 +11,5 @@ export const blazingTrap: TrapItemTemplate = {
   stackable: true,
   maxStack: 2,
   trapTemplateId: 'fire_pit',
+  spriteName: 'fire icon',
 };

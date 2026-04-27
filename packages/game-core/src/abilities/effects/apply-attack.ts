@@ -87,10 +87,9 @@ export function applyAttack(
 
     if (trackMastery === true) {
       const wType = getEquippedWeaponType(newState);
-      if (newState.run !== null && wType !== null) {
-        const currentRun = newState.run;
-        const count = currentRun.weaponMastery[wType];
-        newState = { ...newState, run: { ...currentRun, weaponMastery: { ...currentRun.weaponMastery, [wType]: count + 1 } } };
+      if (wType !== null) {
+        const count = newState.weaponMastery[wType];
+        newState = { ...newState, weaponMastery: { ...newState.weaponMastery, [wType]: count + 1 } };
         const masteryResult = checkWeaponMasteryUnlocks(newState, wType);
         newState = masteryResult.state;
         generatedEvents = [...generatedEvents, ...masteryResult.events];

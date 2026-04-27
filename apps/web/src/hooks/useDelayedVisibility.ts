@@ -12,7 +12,7 @@ interface UseDelayedVisibilityReturn {
  */
 export function useDelayedVisibility(trigger: boolean, delayMs: number): UseDelayedVisibilityReturn {
   const [isVisible, setIsVisible] = useState(false);
-  const timerRef = useRef<NodeJS.Timeout | undefined>(undefined);
+  const timerRef = useRef<ReturnType<typeof setTimeout> | undefined>(undefined);
 
   useEffect(() => {
     if (trigger) {

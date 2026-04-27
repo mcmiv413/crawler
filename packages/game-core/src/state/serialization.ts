@@ -1,5 +1,5 @@
 import type { GameState, StoredFloor, RunState, EntityId, AnyItemTemplate, MapCell, EnemyInstance, DungeonFloor, ObjectInstance } from '@dungeon/contracts';
-import { CURRENT_SCHEMA_VERSION, validateSchemaVersion } from '@dungeon/contracts';
+import { CURRENT_SCHEMA_VERSION, validateSchemaVersion, EMPTY_WEAPON_MASTERY } from '@dungeon/contracts';
 import { BASE_PLAYER_STATS } from '@dungeon/content';
 
 /** Plain-object (JSON) form of a StoredFloor (Maps become Record). */
@@ -8,6 +8,8 @@ interface StoredFloorJson {
   enemies: Record<string, unknown>;
   objects: Record<string, unknown>;
   playerPosition: StoredFloor['playerPosition'];
+  originalEnemyCount?: number;
+  lastSimulatedTurn?: number;
 }
 
 /** Plain-object (JSON) form of a RunState (Maps become Records). */
@@ -32,6 +34,8 @@ function serializeStoredFloor(sf: StoredFloor): unknown {
     enemies: Object.fromEntries(sf.enemies),
     objects: Object.fromEntries(sf.objects),
     playerPosition: sf.playerPosition,
+    originalEnemyCount: sf.originalEnemyCount,
+    lastSimulatedTurn: sf.lastSimulatedTurn,
   };
 }
 
@@ -47,6 +51,8 @@ function deserializeStoredFloor(raw: StoredFloorJson): StoredFloor {
     enemies: new Map(Object.entries(raw.enemies)) as ReadonlyMap<string, EnemyInstance>,
     objects: new Map(Object.entries(raw.objects)) as ReadonlyMap<string, ObjectInstance>,
     playerPosition: raw.playerPosition,
+    originalEnemyCount: raw.originalEnemyCount,
+    lastSimulatedTurn: raw.lastSimulatedTurn,
   };
 }
 
@@ -126,6 +132,12 @@ export function deserializeState(json: string): GameState {
     stats: playerStats,
   };
 
+  // Apply defensive defaults for weaponMastery in case old saves don't have it
+  const weaponMastery = {
+    ...EMPTY_WEAPON_MASTERY,
+    ...((parsed.weaponMastery ?? {}) as Record<string, unknown>),
+  };
+
   const persistedFloorCache = (parsed.persistedFloorCache !== null && parsed.persistedFloorCache !== undefined)
     ? new Map(
         Object.entries(parsed.persistedFloorCache as Record<string, StoredFloorJson>).map(
@@ -144,6 +156,7 @@ export function deserializeState(json: string): GameState {
     ...parsed,
     world,
     player,
+    weaponMastery,
     run: runObj !== null ? deserializeRun(runObj) : null,
     itemRegistry: {
       items: new Map(Object.entries(itemRegistryObj.items)) as unknown as ReadonlyMap<EntityId, AnyItemTemplate>,

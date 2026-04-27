@@ -125,7 +125,6 @@ export function createTestRunState(overrides?: {
     runMetrics: EMPTY_RUN_METRICS,
     floorHistory: [],
     floorCache: new Map(),
-    weaponMastery: { ...EMPTY_WEAPON_MASTERY, ...overrides?.weaponMastery },
     speedAccumulators,
   };
 }
@@ -145,7 +144,6 @@ export function createTestGameStateInCombat(options?: {
 
   const run = createTestRunState({
     enemies: new Map([[enemyKey, enemy]]),
-    weaponMastery: options?.weaponMastery,
   });
 
   const base = createTestGameState({
@@ -160,6 +158,7 @@ export function createTestGameStateInCombat(options?: {
     ...base,
     run,
     itemRegistry,
+    weaponMastery: options?.weaponMastery ? { ...EMPTY_WEAPON_MASTERY, ...options.weaponMastery } : base.weaponMastery,
   };
 }
 
@@ -191,6 +190,7 @@ export function createTestGameState(overrides?: {
     turnNumber: 10,
     version: 1,
     activeQuests: [],
+    weaponMastery: EMPTY_WEAPON_MASTERY,
   };
 }
 

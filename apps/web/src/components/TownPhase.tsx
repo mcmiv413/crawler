@@ -455,55 +455,53 @@ export function TownPhase({
           </InfoCard>
         )}
 
-        <div style={{ display: 'flex', flexDirection: 'column', gap: 5, marginBottom: 14 }}>
+        <div style={{ display: 'flex', flexDirection: 'row', gap: 5, flexWrap: 'wrap', marginBottom: 14 }}>
           <button
             onClick={() => {
               setNpcDialogue(null);
               sendCommand({ type: 'TOWN_ACTION', action: 'enter_dungeon' });
             }}
-            style={btnPrimaryStyle}
+            style={{ ...btnPrimaryStyle, flex: 1, minWidth: 80 }}
             disabled={loading}
           >
             Enter Dungeon
           </button>
 
-          <div style={{ display: 'flex', gap: 5 }}>
-            {view.town?.lastRetreatFloor && view.town.lastRetreatFloor > 1 && (
-              <button
-                onClick={() => {
-                  setNpcDialogue(null);
-                  sendCommand({
-                    type: 'TOWN_ACTION',
-                    action: 'enter_dungeon',
-                    startDepth: view.town!.lastRetreatFloor,
-                  });
-                }}
-                style={{ ...btnContinueStyle, flex: 1 }}
-                disabled={loading}
-                title="Continue from where you left off"
-              >
-                Continue — Floor {view.town.lastRetreatFloor}
-              </button>
-            )}
+          {view.town?.lastRetreatFloor && view.town.lastRetreatFloor > 1 && (
+            <button
+              onClick={() => {
+                setNpcDialogue(null);
+                sendCommand({
+                  type: 'TOWN_ACTION',
+                  action: 'enter_dungeon',
+                  startDepth: view.town!.lastRetreatFloor,
+                });
+              }}
+              style={{ ...btnContinueStyle, flex: 1, minWidth: 80 }}
+              disabled={loading}
+              title="Continue from where you left off"
+            >
+              Continue — Floor {view.town.lastRetreatFloor}
+            </button>
+          )}
 
-            {view.deathStashFloor && view.deathStashFloor > 0 && (
-              <button
-                onClick={() => {
-                  setNpcDialogue(null);
-                  sendCommand({
-                    type: 'TOWN_ACTION',
-                    action: 'enter_dungeon',
-                    startDepth: view.deathStashFloor,
-                  });
-                }}
-                style={{ ...btnStashStyle, flex: 1 }}
-                disabled={loading}
-                title="Return to retrieve your lost items"
-              >
-                Recover Stash — Floor {view.deathStashFloor}
-              </button>
-            )}
-          </div>
+          {view.deathStashFloor && view.deathStashFloor > 0 && (
+            <button
+              onClick={() => {
+                setNpcDialogue(null);
+                sendCommand({
+                  type: 'TOWN_ACTION',
+                  action: 'enter_dungeon',
+                  startDepth: view.deathStashFloor,
+                });
+              }}
+              style={{ ...btnStashStyle, flex: 1, minWidth: 80 }}
+              disabled={loading}
+              title="Return to retrieve your lost items"
+            >
+              Recover Stash — Floor {view.deathStashFloor}
+            </button>
+          )}
         </div>
 
         {view.town?.npcs && view.town.npcs.length > 0 && (

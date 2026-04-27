@@ -20,7 +20,7 @@ export function useBumpAnimationState(duration: number): UseBumpAnimationStateRe
   const [animations, setAnimations] = useState<ActiveBumpAnimation[]>([]);
   const rafRef = useRef<number | undefined>(undefined);
   const nextIdRef = useRef(0);
-  const timersRef = useRef<NodeJS.Timeout[]>([]);
+  const timersRef = useRef<ReturnType<typeof setTimeout>[]>([]);
 
   useEffect(() => {
     const handleBumpAnimation = (event: Event) => {

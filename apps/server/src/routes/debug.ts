@@ -30,12 +30,9 @@ export function registerDebugRoutes(app: FastifyInstance, repo: IGameRepository)
       if (patch.weaponMastery && newState.run) {
         newState = {
           ...newState,
-          run: {
-            ...newState.run,
-            weaponMastery: {
-              ...newState.run.weaponMastery,
-              ...patch.weaponMastery,
-            },
+          weaponMastery: {
+            ...newState.weaponMastery,
+            ...patch.weaponMastery,
           },
         };
       }

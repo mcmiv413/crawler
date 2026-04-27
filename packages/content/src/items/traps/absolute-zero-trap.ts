@@ -11,4 +11,5 @@ export const absoluteZeroTrap: TrapItemTemplate = {
   stackable: true,
   maxStack: 1,
   trapTemplateId: 'frost_trap',
+  spriteName: 'ice icon',
 };

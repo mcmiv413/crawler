@@ -6,9 +6,7 @@ export function checkWeaponMasteryUnlocks(
   state: GameState,
   weaponType: WeaponType,
 ): { state: GameState; events: readonly DomainEvent[] } {
-  if (state.run === null) return { state, events: [] };
-
-  const hits = state.run.weaponMastery[weaponType];
+  const hits = state.weaponMastery[weaponType];
   let events: DomainEvent[] = [];
   let newState = state;
 

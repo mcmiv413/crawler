@@ -38,6 +38,7 @@ describe('AbilityDropdown', () => {
       <AbilityDropdown
         abilities={abilities}
         enemies={enemies}
+        inventory={[]}
         playerX={0}
         playerY={0}
         onSelect={onSelect}
@@ -89,6 +90,7 @@ describe('AbilityDropdown', () => {
       <AbilityDropdown
         abilities={abilities}
         enemies={enemies}
+        inventory={[]}
         playerX={0}
         playerY={0}
         onSelect={onSelect}
