@@ -329,8 +329,11 @@ This is normal and expected. It means 21 diagnostic messages about cross-package
 
 ## Validation Commands
 
+Use `pnpm test` for fast-fail validation and `pnpm test:verbose` when you need the full failing set.
+
 ```bash
 pnpm test
+pnpm test:verbose
 pnpm test:e2e
 pnpm validate
 ```

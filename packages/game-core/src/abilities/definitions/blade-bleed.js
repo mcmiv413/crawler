@@ -8,6 +8,7 @@ export const BLADE_BLEED_DEFINITION = {
     requirements: [
         { kind: 'weapon_type', weaponType: 'blade' },
         { kind: 'has_target' },
+        { kind: 'target_in_melee_range' },
     ],
     targeting: { selector: { kind: 'single_enemy' } },
     effects: [

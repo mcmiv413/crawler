@@ -39,7 +39,7 @@ export function handleDisarmTrap(
     if (
       template === undefined ||
       template.isHazard !== true ||
-      !['spike', 'fire'].includes(template.hazardType ?? '')
+      !isDisarmableTrapType(template.hazardType ?? '')
     ) {
       return { state, events: [], runEnded: false };
     }
@@ -94,6 +94,13 @@ export function handleDisarmTrap(
   } catch {
     return { state, events: [], runEnded: false };
   }
+}
+
+/**
+ * Check if a hazard type is disarmable.
+ */
+function isDisarmableTrapType(hazardType: string): boolean {
+  return ['spike', 'fire', 'poison', 'frost', 'lightning'].includes(hazardType);
 }
 
 /**

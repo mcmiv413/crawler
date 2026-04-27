@@ -152,6 +152,7 @@ export function buildMapView(state: GameState): MapView | null {
     .map(([key, obj]): EntityView => {
       const [x, y] = key.split(',').map(Number);
       const template = OBJECT_TEMPLATES.get(obj.templateId);
+      const isDisarmableTrap = template?.objectCategory === 'trap' && template?.hazardType !== undefined;
       return {
         id: obj.id,
         x: x!,
@@ -162,6 +163,9 @@ export function buildMapView(state: GameState): MapView | null {
         type: 'object',
         templateId: obj.templateId,
         spriteName: template?.spriteName,
+        objectCategory: template?.objectCategory,
+        isDisarmableTrap,
+        hazardType: template?.hazardType,
       };
     });
 

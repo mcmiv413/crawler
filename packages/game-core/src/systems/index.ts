@@ -16,6 +16,7 @@ export { processTalkNpc, updateNpcDisposition } from './npc.js';
 export { checkLevelUp } from './progression.js';
 export { shouldPromoteToNemesis, promoteToNemesis, slayNemesis, findNemesisByTemplateId } from './nemesis.js';
 export { grantAbility, canUseAbility, tickAbilityCooldowns } from './abilities.js';
+export { getValidTrapPlacementDirections } from './trap-placement.js';
 export { checkWeaponMasteryUnlocks } from './weapon-mastery.js';
 export { updateFactionOnKill, tickFactionPowerForNemeses } from './factions.js';
 export { applyRunConsequences, evaluateEventChains } from './world-consequences.js';

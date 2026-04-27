@@ -8,12 +8,13 @@ export const AXE_CLEAVE_DEFINITION = {
     requirements: [
         { kind: 'weapon_type', weaponType: 'axe' },
         { kind: 'has_target' },
+        { kind: 'target_in_melee_range' },
     ],
     targeting: { selector: { kind: 'target_plus_adjacent_enemies' } },
     effects: [
         {
             kind: 'attack',
-            damageMultiplier: 0.75, // Average of 1x primary and 0.5x adjacent
+            damageMultiplier: 1.0, // Primary target at full damage; adjacent targets will be reduced to 50% by applyAttack
             trackMastery: true,
         },
     ],

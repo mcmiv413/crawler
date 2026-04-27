@@ -1,48 +1,59 @@
 import { describe, it, expect } from 'vitest';
 import { createTestGameStateInCombat } from '../test-utils.js';
-import { OBJECT_TEMPLATES } from '@dungeon/content';
 import { handleDisarmTrap } from '../engine/handlers/disarm-trap.js';
 import { handleSetTrap } from '../engine/handlers/set-trap.js';
 import { calculateHazardDamage } from './hazard-damage.js';
 import { SeededRNG } from '../utils/rng.js';
 import { entityId } from '@dungeon/contracts';
-import type { ObjectInstance } from '@dungeon/contracts';
+import type { ObjectInstance, ObjectTemplate } from '@dungeon/contracts';
 
 describe('Trap System', () => {
   describe('calculateHazardDamage', () => {
-    it('calculates trap damage from healthDelta', () => {
-      const template = OBJECT_TEMPLATES.get('trap_spikes');
-      expect(template).toBeDefined();
-      const damage = calculateHazardDamage(template!, 100);
-      expect(damage).toEqual(15);
+    function createHazardTemplate(
+      overrides: Partial<ObjectTemplate> = {},
+    ): ObjectTemplate {
+      return {
+        templateId: 'test_trap',
+        name: 'Test Trap',
+        description: 'Generated hazard for unit tests.',
+        ascii: '^',
+        color: '#fff',
+        spriteName: 'spikes',
+        healthDelta: -7,
+        consumable: false,
+        blocksMovement: false,
+        isHazard: true,
+        objectCategory: 'trap',
+        hazardType: 'spike',
+        ...overrides,
+      };
+    }
+
+    it('uses absolute healthDelta when rarity is absent', () => {
+      const damage = calculateHazardDamage(createHazardTemplate({ healthDelta: -7 }), 100);
+
+      expect(damage).toBe(7);
     });
 
-    it('calculates poison trap damage from healthDelta', () => {
-      const template = OBJECT_TEMPLATES.get('poison_trap');
-      expect(template).toBeDefined();
-      const damage = calculateHazardDamage(template!, 100);
-      expect(damage).toEqual(20);
-    });
+    it('increases damage as hazard rarity increases', () => {
+      const maxHealth = 100;
 
-    it('calculates lightning trap damage from healthDelta', () => {
-      const template = OBJECT_TEMPLATES.get('lightning_trap');
-      expect(template).toBeDefined();
-      const damage = calculateHazardDamage(template!, 100);
-      expect(damage).toEqual(30);
-    });
+      const commonDamage = calculateHazardDamage(createHazardTemplate({ rarity: 'common' }), maxHealth);
+      const uncommonDamage = calculateHazardDamage(createHazardTemplate({ rarity: 'uncommon' }), maxHealth);
+      const rareDamage = calculateHazardDamage(createHazardTemplate({ rarity: 'rare' }), maxHealth);
+      const epicDamage = calculateHazardDamage(createHazardTemplate({ rarity: 'epic' }), maxHealth);
+      const legendaryDamage = calculateHazardDamage(createHazardTemplate({ rarity: 'legendary' }), maxHealth);
 
-    it('calculates inferno pit damage from healthDelta', () => {
-      const template = OBJECT_TEMPLATES.get('inferno_pit');
-      expect(template).toBeDefined();
-      const damage = calculateHazardDamage(template!, 100);
-      expect(damage).toEqual(40);
+      expect(commonDamage).toBeLessThan(uncommonDamage);
+      expect(uncommonDamage).toBeLessThan(rareDamage);
+      expect(rareDamage).toBeLessThan(epicDamage);
+      expect(epicDamage).toBeLessThan(legendaryDamage);
     });
 
     it('ensures minimum damage of 1', () => {
-      const template = OBJECT_TEMPLATES.get('trap_spikes');
-      expect(template).toBeDefined();
-      const damage = calculateHazardDamage(template!, 1);
-      expect(damage).toBeGreaterThanOrEqual(1);
+      const damage = calculateHazardDamage(createHazardTemplate({ rarity: 'common' }), 1);
+
+      expect(damage).toBe(1);
     });
   });
 
@@ -111,29 +122,34 @@ describe('Trap System', () => {
       expect(result.state).toEqual(state);
     });
 
-    it('only allows disarming spike and fire traps', () => {
-      const rng = new SeededRNG(42);
-      let state = createTestGameStateInCombat();
+    it('allows disarming all trap types (spike, fire, poison, frost, lightning)', () => {
+      const trapTypes = ['trap_spikes', 'fire_pit', 'poison_trap', 'frost_trap', 'lightning_trap'];
 
-      // Place a poison trap (not disarmable)
-      const trapInstance: ObjectInstance = {
-        id: entityId('trap1'),
-        templateId: 'poison_trap',
-        position: { x: 1, y: 0 },
-        isExhausted: false,
-      };
-      const objects = new Map(state.run!.objects);
-      objects.set('1,0', trapInstance);
-      state = {
-        ...state,
-        run: { ...state.run!, objects },
-      };
+      for (const templateId of trapTypes) {
+        const rng = new SeededRNG(42);
+        let state = createTestGameStateInCombat();
 
-      // Try to disarm poison trap
-      const result = handleDisarmTrap(state, 'E', rng);
+        // Place a trap
+        const trapInstance: ObjectInstance = {
+          id: entityId(`trap_${templateId}`),
+          templateId,
+          position: { x: 1, y: 0 },
+          isExhausted: false,
+        };
+        const objects = new Map(state.run!.objects);
+        objects.set('1,0', trapInstance);
+        state = {
+          ...state,
+          run: { ...state.run!, objects },
+        };
 
-      // Verify trap not removed (poison traps can't be disarmed)
-      expect(result.state.run!.objects.has('1,0')).toBe(true);
+        // Try to disarm trap
+        const result = handleDisarmTrap(state, 'E', rng);
+
+        // Verify trap was removed and added to inventory
+        expect(result.state.run!.objects.has('1,0')).toBe(false);
+        expect(result.state.player.inventory.length).toBeGreaterThan(state.player.inventory.length);
+      }
     });
   });
 

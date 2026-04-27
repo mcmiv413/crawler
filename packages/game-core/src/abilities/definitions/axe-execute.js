@@ -8,6 +8,7 @@ export const AXE_EXECUTE_DEFINITION = {
     requirements: [
         { kind: 'weapon_type', weaponType: 'axe' },
         { kind: 'has_target' },
+        { kind: 'target_in_melee_range' },
     ],
     targeting: { selector: { kind: 'single_enemy' } },
     effects: [

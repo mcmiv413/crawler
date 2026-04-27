@@ -1,23 +1,128 @@
-import type { GameState, WeaponTemplate, EnemyInstance } from '@dungeon/contracts';
+import type { GameState, WeaponTemplate, WeaponType } from '@dungeon/contracts';
 import { posKey } from '@dungeon/contracts';
 import { ABILITY_DEFINITIONS, OBJECT_TEMPLATES } from '@dungeon/content';
 import type { AvailableAction } from '../game-view.js';
 import { chebyshevDistance } from '../utils.js';
 
+type PlayerAbilityState = NonNullable<GameState['player']['abilities']>[number];
+
 /**
  * Helper to check if player can retreat (without importing from game-core to avoid circular dep).
  */
 function canRetreat(state: GameState): boolean {
-  if (!state.run || state.phase !== 'dungeon') return false;
+  if (state.run === null || state.phase !== 'dungeon') return false;
 
   const playerKey = posKey(state.player.position);
   const cell = state.run.floor.cells.get(playerKey);
-  if (!cell) return false;
+  if (cell === undefined) return false;
 
-  // Can retreat from entrance or stairs_up
-  return cell.tile.type === 'stairs_up' ||
-    (state.player.position.x === state.run.floor.entrance.x &&
-     state.player.position.y === state.run.floor.entrance.y);
+  return cell.tile.type === 'stairs_up' || (
+    state.player.position.x === state.run.floor.entrance.x
+    && state.player.position.y === state.run.floor.entrance.y
+  );
+}
+
+function getEquippedWeaponType(state: GameState): WeaponType | null {
+  if (state.player.equipment.weapon === null) return null;
+
+  const weaponTemplate = state.itemRegistry.items.get(state.player.equipment.weapon);
+  if (weaponTemplate?.itemClass !== 'weapon') return null;
+
+  return (weaponTemplate as WeaponTemplate).weapon.weaponType;
+}
+
+function getEquippedWeaponRange(state: GameState): { max: number; min: number } {
+  if (state.player.equipment.weapon === null) {
+    return { max: 1, min: 0 };
+  }
+
+  const weaponTemplate = state.itemRegistry.items.get(state.player.equipment.weapon);
+  if (weaponTemplate?.itemClass !== 'weapon') {
+    return { max: 1, min: 0 };
+  }
+
+  const weapon = (weaponTemplate as WeaponTemplate).weapon;
+  return {
+    max: weapon.weaponRange ?? 1,
+    min: weapon.minRange ?? 0,
+  };
+}
+
+function isAbilityCompatibleWithEquippedWeapon(
+  abilityId: string,
+  equippedWeaponType: WeaponType | null,
+): boolean {
+  const definition = ABILITY_DEFINITIONS.get(abilityId);
+  if (definition?.requiresWeaponTypes === undefined || definition.requiresWeaponTypes.length === 0) {
+    return true;
+  }
+
+  if (equippedWeaponType === null) {
+    return false;
+  }
+
+  return definition.requiresWeaponTypes.includes(equippedWeaponType);
+}
+
+function hasVisibleEnemyTargetInRange(
+  state: GameState,
+  maxRange: number,
+  minRange: number,
+): boolean {
+  if (state.run === null) return false;
+
+  return Array.from(state.run.enemies.values()).some((enemy) => {
+    const distance = chebyshevDistance(state.player.position, enemy.position);
+    if (distance > maxRange || distance < minRange) {
+      return false;
+    }
+
+    const cell = state.run?.floor.cells.get(posKey(enemy.position));
+    return cell?.visibility === 'visible';
+  });
+}
+
+function buildAbilityLabel(
+  abilityName: string,
+  cooldownRemaining: number,
+  requiresTarget: boolean,
+  hasTargetInRange: boolean,
+): string {
+  if (cooldownRemaining > 0) {
+    const turnLabel = cooldownRemaining === 1 ? 'turn' : 'turns';
+    return `${abilityName} (${cooldownRemaining} ${turnLabel})`;
+  }
+
+  if (requiresTarget === true && hasTargetInRange === false) {
+    return `${abilityName} (no target)`;
+  }
+
+  return abilityName;
+}
+
+function buildAbilityAction(
+  state: GameState,
+  ability: PlayerAbilityState,
+  equippedWeaponType: WeaponType | null,
+  weaponRange: { max: number; min: number },
+): AvailableAction | null {
+  if (!isAbilityCompatibleWithEquippedWeapon(ability.id, equippedWeaponType)) {
+    return null;
+  }
+
+  const definition = ABILITY_DEFINITIONS.get(ability.id);
+  const requiresTarget = definition?.requiresTarget === true;
+  const hasTargetInRange = !requiresTarget || hasVisibleEnemyTargetInRange(state, weaponRange.max, weaponRange.min);
+  const enabled = ability.cooldownRemaining === 0 && hasTargetInRange;
+  const abilityName = definition?.name ?? ability.id;
+
+  return {
+    id: `use_ability_${ability.id}`,
+    label: buildAbilityLabel(abilityName, ability.cooldownRemaining, requiresTarget, hasTargetInRange),
+    type: 'ability',
+    enabled,
+    description: definition?.description,
+  };
 }
 
 export function buildAvailableActions(state: GameState): AvailableAction[] {
@@ -31,10 +136,9 @@ export function buildAvailableActions(state: GameState): AvailableAction[] {
     ];
     actions = [...actions, ...townActions];
 
-    // NPC talk actions
     const npcActions = state.world.npcs
-      .filter(npc => npc.available)
-      .map(npc => ({
+      .filter((npc) => npc.available)
+      .map((npc) => ({
         id: `talk_${npc.id}`,
         label: `Talk to ${npc.name}`,
         type: 'town' as const,
@@ -46,8 +150,7 @@ export function buildAvailableActions(state: GameState): AvailableAction[] {
     return actions;
   }
 
-  if (state.phase === 'dungeon' && state.run) {
-    // Movement
+  if (state.phase === 'dungeon' && state.run !== null) {
     const movementActions: AvailableAction[] = [
       { id: 'move_n', label: 'Move North', type: 'move', enabled: true },
       { id: 'move_s', label: 'Move South', type: 'move', enabled: true },
@@ -56,26 +159,20 @@ export function buildAvailableActions(state: GameState): AvailableAction[] {
     ];
     actions = [...actions, ...movementActions];
 
-    // Determine equipped weapon range
-    let attackRange = 1;
-    let minRange = 0;
-    if (state.player.equipment.weapon) {
-      const wt = state.itemRegistry.items.get(state.player.equipment.weapon);
-      if (wt && wt.itemClass === 'weapon') {
-        attackRange = (wt as WeaponTemplate).weapon.weaponRange ?? 1;
-        minRange = (wt as WeaponTemplate).weapon.minRange ?? 0;
-      }
-    }
+    const weaponRange = getEquippedWeaponRange(state);
+    const equippedWeaponType = getEquippedWeaponType(state);
 
-    // Attack enemies within weapon range
     const attackActions = Array.from(state.run.enemies.values())
-      .filter(enemy => {
-        const dist = chebyshevDistance(state.player.position, enemy.position);
-        if (dist > attackRange || dist < minRange) return false;
-        const cell = state.run!.floor.cells.get(posKey(enemy.position));
+      .filter((enemy) => {
+        const distance = chebyshevDistance(state.player.position, enemy.position);
+        if (distance > weaponRange.max || distance < weaponRange.min) {
+          return false;
+        }
+
+        const cell = state.run?.floor.cells.get(posKey(enemy.position));
         return cell?.visibility === 'visible';
       })
-      .map(enemy => ({
+      .map((enemy) => ({
         id: `attack_${enemy.id}`,
         label: chebyshevDistance(state.player.position, enemy.position) > 1
           ? `Shoot ${enemy.name}`
@@ -86,130 +183,61 @@ export function buildAvailableActions(state: GameState): AvailableAction[] {
       }));
     actions = [...actions, ...attackActions];
 
-    // Wait
     actions = [...actions, { id: 'wait', label: 'Wait', type: 'wait', enabled: true }];
 
-    // Retreat (if on entrance/stairs_up)
     if (canRetreat(state)) {
       actions = [...actions, { id: 'retreat', label: 'Retreat to Town', type: 'retreat', enabled: true }];
     }
 
-    // Ascend (if on stairs_up with prior floor history)
     const playerCell = state.run.floor.cells.get(posKey(state.player.position));
     if (playerCell?.tile.type === 'stairs_up' && state.run.floorHistory.length > 0) {
       actions = [...actions, { id: 'ascend', label: 'Ascend (<)', type: 'ascend', enabled: true }];
     }
 
-    // Swap weapons (enabled when either slot is occupied, allows single-weapon swap)
-    const hasPrimaryWeapon = state.player.equipment.weapon !== null;
-    const hasSecondaryWeapon = state.player.equipment.secondaryWeapon !== null;
-    if (hasPrimaryWeapon || hasSecondaryWeapon) {
+    if (state.player.equipment.weapon !== null || state.player.equipment.secondaryWeapon !== null) {
       actions = [...actions, { id: 'swap_weapons', label: 'Swap Weapon', type: 'swap', enabled: true }];
     }
 
-    // Object interactions: check player's current position and 8 neighbors
-    const playerPos = state.player.position;
     let objectActions: AvailableAction[] = [];
-    for (let dx = -1; dx <= 1; dx++) {
-      for (let dy = -1; dy <= 1; dy++) {
-        const pos = { x: playerPos.x + dx, y: playerPos.y + dy };
-        const key = posKey(pos);
-        const obj = (state.run.objects ?? new Map()).get(key);
-        if (obj) {
-          const template = OBJECT_TEMPLATES.get(obj.templateId);
-          const label = template ? `${template.name}` : 'Interact';
-          objectActions = [...objectActions, {
-            id: `interact_${key}`,
-            label,
-            type: 'interact',
-            enabled: true,
-            targetPosition: pos,
-          }];
+    for (let dx = -1; dx <= 1; dx += 1) {
+      for (let dy = -1; dy <= 1; dy += 1) {
+        const position = { x: state.player.position.x + dx, y: state.player.position.y + dy };
+        const key = posKey(position);
+        const objectAtPosition = state.run.objects.get(key);
+        if (objectAtPosition === undefined) {
+          continue;
         }
+
+        const template = OBJECT_TEMPLATES.get(objectAtPosition.templateId);
+        objectActions = [...objectActions, {
+          id: `interact_${key}`,
+          label: template?.name ?? 'Interact',
+          type: 'interact',
+          enabled: true,
+          targetPosition: position,
+        }];
       }
     }
     actions = [...actions, ...objectActions];
 
-    // Ability actions (show ALL abilities, with cooldown/target info) - Phase B
     const abilityActions = (state.player.abilities ?? [])
-      .filter(ability => {
-        const def = ABILITY_DEFINITIONS.get(ability.id);
-        // Filter out abilities that require specific weapon types if player doesn't have a matching one
-        if (def?.requiresWeaponTypes && def.requiresWeaponTypes.length > 0) {
-          if (!state.player.equipment.weapon) return false;
-          const wt = state.itemRegistry.items.get(state.player.equipment.weapon);
-          if (!wt || wt.itemClass !== 'weapon') return false;
-          const weaponType = (wt as WeaponTemplate).weapon.weaponType;
-          return def.requiresWeaponTypes.includes(weaponType);
-        }
-        return true;
-      })
-      .map(ability => {
-        const def = ABILITY_DEFINITIONS.get(ability.id);
-        const isReady = ability.cooldownRemaining === 0;
+      .map((ability) => buildAbilityAction(state, ability, equippedWeaponType, weaponRange))
+      .filter((action): action is AvailableAction => action !== null);
+    actions = [...actions, ...abilityActions];
 
-        // B2: Add cooldown label suffix if on cooldown
-        let label = def?.name ?? ability.id;
-        if (!isReady) {
-          label += ` (${ability.cooldownRemaining} turn${ability.cooldownRemaining === 1 ? '' : 's'})`;
-        }
-
-        // A6: Check target validation for targeted abilities using ability-specific range
-        let enabled = isReady;
-      let targetId: string | undefined;
-      if (enabled && def?.requiresTarget) {
-        // Determine range for this ability: ranged abilities use weapon range, others use melee (1)
-        let abilityRange = 1; // Default melee range
-        if (def?.requiresWeaponTypes?.includes('ranged') && state.player.equipment.weapon) {
-          const wt = state.itemRegistry.items.get(state.player.equipment.weapon);
-          if (wt && wt.itemClass === 'weapon') {
-            abilityRange = (wt as WeaponTemplate).weapon.weaponRange ?? 1;
-          }
-        }
-
-        // Find nearest enemy within this ability's range
-        let nearestEnemy: EnemyInstance | null = null;
-        let nearestDist = Infinity;
-        for (const enemy of state.run!.enemies.values()) {
-          const dist = chebyshevDistance(state.player.position, enemy.position);
-          if (dist >= 1 && dist <= abilityRange && dist < nearestDist) {
-            nearestEnemy = enemy;
-            nearestDist = dist;
-          }
-        }
-
-        if (nearestEnemy) {
-          targetId = nearestEnemy.id;
-        } else {
-          label += ' (no target)';
-          enabled = false;
-        }
+    const itemActions = state.player.inventory.flatMap((itemId) => {
+      const template = state.itemRegistry.items.get(itemId);
+      if (template?.itemClass !== 'consumable') {
+        return [];
       }
 
       return {
-        id: `use_ability_${ability.id}`,
-        label,
-        type: 'ability' as const,
-        enabled,
-        description: def?.description,  // B1: Add description
-        targetId,  // Include targetId for targeted abilities
+        id: `use_${itemId}`,
+        label: `Use ${template.name}`,
+        type: 'item' as const,
+        enabled: true,
+        targetId: itemId,
       };
-    });
-    actions = [...actions, ...abilityActions];
-
-    // Consumables in actions panel (equipping is handled by InventoryPanel)
-    const itemActions = state.player.inventory.flatMap(itemId => {
-      const template = state.itemRegistry.items.get(itemId);
-      if (template?.itemClass === 'consumable') {
-        return {
-          id: `use_${itemId}`,
-          label: `Use ${template.name}`,
-          type: 'item' as const,
-          enabled: true,
-          targetId: itemId,
-        };
-      }
-      return [];
     });
     actions = [...actions, ...itemActions];
   }

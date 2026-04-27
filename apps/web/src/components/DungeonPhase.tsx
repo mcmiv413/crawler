@@ -1,13 +1,16 @@
-import React, { useState, useEffect, useMemo } from 'react';
+import React, { useEffect, useMemo, useState } from 'react';
 import type { GameView } from '@dungeon/presenter';
-import { getDamageBand } from '@dungeon/content';
 import { VP_WIDTH, VP_HEIGHT } from '../utils/viewport.js';
-import { TAB_BAR_HEIGHT, BUMP_ANIMATION_DURATION_MS, COMBAT_INDICATOR_FADEOUT_MS, COMBAT_LOG_MINI_FONT_SIZE, COMBAT_LOG_MINI_LINE_HEIGHT, COMBAT_LOG_MINI_ENTRIES } from '../config/ui-config.js';
+import {
+  TAB_BAR_HEIGHT,
+  COMBAT_INDICATOR_FADEOUT_MS,
+  COMBAT_LOG_MINI_FONT_SIZE,
+  COMBAT_LOG_MINI_LINE_HEIGHT,
+  COMBAT_LOG_MINI_ENTRIES,
+} from '../config/ui-config.js';
 import { PlayerHud } from './PlayerHud.js';
 import { DungeonView } from './DungeonView.js';
 import { DungeonCanvas } from './DungeonCanvas.js';
-import { CombatLogView } from './CombatLogView.js';
-import { InventoryPanel } from './InventoryPanel.js';
 import { DebugPanel } from './DebugPanel.js';
 import { UnifiedActionPanel } from './UnifiedActionPanel.js';
 import { InspectModal } from './InspectModal.js';
@@ -45,18 +48,19 @@ function dangerColor(level: string): string {
 function MiniCombatLog({ entries }: { entries: readonly { text: string; type: string }[] }) {
   const recent = entries.slice(-COMBAT_LOG_MINI_ENTRIES);
   if (recent.length === 0) return null;
+
   return (
     <div style={{ marginTop: 8, borderTop: '1px solid #222', paddingTop: 4 }}>
-      {recent.map((e, index) => (
+      {recent.map((entry, index) => (
         <div
-          key={`${index}-${e.type}-${e.text}`}
+          key={`${index}-${entry.type}-${entry.text}`}
           style={{
             fontSize: COMBAT_LOG_MINI_FONT_SIZE,
             lineHeight: COMBAT_LOG_MINI_LINE_HEIGHT,
-            color: e.type === 'loot' ? '#4f4' : e.type === 'death' ? '#f44' : '#aaa',
+            color: entry.type === 'loot' ? '#4f4' : entry.type === 'death' ? '#f44' : '#aaa',
           }}
         >
-          {e.text}
+          {entry.text}
         </div>
       ))}
     </div>
@@ -66,11 +70,9 @@ function MiniCombatLog({ entries }: { entries: readonly { text: string; type: st
 function MapDisplay({
   map,
   useSprites,
-  containerRef,
 }: {
-  map: any;
+  map: GameView['map'];
   useSprites: boolean;
-  containerRef?: React.RefObject<HTMLDivElement | null>;
 }) {
   const [vpTilesWidth, setVpTilesWidth] = useState(VP_WIDTH);
   const [vpTilesHeight, setVpTilesHeight] = useState(VP_HEIGHT);
@@ -79,24 +81,20 @@ function MapDisplay({
   useEffect(() => {
     const calculateViewport = () => {
       const container = displayContainerRef.current;
-      if (!container) return;
+      if (container === null) return;
 
-      const CELL_SIZE = 24;
+      const cellSize = 24;
       const availableWidth = container.offsetWidth;
       const availableHeight = container.offsetHeight;
 
-      // Calculate how many tiles fit in available space (minimum 15x12)
-      const newVpTilesWidth = Math.max(15, Math.floor(availableWidth / CELL_SIZE));
-      const newVpTilesHeight = Math.max(12, Math.floor(availableHeight / CELL_SIZE));
-
-      setVpTilesWidth(newVpTilesWidth);
-      setVpTilesHeight(newVpTilesHeight);
+      setVpTilesWidth(Math.max(15, Math.floor(availableWidth / cellSize)));
+      setVpTilesHeight(Math.max(12, Math.floor(availableHeight / cellSize)));
     };
 
     calculateViewport();
     window.addEventListener('resize', calculateViewport);
     const resizeObserver = new ResizeObserver(() => calculateViewport());
-    if (displayContainerRef.current) {
+    if (displayContainerRef.current !== null) {
       resizeObserver.observe(displayContainerRef.current);
     }
 
@@ -106,36 +104,52 @@ function MapDisplay({
     };
   }, []);
 
-  // Viewport top-left derived synchronously from map so indicators always align with canvas
   const { vpLeft, vpTop } = useMemo(() => {
-    if (!map) return { vpLeft: 0, vpTop: 0 };
-    const minX = Math.min(...map.cells.map((c: { x: number; y: number }) => c.x));
-    const minY = Math.min(...map.cells.map((c: { x: number; y: number }) => c.y));
+    if (map === null) return { vpLeft: 0, vpTop: 0 };
+
+    const minX = Math.min(...map.cells.map((cell) => cell.x));
+    const minY = Math.min(...map.cells.map((cell) => cell.y));
     return {
       vpLeft: Math.max(minX, map.playerPosition.x - Math.floor(vpTilesWidth / 2)),
       vpTop: Math.max(minY, map.playerPosition.y - Math.floor(vpTilesHeight / 2)),
     };
-  }, [map, vpTilesWidth, vpTilesHeight]);
+  }, [map, vpTilesHeight, vpTilesWidth]);
 
-  if (!map) return null;
+  if (map === null) return null;
 
   const canvasPxWidth = vpTilesWidth * 24;
   const canvasPxHeight = vpTilesHeight * 24;
-  const CELL_SIZE = 24;
+  const cellSize = 24;
 
   return (
     <>
       <div style={{ fontSize: 13, color: dangerColor(map.dangerLevel), marginBottom: 4 }}>
         Danger: {map.dangerLevel.charAt(0).toUpperCase() + map.dangerLevel.slice(1)}
       </div>
-      <div ref={displayContainerRef} style={{ flex: 1, minHeight: 0, overflow: 'hidden', marginBottom: 8, imageRendering: 'pixelated' as const, display: 'flex', alignItems: 'center', justifyContent: 'center', background: '#0a0a0a', position: 'relative' }}>
+      <div
+        ref={displayContainerRef}
+        style={{
+          flex: 1,
+          minHeight: 0,
+          overflow: 'hidden',
+          marginBottom: 8,
+          imageRendering: 'pixelated' as const,
+          display: 'flex',
+          alignItems: 'center',
+          justifyContent: 'center',
+          background: '#0a0a0a',
+          position: 'relative',
+        }}
+      >
         <div style={{ width: canvasPxWidth, height: canvasPxHeight, position: 'relative' }}>
-          {useSprites ? <DungeonCanvas map={map} vpTilesWidth={vpTilesWidth} vpTilesHeight={vpTilesHeight} /> : <DungeonView map={map} vpTilesWidth={vpTilesWidth} vpTilesHeight={vpTilesHeight} />}
+          {useSprites
+            ? <DungeonCanvas map={map} vpTilesWidth={vpTilesWidth} vpTilesHeight={vpTilesHeight} />
+            : <DungeonView map={map} vpTilesWidth={vpTilesWidth} vpTilesHeight={vpTilesHeight} />}
           <BumpAnimations />
           <CombatIndicators
             vpLeft={vpLeft}
             vpTop={vpTop}
-            cellSize={CELL_SIZE}
+            cellSize={cellSize}
             fadeOutDuration={COMBAT_INDICATOR_FADEOUT_MS}
           />
         </div>
@@ -143,7 +157,6 @@ function MapDisplay({
     </>
   );
 }
-
 
 export function DungeonPhase({
   view,
@@ -154,124 +167,58 @@ export function DungeonPhase({
   useSprites,
   setUseSprites,
 }: DungeonPhaseProps) {
+  void loading;
+
   const { isMobile } = useBreakpoint();
-  const mapContainerRef = React.useRef<HTMLDivElement>(null);
   const [showInspectModal, setShowInspectModal] = useState(false);
   useAnimationOrchestrator(view.animatedEvents);
 
-  // Get equipped weapon and compute damage range (NEW: uses total damage with attack bonus)
   const equippedWeapon = view.inventory.equipped.weapon;
-  const dmgDisplay = `${view.player.totalDamageMin}–${view.player.totalDamageMax}`;
-  const weaponDisplay = equippedWeapon ? `[${equippedWeapon.name}] ${dmgDisplay}` : `Unarmed ${dmgDisplay}`;
-
-  // Compute mini combat log height dynamically
+  const damageDisplay = `${view.player.totalDamageMin}–${view.player.totalDamageMax}`;
+  const weaponDisplay = equippedWeapon !== null ? `[${equippedWeapon.name}] ${damageDisplay}` : `Unarmed ${damageDisplay}`;
   const miniLogHeight = Math.ceil(
-    COMBAT_LOG_MINI_FONT_SIZE * COMBAT_LOG_MINI_LINE_HEIGHT * COMBAT_LOG_MINI_ENTRIES
-  ) + 8; // +8 for paddingTop + borderTop
+    COMBAT_LOG_MINI_FONT_SIZE * COMBAT_LOG_MINI_LINE_HEIGHT * COMBAT_LOG_MINI_ENTRIES,
+  ) + 8;
 
-  // Mobile: same layout as desktop - action panel always visible with fixed combat log
-  if (isMobile) {
-    return (
-      <div style={{ padding: 8, fontFamily: 'monospace', color: '#ccc', background: '#111', flex: 1, overflow: 'hidden', display: 'flex', flexDirection: 'column', minHeight: 0, paddingBottom: TAB_BAR_HEIGHT + 8 }}>
-        {/* Header: always visible */}
-        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 10, flexShrink: 0 }}>
-          <div style={{ display: 'flex', gap: 8, alignItems: 'center' }}>
-            <h2 style={{ margin: 0, color: '#88cc44', fontSize: 18 }}>Dungeon</h2>
-            <div style={{ display: 'flex', gap: 4, alignItems: 'center' }}>
-              <ItemSpriteIcon spriteName={equippedWeapon?.spriteName} size={16} />
-              <span style={{ fontSize: 13, color: '#aaa' }}>{weaponDisplay}</span>
-            </div>
-          </div>
-          {view.map && (
-            <button
-              onClick={() => setUseSprites(s => !s)}
-              style={{ fontSize: 10, padding: '2px 6px', background: '#333', color: '#aaa', border: '1px solid #555', cursor: 'pointer' }}
-            >
-              {useSprites ? '🎨' : '⬛'}
-            </button>
-          )}
-        </div>
-
-        {/* Player HUD: always visible */}
-        <div style={{ flexShrink: 0, marginBottom: 6 }}>
-          <PlayerHud player={view.player} compact />
-        </div>
-
-        {/* Dungeon map: dynamically sized above combat log */}
-        <div ref={mapContainerRef} style={{ flex: 1, minHeight: 0, display: 'flex', flexDirection: 'column', marginBottom: 6 }}>
-          <MapDisplay map={view.map} useSprites={useSprites} containerRef={mapContainerRef} />
-        </div>
-
-        {/* Combat log: fixed 4 lines, always visible above action panel */}
-        <div style={{ flexShrink: 0, height: miniLogHeight, borderTop: '1px solid #222', paddingTop: 4, marginBottom: 6 }}>
-          <MiniCombatLog entries={combatLog} />
-        </div>
-
-        {/* Action panel: always visible at bottom */}
-        <div style={{ flexShrink: 0 }}>
-          <UnifiedActionPanel
-            view={view}
-            onSendCommand={sendCommand}
-            onInspectOpen={() => setShowInspectModal(true)}
-          />
-        </div>
-
-        {/* Inspect modal overlay */}
-        {showInspectModal && view.inspectableEntities && (
-          <InspectModal
-            entities={view.inspectableEntities}
-            playerSpeed={view.player.speed}
-            useSprites={useSprites}
-            onClose={() => setShowInspectModal(false)}
-          />
-        )}
-
-        {/* Error message */}
-        {error && <p style={{ color: '#f44', fontSize: 10, margin: '4px 0 0 0' }}>{error}</p>}
-
-        {import.meta.env.VITE_DEBUG === 'true' && <DebugPanel />}
-      </div>
-    );
-  }
-
-  // Desktop: new layout with always-visible action panel and dynamic dungeon
-  return (
-    <div style={{ padding: 8, fontFamily: 'monospace', color: '#ccc', background: '#111', flex: 1, overflow: 'hidden', display: 'flex', flexDirection: 'column', minHeight: 0, paddingBottom: TAB_BAR_HEIGHT + 8 }}>
-      {/* Header: always visible */}
+  const sharedContent = (
+    <>
       <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 10, flexShrink: 0 }}>
         <div style={{ display: 'flex', gap: 8, alignItems: 'center' }}>
-          <h2 style={{ margin: 0, color: '#88cc44', fontSize: 20 }}>Dungeon</h2>
+          <h2 style={{ margin: 0, color: '#88cc44', fontSize: isMobile ? 18 : 20 }}>Dungeon</h2>
           <div style={{ display: 'flex', gap: 4, alignItems: 'center' }}>
             <ItemSpriteIcon spriteName={equippedWeapon?.spriteName} size={16} />
-            <span style={{ fontSize: 14, color: '#aaa' }}>{weaponDisplay}</span>
+            <span style={{ fontSize: isMobile ? 13 : 14, color: '#aaa' }}>{weaponDisplay}</span>
           </div>
         </div>
-        {view.map && (
+        {view.map !== null && (
           <button
-            onClick={() => setUseSprites(s => !s)}
-            style={{ fontSize: 11, padding: '2px 8px', background: '#333', color: '#aaa', border: '1px solid #555', cursor: 'pointer' }}
+            onClick={() => setUseSprites((current) => !current)}
+            style={{
+              fontSize: isMobile ? 10 : 11,
+              padding: isMobile ? '2px 6px' : '2px 8px',
+              background: '#333',
+              color: '#aaa',
+              border: '1px solid #555',
+              cursor: 'pointer',
+            }}
           >
-            {useSprites ? '🎨 Sprites' : '⬛ ASCII'}
+            {useSprites ? (isMobile ? '🎨' : '🎨 Sprites') : (isMobile ? '⬛' : '⬛ ASCII')}
           </button>
         )}
       </div>
 
-      {/* Player HUD: always visible */}
-      <div style={{ flexShrink: 0, marginBottom: 6 }}>
+      <div style={{ flexShrink: 0, marginBottom: isMobile ? 6 : 8 }}>
         <PlayerHud player={view.player} compact />
       </div>
 
-      {/* Dungeon map: dynamically sized above combat log */}
-      <div ref={mapContainerRef} style={{ flex: 1, minHeight: 0, display: 'flex', flexDirection: 'column', marginBottom: 8 }}>
-        <MapDisplay map={view.map} useSprites={useSprites} containerRef={mapContainerRef} />
+      <div style={{ flex: 1, minHeight: 0, display: 'flex', flexDirection: 'column', marginBottom: isMobile ? 6 : 8 }}>
+        <MapDisplay map={view.map} useSprites={useSprites} />
       </div>
 
-      {/* Combat log: fixed 4 lines, always visible above action panel */}
-      <div style={{ flexShrink: 0, height: miniLogHeight, borderTop: '1px solid #222', paddingTop: 4, marginBottom: 8 }}>
+      <div style={{ flexShrink: 0, height: miniLogHeight, borderTop: '1px solid #222', paddingTop: 4, marginBottom: isMobile ? 6 : 8 }}>
         <MiniCombatLog entries={combatLog} />
       </div>
 
-      {/* Action panel: always visible at bottom */}
       <div style={{ flexShrink: 0 }}>
         <UnifiedActionPanel
           view={view}
@@ -280,8 +227,7 @@ export function DungeonPhase({
         />
       </div>
 
-      {/* Inspect modal overlay */}
-      {showInspectModal && view.inspectableEntities && (
+      {showInspectModal && view.inspectableEntities.length > 0 && (
         <InspectModal
           entities={view.inspectableEntities}
           playerSpeed={view.player.speed}
@@ -290,10 +236,32 @@ export function DungeonPhase({
         />
       )}
 
-      {/* Error message */}
-      {error && <p style={{ color: '#f44', flexShrink: 0, marginTop: 8 }}>{error}</p>}
+      {error !== null && (
+        <p style={{ color: '#f44', fontSize: isMobile ? 10 : undefined, margin: isMobile ? '4px 0 0 0' : '8px 0 0 0' }}>
+          {error}
+        </p>
+      )}
 
       {import.meta.env.VITE_DEBUG === 'true' && <DebugPanel />}
+    </>
+  );
+
+  return (
+    <div
+      style={{
+        padding: 8,
+        fontFamily: 'monospace',
+        color: '#ccc',
+        background: '#111',
+        flex: 1,
+        overflow: 'hidden',
+        display: 'flex',
+        flexDirection: 'column',
+        minHeight: 0,
+        paddingBottom: TAB_BAR_HEIGHT + 8,
+      }}
+    >
+      {sharedContent}
     </div>
   );
 }

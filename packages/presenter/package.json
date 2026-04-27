@@ -11,6 +11,11 @@
       "import": "./dist/index.js",
       "default": "./dist/index.js"
     },
+    "./targeting": {
+      "types": "./dist/targeting/index.d.ts",
+      "import": "./dist/targeting/index.js",
+      "default": "./dist/targeting/index.js"
+    },
     "./testing/feature-chain-helpers": {
       "types": "./dist/testing/feature-chain-helpers.d.ts",
       "import": "./dist/testing/feature-chain-helpers.js",
