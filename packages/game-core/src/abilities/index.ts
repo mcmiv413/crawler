@@ -18,4 +18,7 @@ export { executeAbility } from './runtime/execute-ability.js';
 
 export { deriveMasteryAbilities } from './derive-mastery-map.js';
 
+export type { AbilityUiMetadata } from './ability-ui-metadata.js';
+export { getAbilityUiMetadata, buildAbilityUiMetadataMap } from './ability-ui-metadata.js';
+
 export { ALL_ABILITY_DEFINITIONS } from './definitions/index.js';
