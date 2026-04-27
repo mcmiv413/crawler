@@ -1,106 +1,510 @@
 import { describe, it, expect, vi } from 'vitest';
 import { render, screen, fireEvent } from '@testing-library/react';
+import '@testing-library/jest-dom';
 import { AbilityDropdown } from './AbilityDropdown';
-import type { AbilityView, EntityView } from '@dungeon/presenter';
+import type { AbilityView, EntityView, InventoryItemView } from '@dungeon/presenter';
+
+const createEnemy = (id: string, x: number, y: number, name: string = 'Goblin'): EntityView => ({
+  id,
+  x,
+  y,
+  ascii: 'g',
+  color: '#0f0',
+  name,
+  type: 'enemy',
+  health: 10,
+  maxHealth: 10,
+  templateId: 'goblin',
+});
+
+const createTrap = (id: string, x: number, y: number, name: string = 'Spike Trap'): EntityView => ({
+  id,
+  x,
+  y,
+  ascii: '^',
+  color: '#f00',
+  name,
+  type: 'object',
+  isDisarmableTrap: true,
+  templateId: 'trap_spikes',
+});
+
+const createTrapItem = (id: string, name: string = 'Spike Trap'): InventoryItemView => ({
+  id,
+  name,
+  itemClass: 'trap',
+  description: 'A trap item',
+  rarity: 'common',
+  rarityColor: '#888888',
+  value: 10,
+  sellPrice: 5,
+  isEquipped: false,
+  quantity: 1,
+  stackEntityIds: ['trap_entity_1'],
+  templateId: 'trap_spikes',
+});
 
 describe('AbilityDropdown', () => {
-  it('does not assign targetId for self-targeted abilities when enemies are in range', () => {
-    const onSelect = vi.fn();
+  describe('Self-targeted abilities', () => {
+    it('does not assign targetId for self-targeted abilities', () => {
+      const onSelect = vi.fn();
 
-    const abilities: AbilityView[] = [
-      {
-        id: 'second_wind',
-        name: 'Second Wind',
-        description: 'Heal yourself',
-        ready: true,
-        cooldownRemaining: 0,
-        requiresTarget: false, // Self-targeted
-        requiresDirection: false,
-      },
-    ];
+      const abilities: AbilityView[] = [
+        {
+          id: 'second_wind',
+          name: 'Second Wind',
+          description: 'Heal yourself',
+          ready: true,
+          cooldownRemaining: 0,
+          requiresTarget: false,
+          requiresDirection: false,
+        },
+      ];
 
-    const enemies: EntityView[] = [
-      {
-        id: 'enemy1',
-        x: 2,
-        y: 2,
-        ascii: 'g',
-        color: '#0f0',
-        name: 'Goblin',
-        type: 'enemy',
-        health: 10,
-        maxHealth: 10,
-        templateId: 'goblin',
-      },
-    ];
+      render(
+        <AbilityDropdown
+          abilities={abilities}
+          enemies={[createEnemy('enemy1', 1, 0)]}
+          inventory={[]}
+          playerX={0}
+          playerY={0}
+          onSelect={onSelect}
+        />
+      );
 
-    render(
-      <AbilityDropdown
-        abilities={abilities}
-        enemies={enemies}
-        inventory={[]}
-        playerX={0}
-        playerY={0}
-        onSelect={onSelect}
-      />
-    );
+      fireEvent.click(screen.getByText('Second Wind'));
 
-    // Click the ability button
-    const abilityButton = screen.getByText('Second Wind');
-    fireEvent.click(abilityButton);
-
-    // Should call onSelect with just abilityId, no targetId
-    expect(onSelect).toHaveBeenCalledWith({ abilityId: 'second_wind' });
-    expect(onSelect).not.toHaveBeenCalledWith(
-      expect.objectContaining({ targetId: expect.anything() })
-    );
+      expect(onSelect).toHaveBeenCalledWith({ abilityId: 'second_wind' });
+    });
   });
 
-  it('assigns targetId for target-requiring abilities when enemies are in range', () => {
-    const onSelect = vi.fn();
+  describe('Single-target abilities', () => {
+    it('auto-fires when exactly one enemy in range', () => {
+      const onSelect = vi.fn();
 
-    const abilities: AbilityView[] = [
-      {
-        id: 'fireball',
-        name: 'Fireball',
-        description: 'Deal fire damage',
-        ready: true,
-        cooldownRemaining: 0,
-        requiresTarget: true, // Requires target
-        requiresDirection: false,
-      },
-    ];
+      const abilities: AbilityView[] = [
+        {
+          id: 'power_strike',
+          name: 'Power Strike',
+          description: 'Attack with force',
+          ready: true,
+          cooldownRemaining: 0,
+          requiresTarget: true,
+          requiresDirection: false,
+        },
+      ];
 
-    const enemies: EntityView[] = [
-      {
-        id: 'enemy1',
-        x: 2,
-        y: 2,
-        ascii: 'g',
-        color: '#0f0',
-        name: 'Goblin',
-        type: 'enemy',
-        health: 10,
-        maxHealth: 10,
-        templateId: 'goblin',
-      },
-    ];
+      render(
+        <AbilityDropdown
+          abilities={abilities}
+          enemies={[createEnemy('enemy1', 1, 0)]}
+          inventory={[]}
+          playerX={0}
+          playerY={0}
+          onSelect={onSelect}
+        />
+      );
 
-    render(
-      <AbilityDropdown
-        abilities={abilities}
-        enemies={enemies}
-        inventory={[]}
-        playerX={0}
-        playerY={0}
-        onSelect={onSelect}
-      />
-    );
+      fireEvent.click(screen.getByText('Power Strike'));
 
-    const abilityButton = screen.getByText('Fireball');
-    fireEvent.click(abilityButton);
+      expect(onSelect).toHaveBeenCalledWith({ abilityId: 'power_strike', targetId: 'enemy1' });
+    });
 
-    // Should call onSelect with targetId for target-requiring abilities
-    expect(onSelect).toHaveBeenCalledWith({ abilityId: 'fireball', targetId: 'enemy1' });
+    it('shows target chooser when multiple enemies in range', () => {
+      const onSelect = vi.fn();
+
+      const abilities: AbilityView[] = [
+        {
+          id: 'power_strike',
+          name: 'Power Strike',
+          description: 'Attack with force',
+          ready: true,
+          cooldownRemaining: 0,
+          requiresTarget: true,
+          requiresDirection: false,
+        },
+      ];
+
+      const enemies = [
+        createEnemy('enemy1', 1, 0, 'Goblin 1'),
+        createEnemy('enemy2', 0, 1, 'Goblin 2'),
+      ];
+
+      render(
+        <AbilityDropdown
+          abilities={abilities}
+          enemies={enemies}
+          inventory={[]}
+          playerX={0}
+          playerY={0}
+          onSelect={onSelect}
+        />
+      );
+
+      fireEvent.click(screen.getByText('Power Strike'));
+
+      // Should display both enemies as choosable targets
+      expect(screen.getByText('Goblin 1')).toBeInTheDocument();
+      expect(screen.getByText('Goblin 2')).toBeInTheDocument();
+
+      // Clicking an enemy should call onSelect
+      fireEvent.click(screen.getByText('Goblin 1'));
+      expect(onSelect).toHaveBeenCalledWith({ abilityId: 'power_strike', targetId: 'enemy1' });
+    });
+
+    it('disables when no enemies in range', () => {
+      const onSelect = vi.fn();
+
+      const abilities: AbilityView[] = [
+        {
+          id: 'power_strike',
+          name: 'Power Strike',
+          description: 'Attack with force',
+          ready: true,
+          cooldownRemaining: 0,
+          requiresTarget: true,
+          requiresDirection: false,
+        },
+      ];
+
+      render(
+        <AbilityDropdown
+          abilities={abilities}
+          enemies={[createEnemy('enemy1', 5, 5)]} // Far away
+          inventory={[]}
+          playerX={0}
+          playerY={0}
+          onSelect={onSelect}
+        />
+      );
+
+      const button = screen.getByText('Power Strike').closest('button');
+      expect(button).toBeDisabled();
+    });
+  });
+
+  describe('Disarm-trap ability', () => {
+    it('auto-disarms when exactly one trap adjacent', () => {
+      const onSelect = vi.fn();
+
+      const abilities: AbilityView[] = [
+        {
+          id: 'dagger_disarm',
+          name: 'Disarm',
+          description: 'Disarm a trap',
+          ready: true,
+          cooldownRemaining: 0,
+          requiresTarget: false,
+          requiresDirection: false,
+        },
+      ];
+
+      const mapObjects = [createTrap('trap1', 1, 0)];
+
+      render(
+        <AbilityDropdown
+          abilities={abilities}
+          enemies={[]}
+          inventory={[]}
+          playerX={0}
+          playerY={0}
+          mapObjects={mapObjects}
+          onSelect={onSelect}
+        />
+      );
+
+      fireEvent.click(screen.getByText('Disarm'));
+
+      // Should auto-disarm without showing chooser
+      expect(onSelect).toHaveBeenCalledWith({
+        abilityId: 'dagger_disarm',
+        direction: 'E',
+      });
+    });
+
+    it('shows trap chooser when multiple adjacent traps', () => {
+      const onSelect = vi.fn();
+
+      const abilities: AbilityView[] = [
+        {
+          id: 'dagger_disarm',
+          name: 'Disarm',
+          description: 'Disarm a trap',
+          ready: true,
+          cooldownRemaining: 0,
+          requiresTarget: false,
+          requiresDirection: false,
+        },
+      ];
+
+      const mapObjects = [
+        createTrap('trap1', 1, 0, 'Spike Trap'),
+        createTrap('trap2', 0, 1, 'Fire Trap'),
+      ];
+
+      render(
+        <AbilityDropdown
+          abilities={abilities}
+          enemies={[]}
+          inventory={[]}
+          playerX={0}
+          playerY={0}
+          mapObjects={mapObjects}
+          onSelect={onSelect}
+        />
+      );
+
+      fireEvent.click(screen.getByText('Disarm'));
+
+      // Should show both traps as choosable
+      expect(screen.getByText('Spike Trap')).toBeInTheDocument();
+      expect(screen.getByText('Fire Trap')).toBeInTheDocument();
+
+      // Clicking a trap should disarm it
+      fireEvent.click(screen.getByText('Spike Trap'));
+      expect(onSelect).toHaveBeenCalledWith({
+        abilityId: 'dagger_disarm',
+        direction: 'E',
+      });
+    });
+
+    it('disables when no adjacent traps', () => {
+      const onSelect = vi.fn();
+
+      const abilities: AbilityView[] = [
+        {
+          id: 'dagger_disarm',
+          name: 'Disarm',
+          description: 'Disarm a trap',
+          ready: true,
+          cooldownRemaining: 0,
+          requiresTarget: false,
+          requiresDirection: false,
+        },
+      ];
+
+      render(
+        <AbilityDropdown
+          abilities={abilities}
+          enemies={[]}
+          inventory={[]}
+          playerX={0}
+          playerY={0}
+          mapObjects={[]}
+          onSelect={onSelect}
+        />
+      );
+
+      const button = screen.getByText('Disarm').closest('button');
+      expect(button).toBeDisabled();
+    });
+  });
+
+  describe('Set-trap ability', () => {
+    it('shows trap picker when no trap selected', () => {
+      const onSelect = vi.fn();
+
+      const abilities: AbilityView[] = [
+        {
+          id: 'dagger_set_trap',
+          name: 'Set Trap',
+          description: 'Place a trap',
+          ready: true,
+          cooldownRemaining: 0,
+          requiresTarget: false,
+          requiresDirection: true,
+        },
+      ];
+
+      const inventory: InventoryItemView[] = [createTrapItem('trap_item', 'Spike Trap')];
+
+      render(
+        <AbilityDropdown
+          abilities={abilities}
+          enemies={[]}
+          inventory={inventory}
+          playerX={0}
+          playerY={0}
+          onSelect={onSelect}
+        />
+      );
+
+      fireEvent.click(screen.getByText('Set Trap'));
+
+      // Should show trap picker
+      expect(screen.getByText('Spike Trap')).toBeInTheDocument();
+    });
+
+    it('shows direction selector after trap selected', () => {
+      const onSelect = vi.fn();
+
+      const abilities: AbilityView[] = [
+        {
+          id: 'dagger_set_trap',
+          name: 'Set Trap',
+          description: 'Place a trap',
+          ready: true,
+          cooldownRemaining: 0,
+          requiresTarget: false,
+          requiresDirection: true,
+        },
+      ];
+
+      const inventory: InventoryItemView[] = [createTrapItem('trap_item', 'Spike Trap')];
+
+      render(
+        <AbilityDropdown
+          abilities={abilities}
+          enemies={[]}
+          inventory={inventory}
+          playerX={0}
+          playerY={0}
+          onSelect={onSelect}
+        />
+      );
+
+      fireEvent.click(screen.getByText('Set Trap'));
+      fireEvent.click(screen.getByText('Spike Trap'));
+
+      // Should show direction selector
+      expect(screen.getByText('Select trap placement direction')).toBeInTheDocument();
+      expect(screen.getByText('↑')).toBeInTheDocument(); // North button
+    });
+
+    it('completes set-trap with direction selection', () => {
+      const onSelect = vi.fn();
+
+      const abilities: AbilityView[] = [
+        {
+          id: 'dagger_set_trap',
+          name: 'Set Trap',
+          description: 'Place a trap',
+          ready: true,
+          cooldownRemaining: 0,
+          requiresTarget: false,
+          requiresDirection: true,
+        },
+      ];
+
+      const inventory: InventoryItemView[] = [createTrapItem('trap_item', 'Spike Trap')];
+
+      render(
+        <AbilityDropdown
+          abilities={abilities}
+          enemies={[]}
+          inventory={inventory}
+          playerX={0}
+          playerY={0}
+          onSelect={onSelect}
+        />
+      );
+
+      fireEvent.click(screen.getByText('Set Trap'));
+      fireEvent.click(screen.getByText('Spike Trap'));
+      fireEvent.click(screen.getByText('↑')); // Select North
+
+      expect(onSelect).toHaveBeenCalledWith({
+        abilityId: 'dagger_set_trap',
+        direction: 'N',
+        itemEntityId: 'trap_entity_1',
+      });
+    });
+
+    it('disables when no traps in inventory', () => {
+      const onSelect = vi.fn();
+
+      const abilities: AbilityView[] = [
+        {
+          id: 'dagger_set_trap',
+          name: 'Set Trap',
+          description: 'Place a trap',
+          ready: true,
+          cooldownRemaining: 0,
+          requiresTarget: false,
+          requiresDirection: true,
+        },
+      ];
+
+      render(
+        <AbilityDropdown
+          abilities={abilities}
+          enemies={[]}
+          inventory={[]}
+          playerX={0}
+          playerY={0}
+          onSelect={onSelect}
+        />
+      );
+
+      const button = screen.getByText('Set Trap').closest('button');
+      expect(button).toBeDisabled();
+    });
+  });
+
+  describe('Ability cooldowns', () => {
+    it('disables ability with cooldown remaining', () => {
+      const onSelect = vi.fn();
+
+      const abilities: AbilityView[] = [
+        {
+          id: 'power_strike',
+          name: 'Power Strike',
+          description: 'Attack with force',
+          ready: false,
+          cooldownRemaining: 3,
+          requiresTarget: true,
+          requiresDirection: false,
+        },
+      ];
+
+      render(
+        <AbilityDropdown
+          abilities={abilities}
+          enemies={[createEnemy('enemy1', 1, 0)]}
+          inventory={[]}
+          playerX={0}
+          playerY={0}
+          onSelect={onSelect}
+        />
+      );
+
+      const button = screen.getByText('Power Strike').closest('button');
+      expect(button).toBeDisabled();
+      expect(screen.getByText('Cooldown: 3 turns')).toBeInTheDocument();
+    });
+  });
+
+  describe('Direction-based abilities', () => {
+    it('shows direction selector for direction-required abilities', () => {
+      const onSelect = vi.fn();
+
+      const abilities: AbilityView[] = [
+        {
+          id: 'test_direction_ability',
+          name: 'Push',
+          description: 'Push in a direction',
+          ready: true,
+          cooldownRemaining: 0,
+          requiresTarget: false,
+          requiresDirection: true,
+        },
+      ];
+
+      render(
+        <AbilityDropdown
+          abilities={abilities}
+          enemies={[]}
+          inventory={[]}
+          playerX={0}
+          playerY={0}
+          onSelect={onSelect}
+        />
+      );
+
+      fireEvent.click(screen.getByText('Push'));
+
+      // Should show direction selector
+      expect(screen.getByText('Select direction for Push')).toBeInTheDocument();
+    });
   });
 });

@@ -100,10 +100,10 @@ export function AbilityDropdown({
     [mapObjects, playerX, playerY],
   );
 
-  const targetableEnemies = useMemo(() => {
-    const inRangeEnemies = getValidEnemyTargets(enemies, playerPosition);
-    return inRangeEnemies.length > 0 ? inRangeEnemies : enemies;
-  }, [enemies, playerX, playerY]);
+  const targetableEnemies = useMemo(
+    () => getValidEnemyTargets(enemies, playerPosition),
+    [enemies, playerX, playerY],
+  );
 
   const validTrapPlacementDirections = useMemo(() => {
     const mutableDirections = new Set<Direction>();
@@ -146,9 +146,14 @@ export function AbilityDropdown({
     }
 
     if (ability.requiresTarget === true) {
-      const target = targetableEnemies[0];
-      if (target !== undefined) {
+      if (targetableEnemies.length === 1) {
+        const target = targetableEnemies[0]!;
         onSelect({ abilityId: ability.id, targetId: target.id });
+        return;
+      }
+
+      if (targetableEnemies.length > 1) {
+        setSelectedAbilityId(ability.id);
         return;
       }
     }
@@ -275,8 +280,36 @@ export function AbilityDropdown({
     );
   }
 
+  // Target chooser for abilities with multiple targets
+  const selectedAbility = selectedAbilityId ? abilities.find((a) => a.id === selectedAbilityId) : undefined;
+  if (selectedAbilityId !== null && selectedAbility?.requiresTarget === true && targetableEnemies.length > 1 && selectedAbilityId !== 'dagger_disarm' && selectedAbilityId !== 'dagger_set_trap') {
+    return (
+      <div className={styles.listContainer}>
+        {targetableEnemies.map((enemy) => (
+          <button
+            key={enemy.id}
+            className={styles.itemButton}
+            onClick={() => {
+              onSelect({ abilityId: selectedAbilityId, targetId: enemy.id });
+              resetSelection();
+            }}
+          >
+            <div className={styles.itemHeader}>
+              <span className={styles.itemName}>{enemy.name}</span>
+            </div>
+            <div className={styles.itemDescription}>
+              {calculateDistance(playerX, playerY, enemy.x, enemy.y)} away
+            </div>
+          </button>
+        ))}
+        <button className={styles.itemButton} onClick={resetSelection}>
+          Cancel
+        </button>
+      </div>
+    );
+  }
+
   if (selectedAbilityId !== null) {
-    const selectedAbility = abilities.find((ability) => ability.id === selectedAbilityId);
     const isSetTrap = selectedAbilityId === 'dagger_set_trap';
 
     return (
