@@ -10,5 +10,5 @@ export const ironMace: WeaponTemplate = {
   value: 20,
   stackable: false,
   maxStack: 1,
-  weapon: { damage: 7, damageType: 'physical', accuracy: -2, speed: -4, slot: 'weapon', weaponRange: 1, weaponType: 'bludgeon' },
+  weapon: { damage: 9, damageType: 'physical', accuracy: -2, speed: -4, slot: 'weapon', weaponRange: 1, weaponType: 'bludgeon' },
 };

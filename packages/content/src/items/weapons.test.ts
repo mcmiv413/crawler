@@ -45,9 +45,9 @@ describe('WEAPONS', () => {
     expect(uncommonMin).toBeLessThanOrEqual(rareMin);
   });
 
-  it('iron_mace damage === 7', () => {
+  it('iron_mace damage === 9', () => {
     const w = WEAPONS.find(w => w.itemId === 'iron_mace');
-    expect(w?.weapon.damage).toBe(7);
+    expect(w?.weapon.damage).toBe(9);
   });
 
   it('short_bow damage === 6', () => {
