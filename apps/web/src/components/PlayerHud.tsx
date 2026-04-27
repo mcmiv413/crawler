@@ -206,8 +206,8 @@ export function PlayerHud({ player, compact = false }: PlayerHudProps) {
 
       {/* Secondary stats inline */}
       <div style={{ fontSize: 11, color: colors.muted, marginTop: 5, display: 'flex', gap: 8, flexWrap: 'wrap' }}>
-        <span>ATK <span style={{ color: colors.gold }}>{player.attack}</span></span>
-        <span>DEF <span style={{ color: colors.steel }}>{player.defense}</span></span>
+        <span>ATK <span style={{ color: colors.gold }}>{player.statBreakdowns.attack?.base ?? player.attack}</span></span>
+        <span>DEF <span style={{ color: colors.steel }}>{player.statBreakdowns.defense?.base ?? player.defense}</span></span>
         {player.accuracy !== undefined && (
           <span>ACC <span style={{ color: colors.teal }}>{player.accuracy}%</span></span>
         )}
