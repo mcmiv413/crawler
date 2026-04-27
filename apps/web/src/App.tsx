@@ -42,7 +42,7 @@ function renderPanel(
   if (panelType === 'inventory') {
     return (
       <div key="inventory" style={panelStyle}>
-        <InventoryScreen inventory={view.inventory} phase={view.phase} sendCommand={sendCommand} onClose={onClosePanel ?? (() => {})} gold={view.player.gold} />
+        <InventoryScreen inventory={view.inventory} phase={view.phase} sendCommand={sendCommand} onClose={onClosePanel ?? (() => {})} gold={view.player.gold} notification={view.notification} />
       </div>
     );
   }

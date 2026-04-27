@@ -4,12 +4,14 @@ import { ItemSpriteIcon } from './ItemSpriteIcon';
 import { colors, FONT_STACK } from '../styles.js';
 import { SectionLabel } from './ui/index.js';
 
+const DEFENSE_DIVISOR = 35; // matches defenseDivisor in packages/content/src/balance/tables.ts
+
 const statDescriptions: Record<string, string> = {
   health: 'Maximum health. Determines how much damage you can take before dying.',
   attack: 'Bonus damage added to your weapon. Combined with weapon damage range to determine total damage dealt per hit.',
-  defense: 'Damage reduction. Each point of defense reduces incoming damage by a percentage.',
-  accuracy: 'Chance to hit enemies in combat. Affects whether your attacks connect.',
-  evasion: 'Chance to dodge incoming attacks. Higher evasion means you take less damage.',
+  defense: 'Reduces incoming damage. Uses diminishing returns so early points are most efficient. Formula: DEF / (DEF + 35). DEF 4 ≈ 10%, DEF 17 ≈ 33%, DEF 35 = 50%.',
+  accuracy: 'Improves your hit chance. Base hit chance is 65%. Your accuracy adds to this directly. Formula: 65 + accuracy − enemy evasion, capped between 15% and 95%.',
+  evasion: 'Makes you harder to hit. Subtracts directly from enemy hit chance. Formula: 65 + enemy accuracy − your evasion, capped between 15% and 95%.',
   speed: 'Turn order in combat. Higher speed means you act sooner in each round.',
 };
 
@@ -126,10 +128,10 @@ export function StatDetailModal({ breakdown, onClose, player }: StatDetailModalP
         <div style={{ marginBottom: 8, padding: 6, background: colors.border2, borderRadius: '2px' }}>
           <div style={{ fontSize: 10, color: colors.muted, marginBottom: 4 }}>Damage Mitigation</div>
           <div style={{ fontSize: 12, color: colors.text, fontWeight: 600 }}>
-            {Math.round((breakdown.total / (breakdown.total + 35)) * 100)}% damage reduction
+            {Math.round((breakdown.total / (breakdown.total + DEFENSE_DIVISOR)) * 100)}% damage reduction
           </div>
           <div style={{ fontSize: 9, color: colors.muted, marginTop: 2 }}>
-            Reduces incoming damage by {Math.round((breakdown.total / (breakdown.total + 35)) * 100)}%
+            Reduces incoming damage by {Math.round((breakdown.total / (breakdown.total + DEFENSE_DIVISOR)) * 100)}%
           </div>
         </div>
       )}

@@ -57,6 +57,12 @@ export const COMBAT_LOG_MAX_HEIGHT = 250;
 /** Number of combat log entries shown in the dungeon mini-log. */
 export const COMBAT_LOG_MINI_ENTRIES = 4;
 
+/** Font size (px) for mini combat log entries on dungeon screen. */
+export const COMBAT_LOG_MINI_FONT_SIZE = 13;
+
+/** Line height (multiplier) for mini combat log entries on dungeon screen. */
+export const COMBAT_LOG_MINI_LINE_HEIGHT = 1.3;
+
 /** Duration (ms) a combat indicator floats and is visible before fading out. */
 export const COMBAT_INDICATOR_FADEOUT_MS = 1500;
 
