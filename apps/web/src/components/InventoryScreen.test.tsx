@@ -26,6 +26,8 @@ const mockWeapon = {
   templateId: 'iron_sword',
   weaponStats: {
     damage: 8,
+    damageMin: 8,
+    damageMax: 8,
     damageType: 'physical' as const,
     accuracy: 85,
     speed: 1,

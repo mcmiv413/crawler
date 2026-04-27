@@ -4,6 +4,7 @@
   "private": true,
   "type": "module",
   "scripts": {
+    "prepare": "cp .claude/hooks/pre-commit.sh .git/hooks/pre-commit && chmod +x .git/hooks/pre-commit",
     "build": "pnpm -r run build",
     "test": "VITEST_MAX_THREADS=2 vitest run --reporter=./scripts/reporters/vitest-quiet.js --bail 1",
     "test:verbose": "VITEST_MAX_THREADS=2 vitest run",

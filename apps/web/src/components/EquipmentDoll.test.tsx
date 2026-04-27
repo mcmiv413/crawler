@@ -39,6 +39,8 @@ const mockWeapon: InventoryItemView = {
   templateId: 'iron_sword',
   weaponStats: {
     damage: 8,
+    damageMin: 8,
+    damageMax: 8,
     damageType: 'physical',
     accuracy: 85,
     speed: 1,

@@ -30,6 +30,8 @@ const BASE_PLAYER = {
   accuracy: 80,
   evasion: 20,
   speed: 1,
+  totalDamageMin: 5,
+  totalDamageMax: 15,
   resistances: {} as Record<string, number>,
   gold: 0,
   floor: 1,
