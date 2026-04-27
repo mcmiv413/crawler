@@ -3,7 +3,7 @@ import type {
 } from '@dungeon/contracts';
 import type { CommandResult } from './shared.js';
 import type { SeededRNG } from '../../utils/rng.js';
-import { COMBAT } from '@dungeon/content';
+import { COMBAT, getWeaponDamageProfile } from '@dungeon/content';
 import { updateRunMetrics } from './shared.js';
 import { executeAbility } from '../../abilities/runtime/execute-ability.js';
 import { resolveAttack } from '../../systems/combat.js';
@@ -291,6 +291,18 @@ export function handleAttack(
   const affinityValue = targetEnemy.affinities?.[weaponDamageType];
   const resistance = affinityValue ?? 0;
 
+  // Extract weapon damage profile and base damage for new combat system
+  let weaponDamageProfile: string | undefined;
+  let weaponBaseDamage: number | undefined;
+  if (state.player.equipment.weapon !== null) {
+    const weaponTemplate = state.itemRegistry.items.get(state.player.equipment.weapon);
+    if (weaponTemplate !== undefined && weaponTemplate.itemClass === 'weapon') {
+      const weapon = (weaponTemplate as WeaponTemplate).weapon;
+      weaponDamageProfile = getWeaponDamageProfile(weapon.weaponType, weapon.weaponRange);
+      weaponBaseDamage = weapon.damage;
+    }
+  }
+
   // DEBUG: Log combat parameters for diagnosis
   const expectedHitChance = Math.max(15, Math.min(95, COMBAT.baseHitChance + effectiveAccuracy - targetEnemy.stats.evasion));
 
@@ -304,6 +316,8 @@ export function handleAttack(
     defenderHealth: targetEnemy.stats.health,
     damageType: weaponDamageType,
     defenderResistance: resistance,
+    weaponDamageProfile,
+    weaponBaseDamage,
   }, rng, onHitStatus, onHitChance);
 
   // Include diagnostic info for misses
