@@ -8,9 +8,8 @@ function collectWeaponBonuses(statName: string, weapon: unknown): StatBonusSourc
   const spriteName = 'spriteName' in weapon ? (weapon as { spriteName?: string }).spriteName : undefined;
   const mutableBonuses: StatBonusSource[] = [];
 
-  if (statName === 'attack' && w.damage > 0) {
-    mutableBonuses.push({ source: `${(weapon as { name: string }).name}`, amount: w.damage, spriteName });
-  }
+  // NOTE: weapon damage is NOT a bonus to attack stat; it's a separate damage range
+  // The stat breakdown for attack shows only the flat attack bonus, weapon damage is shown separately
   if (statName === 'accuracy' && w.accuracy !== 0) {
     mutableBonuses.push({ source: `${(weapon as { name: string }).name} accuracy`, amount: w.accuracy, spriteName });
   }
