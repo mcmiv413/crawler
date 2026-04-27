@@ -332,7 +332,7 @@ export interface ShopItemView {
   readonly price: number;
   readonly effectivePrice: number;  // after shopkeeper disposition discount
   readonly stock: number;
-  readonly itemClass: string;  // weapon | armor | consumable
+  readonly itemClass: string;  // weapon | armor | consumable | trap
   readonly spriteName?: string;  // Atlas sprite name for rendering
   readonly weaponData?: { readonly damage: number; readonly damageMin: number; readonly damageMax: number; readonly damageType: string; readonly accuracy: number; readonly speed: number; readonly weaponRange: number; readonly minRange?: number };
   readonly armorData?: { readonly defense: number; readonly evasionPenalty: number; readonly slot: string; readonly enchantmentSlots: number };

@@ -11,4 +11,5 @@ export const poisonGasTrap: TrapItemTemplate = {
   stackable: true,
   maxStack: 3,
   trapTemplateId: 'poison_trap',
+  spriteName: 'acid pool center',
 };

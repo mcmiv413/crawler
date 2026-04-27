@@ -11,4 +11,5 @@ export const fireTrap: TrapItemTemplate = {
   stackable: true,
   maxStack: 5,
   trapTemplateId: 'fire_pit',
+  spriteName: 'fire icon',
 };

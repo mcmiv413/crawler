@@ -136,7 +136,6 @@ describe('Inventory System', () => {
       turnCount: 1,
       isActive: true,
       floorHistory: [],
-      weaponMastery: EMPTY_WEAPON_MASTERY,
       speedAccumulators: {},
     };
     const stateWithRun = { ...state, phase: 'dungeon' as const, run: runState };
@@ -203,7 +202,6 @@ describe('Inventory System', () => {
       turnCount: 1,
       isActive: true,
       floorHistory: [],
-      weaponMastery: EMPTY_WEAPON_MASTERY,
       speedAccumulators: {},
     };
 

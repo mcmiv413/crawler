@@ -359,7 +359,6 @@ describe('handlePlayerDeath - enriched event fields', () => {
         floorHistory: [],
         floorCache: new Map(),
         speedAccumulators: {},
-        weaponMastery: { blade: 0, bludgeon: 0, axe: 0, ranged: 0, dagger: 0 },
       },
       itemRegistry: { items: new Map() } as any,
     };

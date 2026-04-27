@@ -11,4 +11,5 @@ export const infernoTrap: TrapItemTemplate = {
   stackable: true,
   maxStack: 3,
   trapTemplateId: 'fire_pit',
+  spriteName: 'fire icon',
 };

@@ -156,7 +156,7 @@ export function resolveEnemyAbility(
       runMetrics: state.run.runMetrics,
       floorHistory: state.run.floorHistory,
       floorCache: state.run.floorCache,
-      weaponMastery: state.run.weaponMastery,
+      weaponMastery: state.weaponMastery,
       speedAccumulators: state.run.speedAccumulators,
     },
   };

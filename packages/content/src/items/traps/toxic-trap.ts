@@ -11,4 +11,5 @@ export const toxicTrap: TrapItemTemplate = {
   stackable: true,
   maxStack: 2,
   trapTemplateId: 'poison_trap',
+  spriteName: 'acid pool center',
 };

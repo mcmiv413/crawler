@@ -50,7 +50,6 @@ function makeAiState(
     floorHistory: [],
     floorCache: new Map(),
     speedAccumulators: {},
-    weaponMastery: EMPTY_WEAPON_MASTERY,
   };
 
   const base = createTestGameState();

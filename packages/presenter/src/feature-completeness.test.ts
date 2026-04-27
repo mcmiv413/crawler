@@ -809,7 +809,7 @@ describe('Feature Completeness: Weapon Mastery Unlock', () => {
     const result = handleCommand(state, { type: 'ATTACK', targetId: target.id }, rng());
 
     // Verify weapon mastery count increased
-    const newMastery = result.state.run?.weaponMastery;
+    const newMastery = result.state.weaponMastery;
     expect(newMastery).toBeDefined();
 
     // Verify mastery unlock events (if count reaches threshold)

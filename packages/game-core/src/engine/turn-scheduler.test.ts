@@ -54,7 +54,6 @@ function makeTurnState(
     runMetrics: EMPTY_RUN_METRICS,
     floorHistory: [],
     floorCache: new Map(),
-    weaponMastery: EMPTY_WEAPON_MASTERY,
     speedAccumulators: {},
   };
 

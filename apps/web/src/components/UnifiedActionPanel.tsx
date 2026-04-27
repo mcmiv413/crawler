@@ -127,13 +127,22 @@ export function UnifiedActionPanel({
         break;
       }
       case 'ABILITY': {
-        const abilitySelection = selection as { abilityId: string; targetId?: string; direction?: Direction };
-        onSendCommand({
-          type: 'USE_ABILITY',
-          abilityId: abilitySelection.abilityId,
-          targetId: abilitySelection.targetId,
-          direction: abilitySelection.direction,
-        });
+        const abilitySelection = selection as { abilityId: string; targetId?: string; direction?: Direction; itemEntityId?: string };
+        // Set Trap uses a different command type
+        if (abilitySelection.itemEntityId) {
+          onSendCommand({
+            type: 'SET_TRAP',
+            direction: abilitySelection.direction!,
+            itemEntityId: abilitySelection.itemEntityId,
+          });
+        } else {
+          onSendCommand({
+            type: 'USE_ABILITY',
+            abilityId: abilitySelection.abilityId,
+            targetId: abilitySelection.targetId,
+            direction: abilitySelection.direction,
+          });
+        }
         break;
       }
       case 'INTERACT': {
@@ -300,6 +309,7 @@ export function UnifiedActionPanel({
               <AbilityDropdown
                 abilities={view.player.abilities}
                 enemies={enemies}
+                inventory={view.inventory.items}
                 playerX={playerPos.x}
                 playerY={playerPos.y}
                 onSelect={(abilitySelection) => handleDropdownSelect('ABILITY', abilitySelection)}

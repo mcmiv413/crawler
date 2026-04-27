@@ -17,9 +17,9 @@ export const colors = {
   // Text
   text:    '#cdd0d6',
   label:   '#7b8090',
-  // Raised from #5a5e6b → #686c7a for ~4.6:1 contrast against --panel.
+  // Brightened from #686c7a → #9096a8 for improved readability while maintaining subdued appearance.
   // Affects section labels, slot names, metadata, placeholders.
-  muted:   '#686c7a',
+  muted:   '#9096a8',
   // Accents — same perceptual weight, vary hue only
   lime:    '#7dc940',  // HP full, loot, primary CTA
   gold:    '#c8963c',  // economy — gold, ATK

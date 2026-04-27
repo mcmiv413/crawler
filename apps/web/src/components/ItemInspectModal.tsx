@@ -151,6 +151,17 @@ export function ItemInspectModal({
             </InfoCard>
           )}
 
+          {isInventoryItem && (item as InventoryItemView).itemClass === 'consumable' && (item as any).consumable?.effect === 'buff' && (
+            <InfoCard marginBottom={12}>
+              <SectionLabel label="Effect" color={colors.teal} />
+              <div style={{ fontSize: 11, color: colors.text, lineHeight: 1.6 }}>
+                <div>
+                  +{(item as any).consumable.magnitude} attack · ~{(item as any).consumable.duration} turns
+                </div>
+              </div>
+            </InfoCard>
+          )}
+
           {showComparison && equippedInSlot && isInventoryItem && (
             <div style={{ marginBottom: 12 }}>
               <SectionLabel label="Comparison" color={colors.gold} />

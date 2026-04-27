@@ -11,4 +11,5 @@ export const lightningTrap: TrapItemTemplate = {
   stackable: true,
   maxStack: 2,
   trapTemplateId: 'lightning_trap',
+  spriteName: 'lightning icon',
 };

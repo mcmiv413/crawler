@@ -3,7 +3,7 @@ import type { ConsumableTemplate } from '@dungeon/contracts';
 export const strengthElixir: ConsumableTemplate = {
   itemId: 'strength_elixir',
   name: 'Strength Elixir',
-  description: 'Temporarily boosts attack power.',
+  description: 'Grants +5 attack for approximately 10 turns.',
   itemClass: 'consumable',
   rarity: 'uncommon',
   value: 20,

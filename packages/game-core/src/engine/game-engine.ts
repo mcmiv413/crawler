@@ -57,6 +57,7 @@ export class GameEngine implements IGameEngine {
       turnNumber: 0,
       version: 1,
       activeQuests: [],
+      weaponMastery: EMPTY_WEAPON_MASTERY,
     };
 
     return state;
@@ -120,7 +121,7 @@ export class GameEngine implements IGameEngine {
 
   private enterDungeon(state: GameState, rng: SeededRNG, startDepth?: number): CommandResult {
     // Area 4b: Clamp startDepth to [1, deepestFloor - 1]
-    const maxAllowed = Math.max(1, state.world.deepestFloor - 1);
+    const maxAllowed = Math.max(1, state.world.deepestFloor);
 
     // If no depth specified, continue from last retreat floor if available
     const defaultDepth = state.lastRetreatFloor !== undefined ? Math.max(1, Math.min(state.lastRetreatFloor, maxAllowed)) : 1;
@@ -223,7 +224,6 @@ export class GameEngine implements IGameEngine {
         runMetrics: EMPTY_RUN_METRICS,
         floorHistory: [],
         floorCache: new Map(),
-        weaponMastery: EMPTY_WEAPON_MASTERY,
         speedAccumulators,
       },
       lastRunMetrics: undefined,  // Clear previous run metrics when starting new run
@@ -352,20 +352,17 @@ export class GameEngine implements IGameEngine {
   ): CommandResult {
     if (state.run === null) return { state, events: [...previousEvents], runEnded: false };
 
-    const history = state.run.floorHistory;
     let events = [...previousEvents];
 
-    // If no history (floor 1), treat as retreat to town
-    if (history.length === 0) {
+    // If on floor 1 or below, treat as retreat to town
+    if (state.player.floor <= 1) {
       const retreatResult = executeRetreat(state, rng);
       return { state: retreatResult.state, events: [...events, ...retreatResult.events], runEnded: true };
     }
 
-    const prev = history[history.length - 1]!;
-    const newHistory = history.slice(0, -1);
     const currentDepth = state.run.floor.depth;
-    const newDepth = currentDepth - 1;
-    const biome = BIOME_BY_FLOOR(newDepth, rng);
+    const targetDepth = currentDepth - 1;
+    const biome = BIOME_BY_FLOOR(targetDepth, rng);
 
     // Save current floor to cache so re-descending restores the cleared state
     const cacheSnapshot: StoredFloor = {
@@ -377,38 +374,71 @@ export class GameEngine implements IGameEngine {
     const newCache = new Map(state.run.floorCache ?? []);
     newCache.set(currentDepth, cacheSnapshot);
 
-    // Recompute FOV for the restored floor from player's prior position
-    const restoredCells = computeFov(prev.floor, prev.playerPosition);
-    const restoredFloor = { ...prev.floor, cells: restoredCells };
+    // Try to load from floorHistory first (for initial descents), then run cache, then persisted cache
+    const fromHistory = state.run.floorHistory.length > 0 ? state.run.floorHistory[0] : undefined;
+    const cached = fromHistory ?? state.run.floorCache?.get(targetDepth) ?? state.persistedFloorCache?.get(targetDepth);
+    
+    let restoredFloor: DungeonFloor;
+    let restoredEnemies: ReadonlyMap<string, EnemyInstance>;
+    let restoredObjects: ReadonlyMap<string, ObjectInstance>;
+    let playerPosition: Position;
+
+    if (cached !== undefined) {
+      // Restore from cache or history
+      const restoredCells = computeFov(cached.floor, cached.playerPosition);
+      restoredFloor = { ...cached.floor, cells: restoredCells };
+      restoredEnemies = cached.enemies;
+      restoredObjects = cached.objects;
+      playerPosition = cached.playerPosition;
+    } else {
+      // Generate fresh floor (shouldn't normally happen, but handle as fallback)
+      const { floor } = generateFloor(targetDepth, biome, rng);
+      const worldMods = buildWorldModifiers(state.world, targetDepth);
+      const { enemies: genEnemies, objects: genObjects } = populateFloor(floor, biome, rng, worldMods);
+      const validation = validateSpawns(floor, genEnemies);
+      const finalEnemies = validation.valid === true ? genEnemies : fixSpawns(floor, genEnemies);
+      const visibleCells = computeFov(floor, floor.entrance);
+      restoredFloor = { ...floor, cells: visibleCells };
+      restoredEnemies = finalEnemies;
+      restoredObjects = genObjects;
+      playerPosition = floor.entrance;
+    }
 
     events = [...events, {
       type: 'FLOOR_ENTERED',
-      depth: newDepth,
+      depth: targetDepth,
       biomeId: biome.biomeId,
       timestamp: Date.now(),
       turnNumber: state.turnNumber,
     }];
 
+    // Initialize speed accumulators for each enemy
+    const speedAccumulators: Record<string, number> = {};
+    for (const enemy of restoredEnemies.values()) {
+      speedAccumulators[enemy.id] = 0;
+    }
+
     const newState: GameState = {
       ...state,
       player: {
         ...state.player,
-        position: prev.playerPosition,
-        floor: newDepth,
+        position: playerPosition,
+        floor: targetDepth,
       },
       run: {
         ...state.run,
         floor: restoredFloor,
-        enemies: prev.enemies,
-        objects: prev.objects,
+        enemies: restoredEnemies,
+        objects: restoredObjects,
         turnCount: 0,
-        floorHistory: newHistory,
+        floorHistory: state.run.floorHistory.slice(0, -1),
         floorCache: newCache,
+        speedAccumulators,
       },
     };
 
     // D1: Check for floor depth quest completion
-    const questResult = completeFloorDepthQuests(newState, newDepth);
+    const questResult = completeFloorDepthQuests(newState, targetDepth);
     const finalState = questResult.state;
     events = [...events, ...questResult.events];
 

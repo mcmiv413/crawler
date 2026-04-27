@@ -54,9 +54,9 @@ function createTestGameState(playerPos = { x: 5, y: 5 }): GameState {
       turnCount: 1,
       isActive: true,
       floorHistory: [],
-      weaponMastery: { blade: 0, bludgeon: 0, axe: 0, ranged: 0, dagger: 0 },
       speedAccumulators: {},
     },
+    weaponMastery: { blade: 0, bludgeon: 0, axe: 0, ranged: 0, dagger: 0 },
     world: {
       town: { prosperity: 50, fear: 0, corruption: 0, rumors: [], lastRunSummary: null },
       npcs: [],

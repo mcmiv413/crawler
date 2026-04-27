@@ -11,4 +11,5 @@ export const epicInfernoPit: TrapItemTemplate = {
   stackable: true,
   maxStack: 1,
   trapTemplateId: 'inferno_pit',
+  spriteName: 'big flame',
 };
