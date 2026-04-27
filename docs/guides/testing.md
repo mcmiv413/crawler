@@ -4,12 +4,21 @@
 
 Tests define required behavior, not current implementation.
 
+> For agents, the mandatory execution workflow lives in `CLAUDE.md`. This guide provides the layer rules, helpers, and examples that support that workflow.
+
 AI assistants are allowed to generate test scaffolding, but every test must be reviewed for:
 - correct layer
 - deterministic setup
 - meaningful assertions
 - player-visible outcome validation
 - no accidental coupling to tunable config
+
+## Execution Workflow
+
+1. Start with the smallest affected scope (`pnpm vitest run path/to/file.test.ts` or `pnpm test:changed`).
+2. If a quiet run fails, rerun the failing scope with full output (`pnpm test:verbose`, targeted Vitest, and `.validate-logs/test.log`) before diagnosing.
+3. Decide whether the failure is a real regression or a brittle test. Prefer fixing the test when it depends on tuned values, live config in the wrong layer, or implementation details.
+4. Finish with `pnpm validate`. Focused test passes help you iterate, but they do not replace full validation.
 
 ## Test Layer Decision
 

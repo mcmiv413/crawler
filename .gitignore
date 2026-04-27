@@ -42,6 +42,7 @@ mcp-config.json
 !README.MD
 !readme.MD
 !docs/**/*.md
+!.github/copilot-instructions.md
 .vercel
 
 # Windows zone identifier files
