@@ -183,7 +183,7 @@ describe('Regression Tests - Threat and Balance Rules', () => {
         ...firstEnemy,
         stats: { ...firstEnemy.stats, attack: 6, speed: 120 }, // Faster than player (100)
         position: { x: 10, y: 5 },
-        equipment: { ...firstEnemy.equipment, weapon: { ...firstEnemy.equipment.weapon, range: 3 } },
+        equipment: { ...firstEnemy.equipment, weapon: { ...firstEnemy.equipment.weapon, weaponRange: 3 } },
       };
 
       const threat = computeEnemyThreatRating(rangedEnemy, state);
@@ -282,7 +282,7 @@ describe('Regression Tests - Threat and Balance Rules', () => {
       const rangedEnemy: EnemyInstance = {
         ...firstEnemy,
         position: { x: 8, y: 5 }, // 3 squares away
-        equipment: { ...firstEnemy.equipment, weapon: { ...firstEnemy.equipment.weapon, range: 3 } },
+        equipment: { ...firstEnemy.equipment, weapon: { ...firstEnemy.equipment.weapon, weaponRange: 3 } },
       };
 
       // With range 3, this enemy should be within attack range
@@ -298,7 +298,7 @@ describe('Regression Tests - Threat and Balance Rules', () => {
       const meleeEnemy: EnemyInstance = {
         ...firstEnemy,
         position: { x: 8, y: 5 }, // 3 squares away
-        equipment: { ...firstEnemy.equipment, weapon: { ...firstEnemy.equipment.weapon, range: 1 } },
+        equipment: { ...firstEnemy.equipment, weapon: { ...firstEnemy.equipment.weapon, weaponRange: 1 } },
       };
 
       // With range 1, this enemy is out of attack range
@@ -322,7 +322,7 @@ describe('Regression Tests - Threat and Balance Rules', () => {
       const dangerous = { 
         ...baseEnemy, 
         stats: { ...baseEnemy.stats, speed: 150, health: 100 },
-        equipment: { ...baseEnemy.equipment, weapon: { ...baseEnemy.equipment.weapon, range: 3 } },
+        equipment: { ...baseEnemy.equipment, weapon: { ...baseEnemy.equipment.weapon, weaponRange: 3 } },
       };
       const threat = computeEnemyThreatRating(dangerous, state);
       expect(['Moderate', 'High', 'Deadly']).toContain(threat);

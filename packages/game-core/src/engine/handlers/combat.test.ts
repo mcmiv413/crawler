@@ -13,7 +13,11 @@ describe('handleAttack integration', () => {
     }
 
     // Get first enemy
-    const [, enemy] = state.run.enemies.entries().next().value;
+    const entryResult = state.run.enemies.entries().next();
+    if (entryResult.done || !entryResult.value) {
+      throw new Error('No enemies found');
+    }
+    const [, enemy] = entryResult.value;
 
     // Run attack multiple times and collect damage results
     const damages: number[] = [];
