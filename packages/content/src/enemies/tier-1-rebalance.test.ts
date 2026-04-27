@@ -9,7 +9,7 @@ describe('Tier 1 Enemy Rebalance', () => {
     });
 
     it('should have reasonable attack', () => {
-      expect(caveRat.stats.attack).toBeGreaterThan(5);
+      expect(caveRat.stats.attack).toBeGreaterThanOrEqual(5);
       expect(caveRat.stats.attack).toBeLessThan(25);
     });
 

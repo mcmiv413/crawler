@@ -109,11 +109,9 @@ describe('debug routes', () => {
     expect(mockRepo.saveGame).toHaveBeenCalledWith(
       testGameId,
       expect.objectContaining({
-        run: expect.objectContaining({
-          weaponMastery: expect.objectContaining({
-            blade: 3,
-            axe: 2,
-          }),
+        weaponMastery: expect.objectContaining({
+          blade: 3,
+          axe: 2,
         }),
       })
     );
@@ -137,6 +135,7 @@ describe('debug routes', () => {
     const savedState = vi.mocked(mockRepo.saveGame).mock.calls[0]?.[1];
     // weaponMastery patch should be ignored when run is null
     expect(savedState?.run).toBeNull();
+    expect(savedState?.weaponMastery).toEqual(testGameState.weaponMastery);
   });
 
   it('grants abilities', async () => {

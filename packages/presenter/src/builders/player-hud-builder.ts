@@ -200,7 +200,7 @@ export function buildPlayerHud(state: GameState): PlayerHudView {
     biomeColor: state.run?.floor.biomeId ? (BIOMES.get(state.run.floor.biomeId)?.ambientColor ?? '#666') : '#666',
     statuses: statusList,
     abilities: abilityList,
-    weaponMastery: { ...state.weaponMastery },
+    weaponMastery: state.run ? { ...state.weaponMastery } : null,
     equippedItems: mutableEquippedItems,
     statBreakdowns: calculateStatBreakdown(state),
     activeQuests,
