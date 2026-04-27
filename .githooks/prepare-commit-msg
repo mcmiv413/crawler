@@ -1,0 +1,36 @@
+#!/usr/bin/env bash
+# Pre-commit hook: validate conventional commit messages
+
+set -euo pipefail
+
+# Check if user is trying to bypass the hook
+if [[ "${GIT_PARAMS:-}" == *"--no-verify"* ]]; then
+  echo "❌ --no-verify is not allowed for commits"
+  echo ""
+  echo "   This hook ensures all commits follow conventional commit format:"
+  echo "   feat: description"
+  echo "   fix: description"
+  echo "   refactor: description"
+  echo "   docs: description"
+  echo "   test: description"
+  echo "   chore: description"
+  echo ""
+  exit 1
+fi
+
+# Get the commit message
+COMMIT_MSG="$1"
+
+# Validate conventional commit format
+if ! grep -qE "^(feat|fix|refactor|docs|test|chore|perf|ci): " "$COMMIT_MSG"; then
+  echo "❌ Commit message does not follow conventional commit format"
+  echo ""
+  echo "   Your message: $(head -1 "$COMMIT_MSG")"
+  echo ""
+  echo "   Expected format: <type>: <description>"
+  echo "   Valid types: feat, fix, refactor, docs, test, chore, perf, ci"
+  echo ""
+  exit 1
+fi
+
+exit 0

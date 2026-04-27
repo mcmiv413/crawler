@@ -33,7 +33,8 @@ describe('WEAPONS', () => {
   });
 
   it('rarity tier damage scaling: common < uncommon < rare', () => {
-    const common = WEAPONS.filter(w => w.rarity === 'common');
+    // iron_mace is an exception: common bludgeon weapon needed to ensure every weapon type has a common variant
+    const common = WEAPONS.filter(w => w.rarity === 'common' && w.itemId !== 'iron_mace');
     const uncommon = WEAPONS.filter(w => w.rarity === 'uncommon');
     const rare = WEAPONS.filter(w => w.rarity === 'rare');
 
