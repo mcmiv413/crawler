@@ -217,7 +217,7 @@ export function UnifiedActionPanel({
         });
       }
       case 'SWAP':
-        return !!view.inventory.equipped.weapon; // allows swap-to-unarmed
+        return !!view.inventory.equipped.weapon || !!view.inventory.equipped.secondaryWeapon;
       case 'ABILITY':
         return view.player.abilities.some((a) => a.ready);
       case 'INTERACT':
@@ -225,7 +225,7 @@ export function UnifiedActionPanel({
       case 'USE':
         return consumablesWithQty.some((item) => item.quantity > 0);
       case 'INSPECT':
-        return true;
+        return view.inspectableEntities.length > 0;
       default:
         return false;
     }

@@ -32,6 +32,7 @@ interface InventoryScreenProps {
   sendCommand: (command: unknown) => void;
   onClose: () => void;
   gold?: number;
+  notification?: string | null;
 }
 
 /**
@@ -43,6 +44,7 @@ export function InventoryScreen({
   sendCommand,
   onClose,
   gold,
+  notification,
 }: InventoryScreenProps) {
   const { isMobile } = useBreakpoint();
   const [selectedItem, setSelectedItem] = useState<InventoryItemView | null>(null);
@@ -61,20 +63,9 @@ export function InventoryScreen({
 
   // Helper to find the currently equipped item in a slot for comparison
   const getEquippedInSlot = (item: InventoryItemView): InventoryItemView | null => {
-    if (item.weaponStats) {
-      return inventory.equipped.weapon ?? null;
-    }
-    if (item.armorStats) {
-      const slot = item.armorStats.slot;
-      if (slot === 'chest') return inventory.equipped.chest;
-      if (slot === 'head') return inventory.equipped.head;
-      if (slot === 'gloves') return inventory.equipped.gloves;
-      if (slot === 'boots') return inventory.equipped.boots;
-      if (slot === 'ring') {
-        return inventory.equipped.ring1 ?? inventory.equipped.ring2 ?? null;
-      }
-    }
-    return null;
+    return Object.values(inventory.equipped).find(
+      (e): e is InventoryItemView => e !== null && e.id === item.id
+    ) ?? null;
   };
 
   return (
@@ -118,6 +109,11 @@ export function InventoryScreen({
       {/* Equipment Section - always visible */}
       <div style={{ marginBottom: 24, flexShrink: 0 }}>
         <h2 style={{ fontSize: 14, color: '#888', marginBottom: 8 }}>Equipment</h2>
+        {notification && (
+          <p style={{ color: '#fa0', fontSize: 11, margin: '4px 0', textAlign: 'center' }}>
+            {notification}
+          </p>
+        )}
         <EquipmentDoll
           equipped={inventory.equipped}
           onSlotClick={(item) => setSelectedItem(item)}

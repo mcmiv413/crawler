@@ -2,7 +2,7 @@ import React, { useState, useEffect, useMemo } from 'react';
 import type { GameView } from '@dungeon/presenter';
 import { getDamageBand } from '@dungeon/content';
 import { VP_WIDTH, VP_HEIGHT } from '../utils/viewport.js';
-import { TAB_BAR_HEIGHT, BUMP_ANIMATION_DURATION_MS, COMBAT_INDICATOR_FADEOUT_MS } from '../config/ui-config.js';
+import { TAB_BAR_HEIGHT, BUMP_ANIMATION_DURATION_MS, COMBAT_INDICATOR_FADEOUT_MS, COMBAT_LOG_MINI_FONT_SIZE, COMBAT_LOG_MINI_LINE_HEIGHT, COMBAT_LOG_MINI_ENTRIES } from '../config/ui-config.js';
 import { PlayerHud } from './PlayerHud.js';
 import { DungeonView } from './DungeonView.js';
 import { DungeonCanvas } from './DungeonCanvas.js';
@@ -43,7 +43,7 @@ function dangerColor(level: string): string {
 }
 
 function MiniCombatLog({ entries }: { entries: readonly { text: string; type: string }[] }) {
-  const recent = entries.slice(-4);
+  const recent = entries.slice(-COMBAT_LOG_MINI_ENTRIES);
   if (recent.length === 0) return null;
   return (
     <div style={{ marginTop: 8, borderTop: '1px solid #222', paddingTop: 4 }}>
@@ -51,8 +51,8 @@ function MiniCombatLog({ entries }: { entries: readonly { text: string; type: st
         <div
           key={`${index}-${e.type}-${e.text}`}
           style={{
-            fontSize: 13,
-            lineHeight: 1.3,
+            fontSize: COMBAT_LOG_MINI_FONT_SIZE,
+            lineHeight: COMBAT_LOG_MINI_LINE_HEIGHT,
             color: e.type === 'loot' ? '#4f4' : e.type === 'death' ? '#f44' : '#aaa',
           }}
         >
@@ -164,6 +164,11 @@ export function DungeonPhase({
   const dmgDisplay = `${view.player.totalDamageMin}–${view.player.totalDamageMax}`;
   const weaponDisplay = equippedWeapon ? `[${equippedWeapon.name}] ${dmgDisplay}` : `Unarmed ${dmgDisplay}`;
 
+  // Compute mini combat log height dynamically
+  const miniLogHeight = Math.ceil(
+    COMBAT_LOG_MINI_FONT_SIZE * COMBAT_LOG_MINI_LINE_HEIGHT * COMBAT_LOG_MINI_ENTRIES
+  ) + 8; // +8 for paddingTop + borderTop
+
   // Mobile: same layout as desktop - action panel always visible with fixed combat log
   if (isMobile) {
     return (
@@ -198,7 +203,7 @@ export function DungeonPhase({
         </div>
 
         {/* Combat log: fixed 4 lines, always visible above action panel */}
-        <div style={{ flexShrink: 0, minHeight: 64, maxHeight: 80, borderTop: '1px solid #222', paddingTop: 4, marginBottom: 6, overflow: 'hidden' }}>
+        <div style={{ flexShrink: 0, height: miniLogHeight, borderTop: '1px solid #222', paddingTop: 4, marginBottom: 6 }}>
           <MiniCombatLog entries={combatLog} />
         </div>
 
@@ -223,9 +228,6 @@ export function DungeonPhase({
 
         {/* Error message */}
         {error && <p style={{ color: '#f44', fontSize: 10, margin: '4px 0 0 0' }}>{error}</p>}
-
-        {/* Notification (amber for info like EQUIP_BLOCKED) */}
-        {view.notification && <p style={{ color: '#fa0', fontSize: 10, margin: '4px 0 0 0' }}>{view.notification}</p>}
 
         {import.meta.env.VITE_DEBUG === 'true' && <DebugPanel />}
       </div>
@@ -265,7 +267,7 @@ export function DungeonPhase({
       </div>
 
       {/* Combat log: fixed 4 lines, always visible above action panel */}
-      <div style={{ flexShrink: 0, minHeight: 64, maxHeight: 80, borderTop: '1px solid #222', paddingTop: 4, marginBottom: 8, overflow: 'hidden' }}>
+      <div style={{ flexShrink: 0, height: miniLogHeight, borderTop: '1px solid #222', paddingTop: 4, marginBottom: 8 }}>
         <MiniCombatLog entries={combatLog} />
       </div>
 
@@ -290,9 +292,6 @@ export function DungeonPhase({
 
       {/* Error message */}
       {error && <p style={{ color: '#f44', flexShrink: 0, marginTop: 8 }}>{error}</p>}
-
-      {/* Notification (amber for info like EQUIP_BLOCKED) */}
-      {view.notification && <p style={{ color: '#fa0', flexShrink: 0, marginTop: 8 }}>{view.notification}</p>}
 
       {import.meta.env.VITE_DEBUG === 'true' && <DebugPanel />}
     </div>

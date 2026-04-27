@@ -26,27 +26,30 @@ export function ClickableStatGrid({ player }: ClickableStatGridProps) {
       label: 'HP',
       value: `${player.health}`,
       sub: `/${player.maxHealth}`,
+      detail: '',
     },
     {
       key: 'attack',
       label: 'DMG',
       value: `${player.totalDamageMin}–${player.totalDamageMax}`,
       sub: '',
+      detail: '',
     },
     {
       key: 'defense',
       label: 'DEF',
       value: player.defense.toString(),
       sub: '',
+      detail: `${Math.round(player.defense / (player.defense + 35) * 100)}% mit`,
     },
     ...(player.accuracy !== undefined
-      ? [{ key: 'accuracy', label: 'ACC', value: `${player.accuracy}`, sub: '%' }]
+      ? [{ key: 'accuracy', label: 'ACC', value: `+${player.accuracy}`, sub: '', detail: `${Math.min(95, Math.max(15, 65 + player.accuracy))}% base hit` }]
       : []),
     ...(player.evasion !== undefined
-      ? [{ key: 'evasion', label: 'EVA', value: `${player.evasion}`, sub: '%' }]
+      ? [{ key: 'evasion', label: 'EVA', value: `+${player.evasion}`, sub: '', detail: `-${player.evasion}% enemy hit` }]
       : []),
     ...(player.speed !== undefined
-      ? [{ key: 'speed', label: 'SPD', value: player.speed.toString(), sub: '' }]
+      ? [{ key: 'speed', label: 'SPD', value: player.speed.toString(), sub: '', detail: '' }]
       : []),
   ];
 
@@ -101,6 +104,11 @@ export function ClickableStatGrid({ player }: ClickableStatGridProps) {
                   </span>
                 )}
               </div>
+              {stat.detail && (
+                <div style={{ fontSize: 9, color: colors.muted, marginTop: 2 }}>
+                  {stat.detail}
+                </div>
+              )}
             </button>
           );
         })}
