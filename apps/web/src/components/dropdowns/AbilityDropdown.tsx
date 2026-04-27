@@ -321,7 +321,29 @@ export function AbilityDropdown({
             </span>
           </div>
           <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: '0.5rem' }}>
-            {DIRECTION_BUTTONS.map(({ direction, label }) => {
+            {DIRECTION_BUTTONS.slice(0, 4).map(({ direction, label }) => {
+              const isDisabled = isSetTrap && validTrapPlacementDirections.size > 0 && !validTrapPlacementDirections.has(direction);
+              return (
+                <button
+                  key={direction}
+                  className={`${styles.itemButton} ${isDisabled ? styles.disabled : ''}`}
+                  disabled={isDisabled}
+                  onClick={() => handleDirectionSelect(direction)}
+                  style={{ alignItems: 'center', textAlign: 'center' }}
+                >
+                  {label}
+                </button>
+              );
+            })}
+            <button
+              className={`${styles.itemButton} ${styles.disabled}`}
+              disabled
+              style={{ alignItems: 'center', textAlign: 'center' }}
+              title="Player position"
+            >
+              ⊙
+            </button>
+            {DIRECTION_BUTTONS.slice(4).map(({ direction, label }) => {
               const isDisabled = isSetTrap && validTrapPlacementDirections.size > 0 && !validTrapPlacementDirections.has(direction);
               return (
                 <button
