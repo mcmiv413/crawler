@@ -1,14 +1,36 @@
 /**
- * AbilityDropdown - Displays available abilities with target selection support.
- * For single-target abilities, shows both ability and target selection.
- * For directional abilities, shows direction selector after ability is clicked.
- * For Set Trap ability, shows trap picker then direction selector.
+ * AbilityDropdown - Displays available abilities with target and direction support.
  */
 
-import { useState } from 'react';
+import { useMemo, useState } from 'react';
 import type { AbilityView, EntityView, InventoryItemView } from '@dungeon/presenter';
+import { getValidDisarmableTraps, getValidEnemyTargets, getValidTrapPlacementDirections } from '@dungeon/presenter/targeting';
 import type { Direction } from '@dungeon/contracts';
 import styles from './ActionDropdowns.module.css';
+
+type AbilitySelection = {
+  abilityId: string;
+  targetId?: string;
+  direction?: Direction;
+  itemEntityId?: string;
+};
+
+type MapCellLike = {
+  readonly x: number;
+  readonly y: number;
+  readonly walkable: boolean;
+};
+
+const DIRECTION_BUTTONS: ReadonlyArray<{ readonly direction: Direction; readonly label: string }> = [
+  { direction: 'NW', label: '↖' },
+  { direction: 'N', label: '↑' },
+  { direction: 'NE', label: '↗' },
+  { direction: 'W', label: '←' },
+  { direction: 'E', label: '→' },
+  { direction: 'SW', label: '↙' },
+  { direction: 'S', label: '↓' },
+  { direction: 'SE', label: '↘' },
+];
 
 export interface AbilityDropdownProps {
   readonly abilities: readonly AbilityView[];
@@ -16,11 +38,42 @@ export interface AbilityDropdownProps {
   readonly inventory: readonly InventoryItemView[];
   readonly playerX: number;
   readonly playerY: number;
-  readonly onSelect: (selection: { abilityId: string; targetId?: string; direction?: Direction; itemEntityId?: string }) => void;
+  readonly mapObjects?: readonly EntityView[];
+  readonly mapCells?: readonly MapCellLike[];
+  readonly onSelect: (selection: AbilitySelection) => void;
 }
 
 function calculateDistance(x1: number, y1: number, x2: number, y2: number): number {
   return Math.max(Math.abs(x1 - x2), Math.abs(y1 - y2));
+}
+
+function calculateDirection(
+  playerX: number,
+  playerY: number,
+  targetX: number,
+  targetY: number,
+): Direction {
+  const dx = targetX - playerX;
+  const dy = targetY - playerY;
+
+  if (dy < 0) {
+    if (dx < 0) return 'NW';
+    if (dx === 0) return 'N';
+    return 'NE';
+  }
+
+  if (dy === 0) {
+    if (dx < 0) return 'W';
+    return 'E';
+  }
+
+  if (dx < 0) return 'SW';
+  if (dx === 0) return 'S';
+  return 'SE';
+}
+
+function getTrapEntityId(item: InventoryItemView): string | null {
+  return item.stackEntityIds[0] ?? null;
 }
 
 export function AbilityDropdown({
@@ -29,15 +82,104 @@ export function AbilityDropdown({
   inventory,
   playerX,
   playerY,
+  mapObjects = [],
+  mapCells,
   onSelect,
 }: AbilityDropdownProps) {
-  const [selectedAbilityForDirection, setSelectedAbilityForDirection] = useState<string | null>(null);
-  const [selectedTrapForPlacement, setSelectedTrapForPlacement] = useState<string | null>(null);
+  const [selectedAbilityId, setSelectedAbilityId] = useState<string | null>(null);
+  const [selectedTrapItemId, setSelectedTrapItemId] = useState<string | null>(null);
+  const playerPosition = { x: playerX, y: playerY };
 
-  // Filter to ready abilities
-  const readyAbilities = abilities.filter((a) => a.ready);
+  const trapItems = useMemo(
+    () => inventory.filter((item) => item.itemClass === 'trap'),
+    [inventory],
+  );
 
-  if (readyAbilities.length === 0) {
+  const disarmableTraps = useMemo(
+    () => getValidDisarmableTraps(playerPosition, mapObjects),
+    [mapObjects, playerX, playerY],
+  );
+
+  const targetableEnemies = useMemo(() => {
+    const inRangeEnemies = getValidEnemyTargets(enemies, playerPosition);
+    return inRangeEnemies.length > 0 ? inRangeEnemies : enemies;
+  }, [enemies, playerX, playerY]);
+
+  const validTrapPlacementDirections = useMemo(() => {
+    const mutableDirections = new Set<Direction>();
+    const placements = getValidTrapPlacementDirections(playerPosition, mapObjects, enemies, mapCells);
+
+    for (const placement of placements) {
+      mutableDirections.add(calculateDirection(playerX, playerY, placement.x, placement.y));
+    }
+
+    return mutableDirections;
+  }, [enemies, mapCells, mapObjects, playerX, playerY]);
+
+  const resetSelection = () => {
+    setSelectedAbilityId(null);
+    setSelectedTrapItemId(null);
+  };
+
+  const handleAbilitySelect = (ability: AbilityView) => {
+    if (ability.ready !== true) {
+      return;
+    }
+
+    if (ability.id === 'dagger_disarm') {
+      if (disarmableTraps.length === 1) {
+        const trap = disarmableTraps[0]!;
+        onSelect({
+          abilityId: ability.id,
+          direction: calculateDirection(playerX, playerY, trap.x, trap.y),
+        });
+        return;
+      }
+
+      setSelectedAbilityId(ability.id);
+      return;
+    }
+
+    if (ability.id === 'dagger_set_trap' || ability.requiresDirection === true) {
+      setSelectedAbilityId(ability.id);
+      return;
+    }
+
+    if (ability.requiresTarget === true) {
+      const target = targetableEnemies[0];
+      if (target !== undefined) {
+        onSelect({ abilityId: ability.id, targetId: target.id });
+        return;
+      }
+    }
+
+    onSelect({ abilityId: ability.id });
+  };
+
+  const handleDirectionSelect = (direction: Direction) => {
+    if (selectedAbilityId === null) {
+      return;
+    }
+
+    if (selectedAbilityId === 'dagger_set_trap') {
+      if (selectedTrapItemId === null) {
+        return;
+      }
+
+      onSelect({
+        abilityId: selectedAbilityId,
+        direction,
+        itemEntityId: selectedTrapItemId,
+      });
+      resetSelection();
+      return;
+    }
+
+    onSelect({ abilityId: selectedAbilityId, direction });
+    resetSelection();
+  };
+
+  if (abilities.length === 0) {
     return (
       <div className={styles.emptyState}>
         <p>No abilities available.</p>
@@ -45,75 +187,15 @@ export function AbilityDropdown({
     );
   }
 
-  // Check if any enemy is in reasonable range (assume max ability range ~5)
-  const maxAbilityRange = 5;
-  const enemiesInRange = enemies.filter((enemy) => {
-    const distance = calculateDistance(playerX, playerY, enemy.x, enemy.y);
-    return distance <= maxAbilityRange;
-  });
-
-  const handleAbilitySelect = (abilityId: string) => {
-    const ability = abilities.find(a => a.id === abilityId);
-    
-    // Special case: Set Trap shows trap picker first
-    if (ability?.id === 'dagger_set_trap') {
-      setSelectedAbilityForDirection(abilityId);
-      return;
-    }
-    
-    if (ability?.requiresDirection) {
-      setSelectedAbilityForDirection(abilityId);
-      return;
-    }
-
-    // Self-targeted abilities never get a targetId
-    if (!ability?.requiresTarget) {
-      onSelect({ abilityId });
-      return;
-    }
-
-    // If only one enemy in range, auto-target it
-    if (enemiesInRange.length === 1) {
-      const target = enemiesInRange[0];
-      if (target) {
-        onSelect({ abilityId, targetId: target.id });
-      }
-    } else if (enemiesInRange.length > 1) {
-      // Multiple targets - user should select one
-      // For now, just use first enemy in range
-      const target = enemiesInRange[0];
-      if (target) {
-        onSelect({ abilityId, targetId: target.id });
-      }
-    } else {
-      // No targets in range, still send ability
-      onSelect({ abilityId });
-    }
-  };
-
-  const handleDirectionSelect = (direction: Direction) => {
-    if (selectedAbilityForDirection) {
-      const ability = abilities.find(a => a.id === selectedAbilityForDirection);
-      // Set Trap sends itemEntityId instead of targetId
-      if (ability?.id === 'dagger_set_trap' && selectedTrapForPlacement) {
-        onSelect({ abilityId: selectedAbilityForDirection, direction, itemEntityId: selectedTrapForPlacement });
-      } else {
-        onSelect({ abilityId: selectedAbilityForDirection, direction });
-      }
-      setSelectedAbilityForDirection(null);
-      setSelectedTrapForPlacement(null);
-    }
-  };
-
-  // Show trap picker if Set Trap is selected and no trap chosen yet
-  if (selectedAbilityForDirection && selectedAbilityForDirection === 'dagger_set_trap' && !selectedTrapForPlacement) {
-    const trapItems = inventory.filter((item) => item.itemClass === 'trap');
-    
-    if (trapItems.length === 0) {
+  if (selectedAbilityId === 'dagger_disarm') {
+    if (disarmableTraps.length === 0) {
       return (
-        <div className={styles.listContainer}>
-          <div style={{ marginBottom: '12px', padding: '8px', textAlign: 'center' }}>
-            <p style={{ margin: 0 }}>No traps in inventory</p>
+        <div className={styles.emptyState}>
+          <div>
+            <p>No disarmable traps nearby.</p>
+            <button className={styles.itemButton} onClick={resetSelection}>
+              Cancel
+            </button>
           </div>
         </div>
       );
@@ -121,31 +203,107 @@ export function AbilityDropdown({
 
     return (
       <div className={styles.listContainer}>
-        <div style={{ marginBottom: '12px', padding: '8px' }}>
-          <p style={{ margin: '0 0 8px 0', textAlign: 'center' }}>Select trap to place</p>
-          {trapItems.map((trap) => (
+        {disarmableTraps.map((trap) => {
+          const distance = calculateDistance(playerX, playerY, trap.x, trap.y);
+          return (
             <button
               key={trap.id}
               className={styles.itemButton}
               onClick={() => {
-                const entityId = trap.stackEntityIds[0];
-                if (entityId) setSelectedTrapForPlacement(entityId);
+                onSelect({
+                  abilityId: 'dagger_disarm',
+                  direction: calculateDirection(playerX, playerY, trap.x, trap.y),
+                });
+                resetSelection();
               }}
             >
               <div className={styles.itemHeader}>
                 <span className={styles.itemName}>{trap.name}</span>
-                <span className={styles.badge}>Qty: {trap.quantity ?? 0}</span>
+                <span className={styles.badge}>{distance} away</span>
               </div>
-              <div className={styles.itemDescription}>{trap.description}</div>
+              <div className={styles.itemDescription}>Disarm the selected trap.</div>
             </button>
-          ))}
-          <button
-            style={{ marginTop: '8px', width: '100%', padding: '6px' }}
-            onClick={() => {
-              setSelectedAbilityForDirection(null);
-              setSelectedTrapForPlacement(null);
-            }}
-          >
+          );
+        })}
+        <button className={styles.itemButton} onClick={resetSelection}>
+          Cancel
+        </button>
+      </div>
+    );
+  }
+
+  if (selectedAbilityId === 'dagger_set_trap' && selectedTrapItemId === null) {
+    if (trapItems.length === 0) {
+      return (
+        <div className={styles.emptyState}>
+          <div>
+            <p>No traps in inventory.</p>
+            <button className={styles.itemButton} onClick={resetSelection}>
+              Cancel
+            </button>
+          </div>
+        </div>
+      );
+    }
+
+    return (
+      <div className={styles.listContainer}>
+        {trapItems.map((item) => {
+          const trapEntityId = getTrapEntityId(item);
+          return (
+            <button
+              key={item.id}
+              className={styles.itemButton}
+              onClick={() => {
+                if (trapEntityId !== null) {
+                  setSelectedTrapItemId(trapEntityId);
+                }
+              }}
+            >
+              <div className={styles.itemHeader}>
+                <span className={styles.itemName}>{item.name}</span>
+                <span className={styles.quantity}>×{item.quantity ?? 0}</span>
+              </div>
+              <div className={styles.itemDescription}>{item.description}</div>
+            </button>
+          );
+        })}
+        <button className={styles.itemButton} onClick={resetSelection}>
+          Cancel
+        </button>
+      </div>
+    );
+  }
+
+  if (selectedAbilityId !== null) {
+    const selectedAbility = abilities.find((ability) => ability.id === selectedAbilityId);
+    const isSetTrap = selectedAbilityId === 'dagger_set_trap';
+
+    return (
+      <div className={styles.listContainer}>
+        <div className={styles.itemButton}>
+          <div className={styles.itemHeader}>
+            <span className={styles.itemName}>
+              {isSetTrap ? 'Select trap placement direction' : `Select direction for ${selectedAbility?.name ?? selectedAbilityId}`}
+            </span>
+          </div>
+          <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: '0.5rem' }}>
+            {DIRECTION_BUTTONS.map(({ direction, label }) => {
+              const isDisabled = isSetTrap && validTrapPlacementDirections.size > 0 && !validTrapPlacementDirections.has(direction);
+              return (
+                <button
+                  key={direction}
+                  className={`${styles.itemButton} ${isDisabled ? styles.disabled : ''}`}
+                  disabled={isDisabled}
+                  onClick={() => handleDirectionSelect(direction)}
+                  style={{ alignItems: 'center', textAlign: 'center' }}
+                >
+                  {label}
+                </button>
+              );
+            })}
+          </div>
+          <button className={styles.itemButton} onClick={resetSelection}>
             Cancel
           </button>
         </div>
@@ -153,107 +311,36 @@ export function AbilityDropdown({
     );
   }
 
-  // Show direction selector if a directional ability is selected (or Set Trap with trap chosen)
-  if (selectedAbilityForDirection) {
-    const selectedAbility = abilities.find(a => a.id === selectedAbilityForDirection);
-    return (
-      <div className={styles.listContainer}>
-        <div style={{ marginBottom: '12px', padding: '8px', textAlign: 'center' }}>
-          <p style={{ margin: '0 0 8px 0' }}>
-            {selectedAbilityForDirection === 'dagger_set_trap' ? `Select direction to place trap` : `Select direction for ${selectedAbility?.name}`}
-          </p>
-          <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: '4px' }}>
-            <button
-              onClick={() => handleDirectionSelect('NW')}
-              style={{ padding: '4px', fontSize: '12px' }}
-            >
-              ↖
-            </button>
-            <button
-              onClick={() => handleDirectionSelect('N')}
-              style={{ padding: '4px', fontSize: '12px' }}
-            >
-              ↑
-            </button>
-            <button
-              onClick={() => handleDirectionSelect('NE')}
-              style={{ padding: '4px', fontSize: '12px' }}
-            >
-              ↗
-            </button>
-            <button
-              onClick={() => handleDirectionSelect('W')}
-              style={{ padding: '4px', fontSize: '12px' }}
-            >
-              ←
-            </button>
-            <button
-              onClick={() => {
-                if (selectedAbilityForDirection === 'dagger_set_trap') {
-                  // Go back to trap picker
-                  setSelectedTrapForPlacement(null);
-                } else {
-                  // Close the whole dropdown
-                  setSelectedAbilityForDirection(null);
-                }
-              }}
-              style={{ padding: '4px', fontSize: '12px' }}
-            >
-              ✕
-            </button>
-            <button
-              onClick={() => handleDirectionSelect('E')}
-              style={{ padding: '4px', fontSize: '12px' }}
-            >
-              →
-            </button>
-            <button
-              onClick={() => handleDirectionSelect('SW')}
-              style={{ padding: '4px', fontSize: '12px' }}
-            >
-              ↙
-            </button>
-            <button
-              onClick={() => handleDirectionSelect('S')}
-              style={{ padding: '4px', fontSize: '12px' }}
-            >
-              ↓
-            </button>
-            <button
-              onClick={() => handleDirectionSelect('SE')}
-              style={{ padding: '4px', fontSize: '12px' }}
-            >
-              ↘
-            </button>
-          </div>
-        </div>
-      </div>
-    );
-  }
-
   return (
     <div className={styles.listContainer}>
-      {readyAbilities.map((ability) => {
-        const cooldownStatus =
-          ability.cooldownRemaining > 0
-            ? `Cooldown: ${ability.cooldownRemaining} turn${ability.cooldownRemaining > 1 ? 's' : ''}`
-            : 'Ready';
-
-        // Disable button if ability requires target but no targets available
-        const isDisabled = ability.requiresTarget && enemiesInRange.length === 0;
-        const disabledReason = isDisabled ? 'No valid targets in range' : undefined;
+      {abilities.map((ability) => {
+        const cooldownStatus = ability.cooldownRemaining > 0
+          ? `Cooldown: ${ability.cooldownRemaining} turn${ability.cooldownRemaining === 1 ? '' : 's'}`
+          : 'Ready';
+        const disabledReason = ability.cooldownRemaining > 0
+          ? cooldownStatus
+          : ability.id === 'dagger_disarm'
+            ? (disarmableTraps.length === 0 ? 'No adjacent traps' : undefined)
+            : ability.id === 'dagger_set_trap'
+              ? (trapItems.length === 0 ? 'No traps in inventory' : undefined)
+              : ability.requiresTarget
+                ? (targetableEnemies.length === 0 ? 'No valid targets' : undefined)
+                : undefined;
+        const isDisabled = disabledReason !== undefined && disabledReason !== 'Ready';
 
         return (
           <button
             key={ability.id}
-            className={`${styles.itemButton}`}
-            onClick={() => handleAbilitySelect(ability.id)}
+            className={`${styles.itemButton} ${isDisabled ? styles.disabled : ''}`}
             disabled={isDisabled}
+            onClick={() => handleAbilitySelect(ability)}
             title={disabledReason}
           >
             <div className={styles.itemHeader}>
               <span className={styles.itemName}>{ability.name}</span>
-              <span className={`${styles.badge} ${styles.ready}`}>{disabledReason ?? cooldownStatus}</span>
+              <span className={`${styles.badge} ${ability.cooldownRemaining > 0 ? styles.cooldown : styles.ready}`}>
+                {disabledReason ?? cooldownStatus}
+              </span>
             </div>
             <div className={styles.itemDescription}>{ability.description}</div>
           </button>

@@ -69,6 +69,8 @@ export default class QuietReporter {
     // Count final pass/fail from files
     const final = this.countFinalResults(files || []);
     const total = final.pass + final.fail;
+    this.passCount = final.pass;
+    this.failCount = final.fail;
 
     if (final.fail === 0) {
       const message = total > 0

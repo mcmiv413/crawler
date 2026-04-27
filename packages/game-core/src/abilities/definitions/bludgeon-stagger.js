@@ -8,6 +8,7 @@ export const BLUDGEON_STAGGER_DEFINITION = {
     requirements: [
         { kind: 'weapon_type', weaponType: 'bludgeon' },
         { kind: 'has_target' },
+        { kind: 'target_in_melee_range' },
     ],
     targeting: { selector: { kind: 'single_enemy' } },
     effects: [

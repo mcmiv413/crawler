@@ -6,14 +6,8 @@
  */
 
 import { useReducer } from 'react';
-import type { GameCommand, Direction } from '@dungeon/contracts';
-import type {
-  AvailableAction,
-  EntityView,
-  InventoryItemView,
-  AbilityView,
-  GameView,
-} from '@dungeon/presenter';
+import type { Direction, GameCommand } from '@dungeon/contracts';
+import type { GameView } from '@dungeon/presenter';
 import type { ActionButtonType } from '../config/action-icons';
 import { ACTION_ORDER } from '../config/action-icons';
 import { SPRITE_NAMES } from '../config/sprite-names';
@@ -65,17 +59,28 @@ export function UnifiedActionPanel({
     active: null,
   });
 
+  const mapEntities = view.map?.entities ?? [];
+  const enemies = mapEntities.filter((entity) => entity.type === 'enemy');
+  const objects = mapEntities.filter((entity) => entity.type === 'object');
+  const playerPos = view.map?.playerPosition ?? { x: 0, y: 0 };
+  const weaponRange = view.inventory.equipped.weapon?.weaponStats?.weaponRange ?? 1;
+  const minRange = view.inventory.equipped.weapon?.weaponStats?.minRange ?? 0;
+  const consumablesWithQty = view.inventory.items
+    .filter((item) => item.itemClass === 'consumable')
+    .map((item) => ({
+      ...item,
+      quantity: item.quantity ?? 0,
+    }));
+
   const handleActionClick = (actionType: ActionButtonType | 'STAIRS') => {
     switch (actionType) {
       case 'WAIT':
         onSendCommand({ type: 'WAIT' });
         break;
       case 'SWAP':
-        // SWAP_WEAPONS toggles between main and secondary weapon (no parameters)
         onSendCommand({ type: 'SWAP_WEAPONS' });
         break;
       case 'STAIRS':
-        // Toggle stairs dropdown
         if (dropdown.active === 'STAIRS') {
           dispatchDropdown({ type: 'CLOSE' });
         } else {
@@ -83,34 +88,30 @@ export function UnifiedActionPanel({
         }
         break;
       case 'ATTACK': {
-        // Auto-attack if only 1 enemy in range, otherwise show dropdown
         const inRangeEnemies = enemies.filter((enemy) => {
           const distance = calculateDistance(playerPos.x, playerPos.y, enemy.x, enemy.y);
           return distance <= weaponRange && distance >= minRange;
         });
 
         if (inRangeEnemies.length === 1) {
-          // Auto-attack the single enemy
           const enemy = inRangeEnemies[0];
-          if (enemy) {
+          if (enemy !== undefined) {
             onSendCommand({ type: 'ATTACK', targetId: enemy.id });
           }
+          break;
+        }
+
+        if (dropdown.active === actionType) {
+          dispatchDropdown({ type: 'CLOSE' });
         } else {
-          // Show dropdown to choose target
-          if (dropdown.active === actionType) {
-            dispatchDropdown({ type: 'CLOSE' });
-          } else {
-            dispatchDropdown({ type: 'OPEN', payload: actionType });
-          }
+          dispatchDropdown({ type: 'OPEN', payload: actionType });
         }
         break;
       }
       case 'INSPECT':
-        // Open inspect modal
-        if (onInspectOpen) onInspectOpen();
+        onInspectOpen?.();
         break;
       default:
-        // Toggle dropdown for actions requiring selection
         if (dropdown.active === actionType) {
           dispatchDropdown({ type: 'CLOSE' });
         } else {
@@ -121,15 +122,17 @@ export function UnifiedActionPanel({
 
   const handleDropdownSelect = (actionType: ActionButtonType, selection: unknown) => {
     switch (actionType) {
-      case 'ATTACK': {
-        const enemyId = selection as string;
-        onSendCommand({ type: 'ATTACK', targetId: enemyId });
+      case 'ATTACK':
+        onSendCommand({ type: 'ATTACK', targetId: selection as string });
         break;
-      }
       case 'ABILITY': {
-        const abilitySelection = selection as { abilityId: string; targetId?: string; direction?: Direction; itemEntityId?: string };
-        // Set Trap uses a different command type
-        if (abilitySelection.itemEntityId) {
+        const abilitySelection = selection as {
+          abilityId: string;
+          targetId?: string;
+          direction?: Direction;
+          itemEntityId?: string;
+        };
+        if (abilitySelection.itemEntityId !== undefined) {
           onSendCommand({
             type: 'SET_TRAP',
             direction: abilitySelection.direction!,
@@ -147,88 +150,60 @@ export function UnifiedActionPanel({
       }
       case 'INTERACT': {
         const objectId = selection as string;
-        // Find the object in the map to get its position
-        const mapEntity = view.map?.entities.find((e) => e.id === objectId);
-        if (mapEntity) {
+        const objectEntity = view.map?.entities.find((entity) => entity.id === objectId);
+        if (objectEntity !== undefined) {
           onSendCommand({
             type: 'INTERACT',
-            targetPosition: { x: mapEntity.x, y: mapEntity.y },
+            targetPosition: { x: objectEntity.x, y: objectEntity.y },
           });
         }
         break;
       }
-      case 'USE': {
-        const itemId = selection as string;
-        onSendCommand({ type: 'USE_ITEM', itemId });
+      case 'USE':
+        onSendCommand({ type: 'USE_ITEM', itemId: selection as string });
         break;
-      }
-      case 'INSPECT': {
-        // Inspect dropdown selection just closes the dropdown
-        // The entity inspection view is handled via GameView in DungeonPhase
+      case 'INSPECT':
         break;
-      }
       default:
         break;
     }
+
     dispatchDropdown({ type: 'CLOSE' });
   };
 
-  const mapEntities = view.map?.entities ?? [];
-  const enemies = mapEntities.filter((e) => e.type === 'enemy');
-  const objects = mapEntities.filter((e) => e.type === 'object');
-  const playerPos = view.map?.playerPosition ?? { x: 0, y: 0 };
-
-  // Get weapon range from equipped weapon (including minRange for ranged weapons)
-  const weaponRange = view.inventory.equipped.weapon?.weaponStats?.weaponRange ?? 1;
-  const minRange = view.inventory.equipped.weapon?.weaponStats?.minRange ?? 0;
-
-  // Prepare consumables with quantity information
-  const consumablesWithQty = view.inventory.items
-    .filter((item) => item.itemClass === 'consumable')
-    .map((item) => ({
-      ...item,
-      quantity: item.quantity ?? 0,
-    }));
-
-  // Helper: detect if player is on stairs_up (can ascend)
   const isOnStairs = (): boolean => {
-    if (!view.map) return false;
+    if (view.map === null) return false;
+
     const playerCell = view.map.cells.find(
-      (cell) =>
-        cell.x === view.map!.playerPosition.x && cell.y === view.map!.playerPosition.y,
+      (cell) => cell.x === view.map!.playerPosition.x && cell.y === view.map!.playerPosition.y,
     );
     return playerCell?.tileType === 'stairs_up';
   };
 
-  // Helper: detect if player is at entrance or on stairs (can retreat)
   const canReturnToTown = (): boolean => {
-    if (!view.map) return false;
+    if (view.map === null) return false;
+
     const playerCell = view.map.cells.find(
-      (cell) =>
-        cell.x === view.map!.playerPosition.x && cell.y === view.map!.playerPosition.y,
+      (cell) => cell.x === view.map!.playerPosition.x && cell.y === view.map!.playerPosition.y,
     );
-    if (!playerCell) return false;
-    return (
-      playerCell.tileType === 'stairs_up' ||
-      (playerCell.x === 0 && playerCell.y === 0) // Entrance is typically at 0,0
-    );
+    if (playerCell === undefined) return false;
+
+    return playerCell.tileType === 'stairs_up' || (playerCell.x === 0 && playerCell.y === 0);
   };
 
   const isActionEnabled = (actionType: ActionButtonType): boolean => {
     switch (actionType) {
       case 'WAIT':
         return true;
-      case 'ATTACK': {
-        // Only enabled if enemies are in weapon range
+      case 'ATTACK':
         return enemies.some((enemy) => {
           const distance = calculateDistance(playerPos.x, playerPos.y, enemy.x, enemy.y);
           return distance <= weaponRange && distance >= minRange;
         });
-      }
       case 'SWAP':
-        return !!view.inventory.equipped.weapon || !!view.inventory.equipped.secondaryWeapon;
+        return view.inventory.equipped.weapon !== null || view.inventory.equipped.secondaryWeapon !== null;
       case 'ABILITY':
-        return view.player.abilities.some((a) => a.ready);
+        return view.player.abilities.length > 0;
       case 'INTERACT':
         return objects.length > 0;
       case 'USE':
@@ -275,7 +250,6 @@ export function UnifiedActionPanel({
           />
         ))}
 
-        {/* Conditional STAIRS button when on stairs */}
         {isOnStairs() && (
           <ActionButton
             key="STAIRS"
@@ -289,8 +263,7 @@ export function UnifiedActionPanel({
         )}
       </div>
 
-      {/* Inline dropdowns rendered below buttons */}
-      {dropdown.active && (
+      {dropdown.active !== null && (
         <div className={styles.dropdownContainer} role="dialog" aria-modal="true">
           <div className={styles.dropdownContent}>
             {dropdown.active === 'ATTACK' && (
@@ -312,6 +285,8 @@ export function UnifiedActionPanel({
                 inventory={view.inventory.items}
                 playerX={playerPos.x}
                 playerY={playerPos.y}
+                mapObjects={objects}
+                mapCells={view.map?.cells}
                 onSelect={(abilitySelection) => handleDropdownSelect('ABILITY', abilitySelection)}
               />
             )}
@@ -348,7 +323,6 @@ export function UnifiedActionPanel({
             )}
           </div>
 
-          {/* Cancel button to close dropdown */}
           <button className={styles.cancelButton} onClick={() => dispatchDropdown({ type: 'CLOSE' })}>
             Cancel
           </button>

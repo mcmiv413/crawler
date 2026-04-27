@@ -4,3 +4,5 @@ export * from './systems/index.js';
 export * from './generation/index.js';
 export * from './state/index.js';
 export { SeededRNG } from './utils/index.js';
+export { getAbilityUiMetadata, buildAbilityUiMetadataMap, type AbilityUiMetadata } from './abilities/ability-ui-metadata.js';
+export { ALL_ABILITY_DEFINITIONS } from './abilities/definitions/index.js';

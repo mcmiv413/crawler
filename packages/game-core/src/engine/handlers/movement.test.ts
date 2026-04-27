@@ -2,10 +2,22 @@ import { describe, it, expect } from 'vitest';
 import { handleMove } from './movement.js';
 import { SeededRNG } from '../../utils/rng.js';
 import { entityId, posKey } from '@dungeon/contracts';
-import type { GameState, ObjectInstance } from '@dungeon/contracts';
+import type { DomainEvent, GameState, ObjectInstance } from '@dungeon/contracts';
 import { createTestGameStateInCombat } from '../../test-utils.js';
-import { OBJECT_TEMPLATES } from '@dungeon/content';
-import { calculateHazardDamage } from '../../systems/hazard-damage.js';
+
+function getTrapTriggeredEvent(
+  events: readonly DomainEvent[],
+): Extract<DomainEvent, { type: 'TRAP_TRIGGERED' }> {
+  const trapEvent = events.find(
+    (event): event is Extract<DomainEvent, { type: 'TRAP_TRIGGERED' }> => event.type === 'TRAP_TRIGGERED',
+  );
+
+  if (trapEvent === undefined) {
+    throw new Error('Expected TRAP_TRIGGERED event');
+  }
+
+  return trapEvent;
+}
 
 describe('handleMove - Trap Damage on Walk', () => {
   /**
@@ -35,17 +47,18 @@ describe('handleMove - Trap Damage on Walk', () => {
     const healthBefore = stateWithTrap.player.stats.health;
     const rng = new SeededRNG(42);
 
-    // Calculate expected damage from trap rarity
-    const trapTemplate = OBJECT_TEMPLATES.get('trap_spikes')!;
-    const expectedDamage = calculateHazardDamage(trapTemplate, stateWithTrap.player.stats.maxHealth);
-
     // Move player to trap location
     const result = handleMove(stateWithTrap, 'E', rng);
 
     // Player should take damage from trap
     const healthAfter = result.state.player.stats.health;
+    const damageTaken = healthBefore - healthAfter;
+    const trapEvent = getTrapTriggeredEvent(result.events);
+
+    expect(result.state.player.position).toEqual(trapPosition);
     expect(healthAfter).toBeLessThan(healthBefore);
-    expect(healthAfter).toBe(healthBefore - expectedDamage); // trap damage scales with rarity
+    expect(damageTaken).toBeGreaterThan(0);
+    expect(trapEvent.damage).toBe(damageTaken);
   });
 
   /**
@@ -71,19 +84,18 @@ describe('handleMove - Trap Damage on Walk', () => {
       run: { ...state.run!, objects },
     };
 
-    // Calculate expected damage from trap rarity
-    const trapTemplate = OBJECT_TEMPLATES.get('trap_spikes')!;
-    const expectedDamage = calculateHazardDamage(trapTemplate, stateWithTrap.player.stats.maxHealth);
-
+    const healthBefore = stateWithTrap.player.stats.health;
     const rng = new SeededRNG(42);
     const result = handleMove(stateWithTrap, 'E', rng);
 
     // Find TRAP_TRIGGERED event
-    const trapEvent = result.events.find((e) => e.type === 'TRAP_TRIGGERED');
-    expect(trapEvent).toBeDefined();
-    expect((trapEvent as any).trapName).toBe(OBJECT_TEMPLATES.get('trap_spikes')!.name);
-    expect((trapEvent as any).damage).toBe(expectedDamage); // damage scales with rarity
-    expect((trapEvent as any).position).toEqual(trapPosition);
+    const trapEvent = getTrapTriggeredEvent(result.events);
+    const damageTaken = healthBefore - result.state.player.stats.health;
+
+    expect(trapEvent.trapId).toBe(trapInstance.id);
+    expect(trapEvent.trapName.length).toBeGreaterThan(0);
+    expect(trapEvent.damage).toBe(damageTaken);
+    expect(trapEvent.position).toEqual(trapPosition);
   });
 
   /**

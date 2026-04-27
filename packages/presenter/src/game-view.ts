@@ -208,6 +208,10 @@ export interface EntityView {
   readonly nemesisName?: string;
   readonly spriteName?: string;  // Atlas sprite name for rendering
   readonly instanceColor?: string;  // hex color for visual disambiguation when 2+ of same type visible
+  // Semantic flags for objects (objects only, undefined for other entity types)
+  readonly objectCategory?: 'trap' | 'chest' | 'healing' | 'misc';
+  readonly isDisarmableTrap?: boolean;  // True if this is a trap that can be disarmed
+  readonly hazardType?: 'spike' | 'fire' | 'poison' | 'frost' | 'lightning';  // Type of trap hazard
 }
 
 export interface InspectableEntityView {
