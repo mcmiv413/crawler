@@ -1,5 +1,5 @@
 import React from 'react';
-import type { StatBreakdown } from '@dungeon/presenter';
+import type { StatBreakdown, PlayerHudView } from '@dungeon/presenter';
 import { ItemSpriteIcon } from './ItemSpriteIcon';
 import { colors, FONT_STACK } from '../styles.js';
 import { SectionLabel } from './ui/index.js';
@@ -26,9 +26,10 @@ const statColors: Record<string, string> = {
 interface StatDetailModalProps {
   breakdown: StatBreakdown;
   onClose: () => void;
+  player?: PlayerHudView;
 }
 
-export function StatDetailModal({ breakdown, onClose }: StatDetailModalProps) {
+export function StatDetailModal({ breakdown, onClose, player }: StatDetailModalProps) {
   const accent = statColors[breakdown.stat] ?? colors.text;
 
   return (
@@ -105,6 +106,18 @@ export function StatDetailModal({ breakdown, onClose }: StatDetailModalProps) {
                 <span>+{bonus.amount}</span>
               </div>
             ))}
+          </div>
+        </div>
+      )}
+
+      {breakdown.stat === 'attack' && player && (
+        <div style={{ marginBottom: 8, padding: 6, background: colors.border2, borderRadius: '2px' }}>
+          <div style={{ fontSize: 10, color: colors.muted, marginBottom: 4 }}>Total Damage Range</div>
+          <div style={{ fontSize: 12, color: colors.text, fontWeight: 600 }}>
+            {player.totalDamageMin}–{player.totalDamageMax} damage
+          </div>
+          <div style={{ fontSize: 9, color: colors.muted, marginTop: 2 }}>
+            Attack bonus {breakdown.total} + weapon damage range
           </div>
         </div>
       )}

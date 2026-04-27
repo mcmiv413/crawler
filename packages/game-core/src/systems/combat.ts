@@ -1,7 +1,7 @@
 import type {
   AttackResult, CombatContext, StatusId, BalanceConfig,
 } from '@dungeon/contracts';
-import { COMBAT, getDamageBand, DAMAGE_BAND_PROFILES } from '@dungeon/content';
+import { COMBAT, getDamageBand } from '@dungeon/content';
 import type { RNG } from '@dungeon/contracts';
 import { rollDamage, rollDamageBetween, calculateHitChance, applyDefense } from '../utils/dice.js';
 
@@ -71,8 +71,8 @@ export function resolveAttack(
   // Use weapon damage profile if available (NEW), otherwise fall back to old system
   if (ctx.weaponDamageProfile !== undefined && ctx.weaponBaseDamage !== undefined) {
     // NEW: weapon-based damage range
-    const profile = ctx.weaponDamageProfile as keyof typeof DAMAGE_BAND_PROFILES;
-    const band = getDamageBand(ctx.weaponBaseDamage, profile);
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    const band = getDamageBand(ctx.weaponBaseDamage, ctx.weaponDamageProfile as any);
     const totalMin = band.min + ctx.attackerAttack;
     const totalMax = band.max + ctx.attackerAttack;
     baseDamage = rollDamageBetween(totalMin, totalMax, rng);

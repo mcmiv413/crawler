@@ -110,6 +110,7 @@ export function ClickableStatGrid({ player }: ClickableStatGridProps) {
         <StatDetailModal
           breakdown={selectedBreakdown}
           onClose={() => setSelectedStat(null)}
+          player={player}
         />
       )}
     </>
