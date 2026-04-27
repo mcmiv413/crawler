@@ -303,7 +303,7 @@ describe('buildTownView', () => {
             ],
             buybackMultiplier: 0.4,
           },
-          highestRarityFound: 'uncommon',
+          highestRarityFound: 'common',
         },
       };
 

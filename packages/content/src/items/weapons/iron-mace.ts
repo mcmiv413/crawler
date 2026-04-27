@@ -6,9 +6,9 @@ export const ironMace: WeaponTemplate = {
   name: 'Iron Mace',
   description: 'A heavy mace that hits hard but slow.',
   itemClass: 'weapon',
-  rarity: 'uncommon',
+  rarity: 'common',
   value: 20,
   stackable: false,
   maxStack: 1,
-  weapon: { damage: 9, damageType: 'physical', accuracy: -2, speed: -4, slot: 'weapon', weaponRange: 1, weaponType: 'bludgeon' },
+  weapon: { damage: 7, damageType: 'physical', accuracy: -2, speed: -4, slot: 'weapon', weaponRange: 1, weaponType: 'bludgeon' },
 };

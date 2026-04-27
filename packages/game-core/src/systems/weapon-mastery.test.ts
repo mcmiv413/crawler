@@ -1,12 +1,11 @@
 import { describe, it, expect } from 'vitest';
 import { checkWeaponMasteryUnlocks } from './weapon-mastery.js';
 import { createTestGameState, createTestRunState } from '../test-utils.js';
-import { EMPTY_WEAPON_MASTERY } from '@dungeon/contracts';
 
 function stateWithBladHits(hits: number) {
-  const run = createTestRunState({ weaponMastery: { blade: hits } });
+  const run = createTestRunState();
   const base = createTestGameState({ phase: 'dungeon' });
-  return { ...base, run };
+  return { ...base, run, weaponMastery: { blade: hits, bludgeon: 0, axe: 0, ranged: 0, dagger: 0 } };
 }
 
 describe('checkWeaponMasteryUnlocks', () => {
@@ -73,9 +72,9 @@ describe('checkWeaponMasteryUnlocks', () => {
   });
 
   it('tracks mastery independently per weapon type', () => {
-    const run = createTestRunState({ weaponMastery: { bludgeon: 15 } });
+    const run = createTestRunState();
     const base = createTestGameState({ phase: 'dungeon' });
-    const state = { ...base, run };
+    const state = { ...base, run, weaponMastery: { bludgeon: 15, blade: 0, axe: 0, ranged: 0, dagger: 0 } };
     const { state: newState } = checkWeaponMasteryUnlocks(state, 'bludgeon');
     expect(newState.player.abilities.some(a => a.id === 'bludgeon_stagger')).toBe(true);
     expect(newState.player.abilities.some(a => a.id === 'blade_bleed')).toBe(false);
