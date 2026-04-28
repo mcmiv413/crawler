@@ -6,13 +6,23 @@ import { ModalBackdrop, ModalCard, SectionLabel } from './ui/index.js';
 interface QuestDetailModalProps {
   quests: readonly QuestView[];
   onClose: () => void;
+  sendCommand: (command: unknown) => Promise<void>;
 }
 
-export function QuestDetailModal({ quests, onClose }: QuestDetailModalProps) {
+export function QuestDetailModal({ quests, onClose, sendCommand }: QuestDetailModalProps) {
   const [selectedQuestId, setSelectedQuestId] = useState<string>(
     quests.length > 0 ? quests[0]!.id : '',
   );
   const selectedQuest = selectedQuestId ? quests.find((q) => q.id === selectedQuestId) : null;
+
+  const handleTurnInQuest = async () => {
+    if (!selectedQuest) return;
+    try {
+      await sendCommand({ type: 'TOWN_ACTION', action: 'turn_in_quest', targetId: selectedQuest.id });
+    } catch (err) {
+      console.error('Failed to turn in quest:', err);
+    }
+  };
 
   return (
     <ModalBackdrop onClose={onClose}>
@@ -32,7 +42,7 @@ export function QuestDetailModal({ quests, onClose }: QuestDetailModalProps) {
           >
             {quests.map((q) => {
               const isSelected = selectedQuestId === q.id;
-              const isComplete = q.status === 'complete';
+              const isComplete = q.status === 'rewarded';
               return (
                 <button
                   key={q.id}
@@ -69,8 +79,10 @@ export function QuestDetailModal({ quests, onClose }: QuestDetailModalProps) {
                   </div>
                   <div style={{ fontSize: 10, color: colors.muted }}>
                     Status:{' '}
-                    {selectedQuest.status === 'complete' ? (
+                    {selectedQuest.status === 'rewarded' ? (
                       <span style={{ color: colors.lime }}>✓ Completed</span>
+                    ) : selectedQuest.status === 'ready_to_turn_in' ? (
+                      <span style={{ color: colors.lime }}>Ready to Turn In</span>
                     ) : (
                       <span style={{ color: colors.gold }}>In Progress</span>
                     )}
@@ -83,6 +95,20 @@ export function QuestDetailModal({ quests, onClose }: QuestDetailModalProps) {
                     <div style={{ fontSize: 11, color: colors.text, lineHeight: 1.4 }}>
                       {selectedQuest.description}
                     </div>
+                  </div>
+                )}
+
+                {selectedQuest.objectiveText && (
+                  <div style={{ marginBottom: 12 }}>
+                    <SectionLabel label="Objective" />
+                    <div style={{ fontSize: 11, color: colors.text, lineHeight: 1.4 }}>
+                      {selectedQuest.objectiveText}
+                    </div>
+                    {selectedQuest.progress > 0 && (
+                      <div style={{ fontSize: 10, color: colors.muted, marginTop: 4 }}>
+                        Progress: {selectedQuest.progress}
+                      </div>
+                    )}
                   </div>
                 )}
 
@@ -101,12 +127,34 @@ export function QuestDetailModal({ quests, onClose }: QuestDetailModalProps) {
           </div>
         </div>
 
-        <button
-          onClick={onClose}
-          style={{ ...btnStyle, marginTop: 16, padding: '6px 12px', fontSize: 11 }}
-        >
-          Close
-        </button>
+        <div style={{ display: 'flex', gap: 8, marginTop: 16 }}>
+          {selectedQuest && selectedQuest.status === 'ready_to_turn_in' && (
+            <button
+              onClick={handleTurnInQuest}
+              style={{
+                ...btnStyle,
+                padding: '6px 12px',
+                fontSize: 11,
+                flex: 1,
+                backgroundColor: colors.lime,
+                color: '#000',
+              }}
+            >
+              Turn In Quest
+            </button>
+          )}
+          <button
+            onClick={onClose}
+            style={{
+              ...btnStyle,
+              padding: '6px 12px',
+              fontSize: 11,
+              flex: selectedQuest?.status === 'ready_to_turn_in' ? 1 : 'initial',
+            }}
+          >
+            Close
+          </button>
+        </div>
       </ModalCard>
     </ModalBackdrop>
   );

@@ -10,6 +10,7 @@ import { EnchantmentDetailModal } from './EnchantmentDetailModal.js';
 interface CharacterScreenProps {
   player: PlayerHudView;
   activeQuests?: readonly QuestView[];
+  sendCommand: (command: unknown) => Promise<void>;
 }
 
 function ResistancesSection({ player }: { player: PlayerHudView }) {
@@ -323,7 +324,7 @@ function NemesisModal({ nemesis, onClose }: { nemesis: NemesisInfo; onClose: () 
 }
 
 
-export function CharacterScreen({ player, activeQuests }: CharacterScreenProps) {
+export function CharacterScreen({ player, activeQuests, sendCommand }: CharacterScreenProps) {
   const [selectedAbilityId, setSelectedAbilityId] = useState<string | null>(null);
   const [showNemesisModal, setShowNemesisModal] = useState(false);
   const [showQuestsModal, setShowQuestsModal] = useState(false);
@@ -482,7 +483,7 @@ export function CharacterScreen({ player, activeQuests }: CharacterScreenProps) 
         <NemesisModal nemesis={player.nemesisInfo} onClose={() => setShowNemesisModal(false)} />
       )}
       {showQuestsModal && hasQuests && (
-        <QuestDetailModal quests={quests} onClose={() => setShowQuestsModal(false)} />
+        <QuestDetailModal quests={quests} onClose={() => setShowQuestsModal(false)} sendCommand={sendCommand} />
       )}
       {showFactionsModal && hasFactions && (
         <FactionDetailModal factions={player.factionStandings} onClose={() => setShowFactionsModal(false)} />
