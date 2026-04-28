@@ -2,8 +2,14 @@ export interface QuestTemplate {
   readonly id: string;
   readonly title: string;
   readonly description: string;
-  readonly targetItemId?: string;
-  readonly targetEnemyTemplateId?: string;
-  readonly targetFloorDepth?: number;
-  readonly rewardGold: number;
+  readonly objective: {
+    readonly type: 'collect_item' | 'defeat_enemy' | 'reach_floor';
+    readonly targetId?: string;
+    readonly targetCount?: number;
+    readonly progress: number;
+  };
+  readonly reward: {
+    readonly type: 'gold';
+    readonly amount: number;
+  };
 }

@@ -15,15 +15,15 @@ describe('quest templates', () => {
       expect(template).toHaveProperty('id');
       expect(template).toHaveProperty('title');
       expect(template).toHaveProperty('description');
-      expect(template).toHaveProperty('rewardGold');
+      expect(template).toHaveProperty('objective');
+      expect(template).toHaveProperty('reward');
       expect(typeof template.id).toBe('string');
       expect(typeof template.title).toBe('string');
       expect(typeof template.description).toBe('string');
-      expect(template.rewardGold).toBeGreaterThan(0);
-      // targetItemId is optional (? syntax), so only check type if present
-      if (template.targetItemId !== undefined) {
-        expect(typeof template.targetItemId).toBe('string');
-      }
+      expect(template.objective).toBeDefined();
+      expect(template.objective.type).toMatch(/collect_item|defeat_enemy|reach_floor/);
+      expect(template.reward.type).toBe('gold');
+      expect(template.reward.amount).toBeGreaterThan(0);
     }
   });
 
@@ -60,9 +60,9 @@ describe('quest templates', () => {
     expect(quest.title).toBe(template.title);
     expect(quest.description).toBe(template.description);
     expect(quest.status).toBe('active');
-    expect(quest.targetItemId).toBe(template.targetItemId);
+    expect(quest.objective).toEqual(template.objective);
+    expect(quest.reward).toEqual(template.reward);
     expect(quest.giverNpcId).toBe('npc1');
-    expect(quest.rewardGold).toBe(template.rewardGold);
   });
 
   it('createQuestFromTemplate creates unique quest ids for same template/npc at different turns', () => {
@@ -77,8 +77,8 @@ describe('quest templates', () => {
 
   it('all templates have meaningful reward amounts', () => {
     for (const template of QUEST_TEMPLATES) {
-      expect(template.rewardGold).toBeGreaterThanOrEqual(50);
-      expect(template.rewardGold).toBeLessThanOrEqual(200);
+      expect(template.reward.amount).toBeGreaterThanOrEqual(50);
+      expect(template.reward.amount).toBeLessThanOrEqual(200);
     }
   });
 });
