@@ -50,7 +50,7 @@ function renderPanel(
   if (panelType === 'character') {
     return (
       <div key="character" style={panelStyle}>
-        <CharacterScreen player={view.player} activeQuests={view.activeQuests} />
+        <CharacterScreen player={view.player} activeQuests={view.activeQuests} sendCommand={sendCommand} />
       </div>
     );
   }
