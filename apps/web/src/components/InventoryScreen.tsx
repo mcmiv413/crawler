@@ -1,9 +1,10 @@
 import React, { useState } from 'react';
-import type { InventoryItemView, InventoryView } from '@dungeon/presenter';
+import type { InventoryItemView, InventoryView, DismissibleNotice } from '@dungeon/presenter';
 import { btnStyle, compactBtnStyle, colors } from '../styles.js';
 import { EquipmentDoll } from './EquipmentDoll.js';
 import { ItemInspectModal } from './ItemInspectModal.js';
 import { ItemSpriteIcon } from './ItemSpriteIcon.js';
+import { DismissibleNoticeModal } from './ui/DismissibleNoticeModal.js';
 import { useInventoryFilter } from '../hooks/useInventoryFilter.js';
 import { useBreakpoint } from '../hooks/useBreakpoint.js';
 
@@ -32,7 +33,7 @@ interface InventoryScreenProps {
   sendCommand: (command: unknown) => void;
   onClose: () => void;
   gold?: number;
-  notification?: string | null;
+  notice?: DismissibleNotice;
 }
 
 /**
@@ -44,10 +45,15 @@ export function InventoryScreen({
   sendCommand,
   onClose,
   gold,
-  notification,
+  notice,
 }: InventoryScreenProps) {
   const { isMobile } = useBreakpoint();
   const [selectedItem, setSelectedItem] = useState<InventoryItemView | null>(null);
+  const [dismissedNoticeIds, setDismissedNoticeIds] = useState<Set<string>>(new Set());
+
+  const handleDismissNotice = (noticeId: string) => {
+    setDismissedNoticeIds(prev => new Set(prev).add(noticeId));
+  };
 
   // Get non-equipped items for the bag
   const equippedIds = new Set<string>(
@@ -109,11 +115,6 @@ export function InventoryScreen({
       {/* Equipment Section - always visible */}
       <div style={{ marginBottom: 24, flexShrink: 0 }}>
         <h2 style={{ fontSize: 14, color: '#888', marginBottom: 8 }}>Equipment</h2>
-        {notification && (
-          <p style={{ color: '#fa0', fontSize: 11, margin: '4px 0', textAlign: 'center' }}>
-            {notification}
-          </p>
-        )}
         <EquipmentDoll
           equipped={inventory.equipped}
           onSlotClick={(item) => setSelectedItem(item)}
@@ -246,6 +247,15 @@ export function InventoryScreen({
           sendCommand={sendCommand}
         />
       )}
+
+      {/* Dismissible Notice Modal */}
+      <DismissibleNoticeModal
+        notice={notice}
+        dismissedNoticeIds={dismissedNoticeIds}
+        onDismiss={handleDismissNotice}
+        title="Equipment Blocked"
+        accentColor="#fa0"
+      />
     </div>
   );
 }

@@ -293,12 +293,17 @@ export function buildGameView(state: GameState): GameView {
     }
   }
 
-  // Find most recent EQUIP_BLOCKED event for notification
-  let notification: string | undefined;
+  // Find most recent EQUIP_BLOCKED event for notice
+  let notice: { id: string; kind: string; message: string } | undefined;
   for (let i = state.world.eventHistory.length - 1; i >= 0; i -= 1) {
     const evt = state.world.eventHistory[i]!;
     if (evt.type === 'EQUIP_BLOCKED') {
-      notification = (evt as Extract<DomainEvent, { type: 'EQUIP_BLOCKED' }>).reason;
+      const blockEvent = evt as Extract<DomainEvent, { type: 'EQUIP_BLOCKED' }>;
+      notice = {
+        id: `equip_blocked_${i}`,
+        kind: 'EQUIP_BLOCKED',
+        message: blockEvent.reason,
+      };
       break;
     }
   }
@@ -338,6 +343,6 @@ export function buildGameView(state: GameState): GameView {
     inspectableEntities: buildInspectableEntities(state),
     recentlyDefeatedNemesis,
     debugMode: state.debugMode ?? false,
-    notification,
+    notice,
   };
 }

@@ -1,5 +1,6 @@
 import React, { useState } from 'react';
 import type { GameView, NpcView, NemesisView, FactionView } from '@dungeon/presenter';
+import { TAB_BAR_HEIGHT } from '../config/ui-config.js';
 import { ItemSpriteIcon } from './ItemSpriteIcon.js';
 import {
   colors,
@@ -414,48 +415,20 @@ export function TownPhase({
         color: colors.text,
         background: colors.panel,
         flex: 1,
-        overflow: 'auto',
         display: 'flex',
         flexDirection: 'column',
+        minHeight: 0,
+        paddingBottom: TAB_BAR_HEIGHT + 8,
       }}
     >
+      {/* Header — fixed */}
       <PanelHeader title="Town" />
 
-      <div style={{ padding: 8 }}>
+      {/* Top section: player stats and action buttons — fixed */}
+      <div style={{ flexShrink: 0, padding: 8, borderBottom: `1px solid ${colors.border}` }}>
         <PlayerHud player={view.player} compact />
 
-        {view.town?.lastRunSummary && (
-          <InfoCard borderColor="#4a3014" marginBottom={10}>
-            <div
-              style={{
-                color: colors.gold,
-                fontStyle: 'italic',
-                fontSize: 11,
-                fontFamily: FONT_STACK,
-              }}
-            >
-              {view.town.lastRunSummary}
-            </div>
-          </InfoCard>
-        )}
-
-        {view.town?.runSummaryStats && <RunSummaryPanel stats={view.town.runSummaryStats} />}
-
-        {view.town?.prepAdvice && view.town.prepAdvice.length > 0 && (
-          <InfoCard borderColor="#1e4a2a" marginBottom={10}>
-            <SectionLabel label="Preparation" color={colors.lime} />
-            {view.town.prepAdvice.map((advice: string, i: number) => (
-              <div
-                key={i}
-                style={{ fontSize: 11, color: colors.text, padding: '1px 0' }}
-              >
-                &rsaquo; {advice}
-              </div>
-            ))}
-          </InfoCard>
-        )}
-
-        <div style={{ display: 'flex', flexDirection: 'row', gap: 5, flexWrap: 'wrap', marginBottom: 14 }}>
+        <div style={{ display: 'flex', flexDirection: 'row', gap: 5, flexWrap: 'wrap', marginTop: 8 }}>
           <button
             onClick={() => {
               setNpcDialogue(null);
@@ -503,33 +476,78 @@ export function TownPhase({
             </button>
           )}
         </div>
+      </div>
 
-        {view.town?.npcs && view.town.npcs.length > 0 && (
-          <div style={{ marginBottom: 14 }}>
-            <SectionLabel label="NPCs" />
-            {view.town.npcs
-              .filter((n: NpcView) => n.available)
-              .map((npc: NpcView) => (
-                <NpcCard
-                  key={npc.id}
-                  npc={npc}
-                  playerHealth={view.player.health}
-                  playerMaxHealth={view.player.maxHealth}
-                  playerGold={view.player.gold}
-                  loading={loading}
-                  talkingTo={talkingTo}
-                  onTalk={() => talkToNpc(npc.id, npc.name)}
-                  onShop={() => setTownPanel('shop')}
-                  onHeal={() => sendCommand({ type: 'TOWN_ACTION', action: 'rest' })}
-                  onTavern={() => setTownPanel('tavern')}
-                  onEnchanter={() => setTownPanel('enchanter')}
-                />
-              ))}
-          </div>
+      {/* NPC section — fixed height, cards shown */}
+      {view.town?.npcs && view.town.npcs.length > 0 && (
+        <div style={{ flexShrink: 0, padding: '0 8px', borderBottom: `1px solid ${colors.border}` }}>
+          <SectionLabel label="NPCs" />
+          {view.town.npcs
+            .filter((n: NpcView) => n.available)
+            .map((npc: NpcView) => (
+              <NpcCard
+                key={npc.id}
+                npc={npc}
+                playerHealth={view.player.health}
+                playerMaxHealth={view.player.maxHealth}
+                playerGold={view.player.gold}
+                loading={loading}
+                talkingTo={talkingTo}
+                onTalk={() => talkToNpc(npc.id, npc.name)}
+                onShop={() => setTownPanel('shop')}
+                onHeal={() => sendCommand({ type: 'TOWN_ACTION', action: 'rest' })}
+                onTavern={() => setTownPanel('tavern')}
+                onEnchanter={() => setTownPanel('enchanter')}
+              />
+            ))}
+        </div>
+      )}
+
+      {/* Messages section — scrolls internally */}
+      <div
+        style={{
+          flex: 1,
+          minHeight: 0,
+          overflow: 'auto',
+          padding: 8,
+          display: 'flex',
+          flexDirection: 'column',
+          gap: 10,
+        }}
+      >
+        {view.town?.lastRunSummary && (
+          <InfoCard borderColor="#4a3014" marginBottom={0}>
+            <div
+              style={{
+                color: colors.gold,
+                fontStyle: 'italic',
+                fontSize: 11,
+                fontFamily: FONT_STACK,
+              }}
+            >
+              {view.town.lastRunSummary}
+            </div>
+          </InfoCard>
+        )}
+
+        {view.town?.runSummaryStats && <RunSummaryPanel stats={view.town.runSummaryStats} />}
+
+        {view.town?.prepAdvice && view.town.prepAdvice.length > 0 && (
+          <InfoCard borderColor="#1e4a2a" marginBottom={0}>
+            <SectionLabel label="Preparation" color={colors.lime} />
+            {view.town.prepAdvice.map((advice: string, i: number) => (
+              <div
+                key={i}
+                style={{ fontSize: 11, color: colors.text, padding: '1px 0' }}
+              >
+                &rsaquo; {advice}
+              </div>
+            ))}
+          </InfoCard>
         )}
 
         {npcDialogue && (
-          <InfoCard borderColor="#2a3a54" marginBottom={10} padding={10}>
+          <InfoCard borderColor="#2a3a54" marginBottom={0} padding={10}>
             <div
               style={{
                 fontSize: 11,
@@ -563,7 +581,7 @@ export function TownPhase({
           </InfoCard>
         )}
 
-        {error && <p style={{ color: colors.blood, fontSize: 11, marginTop: 8 }}>{error}</p>}
+        {error && <p style={{ color: colors.blood, fontSize: 11 }}>{error}</p>}
       </div>
     </div>
   );
