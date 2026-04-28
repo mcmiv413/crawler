@@ -1,1 +1,0 @@
-{"version":3,"file":"world-state.d.ts","sourceRoot":"","sources":["world-state.ts"],"names":[],"mappings":"AAAA,OAAO,KAAK,EAAE,UAAU,EAAuB,aAAa,EAAE,MAAM,oBAAoB,CAAC;AAKzF,OAAO,KAAK,EAAE,SAAS,EAAE,MAAM,iBAAiB,CAAC;AAEjD,gDAAgD;AAChD,wBAAgB,uBAAuB,CAAC,GAAG,EAAE,SAAS,GAAG,UAAU,CAalE;AA6GD,kEAAkE;AAClE,wBAAgB,aAAa,CAAC,GAAG,EAAE,SAAS,GAAG,aAAa,CAkC3D"}

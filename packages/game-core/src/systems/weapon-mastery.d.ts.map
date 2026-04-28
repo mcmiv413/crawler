@@ -1,1 +1,0 @@
-{"version":3,"file":"weapon-mastery.d.ts","sourceRoot":"","sources":["weapon-mastery.ts"],"names":[],"mappings":"AAAA,OAAO,KAAK,EAAE,SAAS,EAAE,UAAU,EAAE,WAAW,EAAE,MAAM,oBAAoB,CAAC;AAI7E,wBAAgB,yBAAyB,CACvC,KAAK,EAAE,SAAS,EAChB,UAAU,EAAE,UAAU,GACrB;IAAE,KAAK,EAAE,SAAS,CAAC;IAAC,MAAM,EAAE,SAAS,WAAW,EAAE,CAAA;CAAE,CA4BtD"}
