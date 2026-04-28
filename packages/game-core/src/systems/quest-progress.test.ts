@@ -1,8 +1,28 @@
 import { describe, it, expect } from 'vitest';
 import type { GameState, Quest } from '@dungeon/contracts';
 import { entityId } from '@dungeon/contracts';
+import { ITEM_BY_ID } from '@dungeon/content';
 import { evaluateQuestProgress, redeemQuest, getObjectiveText } from './quest-progress.js';
-import { PlayerBuilder } from '../test-helpers/builders.js';
+import { createTestGameState } from '../test-utils.js';
+
+function createQuestState(options?: {
+  inventory?: readonly string[];
+  gold?: number;
+  floor?: number;
+}): GameState {
+  return {
+    ...createTestGameState({
+      player: {
+        inventory: (options?.inventory ?? []).map(itemId => entityId(itemId)),
+        gold: options?.gold ?? 50,
+        floor: options?.floor ?? 0,
+      },
+    }),
+    itemRegistry: {
+      items: new Map([...ITEM_BY_ID].map(([itemId, item]) => [entityId(itemId), item] as const)),
+    },
+  };
+}
 
 describe('Quest Progress System', () => {
   describe('evaluateQuestProgress', () => {
@@ -23,9 +43,7 @@ describe('Quest Progress System', () => {
       };
 
       // Build state where player has the item
-      const state = new PlayerBuilder()
-        .withInventoryItem('iron_sword')
-        .buildGameState();
+      const state = createQuestState({ inventory: ['iron_sword'] });
 
       const result = evaluateQuestProgress(quest, state);
 
@@ -50,7 +68,7 @@ describe('Quest Progress System', () => {
         giverNpcId: 'npc_informant_1',
       };
 
-      const state = new PlayerBuilder().buildGameState();
+      const state = createQuestState();
 
       const result = evaluateQuestProgress(quest, state);
 
@@ -74,9 +92,7 @@ describe('Quest Progress System', () => {
         giverNpcId: 'npc_informant_1',
       };
 
-      const state = new PlayerBuilder()
-        .withFloor(5)
-        .buildGameState();
+      const state = createQuestState({ floor: 5 });
 
       const result = evaluateQuestProgress(quest, state);
 
@@ -100,9 +116,7 @@ describe('Quest Progress System', () => {
         giverNpcId: 'npc_informant_1',
       };
 
-      const state = new PlayerBuilder()
-        .withFloor(3)
-        .buildGameState();
+      const state = createQuestState({ floor: 3 });
 
       const result = evaluateQuestProgress(quest, state);
 
@@ -121,7 +135,7 @@ describe('Quest Progress System', () => {
         giverNpcId: 'npc_1',
       };
 
-      const state = new PlayerBuilder().buildGameState();
+      const state = createQuestState();
 
       const result = evaluateQuestProgress(quest, state);
 
@@ -132,9 +146,7 @@ describe('Quest Progress System', () => {
 
   describe('redeemQuest', () => {
     it('marks quest as rewarded and adds gold to player', () => {
-      const state = new PlayerBuilder()
-        .withGold(100)
-        .buildGameState();
+      const state = createQuestState({ gold: 100 });
 
       const quest: Quest = {
         id: 'quest_1',
@@ -156,12 +168,15 @@ describe('Quest Progress System', () => {
       expect(result.state.player.gold).toBe(350);
       expect(result.state.activeQuests[0]?.status).toBe('rewarded');
       expect(result.event.type).toBe('QUEST_TURNED_IN');
+      if (result.event.type !== 'QUEST_TURNED_IN') {
+        throw new Error(`Expected QUEST_TURNED_IN, got ${result.event.type}`);
+      }
       expect(result.event.questId).toBe('quest_1');
       expect(result.event.rewardGold).toBe(250);
     });
 
     it('throws error if quest is not ready to turn in', () => {
-      const state = new PlayerBuilder().buildGameState();
+      const state = createQuestState();
       const quest: Quest = {
         id: 'quest_1',
         title: 'Test Quest',
@@ -240,9 +255,7 @@ describe('Quest Progress System', () => {
         giverNpcId: 'informant_1',
       };
 
-      let state = new PlayerBuilder()
-        .withGold(100)
-        .buildGameState();
+      let state = createQuestState({ gold: 100 });
       state = { ...state, activeQuests: [initialQuest] };
 
       // Simulate defeating enemies by manually updating progress

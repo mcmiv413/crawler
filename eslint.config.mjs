@@ -244,6 +244,7 @@ export default tseslint.config(
       "packages/*/src/**/*.property.test.ts",
       "tests/**/*.ts",
     ],
+    ignores: ["tests/vitest.config.ts"],
     plugins: {
       "@typescript-eslint": tseslint.plugin,
       vitest: pluginVitest,
@@ -312,6 +313,7 @@ export default tseslint.config(
       "apps/*/vite.config.ts",
       "apps/*/vitest.setup.ts",
       "packages/*/vitest.config.ts",
+      "tests/vitest.config.ts",
       "playwright.config.ts",
       "scripts/**/*.ts",
     ],
