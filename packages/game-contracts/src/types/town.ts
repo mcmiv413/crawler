@@ -1,17 +1,32 @@
 import type { EntityId } from './common.js';
 
-export type QuestStatus = 'active' | 'complete' | 'failed';
+export type QuestStatus = 'active' | 'ready_to_turn_in' | 'rewarded' | 'failed';
+
+export interface QuestObjective {
+  readonly type: 'collect_item' | 'defeat_enemy' | 'reach_floor';
+  readonly targetId?: string;
+  readonly targetCount?: number;
+  readonly progress: number;
+}
+
+export interface QuestReward {
+  readonly type: 'gold';
+  readonly amount: number;
+}
 
 export interface Quest {
   readonly id: string;
   readonly title: string;
   readonly description: string;
   readonly status: QuestStatus;
+  readonly objective: QuestObjective;
+  readonly reward: QuestReward;
+  readonly giverNpcId: string;
+  // Legacy fields for backward compatibility during deserialization
   readonly targetItemId?: string;
   readonly targetEnemyTemplateId?: string;
   readonly targetFloorDepth?: number;
-  readonly giverNpcId: string;
-  readonly rewardGold: number;
+  readonly rewardGold?: number;
 }
 
 export interface TownState {

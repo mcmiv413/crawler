@@ -34,7 +34,9 @@ export interface QuestView {
   readonly id: string;
   readonly title: string;
   readonly description: string;
-  readonly status: 'active' | 'complete' | 'failed';
+  readonly status: 'active' | 'ready_to_turn_in' | 'rewarded' | 'failed';
+  readonly objectiveText: string;
+  readonly progress: number;
   readonly rewardGold: number;
   readonly giverNpcId: string;
 }

@@ -32,10 +32,29 @@ export function processTalkNpc(
 
   // Informant: assign a retrieve quest on first conversation if disposition is high enough
   if (npc.role === 'informant') {
-    const hasActiveQuest = state.activeQuests.some(
+    // Check if player already has an active or ready quest (one-quest-at-a-time limit)
+    const hasActiveOrReadyQuest = state.activeQuests.some(
+      q => q.status === 'active' || q.status === 'ready_to_turn_in',
+    );
+    if (hasActiveOrReadyQuest === true) {
+      // Player must complete or fail existing quest first
+      return {
+        state: {
+          ...state,
+          world: {
+            ...state.world,
+            npcs: updateNpcDisposition(state.world.npcs, npcId, 1),
+          },
+        },
+        events,
+      };
+    }
+
+    // Check if player already has a quest from this specific informant
+    const hasQuestFromThisGiver = state.activeQuests.some(
       q => q.giverNpcId === npcId && q.status === 'active',
     );
-    if (hasActiveQuest !== true) {
+    if (hasQuestFromThisGiver === false) {
       // Disposition too low — informant won't share information yet
       if (npc.disposition < 20) {
         return {
@@ -70,7 +89,7 @@ export function processTalkNpc(
           questId: quest.id,
           questTitle: quest.title,
           questDescription: quest.description,
-          rewardGold: quest.rewardGold,
+          rewardGold: quest.reward.amount,
           giverNpcId: npcId,
           timestamp: Date.now(),
           turnNumber: state.turnNumber,

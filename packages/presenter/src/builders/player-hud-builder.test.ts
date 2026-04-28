@@ -246,12 +246,20 @@ describe('buildPlayerHud', () => {
         ...state,
         activeQuests: [
           {
-            id: entityId('q1'),
+            id: 'q1',
             title: 'Slay the Dragon',
             description: 'A dragon has appeared',
             status: 'active',
-            rewardGold: 500,
-            giverNpcId: entityId('npc1'),
+            objective: {
+              type: 'defeat_enemy',
+              targetId: 'dragon',
+              progress: 0,
+            },
+            reward: {
+              type: 'gold',
+              amount: 500,
+            },
+            giverNpcId: 'npc1',
           },
         ],
       };

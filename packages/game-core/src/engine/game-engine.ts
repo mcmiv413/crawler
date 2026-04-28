@@ -19,6 +19,7 @@ import { executeRetreat } from '../systems/retreat.js';
 import { applyRunConsequences } from '../systems/world-consequences.js';
 import { simulatePersistedFloorTimeElapsed } from '../systems/enemy-respawn.js';
 import { completeFloorDepthQuests } from '../systems/quests.js';
+import { evaluateAllQuestProgress } from './quest-evaluator.js';
 
 export class GameEngine implements IGameEngine {
   createNewGame(seed?: number): GameState {
@@ -95,7 +96,15 @@ export class GameEngine implements IGameEngine {
     }
 
     const result = handleCommand(state, command, rng);
-    return this.applyConsequencesIfRunEnded(result);
+    const afterConsequences = this.applyConsequencesIfRunEnded(result);
+    
+    // Evaluate quest progress after command execution
+    const questEval = evaluateAllQuestProgress(afterConsequences.state);
+    return {
+      state: questEval.state,
+      events: [...afterConsequences.events, ...questEval.events],
+      runEnded: afterConsequences.runEnded,
+    };
   }
 
   /**

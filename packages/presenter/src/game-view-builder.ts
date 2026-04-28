@@ -4,6 +4,7 @@ import { ENEMY_TEMPLATES, STATUS_DEFINITIONS, OBJECT_TEMPLATES, DEATH_CONSEQUENC
 import { calculateHitChance, applyRangeAccuracyPenalty } from '@dungeon/core/utils/dice.js';
 import { chebyshevDistance } from '@dungeon/core/utils/grid.js';
 import { getEffectiveStat } from '@dungeon/core/systems/status-effects.js';
+import { getObjectiveText } from '@dungeon/core/systems/quest-progress.js';
 import { buildPlayerHud } from './builders/player-hud-builder.js';
 import { buildMapView } from './builders/map-view-builder.js';
 
@@ -317,7 +318,9 @@ export function buildGameView(state: GameState): GameView {
       title: q.title,
       description: q.description,
       status: q.status,
-      rewardGold: q.rewardGold,
+      objectiveText: getObjectiveText(q),
+      progress: q.objective.progress,
+      rewardGold: q.reward.amount ?? q.rewardGold ?? 0,
       giverNpcId: q.giverNpcId,
     })),
     runResult: state.phase === 'game_over'

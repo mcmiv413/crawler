@@ -1627,10 +1627,16 @@ describe('Quest view and death context', () => {
           title: 'Hunt the Dangerous Enemy',
           description: 'Hunt down a dangerous enemy',
           status: 'active',
-          targetEnemyTemplateId: 'goblin',
-          targetFloorDepth: 5,
-          giverNpcId: entityId('npc1'),
-          rewardGold: 100,
+          objective: {
+            type: 'defeat_enemy',
+            targetId: 'goblin',
+            progress: 0,
+          },
+          reward: {
+            type: 'gold',
+            amount: 100,
+          },
+          giverNpcId: 'npc1',
         },
       ],
     };
@@ -1638,6 +1644,9 @@ describe('Quest view and death context', () => {
     const view = buildGameView(state);
     expect(view.activeQuests).toBeDefined();
     expect(view.activeQuests.length).toBeGreaterThan(0);
+    expect(view.activeQuests[0]).toHaveProperty('objectiveText');
+    expect(view.activeQuests[0]).toHaveProperty('progress');
+    expect(view.activeQuests[0]?.rewardGold).toBe(100);
   });
 
   it('sets phase to game_over when player is dead', () => {

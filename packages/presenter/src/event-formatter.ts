@@ -153,6 +153,24 @@ const EVENT_FORMATTERS = {
     timestamp: event.timestamp,
   }),
 
+  'QUEST_PROGRESS': (event) => ({
+    text: `Quest progress: "${event.questTitle}" • ${event.message}`,
+    type: 'info',
+    timestamp: event.timestamp,
+  }),
+
+  'QUEST_READY': (event) => ({
+    text: `Quest ready! "${event.questTitle}" is complete. Return to ${event.giverNpcId} to claim your reward.`,
+    type: 'info',
+    timestamp: event.timestamp,
+  }),
+
+  'QUEST_TURNED_IN': (event) => ({
+    text: `Quest complete: "${event.questTitle}"! Reward: ${event.rewardGold}g`,
+    type: 'loot',
+    timestamp: event.timestamp,
+  }),
+
   'ABILITY_USED': (event) => {
     if (event.healAmount !== undefined) {
       return {

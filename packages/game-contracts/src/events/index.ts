@@ -193,6 +193,30 @@ export interface QuestAssignedEvent extends BaseEvent {
   readonly giverNpcId: EntityId;
 }
 
+export interface QuestProgressEvent extends BaseEvent {
+  readonly type: 'QUEST_PROGRESS';
+  readonly questId: string;
+  readonly questTitle: string;
+  readonly progress: number;
+  readonly message: string;
+}
+
+export interface QuestReadyEvent extends BaseEvent {
+  readonly type: 'QUEST_READY';
+  readonly questId: string;
+  readonly questTitle: string;
+  readonly giverNpcId: EntityId;
+  readonly message: string;
+}
+
+export interface QuestTurnedInEvent extends BaseEvent {
+  readonly type: 'QUEST_TURNED_IN';
+  readonly questId: string;
+  readonly questTitle: string;
+  readonly rewardGold: number;
+  readonly giverNpcId: EntityId;
+}
+
 export interface QuestCompletedEvent extends BaseEvent {
   readonly type: 'QUEST_COMPLETED';
   readonly questId: string;
@@ -369,6 +393,9 @@ export type DomainEvent =
   | NemesisSlainEvent
   | LootDroppedEvent
   | QuestAssignedEvent
+  | QuestProgressEvent
+  | QuestReadyEvent
+  | QuestTurnedInEvent
   | QuestCompletedEvent
   | AbilityUsedEvent
   | MasteryUnlockedEvent
