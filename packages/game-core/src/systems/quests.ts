@@ -1,45 +1,34 @@
 import type { DomainEvent, GameState } from '@dungeon/contracts';
+import { evaluateQuestProgress } from './quest-progress.js';
 
-export function completeQuest(
-  state: GameState,
-  quest: GameState['activeQuests'][number],
-): { state: GameState; event: DomainEvent } {
-  const updatedState = {
-    ...state,
-    activeQuests: state.activeQuests.map(q =>
-      q.id === quest.id ? { ...q, status: 'complete' as const } : q,
-    ),
-    player: { ...state.player, gold: state.player.gold + quest.rewardGold },
-  };
-
-  const event: DomainEvent = {
-    type: 'QUEST_COMPLETED',
-    questId: quest.id,
-    questTitle: quest.title,
-    rewardGold: quest.rewardGold,
-    timestamp: Date.now(),
-    turnNumber: state.turnNumber,
-  };
-
-  return { state: updatedState, event };
-}
-
+/**
+ * Mark floor depth quests as ready when player reaches the target floor.
+ * This is called after descending/ascending to a new floor.
+ */
 export function completeFloorDepthQuests(
   state: GameState,
   newDepth: number,
 ): { state: GameState; events: DomainEvent[] } {
-  const matchingQuests = state.activeQuests.filter(
-    quest => quest.status === 'active' && quest.targetFloorDepth === newDepth,
-  );
-
+  const mutableEvents: DomainEvent[] = [];
   let currentState = state;
-  let events: DomainEvent[] = [];
 
-  for (const quest of matchingQuests) {
-    const result = completeQuest(currentState, quest);
-    currentState = result.state;
-    events = [...events, result.event];
+  // Find quests with reach_floor objective that match the new depth
+  for (const quest of state.activeQuests) {
+    if (quest.status === 'active' && quest.objective.type === 'reach_floor') {
+      const targetDepth = quest.objective.targetCount ?? 0;
+      if (newDepth === targetDepth) {
+        // Evaluate progress to mark the quest ready
+        const result = evaluateQuestProgress(quest, currentState);
+        currentState = {
+          ...currentState,
+          activeQuests: currentState.activeQuests.map(q =>
+            q.id === quest.id ? result.quest : q,
+          ),
+        };
+        mutableEvents.push(...result.events);
+      }
+    }
   }
 
-  return { state: currentState, events };
+  return { state: currentState, events: mutableEvents };
 }

@@ -71,6 +71,16 @@
       "import": "./dist/systems/status-effects.js",
       "default": "./dist/systems/status-effects.js"
     },
+    "./systems/quest-progress": {
+      "types": "./dist/systems/quest-progress.d.ts",
+      "import": "./dist/systems/quest-progress.js",
+      "default": "./dist/systems/quest-progress.js"
+    },
+    "./systems/quest-progress.js": {
+      "types": "./dist/systems/quest-progress.d.ts",
+      "import": "./dist/systems/quest-progress.js",
+      "default": "./dist/systems/quest-progress.js"
+    },
     "./testing": {
       "types": "./dist/testing/index.d.ts",
       "import": "./dist/testing/index.js",

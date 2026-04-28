@@ -1,5 +1,6 @@
 import type { GameState, WeaponType } from '@dungeon/contracts';
 import { STATUS_DEFINITIONS, ABILITY_DEFINITIONS, ENCHANTMENT_BY_ID, XP_TABLE, FACTIONS, getRarityColor, BIOMES, daggerDisarm, daggerSetTrap, getDamageBand, getWeaponDamageProfile } from '@dungeon/content';
+import { getObjectiveText } from '@dungeon/core/systems/quest-progress.js';
 import { getEffectiveStat } from '@dungeon/core/systems/status-effects.js';
 import type { PlayerHudView, StatusView, AbilityView, EquippedItemView, EnchantmentView, NemesisInfo, FactionStanding } from '../game-view.js';
 import { calculateStatBreakdown } from './stat-breakdown-builder.js';
@@ -112,7 +113,9 @@ export function buildPlayerHud(state: GameState): PlayerHudView {
     title: q.title,
     description: q.description,
     status: q.status,
-    rewardGold: q.rewardGold,
+    objectiveText: getObjectiveText(q),
+    progress: q.objective.progress,
+    rewardGold: q.reward.type === 'gold' ? q.reward.amount : 0,
     giverNpcId: q.giverNpcId,
   }));
 
