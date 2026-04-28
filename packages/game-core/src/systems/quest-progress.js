@@ -1,4 +1,5 @@
 import { entityId } from '@dungeon/contracts';
+import { ENEMY_TEMPLATES, ITEM_BY_ID } from '@dungeon/content';
 /**
  * Evaluates if a quest's objective has been satisfied and marks it ready to turn in.
  * Returns the updated quest and any progress events.
@@ -123,12 +124,33 @@ export function redeemQuest(state, quest) {
  * Gets a human-readable description of a quest objective.
  */
 export function getObjectiveText(quest) {
+    if (typeof quest.objectiveText === 'string' && quest.objectiveText.trim().length > 0) {
+        return quest.objectiveText;
+    }
     const { objective } = quest;
     switch (objective.type) {
-        case 'collect_item':
-            return quest.description; // Use template description
-        case 'defeat_enemy':
-            return quest.description;
+        case 'collect_item': {
+            const targetId = objective.targetId;
+            if (targetId === undefined || targetId.length === 0) {
+                return quest.description;
+            }
+            const itemName = ITEM_BY_ID.get(targetId)?.name ?? humanizeObjectiveTargetId(targetId);
+            const targetCount = objective.targetCount ?? 1;
+            return targetCount > 1
+                ? `Collect ${targetCount} copies of ${itemName}`
+                : `Collect ${itemName}`;
+        }
+        case 'defeat_enemy': {
+            const targetId = objective.targetId;
+            if (targetId === undefined || targetId.length === 0) {
+                return quest.description;
+            }
+            const enemyName = ENEMY_TEMPLATES.get(targetId)?.name ?? humanizeObjectiveTargetId(targetId);
+            const targetCount = objective.targetCount ?? 1;
+            return targetCount > 1
+                ? `Defeat ${targetCount} ${pluralizeObjectiveTarget(enemyName)}`
+                : `Defeat ${enemyName}`;
+        }
         case 'reach_floor': {
             const depth = objective.targetCount ?? 0;
             return `Reach floor ${depth} in the dungeon`;
@@ -136,5 +158,15 @@ export function getObjectiveText(quest) {
         default:
             return quest.description;
     }
+}
+function humanizeObjectiveTargetId(targetId) {
+    return targetId
+        .split('_')
+        .filter(segment => segment.length > 0)
+        .map(segment => segment.charAt(0).toUpperCase() + segment.slice(1))
+        .join(' ');
+}
+function pluralizeObjectiveTarget(name) {
+    return name.endsWith('s') ? name : `${name}s`;
 }
 //# sourceMappingURL=quest-progress.js.map

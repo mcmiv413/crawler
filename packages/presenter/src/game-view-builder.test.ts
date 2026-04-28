@@ -1626,6 +1626,7 @@ describe('Quest view and death context', () => {
           id: 'q1',
           title: 'Hunt the Dangerous Enemy',
           description: 'Hunt down a dangerous enemy',
+          objectiveText: 'Defeat the Goblin and report back.',
           status: 'active',
           objective: {
             type: 'defeat_enemy',
@@ -1645,6 +1646,7 @@ describe('Quest view and death context', () => {
     expect(view.activeQuests).toBeDefined();
     expect(view.activeQuests.length).toBeGreaterThan(0);
     expect(view.activeQuests[0]).toHaveProperty('objectiveText');
+    expect(view.activeQuests[0]?.objectiveText).toBe('Defeat the Goblin and report back.');
     expect(view.activeQuests[0]).toHaveProperty('progress');
     expect(view.activeQuests[0]?.rewardGold).toBe(100);
   });
