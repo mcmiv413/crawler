@@ -1,5 +1,5 @@
 import type {
-  GameState, EntityId, DamageType, DomainEvent, WeaponType, WeaponTemplate, EnemyInstance, StatusId, ItemTemplate, Direction,
+  GameState, EntityId, DamageType, DomainEvent, WeaponType, WeaponTemplate, EnemyInstance, StatusId, Direction,
 } from '@dungeon/contracts';
 import type { CommandResult } from './shared.js';
 import type { SeededRNG } from '../../utils/rng.js';
@@ -23,7 +23,6 @@ import { processEnemyTurns } from '../turn-scheduler.js';
 import { tickAbilityCooldowns } from '../../systems/abilities.js';
 import { handleDisarmTrap } from './disarm-trap.js';
 import { handleSetTrap } from './set-trap.js';
-import { completeQuest } from '../../systems/quests.js';
 
 /** Returns the WeaponType of the currently equipped weapon, or null if none/unknown */
 export function getEquippedWeaponType(state: GameState): WeaponType | null {
@@ -149,32 +148,30 @@ export function processEnemyKill(
   newState = levelResult.state;
   events = [...events, ...levelResult.events];
 
-  // 11. Check quest completion from loot
-  for (const lootEvent of lootResult.events) {
-    if (lootEvent.type === 'LOOT_ACQUIRED') {
-      const itemTemplate = newState.itemRegistry.items.get(lootEvent.itemId);
-      if (itemTemplate !== undefined) {
-        const completedQuest = newState.activeQuests.find(
-          q => q.status === 'active' && q.targetItemId === (itemTemplate as ItemTemplate).itemId,
-        );
-        if (completedQuest !== undefined) {
-          const result = completeQuest(newState, completedQuest);
-          newState = result.state;
-          events = [...events, result.event];
-        }
-      }
+  // 11. Update quest progress from enemy defeat (defeat_enemy objectives)
+  const updatedQuests = newState.activeQuests.map(q => {
+    if (q.status !== 'active' || q.objective.type !== 'defeat_enemy') {
+      return q;
     }
-  }
-
-  // D1: Check quest completion from enemy kill
-  const enemyTargetQuests = newState.activeQuests.filter(
-    q => q.status === 'active' && q.targetEnemyTemplateId === enemy.templateId,
-  );
-  for (const quest of enemyTargetQuests) {
-    const result = completeQuest(newState, quest);
-    newState = result.state;
-    events = [...events, result.event];
-  }
+    // Check if this quest is for this enemy template
+    if (q.objective.targetId !== enemy.templateId) {
+      return q;
+    }
+    // Increment progress (targetCount defaults to 1)
+    const targetCount = q.objective.targetCount ?? 1;
+    const newProgress = Math.min(q.objective.progress + 1, targetCount);
+    return {
+      ...q,
+      objective: {
+        ...q.objective,
+        progress: newProgress,
+      },
+    };
+  });
+  newState = {
+    ...newState,
+    activeQuests: updatedQuests,
+  };
 
   // 12. Check victory condition: depth >= 5 and killed a boss (tier >= 4 indicates boss)
   if (newState.run && newState.run.floor.depth >= 5 && enemy.tier >= 4) {
