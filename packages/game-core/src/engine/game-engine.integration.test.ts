@@ -55,9 +55,16 @@ describe('GameEngine floor navigation', () => {
       title: 'Take the first step',
       description: 'Enter the dungeon and reach floor 1.',
       status: 'active' as const,
-      targetFloorDepth: 1,
-      giverNpcId: entityId('npc_informant'),
-      rewardGold: 25,
+      objective: {
+        type: 'reach_floor' as const,
+        targetCount: 1,
+        progress: 0,
+      },
+      reward: {
+        type: 'gold' as const,
+        amount: 25,
+      },
+      giverNpcId: 'npc_informant',
     };
 
     const stateWithQuest: GameState = {
@@ -67,9 +74,9 @@ describe('GameEngine floor navigation', () => {
 
     const result = engine.submitCommand(stateWithQuest, { type: 'TOWN_ACTION', action: 'enter_dungeon' });
 
-    expect(result.state.activeQuests[0]!.status).toBe('complete');
-    expect(result.state.player.gold).toBe(stateWithQuest.player.gold + quest.rewardGold);
-    expect(result.events.some(event => event.type === 'QUEST_COMPLETED' && event.questId === quest.id)).toBe(true);
+    expect(result.state.activeQuests[0]!.status).toBe('ready_to_turn_in');
+    expect(result.state.player.gold).toBe(stateWithQuest.player.gold);
+    expect(result.events.some(event => event.type === 'QUEST_READY' && event.questId === quest.id)).toBe(true);
   });
 
   it('floor 1 run starts with empty floor history', () => {
@@ -135,9 +142,16 @@ describe('GameEngine floor navigation', () => {
       title: 'Return to the upper halls',
       description: 'Ascend back to floor 2.',
       status: 'active' as const,
-      targetFloorDepth: 2,
-      giverNpcId: entityId('npc_informant'),
-      rewardGold: 40,
+      objective: {
+        type: 'reach_floor' as const,
+        targetCount: 2,
+        progress: 0,
+      },
+      reward: {
+        type: 'gold' as const,
+        amount: 40,
+      },
+      giverNpcId: 'npc_informant',
     };
 
     const stateOnFloor3: GameState = {
@@ -153,9 +167,9 @@ describe('GameEngine floor navigation', () => {
 
     const result = engine.submitCommand(stateOnFloor3, { type: 'ASCEND' });
 
-    expect(result.state.activeQuests[0]!.status).toBe('complete');
-    expect(result.state.player.gold).toBe(stateOnFloor3.player.gold + quest.rewardGold);
-    expect(result.events.some(event => event.type === 'QUEST_COMPLETED' && event.questId === quest.id)).toBe(true);
+    expect(result.state.activeQuests[0]!.status).toBe('ready_to_turn_in');
+    expect(result.state.player.gold).toBe(stateOnFloor3.player.gold);
+    expect(result.events.some(event => event.type === 'QUEST_READY' && event.questId === quest.id)).toBe(true);
   });
 
   it('ASCEND with 2 floors of history leaves 1 floor in history', () => {
