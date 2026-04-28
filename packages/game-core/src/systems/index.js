@@ -18,4 +18,6 @@ export { checkWeaponMasteryUnlocks } from './weapon-mastery.js';
 export { updateFactionOnKill, tickFactionPowerForNemeses } from './factions.js';
 export { applyRunConsequences, evaluateEventChains } from './world-consequences.js';
 export { buildWorldModifiers } from './world-modifiers.js';
+export { evaluateQuestProgress, getObjectiveText, redeemQuest } from './quest-progress.js';
+export { completeFloorDepthQuests } from './quests.js';
 //# sourceMappingURL=index.js.map

@@ -1,28 +1,26 @@
-export function completeQuest(state, quest) {
-    const updatedState = {
-        ...state,
-        activeQuests: state.activeQuests.map(q => q.id === quest.id ? { ...q, status: 'complete' } : q),
-        player: { ...state.player, gold: state.player.gold + quest.rewardGold },
-    };
-    const event = {
-        type: 'QUEST_COMPLETED',
-        questId: quest.id,
-        questTitle: quest.title,
-        rewardGold: quest.rewardGold,
-        timestamp: Date.now(),
-        turnNumber: state.turnNumber,
-    };
-    return { state: updatedState, event };
-}
+import { evaluateQuestProgress } from './quest-progress.js';
+/**
+ * Mark floor depth quests as ready when player reaches the target floor.
+ * This is called after descending/ascending to a new floor.
+ */
 export function completeFloorDepthQuests(state, newDepth) {
-    const matchingQuests = state.activeQuests.filter(quest => quest.status === 'active' && quest.targetFloorDepth === newDepth);
+    const mutableEvents = [];
     let currentState = state;
-    let events = [];
-    for (const quest of matchingQuests) {
-        const result = completeQuest(currentState, quest);
-        currentState = result.state;
-        events = [...events, result.event];
+    // Find quests with reach_floor objective that match the new depth
+    for (const quest of state.activeQuests) {
+        if (quest.status === 'active' && quest.objective.type === 'reach_floor') {
+            const targetDepth = quest.objective.targetCount ?? 0;
+            if (newDepth === targetDepth) {
+                // Evaluate progress to mark the quest ready
+                const result = evaluateQuestProgress(quest, currentState);
+                currentState = {
+                    ...currentState,
+                    activeQuests: currentState.activeQuests.map(q => q.id === quest.id ? result.quest : q),
+                };
+                mutableEvents.push(...result.events);
+            }
+        }
     }
-    return { state: currentState, events };
+    return { state: currentState, events: mutableEvents };
 }
 //# sourceMappingURL=quests.js.map

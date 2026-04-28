@@ -5,41 +5,36 @@ import { moveInDirection } from '../utils/grid.js';
  * and within map bounds.
  */
 export function getValidTrapPlacementDirections(state) {
-    if (!state.run)
+    if (state.run === null)
         return [];
     const playerPos = state.player.position;
     const floor = state.run.floor;
-    const validDirs = [];
-    // All 8 adjacent directions
+    const mutableValidDirections = [];
     const directions = ['N', 'S', 'E', 'W', 'NE', 'NW', 'SE', 'SW'];
-    for (const dir of directions) {
-        const pos = moveInDirection(playerPos, dir);
-        // Check map bounds
-        if (pos.x < 0 || pos.x >= floor.width || pos.y < 0 || pos.y >= floor.height) {
+    for (const direction of directions) {
+        const position = moveInDirection(playerPos, direction);
+        if (position.x < 0 || position.x >= floor.width || position.y < 0 || position.y >= floor.height) {
             continue;
         }
-        // Check if walkable
-        const cell = floor.cells.get(`${pos.x},${pos.y}`);
-        if (!cell || !cell.tile.walkable) {
+        const cell = floor.cells.get(`${position.x},${position.y}`);
+        if (cell === undefined || cell.tile.walkable !== true) {
             continue;
         }
-        // Check if occupied by object
-        if (state.run.objects.has(`${pos.x},${pos.y}`)) {
+        if (state.run.objects.has(`${position.x},${position.y}`)) {
             continue;
         }
-        // Check if occupied by enemy
         let hasEnemy = false;
         for (const enemy of state.run.enemies.values()) {
-            if (enemy.position.x === pos.x && enemy.position.y === pos.y) {
+            if (enemy.position.x === position.x && enemy.position.y === position.y) {
                 hasEnemy = true;
                 break;
             }
         }
-        if (hasEnemy) {
+        if (hasEnemy === true) {
             continue;
         }
-        validDirs.push(pos);
+        mutableValidDirections.push(position);
     }
-    return validDirs;
+    return mutableValidDirections;
 }
 //# sourceMappingURL=trap-placement.js.map

@@ -1,4 +1,5 @@
 import { ECONOMY, ITEM_BY_ID, ENCHANTMENT_BY_ID, getEnchantmentCost, isRarityBuyable } from '@dungeon/content';
+import { redeemQuest } from './quest-progress.js';
 import { addItemToInventory, removeItemFromInventory } from './inventory.js';
 import { calculateEquippedStats } from './equipment.js';
 import { processTalkNpc } from './npc.js';
@@ -89,6 +90,8 @@ export function processTownAction(state, action, targetId, itemId, rng) {
             return processTalkNpc(state, targetId, rng);
         case 'enchant_armor':
             return { state, events: [] }; // Handled by ENCHANT_ARMOR command directly
+        case 'turn_in_quest':
+            return processTurnInQuest(state, targetId);
     }
 }
 function processRest(state) {
@@ -270,6 +273,22 @@ function processShopUndo(state) {
             },
         },
         events: [],
+    };
+}
+function processTurnInQuest(state, questId) {
+    if (questId === undefined)
+        return { state, events: [] };
+    const quest = state.activeQuests.find(q => q.id === questId);
+    if (quest === undefined)
+        return { state, events: [] };
+    // Guard: quest must be ready to turn in
+    if (quest.status !== 'ready_to_turn_in') {
+        return { state, events: [] };
+    }
+    const result = redeemQuest(state, quest);
+    return {
+        state: result.state,
+        events: [result.event],
     };
 }
 //# sourceMappingURL=town.js.map
