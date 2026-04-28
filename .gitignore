@@ -3,7 +3,8 @@ dist/
 .turbo/
 *.tsbuildinfo*
 *.d.ts
-*.d.ts.map\n*.js.map
+*.d.ts.map
+*.js.map
 coverage/
 .env
 .env.local

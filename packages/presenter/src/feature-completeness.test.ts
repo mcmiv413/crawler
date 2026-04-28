@@ -244,11 +244,11 @@ describe('Feature Completeness: Quest System', () => {
 
     // Link 4: quest can complete (simulate quest completion)
     const completedQuests = withQuest.activeQuests.map(q =>
-      q.id === quest.id ? { ...q, status: 'complete' as const } : q,
+      q.id === quest.id ? { ...q, status: 'rewarded' as const } : q,
     );
     const stateCompleted = { ...withQuest, activeQuests: completedQuests };
     const completedView = buildGameView(stateCompleted);
-    expect(completedView.activeQuests[0]!.status).toBe('complete');
+    expect(completedView.activeQuests[0]!.status).toBe('rewarded');
   });
 });
 
