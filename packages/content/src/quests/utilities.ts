@@ -16,6 +16,7 @@ export function createQuestFromTemplate(
     id: `quest_${template.id}_${giverNpcId}_${turnNumber}`,
     title: template.title,
     description: template.description,
+    objectiveText: template.objectiveText,
     status: 'active',
     objective: template.objective,
     reward: template.reward,

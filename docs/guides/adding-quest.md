@@ -26,28 +26,39 @@ import type { QuestTemplate } from './types.js';
 export const myQuest: QuestTemplate = {
   id: 'retrieve_rare_weapon',
   title: 'Retrieve the Lost Artifact',
-  description: 'An ancient artifact was lost deep in the dungeon. Retrieve any rare weapon and bring it back.',
-  
-  targetItemId: 'frost_axe',         // What item to bring back (if applicable)
-  targetEnemyTemplateId: undefined,  // What enemy to defeat (if applicable)
-  targetFloorDepth: undefined,       // What depth to reach (if applicable)
-  
-  rewardGold: 75,                    // Gold reward for completion
+  description: 'An ancient artifact was lost deep in the dungeon generations ago. Recover it for the council.',
+  objectiveText: 'Recover the Frost Axe and bring it back to town.',
+  objective: {
+    type: 'collect_item',
+    targetId: 'frost_axe',
+    targetCount: 1,
+    progress: 0,
+  },
+  reward: {
+    type: 'gold',
+    amount: 75,
+  },
 };
 ```
 
 ### Quest Target Types
 
-You can combine multiple quest objectives:
+Pick the objective type that matches the quest:
 
 ```typescript
 // Hunt a dangerous enemy
 {
   id: 'hunt_dangerous_enemy',
-  title: 'Eliminate the Shadowborn',
+  title: 'Hunt the Shadow Lurker',
   description: 'A dangerous creature has been terrorizing our people. Defeat it and return.',
-  targetEnemyTemplateId: 'shadow_lurker',
-  rewardGold: 100,
+  objectiveText: 'Defeat the Shadow Lurker and end its attacks.',
+  objective: {
+    type: 'defeat_enemy',
+    targetId: 'shadow_lurker',
+    targetCount: 1,
+    progress: 0,
+  },
+  reward: { type: 'gold', amount: 100 },
 }
 
 // Retrieve an item
@@ -55,8 +66,14 @@ You can combine multiple quest objectives:
   id: 'find_enchanted_armor',
   title: 'Seek the Warden\'s Cloak',
   description: 'Find enchanted armor hidden in the depths.',
-  targetItemId: 'plate_armor',  // Valid item ID — check packages/content/src/items/armor.ts
-  rewardGold: 85,
+  objectiveText: 'Recover the Plate Armor and return it to the council.',
+  objective: {
+    type: 'collect_item',
+    targetId: 'plate_armor', // Valid item ID — check ITEM_BY_ID
+    targetCount: 1,
+    progress: 0,
+  },
+  reward: { type: 'gold', amount: 85 },
 }
 
 // Reach a depth
@@ -64,8 +81,13 @@ You can combine multiple quest objectives:
   id: 'rescue_expedition',
   title: 'Find the Lost Expedition',
   description: 'Find survivors of an expedition that disappeared months ago.',
-  targetFloorDepth: 7,
-  rewardGold: 120,
+  objectiveText: 'Reach floor 7 and search for the lost expedition or their research notes.',
+  objective: {
+    type: 'reach_floor',
+    targetCount: 7,
+    progress: 0,
+  },
+  reward: { type: 'gold', amount: 120 },
 }
 ```
 
@@ -109,11 +131,12 @@ To ensure fair distribution, keep reward values balanced across quest difficulty
 
 Before committing a new quest, verify:
 
-- [ ] **Target ID exists**: If using `targetItemId`, confirm it exists in `packages/content/src/items/` (check `ITEM_BY_ID`)
-- [ ] **Enemy ID exists**: If using `targetEnemyTemplateId`, confirm it exists in `packages/content/src/enemies/` (check `ENEMY_TEMPLATES`)
-- [ ] **Has at least one target**: Every quest must have `targetItemId`, `targetEnemyTemplateId`, or `targetFloorDepth` set
-- [ ] **Reward is positive**: `rewardGold` should be > 0
-- [ ] **Description is clear**: Player understands what they need to do
+- [ ] **Target ID exists**: If using `objective.targetId` for an item quest, confirm it exists in `ITEM_BY_ID`
+- [ ] **Enemy ID exists**: If using `objective.targetId` for an enemy quest, confirm it exists in `ENEMY_TEMPLATES`
+- [ ] **Objective type is correct**: Every quest must use one of `collect_item`, `defeat_enemy`, or `reach_floor`
+- [ ] **Objective text is specific**: `objectiveText` should say exactly what the player must do and should not duplicate the flavor description
+- [ ] **Reward is positive**: `reward.amount` should be > 0
+- [ ] **Description is clear**: The flavor text explains why the quest matters
 - [ ] **Index is generated**: Run `pnpm generate:indexes` to update `packages/content/src/quests/index.ts`
 - [ ] **Contract test passes**: Run `pnpm test` to verify cross-references are valid
 

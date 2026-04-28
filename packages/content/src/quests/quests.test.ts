@@ -15,11 +15,14 @@ describe('quest templates', () => {
       expect(template).toHaveProperty('id');
       expect(template).toHaveProperty('title');
       expect(template).toHaveProperty('description');
+      expect(template).toHaveProperty('objectiveText');
       expect(template).toHaveProperty('objective');
       expect(template).toHaveProperty('reward');
       expect(typeof template.id).toBe('string');
       expect(typeof template.title).toBe('string');
       expect(typeof template.description).toBe('string');
+      expect(typeof template.objectiveText).toBe('string');
+      expect(template.objectiveText).not.toBe(template.description);
       expect(template.objective).toBeDefined();
       expect(template.objective.type).toMatch(/collect_item|defeat_enemy|reach_floor/);
       expect(template.reward.type).toBe('gold');
@@ -59,6 +62,7 @@ describe('quest templates', () => {
     expect(quest.id).toContain('npc1');
     expect(quest.title).toBe(template.title);
     expect(quest.description).toBe(template.description);
+    expect(quest.objectiveText).toBe(template.objectiveText);
     expect(quest.status).toBe('active');
     expect(quest.objective).toEqual(template.objective);
     expect(quest.reward).toEqual(template.reward);

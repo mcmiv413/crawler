@@ -4,6 +4,7 @@ export const huntDangerousEnemy: QuestTemplate = {
   id: 'hunt_dangerous_enemy',
   title: 'Hunt the Shadow Lurker',
   description: 'A dangerous shadow creature has been terrorizing nearby villages. Track it down in the dungeon and eliminate the threat. Return to claim your reward.',
+  objectiveText: 'Defeat the Shadow Lurker and end its attacks.',
   objective: {
     type: 'defeat_enemy',
     targetId: 'shadow_lurker',

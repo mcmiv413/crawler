@@ -197,9 +197,29 @@ describe('Quest Progress System', () => {
   });
 
   describe('getObjectiveText', () => {
-    it('returns description for collect_item objectives', () => {
+    it('returns quest-specific objectiveText when present', () => {
       const quest: Quest = {
         id: 'quest_1',
+        title: 'Find the Sword',
+        description: 'Find the legendary sword in the deep dungeon',
+        objectiveText: 'Recover the legendary sword and return it.',
+        status: 'active',
+        objective: {
+          type: 'collect_item',
+          targetId: 'legendary_sword',
+          progress: 0,
+        },
+        reward: { type: 'gold', amount: 100 },
+        giverNpcId: 'npc_1',
+      };
+
+      const text = getObjectiveText(quest);
+      expect(text).toBe(quest.objectiveText);
+    });
+
+    it('generates collect_item text from the target item id when objectiveText is absent', () => {
+      const quest: Quest = {
+        id: 'quest_collect_fallback',
         title: 'Find the Sword',
         description: 'Find the legendary sword in the deep dungeon',
         status: 'active',
@@ -213,7 +233,26 @@ describe('Quest Progress System', () => {
       };
 
       const text = getObjectiveText(quest);
-      expect(text).toBe(quest.description);
+      expect(text).toBe('Collect Legendary Sword');
+    });
+
+    it('generates defeat_enemy text from the target enemy id when objectiveText is absent', () => {
+      const quest: Quest = {
+        id: 'quest_defeat_fallback',
+        title: 'Hunt the Shadow Lurker',
+        description: 'Track down the shadow creature',
+        status: 'active',
+        objective: {
+          type: 'defeat_enemy',
+          targetId: 'shadow_lurker',
+          progress: 0,
+        },
+        reward: { type: 'gold', amount: 100 },
+        giverNpcId: 'npc_1',
+      };
+
+      const text = getObjectiveText(quest);
+      expect(text).toBe('Defeat Shadow Lurker');
     });
 
     it('returns "Reach floor X" for reach_floor objectives', () => {

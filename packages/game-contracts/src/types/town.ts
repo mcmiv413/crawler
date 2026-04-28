@@ -18,6 +18,7 @@ export interface Quest {
   readonly id: string;
   readonly title: string;
   readonly description: string;
+  readonly objectiveText?: string;
   readonly status: QuestStatus;
   readonly objective: QuestObjective;
   readonly reward: QuestReward;
