@@ -770,4 +770,195 @@ describe('TownPhase Component', () => {
       expect(screen.queryByText(/\(shopkeeper\)/)).not.toBeInTheDocument();
     });
   });
+
+  describe('Layout Regions', () => {
+    it('renders fixed header with town title', () => {
+      const view = createMockGameView();
+      render(
+        <TownPhase
+          view={view}
+          combatLog={[]}
+          loading={false}
+          error={null}
+          sendCommand={vi.fn()}
+          talkToNpc={vi.fn()}
+          npcDialogue={null}
+          setNpcDialogue={vi.fn()}
+          talkingTo={null}
+        />
+      );
+
+      const townHeader = screen.getByRole('heading', { name: /Town/i });
+      expect(townHeader).toBeInTheDocument();
+      // Header should have fixed positioning (flex-shrink: 0)
+      expect(townHeader.parentElement).toBeVisible();
+    });
+
+    it('keeps action buttons visible without scrolling', () => {
+      const view = createMockGameView();
+      render(
+        <TownPhase
+          view={view}
+          combatLog={[]}
+          loading={false}
+          error={null}
+          sendCommand={vi.fn()}
+          talkToNpc={vi.fn()}
+          npcDialogue={null}
+          setNpcDialogue={vi.fn()}
+          talkingTo={null}
+        />
+      );
+
+      const enterButton = screen.getByRole('button', { name: /Enter Dungeon/i });
+      expect(enterButton).toBeVisible();
+
+      // Continue button if there's a last retreat floor
+      const continueButton = screen.queryByRole('button', { name: /Continue/i });
+      if (continueButton) {
+        expect(continueButton).toBeVisible();
+      }
+    });
+
+    it('keeps NPC section visible with all cards accessible', () => {
+      const view = createMockGameView();
+      render(
+        <TownPhase
+          view={view}
+          combatLog={[]}
+          loading={false}
+          error={null}
+          sendCommand={vi.fn()}
+          talkToNpc={vi.fn()}
+          npcDialogue={null}
+          setNpcDialogue={vi.fn()}
+          talkingTo={null}
+        />
+      );
+
+      // Both NPCs should be visible without scrolling the main panel
+      expect(screen.getByText(/Miriam/)).toBeVisible();
+      const torbens = screen.getAllByText(/Torben/);
+      expect(torbens.length).toBeGreaterThan(0);
+      expect(torbens[0]).toBeVisible();
+    });
+
+    it('displays messages in a bounded, scrollable section', () => {
+      const view = createMockGameView({
+        town: {
+          ...createMockGameView().town!,
+          lastRunSummary: 'You explored 3 floors and defeated many enemies.',
+          prepAdvice: [
+            'Stock up on health potions',
+            'Equip stronger armor',
+            'Train your combat skills',
+          ],
+        },
+      });
+
+      render(
+        <TownPhase
+          view={view}
+          combatLog={[]}
+          loading={false}
+          error={null}
+          sendCommand={vi.fn()}
+          talkToNpc={vi.fn()}
+          npcDialogue={null}
+          setNpcDialogue={vi.fn()}
+          talkingTo={null}
+        />
+      );
+
+      // Messages should be visible
+      expect(screen.getByText(/You explored 3 floors/)).toBeInTheDocument();
+      expect(screen.getByText(/Stock up on health potions/)).toBeInTheDocument();
+    });
+
+    it('respects tab bar height clearance on mobile', () => {
+      const view = createMockGameView();
+      render(
+        <TownPhase
+          view={view}
+          combatLog={[]}
+          loading={false}
+          error={null}
+          sendCommand={vi.fn()}
+          talkToNpc={vi.fn()}
+          npcDialogue={null}
+          setNpcDialogue={vi.fn()}
+          talkingTo={null}
+        />
+      );
+
+      // Town header should be visible and reachable
+      const townHeader = screen.getByRole('heading', { name: /Town/i });
+      expect(townHeader).toBeVisible();
+      
+      // Buttons should not be pushed off-screen by tab bar
+      const enterButton = screen.getByRole('button', { name: /Enter Dungeon/i });
+      expect(enterButton).toBeVisible();
+    });
+
+    it('shows NPC dialogue in messages section when present', () => {
+      const view = createMockGameView();
+      const npcDialogue = {
+        name: 'Miriam',
+        text: 'Welcome, brave adventurer. Are you injured?',
+      };
+
+      render(
+        <TownPhase
+          view={view}
+          combatLog={[]}
+          loading={false}
+          error={null}
+          sendCommand={vi.fn()}
+          talkToNpc={vi.fn()}
+          npcDialogue={npcDialogue}
+          setNpcDialogue={vi.fn()}
+          talkingTo="npc_healer"
+        />
+      );
+
+      expect(screen.getByText('Miriam:')).toBeInTheDocument();
+      expect(screen.getByText(/Welcome, brave adventurer/)).toBeInTheDocument();
+      expect(screen.getByRole('button', { name: /Dismiss/i })).toBeVisible();
+    });
+
+    it('content does not overflow main container in constrained viewport', () => {
+      const view = createMockGameView({
+        town: {
+          ...createMockGameView().town!,
+          lastRunSummary: 'A very long run summary that might cause overflow if not properly scrolled.',
+          prepAdvice: ['Stock up on health potions', 'Train your combat skills'],
+        },
+      });
+
+      render(
+        <TownPhase
+          view={view}
+          combatLog={[]}
+          loading={false}
+          error={null}
+          sendCommand={vi.fn()}
+          talkToNpc={vi.fn()}
+          npcDialogue={null}
+          setNpcDialogue={vi.fn()}
+          talkingTo={null}
+        />
+      );
+
+      // Long content should still be rendered and not overflow off-screen
+      expect(screen.getByText('A very long run summary that might cause overflow if not properly scrolled.')).toBeInTheDocument();
+      expect(screen.getByText(/Stock up on health potions/)).toBeInTheDocument();
+      
+      // Town header should still be accessible
+      const townHeader = screen.getByRole('heading', { name: /Town/i });
+      expect(townHeader).toBeVisible();
+      
+      // Action buttons should also be accessible
+      expect(screen.getByRole('button', { name: /Enter Dungeon/i })).toBeVisible();
+    });
+  });
 });

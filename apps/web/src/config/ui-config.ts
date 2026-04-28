@@ -93,6 +93,16 @@ export const CONSUMABLES_BAR_MAX_HEIGHT = 160;
 /** Max height (px) of the quest tracker scroll container. */
 export const QUEST_TRACKER_MAX_HEIGHT = 200;
 
+// ── Town Layout ─────────────────────────────────────────────────
+/** Top section height (px) with player HUD and main action buttons in town. */
+export const TOWN_TOP_SECTION_HEIGHT = 120;
+
+/** NPC cards section height — defaults to content size, scrolls if constrained. */
+export const TOWN_NPC_SECTION_MIN_HEIGHT = 100;
+
+/** Messages/dialogue section — scrolls internally when content exceeds viewport. */
+export const TOWN_MESSAGES_SECTION_MIN_HEIGHT = 200;
+
 // ── Z-Index Layers ──────────────────────────────────────────────
 // All modals, overlays, and floating UI use these constants so stacking order
 // is coherent and no one invents their own z-index (bug prevention).

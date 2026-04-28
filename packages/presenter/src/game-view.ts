@@ -62,6 +62,12 @@ export interface FactionStanding {
   readonly enemiesInCurrentDungeon: readonly string[];
 }
 
+export interface DismissibleNotice {
+  readonly id: string;
+  readonly kind: string;
+  readonly message: string;
+}
+
 export interface GameView {
   readonly gameId: string;
   readonly phase: 'town' | 'dungeon' | 'combat' | 'game_over';
@@ -80,7 +86,7 @@ export interface GameView {
   readonly inspectableEntities: readonly InspectableEntityView[];
   readonly recentlyDefeatedNemesis: NemesisView | null;
   readonly debugMode: boolean;
-  readonly notification?: string;
+  readonly notice?: DismissibleNotice;
 }
 
 export interface AbilityView {

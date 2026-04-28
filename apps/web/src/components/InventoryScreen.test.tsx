@@ -8,7 +8,7 @@ import { describe, it, expect, vi } from 'vitest';
 import React from 'react';
 import { render, screen, fireEvent } from '@testing-library/react';
 import { InventoryScreen } from './InventoryScreen.js';
-import type { InventoryView } from '@dungeon/presenter';
+import type { InventoryView, DismissibleNotice } from '@dungeon/presenter';
 
 // Fixtures
 const mockWeapon = {
@@ -351,6 +351,190 @@ describe('InventoryScreen Component', () => {
       fireEvent.click(itemButton);
       // Modal should render with item description
       expect(screen.getByText(/Restores health/)).toBeInTheDocument();
+    });
+  });
+
+  describe('Dismissible Notice Modal', () => {
+    const mockNotice: DismissibleNotice = {
+      id: 'equip_blocked_1',
+      kind: 'EQUIP_BLOCKED',
+      message: 'You are not strong enough to equip this item',
+    };
+
+    it('does not render notice modal when notice prop is undefined', () => {
+      render(
+        <InventoryScreen
+          inventory={emptyInventory}
+          phase="dungeon"
+          onClose={vi.fn()}
+          sendCommand={vi.fn()}
+          notice={undefined}
+        />
+      );
+
+      expect(screen.queryByText('Equipment Blocked')).not.toBeInTheDocument();
+    });
+
+    it('renders notice modal when notice prop is provided', () => {
+      render(
+        <InventoryScreen
+          inventory={emptyInventory}
+          phase="dungeon"
+          onClose={vi.fn()}
+          sendCommand={vi.fn()}
+          notice={mockNotice}
+        />
+      );
+
+      expect(screen.getByText('Equipment Blocked')).toBeInTheDocument();
+      expect(screen.getByText('You are not strong enough to equip this item')).toBeInTheDocument();
+    });
+
+    it('hides notice modal when dismissed via close button', () => {
+      const { rerender } = render(
+        <InventoryScreen
+          inventory={emptyInventory}
+          phase="dungeon"
+          onClose={vi.fn()}
+          sendCommand={vi.fn()}
+          notice={mockNotice}
+        />
+      );
+
+      // Notice should be visible
+      expect(screen.getByText('You are not strong enough to equip this item')).toBeInTheDocument();
+
+      // Click the close button (✕)
+      const closeButton = screen.getByText('✕');
+      fireEvent.click(closeButton);
+
+      // Re-render with same notice — modal should stay hidden
+      rerender(
+        <InventoryScreen
+          inventory={emptyInventory}
+          phase="dungeon"
+          onClose={vi.fn()}
+          sendCommand={vi.fn()}
+          notice={mockNotice}
+        />
+      );
+
+      // Modal should be hidden after dismissal
+      expect(screen.queryByText('You are not strong enough to equip this item')).not.toBeInTheDocument();
+    });
+
+    it('reopens notice modal when a new notice with different id arrives', () => {
+      const firstNotice: DismissibleNotice = {
+        id: 'equip_blocked_1',
+        kind: 'EQUIP_BLOCKED',
+        message: 'First error message',
+      };
+
+      const secondNotice: DismissibleNotice = {
+        id: 'equip_blocked_2',
+        kind: 'EQUIP_BLOCKED',
+        message: 'Second error message',
+      };
+
+      const { rerender } = render(
+        <InventoryScreen
+          inventory={emptyInventory}
+          phase="dungeon"
+          onClose={vi.fn()}
+          sendCommand={vi.fn()}
+          notice={firstNotice}
+        />
+      );
+
+      // First notice visible
+      expect(screen.getByText('First error message')).toBeInTheDocument();
+
+      // Dismiss it
+      const closeButton = screen.getByText('✕');
+      fireEvent.click(closeButton);
+
+      // First notice should be hidden
+      expect(screen.queryByText('First error message')).not.toBeInTheDocument();
+
+      // Render with new notice (different id)
+      rerender(
+        <InventoryScreen
+          inventory={emptyInventory}
+          phase="dungeon"
+          onClose={vi.fn()}
+          sendCommand={vi.fn()}
+          notice={secondNotice}
+        />
+      );
+
+      // Second notice should now be visible
+      expect(screen.getByText('Second error message')).toBeInTheDocument();
+    });
+
+    it('keeps notice hidden if cleared to undefined after dismissal', () => {
+      const { rerender } = render(
+        <InventoryScreen
+          inventory={emptyInventory}
+          phase="dungeon"
+          onClose={vi.fn()}
+          sendCommand={vi.fn()}
+          notice={mockNotice}
+        />
+      );
+
+      // Dismiss the notice
+      const closeButton = screen.getByText('✕');
+      fireEvent.click(closeButton);
+
+      // Render without notice
+      rerender(
+        <InventoryScreen
+          inventory={emptyInventory}
+          phase="dungeon"
+          onClose={vi.fn()}
+          sendCommand={vi.fn()}
+          notice={undefined}
+        />
+      );
+
+      // No notice should be visible
+      expect(screen.queryByText('Equipment Blocked')).not.toBeInTheDocument();
+    });
+
+    it('dismissal state persists across re-renders with same notice', () => {
+      const { rerender } = render(
+        <InventoryScreen
+          inventory={emptyInventory}
+          phase="dungeon"
+          onClose={vi.fn()}
+          sendCommand={vi.fn()}
+          notice={mockNotice}
+        />
+      );
+
+      // Notice should be visible
+      expect(screen.getByText('You are not strong enough to equip this item')).toBeInTheDocument();
+
+      // Click the close button to dismiss
+      const closeButton = screen.getByText('✕');
+      fireEvent.click(closeButton);
+
+      // Modal should be hidden after dismissal
+      expect(screen.queryByText('Equipment Blocked')).not.toBeInTheDocument();
+
+      // Re-render with same notice - should still be dismissed
+      rerender(
+        <InventoryScreen
+          inventory={emptyInventory}
+          phase="dungeon"
+          onClose={vi.fn()}
+          sendCommand={vi.fn()}
+          notice={mockNotice}
+        />
+      );
+
+      // Modal should remain dismissed
+      expect(screen.queryByText('Equipment Blocked')).not.toBeInTheDocument();
     });
   });
 });
