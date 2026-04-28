@@ -21,6 +21,7 @@ Each guide below includes a "Quick Start" section that reminds you to run this c
 | Guide | When to read |
 |-------|-------------|
 | [Architecture](guides/architecture.md) | Understanding the codebase, data flow, package responsibilities |
+| [Nemesis + Factions Sequence Diagrams](guides/nemesis-factions-sequence-diagrams.md) | Tracing the current nemesis and faction systems end-to-end across engine, server, presenter, and UI |
 | [Testing](guides/testing.md) | Writing tests, anti-patterns, helpers, balance testing |
 | [How to Audit the Codebase](guides/how-to-audit.md) | Performing a rigorous structural audit and turning findings into a fix plan |
 | [Audit Tooling Guide](guides/audit-tooling.md) | CLI paths, Serena/Fossil audit workflow, and external-semantics fallback |
