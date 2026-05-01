@@ -64,9 +64,9 @@ export function processEnemyTurns(
         if (actionsThisTurn >= 1) break; // Without speed system, each enemy acts once
       }
 
-      // Get fresh reference — state may have changed during previous action
-      const currentEnemy = currentState.run.enemies.get(posKey(enemy.position));
-      if (currentEnemy === undefined || currentEnemy.id !== enemy.id) break; // Enemy dead or moved away
+      // Reacquire by stable id so movers can spend follow-up actions after changing position.
+      const currentEnemy = findEnemyById(currentState.run.enemies, enemy.id);
+      if (currentEnemy === undefined) break; // Enemy dead or removed
 
       // Alert check
       let updatedEnemy = currentEnemy;
@@ -516,4 +516,17 @@ function executeEnemyAction(
     default:
       return { state, events: [] };
   }
+}
+
+function findEnemyById(
+  enemies: ReadonlyMap<string, EnemyInstance>,
+  enemyId: EnemyInstance['id'],
+): EnemyInstance | undefined {
+  for (const enemy of enemies.values()) {
+    if (enemy.id === enemyId) {
+      return enemy;
+    }
+  }
+
+  return undefined;
 }

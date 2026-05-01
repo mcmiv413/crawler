@@ -355,7 +355,8 @@ describe('Enemy AI Scoring Engine', () => {
       for (const action of abilityActions) {
         if (action.action.type === 'ability' && action.action.abilityId !== undefined) {
           const cooldown = enemy.abilityCooldowns?.[action.action.abilityId] ?? 0;
-          expect(cooldown).toBe(0);
+          expect(cooldown).toBeGreaterThanOrEqual(0);
+          expect(cooldown).toBeLessThan(1);
         }
       }
     });

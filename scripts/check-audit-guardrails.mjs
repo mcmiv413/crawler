@@ -43,6 +43,11 @@ expectContains(
   'pnpm validate',
   'workflow must enforce the repository validation gate',
 );
+expectContains(
+  'eslint.config.mjs',
+  '"dungeon/no-numeric-toBe": "error"',
+  'numeric literal .toBe assertions in game-core system tests must remain merge-blocking',
+);
 expectNotContains(
   'packages/game-contracts/src/types/common.ts',
   "'prepare'",

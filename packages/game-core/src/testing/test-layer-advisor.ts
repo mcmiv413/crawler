@@ -10,7 +10,7 @@
  */
 
 export interface TestAnalysisResult {
-  layer: 'unit' | 'contract' | 'integration' | 'balance' | 'smoke';
+  layer: 'unit' | 'property' | 'contract' | 'integration' | 'balance' | 'e2e';
   issues: Issue[];
   suggestions: string[];
   validated: boolean;
@@ -45,8 +45,11 @@ export function analyzeTestFile(code: string, proposedLayer: string): TestAnalys
   void code; // Mark as used
 
   // Layer-specific validation
-  if (proposedLayer === 'unit') {
+  if (proposedLayer === 'unit' || proposedLayer === 'property') {
     validateUnitLayer(code, imports, hasConfigValueAssertion, hasUnseededRandom, mutableIssues, mutableSuggestions);
+    if (proposedLayer === 'property') {
+      validatePropertyLayer(code, mutableSuggestions);
+    }
   } else if (proposedLayer === 'contract') {
     validateContractLayer(code, usesLiveConfig, hasConfigValueAssertion, mutableIssues, mutableSuggestions);
   } else if (proposedLayer === 'integration') {
@@ -60,6 +63,8 @@ export function analyzeTestFile(code: string, proposedLayer: string): TestAnalys
     );
   } else if (proposedLayer === 'balance') {
     validateBalanceLayer(code, hasUnseededRandom, hasConfigValueAssertion, mutableIssues, mutableSuggestions);
+  } else if (proposedLayer === 'e2e') {
+    validateE2eLayer(code, mutableSuggestions);
   }
 
   // General anti-patterns (all layers)
@@ -90,9 +95,11 @@ export function analyzeTestFile(code: string, proposedLayer: string): TestAnalys
     mutableSuggestions.push('Use test fixtures or builders instead of live config');
   }
 
-  const validLayers: readonly string[] = ['unit', 'contract', 'integration', 'balance', 'smoke'];
+  const validLayers = ['unit', 'property', 'contract', 'integration', 'balance', 'e2e'] as const;
   return {
-    layer: (validLayers.includes(proposedLayer) ? proposedLayer : 'unit') as 'unit' | 'contract' | 'integration' | 'balance' | 'smoke',
+    layer: (validLayers.includes(proposedLayer as (typeof validLayers)[number])
+      ? proposedLayer
+      : 'unit') as (typeof validLayers)[number],
     issues: mutableIssues,
     suggestions: mutableSuggestions,
     validated: mutableIssues.filter((i) => i.severity === 'error').length === 0,
@@ -163,6 +170,17 @@ function validateContractLayer(
   }
 }
 
+function validatePropertyLayer(
+  code: string,
+  mutableSuggestions: string[],
+): void {
+  if (/fc\.property|test\.prop|fast-check/.test(code) !== true) {
+    mutableSuggestions.push(
+      'Property tests should exercise invariants over generated inputs (for example, fast-check fc.property).',
+    );
+  }
+}
+
 function validateIntegrationLayer(
   code: string,
   usesFullState: boolean,
@@ -218,6 +236,15 @@ function validateBalanceLayer(
   // Balance tests should assert distributions/ranges
   if (/ > | < | Between | Range | Distribution /.test(code) !== true) {
     mutableSuggestions.push('Balance tests should assert ranges or distributions (e.g., between 40-60)');
+  }
+}
+
+function validateE2eLayer(
+  code: string,
+  mutableSuggestions: string[],
+): void {
+  if (/@playwright\/test/.test(code) !== true) {
+    mutableSuggestions.push('E2E tests should use Playwright and verify browser-visible behavior.');
   }
 }
 

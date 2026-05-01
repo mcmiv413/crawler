@@ -29,7 +29,12 @@ AI assistants are allowed to generate test scaffolding, but every test must be r
 | Changed-file Vitest scope | `pnpm test:changed` |
 | Single Vitest file | `pnpm vitest run path/to/file.test.ts` |
 | Playwright only | `pnpm test:e2e` |
+| Repo-wide test layer audit | `pnpm exec tsx scripts/audit-tests.ts` |
 | Merge gate | `pnpm validate` |
+
+## Audit Helper
+
+Use `pnpm exec tsx scripts/audit-tests.ts` when you need a repo-wide layer map before or during an audit. It discovers the same root-level file patterns as `tests/vitest.config.ts` and reports `Unit`, `Property`, `Contract`, `Integration`, `Balance`, and `E2E` separately, but it is still triage output rather than proof by itself.
 
 ## Test Layer Decision
 
@@ -57,7 +62,7 @@ AI assistants are allowed to generate test scaffolding, but every test must be r
 
 1. No `Math.random()` in tests. Use `SeededRng`.
 2. No live config imports in unit/property tests. Use builders.
-3. No exact assertions on tunable values.
+3. No exact assertions on tunable values. In `packages/game-core/src/systems/**/*.test.ts`, numeric literal `.toBe(...)` assertions are merge-blocking through `dungeon/no-numeric-toBe`.
 4. No weak assertions such as `toBeDefined()` unless existence is the actual requirement.
 5. No state-only assertions for player-facing behavior.
 6. Any state change the player should notice must verify the full chain:

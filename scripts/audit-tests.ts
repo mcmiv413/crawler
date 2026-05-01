@@ -1,34 +1,48 @@
 /**
-/**
  * audit-tests.ts
  * Automated test audit script to classify all tests by layer and identify anti-patterns.
  * Run with: pnpm exec tsx scripts/audit-tests.ts > tests/AUDIT.md
  */
 
-import * as fs from 'fs';
-import * as path from 'path';
-import { analyzeTestFile } from '../packages/game-core/src/testing/test-layer-advisor.js';
+import * as fs from 'node:fs';
+import * as path from 'node:path';
+import { fileURLToPath } from 'node:url';
+import {
+  analyzeTestFile,
+  type Issue,
+} from '../packages/game-core/src/testing/test-layer-advisor.js';
+import {
+  guessTestLayerFromPath,
+  isRecognizedTestFilePath,
+  normalizeTestPath,
+  TEST_LAYER_LABELS,
+  type TestLayer,
+} from '../tests/test-file-patterns.js';
 
 interface AuditResult {
   filePath: string;
-  proposedLayer: string;
+   proposedLayer: TestLayer;
   issues: number;
   warnings: number;
   isValid: boolean;
   antiPatterns: string[];
 }
 
-function guessLayerFromPath(filePath: string): string {
-  if (filePath.includes('tests/contracts')) return 'contract';
-  if (filePath.includes('tests/integration')) return 'integration';
-  if (filePath.includes('tests/balance')) return 'balance';
-  if (filePath.includes('tests/smoke')) return 'smoke';
-  if (filePath.includes('tests/e2e')) return 'smoke';
-  if (filePath.includes('property')) return 'unit'; // *.property.test.ts
-  return 'unit'; // Default to unit
+const IGNORED_DIRECTORIES = new Set([
+  '.git',
+  'node_modules',
+  'dist',
+  'coverage',
+  'playwright-report',
+  'test-results',
+  'balance-results',
+]);
+
+export function guessLayerFromPath(filePath: string): TestLayer {
+  return guessTestLayerFromPath(filePath) ?? 'unit';
 }
 
-function extractAntiPatterns(issues: any[]): string[] {
+function extractAntiPatterns(issues: Issue[]): string[] {
   const patterns = new Set<string>();
   issues.forEach((issue) => {
     if (issue.code) patterns.add(issue.code);
@@ -36,59 +50,50 @@ function extractAntiPatterns(issues: any[]): string[] {
   return Array.from(patterns);
 }
 
-function findAllTestFiles(dir: string): string[] {
+export function findAllTestFiles(dir: string): string[] {
+  const repoRoot = path.resolve(dir);
   const files: string[] = [];
 
-  function walk(current: string) {
+  function walk(current: string): void {
     const entries = fs.readdirSync(current, { withFileTypes: true });
     for (const entry of entries) {
-      if (entry.name === 'node_modules' || entry.name === '.git') continue;
       const fullPath = path.join(current, entry.name);
+      const relativePath = normalizeTestPath(path.relative(repoRoot, fullPath));
+
       if (entry.isDirectory()) {
+        if (IGNORED_DIRECTORIES.has(entry.name)) continue;
         walk(fullPath);
-      } else if (entry.name.endsWith('.test.ts') || entry.name.endsWith('.test.tsx')) {
-        files.push(fullPath);
+      } else if (isRecognizedTestFilePath(relativePath)) {
+        files.push(relativePath);
       }
     }
   }
 
-  walk(dir);
-  return files;
+  walk(repoRoot);
+  return files.sort();
 }
 
-async function auditAllTests(): Promise<void> {
-  const testFiles = findAllTestFiles('.');
-  const results: AuditResult[] = [];
+export function auditAllTests(dir = '.'): AuditResult[] {
+  const repoRoot = path.resolve(dir);
+  const testFiles = findAllTestFiles(repoRoot);
 
-  console.error(`Found ${testFiles.length} test files. Analyzing...`);
+  return testFiles.map((filePath) => {
+    const content = fs.readFileSync(path.join(repoRoot, filePath), 'utf-8');
+    const proposedLayer = guessLayerFromPath(filePath);
+    const analysis = analyzeTestFile(content, proposedLayer);
 
-  for (const filePath of testFiles) {
-    try {
-      const content = fs.readFileSync(filePath, 'utf-8');
-      const proposedLayer = guessLayerFromPath(filePath);
-      const analysis = analyzeTestFile(content, proposedLayer);
-
-      const result: AuditResult = {
-        filePath: filePath.replace(/^\.\//,  ''),
-        proposedLayer,
-        issues: analysis.issues.filter((i) => i.severity === 'error').length,
-        warnings: analysis.issues.filter((i) => i.severity === 'warning').length,
-        isValid: analysis.validated,
-        antiPatterns: extractAntiPatterns(analysis.issues),
-      };
-
-      results.push(result);
-    } catch (err: any) {
-      console.error(`Error analyzing ${filePath}: ${err.message}`);
-    }
-  }
-
-  // Generate report
-  const report = generateReport(results);
-  console.log(report);
+    return {
+      filePath,
+      proposedLayer,
+      issues: analysis.issues.filter((issue) => issue.severity === 'error').length,
+      warnings: analysis.issues.filter((issue) => issue.severity === 'warning').length,
+      isValid: analysis.validated,
+      antiPatterns: extractAntiPatterns(analysis.issues),
+    };
+  });
 }
 
-function generateReport(results: AuditResult[]): string {
+export function generateReport(results: AuditResult[]): string {
   const lines: string[] = [];
 
   // Header
@@ -98,22 +103,23 @@ function generateReport(results: AuditResult[]): string {
   lines.push('');
 
   // Summary
-  const byLayer: Record<string, AuditResult[]> = {
+  const byLayer: Record<TestLayer, AuditResult[]> = {
     unit: [],
+    property: [],
     contract: [],
     integration: [],
     balance: [],
-    smoke: [],
+    e2e: [],
   };
 
-  results.forEach((r) => {
-    byLayer[r.proposedLayer as keyof typeof byLayer]?.push(r);
+  results.forEach((result) => {
+    byLayer[result.proposedLayer].push(result);
   });
 
-  const validCount = results.filter((r) => r.isValid).length;
-  const invalidCount = results.filter((r) => !r.isValid).length;
-  const totalIssues = results.reduce((sum, r) => sum + r.issues, 0);
-  const totalWarnings = results.reduce((sum, r) => sum + r.warnings, 0);
+  const validCount = results.filter((result) => result.isValid).length;
+  const invalidCount = results.filter((result) => !result.isValid).length;
+  const totalIssues = results.reduce((sum, result) => sum + result.issues, 0);
+  const totalWarnings = results.reduce((sum, result) => sum + result.warnings, 0);
 
   lines.push('## Summary');
   lines.push(`- **Total Test Files:** ${results.length}`);
@@ -126,36 +132,37 @@ function generateReport(results: AuditResult[]): string {
   // By layer
   lines.push('## Distribution by Layer');
   lines.push('');
-  Object.entries(byLayer).forEach(([layer, tests]) => {
+  (Object.keys(byLayer) as TestLayer[]).forEach((layer) => {
+    const tests = byLayer[layer];
     if (tests.length > 0) {
-      const valid = tests.filter((t) => t.isValid).length;
-      lines.push(`### ${capitalize(layer)} Tests (${tests.length})`);
+      const valid = tests.filter((test) => test.isValid).length;
+      lines.push(`### ${TEST_LAYER_LABELS[layer]} Tests (${tests.length})`);
       lines.push(`- Valid: ${valid}/${tests.length}`);
-      lines.push(`- Issues: ${tests.reduce((sum, t) => sum + t.issues, 0)}`);
-      lines.push(`- Warnings: ${tests.reduce((sum, t) => sum + t.warnings, 0)}`);
+      lines.push(`- Issues: ${tests.reduce((sum, test) => sum + test.issues, 0)}`);
+      lines.push(`- Warnings: ${tests.reduce((sum, test) => sum + test.warnings, 0)}`);
       lines.push('');
     }
   });
 
   // Files with errors
-  const errorsFiles = results.filter((r) => r.issues > 0);
-  if (errorsFiles.length > 0) {
+  const errorFiles = results.filter((result) => result.issues > 0);
+  if (errorFiles.length > 0) {
     lines.push('## Files with Errors (High Priority)');
     lines.push('');
-    errorsFiles.slice(0, 10).forEach((r) => {
-      lines.push(`- **${r.filePath}** (${r.antiPatterns.join(', ')})`);
+    errorFiles.slice(0, 10).forEach((result) => {
+      lines.push(`- **${result.filePath}** (${result.antiPatterns.join(', ')})`);
     });
-    if (errorsFiles.length > 10) {
-      lines.push(`- ... and ${errorsFiles.length - 10} more files with errors`);
+    if (errorFiles.length > 10) {
+      lines.push(`- ... and ${errorFiles.length - 10} more files with errors`);
     }
     lines.push('');
   }
 
   // Anti-pattern frequency
   const antiPatternCount: Record<string, number> = {};
-  results.forEach((r) => {
-    r.antiPatterns.forEach((ap) => {
-      antiPatternCount[ap] = (antiPatternCount[ap] ?? 0) + 1;
+  results.forEach((result) => {
+    result.antiPatterns.forEach((antiPattern) => {
+      antiPatternCount[antiPattern] = (antiPatternCount[antiPattern] ?? 0) + 1;
     });
   });
 
@@ -186,8 +193,18 @@ function generateReport(results: AuditResult[]): string {
   return lines.join('\n');
 }
 
-function capitalize(str: string): string {
-  return str.charAt(0).toUpperCase() + str.slice(1);
+async function main(): Promise<void> {
+  const results = auditAllTests(process.cwd());
+  console.error(`Found ${results.length} test files. Analyzing...`);
+  console.log(generateReport(results));
 }
 
-auditAllTests().catch(console.error);
+const isMain = process.argv[1] !== undefined
+  && path.resolve(process.argv[1]) === fileURLToPath(import.meta.url);
+
+if (isMain) {
+  main().catch((error) => {
+    console.error(error);
+    process.exitCode = 1;
+  });
+}
