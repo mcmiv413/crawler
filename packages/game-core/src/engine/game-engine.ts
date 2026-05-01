@@ -24,12 +24,10 @@ import { completeFloorDepthQuests } from '../systems/quests.js';
 import { evaluateAllQuestProgress } from './quest-evaluator.js';
 
 export class GameEngine implements IGameEngine {
-  createNewGame(seed?: number): GameState {
-    // eslint-disable-next-line no-restricted-syntax -- seed entry point, generate with high-quality entropy
-    const gameSeed = seed ?? Math.floor(Math.random() * 2 ** 32);
+  createNewGame(seed: number): GameState {
     const gameId = entityId(generateId());
     const playerId = entityId(generateId());
-    const rng = new SeededRNG(gameSeed);
+    const rng = new SeededRNG(seed);
 
     const state: GameState = {
       gameId,
@@ -56,7 +54,7 @@ export class GameEngine implements IGameEngine {
       run: null,
       world: createInitialWorldState(rng),
       itemRegistry: { items: new Map() },
-      seed: gameSeed,
+      seed,
       turnNumber: 0,
       version: 1,
       activeQuests: [],

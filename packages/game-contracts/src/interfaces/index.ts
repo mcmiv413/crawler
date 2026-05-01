@@ -10,7 +10,7 @@ export interface CommandResult {
 }
 
 export interface IGameEngine {
-  createNewGame(seed?: number): GameState;
+  createNewGame(seed: number): GameState;
   submitCommand(state: GameState, command: GameCommand): CommandResult;
 }
 

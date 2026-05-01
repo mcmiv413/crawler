@@ -14,9 +14,8 @@ import {
   expectEventEmitted,
   expectFormattedEvent,
   expectViewShowsData,
-} from '../../../presenter/src/testing/feature-chain-helpers.js';
-import { formatEvent } from '../../../presenter/src/event-formatter.js';
-import { buildGameView } from '../../../presenter/src/game-view-builder.js';
+} from '@dungeon/presenter/testing/feature-chain-helpers.js';
+import { buildGameView, formatEvent } from '@dungeon/presenter';
 
 // ---------------------------------------------------------------------------
 // Helpers

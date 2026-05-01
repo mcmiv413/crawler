@@ -1,3 +1,4 @@
+import { randomInt } from 'node:crypto';
 import Fastify, { type FastifyInstance } from 'fastify';
 import cors from '@fastify/cors';
 import { GameEngine, serializeState, deserializeState } from '@dungeon/core';
@@ -18,13 +19,35 @@ interface BuildAppOptions {
 
 function buildRestoreResponse(
   state: GameState,
-  serializedState: string = serializeState(state),
+  serializedState: string = getCanonicalSerializedState(state),
 ): { gameId: string; serializedState: string; view: ReturnType<typeof buildGameView> } {
   return {
     gameId: state.gameId,
     view: buildGameView(state),
     serializedState,
   };
+}
+
+function buildRestoreConflictResponse(gameId: string): {
+  code: string;
+  error: string;
+  gameId: string;
+  message: string;
+} {
+  return {
+    error: 'Restore conflict',
+    code: 'RESTORE_STATE_CONFLICT',
+    message: 'Submitted save conflicts with existing server state for this game.',
+    gameId,
+  };
+}
+
+function generateServerSeed(): number {
+  return randomInt(0, 2 ** 32);
+}
+
+function getCanonicalSerializedState(state: GameState): string {
+  return serializeState(deserializeState(serializeState(state)));
 }
 
 function getRestoreSerializedState(body: unknown): string | null {
@@ -60,8 +83,9 @@ export async function buildApp(options: BuildAppOptions = {}): Promise<FastifyIn
   // POST /api/games — create a new game
   app.post('/api/games', async (request, reply) => {
     const body = CreateGameSchema.safeParse(request.body);
-    const seed = body.success ? body.data.seed : undefined;
+    const requestedSeed = body.success ? body.data.seed : undefined;
     const playerName = body.success ? body.data.playerName : undefined;
+    const seed = requestedSeed ?? generateServerSeed();
 
     let state = engine.createNewGame(seed);
     if (playerName) {
@@ -70,7 +94,7 @@ export async function buildApp(options: BuildAppOptions = {}): Promise<FastifyIn
 
     await repo.createGame(state);
     const view = buildGameView(state);
-    const serializedState = serializeState(state);
+    const serializedState = getCanonicalSerializedState(state);
 
     return reply.code(201).send({
       gameId: state.gameId,
@@ -226,8 +250,10 @@ export async function buildApp(options: BuildAppOptions = {}): Promise<FastifyIn
     }
 
     let state: GameState;
+    let canonicalSerializedState: string;
     try {
       state = deserializeState(serializedState);
+      canonicalSerializedState = serializeState(state);
     } catch (error) {
       if (error instanceof SchemaVersionMismatchError) {
         return reply.code(400).send({
@@ -264,7 +290,12 @@ export async function buildApp(options: BuildAppOptions = {}): Promise<FastifyIn
     }
 
     if (existing) {
-      return buildRestoreResponse(existing);
+      const existingSerializedState = getCanonicalSerializedState(existing);
+      if (existingSerializedState !== canonicalSerializedState) {
+        return reply.code(409).send(buildRestoreConflictResponse(state.gameId));
+      }
+
+      return buildRestoreResponse(existing, existingSerializedState);
     }
 
     try {
@@ -276,7 +307,7 @@ export async function buildApp(options: BuildAppOptions = {}): Promise<FastifyIn
       });
     }
 
-    return buildRestoreResponse(state, serializedState);
+    return buildRestoreResponse(state, canonicalSerializedState);
   });
 
   // Debug routes (dev only)

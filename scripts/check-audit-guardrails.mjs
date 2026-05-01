@@ -1,5 +1,5 @@
 import { existsSync, readdirSync, readFileSync } from 'node:fs';
-import { join } from 'node:path';
+import { dirname, join, relative, resolve, sep } from 'node:path';
 import { spawnSync } from 'node:child_process';
 
 const repoRoot = process.cwd();
@@ -7,6 +7,10 @@ const failures = [];
 
 function read(relativePath) {
   return readFileSync(join(repoRoot, relativePath), 'utf8');
+}
+
+function readJson(relativePath) {
+  return JSON.parse(read(relativePath));
 }
 
 function expectContains(relativePath, needle, message) {
@@ -36,6 +40,37 @@ function walk(relativePath) {
   }
 
   return files;
+}
+
+function findExternalSrcImports(relativePath) {
+  const packageRootRelativePath = relativePath.split('/src/')[0];
+  const packageRootAbsolutePath = join(repoRoot, packageRootRelativePath);
+  const fileAbsolutePath = join(repoRoot, relativePath);
+  const matches = read(relativePath).matchAll(
+    /\bfrom\s+['"]([^'"]+)['"]|\bimport\s*\(\s*['"]([^'"]+)['"]\s*\)/g,
+  );
+  const externalSrcImports = [];
+
+  for (const match of matches) {
+    const specifier = match[1] ?? match[2];
+    if (!specifier || specifier.startsWith('.') === false || specifier.includes('/src/') === false) {
+      continue;
+    }
+
+    const resolvedImportPath = resolve(dirname(fileAbsolutePath), specifier);
+    const relativeToPackageRoot = relative(packageRootAbsolutePath, resolvedImportPath);
+    const leavesPackageRoot = relativeToPackageRoot === '' || relativeToPackageRoot.startsWith(`..${sep}`);
+    if (leavesPackageRoot) {
+      externalSrcImports.push(specifier);
+    }
+  }
+
+  return externalSrcImports;
+}
+
+const packageJson = readJson('package.json');
+if (!packageJson.scripts?.validate?.includes('pnpm run check:exports')) {
+  failures.push('package.json: validate must include check:exports so the merge gate matches CI and docs');
 }
 
 expectContains(
@@ -71,6 +106,7 @@ if (existsSync(join(repoRoot, 'tools', 'balance'))) {
 const gameCoreFiles = walk('packages/game-core/src').filter(
   (relativePath) =>
     relativePath.endsWith('.ts') &&
+    relativePath.includes('/testing/') === false &&
     relativePath.includes('.test.') === false &&
     relativePath.includes('.property.test.') === false &&
     relativePath.includes('.integration.test.') === false &&
@@ -81,10 +117,28 @@ const gameCoreFiles = walk('packages/game-core/src').filter(
 for (const relativePath of gameCoreFiles) {
   const lines = read(relativePath).split('\n');
   lines.forEach((line, index) => {
-    if (line.includes('Date.now(')) {
+    if (/\bDate\.now\s*\(/.test(line)) {
       failures.push(`${relativePath}:${index + 1} uses Date.now() in persisted gameplay code`);
     }
+    if (/\bMath\.random\s*\(/.test(line)) {
+      failures.push(`${relativePath}:${index + 1} uses Math.random() in persisted gameplay code`);
+    }
   });
+}
+
+const packageLocalTestFiles = walk('packages').filter(
+  (relativePath) =>
+    relativePath.includes('/src/')
+    && (relativePath.endsWith('.test.ts') || relativePath.endsWith('.test.tsx')),
+);
+
+for (const relativePath of packageLocalTestFiles) {
+  const externalSrcImports = findExternalSrcImports(relativePath);
+  for (const specifier of externalSrcImports) {
+    failures.push(
+      `${relativePath} imports external src path ${specifier}; use a workspace package export instead`,
+    );
+  }
 }
 
 const auditHelper = spawnSync(

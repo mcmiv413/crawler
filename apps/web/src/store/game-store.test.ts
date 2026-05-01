@@ -511,6 +511,38 @@ describe('useGameStore (Zustand)', () => {
       expect(result.current.loading).toBe(false);
     });
 
+    it('preserves the saved session when restore reports a conflict', async () => {
+      const mockGameId = 'game-conflict-123';
+      const serializedState = 'conflicting-state';
+
+      const { result } = renderHook(() => useGameStore());
+
+      vi.mocked(sessionPersistence.loadSession).mockReturnValueOnce({
+        gameId: mockGameId,
+        serializedState,
+      });
+
+      const { fetchGameView: mockFetchGameView, restoreGame: mockRestoreGame } =
+        await import('../api/client.js');
+      vi.mocked(mockFetchGameView).mockRejectedValueOnce(new Error('Server error'));
+      vi.mocked(mockRestoreGame).mockRejectedValueOnce(
+        Object.assign(new Error('Submitted save conflicts with existing server state for this game.'), {
+          status: 409,
+          code: 'RESTORE_STATE_CONFLICT',
+        }),
+      );
+
+      let restored = false;
+      await act(async () => {
+        restored = await result.current.restoreSession();
+      });
+
+      expect(restored).toBe(false);
+      expect(sessionPersistence.clearSession).not.toHaveBeenCalled();
+      expect(result.current.error).toBe('Submitted save conflicts with existing server state for this game.');
+      expect(result.current.loading).toBe(false);
+    });
+
     it('no saved session: loadSession returns null → restoreSession returns false', async () => {
       const { result } = renderHook(() => useGameStore());
 

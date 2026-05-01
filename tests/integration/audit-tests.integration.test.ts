@@ -60,21 +60,27 @@ describe('audit-tests script', () => {
     writeFixture(rootDir, 'tests/integration/game-loop.integration.test.ts', BASIC_VITEST_SOURCE);
     writeFixture(rootDir, 'tests/balance/drop-rates.balance.test.ts', BASIC_VITEST_SOURCE);
     writeFixture(rootDir, 'packages/game-core/src/systems/enemy-ai.property.test.ts', PROPERTY_SOURCE);
+    writeFixture(rootDir, 'packages/game-core/src/systems/enemy-ai.balance.test.ts', BASIC_VITEST_SOURCE);
     writeFixture(rootDir, 'packages/game-core/src/systems/enemy-ai.test.ts', BASIC_VITEST_SOURCE);
     writeFixture(rootDir, 'dist/ignored.spec.ts', E2E_SOURCE);
 
     const results = auditAllTests(rootDir);
-    const byPath = new Map(results.map((result) => [result.filePath, result.proposedLayer]));
+    const byPath = new Map(results.map((result) => [result.filePath, result]));
     const report = generateReport(results);
 
-    expect(results).toHaveLength(6);
-    expect(byPath.get('tests/e2e/game-loop.spec.ts')).toBe('e2e');
-    expect(byPath.get('tests/contracts/game-config.contract.test.ts')).toBe('contract');
-    expect(byPath.get('tests/integration/game-loop.integration.test.ts')).toBe('integration');
-    expect(byPath.get('tests/balance/drop-rates.balance.test.ts')).toBe('balance');
-    expect(byPath.get('packages/game-core/src/systems/enemy-ai.property.test.ts')).toBe('property');
-    expect(byPath.get('packages/game-core/src/systems/enemy-ai.test.ts')).toBe('unit');
+    expect(results).toHaveLength(7);
+    expect(byPath.get('tests/e2e/game-loop.spec.ts')?.proposedLayer).toBe('e2e');
+    expect(byPath.get('tests/contracts/game-config.contract.test.ts')?.proposedLayer).toBe('contract');
+    expect(byPath.get('tests/integration/game-loop.integration.test.ts')?.proposedLayer).toBe('integration');
+    expect(byPath.get('tests/balance/drop-rates.balance.test.ts')?.proposedLayer).toBe('balance');
+    expect(byPath.get('tests/balance/drop-rates.balance.test.ts')?.includedInDefaultRun).toBe(false);
+    expect(byPath.get('packages/game-core/src/systems/enemy-ai.property.test.ts')?.proposedLayer).toBe('property');
+    expect(byPath.get('packages/game-core/src/systems/enemy-ai.balance.test.ts')?.proposedLayer).toBe('balance');
+    expect(byPath.get('packages/game-core/src/systems/enemy-ai.balance.test.ts')?.includedInDefaultRun).toBe(false);
+    expect(byPath.get('packages/game-core/src/systems/enemy-ai.test.ts')?.proposedLayer).toBe('unit');
     expect(report).toContain('### E2E Tests (1)');
     expect(report).toContain('### Property Tests (1)');
+    expect(report).toContain('## Recognized but Excluded from Default Workspace Run');
+    expect(report).toContain('packages/game-core/src/systems/enemy-ai.balance.test.ts');
   });
 });

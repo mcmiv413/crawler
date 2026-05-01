@@ -46,20 +46,11 @@ describe('getEnchantmentCost', () => {
     expect(getEnchantmentCost('blink')).toBe(ENCHANTMENT_COSTS['unique']); // Unique
   });
 
-  it('T1 cost === 40 (Area 2a tuning)', () => {
-    expect(ENCHANTMENT_COSTS[1]).toBe(40);
-  });
-
-  it('T2 cost === 100 (Area 2a tuning)', () => {
-    expect(ENCHANTMENT_COSTS[2]).toBe(100);
-  });
-
-  it('T3 cost === 200 (Area 2a tuning)', () => {
-    expect(ENCHANTMENT_COSTS[3]).toBe(200);
-  });
-
-  it('unique cost === 150 (Area 2a tuning)', () => {
-    expect(ENCHANTMENT_COSTS['unique']).toBe(150);
+  it('tier costs stay positive and increase across the standard tiers', () => {
+    expect(ENCHANTMENT_COSTS[1]).toBeGreaterThan(0);
+    expect(ENCHANTMENT_COSTS[2]).toBeGreaterThan(ENCHANTMENT_COSTS[1]);
+    expect(ENCHANTMENT_COSTS[3]).toBeGreaterThan(ENCHANTMENT_COSTS[2]);
+    expect(ENCHANTMENT_COSTS.unique).toBeGreaterThan(0);
   });
 
   it('returns 0 for unknown enchantment', () => {

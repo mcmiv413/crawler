@@ -294,12 +294,24 @@ When adding new features or tests:
 1. Keep code modular: systems in `packages/game-core/src/systems/`, content in `packages/content/src/`
 2. Write tests colocated with source files
 3. Use Zod schemas for all API shapes (contracts)
-4. Run `pnpm lint` and `pnpm test` before committing
+4. Run `pnpm validate` before committing
 5. Ensure E2E tests pass: `pnpm test:e2e`
 
-### Pre-Push Verification
+### Merge Gate
 
-Before pushing to a branch, run:
+Before opening or merging a PR, run:
+
+```bash
+pnpm validate
+```
+
+This is the canonical repository gate and the same command CI enforces. It runs the repo guardrails, lint, the default workspace Vitest suites, the build, and package export validation.
+
+Balance suites (`tests/balance/**/*.balance.test.ts` and `packages/game-core/src/**/*.balance.test.ts`) stay outside the default gate. Run `pnpm test:balance` when you are changing tuning or balance simulations.
+
+### Clean-Room Pre-Push Verification
+
+If you want the same checks from a fresh install before pushing, run:
 
 ```bash
 pnpm run ci:verify
@@ -308,11 +320,11 @@ pnpm run ci:verify
 This command:
 - Cleans all build artifacts (`dist/`, `node_modules/.vite`, etc.)
 - Performs a fresh install (`pnpm install --frozen-lockfile`)
-- Rebuilds all packages from scratch
-- Validates package exports (ordering + runtime resolution)
-- Runs the full test suite
+- Primes workspace `dist/` exports with `pnpm build`
+- Validates package exports in the clean-room build
+- Runs the full verbose Vitest suite
 
-This mirrors the exact CI environment, catching package contract issues and environment-parity problems that local development can mask.
+This catches fresh-checkout export/runtime issues that `pnpm validate` can miss when your local workspace already has built artifacts.
 
 **Why?** Local machines accumulate state (old `dist/` files, cached symlinks) that CI doesn't have on a fresh checkout. Running `ci:verify` before push catches "works on my machine" failures early.
 

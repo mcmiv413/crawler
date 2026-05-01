@@ -1,8 +1,20 @@
 import { describe, it, expect } from 'vitest';
 import * as fc from 'fast-check';
+import { entityId, type GameState } from '@dungeon/contracts';
 import { GameEngine } from './game-engine.js';
 import { serializeState, deserializeState } from '../state/serialization.js';
 import { createTestGameStateInCombat, createWaitCommand } from '../test-utils.js';
+
+function normalizeNewGameState(state: GameState): GameState {
+  return {
+    ...state,
+    gameId: entityId('normalized-game'),
+    player: {
+      ...state.player,
+      id: entityId('normalized-player'),
+    },
+  };
+}
 
 describe('save/load roundtrip property tests', () => {
   it('game state should survive JSON serialization roundtrip', () => {
@@ -82,6 +94,23 @@ describe('save/load roundtrip property tests', () => {
           const count1 = result1.state.run?.enemies.size ?? 0;
           const count2 = result2.state.run?.enemies.size ?? 0;
           expect(Math.abs(count1 - count2)).toBeLessThanOrEqual(2);
+        },
+      ),
+      { numRuns: 100 },
+    );
+  });
+
+  it('initial game creation produces the same serialized state for the same seed', () => {
+    fc.assert(
+      fc.property(
+        fc.integer({ min: 1, max: 50_000 }),
+        (seed) => {
+          const engine = new GameEngine();
+
+          const state1 = normalizeNewGameState(engine.createNewGame(seed));
+          const state2 = normalizeNewGameState(engine.createNewGame(seed));
+
+          expect(serializeState(state1)).toBe(serializeState(state2));
         },
       ),
       { numRuns: 100 },

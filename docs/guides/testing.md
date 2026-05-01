@@ -25,6 +25,7 @@ AI assistants are allowed to generate test scaffolding, but every test must be r
 | Need | Command |
 |---|---|
 | Fast-fail Vitest run | `pnpm test` |
+| Balance-only Vitest run | `pnpm test:balance` |
 | Full Vitest output | `pnpm test:verbose` |
 | Changed-file Vitest scope | `pnpm test:changed` |
 | Single Vitest file | `pnpm vitest run path/to/file.test.ts` |
@@ -34,7 +35,9 @@ AI assistants are allowed to generate test scaffolding, but every test must be r
 
 ## Audit Helper
 
-Use `pnpm exec tsx scripts/audit-tests.ts` when you need a repo-wide layer map before or during an audit. It discovers the same root-level file patterns as `tests/vitest.config.ts` and reports `Unit`, `Property`, `Contract`, `Integration`, `Balance`, and `E2E` separately, but it is still triage output rather than proof by itself.
+Use `pnpm exec tsx scripts/audit-tests.ts` when you need a repo-wide layer map before or during an audit. It reports both the recognized layer (`Unit`, `Property`, `Contract`, `Integration`, `Balance`, `E2E`) and whether each file participates in the default workspace Vitest run.
+
+The default merge gate excludes balance suites under `tests/balance/` and `packages/game-core/src/**/*.balance.test.ts`. Run `pnpm test:balance` when you need those suites.
 
 ## Test Layer Decision
 
@@ -62,7 +65,7 @@ Use `pnpm exec tsx scripts/audit-tests.ts` when you need a repo-wide layer map b
 
 1. No `Math.random()` in tests. Use `SeededRng`.
 2. No live config imports in unit/property tests. Use builders.
-3. No exact assertions on tunable values. In `packages/game-core/src/systems/**/*.test.ts`, numeric literal `.toBe(...)` assertions are merge-blocking through `dungeon/no-numeric-toBe`.
+3. No exact assertions on tunable values. Numeric literal `.toBe(...)` is only auto-blocked today in `packages/game-core/src/systems/**/*.test.ts` through `dungeon/no-numeric-toBe`; elsewhere, treat exact tunable assertions as brittle review failures and prefer range or comparative checks.
 4. No weak assertions such as `toBeDefined()` unless existence is the actual requirement.
 5. No state-only assertions for player-facing behavior.
 6. Any state change the player should notice must verify the full chain:

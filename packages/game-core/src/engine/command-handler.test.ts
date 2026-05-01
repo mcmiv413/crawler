@@ -19,7 +19,7 @@ import {
 import {
   assertFeatureChain,
   expectFormattedEvent,
-} from '../../../presenter/src/testing/feature-chain-helpers.js';
+} from '@dungeon/presenter/testing/feature-chain-helpers.js';
 
 // ---------------------------------------------------------------------------
 // Helpers
