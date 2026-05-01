@@ -39,6 +39,7 @@ describe('faction progression', () => {
 
   it('player death against a leaderless faction creates a leader and boosts power', () => {
     const state = createTestGameState();
+    const before = state.world.factions.find(f => f.id === 'goblin_warband')!;
 
     const result = applyFactionDeathConsequences(state.world, 'goblin_warband', context);
     const faction = result.world.factions.find(f => f.id === 'goblin_warband')!;
@@ -46,8 +47,8 @@ describe('faction progression', () => {
     expect(faction.status).toBe('led');
     expect(faction.leader).not.toBeNull();
     expect(faction.activeLeaderId).toBe(faction.leader?.id);
-    expect(faction.playerDeathsCaused).toBe(1);
-    expect(faction.power).toBe(state.world.factions.find(f => f.id === 'goblin_warband')!.power + FACTION_CONFIG.power.playerDeathPowerGain);
+    expect(faction.playerDeathsCaused).toBe(before.playerDeathsCaused + 1);
+    expect(faction.power).toBe(before.power + FACTION_CONFIG.power.playerDeathPowerGain);
     expect(result.events).toContainEqual(expect.objectContaining({
       type: 'FACTION_LEADER_EMERGED',
       factionId: 'goblin_warband',
@@ -66,7 +67,7 @@ describe('faction progression', () => {
     const updatedFaction = secondResult.world.factions.find(f => f.id === 'goblin_warband')!;
 
     expect(updatedFaction.activeLeaderId).toBe(ledFaction.activeLeaderId);
-    expect(updatedFaction.playerDeathsCaused).toBe(2);
+    expect(updatedFaction.playerDeathsCaused).toBe(ledFaction.playerDeathsCaused + 1);
     expect(updatedFaction.power).toBe(ledFaction.power + FACTION_CONFIG.power.playerDeathWithLeaderPowerGain);
     expect(secondResult.events).not.toContainEqual(expect.objectContaining({ type: 'FACTION_LEADER_EMERGED' }));
   });

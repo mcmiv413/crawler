@@ -30,6 +30,7 @@ Do NOT summarize. Do NOT praise. Only surface issues that matter.
 - **External semantics need explicit sources.** When a finding depends on Vitest, ESLint, Fastify, or other tool/framework behavior, confirm it with the relevant CLI or authoritative docs/web lookup. Distinguish repo facts from external contract facts.
 - **Keep one-off artifacts out of `docs/`.** Store raw audit outputs in session artifacts or ignored files. Commit only durable protocol updates and confirmed bug logs.
 - **Log confirmed bugs before fix work.** When the audit proves a real bug, add a `docs/bugs/BUG-*.md` entry before proposing implementation changes.
+- **Use the audit helper as topology triage, not final proof.** `pnpm exec tsx scripts/audit-tests.ts` should surface `unit`, `property`, `contract`, `integration`, `balance`, and `e2e`; if a documented layer is missing or collapsed, that mismatch is itself a finding.
 
 ## CLI PATHS
 
@@ -111,6 +112,7 @@ Find:
 - rules not enforced as errors
 - checks not wired into CI
 - gaps between "intended" vs "actual" enforcement
+- documented hard test rules that still pass as warnings (for example, numeric literal `.toBe(...)` assertions in guarded test scopes)
 
 ---
 

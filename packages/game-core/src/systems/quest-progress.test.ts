@@ -48,7 +48,7 @@ describe('Quest Progress System', () => {
       const result = evaluateQuestProgress(quest, state);
 
       expect(result.quest.status).toBe('ready_to_turn_in');
-      expect(result.quest.objective.progress).toBe(1);
+      expect(result.quest.objective.progress).toBe(state.player.inventory.length);
       expect(result.events).toHaveLength(1);
       expect(result.events[0]?.type).toBe('QUEST_READY');
     });
@@ -73,7 +73,7 @@ describe('Quest Progress System', () => {
       const result = evaluateQuestProgress(quest, state);
 
       expect(result.quest.status).toBe('active');
-      expect(result.quest.objective.progress).toBe(0);
+      expect(result.quest.objective.progress).toBe(quest.objective.progress);
       expect(result.events).toHaveLength(0);
     });
 
@@ -97,7 +97,7 @@ describe('Quest Progress System', () => {
       const result = evaluateQuestProgress(quest, state);
 
       expect(result.quest.status).toBe('ready_to_turn_in');
-      expect(result.quest.objective.progress).toBe(5);
+      expect(result.quest.objective.progress).toBe(state.player.floor);
       expect(result.events[0]?.type).toBe('QUEST_READY');
     });
 
@@ -121,7 +121,7 @@ describe('Quest Progress System', () => {
       const result = evaluateQuestProgress(quest, state);
 
       expect(result.quest.status).toBe('active');
-      expect(result.quest.objective.progress).toBe(3);
+      expect(result.quest.objective.progress).toBe(state.player.floor);
     });
 
     it('does not re-evaluate non-active quests', () => {
@@ -165,14 +165,14 @@ describe('Quest Progress System', () => {
 
       const result = redeemQuest(stateWithQuest, quest);
 
-      expect(result.state.player.gold).toBe(350);
+      expect(result.state.player.gold).toBe(state.player.gold + quest.reward.amount);
       expect(result.state.activeQuests[0]?.status).toBe('rewarded');
       expect(result.event.type).toBe('QUEST_TURNED_IN');
       if (result.event.type !== 'QUEST_TURNED_IN') {
         throw new Error(`Expected QUEST_TURNED_IN, got ${result.event.type}`);
       }
       expect(result.event.questId).toBe('quest_1');
-      expect(result.event.rewardGold).toBe(250);
+      expect(result.event.rewardGold).toBe(quest.reward.amount);
     });
 
     it('throws error if quest is not ready to turn in', () => {
@@ -318,7 +318,7 @@ describe('Quest Progress System', () => {
 
       // Redeem quest
       const redeemResult = redeemQuest(stateWithReadyQuest, progressResult.quest);
-      expect(redeemResult.state.player.gold).toBe(600);
+      expect(redeemResult.state.player.gold).toBe(state.player.gold + initialQuest.reward.amount);
       expect(redeemResult.state.activeQuests[0]?.status).toBe('rewarded');
     });
   });

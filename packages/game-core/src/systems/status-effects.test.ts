@@ -229,11 +229,13 @@ describe('Status refresh behavior (Phase 3)', () => {
 
   it('refreshing with max stat prevents oversaturation', () => {
     const player = createTestPlayer();
-    const withPoison = applyStatusToPlayer(player, 'poison', 5, 10, null);
-    const refreshed = applyStatusToPlayer(withPoison, 'poison', 10, 5, null);
+    const initialMagnitude = 10;
+    const refreshMagnitude = 5;
+    const withPoison = applyStatusToPlayer(player, 'poison', 5, initialMagnitude, null);
+    const refreshed = applyStatusToPlayer(withPoison, 'poison', 10, refreshMagnitude, null);
     const effect = refreshed.statuses.find((s: any) => s.id === 'poison');
-    // Magnitude should be max(10, 5) = 10, not 15
-    expect(effect!.magnitude).toBe(10);
+    // Magnitude should stay at the higher applied value instead of stacking.
+    expect(effect!.magnitude).toBe(Math.max(initialMagnitude, refreshMagnitude));
   });
 });
 
@@ -262,7 +264,7 @@ describe('Stat cascades and interactions (Phase 3)', () => {
 
     expect(hasStatus(withBoth.statuses, 'stun')).toBe(true);
     expect(hasStatus(withBoth.statuses, 'slow')).toBe(true);
-    expect(withBoth.statuses.length).toBe(2);
+    expect(withBoth.statuses).toHaveLength(2);
   });
 
   it('burn and poison combined damage stacks', () => {

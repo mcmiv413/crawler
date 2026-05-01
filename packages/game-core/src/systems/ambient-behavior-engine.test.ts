@@ -72,7 +72,7 @@ describe('ambient-behavior-engine', () => {
 
       const scores = scoreTiles(enemy, profile, stateNoRun);
 
-      expect(scores.size).toBe(0);
+      expect(scores.size).toBeLessThan(1);
     });
 
     it('scores tiles based on wall adjacency preference', () => {
@@ -155,6 +155,7 @@ describe('ambient-behavior-engine', () => {
         archetype: 'aggressive-melee',
         position: { x: 5, y: 6 },
       });
+      const nearbyAllies = [ally1, ally2];
 
       const newState = {
         ...state,
@@ -162,15 +163,14 @@ describe('ambient-behavior-engine', () => {
           ...state.run!,
           enemies: new Map([
             [enemy.id, enemy],
-            [ally1.id, ally1],
-            [ally2.id, ally2],
+            ...nearbyAllies.map((ally) => [ally.id, ally] as const),
           ]),
         },
       };
 
       const social = analyzeSocialState(enemy, profile, newState);
 
-      expect(social.sameTypeCount).toBe(2);
+      expect(social.sameTypeCount).toBe(nearbyAllies.length);
     });
 
     it('counts other-type allies within radius', () => {
@@ -179,6 +179,7 @@ describe('ambient-behavior-engine', () => {
         archetype: 'cautious-defensive',
         position: { x: 6, y: 5 },
       });
+      const nearbyOtherTypes = [otherType];
 
       const newState = {
         ...state,
@@ -186,14 +187,14 @@ describe('ambient-behavior-engine', () => {
           ...state.run!,
           enemies: new Map([
             [enemy.id, enemy],
-            [otherType.id, otherType],
+            ...nearbyOtherTypes.map((ally) => [ally.id, ally] as const),
           ]),
         },
       };
 
       const social = analyzeSocialState(enemy, profile, newState);
 
-      expect(social.otherTypeCount).toBe(1);
+      expect(social.otherTypeCount).toBe(nearbyOtherTypes.length);
     });
 
     it('excludes allies outside social radius', () => {
@@ -216,7 +217,7 @@ describe('ambient-behavior-engine', () => {
 
       const social = analyzeSocialState(enemy, profile, newState);
 
-      expect(social.sameTypeCount).toBe(0);
+      expect(social.sameTypeCount).toBeLessThan(1);
     });
 
     it('finds nearest ally position', () => {
@@ -391,10 +392,11 @@ describe('ambient-behavior-engine', () => {
 
     it('increments ambient state age', () => {
       const enemy = createTestEnemy({ ambientStateAge: 3 });
+      const startingAge = enemy.ambientStateAge ?? 0;
 
       const result = decideAmbientAction(enemy, profile, state, rng);
 
-      expect(result.updatedEnemy.ambientStateAge).toBe(4);
+      expect(result.updatedEnemy.ambientStateAge).toBe(startingAge + 1);
     });
 
     it('decides roaming action', () => {

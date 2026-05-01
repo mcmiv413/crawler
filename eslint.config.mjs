@@ -335,7 +335,7 @@ export default tseslint.config(
   {
     files: ["packages/game-core/src/systems/**/*.test.ts"],
     rules: {
-      "dungeon/no-numeric-toBe": "warn",
+      "dungeon/no-numeric-toBe": "error",
     },
   },
 );

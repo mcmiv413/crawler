@@ -486,6 +486,38 @@ describe('processEnemyTurns', () => {
       }
     });
 
+    it('lets a fast enemy move and spend a follow-up action in the same turn', () => {
+      const fastMover = createTestEnemy({
+        id: entityId('fast_mover'),
+        position: { x: 2, y: 0 },
+        isAlerted: true,
+        archetype: 'aggressive_melee',
+        stats: {
+          maxHealth: 30,
+          health: 30,
+          attack: 50,
+          defense: 3,
+          accuracy: 100,
+          evasion: 0,
+          speed: 250,
+        },
+      });
+
+      const state = makeTurnState({ x: 0, y: 0 }, [fastMover], { playerHealth: 100 });
+      const rng = new SeededRNG(1);
+
+      const result = processEnemyTurns(state, rng, 100);
+      const moveIndex = result.events.findIndex(
+        (event) => event.type === 'ENEMY_MOVED' && event.enemyId === fastMover.id,
+      );
+      const attackIndex = result.events.findIndex(
+        (event) => event.type === 'ATTACK_PERFORMED' && event.attackerId === fastMover.id,
+      );
+
+      expect(moveIndex).toBeGreaterThanOrEqual(0);
+      expect(attackIndex).toBeGreaterThan(moveIndex);
+    });
+
     it('skips enemy turns when accumulator below threshold', () => {
       const slow = createTestEnemy({
         id: entityId('slow'), position: { x: 2, y: 0 },

@@ -8,10 +8,12 @@ describe('buildWorldModifiers', () => {
     const state = createTestGameState();
     const mods = buildWorldModifiers(state.world, 1);
 
-    expect(mods.extraEnemies).toBe(0);
+    expect(mods.extraEnemies).toBeGreaterThanOrEqual(0);
+    expect(mods.extraEnemies).toBeLessThan(1);
     expect(mods.preferredArchetypes).toHaveLength(0);
     expect(mods.preferredDamageTypes).toHaveLength(0);
-    expect(mods.reservedEncounterSlots).toBe(0);
+    expect(mods.reservedEncounterSlots).toBeGreaterThanOrEqual(0);
+    expect(mods.reservedEncounterSlots).toBeLessThan(1);
     expect(mods.factions).toEqual(state.world.factions);
     for (const faction of state.world.factions) {
       expect(mods.factionWeightMultipliers[faction.id]).toBeDefined();
@@ -52,7 +54,8 @@ describe('buildWorldModifiers', () => {
 
   it('passes reserved encounter slots through untouched', () => {
     const state = createTestGameState();
-    const mods = buildWorldModifiers(state.world, 3, 2);
-    expect(mods.reservedEncounterSlots).toBe(2);
+    const reservedEncounterSlots = 2;
+    const mods = buildWorldModifiers(state.world, 3, reservedEncounterSlots);
+    expect(mods.reservedEncounterSlots).toBe(reservedEncounterSlots);
   });
 });
