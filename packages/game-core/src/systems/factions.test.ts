@@ -1,5 +1,6 @@
 import { describe, expect, it } from 'vitest';
-import { ENEMY_TEMPLATES, INITIAL_FACTIONS } from '@dungeon/content';
+import { ENEMY_TEMPLATES, FACTION_CONFIG, INITIAL_FACTIONS } from '@dungeon/content';
+import type { EntityId } from '@dungeon/contracts';
 import {
   applyFactionDeathConsequences,
   applyFactionLeaderSlain,
@@ -27,7 +28,7 @@ describe('faction progression', () => {
     const result = applyFactionMemberKill(state.world, 'goblin_warband', context);
     const after = result.world.factions.find(f => f.id === 'goblin_warband')!;
 
-    expect(after.power).toBe(before.power - 1);
+    expect(after.power).toBe(before.power - FACTION_CONFIG.power.memberKillPowerLoss);
     expect(after.membersKilledByPlayer).toBe(before.membersKilledByPlayer + 1);
     expect(result.events).toContainEqual(expect.objectContaining({
       type: 'FACTION_POWER_CHANGED',
@@ -46,7 +47,7 @@ describe('faction progression', () => {
     expect(faction.leader).not.toBeNull();
     expect(faction.activeLeaderId).toBe(faction.leader?.id);
     expect(faction.playerDeathsCaused).toBe(1);
-    expect(faction.power).toBe(state.world.factions.find(f => f.id === 'goblin_warband')!.power + 20);
+    expect(faction.power).toBe(state.world.factions.find(f => f.id === 'goblin_warband')!.power + FACTION_CONFIG.power.playerDeathPowerGain);
     expect(result.events).toContainEqual(expect.objectContaining({
       type: 'FACTION_LEADER_EMERGED',
       factionId: 'goblin_warband',
@@ -66,7 +67,7 @@ describe('faction progression', () => {
 
     expect(updatedFaction.activeLeaderId).toBe(ledFaction.activeLeaderId);
     expect(updatedFaction.playerDeathsCaused).toBe(2);
-    expect(updatedFaction.power).toBe(ledFaction.power + 8);
+    expect(updatedFaction.power).toBe(ledFaction.power + FACTION_CONFIG.power.playerDeathWithLeaderPowerGain);
     expect(secondResult.events).not.toContainEqual(expect.objectContaining({ type: 'FACTION_LEADER_EMERGED' }));
   });
 
@@ -93,10 +94,10 @@ describe('faction progression', () => {
             ? {
                 ...faction,
                 status: 'led',
-                activeLeaderId: 'goblin_warlord' as never,
+                activeLeaderId: 'goblin_warlord' as EntityId,
                 leaderSlain: false,
                 leader: {
-                  id: 'goblin_warlord' as never,
+                  id: 'goblin_warlord' as EntityId,
                   factionId: faction.id,
                   name: 'Grak',
                   title: 'Warlord',
@@ -147,7 +148,7 @@ describe('faction progression', () => {
     expect(result.events).toHaveLength(state.world.factions.length);
     for (const faction of result.world.factions) {
       const before = state.world.factions.find(candidate => candidate.id === faction.id)!;
-      expect(faction.power).toBe(before.power + 1);
+      expect(faction.power).toBe(before.power + FACTION_CONFIG.power.newDeepestFloorPowerGain);
     }
     expect(result.events).toEqual(expect.arrayContaining([
       expect.objectContaining({ type: 'FACTION_POWER_CHANGED', reason: 'new_deepest_floor' }),
@@ -177,7 +178,7 @@ describe('faction progression', () => {
     const stableFaction = result.world.factions.find(faction => faction.id === 'undead_legion')!;
 
     expect(brokenFaction.power).toBe(state.world.factions.find(faction => faction.id === 'goblin_warband')!.power);
-    expect(stableFaction.power).toBe(state.world.factions.find(faction => faction.id === 'undead_legion')!.power + 1);
+    expect(stableFaction.power).toBe(state.world.factions.find(faction => faction.id === 'undead_legion')!.power + FACTION_CONFIG.power.newDeepestFloorPowerGain);
     expect(result.events.some(event => event.type === 'FACTION_POWER_CHANGED' && event.factionId === 'goblin_warband')).toBe(false);
   });
 
