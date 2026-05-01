@@ -1,9 +1,10 @@
 import type { GameState, WeaponType } from '@dungeon/contracts';
-import { STATUS_DEFINITIONS, ABILITY_DEFINITIONS, ENCHANTMENT_BY_ID, XP_TABLE, FACTIONS, getRarityColor, BIOMES, daggerDisarm, daggerSetTrap, getDamageBand, getWeaponDamageProfile } from '@dungeon/content';
+import { STATUS_DEFINITIONS, ABILITY_DEFINITIONS, ENCHANTMENT_BY_ID, XP_TABLE, getRarityColor, BIOMES, daggerDisarm, daggerSetTrap, getDamageBand, getWeaponDamageProfile } from '@dungeon/content';
 import { getObjectiveText } from '@dungeon/core/systems/quest-progress.js';
 import { getEffectiveStat } from '@dungeon/core/systems/status-effects.js';
-import type { PlayerHudView, StatusView, AbilityView, EquippedItemView, EnchantmentView, NemesisInfo, FactionStanding } from '../game-view.js';
+import type { AbilityView, EnchantmentView, EquippedItemView, PlayerHudView, StatusView } from '../game-view.js';
 import { calculateStatBreakdown } from './stat-breakdown-builder.js';
+import { buildFactionView, buildOgreProgressView } from './faction-progress-builder.js';
 
 export function buildPlayerHud(state: GameState): PlayerHudView {
   const p = state.player;
@@ -119,52 +120,17 @@ export function buildPlayerHud(state: GameState): PlayerHudView {
     giverNpcId: q.giverNpcId,
   }));
 
-  // Build nemesis info - show first active nemesis
-  let nemesisInfo: NemesisInfo | null = null;
-  const activeNemesis = state.world.nemeses.find(n => n.isActive);
-  if (activeNemesis !== undefined) {
-    const tierToRarity: Record<number, string> = {
-      1: 'common',
-      2: 'uncommon',
-      3: 'rare',
-      4: 'epic',
-      5: 'legendary',
-    };
-    nemesisInfo = {
-      id: activeNemesis.id,
-      name: activeNemesis.name,
-      title: activeNemesis.title,
-      rarity: tierToRarity[activeNemesis.tier] ?? 'unknown',
-      defeats: activeNemesis.killCount,
-      promotionStage: activeNemesis.rank,
-      lastSeenFloor: state.run?.floor.depth ?? null,
-      nextPossibleFloor: activeNemesis.floorOfAscension + 1,
-    };
-  }
-
-  // Build faction standings
-  const factionStandings: FactionStanding[] = state.world.factions.map(f => {
-    const factionDef = FACTIONS.get(f.id);
-
-    // Find enemies in current dungeon that belong to this faction
-    const mutableEnemiesInCurrentDungeon: string[] = [];
+  const factionProgress = state.world.factions.map(faction => {
+    const mutableCurrentDungeonEnemies: string[] = [];
     if (state.run) {
       for (const enemy of state.run.enemies.values()) {
-        if (enemy.factions?.some(ef => ef.factionId === f.id)) {
-          mutableEnemiesInCurrentDungeon.push(enemy.name);
+        if (enemy.factions?.some(candidate => candidate.factionId === faction.id)) {
+          mutableCurrentDungeonEnemies.push(enemy.name);
         }
       }
     }
 
-    return {
-      factionId: f.id,
-      name: f.name,
-      alignment: f.power > 50 ? 'strong' : f.power < 50 ? 'weak' : 'neutral',
-      standing: Math.max(0, f.disposition + 100),
-      maxStanding: 200,
-      description: factionDef?.description ?? '',
-      enemiesInCurrentDungeon: mutableEnemiesInCurrentDungeon,
-    };
+    return buildFactionView(faction, mutableCurrentDungeonEnemies);
   });
 
   // Calculate total damage range (effective attack stat + weapon damage range)
@@ -207,7 +173,7 @@ export function buildPlayerHud(state: GameState): PlayerHudView {
     equippedItems: mutableEquippedItems,
     statBreakdowns: calculateStatBreakdown(state),
     activeQuests,
-    nemesisInfo,
-    factionStandings,
+    factionProgress,
+    ogreProgress: buildOgreProgressView(state.world),
   };
 }

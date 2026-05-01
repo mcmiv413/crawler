@@ -7,4 +7,9 @@ export const shadowCult: FactionDefinition = {
   lore: 'These shadowy servants of forgotten gods perform unspeakable rituals in the dungeon\'s deepest reaches. They view the surface as a realm of weakness, unworthy of their dark ambitions.',
   initialPower: 25,
   initialDisposition: -60,
+  leader: {
+    templateId: 'shadow_hierophant',
+    names: ['Velis', 'Ormira', 'Sethra'],
+    titles: ['Night Voice', 'Veil-Mother', 'Ash Cantor'],
+  },
 };

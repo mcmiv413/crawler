@@ -2,8 +2,7 @@ import { describe, it, expect } from 'vitest';
 import { checkRespawn, respawnEnemiesOnPersistedFloor, simulatePersistedFloorTimeElapsed } from './enemy-respawn.js';
 import { createTestGameState, createTestRunState, createTestEnemy } from '../test-utils.js';
 import { SeededRNG } from '../utils/rng.js';
-import { ENEMY_RESPAWN } from '@dungeon/content';
-import { stoneCrypt } from '@dungeon/content';
+import { ENEMY_RESPAWN, INITIAL_FACTIONS, stoneCrypt } from '@dungeon/content';
 import type { StoredFloor } from '@dungeon/contracts';
 
 describe('checkRespawn', () => {
@@ -306,6 +305,7 @@ describe('respawnEnemiesOnPersistedFloor', () => {
       1, // depth
       30, // 30 turns since last visit
       rng,
+      INITIAL_FACTIONS,
     );
 
     // Should respawn some enemies but capped at 50% (5)
@@ -333,6 +333,7 @@ describe('respawnEnemiesOnPersistedFloor', () => {
       1,
       0, // No time elapsed
       rng,
+      INITIAL_FACTIONS,
     );
 
     expect(respawned.size).toBeLessThanOrEqual(0);
@@ -374,6 +375,7 @@ describe('simulatePersistedFloorTimeElapsed', () => {
       stoneCrypt,
       1,
       rng,
+      INITIAL_FACTIONS,
     );
 
     // Should have respawned enemies

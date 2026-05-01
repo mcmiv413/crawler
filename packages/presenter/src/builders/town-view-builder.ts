@@ -1,6 +1,7 @@
-import type { GameState, TownState, NemesisRecord } from '@dungeon/contracts';
-import { ITEM_BY_ID, TOWN_DESCRIPTIONS, getFactionIdsForTemplate, isRarityBuyable, ENEMY_TEMPLATES, getRarityColor, getDamageBand, getWeaponDamageProfile } from '@dungeon/content';
-import type { TownView, FactionView, NemesisView, ShopItemView, RunSummaryStats } from '../game-view.js';
+import type { GameState, TownState } from '@dungeon/contracts';
+import { ITEM_BY_ID, TOWN_DESCRIPTIONS, isRarityBuyable, getRarityColor, getDamageBand, getWeaponDamageProfile } from '@dungeon/content';
+import type { ShopItemView, RunSummaryStats, TownView } from '../game-view.js';
+import { buildFactionPressureSummary, buildFactionView, buildOgreProgressView } from './faction-progress-builder.js';
 
 function shopkeeperDiscountPct(state: GameState): number {
   const shopkeeper = state.world.npcs.find(n => n.role === 'shopkeeper');
@@ -13,20 +14,6 @@ function buildAtmosphereDescription(town: TownState): string {
   if (town.fear >= 60) return TOWN_DESCRIPTIONS.fearful;
   if (town.prosperity >= 70) return TOWN_DESCRIPTIONS.prosperous;
   return TOWN_DESCRIPTIONS.normal;
-}
-
-function computeFactionTrend(
-  factionId: string,
-  nemeses: readonly NemesisRecord[],
-): 'rising' | 'falling' | 'stable' {
-  const factionNemeses = nemeses.filter(n =>
-    getFactionIdsForTemplate(n.sourceTemplateId).includes(factionId)
-  );
-  if (factionNemeses.length === 0) return 'stable';
-
-  const hasActive = factionNemeses.some(n => n.isActive);
-  if (hasActive) return 'rising';
-  return 'falling';
 }
 
 function buildRunSummaryStats(state: GameState): RunSummaryStats | null {
@@ -47,8 +34,6 @@ function buildRunSummaryStats(state: GameState): RunSummaryStats | null {
     else if (e.field === 'corruption') corruptionDelta += delta;
   }
 
-  const nemesisPromoted = recentEvents.some(e => e.type === 'NEMESIS_PROMOTED');
-
   return {
     floorsCleared: metrics.floorsCleared,
     enemiesKilled: metrics.enemiesKilled,
@@ -56,7 +41,6 @@ function buildRunSummaryStats(state: GameState): RunSummaryStats | null {
     prosperityDelta,
     fearDelta,
     corruptionDelta,
-    nemesisPromoted,
     equipmentLost: [],
   };
 }
@@ -73,15 +57,6 @@ function buildPrepAdvice(state: GameState): string[] {
   if (state.player.stats.health < state.player.stats.maxHealth * 0.5) {
     advice = [...advice, 'Your health is low. Rest at the inn before venturing out.'];
   }
-
-  // Active nemesis with known weakness
-  let nemesisAdvice: string[] = [];
-  for (const nemesis of state.world.nemeses.filter(n => n.isActive)) {
-    if (nemesis.weaknesses.length > 0) {
-      nemesisAdvice = [...nemesisAdvice, `${nemesis.name} is weak to ${nemesis.weaknesses.join(', ')}. Equip accordingly.`];
-    }
-  }
-  advice = [...advice, ...nemesisAdvice];
 
   // No consumables
   const consumableCount = state.player.inventory.filter(id => {
@@ -109,43 +84,9 @@ export function buildTownView(state: GameState): TownView {
     rumors: state.world.town.rumors,
     lastRunSummary: state.world.town.lastRunSummary,
     atmosphereDescription: buildAtmosphereDescription(state.world.town),
-    factions: state.world.factions.map((f): FactionView => ({
-      id: f.id,
-      name: f.name,
-      power: f.power,
-      disposition: f.disposition,
-      trend: computeFactionTrend(f.id, state.world.nemeses),
-    })),
-    nemeses: state.world.nemeses
-      .filter(n => n.isActive)
-      .map((n): NemesisView => ({
-        id: n.id,
-        name: n.name,
-        title: n.title,
-        tier: n.tier,
-        rank: n.rank,
-        floorOfAscension: n.floorOfAscension,
-        killCount: n.killCount,
-        killedByWeaponType: n.killedByWeaponType,
-        isActive: n.isActive,
-        weaknesses: n.weaknesses,
-        spriteName: ENEMY_TEMPLATES.get(n.sourceTemplateId)?.spriteName ?? null,
-      })),
-    slainNemeses: state.world.nemeses
-      .filter(n => !n.isActive)
-      .map((n): NemesisView => ({
-        id: n.id,
-        name: n.name,
-        title: n.title,
-        tier: n.tier,
-        rank: n.rank,
-        floorOfAscension: n.floorOfAscension,
-        killCount: n.killCount,
-        killedByWeaponType: n.killedByWeaponType,
-        isActive: n.isActive,
-        weaknesses: n.weaknesses,
-        spriteName: ENEMY_TEMPLATES.get(n.sourceTemplateId)?.spriteName ?? null,
-      })),
+    factions: state.world.factions.map(faction => buildFactionView(faction)),
+    factionPressureSummary: buildFactionPressureSummary(state.world),
+    ogreProgress: buildOgreProgressView(state.world),
     npcs: state.world.npcs.map(npc => ({
       id: npc.id,
       name: npc.name,

@@ -7,7 +7,6 @@ export interface RunSummaryStats {
   readonly prosperityDelta: number;
   readonly fearDelta: number;
   readonly corruptionDelta: number;
-  readonly nemesisPromoted: boolean;
   readonly equipmentLost: readonly string[];
 }
 
@@ -41,31 +40,51 @@ export interface QuestView {
   readonly giverNpcId: string;
 }
 
-export interface NemesisInfo {
-  readonly id: string;
-  readonly name: string;
-  readonly title: string;
-  readonly rarity: string;
-  readonly defeats: number;
-  readonly promotionStage: number;
-  readonly lastSeenFloor: number | null;
-  readonly nextPossibleFloor: number;
+
+export interface FactionLeaderView {
+  readonly state: 'leaderless' | 'emerged' | 'slain';
+  readonly name: string | null;
+  readonly title: string | null;
+  readonly templateId: string | null;
+  readonly spriteName?: string;
+  readonly emergedOnRun?: number;
+  readonly emergedOnDepth?: number;
 }
 
-export interface FactionStanding {
-  readonly factionId: string;
+export interface FactionView {
+  readonly id: string;
   readonly name: string;
-  readonly alignment: string;
-  readonly standing: number;
-  readonly maxStanding: number;
   readonly description: string;
-  readonly enemiesInCurrentDungeon: readonly string[];
+  readonly lore: string;
+  readonly power: number;
+  readonly disposition: number;
+  readonly status: FactionStatus;
+  readonly powerBand: FactionPowerBand;
+  readonly leader: FactionLeaderView;
+  readonly membersKilledByPlayer: number;
+  readonly leadersKilledByPlayer: number;
+  readonly playerDeathsCaused: number;
+  readonly worldEffectText: string;
+  readonly townEffectText: string;
+  readonly currentDungeonEnemies: readonly string[];
+}
+
+export interface OgreProgressView {
+  readonly status: 'sealed' | 'emerged' | 'slain';
+  readonly selectedSpawnDepth: number | null;
+  readonly eligibleSpawnDepths: readonly number[];
+  readonly brokenFactions: number;
+  readonly totalFactions: number;
+  readonly summaryText: string;
 }
 
 export interface DismissibleNotice {
   readonly id: string;
   readonly kind: string;
   readonly message: string;
+  readonly title?: string;
+  readonly detail?: string;
+  readonly spriteName?: string;
 }
 
 export interface GameView {
@@ -84,7 +103,6 @@ export interface GameView {
   readonly deathSummary: DeathSummary | null;
   readonly deathContext: DeathContext | null;
   readonly inspectableEntities: readonly InspectableEntityView[];
-  readonly recentlyDefeatedNemesis: NemesisView | null;
   readonly debugMode: boolean;
   readonly notice?: DismissibleNotice;
 }
@@ -168,8 +186,8 @@ export interface PlayerHudView {
   readonly equippedItems: readonly EquippedItemView[];
   readonly statBreakdowns: Record<string, StatBreakdown>;
   readonly activeQuests: readonly QuestView[];
-  readonly nemesisInfo: NemesisInfo | null;
-  readonly factionStandings: readonly FactionStanding[];
+  readonly factionProgress: readonly FactionView[];
+  readonly ogreProgress: OgreProgressView;
 }
 
 export interface StatusView {
@@ -212,8 +230,6 @@ export interface EntityView {
   readonly health?: number;
   readonly maxHealth?: number;
   readonly templateId: string | null;  // templateId for enemies, itemId for items, null for player
-  readonly isNemesis?: boolean;
-  readonly nemesisName?: string;
   readonly spriteName?: string;  // Atlas sprite name for rendering
   readonly instanceColor?: string;  // hex color for visual disambiguation when 2+ of same type visible
   // Semantic flags for objects (objects only, undefined for other entity types)
@@ -277,28 +293,6 @@ export interface AvailableAction {
   readonly description?: string;  // For tooltips
 }
 
-export interface FactionView {
-  readonly id: string;
-  readonly name: string;
-  readonly power: number;
-  readonly disposition: number;
-  readonly trend: 'rising' | 'falling' | 'stable';
-}
-
-export interface NemesisView {
-  readonly id: string;
-  readonly name: string;
-  readonly title: string;
-  readonly tier: number;
-  readonly rank: number;
-  readonly floorOfAscension: number;
-  readonly killCount: number;
-  readonly killedByWeaponType: string | null;
-  readonly isActive: boolean;
-  readonly weaknesses: readonly string[];
-  readonly spriteName: string | null;
-}
-
 export interface EnchantmentSlotView {
   readonly index: number;
   readonly enchantmentId: string | null;
@@ -313,9 +307,9 @@ export interface TownView {
   readonly shop: ShopView;
   readonly rumors: readonly string[];
   readonly lastRunSummary: string | null;
-  readonly nemeses: readonly NemesisView[];
-  readonly slainNemeses: readonly NemesisView[];  // Recently defeated nemeses (for screen display)
   readonly factions: readonly FactionView[];
+  readonly factionPressureSummary: string;
+  readonly ogreProgress: OgreProgressView;
   readonly atmosphereDescription: string;
   readonly unlockedBlueprints: readonly string[];
   readonly runSummaryStats: RunSummaryStats | null;
@@ -403,3 +397,4 @@ export interface MoveAnimationEntry {
   readonly style:      MoveAnimStyle;
   readonly durationMs: number;
 }
+import type { FactionPowerBand, FactionStatus } from '@dungeon/contracts';

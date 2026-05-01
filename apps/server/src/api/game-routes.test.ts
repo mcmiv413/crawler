@@ -3,7 +3,8 @@ import type { FastifyInstance } from 'fastify';
 import { buildApp } from '../app.js';
 import { deserializeState, serializeState } from '@dungeon/core';
 import { createTestEnemy, createTestGameStateInCombat } from '@dungeon/core/testing';
-import type { EntityId, GameCommand } from '@dungeon/contracts';
+import { entityId } from '@dungeon/contracts';
+import type { EntityId, GameCommand, GameState } from '@dungeon/contracts';
 
 describe('Game Routes', () => {
   let app: FastifyInstance;
@@ -208,8 +209,11 @@ describe('Game Routes', () => {
     it('applies run consequences exactly once on victory', async () => {
       const baseState = createTestGameStateInCombat({ enemyAt: { x: 1, y: 0 } });
       const boss = createTestEnemy({
+        id: entityId('dungeon_ogre'),
+        templateId: 'dungeon_ogre',
+        name: 'Dungeon Ogre',
         position: { x: 1, y: 0 },
-        tier: 4,
+        tier: 5,
         stats: {
           maxHealth: 1,
           health: 1,
@@ -221,7 +225,7 @@ describe('Game Routes', () => {
         },
       });
 
-      const victoryState = {
+      const victoryState: GameState = {
         ...baseState,
         player: {
           ...baseState.player,
@@ -230,6 +234,17 @@ describe('Game Routes', () => {
           stats: {
             ...baseState.player.stats,
             attack: 9999,
+          },
+        },
+        world: {
+          ...baseState.world,
+          dungeonOgre: {
+            id: 'dungeon_ogre',
+            status: 'emerged' as const,
+            emergedAfterRun: 1,
+            emergedAtDepth: 5,
+            eligibleSpawnDepths: [5, 6, 7],
+            selectedSpawnDepth: 5,
           },
         },
         run: {

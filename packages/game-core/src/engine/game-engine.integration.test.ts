@@ -536,14 +536,25 @@ describe('GameEngine victory condition', () => {
     };
   }
 
-  it('killing a boss on floor ≥5 sets runMetrics.causeOfEnd to "victory"', () => {
+  it('killing the dungeon ogre sets runMetrics.causeOfEnd to "victory"', () => {
     const engine = new GameEngine();
     const dungeonState = enterDungeon(engine);
 
-    const boss = makeBoss('boss1', 1, 0);
+    const boss = makeBoss('dungeon_ogre', 1, 0);
     const patchedState: GameState = {
       ...dungeonState,
       player: { ...dungeonState.player, position: { x: 0, y: 0 }, stats: { ...dungeonState.player.stats, attack: 9999 } },
+      world: {
+        ...dungeonState.world,
+        dungeonOgre: {
+          id: 'dungeon_ogre',
+          status: 'emerged',
+          emergedAfterRun: 1,
+          emergedAtDepth: 5,
+          eligibleSpawnDepths: [5, 6, 7],
+          selectedSpawnDepth: 5,
+        },
+      },
       run: {
         ...dungeonState.run!,
         floor: { ...dungeonState.run!.floor, depth: 5 },
@@ -556,7 +567,7 @@ describe('GameEngine victory condition', () => {
     expect(result.state.run?.runMetrics?.causeOfEnd).toBe('victory');
   });
 
-  it('killing a boss on floor <5 does NOT trigger victory', () => {
+  it('killing a regular boss does NOT trigger victory', () => {
     const engine = new GameEngine();
     const dungeonState = enterDungeon(engine);
 
@@ -566,7 +577,7 @@ describe('GameEngine victory condition', () => {
       player: { ...dungeonState.player, position: { x: 0, y: 0 }, stats: { ...dungeonState.player.stats, attack: 9999 } },
       run: {
         ...dungeonState.run!,
-        floor: { ...dungeonState.run!.floor, depth: 4 },
+        floor: { ...dungeonState.run!.floor, depth: 5 },
         enemies: new Map([['1,0', boss]]),
       },
     };
@@ -577,14 +588,25 @@ describe('GameEngine victory condition', () => {
     expect(result.state.run?.runMetrics?.causeOfEnd).not.toBe('victory');
   });
 
-  it('killing a boss on floor ≥5 sets phase to game_over', () => {
+  it('killing the dungeon ogre sets phase to game_over', () => {
     const engine = new GameEngine();
     const dungeonState = enterDungeon(engine);
 
-    const boss = makeBoss('boss3', 1, 0);
+    const boss = makeBoss('dungeon_ogre', 1, 0);
     const patchedState: GameState = {
       ...dungeonState,
       player: { ...dungeonState.player, position: { x: 0, y: 0 }, stats: { ...dungeonState.player.stats, attack: 9999 } },
+      world: {
+        ...dungeonState.world,
+        dungeonOgre: {
+          id: 'dungeon_ogre',
+          status: 'emerged',
+          emergedAfterRun: 1,
+          emergedAtDepth: 5,
+          eligibleSpawnDepths: [5, 6, 7],
+          selectedSpawnDepth: 5,
+        },
+      },
       run: {
         ...dungeonState.run!,
         floor: { ...dungeonState.run!.floor, depth: 5 },
@@ -774,5 +796,58 @@ describe('GameEngine floor persistence (Phase A2)', () => {
     // After death, persistedFloorCache should still exist
     expect(result.state.persistedFloorCache).toBeDefined();
     expect(result.state.persistedFloorCache?.has(1)).toBe(true);
+  });
+
+  it('keeps the selected Dungeon Ogre spawn depth stable across retreat, re-entry, and death', () => {
+    const engine = new GameEngine();
+    let state = enterDungeon(engine);
+
+    state = {
+      ...state,
+      world: {
+        ...state.world,
+        dungeonOgre: {
+          id: 'dungeon_ogre',
+          status: 'emerged',
+          emergedAfterRun: 2,
+          emergedAtDepth: 4,
+          eligibleSpawnDepths: [5, 6, 7],
+          selectedSpawnDepth: 6,
+        },
+      },
+    };
+
+    const afterRetreat = engine.submitCommand(state, { type: 'RETREAT' }).state;
+    expect(afterRetreat.world.dungeonOgre.selectedSpawnDepth).toBe(6);
+
+    const reentered = engine.submitCommand(afterRetreat, {
+      type: 'TOWN_ACTION',
+      action: 'enter_dungeon',
+      startDepth: 1,
+    }).state;
+    expect(reentered.world.dungeonOgre.selectedSpawnDepth).toBe(6);
+
+    const lethalEnemyBase = makeEnemy('ogre-depth-lock', 0, 1);
+    const lethalEnemy = {
+      ...lethalEnemyBase,
+      stats: { ...lethalEnemyBase.stats, attack: 20 },
+    };
+    const doomedState: GameState = {
+      ...reentered,
+      player: {
+        ...reentered.player,
+        position: { x: 0, y: 0 },
+        stats: { ...reentered.player.stats, health: 1 },
+      },
+      run: {
+        ...reentered.run!,
+        enemies: new Map([['0,1', lethalEnemy]]),
+      },
+    };
+
+    const afterDeath = engine.submitCommand(doomedState, { type: 'ATTACK', targetId: lethalEnemy.id }).state;
+    expect(afterDeath.phase).toBe('town');
+    expect(afterDeath.world.dungeonOgre.selectedSpawnDepth).toBe(6);
+    expect(afterDeath.world.dungeonOgre.eligibleSpawnDepths).toEqual([5, 6, 7]);
   });
 });

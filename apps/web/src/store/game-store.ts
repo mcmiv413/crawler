@@ -17,7 +17,6 @@ interface GameStore {
   autoWalkKnownEnemyIds: Set<string>;
   debugLogging: boolean;
   deathTransitioning: boolean;
-  nemesisSlainTransitioning: boolean;
 
   createGame: (seed?: number, playerName?: string) => Promise<void>;
   sendCommand: (command: unknown) => Promise<void>;
@@ -31,7 +30,6 @@ interface GameStore {
 }
 
 let deathTransitionTimeout: ReturnType<typeof setTimeout> | null = null;
-let nemesisSlainTimeout: ReturnType<typeof setTimeout> | null = null;
 
 export const useGameStore = create<GameStore>((set, get) => ({
   gameId: null,
@@ -43,7 +41,6 @@ export const useGameStore = create<GameStore>((set, get) => ({
   autoWalkKnownEnemyIds: new Set(),
   debugLogging: false,
   deathTransitioning: false,
-  nemesisSlainTransitioning: false,
 
   createGame: async (seed, playerName) => {
     set({ loading: true, error: null });
@@ -115,30 +112,7 @@ export const useGameStore = create<GameStore>((set, get) => ({
         viewWithOptionalFields.runResult === 'permadeath';
       const isDeath = dungeonToEndPhase && hasDeathSignal;
 
-      // Detect nemesis slain transition: recentlyDefeatedNemesis just appeared.
-      // Err on nemesis slain over death if both fired this turn (user preference).
-      const slainIdBefore = currentView?.recentlyDefeatedNemesis?.id ?? null;
-      const slainIdAfter = result.view.recentlyDefeatedNemesis?.id ?? null;
-      const isNemesisSlain = !!slainIdAfter && slainIdAfter !== slainIdBefore;
-
-      if (isNemesisSlain) {
-        if (deathTransitionTimeout) clearTimeout(deathTransitionTimeout);
-        if (nemesisSlainTimeout) clearTimeout(nemesisSlainTimeout);
-        deathTransitionTimeout = null;
-
-        set({
-          view: result.view,
-          combatLog: [...get().combatLog, ...result.view.combatLog].slice(-50),
-          nemesisSlainTransitioning: true,
-          deathTransitioning: false,
-          loading: false,
-        });
-
-        nemesisSlainTimeout = setTimeout(() => {
-          set({ nemesisSlainTransitioning: false });
-          nemesisSlainTimeout = null;
-        }, 2000);
-      } else if (isDeath) {
+      if (isDeath) {
         if (deathTransitionTimeout) clearTimeout(deathTransitionTimeout);
 
         set({
@@ -156,15 +130,12 @@ export const useGameStore = create<GameStore>((set, get) => ({
         }, 2000);
       } else {
         if (deathTransitionTimeout) clearTimeout(deathTransitionTimeout);
-        if (nemesisSlainTimeout) clearTimeout(nemesisSlainTimeout);
         deathTransitionTimeout = null;
-        nemesisSlainTimeout = null;
         set({
           view: result.view,
           combatLog: [...get().combatLog, ...result.view.combatLog].slice(-50),
           loading: false,
           deathTransitioning: false,
-          nemesisSlainTransitioning: false,
         });
       }
     } catch (err) {
@@ -216,11 +187,9 @@ export const useGameStore = create<GameStore>((set, get) => ({
 
   resetGame: () => {
     if (deathTransitionTimeout) clearTimeout(deathTransitionTimeout);
-    if (nemesisSlainTimeout) clearTimeout(nemesisSlainTimeout);
     deathTransitionTimeout = null;
-    nemesisSlainTimeout = null;
     clearSession();
-    set({ gameId: null, view: null, combatLog: [], error: null, autoWalkPath: [], autoWalkKnownEnemyIds: new Set(), deathTransitioning: false, nemesisSlainTransitioning: false });
+    set({ gameId: null, view: null, combatLog: [], error: null, autoWalkPath: [], autoWalkKnownEnemyIds: new Set(), deathTransitioning: false });
   },
 
   startAutoWalk: (path) => {

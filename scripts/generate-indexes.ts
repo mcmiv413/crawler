@@ -265,11 +265,13 @@ export const ${di.name} = ${di.generator}(${config.exportName});`;
     lines.push(`export type { ${config.itemType} } from '${config.typeImport}';`);
   }
 
-  // Special handling for factions: create FACTIONS alias and INITIAL_FACTIONS array
+  // Special handling for factions: create FACTIONS alias and runtime state seeds
   if (config.sourceDir === 'factions' && config.exportType === 'map') {
-    lines.push(`\nimport type { FactionState } from '@dungeon/contracts';`);
+    lines.push(`\nimport type { DungeonOgreState, FactionState } from '@dungeon/contracts';`);
     lines.push(`export const FACTIONS = ${config.exportName};`);
-    lines.push(`export const INITIAL_FACTIONS: readonly FactionState[] = Array.from(${config.exportName}.values()).map(f => ({\n  id: f.id,\n  name: f.name,\n  power: f.initialPower,\n  disposition: f.initialDisposition,\n}));`);
+    lines.push(`export const INITIAL_FACTIONS: readonly FactionState[] = Array.from(${config.exportName}.values()).map(f => ({\n  id: f.id,\n  name: f.name,\n  power: f.initialPower,\n  disposition: f.initialDisposition,\n  status: 'leaderless',\n  leader: null,\n  leaderSlain: false,\n  membersKilledByPlayer: 0,\n  leadersKilledByPlayer: 0,\n  playerDeathsCaused: 0,\n}));`);
+    lines.push(`export const INITIAL_DUNGEON_OGRE: DungeonOgreState = {\n  id: 'dungeon_ogre',\n  status: 'sealed',\n};`);
+    lines.push(`export * from './types.js';`);
   }
 
   lines.push(`\nexport {\n  ${reExports},\n};`);

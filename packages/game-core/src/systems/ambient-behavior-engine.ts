@@ -435,6 +435,7 @@ export function preSimulateAmbientBehavior(
 
   for (let round = 0; round < rounds; round++) {
     const newEnemies = new Map<string, EnemyInstance>();
+    const occupied = new Set<string>();
 
     for (const [key, enemy] of simEnemies) {
       const profileId = enemy.ambientBehaviorProfile;
@@ -442,6 +443,7 @@ export function preSimulateAmbientBehavior(
       if (profile === undefined) {
         // No profile: keep enemy as-is
         newEnemies.set(key, enemy);
+        occupied.add(key);
         continue;
       }
 
@@ -469,12 +471,32 @@ export function preSimulateAmbientBehavior(
         }
       }
 
-      const newKey = posKey(updatedEnemy.position);
+      const newPosition = pickUnoccupiedPreSimPosition(enemy.position, updatedEnemy.position, occupied);
+      const newKey = posKey(newPosition);
+      updatedEnemy = newPosition === updatedEnemy.position
+        ? updatedEnemy
+        : { ...updatedEnemy, position: newPosition };
       newEnemies.set(newKey, updatedEnemy);
+      occupied.add(newKey);
     }
 
     simEnemies = newEnemies;
   }
 
   return simEnemies;
+}
+
+function pickUnoccupiedPreSimPosition(
+  currentPosition: Position,
+  desiredPosition: Position,
+  occupied: ReadonlySet<string>,
+): Position {
+  const candidates = [desiredPosition, currentPosition, ...getNeighbors(currentPosition)];
+  for (const candidate of candidates) {
+    if (occupied.has(posKey(candidate)) === false) {
+      return candidate;
+    }
+  }
+
+  return currentPosition;
 }

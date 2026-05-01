@@ -44,7 +44,7 @@ export const SIDE_PANEL_WIDTH = 320;
 /** Minimum width (px) of the desktop actions/abilities column. */
 export const ACTIONS_COLUMN_MIN_WIDTH = 250;
 
-/** Max-width (px) of full-screen modal cards (nemesis, quest, game over). */
+/** Max-width (px) of full-screen modal cards (quest, notice, game over). */
 export const MODAL_CARD_MAX_WIDTH = 500;
 
 /** Max-height (vh) of the item inspect overlay modal. */

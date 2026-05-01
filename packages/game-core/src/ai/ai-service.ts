@@ -23,27 +23,8 @@ export interface RunSummaryContext {
   readonly floor: number;
 }
 
-export interface NemesisNameContext {
-  readonly enemyTemplateName: string;
-  readonly tier: number;
-  readonly floor: number;
-  readonly biome: string;
-}
-
-export interface NemesisLootContext {
-  readonly nemesisName: string;
-  readonly nemesisTitle: string;
-  readonly tier: number;
-  readonly floor: number;
-  readonly traits: readonly string[];
-  readonly weaponType: string | null;
-  readonly rank: number;
-}
-
 export interface AiService {
   generateDialogue(context: NpcDialogueContext): Promise<string>;
   generateRumor(context: RumorContext): Promise<string>;
   generateRunSummary(context: RunSummaryContext): Promise<string>;
-  generateNemesisName(context: NemesisNameContext): Promise<{ name: string; title: string }>;
-  generateNemesisLoot(context: NemesisLootContext): Promise<{ name: string; description: string }>;
 }

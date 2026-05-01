@@ -61,7 +61,7 @@ export function DungeonView({ map, vpTilesWidth, vpTilesHeight }: Props) {
       }
 
       if (entity && cell?.visibility === 'visible') {
-        ascii = entity.isNemesis ? `*${entity.ascii}` : entity.ascii;
+        ascii = entity.ascii;
         color = entity.color;
       }
 

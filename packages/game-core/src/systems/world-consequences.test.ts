@@ -2,7 +2,7 @@ import { describe, it, expect } from 'vitest';
 import { applyRunConsequences, evaluateEventChains } from './world-consequences.js';
 import type { RunMetrics, NpcState } from '@dungeon/contracts';
 import { entityId, EMPTY_RUN_METRICS } from '@dungeon/contracts';
-import { createTestGameState, createTestNemesis } from '../test-utils.js';
+import { createTestGameState } from '../test-utils.js';
 
 const metrics = (overrides: Partial<RunMetrics> = {}): RunMetrics => ({
   ...EMPTY_RUN_METRICS,
@@ -29,30 +29,6 @@ describe('applyRunConsequences', () => {
     const state = createTestGameState();
     const { state: newState } = applyRunConsequences(state, metrics({ causeOfEnd: 'victory', floorsCleared: 3, enemiesKilled: 12 }));
     expect(newState.world.town.prosperity).toBeGreaterThan(state.world.town.prosperity + 10);
-  });
-
-  it('ticks corruption up when nemeses are active', () => {
-    const nemesis = {
-      id: entityId('n1'),
-      name: 'Vorreth',
-      title: 'the Unbroken',
-      sourceTemplateId: 'goblin_archer',
-      rank: 1 as const,
-      tier: 2 as const,
-      stats: { maxHealth: 30, health: 30, attack: 8, defense: 3, accuracy: 70, evasion: 15, speed: 120 },
-      traits: [],
-      weaknesses: [],
-      killEventId: null,
-      encounterCount: 0,
-      isActive: true,
-      killCount: 1,
-      floorOfAscension: 2,
-      biomeOfAscension: 'crypt',
-      killedByWeaponType: null,
-    };
-    const state = createTestGameState({ world: { nemeses: [nemesis] } });
-    const { state: newState } = applyRunConsequences(state, metrics({ causeOfEnd: 'retreat', floorsCleared: 1 }));
-    expect(newState.world.town.corruption).toBeGreaterThan(state.world.town.corruption);
   });
 
   it('emits TOWN_STATE_CHANGED events for changes', () => {
@@ -118,52 +94,6 @@ describe('applyRunConsequences shopkeeper availability', () => {
 });
 
 describe('evaluateEventChains', () => {
-  it('rewards recent NEMESIS_SLAIN history when no nemeses remain active', () => {
-    const slainNemesis = createTestNemesis({ isActive: false });
-    const nemesisSlainEvent = {
-      type: 'NEMESIS_SLAIN' as const,
-      nemesisId: slainNemesis.id,
-      nemesisName: slainNemesis.name,
-      blueprintUnlocked: null,
-      lootItemName: null,
-      floor: 2,
-      timestamp: Date.now(),
-      turnNumber: 1,
-    };
-    const state = createTestGameState({
-      world: {
-        nemeses: [slainNemesis],
-        eventHistory: [nemesisSlainEvent],
-      },
-    });
-
-    const { state: newState } = evaluateEventChains(state);
-
-    expect(newState.world.town.prosperity).toBeGreaterThan(state.world.town.prosperity);
-    expect(newState.world.town.corruption).toBeLessThan(state.world.town.corruption);
-  });
-
-  it('does not reward generic ENTITY_DIED history when no nemeses are active', () => {
-    const deathEvent = {
-      type: 'ENTITY_DIED' as const,
-      entityId: entityId('enemy_1'),
-      killerId: entityId('player_1'),
-      entityName: 'Goblin',
-      timestamp: Date.now(),
-      turnNumber: 1,
-    };
-    const state = createTestGameState({
-      world: {
-        eventHistory: [deathEvent],
-      },
-    });
-
-    const { state: newState } = evaluateEventChains(state);
-
-    expect(newState.world.town.prosperity).toBe(state.world.town.prosperity);
-    expect(newState.world.town.corruption).toBe(state.world.town.corruption);
-  });
-
   it('triggers fear spike when 3+ deaths in recent history', () => {
     const deathEvent = {
       type: 'PLAYER_DIED' as const,
@@ -211,7 +141,18 @@ describe('evaluateEventChains', () => {
   });
 
   it('faction at 0 power gets improved disposition', () => {
-    const weakFaction = { id: 'goblin_warband', name: 'Goblin Warband', power: 0, disposition: -30 };
+    const weakFaction = {
+      id: 'goblin_warband',
+      name: 'Goblin Warband',
+      power: 0,
+      disposition: -30,
+      status: 'leaderless' as const,
+      leader: null,
+      leaderSlain: false,
+      membersKilledByPlayer: 0,
+      leadersKilledByPlayer: 0,
+      playerDeathsCaused: 0,
+    };
     const state = createTestGameState({ world: { factions: [weakFaction] } });
     const { state: newState } = evaluateEventChains(state);
     expect(newState.world.factions[0]!.disposition).toBeGreaterThan(weakFaction.disposition);

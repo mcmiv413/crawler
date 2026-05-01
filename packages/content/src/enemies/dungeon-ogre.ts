@@ -3,7 +3,7 @@ import type { EnemyTemplate } from '@dungeon/contracts';
 export const dungeonOgre = {
   templateId: 'dungeon_ogre',
   name: 'Dungeon Ogre',
-  archetype: 'aggressive_melee',
+  archetype: 'boss',
   tier: 4,
   stats: {
     maxHealth: 78,
@@ -23,8 +23,8 @@ export const dungeonOgre = {
   },
   affinities: { physical: 0.15 },
   spawn: {
-    floorRange: [3, 5],
-    weight: 1,
+    floorRange: [1, 99],
+    weight: 0,
   },
   lootTableId: 'loot_elite',
   experienceValue: 60,
@@ -33,6 +33,5 @@ export const dungeonOgre = {
   color: '#558855',
   spriteName: 'ogre',
   biomes: [{ biomeId: 'frozen_depths' }],
-  factions: [{ factionId: 'goblin_warband', weight: 1.0 }],
   ambientBehaviorProfile: 'wanderer',
 } as const satisfies EnemyTemplate;

@@ -1,10 +1,5 @@
-/**
- * Failing tests for DeathContext and NemesisView spriteName
- * in the GameView type system.
- */
-
 import { describe, it, expect } from 'vitest';
-import type { DeathContext, NemesisView, GameView } from './game-view.js';
+import type { DeathContext, GameView } from './game-view.js';
 
 describe('GameView DeathContext type', () => {
   it('should define DeathContext interface with required fields', () => {
@@ -77,62 +72,6 @@ describe('GameView DeathContext type', () => {
 
     expect(context.killerName).toBe('Orc');
     // Type system will prevent mutations at compile time
-  });
-});
-
-describe('NemesisView spriteName field', () => {
-  it('should have spriteName field on NemesisView', () => {
-    const nemesis: NemesisView = {
-      id: 'nem1',
-      name: 'Lord of Shadows',
-      title: 'Nemesis',
-      tier: 3,
-      rank: 2,
-      floorOfAscension: 5,
-      killCount: 3,
-      killedByWeaponType: null,
-      isActive: true,
-      weaknesses: ['fire', 'light'],
-      spriteName: 'enemy_nemesis_shadows_01',
-    };
-
-    expect(nemesis.spriteName).toBe('enemy_nemesis_shadows_01');
-  });
-
-  it('should allow null spriteName if template not found', () => {
-    const nemesis: NemesisView = {
-      id: 'nem2',
-      name: 'Unknown Entity',
-      title: 'Nemesis',
-      tier: 2,
-      rank: 1,
-      floorOfAscension: 3,
-      killCount: 1,
-      killedByWeaponType: null,
-      isActive: false,
-      weaknesses: [],
-      spriteName: null,
-    };
-
-    expect(nemesis.spriteName).toBeNull();
-  });
-
-  it('should be readonly on NemesisView', () => {
-    const nemesis: Readonly<NemesisView> = {
-      id: 'nem3',
-      name: 'Cursed Knight',
-      title: 'Nemesis',
-      tier: 2,
-      rank: 1,
-      floorOfAscension: 4,
-      killCount: 2,
-      killedByWeaponType: 'axe',
-      isActive: true,
-      weaknesses: ['holy'],
-      spriteName: 'enemy_knight_cursed_01',
-    };
-
-    expect(nemesis.spriteName).toBe('enemy_knight_cursed_01');
   });
 });
 

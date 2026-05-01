@@ -98,19 +98,40 @@ describe('buildTownView', () => {
   });
 
   describe('factions', () => {
-    it('displays faction information', () => {
+    it('displays faction pressure and ogre progress information', () => {
       state = {
         ...state,
         world: {
           ...state.world,
           factions: [
             {
-              id: 'faction1',
-              name: 'Guild of Thieves',
-              power: 50,
-              disposition: 10,
+              id: 'goblin_warband',
+              name: 'Goblin Warband',
+              power: 82,
+              disposition: -30,
+              status: 'led',
+              activeLeaderId: entityId('goblin_warband_leader'),
+              leader: {
+                id: entityId('goblin_warband_leader'),
+                factionId: 'goblin_warband',
+                name: 'Brakka',
+                title: 'Knife-King',
+                templateId: 'goblin_warlord',
+                isActive: true,
+                isSlain: false,
+                emergedOnRun: 2,
+                emergedOnDepth: 3,
+              },
+              leaderSlain: false,
+              membersKilledByPlayer: 5,
+              leadersKilledByPlayer: 0,
+              playerDeathsCaused: 1,
             },
           ],
+          dungeonOgre: {
+            id: 'dungeon_ogre',
+            status: 'sealed',
+          },
         },
       };
 
@@ -118,9 +139,14 @@ describe('buildTownView', () => {
       expect(view.factions).toHaveLength(1);
       const faction = view.factions[0];
       if (faction) {
-        expect(faction.name).toBe('Guild of Thieves');
-        expect(faction.power).toBe(50);
+        expect(faction.name).toBe('Goblin Warband');
+        expect(faction.powerBand).toBe('dominant');
+        expect(faction.leader.name).toBe('Brakka');
+        expect(faction.worldEffectText).toContain('200%');
+        expect(faction.townEffectText).toContain('prosperity -3');
       }
+      expect(view.factionPressureSummary).toBe('1 led · 0 leaderless · 0 broken.');
+      expect(view.ogreProgress.summaryText).toContain('Break 1 more');
     });
 
     it('shows no factions when none exist', () => {
@@ -128,75 +154,6 @@ describe('buildTownView', () => {
 
       const view = buildTownView(state);
       expect(view.factions).toEqual([]);
-    });
-  });
-
-  describe('nemeses', () => {
-    it('displays only active nemeses', () => {
-      state = {
-        ...state,
-        world: {
-          ...state.world,
-          nemeses: [
-            {
-              id: entityId('nemesis1'),
-              name: 'Dread Goblin',
-              title: 'The Terrible',
-              isActive: true,
-              tier: 2,
-              rank: 1,
-              floorOfAscension: 5,
-              killCount: 3,
-              killedByWeaponType: null,
-              sourceTemplateId: 'goblin',
-              weaknesses: [],
-              stats: { maxHealth: 100, health: 100, attack: 20, defense: 10, accuracy: 75, evasion: 20, speed: 10 },
-              traits: [],
-              killEventId: null,
-              encounterCount: 5,
-              biomeOfAscension: 'cavern',
-            },
-            {
-              id: entityId('nemesis2'),
-              name: 'Slain Orc',
-              title: 'The Defeated',
-              isActive: false,
-              tier: 1,
-              rank: 0,
-              floorOfAscension: 3,
-              killCount: 0,
-              killedByWeaponType: 'blade',
-              sourceTemplateId: 'orc',
-              weaknesses: [],
-              stats: { maxHealth: 80, health: 0, attack: 15, defense: 8, accuracy: 60, evasion: 15, speed: 8 },
-              traits: [],
-              killEventId: entityId('kill1'),
-              encounterCount: 3,
-              biomeOfAscension: 'forest',
-            },
-          ],
-        },
-      };
-
-      const view = buildTownView(state);
-      expect(view.nemeses).toHaveLength(1);
-      const activeNemesis = view.nemeses[0];
-      if (activeNemesis) {
-        expect(activeNemesis.name).toBe('Dread Goblin');
-      }
-      expect(view.slainNemeses).toHaveLength(1);
-      const slainNemesis = view.slainNemeses[0];
-      if (slainNemesis) {
-        expect(slainNemesis.name).toBe('Slain Orc');
-      }
-    });
-
-    it('shows empty nemesis lists when none exist', () => {
-      state = { ...state, world: { ...state.world, nemeses: [] } };
-
-      const view = buildTownView(state);
-      expect(view.nemeses).toEqual([]);
-      expect(view.slainNemeses).toEqual([]);
     });
   });
 

@@ -107,7 +107,6 @@ export interface EnemyInstance extends EnemyTemplate {
   readonly statuses: readonly StatusEffect[];
   readonly isAlerted: boolean;
   readonly lastKnownPlayerPos: Position | null;
-  readonly nemesisId?: EntityId;
   readonly abilityCooldowns?: Record<string, number>;
   readonly ambientState?: AmbientState; // current state in state machine
   readonly ambientStateAge?: number; // turns in current state, for triggering transitions

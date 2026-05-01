@@ -9,9 +9,6 @@ import { buildPlayerHud } from './builders/player-hud-builder.js';
 import { buildMapView } from './builders/map-view-builder.js';
 
 function getEnemyColor(enemy: EnemyInstance): string {
-  // Nemesis enemies are gold
-  if (enemy.nemesisId) return '#ffd700';
-
   const damageType = enemy.equipment?.weapon?.damageType ?? 'physical';
   switch (damageType) {
     case 'fire': return '#ff4400';
@@ -26,7 +23,6 @@ import { buildAvailableActions } from './builders/actions-builder.js';
 import { buildTownView } from './builders/town-view-builder.js';
 import { buildInventoryView } from './builders/inventory-view-builder.js';
 import { buildDeathSummary } from './builders/death-summary-builder.js';
-import type { NemesisView } from './game-view.js';
 
 function computeThreatRating(enemy: EnemyInstance, state: GameState): 'Low' | 'Moderate' | 'High' | 'Deadly' {
   const playerStats = state.player.stats;
@@ -260,50 +256,57 @@ function buildDeathContext(state: GameState): DeathContext | null {
   };
 }
 
+function buildNotice(event: DomainEvent, index: number): GameView['notice'] | undefined {
+  switch (event.type) {
+    case 'FACTION_LEADER_EMERGED': {
+      const spriteName = ENEMY_TEMPLATES.get(event.leaderTemplateId)?.spriteName;
+      return {
+        id: `faction_leader_emerged_${index}`,
+        kind: event.type,
+        title: 'Faction Leader Emerged',
+        message: `${event.leaderName}, ${event.leaderTitle}, now leads the ${event.factionName}.`,
+        detail: `A new leader rose on floor ${event.emergedOnDepth}. Break the faction to stop its pressure.`,
+        spriteName,
+      };
+    }
+    case 'FACTION_LEADER_SLAIN':
+      return {
+        id: `faction_leader_slain_${index}`,
+        kind: event.type,
+        title: 'Faction Leader Slain',
+        message: `${event.leaderName}, ${event.leaderTitle}, has been slain.`,
+        detail: `${event.factionName} is broken.`,
+      };
+    case 'DUNGEON_OGRE_EMERGED': {
+      const eligibleDepths = event.eligibleSpawnDepths.join(', ');
+      return {
+        id: `dungeon_ogre_emerged_${index}`,
+        kind: event.type,
+        title: 'Dungeon Ogre Emerged',
+        message: `The Dungeon Ogre has claimed floor ${event.selectedSpawnDepth}.`,
+        detail: `Eligible depths were ${eligibleDepths}. Its lair will stay fixed until you slay it.`,
+        spriteName: ENEMY_TEMPLATES.get('dungeon_ogre')?.spriteName,
+      };
+    }
+    case 'EQUIP_BLOCKED':
+      return {
+        id: `equip_blocked_${index}`,
+        kind: event.type,
+        title: 'Equipment Blocked',
+        message: event.reason,
+      };
+    default:
+      return undefined;
+  }
+}
+
 /** Build a GameView from authoritative GameState */
 export function buildGameView(state: GameState): GameView {
-  // Find most recent NEMESIS_SLAIN event in current run
-  let recentlyDefeatedNemesis: NemesisView | null = null;
-  if (state.run) {
-    let nemesisSslainEvent: Extract<DomainEvent, { type: 'NEMESIS_SLAIN' }> | null = null;
-    for (let i = state.world.eventHistory.length - 1; i >= 0; i -= 1) {
-      if (state.world.eventHistory[i]!.type === 'NEMESIS_SLAIN') {
-        nemesisSslainEvent = state.world.eventHistory[i] as Extract<DomainEvent, { type: 'NEMESIS_SLAIN' }>;
-        break;
-      }
-    }
-
-    if (nemesisSslainEvent) {
-      const nemesis = state.world.nemeses.find(n => n.id === nemesisSslainEvent.nemesisId);
-      if (nemesis) {
-        recentlyDefeatedNemesis = {
-          id: nemesis.id,
-          name: nemesis.name,
-          title: nemesis.title,
-          tier: nemesis.tier,
-          rank: nemesis.rank,
-          floorOfAscension: nemesis.floorOfAscension,
-          killCount: nemesis.killCount,
-          killedByWeaponType: nemesis.killedByWeaponType,
-          isActive: nemesis.isActive,
-          weaknesses: nemesis.weaknesses,
-          spriteName: ENEMY_TEMPLATES.get(nemesis.sourceTemplateId)?.spriteName ?? null,
-        };
-      }
-    }
-  }
-
-  // Find most recent EQUIP_BLOCKED event for notice
-  let notice: { id: string; kind: string; message: string } | undefined;
+  let notice: GameView['notice'];
   for (let i = state.world.eventHistory.length - 1; i >= 0; i -= 1) {
     const evt = state.world.eventHistory[i]!;
-    if (evt.type === 'EQUIP_BLOCKED') {
-      const blockEvent = evt as Extract<DomainEvent, { type: 'EQUIP_BLOCKED' }>;
-      notice = {
-        id: `equip_blocked_${i}`,
-        kind: 'EQUIP_BLOCKED',
-        message: blockEvent.reason,
-      };
+    notice = buildNotice(evt, i);
+    if (notice !== undefined) {
       break;
     }
   }
@@ -341,7 +344,6 @@ export function buildGameView(state: GameState): GameView {
       ? buildDeathContext(state)
       : null,
     inspectableEntities: buildInspectableEntities(state),
-    recentlyDefeatedNemesis,
     debugMode: state.debugMode ?? false,
     notice,
   };

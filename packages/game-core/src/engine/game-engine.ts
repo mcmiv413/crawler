@@ -1,20 +1,22 @@
-import type { GameState, GameCommand, StoredFloor, DungeonFloor, EnemyInstance, Position } from '@dungeon/contracts';
+import type { GameState, GameCommand, StoredFloor, DungeonFloor, EnemyInstance, Position, WorldState } from '@dungeon/contracts';
 import { entityId, posKey } from '@dungeon/contracts';
 import type { IGameEngine, CommandResult } from '@dungeon/contracts';
 import type { DomainEvent } from '@dungeon/contracts';
 import { chebyshevDistance } from '../utils/grid.js';
 import { generateId } from '../utils/id.js';
-import { BASE_PLAYER_STATS, ECONOMY, BIOME_BY_FLOOR } from '@dungeon/content';
+import { BASE_PLAYER_STATS, ECONOMY, BIOME_BY_FLOOR, ENEMY_TEMPLATES } from '@dungeon/content';
 import { EMPTY_RUN_METRICS, EMPTY_WEAPON_MASTERY } from '@dungeon/contracts';
 import { SeededRNG } from '../utils/rng.js';
 import { handleCommand } from './command-handler.js';
 import { generateFloor } from '../generation/map-generator.js';
 import type { ObjectInstance } from '@dungeon/contracts';
 import { populateFloor } from '../generation/floor-populator.js';
+import { createEnemyInstance, assignInstanceColors } from '../generation/enemy-instantiation.js';
 import { validateSpawns } from '../generation/spawn-validator.js';
 import { computeFov } from '../systems/fov.js';
 import { createInitialWorldState } from '../state/world-state.js';
 import { buildWorldModifiers } from '../systems/world-modifiers.js';
+import { applyNewDeepestFloorPressure } from '../systems/factions.js';
 import { executeRetreat } from '../systems/retreat.js';
 import { applyRunConsequences } from '../systems/world-consequences.js';
 import { simulatePersistedFloorTimeElapsed } from '../systems/enemy-respawn.js';
@@ -112,11 +114,11 @@ export class GameEngine implements IGameEngine {
    * This ensures consequences are always applied by the engine, regardless of server-side handling.
    */
   private applyConsequencesIfRunEnded(result: CommandResult): CommandResult {
-    if (result.runEnded !== true || result.state.run === null) {
+    if (result.runEnded !== true) {
       return result;
     }
 
-    const runMetrics = result.state.run.runMetrics;
+    const runMetrics = result.state.run?.runMetrics ?? result.state.lastRunMetrics;
     if (runMetrics === undefined) {
       return result;
     }
@@ -129,14 +131,11 @@ export class GameEngine implements IGameEngine {
   }
 
   private enterDungeon(state: GameState, rng: SeededRNG, startDepth?: number): CommandResult {
-    // Area 4b: Clamp startDepth to [1, deepestFloor - 1]
     const maxAllowed = Math.max(1, state.world.deepestFloor);
-
-    // If no depth specified, continue from last retreat floor if available
     const defaultDepth = state.lastRetreatFloor !== undefined ? Math.max(1, Math.min(state.lastRetreatFloor, maxAllowed)) : 1;
     const depth = startDepth !== undefined ? Math.max(1, Math.min(startDepth, maxAllowed)) : defaultDepth;
-    
-    // Phase A2: Check if this floor is already cached from a previous run
+
+    const biome = BIOME_BY_FLOOR(depth, rng);
     const cachedFloor = state.persistedFloorCache?.get(depth);
     let events: DomainEvent[] = [];
 
@@ -145,38 +144,28 @@ export class GameEngine implements IGameEngine {
     let objects: ReadonlyMap<string, ObjectInstance>;
 
     if (cachedFloor !== undefined) {
-      // Restore cached floor and simulate time elapsed for respawning
-      const biome = BIOME_BY_FLOOR(depth, rng);
       const turnsSinceVisit = state.turnNumber - (cachedFloor.lastSimulatedTurn ?? 0);
-
-      // Simulate respawning and ambient behavior based on time elapsed
       const simulatedFloor = simulatePersistedFloorTimeElapsed(
         cachedFloor,
         turnsSinceVisit,
         biome,
         depth,
         rng,
+        state.world.factions,
       );
 
       floor = simulatedFloor.floor;
       enemies = simulatedFloor.enemies;
       objects = simulatedFloor.objects;
-
-      // Update FOV from entrance (cached floor doesn't have updated visibility)
       const visibleCells = computeFov(floor, floor.entrance);
       floor = { ...floor, cells: visibleCells };
     } else {
-      // Generate fresh floor
-      const biome = BIOME_BY_FLOOR(depth, rng);
       const { floor: generatedFloor } = generateFloor(depth, biome, rng);
-      const worldMods = buildWorldModifiers(state.world, depth);
+      const reservedEncounterSlots = this.countGuaranteedEncountersForFloor(state, state.world, depth, biome.biomeId);
+      const worldMods = buildWorldModifiers(state.world, depth, reservedEncounterSlots);
       const { enemies: genEnemies, objects: genObjects } = populateFloor(generatedFloor, biome, rng, worldMods);
-
-      // Validate spawns and fix if needed
       const validation = validateSpawns(generatedFloor, genEnemies);
       const finalEnemies = validation.valid === true ? genEnemies : fixSpawns(generatedFloor, genEnemies);
-
-      // Update FOV from entrance
       const visibleCells = computeFov(generatedFloor, generatedFloor.entrance);
 
       floor = { ...generatedFloor, cells: visibleCells };
@@ -184,6 +173,7 @@ export class GameEngine implements IGameEngine {
       objects = genObjects;
     }
 
+    enemies = this.applyGuaranteedEncounters(state, state.world, floor, enemies, rng);
     const runId = entityId(generateId());
 
     events = [...events, {
@@ -209,7 +199,6 @@ export class GameEngine implements IGameEngine {
       turnNumber: state.turnNumber,
     }];
 
-    // Initialize speed accumulators for each enemy (for kiting system)
     const speedAccumulators: Record<string, number> = {};
     for (const enemy of enemies.values()) {
       speedAccumulators[enemy.id] = 0;
@@ -235,18 +224,16 @@ export class GameEngine implements IGameEngine {
         floorCache: new Map(),
         speedAccumulators,
       },
-      lastRunMetrics: undefined,  // Clear previous run metrics when starting new run
+      lastRunMetrics: undefined,
       turnNumber: state.turnNumber + 1,
     };
 
-    // Check for death stash recovery
     const recovery = this.tryRecoverDeathStash(newState, depth);
     if (recovery !== null) {
       newState = recovery.state;
       events = [...events, ...recovery.events];
     }
 
-    // D1: Check for floor depth quest completion
     const questResult = completeFloorDepthQuests(newState, depth);
     newState = questResult.state;
     events = [...events, ...questResult.events];
@@ -262,8 +249,20 @@ export class GameEngine implements IGameEngine {
     const newDepth = (state.run?.floor.depth ?? 0) + 1;
     const biome = BIOME_BY_FLOOR(newDepth, rng);
     let events = [...previousEvents];
+    const previousDeepestFloor = state.world.deepestFloor;
 
-    // Save current floor to history (capped at 3)
+    let worldForDepth = state.world;
+    if (newDepth > previousDeepestFloor) {
+      const pressureResult = applyNewDeepestFloorPressure(
+        state.world,
+        previousDeepestFloor,
+        newDepth,
+        { timestamp: Date.now(), turnNumber: state.turnNumber, depth: newDepth },
+      );
+      worldForDepth = pressureResult.world;
+      events = [...events, ...pressureResult.events];
+    }
+
     const snapshot: StoredFloor = {
       floor: state.run!.floor,
       enemies: state.run!.enemies,
@@ -273,7 +272,6 @@ export class GameEngine implements IGameEngine {
     const newHistory = [...state.run!.floorHistory, snapshot].slice(-3);
 
     const existingCache = state.run!.floorCache ?? new Map<number, StoredFloor>();
-    // Check persisted cache first (floors from previous runs), then in-run cache
     let cached = state.persistedFloorCache?.get(newDepth);
     if (cached === undefined) {
       cached = existingCache.get(newDepth);
@@ -292,7 +290,8 @@ export class GameEngine implements IGameEngine {
       playerPosition = cached.floor.entrance;
     } else {
       const { floor } = generateFloor(newDepth, biome, rng);
-      const worldMods = buildWorldModifiers(state.world, newDepth);
+      const reservedEncounterSlots = this.countGuaranteedEncountersForFloor(state, worldForDepth, newDepth, biome.biomeId);
+      const worldMods = buildWorldModifiers(worldForDepth, newDepth, reservedEncounterSlots);
       const { enemies: generatedEnemies, objects: generatedObjects } = populateFloor(floor, biome, rng, worldMods);
       const validation = validateSpawns(floor, generatedEnemies);
       finalEnemies = validation.valid === true ? generatedEnemies : fixSpawns(floor, generatedEnemies);
@@ -302,6 +301,8 @@ export class GameEngine implements IGameEngine {
       playerPosition = floor.entrance;
     }
 
+    finalEnemies = this.applyGuaranteedEncounters(state, worldForDepth, fovFloor, finalEnemies, rng);
+
     events = [...events, {
       type: 'FLOOR_ENTERED',
       depth: newDepth,
@@ -310,7 +311,6 @@ export class GameEngine implements IGameEngine {
       turnNumber: state.turnNumber,
     }];
 
-    // Initialize speed accumulators for each new enemy (for kiting system)
     const speedAccumulators: Record<string, number> = {};
     for (const enemy of finalEnemies.values()) {
       speedAccumulators[enemy.id] = 0;
@@ -334,19 +334,17 @@ export class GameEngine implements IGameEngine {
         speedAccumulators,
       },
       world: {
-        ...state.world,
-        deepestFloor: Math.max(state.world.deepestFloor, newDepth),
+        ...worldForDepth,
+        deepestFloor: Math.max(worldForDepth.deepestFloor, newDepth),
       },
     };
 
-    // Check for death stash recovery
     const recovery = this.tryRecoverDeathStash(newState, newDepth);
     if (recovery !== null) {
       newState = recovery.state;
       events = [...events, ...recovery.events];
     }
 
-    // D1: Check for floor depth quest completion
     const questResult = completeFloorDepthQuests(newState, newDepth);
     newState = questResult.state;
     events = [...events, ...questResult.events];
@@ -363,7 +361,6 @@ export class GameEngine implements IGameEngine {
 
     let events = [...previousEvents];
 
-    // If on floor 1 or below, treat as retreat to town
     if (state.player.floor <= 1) {
       const retreatResult = executeRetreat(state, rng);
       return { state: retreatResult.state, events: [...events, ...retreatResult.events], runEnded: true };
@@ -373,7 +370,6 @@ export class GameEngine implements IGameEngine {
     const targetDepth = currentDepth - 1;
     const biome = BIOME_BY_FLOOR(targetDepth, rng);
 
-    // Save current floor to cache so re-descending restores the cleared state
     const cacheSnapshot: StoredFloor = {
       floor: state.run.floor,
       enemies: state.run.enemies,
@@ -383,26 +379,24 @@ export class GameEngine implements IGameEngine {
     const newCache = new Map(state.run.floorCache ?? []);
     newCache.set(currentDepth, cacheSnapshot);
 
-    // Try to load from floorHistory first (for initial descents), then run cache, then persisted cache
     const fromHistory = state.run.floorHistory.length > 0 ? state.run.floorHistory[0] : undefined;
     const cached = fromHistory ?? state.run.floorCache?.get(targetDepth) ?? state.persistedFloorCache?.get(targetDepth);
-    
+
     let restoredFloor: DungeonFloor;
     let restoredEnemies: ReadonlyMap<string, EnemyInstance>;
     let restoredObjects: ReadonlyMap<string, ObjectInstance>;
     let playerPosition: Position;
 
     if (cached !== undefined) {
-      // Restore from cache or history
       const restoredCells = computeFov(cached.floor, cached.playerPosition);
       restoredFloor = { ...cached.floor, cells: restoredCells };
       restoredEnemies = cached.enemies;
       restoredObjects = cached.objects;
       playerPosition = cached.playerPosition;
     } else {
-      // Generate fresh floor (shouldn't normally happen, but handle as fallback)
       const { floor } = generateFloor(targetDepth, biome, rng);
-      const worldMods = buildWorldModifiers(state.world, targetDepth);
+      const reservedEncounterSlots = this.countGuaranteedEncountersForFloor(state, state.world, targetDepth, biome.biomeId);
+      const worldMods = buildWorldModifiers(state.world, targetDepth, reservedEncounterSlots);
       const { enemies: genEnemies, objects: genObjects } = populateFloor(floor, biome, rng, worldMods);
       const validation = validateSpawns(floor, genEnemies);
       const finalEnemies = validation.valid === true ? genEnemies : fixSpawns(floor, genEnemies);
@@ -413,6 +407,8 @@ export class GameEngine implements IGameEngine {
       playerPosition = floor.entrance;
     }
 
+    restoredEnemies = this.applyGuaranteedEncounters(state, state.world, restoredFloor, restoredEnemies, rng);
+
     events = [...events, {
       type: 'FLOOR_ENTERED',
       depth: targetDepth,
@@ -421,7 +417,6 @@ export class GameEngine implements IGameEngine {
       turnNumber: state.turnNumber,
     }];
 
-    // Initialize speed accumulators for each enemy
     const speedAccumulators: Record<string, number> = {};
     for (const enemy of restoredEnemies.values()) {
       speedAccumulators[enemy.id] = 0;
@@ -446,12 +441,158 @@ export class GameEngine implements IGameEngine {
       },
     };
 
-    // D1: Check for floor depth quest completion
     const questResult = completeFloorDepthQuests(newState, targetDepth);
     const finalState = questResult.state;
     events = [...events, ...questResult.events];
 
     return { state: finalState, events, runEnded: false };
+  }
+
+
+  private countGuaranteedEncountersForFloor(
+    state: GameState,
+    world: WorldState,
+    depth: number,
+    biomeId: string,
+  ): number {
+    let count = 0;
+    for (const faction of world.factions) {
+      const leader = faction.leader;
+      if (faction.status !== 'led' || leader === null || leader.isActive !== true) {
+        continue;
+      }
+      if (this.isEntityPresentAnywhere(state, leader.id) || !this.isTemplateEligibleForFloor(leader.templateId, depth, biomeId)) {
+        continue;
+      }
+      count += 1;
+    }
+
+    if (world.dungeonOgre.status === 'emerged'
+      && world.dungeonOgre.selectedSpawnDepth === depth
+      && this.isEntityPresentAnywhere(state, entityId('dungeon_ogre')) !== true) {
+      count += 1;
+    }
+
+    return count;
+  }
+
+  private applyGuaranteedEncounters(
+    state: GameState,
+    world: WorldState,
+    floor: DungeonFloor,
+    enemies: ReadonlyMap<string, EnemyInstance>,
+    rng: SeededRNG,
+  ): ReadonlyMap<string, EnemyInstance> {
+    let updatedEnemies = new Map(enemies);
+
+    for (const faction of world.factions) {
+      const leader = faction.leader;
+      if (faction.status !== 'led' || leader === null || leader.isActive !== true) {
+        continue;
+      }
+      if ([...updatedEnemies.values()].some(enemy => enemy.id === leader.id) || this.isEntityPresentAnywhere(state, leader.id)) {
+        continue;
+      }
+      if (!this.isTemplateEligibleForFloor(leader.templateId, floor.depth, floor.biomeId)) {
+        continue;
+      }
+
+      const template = ENEMY_TEMPLATES.get(leader.templateId);
+      const position = this.findGuaranteedEncounterPosition(floor, updatedEnemies, rng);
+      if (template === undefined || position === null) {
+        continue;
+      }
+
+      this.removeOccupantAtPosition(updatedEnemies, position);
+      updatedEnemies.set(posKey(position), createEnemyInstance(template, position, floor.depth, {
+        id: leader.id,
+        name: `${leader.name} ${leader.title}`,
+        skipFactionStrength: true,
+      }));
+    }
+
+    if (world.dungeonOgre.status === 'emerged'
+      && world.dungeonOgre.selectedSpawnDepth === floor.depth
+      && ![...updatedEnemies.values()].some(enemy => enemy.id === entityId('dungeon_ogre'))
+      && this.isEntityPresentAnywhere(state, entityId('dungeon_ogre')) !== true) {
+      const template = ENEMY_TEMPLATES.get('dungeon_ogre');
+      const position = this.findGuaranteedEncounterPosition(floor, updatedEnemies, rng);
+      if (template !== undefined && position !== null) {
+        this.removeOccupantAtPosition(updatedEnemies, position);
+        updatedEnemies.set(posKey(position), createEnemyInstance(template, position, floor.depth, {
+          id: entityId('dungeon_ogre'),
+          skipFactionStrength: true,
+        }));
+      }
+    }
+
+    return assignInstanceColors(updatedEnemies);
+  }
+
+  private findGuaranteedEncounterPosition(
+    floor: DungeonFloor,
+    enemies: ReadonlyMap<string, EnemyInstance>,
+    rng: SeededRNG,
+  ): Position | null {
+    const candidates = Array.from(floor.cells)
+      .filter(([key, cell]) => {
+        if (cell.tile.walkable !== true) return false;
+        const [x, y] = key.split(',').map(Number);
+        const position = { x: x!, y: y! };
+        if (key === posKey(floor.entrance) || key === posKey(floor.exit)) return false;
+        return chebyshevDistance(position, floor.entrance) > 2;
+      })
+      .map(([key]) => {
+        const [x, y] = key.split(',').map(Number);
+        return { x: x!, y: y! };
+      });
+
+    const openPositions = candidates.filter(position => !enemies.has(posKey(position)));
+    if (openPositions.length > 0) {
+      return rng.pick(openPositions);
+    }
+
+    if (candidates.length === 0) {
+      return null;
+    }
+
+    const mutableCandidates = [...candidates];
+    mutableCandidates.sort((left, right) =>
+      chebyshevDistance(right, floor.entrance) - chebyshevDistance(left, floor.entrance));
+    return mutableCandidates[0] ?? null;
+  }
+
+  private removeOccupantAtPosition(enemies: Map<string, EnemyInstance>, position: Position): void {
+    enemies.delete(posKey(position));
+  }
+
+  private isTemplateEligibleForFloor(templateId: string, depth: number, biomeId: string): boolean {
+    const template = ENEMY_TEMPLATES.get(templateId);
+    if (template === undefined) {
+      return false;
+    }
+    const [minDepth, maxDepth] = template.spawn.floorRange;
+    if (depth < minDepth || depth > maxDepth) {
+      return false;
+    }
+    return template.biomes?.some(biome => biome.biomeId === biomeId) ?? true;
+  }
+
+  private isEntityPresentAnywhere(state: GameState, entityIdToFind: ReturnType<typeof entityId>): boolean {
+    if (state.run?.enemies && [...state.run.enemies.values()].some(enemy => enemy.id === entityIdToFind)) {
+      return true;
+    }
+    for (const floor of state.run?.floorCache?.values() ?? []) {
+      if ([...floor.enemies.values()].some(enemy => enemy.id === entityIdToFind)) {
+        return true;
+      }
+    }
+    for (const floor of state.persistedFloorCache?.values() ?? []) {
+      if ([...floor.enemies.values()].some(enemy => enemy.id === entityIdToFind)) {
+        return true;
+      }
+    }
+    return false;
   }
 
   private tryRecoverDeathStash(

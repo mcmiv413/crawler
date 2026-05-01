@@ -250,13 +250,6 @@ export function renderMap(
 
       drawEntity(ctx, entity, screenX, screenY, offsetX, offsetY);
 
-      // Gold border for nemesis enemies
-      if (entity.isNemesis) {
-        ctx.strokeStyle = '#ffd700';
-        ctx.lineWidth = 2;
-        ctx.strokeRect(screenX + offsetX + 1, screenY + offsetY + 1, CELL_SIZE - 2, CELL_SIZE - 2);
-      }
-
       // Instance color square for disambiguation when 2+ of same type visible
       if (entity.instanceColor) {
         // Dark backdrop: 5×6px at (CELL_SIZE - 5, 0)

@@ -1,9 +1,10 @@
 import type {
   GameState, EntityId, DamageType, DomainEvent, WeaponType, WeaponTemplate, EnemyInstance, StatusId, Direction,
 } from '@dungeon/contracts';
+import { entityId } from '@dungeon/contracts';
 import type { CommandResult } from './shared.js';
 import type { SeededRNG } from '../../utils/rng.js';
-import { COMBAT, getWeaponDamageProfile } from '@dungeon/content';
+import { COMBAT, getPrimaryFactionId, getWeaponDamageProfile } from '@dungeon/content';
 import { updateRunMetrics } from './shared.js';
 import { executeAbility } from '../../abilities/runtime/execute-ability.js';
 import { resolveAttack } from '../../systems/combat.js';
@@ -12,8 +13,7 @@ import { applyDamageToEnemy } from '../../systems/damage.js';
 import { applyDefense, applyRangeAccuracyPenalty } from '../../utils/dice.js';
 import { processEnemyLoot } from '../../systems/loot.js';
 import { checkLevelUp } from '../../systems/progression.js';
-import { slayNemesis } from '../../systems/nemesis.js';
-import { updateFactionOnKill } from '../../systems/factions.js';
+import { applyDungeonOgreSlain, applyFactionLeaderSlain, applyFactionMemberKill } from '../../systems/factions.js';
 import { canUseAbility, setAbilityCooldown } from '../../systems/abilities.js';
 import { applyLifeStealOnKill, getExpBonusMultiplier } from '../../systems/enchantment-hooks.js';
 import { checkWeaponMasteryUnlocks } from '../../systems/weapon-mastery.js';
@@ -47,8 +47,8 @@ export function getEquippedWeaponDamageType(state: GameState): DamageType {
 }
 
 /**
- * Processes enemy death: removes from map, awards XP, processes loot, handles quests, nemesis slaying,
- * faction updates, level ups, and victory conditions.
+ * Processes enemy death: removes from map, awards XP, processes loot, handles quests,
+ * faction progression, level ups, and victory conditions.
  *
  * This is extracted to ensure feature parity between regular attacks and ability kills.
  */
@@ -117,28 +117,38 @@ export function processEnemyKill(
   const goldFromLoot = newState.player.gold - goldBeforeLoot;
   if (goldFromLoot > 0) newState = updateRunMetrics(newState, { goldEarned: goldFromLoot });
 
-  // A10.1: Mark nemesis slain if applicable — check nemesisId first
-  if (enemy.nemesisId !== undefined) {
-    // This enemy IS a named nemesis — slay it
-    const killingWeaponType = getEquippedWeaponType(newState);
-    const slayResult = slayNemesis(newState, enemy.nemesisId, killingWeaponType ?? undefined);
-    newState = slayResult.state;
-    events = [...events, ...slayResult.events];
-  } else {
-    // Double-check: if this enemy template matches an active nemesis, slay it
-    const activeNemesis = newState.world.nemeses.find(
-      n => n.isActive && n.sourceTemplateId === enemy.templateId
-    );
-    if (activeNemesis !== undefined) {
-      const killingWeaponType = getEquippedWeaponType(newState);
-      const slayResult = slayNemesis(newState, activeNemesis.id, killingWeaponType ?? undefined);
-      newState = slayResult.state;
-      events = [...events, ...slayResult.events];
-    }
-  }
+  // 8. Update faction progression
+  const eventContext = {
+    timestamp: Date.now(),
+    turnNumber: newState.turnNumber,
+    depth: newState.run?.floor.depth ?? state.player.floor,
+  };
+  const leaderFaction = newState.world.factions.find(faction => faction.activeLeaderId === enemy.id);
 
-  // 8. Update faction power
-  newState = updateFactionOnKill(newState, enemy.templateId);
+  if (newState.world.dungeonOgre.status === 'emerged' && enemy.id === entityId('dungeon_ogre')) {
+    const ogreResult = applyDungeonOgreSlain(newState.world, eventContext);
+    newState = { ...newState, world: ogreResult.world };
+    events = [...events, ...ogreResult.events];
+    newState = updateRunMetrics(newState, { causeOfEnd: 'victory' });
+    const victoryRun = newState.run!;
+    newState = { ...newState, phase: 'game_over' };
+    events = [...events, {
+      type: 'RUN_ENDED',
+      runId: victoryRun.runId,
+      reason: 'victory',
+      floorsCleared: victoryRun.floor.depth,
+      timestamp: Date.now(),
+      turnNumber: newState.turnNumber,
+    }];
+  } else if (leaderFaction !== undefined) {
+    const factionResult = applyFactionLeaderSlain(newState.world, leaderFaction.id, eventContext, state.seed);
+    newState = { ...newState, world: factionResult.world };
+    events = [...events, ...factionResult.events];
+  } else {
+    const factionResult = applyFactionMemberKill(newState.world, getPrimaryFactionId(enemy.templateId), eventContext);
+    newState = { ...newState, world: factionResult.world };
+    events = [...events, ...factionResult.events];
+  }
 
   // 9. Track kill metric
   newState = updateRunMetrics(newState, { enemiesKilled: 1 });
@@ -172,21 +182,6 @@ export function processEnemyKill(
     ...newState,
     activeQuests: updatedQuests,
   };
-
-  // 12. Check victory condition: depth >= 5 and killed a boss (tier >= 4 indicates boss)
-  if (newState.run && newState.run.floor.depth >= 5 && enemy.tier >= 4) {
-    newState = updateRunMetrics(newState, { causeOfEnd: 'victory' });
-    const victoryRun = newState.run!;
-    newState = { ...newState, phase: 'game_over' };
-    events = [...events, {
-      type: 'RUN_ENDED',
-      runId: victoryRun.runId,
-      reason: 'victory',
-      floorsCleared: victoryRun.floor.depth,
-      timestamp: Date.now(),
-      turnNumber: newState.turnNumber,
-    }];
-  }
 
   return { state: newState, events };
 }

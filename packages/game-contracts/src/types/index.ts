@@ -7,7 +7,6 @@ export * from './town.js';
 export * from './items.js';
 export * from './objects.js';
 export * from './game-state.js';
-export * from './nemesis.js';
 export * from './ambient-behavior.js';
 export * from './rng.js';
 export * from './balance-config.js';

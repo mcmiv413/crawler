@@ -8,7 +8,7 @@ This project uses a **3-tier progressive disclosure** system. Each tier loads di
 |------|---------|-------------|------------------|
 | **1. CLAUDE.md** | `CLAUDE.md` | Every session | Commands, architecture skeleton, behavioral rules, pointers to guides |
 | **2. Reference guides** | `docs/guides/*.md` | On-demand | How-to procedures, detailed explanations, code examples |
-| **3. Serena memories** | Serena memory system | Serena sessions only | Lightweight what/how/where pointers to guides |
+| **3. Project memory** | `.claude/memory/*.md` | Session start (index) | Lightweight what/how/where pointers organized by domain and tooling |
 
 ## When to Update What
 
@@ -24,9 +24,11 @@ This project uses a **3-tier progressive disclosure** system. Each tier loads di
 - New content types (a new "adding-X" guide)
 - Design system updates
 
-### Add a Serena memory when:
-- Summarizing a guide for quick lookup (what/how/where only)
-- No duplicated content — always point to the doc
+### Add project memory when:
+- Recording domain knowledge (architecture, testing patterns, content guidelines)
+- Documenting tool workflows and gotchas
+- Creating quick-reference pointers to guides
+- No duplicated content — always point to the doc, not quote it
 
 ## Rules
 

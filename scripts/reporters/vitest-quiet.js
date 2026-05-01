@@ -45,7 +45,7 @@ export default class QuietReporter {
       current = current.suite;
     }
 
-    const error = task.result?.error;
+    const error = this.getTaskError(task);
     const errorStr = error ? this.formatError(error) : 'Unknown error';
 
     this.failures.push({
@@ -56,8 +56,25 @@ export default class QuietReporter {
     });
   }
 
+  getTaskError(task) {
+    const directError = task.result?.error;
+    if (directError !== undefined) {
+      return directError;
+    }
+
+    const errors = task.result?.errors;
+    if (Array.isArray(errors) && errors.length > 0) {
+      return errors[0];
+    }
+
+    return undefined;
+  }
+
   formatError(err) {
     if (err instanceof Error) {
+      return err.message.split('\n').slice(0, 5).join('\n');
+    }
+    if (typeof err === 'object' && err !== null && 'message' in err && typeof err.message === 'string') {
       return err.message.split('\n').slice(0, 5).join('\n');
     }
     return String(err);

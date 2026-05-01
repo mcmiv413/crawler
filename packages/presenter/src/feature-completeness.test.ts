@@ -22,7 +22,6 @@ import {
   createTestGameStateInCombat,
   createTestGameStateWithAbility,
   createTestEnemy,
-  createTestNemesis,
   createTestRunState,
   createUnequipCommand,
   createSwapWeaponsCommand,
@@ -350,44 +349,6 @@ describe('Feature Completeness: Permadeath', () => {
   });
 });
 
-describe('Feature Completeness: Nemesis System', () => {
-  it('full chain: die to enemy → nemesis promoted → visible in town view → affects corruption', () => {
-    const state = createTestGameStateInCombat();
-    const enemy = [...state.run!.enemies.values()][0]!;
-    // Force first death (guaranteed promotion)
-    const stateNoNemeses: GameState = {
-      ...state,
-      player: { ...state.player, floor: 2 },
-      world: { ...state.world, nemeses: [] },
-    };
-    const r = rng();
-
-    const deathResult = handlePlayerDeath(stateNoNemeses, enemy.id, 'killed', r, 0);
-
-    // Link 2: nemesis created
-    expect(deathResult.state.world.nemeses.length).toBeGreaterThan(0);
-    const nemesis = deathResult.state.world.nemeses[0]!;
-    expect(nemesis.isActive).toBe(true);
-
-    // Link 3: NEMESIS_PROMOTED event formatted
-    const promoEvents = deathResult.events.filter(e => e.type === 'NEMESIS_PROMOTED');
-    expect(promoEvents).toHaveLength(1);
-    expect(formatEvent(promoEvents[0]!)).not.toBeNull();
-
-    // Link 3: visible in town view
-    const townState: GameState = { ...deathResult.state, phase: 'town' };
-    const view = buildGameView(townState);
-    expect(view.town!.nemeses.length).toBeGreaterThan(0);
-
-    // Link 4: affects corruption via run consequences
-    const { state: afterConsequences } = applyRunConsequences(
-      deathResult.state,
-      { ...EMPTY_RUN_METRICS, causeOfEnd: 'death' },
-    );
-    expect(afterConsequences.world.town.corruption).toBeGreaterThan(state.world.town.corruption);
-  });
-});
-
 describe('Feature Completeness: Town State', () => {
   it('full chain: run outcome → town stats change → atmosphere text updates → NPC availability', () => {
     const shopkeeper: NpcState = {
@@ -511,22 +472,16 @@ describe('Feature Completeness: damageTaken metric', () => {
 });
 
 describe('Feature Completeness: Factions', () => {
-  it('full chain: nemesis exists → faction power increases → visible in view → trend shown', () => {
-    const nemesis = createTestNemesis({ isActive: true, sourceTemplateId: 'goblin_skirmisher' });
-    const state = createTestGameState({
-      world: { nemeses: [nemesis] },
-    });
+  it('full chain: factions visible in view with status and power band shown', () => {
+    const state = createTestGameState();
 
-    // Link 3: visible in town view with trend
+    // Link 3: visible in town view with mechanical faction progress
     const view = buildGameView({ ...state, phase: 'town' });
     expect(view.town!.factions.length).toBeGreaterThan(0);
     for (const faction of view.town!.factions) {
-      expect(['rising', 'falling', 'stable']).toContain(faction.trend);
+      expect(['leaderless', 'led', 'broken']).toContain(faction.status);
+      expect(['broken', 'weak', 'stable', 'strong', 'dominant']).toContain(faction.powerBand);
     }
-
-    // Link 3: nemesis visible in Known Threats
-    expect(view.town!.nemeses.length).toBeGreaterThan(0);
-    expect(view.town!.nemeses[0]!.killedByWeaponType).toBeDefined();
   });
 });
 
@@ -1050,14 +1005,16 @@ describe('Feature Completeness: World Modifiers (Corruption/Fear Impact)', () =>
 });
 
 describe('Feature Completeness: Faction War (Multiple Factions)', () => {
-  it('full chain: faction power changes → disposition affects → visible in town', () => {
+  it('full chain: faction power changes → presenter exposes faction and ogre progress', () => {
     const state = createTestGameState({ phase: 'town' });
 
     const view = buildGameView(state);
     expect(view.town?.factions.length ?? 0).toBeGreaterThanOrEqual(2);
     for (const faction of view.town?.factions ?? []) {
-      expect(['rising', 'falling', 'stable']).toContain(faction.trend);
+      expect(faction.worldEffectText).toContain('pressure');
+      expect(faction.townEffectText).toContain('Town effect per run');
     }
+    expect(view.player.ogreProgress.totalFactions).toBeGreaterThan(0);
   });
 });
 

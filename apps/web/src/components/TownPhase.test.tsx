@@ -11,6 +11,41 @@ import { render, screen, fireEvent } from '@testing-library/react';
 import { TownPhase } from './TownPhase.js';
 import type { GameView, ShopItemView, FactionView, NpcView } from '@dungeon/presenter';
 
+const baseFaction: FactionView = {
+  id: 'goblin_warband',
+  name: 'Goblin Warband',
+  description: 'Disorganized raiders motivated by greed and chaos.',
+  lore: 'They gather in the warrens below.',
+  power: 40,
+  disposition: -30,
+  status: 'led',
+  powerBand: 'stable',
+  leader: {
+    state: 'emerged',
+    name: 'Brakka',
+    title: 'Knife-King',
+    templateId: 'goblin_warlord',
+    spriteName: 'goblin king',
+    emergedOnRun: 2,
+    emergedOnDepth: 3,
+  },
+  membersKilledByPlayer: 3,
+  leadersKilledByPlayer: 0,
+  playerDeathsCaused: 1,
+  worldEffectText: 'Stable dungeon pressure: members spawn at normal rates and fight at baseline strength. Active leader pressure is in play.',
+  townEffectText: 'Town effect per run: prosperity -1, corruption +1.',
+  currentDungeonEnemies: [],
+};
+
+const baseOgreProgress = {
+  status: 'sealed' as const,
+  selectedSpawnDepth: null,
+  eligibleSpawnDepths: [],
+  brokenFactions: 1,
+  totalFactions: 4,
+  summaryText: '1/4 factions broken. Break 3 more to reveal the Dungeon Ogre.',
+};
+
 // Mock fixtures
 const createMockGameView = (overrides?: Partial<GameView>): GameView => ({
   gameId: 'test-game',
@@ -40,8 +75,8 @@ const createMockGameView = (overrides?: Partial<GameView>): GameView => ({
     equippedItems: [],
     statBreakdowns: {},
     activeQuests: [],
-    nemesisInfo: null,
-    factionStandings: [],
+    factionProgress: [],
+    ogreProgress: baseOgreProgress,
   },
   map: null,
   combatLog: [],
@@ -66,23 +101,15 @@ const createMockGameView = (overrides?: Partial<GameView>): GameView => ({
       prosperityDelta: 5,
       fearDelta: -2,
       corruptionDelta: 0,
-      nemesisPromoted: false,
+
       equipmentLost: [],
     },
     prepAdvice: ['Stock up on potions'],
     lastRetreatFloor: undefined,
-    factions: [
-      {
-        id: 'goblin_warband',
-        name: 'Goblin Warband',
-        power: 40,
-        disposition: -30,
-        trend: 'stable',
-      },
-    ] as FactionView[],
+    factions: [baseFaction] as FactionView[],
+    factionPressureSummary: '1 led · 2 leaderless · 1 broken.',
+    ogreProgress: baseOgreProgress,
     rumors: [],
-    slainNemeses: [],
-    nemeses: [],
     npcs: [
       {
         id: 'npc_healer',
@@ -94,6 +121,12 @@ const createMockGameView = (overrides?: Partial<GameView>): GameView => ({
         id: 'npc_shopkeeper',
         name: 'Torben',
         role: 'shopkeeper',
+        available: true,
+      },
+      {
+        id: 'npc_informant',
+        name: 'Scratch',
+        role: 'informant',
         available: true,
       },
     ] as NpcView[],
@@ -134,7 +167,6 @@ const createMockGameView = (overrides?: Partial<GameView>): GameView => ({
   deathSummary: null,
   deathContext: null,
   inspectableEntities: [],
-  recentlyDefeatedNemesis: null,
   debugMode: false,
   animatedEvents: [],
   ...overrides,
@@ -274,8 +306,8 @@ describe('TownPhase Component', () => {
         />
       );
 
-      // Factions section should be accessible
-      expect(screen.getByRole('heading', { name: /Town/i })).toBeInTheDocument();
+      expect(screen.getByText(/Faction Pressure/i)).toBeInTheDocument();
+      expect(screen.getByText(/1 led · 2 leaderless · 1 broken/i)).toBeInTheDocument();
     });
 
     it('shows empty state when factions array is empty', () => {
@@ -300,11 +332,10 @@ describe('TownPhase Component', () => {
         />
       );
 
-      // Factions are in the town view
-      expect(screen.getByRole('heading', { name: /Town/i })).toBeInTheDocument();
+      expect(screen.getByText(/Faction Pressure/i)).toBeInTheDocument();
     });
 
-    it('displays faction power and disposition', () => {
+    it('displays faction power and ogre progress in the tavern panel', () => {
       const view = createMockGameView();
       render(
         <TownPhase
@@ -320,8 +351,10 @@ describe('TownPhase Component', () => {
         />
       );
 
-      // Town heading should be present (contains faction information)
-      expect(screen.getByRole('heading', { name: /Town/i })).toBeInTheDocument();
+      fireEvent.click(screen.getByRole('button', { name: /Tavern →/i }));
+      expect(screen.getByText(/Goblin Warband — Power 40\/100 · Stable/i)).toBeInTheDocument();
+      expect(screen.getByText(/The Dungeon Ogre/i)).toBeInTheDocument();
+      expect(screen.getByText(/Break 3 more to reveal the Dungeon Ogre/i)).toBeInTheDocument();
     });
   });
 

@@ -3,10 +3,9 @@ import type { Player } from './player.js';
 import type { EnemyInstance } from './enemy.js';
 import type { ObjectInstance } from './objects.js';
 import type { DungeonFloor } from './map.js';
-import type { TownState, NpcState, ShopInventory, FactionState, Quest } from './town.js';
+import type { TownState, NpcState, ShopInventory, FactionState, Quest, DungeonOgreState } from './town.js';
 import type { AnyItemTemplate } from './items.js';
 import type { DomainEvent } from '../events/index.js';
-import type { NemesisRecord } from './nemesis.js';
 
 export interface StoredFloor {
   readonly floor: DungeonFloor;
@@ -38,8 +37,8 @@ export interface WorldState {
   readonly eventHistory: readonly DomainEvent[];
   readonly totalRuns: number;
   readonly deepestFloor: number;
-  readonly nemeses: readonly NemesisRecord[];
   readonly factions: readonly FactionState[];
+  readonly dungeonOgre: DungeonOgreState;
   readonly unlockedBlueprints: readonly string[];
   readonly highestRarityFound: 'common' | 'uncommon' | 'rare' | 'epic' | 'legendary';
 }

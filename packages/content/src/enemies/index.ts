@@ -3,6 +3,7 @@ import type { EnemyTemplate } from '@dungeon/contracts';
 import { ashBeetle } from './ash-beetle.js';
 import { boneShaman } from './bone-shaman.js';
 import { briarNeedler } from './briar-needler.js';
+import { broodMatriarch } from './brood-matriarch.js';
 import { caveRat } from './cave-rat.js';
 import { chainSpecter } from './chain-specter.js';
 import { crystalGolem } from './crystal-golem.js';
@@ -11,9 +12,12 @@ import { emberBat } from './ember-bat.js';
 import { fireImp } from './fire-imp.js';
 import { frostWraith } from './frost-wraith.js';
 import { goblinArcher } from './goblin-archer.js';
+import { goblinWarlord } from './goblin-warlord.js';
+import { lichCommander } from './lich-commander.js';
 import { mireToad } from './mire-toad.js';
 import { mossGolem } from './moss-golem.js';
 import { pitSpider } from './pit-spider.js';
+import { shadowHierophant } from './shadow-hierophant.js';
 import { shadowLurker } from './shadow-lurker.js';
 import { shardPriest } from './shard-priest.js';
 import { skeletonWarrior } from './skeleton-warrior.js';
@@ -23,6 +27,7 @@ const items: [string, EnemyTemplate][] = [
   [ashBeetle.templateId, ashBeetle],
   [boneShaman.templateId, boneShaman],
   [briarNeedler.templateId, briarNeedler],
+  [broodMatriarch.templateId, broodMatriarch],
   [caveRat.templateId, caveRat],
   [chainSpecter.templateId, chainSpecter],
   [crystalGolem.templateId, crystalGolem],
@@ -31,9 +36,12 @@ const items: [string, EnemyTemplate][] = [
   [fireImp.templateId, fireImp],
   [frostWraith.templateId, frostWraith],
   [goblinArcher.templateId, goblinArcher],
+  [goblinWarlord.templateId, goblinWarlord],
+  [lichCommander.templateId, lichCommander],
   [mireToad.templateId, mireToad],
   [mossGolem.templateId, mossGolem],
   [pitSpider.templateId, pitSpider],
+  [shadowHierophant.templateId, shadowHierophant],
   [shadowLurker.templateId, shadowLurker],
   [shardPriest.templateId, shardPriest],
   [skeletonWarrior.templateId, skeletonWarrior],
@@ -47,7 +55,7 @@ export const ENEMIES_BY_BIOME = buildByBiomeMap(ENEMY_TEMPLATES);
 export const ENEMIES_BY_FACTION = buildByFactionMap(ENEMY_TEMPLATES);
 
 export {
-  ashBeetle, boneShaman, briarNeedler, caveRat, chainSpecter, crystalGolem, dungeonOgre, emberBat, fireImp, frostWraith, goblinArcher, mireToad, mossGolem, pitSpider, shadowLurker, shardPriest, skeletonWarrior,
+  ashBeetle, boneShaman, briarNeedler, broodMatriarch, caveRat, chainSpecter, crystalGolem, dungeonOgre, emberBat, fireImp, frostWraith, goblinArcher, goblinWarlord, lichCommander, mireToad, mossGolem, pitSpider, shadowHierophant, shadowLurker, shardPriest, skeletonWarrior,
 };
 
 // Add custom utilities below this line ↓

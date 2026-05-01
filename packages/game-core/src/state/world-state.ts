@@ -1,6 +1,6 @@
 import type { WorldState, TownState, NpcState, ShopInventory } from '@dungeon/contracts';
 import { entityId } from '@dungeon/contracts';
-import { ECONOMY, CONSUMABLES, WEAPONS, ARMOR, INITIAL_FACTIONS, rustySword, ironMace, shortBow,
+import { ECONOMY, CONSUMABLES, WEAPONS, ARMOR, INITIAL_DUNGEON_OGRE, INITIAL_FACTIONS, rustySword, ironMace, shortBow,
   handAxe, flameDagger, venomBlade, warBow, stoneHammer, frostAxe, ironSword, leatherVest,
   leatherCap, leatherGloves, leatherBoots, copperRing, chainShirt, ironHelm, chainGauntlets } from '@dungeon/content';
 import type { SeededRNG } from '../utils/rng.js';
@@ -14,8 +14,8 @@ export function createInitialWorldState(rng: SeededRNG): WorldState {
     eventHistory: [],
     totalRuns: 0,
     deepestFloor: 0,
-    nemeses: [],
     factions: [...INITIAL_FACTIONS],
+    dungeonOgre: INITIAL_DUNGEON_OGRE,
     unlockedBlueprints: [],
     highestRarityFound: 'common',
   };

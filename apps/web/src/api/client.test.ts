@@ -45,8 +45,15 @@ const BASE_PLAYER = {
   equippedItems: [] as never[],
   statBreakdowns: {} as Record<string, never>,
   activeQuests: [] as never[],
-  nemesisInfo: null,
-  factionStandings: [] as never[],
+  factionProgress: [] as never[],
+  ogreProgress: {
+    status: 'sealed' as const,
+    selectedSpawnDepth: null,
+    eligibleSpawnDepths: [] as never[],
+    brokenFactions: 0,
+    totalFactions: 4,
+    summaryText: '0/4 factions broken. Break 4 more to reveal the Dungeon Ogre.',
+  },
 };
 
 class GameViewBuilder {
@@ -97,7 +104,7 @@ class GameViewBuilder {
       deathSummary: null,
       deathContext: null,
       inspectableEntities: [],
-      recentlyDefeatedNemesis: null,
+
       debugMode: false,
       animatedEvents: [],
     };

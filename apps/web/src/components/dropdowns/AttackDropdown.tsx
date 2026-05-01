@@ -83,14 +83,7 @@ export function AttackDropdown({
                   }}
                 />
               )}
-              {enemy.nemesisName ? (
-                <>
-                  <span className={styles.nemesisBadge}>⭐</span>
-                  <span>{enemy.nemesisName}</span>
-                </>
-              ) : (
-                <span>{enemy.name}</span>
-              )}
+              <span>{enemy.name}</span>
             </div>
 
             <div className={styles.targetStats}>

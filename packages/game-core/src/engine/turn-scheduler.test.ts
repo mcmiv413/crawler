@@ -542,67 +542,6 @@ describe('processEnemyTurns', () => {
       expect(farAlerted).toBe(false);
     });
 
-    it('triggers NEMESIS_ENCOUNTERED event when nemesis becomes alerted', () => {
-      const nemesisEnemy = createTestEnemy({
-        id: entityId('nemesis'), position: { x: 2, y: 0 },
-        stats: { maxHealth: 30, health: 30, attack: 8, defense: 3, accuracy: 70, evasion: 15, speed: 100 },
-        isAlerted: false,
-        nemesisId: entityId('nemesis_1'),
-      });
-
-      const state = makeTurnState({ x: 0, y: 0 }, [nemesisEnemy]);
-      const rng = new SeededRNG(1);
-
-      const result = processEnemyTurns(state, rng);
-
-      // Should have NEMESIS_ENCOUNTERED event
-      const nemesisEvent = result.events.find((e) => e.type === 'NEMESIS_ENCOUNTERED');
-      expect(nemesisEvent).toBeDefined();
-      expect(nemesisEvent?.nemesisId).toBe('nemesis_1');
-      expect(nemesisEvent?.nemesisName).toBe(nemesisEnemy.name);
-    });
-
-    it('increments nemesis encounter count in world state', () => {
-      const nemesisEnemy = createTestEnemy({
-        id: entityId('nemesis'), position: { x: 2, y: 0 },
-        stats: { maxHealth: 30, health: 30, attack: 8, defense: 3, accuracy: 70, evasion: 15, speed: 100 },
-        isAlerted: false,
-        nemesisId: entityId('nemesis_1'),
-      });
-
-      let state = makeTurnState({ x: 0, y: 0 }, [nemesisEnemy]);
-      state = {
-        ...state,
-        world: {
-          ...state.world,
-          nemeses: [{
-        id: entityId('nemesis_1'),
-        name: 'Test Nemesis',
-        title: 'the Fierce',
-        sourceTemplateId: 'goblin',
-        rank: 1,
-        tier: 2,
-        stats: { maxHealth: 100, health: 100, attack: 15, defense: 5, accuracy: 75, evasion: 20, speed: 100 },
-        traits: [],
-        weaknesses: [],
-        killEventId: null,
-        encounterCount: 0,
-        isActive: true,
-        killCount: 0,
-        killedByWeaponType: null,
-        floorOfAscension: 2,
-        biomeOfAscension: 'dungeon',
-      }],
-        },
-      };
-
-      const rng = new SeededRNG(1);
-      const result = processEnemyTurns(state, rng);
-
-      // Check nemesis encounter count was incremented
-      const updatedNemesis = result.state.world.nemeses.find((n) => n.id === 'nemesis_1');
-      expect(updatedNemesis?.encounterCount).toBe(1);
-    });
   });
 
   describe('Stun and cooldown interactions', () => {

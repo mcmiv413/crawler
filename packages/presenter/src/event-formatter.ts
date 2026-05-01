@@ -110,30 +110,6 @@ const EVENT_FORMATTERS = {
     timestamp: event.timestamp,
   }),
 
-  'NEMESIS_ENCOUNTERED': (event) => ({
-    text: `⚠ ${event.nemesisName} has found you!`,
-    type: 'info',
-    timestamp: event.timestamp,
-  }),
-
-  'NEMESIS_PROMOTED': (event) => ({
-    text: `A nemesis rises: ${event.nemesisName} — a new threat lurks in the dungeon!`,
-    type: 'info',
-    timestamp: event.timestamp,
-  }),
-
-  'NEMESIS_SLAIN': (event) => {
-    const parts: string[] = [
-      `☠ ${event.nemesisName} has been vanquished!`,
-      ...(event.lootItemName ? [`Drops: ${event.lootItemName}`] : []),
-      ...(event.blueprintUnlocked ? [`Enchantment unlocked: ${event.blueprintUnlocked}`] : []),
-    ];
-    return {
-      text: parts.join(' · '),
-      type: 'death',
-      timestamp: event.timestamp,
-    };
-  },
 
   'LOOT_DROPPED': (event) => ({
     text: `Inventory full — ${event.itemName} from ${event.enemyName} was lost.`,
@@ -328,6 +304,48 @@ const EVENT_FORMATTERS = {
       timestamp: event.timestamp,
     };
   },
+
+  'FACTION_POWER_CHANGED': (event) => ({
+    text: `${event.factionName} power ${event.delta >= 0 ? 'rose' : 'fell'} to ${event.newPower} (${event.newBand}).`,
+    type: 'info',
+    timestamp: event.timestamp,
+  }),
+
+  'FACTION_LEADER_EMERGED': (event) => ({
+    text: `${event.leaderName}, ${event.leaderTitle}, now leads the ${event.factionName}.`,
+    type: 'info',
+    timestamp: event.timestamp,
+  }),
+
+  'FACTION_LEADER_SLAIN': (event) => ({
+    text: `${event.leaderName}, ${event.leaderTitle}, has been slain.`,
+    type: 'death',
+    timestamp: event.timestamp,
+  }),
+
+  'FACTION_BROKEN': (event) => ({
+    text: `${event.factionName} has been broken.`,
+    type: 'info',
+    timestamp: event.timestamp,
+  }),
+
+  'DUNGEON_OGRE_EMERGED': (event) => ({
+    text: `The Dungeon Ogre stirs below. It has claimed floor ${event.selectedSpawnDepth} from depths ${event.eligibleSpawnDepths.join(', ')}.`,
+    type: 'info',
+    timestamp: event.timestamp,
+  }),
+
+  'DUNGEON_OGRE_SLAIN': (event) => ({
+    text: `The Dungeon Ogre has been slain!`,
+    type: 'death',
+    timestamp: event.timestamp,
+  }),
+
+  'GAME_WON': (event) => ({
+    text: `Victory! You conquered the dungeon on floor ${event.floor}.`,
+    type: 'info',
+    timestamp: event.timestamp,
+  }),
 
   'PLAYER_MOVED': () => null,
   'ENEMY_MOVED': () => null,

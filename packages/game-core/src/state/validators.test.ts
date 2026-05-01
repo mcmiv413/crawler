@@ -332,13 +332,6 @@ describe('state validators', () => {
       expect(errors.some(e => e.path === 'deepestFloor')).toBe(true);
     });
 
-    it('rejects world with non-array nemeses', () => {
-      const state = createTestGameState();
-      const invalid = { ...state.world, nemeses: {} as any };
-      const errors = validateWorldState(invalid);
-      expect(errors.some(e => e.path === 'nemeses')).toBe(true);
-    });
-
     it('rejects world with non-array factions', () => {
       const state = createTestGameState();
       const invalid = { ...state.world, factions: {} as any };

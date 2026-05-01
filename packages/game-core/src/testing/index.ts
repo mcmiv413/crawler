@@ -6,7 +6,6 @@ export {
   BASE_TEST_STATS,
   createTestPlayer,
   createTestEnemy,
-  createTestNemesis,
   createTestRunState,
   createTestGameStateInCombat,
   createTestGameState,

@@ -608,14 +608,31 @@ describe('handleAttack', () => {
     expect((attackEvent as any).hit).toBe(false);
   });
 
-  it('victory: kill boss on floor >= 5', () => {
+  it('victory: kill the dungeon ogre', () => {
     const state = createTestGameStateInCombat();
-    // Set floor depth to 5 and enemy to boss tier (>= 4) with 1 HP
     const enemies = new Map(state.run!.enemies);
     const [key, enemy] = [...enemies.entries()][0]!;
-    enemies.set(key, { ...enemy, tier: 4, stats: { ...enemy.stats, health: 1 } });
+    enemies.set(key, {
+      ...enemy,
+      id: entityId('dungeon_ogre'),
+      templateId: 'dungeon_ogre',
+      name: 'Dungeon Ogre',
+      tier: 5,
+      stats: { ...enemy.stats, health: 1 },
+    });
     const bossState: GameState = {
       ...state,
+      world: {
+        ...state.world,
+        dungeonOgre: {
+          id: 'dungeon_ogre',
+          status: 'emerged',
+          emergedAfterRun: 1,
+          emergedAtDepth: 5,
+          eligibleSpawnDepths: [5, 6, 7],
+          selectedSpawnDepth: 5,
+        },
+      },
       run: { ...state.run!, enemies, floor: { ...state.run!.floor, depth: 5 } },
     };
 

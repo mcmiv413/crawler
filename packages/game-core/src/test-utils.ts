@@ -2,9 +2,9 @@
  * Shared test factories for game-core unit tests.
  * Import via relative path — not exported from the package barrel.
  */
-import type { Player, EnemyInstance, NemesisRecord, GameState, GamePhase, WorldState, PlayerStats, PlayerAbility, RunState, WeaponMastery, Position, EntityId, AnyItemTemplate } from '@dungeon/contracts';
+import type { Player, EnemyInstance, GameState, GamePhase, WorldState, PlayerStats, PlayerAbility, RunState, WeaponMastery, Position, EntityId, AnyItemTemplate } from '@dungeon/contracts';
 import { entityId, EMPTY_WEAPON_MASTERY, EMPTY_RUN_METRICS } from '@dungeon/contracts';
-import { BASE_PLAYER_STATS, INITIAL_FACTIONS, ITEM_BY_ID } from '@dungeon/content';
+import { BASE_PLAYER_STATS, INITIAL_DUNGEON_OGRE, INITIAL_FACTIONS, ITEM_BY_ID } from '@dungeon/content';
 import { ALL_ABILITY_DEFINITIONS } from './abilities/definitions/index.js';
 
 export const BASE_TEST_STATS: PlayerStats = { ...BASE_PLAYER_STATS };
@@ -72,28 +72,6 @@ export function createTestEnemy(overrides?: Partial<EnemyInstance>): EnemyInstan
     lastKnownPlayerPos: null,
     ambientState: 'roaming',
     ambientStateAge: 0,
-    ...overrides,
-  };
-}
-
-export function createTestNemesis(overrides?: Partial<NemesisRecord>): NemesisRecord {
-  return {
-    id: entityId('n1'),
-    name: 'Vorreth',
-    title: 'the Unbroken',
-    sourceTemplateId: 'goblin_skirmisher',
-    rank: 1,
-    tier: 2,
-    stats: { maxHealth: 30, health: 30, attack: 8, defense: 3, accuracy: 70, evasion: 15, speed: 120 },
-    traits: [],
-    weaknesses: [],
-    killEventId: null,
-    encounterCount: 0,
-    isActive: true,
-    killCount: 1,
-    floorOfAscension: 2,
-    biomeOfAscension: 'crypt',
-    killedByWeaponType: null,
     ...overrides,
   };
 }
@@ -179,8 +157,8 @@ export function createTestGameState(overrides?: {
       eventHistory: [],
       totalRuns: 0,
       deepestFloor: 0,
-      nemeses: [],
       factions: [...INITIAL_FACTIONS],
+      dungeonOgre: INITIAL_DUNGEON_OGRE,
       unlockedBlueprints: [],
       highestRarityFound: 'common' as const,
       ...overrides?.world,
