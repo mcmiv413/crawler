@@ -71,7 +71,7 @@ export function processEnemyKill(
     entityId: enemy.id,
     killerId: newState.player.id,
     entityName: enemy.name,
-    timestamp: Date.now(),
+    timestamp: newState.turnNumber,
     turnNumber: newState.turnNumber,
   }];
 
@@ -92,7 +92,7 @@ export function processEnemyKill(
       enemyId: enemy.id,
       enemyName: enemy.name,
       hpRestored: lifeStealHp,
-      timestamp: Date.now(),
+      timestamp: newState.turnNumber,
       turnNumber: newState.turnNumber,
     }];
   }
@@ -119,7 +119,7 @@ export function processEnemyKill(
 
   // 8. Update faction progression
   const eventContext = {
-    timestamp: Date.now(),
+    timestamp: newState.turnNumber,
     turnNumber: newState.turnNumber,
     depth: newState.run?.floor.depth ?? state.player.floor,
   };
@@ -137,7 +137,7 @@ export function processEnemyKill(
       runId: victoryRun.runId,
       reason: 'victory',
       floorsCleared: victoryRun.floor.depth,
-      timestamp: Date.now(),
+      timestamp: newState.turnNumber,
       turnNumber: newState.turnNumber,
     }];
   } else if (leaderFaction !== undefined) {
@@ -241,7 +241,7 @@ export function handleAttack(
         critical: false,
         position: targetEnemy.position,
         reason,
-        timestamp: Date.now(),
+        timestamp: state.turnNumber,
         turnNumber: state.turnNumber,
       }],
       runEnded: false,
@@ -330,7 +330,7 @@ export function handleAttack(
     position: targetEnemy.position,
     reason: debugReason,
     missReason: result.missReason,
-    timestamp: Date.now(),
+    timestamp: state.turnNumber,
     turnNumber: state.turnNumber,
   }];
 
@@ -361,7 +361,7 @@ export function handleAttack(
           enemyEvasion: lastEnemy.stats.evasion,
           rngSeed: newState.seed,
           streakLength: newMissCount,
-          timestamp: Date.now(),
+          timestamp: newState.turnNumber,
           turnNumber: newState.turnNumber,
         };
         events = [...events, debugEvent];
@@ -405,7 +405,7 @@ export function handleAttack(
         bypassResistance: false,
         isCrit: result.criticalHit,
         critMultiplier: result.criticalHit === true ? COMBAT.critMultiplier : 1,
-        timestamp: Date.now(),
+        timestamp: newState.turnNumber,
         turnNumber: newState.turnNumber,
       };
       events = [...events, debugEvent];
@@ -428,7 +428,7 @@ export function handleAttack(
         statusId,
         duration,
         sourceId: state.player.id,
-        timestamp: Date.now(),
+        timestamp: newState.turnNumber,
         turnNumber: newState.turnNumber,
       }];
     }

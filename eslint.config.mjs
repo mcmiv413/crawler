@@ -280,7 +280,7 @@ export default tseslint.config(
       "@typescript-eslint/require-await": "error",
       "@typescript-eslint/no-unnecessary-type-assertion": "error",
       "vitest/no-focused-tests": "error",
-      "vitest/no-disabled-tests": "warn",
+      "vitest/no-disabled-tests": "error",
       "no-restricted-syntax": ["error", NO_MATH_RANDOM],
       "no-console": "off",
     },

@@ -301,7 +301,7 @@ export function decideAmbientAction(
           oldState: currentState,
           newState: nextState,
           reason: rule.trigger,
-          timestamp: Date.now(),
+          timestamp: state.turnNumber,
           turnNumber: state.turnNumber,
         };
         break; // Only transition once per turn

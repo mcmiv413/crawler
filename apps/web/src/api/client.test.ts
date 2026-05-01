@@ -6,6 +6,7 @@ import {
   fetchGameView,
   sendCommand,
   restoreGame,
+  ApiError,
   GameNotFoundError,
   fetchNpcDialogue,
   type CreateGameResponse,
@@ -339,6 +340,28 @@ describe('API Client', () => {
       expect(result.gameId).toBeDefined();
       expect(result.view).toBeDefined();
       expect(result.serializedState).toBeDefined();
+    });
+
+    it('throws ApiError with status and code for structured restore failures', async () => {
+      const serializedState = '{"version":"1","state":{"player":{"health":50}}}';
+      const mockFetch = vi.mocked(global.fetch);
+      mockFetch.mockResolvedValueOnce(
+        mockResponse(
+          {
+            error: 'Invalid save file',
+            code: 'INVALID_SAVE_FILE',
+            message: 'Save payload could not be parsed.',
+          },
+          { ok: false, status: 400, statusText: 'Bad Request' },
+        ),
+      );
+
+      await expect(restoreGame(serializedState)).rejects.toMatchObject({
+        name: 'ApiError',
+        status: 400,
+        code: 'INVALID_SAVE_FILE',
+        message: 'Save payload could not be parsed.',
+      } satisfies Partial<ApiError>);
     });
   });
 

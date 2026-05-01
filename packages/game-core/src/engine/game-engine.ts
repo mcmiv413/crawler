@@ -71,12 +71,12 @@ export class GameEngine implements IGameEngine {
 
     // Special handling: enter dungeon generates a new floor
     if (command.type === 'TOWN_ACTION' && command.action === 'enter_dungeon') {
-      return this.enterDungeon(state, rng, command.startDepth);
+      return this.finalizeCommandResult(this.enterDungeon(state, rng, command.startDepth), false);
     }
 
     // Special handling: ascend command
     if (command.type === 'ASCEND' && state.run) {
-      return this.ascendFloor(state, [], rng);
+      return this.finalizeCommandResult(this.ascendFloor(state, [], rng), false);
     }
 
     // Special handling: descend/ascend stairs on move
@@ -86,25 +86,40 @@ export class GameEngine implements IGameEngine {
         const playerKey = posKey(result.state.player.position);
         const cell = result.state.run.floor.cells.get(playerKey);
         if (cell?.tile.type === 'stairs_down') {
-          return this.descendFloor(result.state, rng, result.events);
+          return this.finalizeCommandResult(this.descendFloor(result.state, rng, result.events), false);
         }
         if (cell?.tile.type === 'stairs_up' && result.state.run!.floorHistory.length > 0) {
           // Auto-ascend only when there's a prior floor to return to.
           // On floor 1 (no history), stairs_up is the entrance — use RETREAT to leave.
-          return this.ascendFloor(result.state, result.events, rng);
+          return this.finalizeCommandResult(this.ascendFloor(result.state, result.events, rng), false);
         }
       }
-      return this.applyConsequencesIfRunEnded(result);
+      return this.finalizeCommandResult(result, false);
     }
 
-    const result = handleCommand(state, command, rng);
+    return this.finalizeCommandResult(handleCommand(state, command, rng), true);
+  }
+
+  private finalizeCommandResult(
+    result: CommandResult,
+    evaluateQuestProgress: boolean,
+  ): CommandResult {
     const afterConsequences = this.applyConsequencesIfRunEnded(result);
-    
-    // Evaluate quest progress after command execution
+
+    if (evaluateQuestProgress !== true) {
+      return {
+        state: this.appendEventHistory(afterConsequences.state, afterConsequences.events),
+        events: afterConsequences.events,
+        runEnded: afterConsequences.runEnded,
+      };
+    }
+
     const questEval = evaluateAllQuestProgress(afterConsequences.state);
+    const events = [...afterConsequences.events, ...questEval.events];
+
     return {
-      state: questEval.state,
-      events: [...afterConsequences.events, ...questEval.events],
+      state: this.appendEventHistory(questEval.state, events),
+      events,
       runEnded: afterConsequences.runEnded,
     };
   }
@@ -122,11 +137,28 @@ export class GameEngine implements IGameEngine {
     if (runMetrics === undefined) {
       return result;
     }
-    const consequenceResult = applyRunConsequences(result.state, runMetrics);
+    const consequenceResult = applyRunConsequences(result.state, runMetrics, result.events);
     return {
       state: consequenceResult.state,
       events: [...result.events, ...consequenceResult.events],
       runEnded: result.runEnded,
+    };
+  }
+
+  private appendEventHistory(
+    state: GameState,
+    events: readonly DomainEvent[],
+  ): GameState {
+    if (events.length === 0) {
+      return state;
+    }
+
+    return {
+      ...state,
+      world: {
+        ...state.world,
+        eventHistory: [...state.world.eventHistory, ...events],
+      },
     };
   }
 
@@ -179,7 +211,7 @@ export class GameEngine implements IGameEngine {
     events = [...events, {
       type: 'RUN_STARTED',
       runId,
-      timestamp: Date.now(),
+      timestamp: state.turnNumber,
       turnNumber: state.turnNumber,
     }];
 
@@ -187,7 +219,7 @@ export class GameEngine implements IGameEngine {
       type: 'PHASE_CHANGED',
       from: 'town',
       to: 'dungeon',
-      timestamp: Date.now(),
+      timestamp: state.turnNumber,
       turnNumber: state.turnNumber,
     }];
 
@@ -195,7 +227,7 @@ export class GameEngine implements IGameEngine {
       type: 'FLOOR_ENTERED',
       depth,
       biomeId: floor.biomeId,
-      timestamp: Date.now(),
+      timestamp: state.turnNumber,
       turnNumber: state.turnNumber,
     }];
 
@@ -257,7 +289,7 @@ export class GameEngine implements IGameEngine {
         state.world,
         previousDeepestFloor,
         newDepth,
-        { timestamp: Date.now(), turnNumber: state.turnNumber, depth: newDepth },
+        { timestamp: state.turnNumber, turnNumber: state.turnNumber, depth: newDepth },
       );
       worldForDepth = pressureResult.world;
       events = [...events, ...pressureResult.events];
@@ -307,7 +339,7 @@ export class GameEngine implements IGameEngine {
       type: 'FLOOR_ENTERED',
       depth: newDepth,
       biomeId: biome.biomeId,
-      timestamp: Date.now(),
+      timestamp: state.turnNumber,
       turnNumber: state.turnNumber,
     }];
 
@@ -413,7 +445,7 @@ export class GameEngine implements IGameEngine {
       type: 'FLOOR_ENTERED',
       depth: targetDepth,
       biomeId: biome.biomeId,
-      timestamp: Date.now(),
+      timestamp: state.turnNumber,
       turnNumber: state.turnNumber,
     }];
 
@@ -615,7 +647,7 @@ export class GameEngine implements IGameEngine {
       type: 'EQUIPMENT_RECOVERED',
       items: stash.items.map(si => ({ slot: si.slot, itemName: si.item.name })),
       floor: floorDepth,
-      timestamp: Date.now(),
+      timestamp: state.turnNumber,
       turnNumber: state.turnNumber,
     }];
 

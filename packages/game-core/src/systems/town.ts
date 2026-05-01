@@ -79,7 +79,7 @@ export function processEnchantArmor(
     enchantmentId,
     enchantmentName: enchDef.name,
     slot: equipSlot,
-    timestamp: Date.now(),
+    timestamp: state.turnNumber,
     turnNumber: state.turnNumber,
   }];
 
@@ -156,7 +156,7 @@ function processRest(state: GameState): { state: GameState; events: DomainEvent[
     amount: -cost,
     newTotal: state.player.gold - cost,
     reason: 'Healing at town',
-    timestamp: Date.now(),
+    timestamp: state.turnNumber,
     turnNumber: state.turnNumber,
   }];
 

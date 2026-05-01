@@ -29,7 +29,7 @@ export function executeRetreat(state: GameState, rng: SeededRNG): { state: GameS
     runId: state.run!.runId,
     reason: 'retreat',
     floorsCleared: state.player.floor - 1,
-    timestamp: Date.now(),
+    timestamp: state.turnNumber,
     turnNumber: state.turnNumber,
   }];
 
@@ -37,7 +37,7 @@ export function executeRetreat(state: GameState, rng: SeededRNG): { state: GameS
     type: 'PHASE_CHANGED',
     from: 'dungeon',
     to: 'town',
-    timestamp: Date.now(),
+    timestamp: state.turnNumber,
     turnNumber: state.turnNumber,
   }];
 

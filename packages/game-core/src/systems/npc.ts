@@ -91,7 +91,7 @@ export function processTalkNpc(
           questDescription: quest.description,
           rewardGold: quest.reward.amount,
           giverNpcId: npcId,
-          timestamp: Date.now(),
+          timestamp: state.turnNumber,
           turnNumber: state.turnNumber,
         }],
       };

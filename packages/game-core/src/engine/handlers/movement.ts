@@ -49,7 +49,7 @@ export function handleMove(
     type: 'PLAYER_MOVED',
     from: state.player.position,
     to: newPos,
-    timestamp: Date.now(),
+    timestamp: state.turnNumber,
     turnNumber: state.turnNumber,
   }];
 
@@ -89,7 +89,7 @@ export function handleMove(
           rarity: template.rarity,
           hazardType: template.hazardType,
           statusEffect: template.statusEffect,
-          timestamp: Date.now(),
+          timestamp: state.turnNumber,
           turnNumber: state.turnNumber,
         }];
 
@@ -219,7 +219,7 @@ export function handleInteract(
       amount: scaledGold,
       newTotal: goldAfter,
       reason: template.name,
-      timestamp: Date.now(),
+      timestamp: state.turnNumber,
       turnNumber: state.turnNumber,
     }];
   }
@@ -248,7 +248,7 @@ export function handleInteract(
     position: targetPosition,
     healthDelta: template.healthDelta,
     gotLoot,
-    timestamp: Date.now(),
+    timestamp: state.turnNumber,
     turnNumber: state.turnNumber,
   }];
 

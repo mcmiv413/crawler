@@ -2,6 +2,7 @@ import { describe, it, expect } from 'vitest';
 import * as fc from 'fast-check';
 import { GameEngine } from './game-engine.js';
 import { serializeState, deserializeState } from '../state/serialization.js';
+import { createTestGameStateInCombat, createWaitCommand } from '../test-utils.js';
 
 describe('save/load roundtrip property tests', () => {
   it('game state should survive JSON serialization roundtrip', () => {
@@ -84,6 +85,60 @@ describe('save/load roundtrip property tests', () => {
         },
       ),
       { numRuns: 100 },
+    );
+  });
+
+  it('replaying the same saved combat state produces identical serialized state and events', () => {
+    fc.assert(
+      fc.property(
+        fc.integer({ min: 1, max: 20 }),
+        fc.integer({ min: 5, max: 30 }),
+        (playerHealth, enemyAttack) => {
+          const baseState = createTestGameStateInCombat();
+          const [enemy] = baseState.run?.enemies.values() ?? [];
+          if (!enemy || !baseState.run) {
+            return;
+          }
+
+          const initialState = {
+            ...baseState,
+            player: {
+              ...baseState.player,
+              stats: {
+                ...baseState.player.stats,
+                health: playerHealth,
+              },
+            },
+            run: {
+              ...baseState.run,
+              enemies: new Map([
+                ['1,0', {
+                  ...enemy,
+                  stats: {
+                    ...enemy.stats,
+                    attack: enemyAttack,
+                  },
+                }],
+              ]),
+            },
+          };
+          const serializedInitialState = serializeState(initialState);
+
+          const replay = () => {
+            const engine = new GameEngine();
+            const restoredState = deserializeState(serializedInitialState);
+            const result = engine.submitCommand(restoredState, createWaitCommand());
+
+            return {
+              events: JSON.stringify(result.events),
+              serializedState: serializeState(result.state),
+            };
+          };
+
+          expect(replay()).toEqual(replay());
+        },
+      ),
+      { numRuns: 50 },
     );
   });
 

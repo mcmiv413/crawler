@@ -23,7 +23,7 @@ function applyTownDelta(
     field,
     oldValue: oldVal,
     newValue: newVal,
-    timestamp: Date.now(),
+    timestamp: turnNumber,
     turnNumber,
   };
   return { town: { ...town, [field]: newVal }, event };
@@ -33,6 +33,7 @@ function applyTownDelta(
 export function applyRunConsequences(
   state: GameState,
   metrics: RunMetrics,
+  recentEvents: readonly DomainEvent[] = [],
 ): { state: GameState; events: DomainEvent[] } {
   let events: DomainEvent[] = [];
   let town = state.world.town;
@@ -76,7 +77,10 @@ export function applyRunConsequences(
   newState = syncNpcAvailability(newState);
 
   // Evaluate event chains (4D)
-  const chainResult = evaluateEventChains(newState);
+  const chainResult = evaluateEventChains(
+    newState,
+    [...newState.world.eventHistory, ...recentEvents, ...events],
+  );
   newState = chainResult.state;
   events = [...events, ...chainResult.events];
 
@@ -116,11 +120,10 @@ function syncNpcAvailability(state: GameState): GameState {
  */
 export function evaluateEventChains(
   state: GameState,
+  history: readonly DomainEvent[] = state.world.eventHistory,
 ): { state: GameState; events: DomainEvent[] } {
   let events: DomainEvent[] = [];
-  const history = state.world.eventHistory;
   let town = state.world.town;
-  let factions = state.world.factions;
 
   // Chain 1: 3+ deaths in recent history → fear spike
   const recentDeaths = history.slice(-FEAR_ESCALATION.recentEventWindow).filter(e => e.type === 'PLAYER_DIED').length;
@@ -130,16 +133,9 @@ export function evaluateEventChains(
     if (result.event !== null) events = [...events, result.event];
   }
 
-  // Chain 3: A faction at 0 power → their disposition improves (broken/scattered)
-  factions = factions.map(f =>
-    f.power === 0 && f.disposition < -10
-      ? { ...f, disposition: Math.min(-10, f.disposition + 20) }
-      : f,
-  );
-
   const newState: GameState = {
     ...state,
-    world: { ...state.world, town, factions },
+    world: { ...state.world, town },
   };
 
   return { state: newState, events };

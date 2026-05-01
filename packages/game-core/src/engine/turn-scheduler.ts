@@ -85,7 +85,7 @@ export function processEnemyTurns(
             type: 'ENEMY_ALERTED',
             enemyId: updatedEnemy.id,
             enemyName: updatedEnemy.name,
-            timestamp: Date.now(),
+            timestamp: currentState.turnNumber,
             turnNumber: currentState.turnNumber,
           }];
 
@@ -105,7 +105,7 @@ export function processEnemyTurns(
               type: 'ENEMY_ALERTED',
               enemyId: alertedNeighbor.id,
               enemyName: alertedNeighbor.name,
-              timestamp: Date.now(),
+              timestamp: currentState.turnNumber,
               turnNumber: currentState.turnNumber,
             }];
           }
@@ -270,7 +270,7 @@ function executeEnemyAction(
         enemyId: enemy.id,
         from: enemy.position,
         to: action.targetPosition,
-        timestamp: Date.now(),
+        timestamp: state.turnNumber,
         turnNumber: state.turnNumber,
       }];
 
@@ -301,7 +301,7 @@ function executeEnemyAction(
             rarity: hazardTemplate.rarity,
             hazardType: hazardTemplate.hazardType,
             statusEffect: hazardTemplate.statusEffect,
-            timestamp: Date.now(),
+            timestamp: state.turnNumber,
             turnNumber: state.turnNumber,
           }];
 
@@ -312,7 +312,7 @@ function executeEnemyAction(
               entityId: movedEnemy.id,
               killerId: null,
               entityName: movedEnemy.name,
-              timestamp: Date.now(),
+              timestamp: state.turnNumber,
               turnNumber: state.turnNumber,
             }];
           }
@@ -390,7 +390,7 @@ function executeEnemyAction(
         position: state.player.position,
         reason: debugReason,
         missReason: result.missReason,
-        timestamp: Date.now(),
+        timestamp: state.turnNumber,
         turnNumber: state.turnNumber,
       };
 
@@ -416,7 +416,7 @@ function executeEnemyAction(
             enemyEvasion: enemy.stats.evasion,
             rngSeed: newState.seed,
             streakLength: newMissCount,
-            timestamp: Date.now(),
+            timestamp: newState.turnNumber,
             turnNumber: newState.turnNumber,
           };
           resultEvents = [...resultEvents, debugEvent];
@@ -430,7 +430,7 @@ function executeEnemyAction(
           defenderId: state.player.id,
           attackerId: enemy.id,
           attackerName: enemy.name,
-          timestamp: Date.now(),
+          timestamp: state.turnNumber,
           turnNumber: state.turnNumber,
         }];
       }
@@ -469,7 +469,7 @@ function executeEnemyAction(
             targetName: enemy.name,
             damageAmount: thornsResult.finalDamage,
             byPlayerId: state.player.id,
-            timestamp: Date.now(),
+            timestamp: state.turnNumber,
             turnNumber: state.turnNumber,
           };
           resultEvents = [...resultEvents, thornsEvent];

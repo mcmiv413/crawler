@@ -61,17 +61,6 @@ class SpriteRegistry {
     return { image: this.sheet, rect };
   }
 
-  /**
-   * Resolve a sprite with biome-specific fallback chain:
-   *   'tile:<type>:<biomeId>'  → 'tile:<type>'  → null
-   */
-  getTileSprite(tileType: string, biomeId: string): SpriteEntry | null {
-    return (
-      this.getSprite(`tile:${tileType}:${biomeId}`) ??
-      this.getSprite(`tile:${tileType}`) ??
-      null
-    );
-  }
 }
 
 export const spriteRegistry = new SpriteRegistry();

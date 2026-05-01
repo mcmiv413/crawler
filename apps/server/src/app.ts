@@ -3,26 +3,54 @@ import cors from '@fastify/cors';
 import { GameEngine, serializeState, deserializeState } from '@dungeon/core';
 import { buildGameView, formatEvents, buildAnimationSequence } from '@dungeon/presenter';
 import { GameCommandSchema, CreateGameSchema, SchemaVersionMismatchError, SchemaParseError, getSchemaVersionErrorMessage } from '@dungeon/contracts';
-import type { GameCommand, EntityId, GameState, RunMetrics } from '@dungeon/contracts';
+import type { AiService } from '@dungeon/core/ai/ai-service.js';
+import type { GameCommand, EntityId, GameState, IGameRepository, RunMetrics } from '@dungeon/contracts';
 import { CompositeAiService } from './ai/ai-service-composite.js';
 import { processGameCommand } from './game-command/process-command.js';
 import { InMemoryRepository } from './in-memory-repository.js';
 import { registerDebugRoutes } from './routes/debug.js';
 
-export async function buildApp(): Promise<FastifyInstance> {
+interface BuildAppOptions {
+  readonly ai?: AiService;
+  readonly engine?: GameEngine;
+  readonly repo?: IGameRepository;
+}
+
+function buildRestoreResponse(
+  state: GameState,
+  serializedState: string = serializeState(state),
+): { gameId: string; serializedState: string; view: ReturnType<typeof buildGameView> } {
+  return {
+    gameId: state.gameId,
+    view: buildGameView(state),
+    serializedState,
+  };
+}
+
+function getRestoreSerializedState(body: unknown): string | null {
+  const restoreBody = body as { serializedState?: string };
+  if (!restoreBody.serializedState || typeof restoreBody.serializedState !== 'string') {
+    return null;
+  }
+
+  return restoreBody.serializedState;
+}
+
+export async function buildApp(options: BuildAppOptions = {}): Promise<FastifyInstance> {
   const app = Fastify({ logger: true });
   await app.register(cors, { origin: true });
 
-  const engine = new GameEngine();
+  const engine = options.engine ?? new GameEngine();
   const dbPath = process.env.DUNGEON_DB_PATH;
-  let repo;
-  if (dbPath) {
-    const { SqliteRepository } = await import('./sqlite-repository.js');
-    repo = new SqliteRepository(dbPath);
-  } else {
-    repo = new InMemoryRepository();
-  }
-  const ai = new CompositeAiService();
+  const repo = options.repo ?? await (async () => {
+    if (dbPath) {
+      const { SqliteRepository } = await import('./sqlite-repository.js');
+      return new SqliteRepository(dbPath);
+    }
+
+    return new InMemoryRepository();
+  })();
+  const ai = options.ai ?? new CompositeAiService();
 
   const lmHost = process.env['LM_HOST'];
   const lmPort = process.env['LM_PORT'] ?? '1234';
@@ -189,72 +217,66 @@ export async function buildApp(): Promise<FastifyInstance> {
 
   // POST /api/games/restore — restore a game from client-side serialized state
   app.post('/api/games/restore', async (request, reply) => {
-    const body = request.body as {
-      serializedState?: string;
-    };
-    if (!body.serializedState || typeof body.serializedState !== 'string') {
-      return reply.code(400).send({ error: 'Missing serializedState' });
+    const serializedState = getRestoreSerializedState(request.body);
+    if (serializedState === null) {
+      return reply.code(400).send({
+        error: 'Missing serializedState',
+        code: 'MISSING_SERIALIZED_STATE',
+      });
     }
 
+    let state: GameState;
     try {
-      const state = deserializeState(body.serializedState);
-      if (!state.gameId) {
-        return reply.code(400).send({ error: 'Invalid game state' });
-      }
-
-      // Check if game already exists in repo (warm instance)
-      try {
-        const existing = await repo.loadGame(state.gameId as EntityId);
-        if (existing) {
-          // Server already has it — just return the view
-          const view = buildGameView(existing);
-          const existingSerializedState = serializeState(existing);
-          return {
-            gameId: existing.gameId,
-            view,
-            serializedState: existingSerializedState,
-          };
-        }
-      } catch (loadError) {
-        // If server has a corrupted version of this game, we can't load it
-        if (loadError instanceof SchemaVersionMismatchError) {
-          return reply.code(400).send({
-            error: 'Incompatible save file on server',
-            message: getSchemaVersionErrorMessage(loadError.foundVersion),
-          });
-        }
-        if (loadError instanceof SchemaParseError) {
-          return reply.code(400).send({
-            error: 'Corrupted save file on server',
-            message: loadError.message,
-          });
-        }
-        throw loadError;
-      }
-
-      // Cold start: re-hydrate from client state
-      await repo.createGame(state);
-      const view = buildGameView(state);
-      return {
-        gameId: state.gameId,
-        view,
-        serializedState: body.serializedState,
-      };
+      state = deserializeState(serializedState);
     } catch (error) {
       if (error instanceof SchemaVersionMismatchError) {
         return reply.code(400).send({
           error: 'Incompatible save file',
+          code: 'INCOMPATIBLE_SAVE_FILE',
           message: getSchemaVersionErrorMessage(error.foundVersion),
         });
       }
       if (error instanceof SchemaParseError) {
         return reply.code(400).send({
           error: 'Invalid save file',
+          code: 'INVALID_SAVE_FILE',
           message: error.message,
         });
       }
-      return reply.code(400).send({ error: 'Failed to deserialize game state' });
+      throw error;
     }
+
+    if (!state.gameId) {
+      return reply.code(400).send({
+        error: 'Invalid game state',
+        code: 'INVALID_GAME_STATE',
+      });
+    }
+
+    let existing: GameState | null;
+    try {
+      existing = await repo.loadGame(state.gameId as EntityId);
+    } catch {
+      return reply.code(500).send({
+        error: 'Failed to restore existing game state',
+        code: 'RESTORE_WARM_LOAD_FAILED',
+      });
+    }
+
+    if (existing) {
+      return buildRestoreResponse(existing);
+    }
+
+    try {
+      await repo.createGame(state);
+    } catch {
+      return reply.code(500).send({
+        error: 'Failed to restore game state',
+        code: 'RESTORE_CREATE_FAILED',
+      });
+    }
+
+    return buildRestoreResponse(state, serializedState);
   });
 
   // Debug routes (dev only)
@@ -317,4 +339,3 @@ export async function buildApp(): Promise<FastifyInstance> {
 
   return app;
 }
-

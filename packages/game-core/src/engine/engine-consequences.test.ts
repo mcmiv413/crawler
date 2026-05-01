@@ -1,54 +1,83 @@
-import { describe, it, expect } from 'vitest';
+import { describe, expect, it } from 'vitest';
 import { GameEngine } from './game-engine.js';
-import { createTestGameState } from '../test-utils.js';
-import { SeededRNG } from '../utils/rng.js';
+import { createTestGameStateInCombat, createWaitCommand } from '../test-utils.js';
+
+function createPriorDeathEvent(timestamp: number) {
+  return {
+    type: 'PLAYER_DIED' as const,
+    killerId: null,
+    killerName: null,
+    killerSpriteName: null,
+    floor: 1,
+    cause: 'prior death',
+    goldLost: 0,
+    overkillDamage: 0,
+    timestamp,
+    turnNumber: timestamp,
+  };
+}
 
 describe('GameEngine — applyRunConsequences integration', () => {
-  describe('consequences applied when run ends via command', () => {
-    it('applies town deltas on victory', () => {
-      const engine = new GameEngine();
-      const state = createTestGameState();
+  it('uses current command events when evaluating same-run fear escalation', () => {
+    const engine = new GameEngine();
+    const baseState = createTestGameStateInCombat();
+    const [enemy] = baseState.run?.enemies.values() ?? [];
+    expect(enemy).toBeDefined();
 
-      // Simulate game state where player can defeat a boss
-      if (!state.run) return;
+    const state = {
+      ...baseState,
+      player: {
+        ...baseState.player,
+        baseStats: {
+          ...baseState.player.baseStats,
+          maxHealth: 200,
+        },
+        stats: {
+          ...baseState.player.stats,
+          health: 10,
+          maxHealth: 200,
+          defense: 0,
+          evasion: 0,
+        },
+      },
+      world: {
+        ...baseState.world,
+        eventHistory: [
+          createPriorDeathEvent(1),
+          createPriorDeathEvent(2),
+        ],
+        town: {
+          ...baseState.world.town,
+          fear: 30,
+        },
+      },
+      run: {
+        ...baseState.run!,
+        enemies: new Map([
+          ['1,0', {
+            ...enemy!,
+            stats: {
+              ...enemy!.stats,
+              attack: 100,
+              accuracy: 100,
+            },
+          }],
+        ]),
+      },
+    };
 
-      const rng = new SeededRNG(42);
-      const initialTown = state.world.town;
+    const result = engine.submitCommand(state, createWaitCommand());
 
-      // When player defeats boss (depth >= 5, boss enemy), consequences should apply
-      // This is tested via submitCommand integration
-      expect(state.world.town).toBeDefined();
-    });
-
-    it('world state is updated regardless of server call', () => {
-      const engine = new GameEngine();
-      const state = createTestGameState();
-
-      // Engine should apply consequences internally
-      // Not relying on apps/server/src/app.ts to call applyRunConsequences
-      expect(engine).toBeDefined();
-      expect(state.world).toBeDefined();
-    });
-
-    it('consequences trigger on player death', () => {
-      const engine = new GameEngine();
-      const state = createTestGameState();
-
-      if (!state.run) return;
-      const initialTown = state.world.town.prosperity;
-
-      // On death, prosperity should decrease
-      // This should be handled by engine, not server
-      expect(state.world.town.prosperity).toBeDefined();
-    });
-
-    it('event chains are evaluated after consequences', () => {
-      const engine = new GameEngine();
-      const state = createTestGameState();
-
-      // Event chains (3+ deaths, leader kills, faction checks)
-      // should be evaluated by engine internally
-      expect(state.world.eventHistory).toBeDefined();
-    });
+    expect(result.runEnded).toBe(true);
+    expect(result.events).toContainEqual(
+      expect.objectContaining({ type: 'PLAYER_DIED' }),
+    );
+    expect(result.events).toContainEqual(
+      expect.objectContaining({
+        type: 'TOWN_STATE_CHANGED',
+        field: 'fear',
+      }),
+    );
+    expect(result.state.world.town.fear).toBeGreaterThan(state.world.town.fear);
   });
 });

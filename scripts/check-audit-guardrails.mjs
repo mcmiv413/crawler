@@ -76,8 +76,8 @@ const gameCoreFiles = walk('packages/game-core/src').filter(
 for (const relativePath of gameCoreFiles) {
   const lines = read(relativePath).split('\n');
   lines.forEach((line, index) => {
-    if (line.includes('Date.now(') && /timestamp:\s*Date\.now\(\)/.test(line) === false) {
-      failures.push(`${relativePath}:${index + 1} uses Date.now() outside timestamp metadata`);
+    if (line.includes('Date.now(')) {
+      failures.push(`${relativePath}:${index + 1} uses Date.now() in persisted gameplay code`);
     }
   });
 }

@@ -32,7 +32,7 @@ export function evaluateQuestProgress(
       questTitle: readyQuest.title,
       giverNpcId: entityId(readyQuest.giverNpcId),
       message: `${readyQuest.title} is ready to turn in to ${readyQuest.giverNpcId}`,
-      timestamp: Date.now(),
+      timestamp: state.turnNumber,
       turnNumber: state.turnNumber,
     };
 
@@ -147,7 +147,7 @@ export function redeemQuest(
     questTitle: quest.title,
     rewardGold: rewardAmount,
     giverNpcId: entityId(quest.giverNpcId),
-    timestamp: Date.now(),
+    timestamp: state.turnNumber,
     turnNumber: state.turnNumber,
   };
 
