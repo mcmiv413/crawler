@@ -36,46 +36,6 @@ describe('Loot system', () => {
     expect(goldTier5).toBeGreaterThanOrEqual(goldTier1);
   });
 
-  it('nemesis rank 1 provides gold multiplier (Area 4a)', () => {
-    const rng = new SeededRNG(999);
-    const enemy = createEnemy(3);
-
-    const normalGold = rollGoldDrop(enemy, new SeededRNG(999));
-    const nemesisGold = rollGoldDrop(enemy, new SeededRNG(999), 1);
-
-    expect(nemesisGold).toBeGreaterThan(normalGold);
-  });
-
-  it('nemesis rank 2 provides greater gold multiplier than rank 1 (Area 4a)', () => {
-    const enemy = createEnemy(3);
-    const rank1Gold = rollGoldDrop(enemy, new SeededRNG(999), 1);
-    const rank2Gold = rollGoldDrop(enemy, new SeededRNG(999), 2);
-
-    expect(rank2Gold).toBeGreaterThanOrEqual(rank1Gold);
-  });
-
-  it('nemesis rank 3 provides greatest gold multiplier (Area 4a)', () => {
-    const enemy = createEnemy(3);
-    const rank2Gold = rollGoldDrop(enemy, new SeededRNG(999), 2);
-    const rank3Gold = rollGoldDrop(enemy, new SeededRNG(999), 3);
-
-    expect(rank3Gold).toBeGreaterThanOrEqual(rank2Gold);
-  });
-
-  it('nemesis guarantees 100% item drop (Area 4a)', () => {
-    const enemy = createEnemy(2);
-    let dropCount = 0;
-
-    for (let seed = 0; seed < 50; seed++) {
-      const item = rollItemDrop(enemy, new SeededRNG(seed), 2, 1);
-      if (item !== null) dropCount++;
-    }
-
-    // Nemesis rank 1 should guarantee high drop rate across 50 seeds
-    expect(dropCount).toBeGreaterThan(40);
-    expect(dropCount).toBeLessThanOrEqual(50);
-  });
-
   it('item drop returns null or a valid string across multiple seeds', () => {
     // Test 100 seeds to confirm both null and non-null outcomes exist
     let foundNull = false;

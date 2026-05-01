@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import type { PlayerHudView, QuestView, NemesisInfo, FactionStanding } from '@dungeon/presenter';
+import type { PlayerHudView, QuestView, FactionView } from '@dungeon/presenter';
 import { ABILITY_DEFINITIONS, MASTERY_THRESHOLDS } from '@dungeon/content';
 import { ClickableStatGrid } from './ClickableStatGrid.js';
 import { MasteryDetailModal } from './MasteryDetailModal.js';
@@ -246,96 +246,73 @@ function XpProgressSection({ player }: { player: PlayerHudView }) {
   );
 }
 
-function NemesisModal({ nemesis, onClose }: { nemesis: NemesisInfo; onClose: () => void }) {
+function titleCase(value: string): string {
+  return value.replace(/_/g, ' ').replace(/\b\w/g, match => match.toUpperCase());
+}
+
+function FactionProgressSection({ player, onOpenDetails }: { player: PlayerHudView; onOpenDetails: () => void }) {
+  const factions = player.factionProgress;
+
+  if (factions.length === 0) return null;
+
   return (
-    <div
-      style={{
-        position: 'fixed',
-        top: 0,
-        left: 0,
-        right: 0,
-        bottom: 0,
-        background: 'rgba(0,0,0,0.7)',
-        display: 'flex',
-        alignItems: 'center',
-        justifyContent: 'center',
-        zIndex: 1000,
-      }}
-      onClick={onClose}
-    >
-      <div
-        style={{
-          background: '#1a1a2a',
-          border: '2px solid #8a4a4a',
-          borderRadius: '4px',
-          padding: '16px',
-          maxWidth: '400px',
-          color: '#ccc',
-          fontFamily: 'monospace',
-        }}
-        onClick={(e) => e.stopPropagation()}
-      >
-        <div style={{ fontSize: 16, fontWeight: 'bold', color: '#f88', marginBottom: 12 }}>{nemesis.name}</div>
-        <div style={{ display: 'flex', flexDirection: 'column', gap: '8px', fontSize: 12 }}>
-          <div>
-            <div style={{ color: '#888' }}>Title</div>
-            <div>{nemesis.title}</div>
-          </div>
-          <div>
-            <div style={{ color: '#888' }}>Threat Level</div>
-            <div style={{ textTransform: 'capitalize' }}>{nemesis.rarity}</div>
-          </div>
-          <div>
-            <div style={{ color: '#888' }}>Promotion Stage</div>
-            <div>{nemesis.promotionStage}</div>
-          </div>
-          <div>
-            <div style={{ color: '#888' }}>Times Defeated</div>
-            <div style={{ color: '#4f4' }}>{nemesis.defeats}</div>
-          </div>
-          {nemesis.lastSeenFloor !== null && (
-            <div>
-              <div style={{ color: '#888' }}>Last Encountered</div>
-              <div>Floor {nemesis.lastSeenFloor}</div>
-            </div>
-          )}
-          <div>
-            <div style={{ color: '#888' }}>Next Appearance</div>
-            <div>Floor {nemesis.nextPossibleFloor}+</div>
-          </div>
-        </div>
+    <div style={{ marginBottom: 12 }}>
+      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 4 }}>
+        <div style={{ color: '#888', fontSize: 11, fontWeight: 'bold' }}>FACTION PROGRESS</div>
         <button
-          onClick={onClose}
+          onClick={onOpenDetails}
           style={{
-            marginTop: 16,
-            padding: '6px 12px',
-            background: '#2a2a3a',
-            color: '#ccc',
-            border: '1px solid #444',
+            padding: '3px 8px',
+            background: '#1a2a1a',
+            color: '#4f4',
+            border: '1px solid #2a6a2a',
+            fontSize: 10,
             cursor: 'pointer',
-            fontSize: 11,
           }}
         >
-          Close
+          Inspect
         </button>
+      </div>
+
+      <div style={{ display: 'flex', flexDirection: 'column', gap: 6, marginBottom: 6 }}>
+        {factions.map((faction: FactionView) => (
+          <div key={faction.id} style={{ background: '#161616', border: '1px solid #333', padding: 8 }}>
+            <div style={{ display: 'flex', justifyContent: 'space-between', gap: 8, marginBottom: 2 }}>
+              <div style={{ color: '#ddd', fontSize: 11, fontWeight: 'bold' }}>{faction.name}</div>
+              <div style={{ color: '#aaa', fontSize: 10 }}>Power {faction.power}/100</div>
+            </div>
+            <div style={{ color: '#6af', fontSize: 10, marginBottom: 2 }}>
+              {titleCase(faction.powerBand)} · {titleCase(faction.status)}
+            </div>
+            <div style={{ color: '#aaa', fontSize: 10 }}>
+              {faction.leader.state === 'emerged'
+                ? `Leader active: ${faction.leader.name}, ${faction.leader.title}`
+                : faction.leader.state === 'slain'
+                  ? 'Leader slain — faction broken.'
+                  : 'No faction leader yet.'}
+            </div>
+          </div>
+        ))}
+      </div>
+
+      <div style={{ background: '#14181f', border: '1px solid #2a3a4a', padding: 8 }}>
+        <div style={{ color: '#8af', fontSize: 11, fontWeight: 'bold', marginBottom: 2 }}>Dungeon Ogre</div>
+        <div style={{ color: '#ccc', fontSize: 10 }}>{player.ogreProgress.summaryText}</div>
       </div>
     </div>
   );
 }
 
-
 export function CharacterScreen({ player, activeQuests, sendCommand }: CharacterScreenProps) {
   const [selectedAbilityId, setSelectedAbilityId] = useState<string | null>(null);
-  const [showNemesisModal, setShowNemesisModal] = useState(false);
   const [showQuestsModal, setShowQuestsModal] = useState(false);
   const [showFactionsModal, setShowFactionsModal] = useState(false);
   const [showMasteryModal, setShowMasteryModal] = useState<string | null>(null);
   const [showEnchantsModal, setShowEnchantsModal] = useState(false);
 
   const quests = (activeQuests ?? player.activeQuests ?? []);
-  const hasNemesis = player.nemesisInfo !== null;
   const hasQuests = quests.length > 0;
-  const hasFactions = (player.factionStandings ?? []).length > 0;
+  const hasFactions = player.factionProgress.length > 0;
   const hasEnchantments = player.equippedItems.some(item => item.enchantments.length > 0);
   const hasMasteries = player.weaponMastery && Object.keys(player.weaponMastery).length > 0;
 
@@ -373,21 +350,6 @@ export function CharacterScreen({ player, activeQuests, sendCommand }: Character
 
       {/* Info buttons section - stacked */}
       <div style={{ marginBottom: 12, display: 'flex', gap: '6px', flexWrap: 'wrap' }}>
-        {hasNemesis && (
-          <button
-            onClick={() => setShowNemesisModal(true)}
-            style={{
-              padding: '4px 8px',
-              background: '#2a1a1a',
-              color: '#f88',
-              border: '1px solid #6a2a2a',
-              fontSize: 11,
-              cursor: 'pointer',
-            }}
-          >
-            Nemesis
-          </button>
-        )}
         {hasQuests && (
           <button
             onClick={() => setShowQuestsModal(true)}
@@ -401,21 +363,6 @@ export function CharacterScreen({ player, activeQuests, sendCommand }: Character
             }}
           >
             Quests ({quests.length})
-          </button>
-        )}
-        {hasFactions && (
-          <button
-            onClick={() => setShowFactionsModal(true)}
-            style={{
-              padding: '4px 8px',
-              background: '#1a2a1a',
-              color: '#4f4',
-              border: '1px solid #2a6a2a',
-              fontSize: 11,
-              cursor: 'pointer',
-            }}
-          >
-            Factions
           </button>
         )}
         {hasMasteries && (
@@ -468,6 +415,10 @@ export function CharacterScreen({ player, activeQuests, sendCommand }: Character
       {/* Resistances */}
       <ResistancesSection player={player} />
 
+      {hasFactions && (
+        <FactionProgressSection player={player} onOpenDetails={() => setShowFactionsModal(true)} />
+      )}
+
       {/* Status effects */}
       <StatusSection player={player} />
 
@@ -479,14 +430,11 @@ export function CharacterScreen({ player, activeQuests, sendCommand }: Character
       />
 
       {/* Modals */}
-      {showNemesisModal && hasNemesis && (
-        <NemesisModal nemesis={player.nemesisInfo} onClose={() => setShowNemesisModal(false)} />
-      )}
       {showQuestsModal && hasQuests && (
         <QuestDetailModal quests={quests} onClose={() => setShowQuestsModal(false)} sendCommand={sendCommand} />
       )}
       {showFactionsModal && hasFactions && (
-        <FactionDetailModal factions={player.factionStandings} onClose={() => setShowFactionsModal(false)} />
+        <FactionDetailModal factions={player.factionProgress} onClose={() => setShowFactionsModal(false)} />
       )}
       {showEnchantsModal && hasEnchantments && (
         <EnchantmentDetailModal player={player} onClose={() => setShowEnchantsModal(false)} />

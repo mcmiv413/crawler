@@ -211,12 +211,13 @@ export function validateWorldState(world: WorldState): ValidationError[] {
     mutableErrors.push({ path: 'deepestFloor', message: 'deepestFloor must be non-negative' });
   }
 
-  if (!Array.isArray(world.nemeses)) {
-    mutableErrors.push({ path: 'nemeses', message: 'nemeses must be an array' });
-  }
-
   if (!Array.isArray(world.factions)) {
     mutableErrors.push({ path: 'factions', message: 'factions must be an array' });
+  }
+
+  // eslint-disable-next-line @typescript-eslint/no-unnecessary-condition, @typescript-eslint/strict-boolean-expressions
+  if (typeof world.dungeonOgre !== 'object' || world.dungeonOgre === null) {
+    mutableErrors.push({ path: 'dungeonOgre', message: 'dungeonOgre is required and must be an object' });
   }
 
   return mutableErrors;

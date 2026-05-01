@@ -1,5 +1,6 @@
 import type { EntityId, Position, DamageType, StatusId, GamePhase, WeaponType } from '../types/common.js';
 import type { AmbientState } from '../types/ambient-behavior.js';
+import type { FactionPowerBand, FactionPowerChangeReason, FactionStatus } from '../types/town.js';
 
 interface BaseEvent {
   readonly timestamp: number;
@@ -29,9 +30,9 @@ export interface AttackPerformedEvent extends BaseEvent {
   readonly damageType: DamageType;
   readonly hit: boolean;
   readonly critical: boolean;
-  readonly position: Position; // Defender's position at time of attack (needed for damage indicators when entity dies)
+  readonly position: Position;
   readonly reason?: string;
-  readonly missReason?: 'accuracy' | 'evasion';  // reason for miss if hit=false
+  readonly missReason?: 'accuracy' | 'evasion';
 }
 
 export interface EntityDiedEvent extends BaseEvent {
@@ -53,13 +54,6 @@ export interface StatusExpiredEvent extends BaseEvent {
   readonly type: 'STATUS_EXPIRED';
   readonly targetId: EntityId;
   readonly statusId: StatusId;
-}
-
-export interface NemesisEncounteredEvent extends BaseEvent {
-  readonly type: 'NEMESIS_ENCOUNTERED';
-  readonly nemesisId: EntityId;
-  readonly nemesisName: string;
-  readonly floor: number;
 }
 
 export interface LootAcquiredEvent extends BaseEvent {
@@ -119,6 +113,70 @@ export interface TownStateChangedEvent extends BaseEvent {
   readonly newValue: number;
 }
 
+export interface FactionPowerChangedEvent extends BaseEvent {
+  readonly type: 'FACTION_POWER_CHANGED';
+  readonly factionId: string;
+  readonly factionName: string;
+  readonly reason: FactionPowerChangeReason;
+  readonly oldPower: number;
+  readonly newPower: number;
+  readonly delta: number;
+  readonly oldBand: FactionPowerBand;
+  readonly newBand: FactionPowerBand;
+  readonly status: FactionStatus;
+}
+
+export interface FactionLeaderEmergedEvent extends BaseEvent {
+  readonly type: 'FACTION_LEADER_EMERGED';
+  readonly factionId: string;
+  readonly factionName: string;
+  readonly leaderId: EntityId;
+  readonly leaderName: string;
+  readonly leaderTitle: string;
+  readonly leaderTemplateId: string;
+  readonly emergedOnRun: number;
+  readonly emergedOnDepth: number;
+}
+
+export interface FactionLeaderSlainEvent extends BaseEvent {
+  readonly type: 'FACTION_LEADER_SLAIN';
+  readonly factionId: string;
+  readonly factionName: string;
+  readonly leaderId: EntityId;
+  readonly leaderName: string;
+  readonly leaderTitle: string;
+  readonly slainAtDepth: number;
+}
+
+export interface FactionBrokenEvent extends BaseEvent {
+  readonly type: 'FACTION_BROKEN';
+  readonly factionId: string;
+  readonly factionName: string;
+  readonly leaderId?: EntityId;
+  readonly brokenAtDepth: number;
+}
+
+export interface DungeonOgreEmergedEvent extends BaseEvent {
+  readonly type: 'DUNGEON_OGRE_EMERGED';
+  readonly ogreId: 'dungeon_ogre';
+  readonly emergedAfterRun: number;
+  readonly emergedAtDepth: number;
+  readonly eligibleSpawnDepths: readonly number[];
+  readonly selectedSpawnDepth: number;
+}
+
+export interface DungeonOgreSlainEvent extends BaseEvent {
+  readonly type: 'DUNGEON_OGRE_SLAIN';
+  readonly ogreId: 'dungeon_ogre';
+  readonly slainAtDepth: number;
+}
+
+export interface GameWonEvent extends BaseEvent {
+  readonly type: 'GAME_WON';
+  readonly victorySource: 'dungeon_ogre';
+  readonly floor: number;
+}
+
 export interface ItemUsedEvent extends BaseEvent {
   readonly type: 'ITEM_USED';
   readonly itemId: EntityId;
@@ -157,23 +215,6 @@ export interface LevelUpEvent extends BaseEvent {
     readonly accuracy: number;
     readonly evasion: number;
   };
-}
-
-export interface NemesisPromotedEvent extends BaseEvent {
-  readonly type: 'NEMESIS_PROMOTED';
-  readonly nemesisId: EntityId;
-  readonly nemesisName: string;
-  readonly sourceTemplateId: string;
-  readonly floor: number;
-}
-
-export interface NemesisSlainEvent extends BaseEvent {
-  readonly type: 'NEMESIS_SLAIN';
-  readonly nemesisId: EntityId;
-  readonly nemesisName: string;
-  readonly blueprintUnlocked: string | null;
-  readonly lootItemName: string | null;
-  readonly floor: number;
 }
 
 export interface LootDroppedEvent extends BaseEvent {
@@ -383,14 +424,18 @@ export type DomainEvent =
   | RunEndedEvent
   | PhaseChangedEvent
   | TownStateChangedEvent
+  | FactionPowerChangedEvent
+  | FactionLeaderEmergedEvent
+  | FactionLeaderSlainEvent
+  | FactionBrokenEvent
+  | DungeonOgreEmergedEvent
+  | DungeonOgreSlainEvent
+  | GameWonEvent
   | ItemUsedEvent
   | EquipBlockedEvent
   | EnemyAlertedEvent
   | EnemyAmbientStateChangedEvent
   | LevelUpEvent
-  | NemesisEncounteredEvent
-  | NemesisPromotedEvent
-  | NemesisSlainEvent
   | LootDroppedEvent
   | QuestAssignedEvent
   | QuestProgressEvent

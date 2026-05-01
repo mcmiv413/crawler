@@ -1,8 +1,9 @@
 import type { DomainEvent, GameState, EntityId, Equipment, DeathStash, DeathStashItem, StoredFloor } from '@dungeon/contracts';
 import type { SeededRNG } from '../utils/rng.js';
-import { shouldPromoteToNemesis, promoteToNemesis } from './nemesis.js';
+import { EMPTY_RUN_METRICS } from '@dungeon/contracts';
 import { randomizeShop } from '../state/world-state.js';
-import { DEATH_CONSEQUENCES, ENEMY_TEMPLATES } from '@dungeon/content';
+import { applyFactionDeathConsequences } from './factions.js';
+import { DEATH_CONSEQUENCES, ENEMY_TEMPLATES, getPrimaryFactionId } from '@dungeon/content';
 
 interface TrapHazardCause {
   type: 'TRAP_HAZARD';
@@ -100,13 +101,19 @@ function handleTrapHazardDeath(
       : new Map<number, StoredFloor>();
     updatedCache.set(currentFloorDepth, currentFloorSnapshot);
 
+    const finalRunMetrics = {
+      ...(run.runMetrics ?? EMPTY_RUN_METRICS),
+      causeOfEnd: 'death' as const,
+      floorsCleared: state.player.floor - 1,
+    };
+
     const newState: GameState = {
       ...state,
       phase: 'game_over',
       run: null,
       persistedFloorCache: updatedCache,
       lastRetreatFloor: currentFloorDepth,
-      lastRunMetrics: run.runMetrics,
+      lastRunMetrics: finalRunMetrics,
     };
 
     return { state: newState, events };
@@ -114,6 +121,11 @@ function handleTrapHazardDeath(
 
   // --- Normal death ---
   const goldLoss = Math.floor(state.player.gold * DEATH_CONSEQUENCES.goldLossPercent);
+  const finalRunMetrics = {
+    ...(run.runMetrics ?? EMPTY_RUN_METRICS),
+    causeOfEnd: 'death' as const,
+    floorsCleared: state.player.floor - 1,
+  };
 
   events = [
     {
@@ -221,7 +233,7 @@ function handleTrapHazardDeath(
     phase: 'town',
     run: null,
     persistedFloorCache: updatedCache,
-    lastRunMetrics: run.runMetrics,
+    lastRunMetrics: finalRunMetrics,
     player: {
       ...state.player,
       gold: newGold,
@@ -300,13 +312,19 @@ function handleEnemyDeath(
       : new Map<number, StoredFloor>();
     updatedCache.set(currentFloorDepth, currentFloorSnapshot);
 
+    const finalRunMetrics = {
+      ...(run.runMetrics ?? EMPTY_RUN_METRICS),
+      causeOfEnd: 'death' as const,
+      floorsCleared: state.player.floor - 1,
+    };
+
     const newState: GameState = {
       ...state,
       phase: 'game_over',
       run: null,
       persistedFloorCache: updatedCache,
       lastRetreatFloor: currentFloorDepth,
-      lastRunMetrics: run.runMetrics,
+      lastRunMetrics: finalRunMetrics,
     };
 
     return { state: newState, events };
@@ -323,6 +341,11 @@ function handleEnemyDeath(
     : null;
 
   const goldLoss = Math.floor(state.player.gold * DEATH_CONSEQUENCES.goldLossPercent);
+  const finalRunMetrics = {
+    ...(run.runMetrics ?? EMPTY_RUN_METRICS),
+    causeOfEnd: 'death' as const,
+    floorsCleared: state.player.floor - 1,
+  };
 
   events = [
     {
@@ -394,16 +417,7 @@ function handleEnemyDeath(
     };
   }
 
-  // --- Nemesis promotion ---
-  let newWorld = state.world;
-  let nemesisEvents: DomainEvent[] = [];
-  if (killer !== null && shouldPromoteToNemesis(state, killer, state.player.floor, rng)) {
-    const promotionResult = promoteToNemesis(state, killer, state.player.floor, rng);
-    newWorld = promotionResult.state.world;
-    nemesisEvents = promotionResult.events.filter(e => e.type === 'NEMESIS_PROMOTED');
-  }
-
-  events = [...events, ...deathStashEvents, ...nemesisEvents];
+  events = [...events, ...deathStashEvents];
 
   // Save current floor to persistedFloorCache
   const currentFloorDepth = state.player.floor;
@@ -438,13 +452,19 @@ function handleEnemyDeath(
 
   // --- Randomize shop for next visit ---
   const newShop = randomizeShop(rng);
+  const factionResult = applyFactionDeathConsequences(
+    state.world,
+    getPrimaryFactionId(killer?.templateId ?? ''),
+    { timestamp: Date.now(), turnNumber: state.turnNumber, depth: state.player.floor },
+  );
+  events = [...events, ...factionResult.events];
 
   const newState: GameState = {
     ...state,
     phase: 'town',
     run: null,
     persistedFloorCache: updatedCache,
-    lastRunMetrics: run.runMetrics,
+    lastRunMetrics: finalRunMetrics,
     player: {
       ...state.player,
       gold: newGold,
@@ -456,7 +476,7 @@ function handleEnemyDeath(
       deathStash: newDeathStash,
     },
     world: {
-      ...newWorld,
+      ...factionResult.world,
       shop: newShop,
     },
   };

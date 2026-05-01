@@ -16,7 +16,6 @@ export function RunSummaryPanel({ stats }: RunSummaryPanelProps) {
           {stats.fearDelta !== 0 && <span style={{ color: stats.fearDelta > 0 ? '#f44' : '#4f4', marginRight: 8 }}>Fear {stats.fearDelta > 0 ? '+' : ''}{stats.fearDelta}</span>}
           {stats.corruptionDelta !== 0 && <span style={{ color: stats.corruptionDelta > 0 ? '#f44' : '#4f4', marginRight: 8 }}>Corruption {stats.corruptionDelta > 0 ? '+' : ''}{stats.corruptionDelta}</span>}
         </div>
-        {stats.nemesisPromoted && <div style={{ color: '#cc4444', marginTop: 2 }}>A new nemesis has risen from the dungeon...</div>}
       </div>
     </div>
   );

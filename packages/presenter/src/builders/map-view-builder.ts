@@ -20,9 +20,6 @@ function getDamageTypeColor(damageType: DamageType): string {
 }
 
 function getEnemyColor(enemy: EnemyInstance): string {
-  // Nemesis enemies are gold
-  if (enemy.nemesisId) return '#ffd700';
-
   // Prefer template color if set
   if (enemy.color) return enemy.color;
 
@@ -139,8 +136,6 @@ export function buildMapView(state: GameState): MapView | null {
       health: enemy.stats.health,
       maxHealth: enemy.stats.maxHealth,
       templateId: enemy.templateId,
-      isNemesis: !!enemy.nemesisId,
-      nemesisName: enemy.nemesisId ? enemy.name : undefined,
       spriteName: template?.spriteName,
       instanceColor: showInstanceColor ? enemy.instanceColor : undefined,
     };

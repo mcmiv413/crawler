@@ -31,9 +31,13 @@ describe('Enemy Content Integrity', () => {
   });
 
   describe('Faction membership', () => {
-    it('every enemy belongs to at least one faction', () => {
+    it('every enemy belongs to at least one faction unless intentionally unaffiliated', () => {
       for (const t of ENEMY_TEMPLATES.values()) {
         const factions = t.factions ?? [];
+        if (t.templateId === 'dungeon_ogre') {
+          expect(factions).toHaveLength(0);
+          continue;
+        }
         expect(factions.length, `${t.templateId} has no faction membership`).toBeGreaterThan(0);
       }
     });
@@ -47,6 +51,17 @@ describe('Enemy Content Integrity', () => {
             `${t.templateId} references unknown faction '${factionId}'`,
           ).toBe(true);
         }
+      }
+    });
+
+    it('every faction leader template exists and belongs to its faction', () => {
+      for (const faction of FACTIONS.values()) {
+        const leaderTemplate = ENEMY_TEMPLATES.get(faction.leader.templateId);
+        expect(leaderTemplate, `${faction.id} leader template '${faction.leader.templateId}' is missing`).toBeDefined();
+        expect(
+          leaderTemplate?.factions?.some(({ factionId }) => factionId === faction.id),
+          `${faction.leader.templateId} must reference faction '${faction.id}'`,
+        ).toBe(true);
       }
     });
 
@@ -106,8 +121,12 @@ describe('Enemy Content Integrity', () => {
   });
 
   describe('Spawn weight', () => {
-    it('every enemy has positive spawn weight', () => {
+    it('regular enemies have positive spawn weight', () => {
       for (const t of ENEMY_TEMPLATES.values()) {
+        if (t.archetype === 'boss') {
+          expect(t.spawn.weight, `${t.templateId} must not have a negative spawn weight`).toBeGreaterThanOrEqual(0);
+          continue;
+        }
         expect(t.spawn.weight, `${t.templateId} has zero spawn weight`).toBeGreaterThan(0);
       }
     });

@@ -46,6 +46,11 @@ function makeRunState(depth: number, playerOnStairsUp: boolean, hasHistory: bool
   };
 }
 
+const sealedDungeonOgre = {
+  id: 'dungeon_ogre' as const,
+  status: 'sealed' as const,
+};
+
 function makeState(overrides: Partial<GameState> = {}): GameState {
   return {
     gameId: entityId('g1'),
@@ -77,8 +82,8 @@ function makeState(overrides: Partial<GameState> = {}): GameState {
       eventHistory: [],
       totalRuns: 0,
       deepestFloor: 0,
-      nemeses: [],
       factions: [],
+      dungeonOgre: sealedDungeonOgre,
       unlockedBlueprints: [],
       highestRarityFound: 'common' as const,
     },
@@ -144,8 +149,8 @@ describe('buildGameView shop effectivePrice', () => {
         eventHistory: [],
         totalRuns: 0,
         deepestFloor: 0,
-        nemeses: [],
         factions: [],
+        dungeonOgre: sealedDungeonOgre,
         unlockedBlueprints: [],
         highestRarityFound: 'common' as const,
       },
@@ -167,8 +172,8 @@ describe('buildGameView shop effectivePrice', () => {
         eventHistory: [],
         totalRuns: 0,
         deepestFloor: 0,
-        nemeses: [],
         factions: [],
+        dungeonOgre: sealedDungeonOgre,
         unlockedBlueprints: [],
         highestRarityFound: 'common' as const,
       },
@@ -234,8 +239,8 @@ describe('buildGameView inventory sellPrice', () => {
         eventHistory: [],
         totalRuns: 0,
         deepestFloor: 0,
-        nemeses: [],
         factions: [],
+        dungeonOgre: sealedDungeonOgre,
         unlockedBlueprints: [],
         highestRarityFound: 'common' as const,
       },
@@ -288,8 +293,8 @@ describe('buildGameView inventory sellPrice', () => {
         eventHistory: [],
         totalRuns: 0,
         deepestFloor: 0,
-        nemeses: [],
         factions: [],
+        dungeonOgre: sealedDungeonOgre,
         unlockedBlueprints: [],
         highestRarityFound: 'common' as const,
       },
@@ -502,8 +507,8 @@ describe('buildGameView shop rarity', () => {
         eventHistory: [],
         totalRuns: 0,
         deepestFloor: 0,
-        nemeses: [],
         factions: [],
+        dungeonOgre: sealedDungeonOgre,
         unlockedBlueprints: [],
         highestRarityFound: 'common' as const,
       },
@@ -1591,28 +1596,32 @@ describe('Entity deduplication and sorting', () => {
     }
   });
 
-  it('renders nemesis with special coloring', () => {
+  it('renders dungeon ogre with current template metadata', () => {
     let state = createTestGameStateInCombat({ enemyAt: { x: 1, y: 0 } });
     if (!state.run) throw new Error('No run');
 
-    // Get the enemy and set nemesis ID
     const enemy = Array.from(state.run.enemies.values())[0]!;
-    const nemesisEnemy = { ...enemy, nemesisId: entityId('nemesis1') };
-    const nemesisMap = new Map<string, EnemyInstance>();
-    nemesisMap.set('1,0', nemesisEnemy);
+    const ogreEnemy = {
+      ...enemy,
+      id: entityId('dungeon_ogre'),
+      templateId: 'dungeon_ogre',
+      name: 'Dungeon Ogre',
+    };
+    const ogreMap = new Map<string, EnemyInstance>();
+    ogreMap.set('1,0', ogreEnemy);
     state = {
       ...state,
-      run: { ...state.run, enemies: nemesisMap },
+      run: { ...state.run, enemies: ogreMap },
     };
 
     const view = buildGameView(state);
     const mapEntities = view.map?.entities ?? [];
-    const nemesisEntity = mapEntities.find(e => e.id === enemy.id);
+    const ogreEntity = mapEntities.find(e => e.id === entityId('dungeon_ogre'));
 
-    // Nemesis should have different coloring (not default enemy color)
-    expect(nemesisEntity).toBeDefined();
-    // The specific color can vary, but it should be set for nemesis
-    expect(nemesisEntity?.color).toBeDefined();
+    expect(ogreEntity).toBeDefined();
+    expect(ogreEntity?.templateId).toBe('dungeon_ogre');
+    expect(ogreEntity?.spriteName).toBeDefined();
+    expect(ogreEntity?.color).toBeDefined();
   });
 });
 
@@ -1703,5 +1712,56 @@ describe('Quest view and death context', () => {
     expect(view.combatLog).toBeDefined();
     // createTestGameStateInCombat creates dungeon phase with enemy present
     expect(view.phase).toBe('dungeon');
+  });
+
+  it('builds leader emerged notices for player-facing overlays', () => {
+    const state = makeState({
+      world: {
+        ...makeState().world,
+        eventHistory: [{
+          type: 'FACTION_LEADER_EMERGED',
+          factionId: 'goblin_warband',
+          factionName: 'Goblin Warband',
+          leaderId: entityId('goblin_warband_leader'),
+          leaderName: 'Brakka',
+          leaderTitle: 'Knife-King',
+          leaderTemplateId: 'goblin_warlord',
+          emergedOnRun: 2,
+          emergedOnDepth: 3,
+          timestamp: 1,
+          turnNumber: 10,
+        }],
+      },
+    });
+
+    const view = buildGameView(state);
+    expect(view.notice?.kind).toBe('FACTION_LEADER_EMERGED');
+    expect(view.notice?.title).toBe('Faction Leader Emerged');
+    expect(view.notice?.message).toContain('Brakka, Knife-King');
+    expect(view.notice?.spriteName).toBe('goblin king');
+  });
+
+  it('builds dungeon ogre emerged notices with selected depth details', () => {
+    const state = makeState({
+      world: {
+        ...makeState().world,
+        eventHistory: [{
+          type: 'DUNGEON_OGRE_EMERGED',
+          ogreId: 'dungeon_ogre',
+          emergedAfterRun: 4,
+          emergedAtDepth: 6,
+          eligibleSpawnDepths: [7, 8, 9],
+          selectedSpawnDepth: 8,
+          timestamp: 1,
+          turnNumber: 10,
+        }],
+      },
+    });
+
+    const view = buildGameView(state);
+    expect(view.notice?.kind).toBe('DUNGEON_OGRE_EMERGED');
+    expect(view.notice?.message).toContain('floor 8');
+    expect(view.notice?.detail).toContain('7, 8, 9');
+    expect(view.notice?.spriteName).toBe('ogre');
   });
 });

@@ -2,6 +2,7 @@ import { describe, it, expect } from 'vitest';
 import { decideMovementByBehavior, getWalkableNeighbors, getAllBehaviors, getBehaviorInfo } from './movement-behaviors.js';
 import { createTestGameStateInCombat, createTestEnemy, createTestRunState } from '../test-utils.js';
 import type { GameState } from '@dungeon/contracts';
+import { INITIAL_DUNGEON_OGRE } from '@dungeon/content';
 
 describe('Movement Behaviors', () => {
   describe('wall_stalker behavior', () => {
@@ -127,8 +128,8 @@ describe('Movement Behaviors', () => {
           eventHistory: [],
           totalRuns: 0,
           deepestFloor: 0,
-          nemeses: [],
           factions: [],
+          dungeonOgre: INITIAL_DUNGEON_OGRE,
           unlockedBlueprints: [],
           highestRarityFound: 'common' as const,
         },

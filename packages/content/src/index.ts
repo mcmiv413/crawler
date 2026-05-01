@@ -7,7 +7,6 @@ export * from './statuses/index.js';
 export * from './balance/tables.js';
 export * from './fallback-text/combat-log.js';
 export * from './fallback-text/town.js';
-export * from './fallback-text/nemesis.js';
 export * from './factions/index.js';
 export * from './factions/utilities.js';
 export * from './abilities/index.js';

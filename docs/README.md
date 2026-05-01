@@ -24,7 +24,7 @@ Each guide below includes a "Quick Start" section that reminds you to run this c
 | [Nemesis + Factions Sequence Diagrams](guides/nemesis-factions-sequence-diagrams.md) | Tracing the current nemesis and faction systems end-to-end across engine, server, presenter, and UI |
 | [Testing](guides/testing.md) | Writing tests, anti-patterns, helpers, balance testing |
 | [How to Audit the Codebase](guides/how-to-audit.md) | Performing a rigorous structural audit and turning findings into a fix plan |
-| [Audit Tooling Guide](guides/audit-tooling.md) | CLI paths, Serena/Fossil audit workflow, and external-semantics fallback |
+| [Audit Tooling Guide](guides/audit-tooling.md) | CLI paths, audit workflow (Serena for symbol lookup, Fossil for leads), and external-semantics fallback |
 | [Adding a Game Mechanic](guides/adding-mechanic.md) | Implementing a new system end-to-end (the 6-hop chain) |
 | [Adding an Ability](guides/adding-ability.md) | Data-driven ability definitions and the execution pipeline |
 | [Adding an Enemy](guides/adding-enemy.md) | Enemy templates, archetypes, spawning, AI behavior |

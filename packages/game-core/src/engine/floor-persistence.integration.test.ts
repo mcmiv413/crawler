@@ -137,6 +137,7 @@ describe('Floor Persistence & Selection (Phase 5)', () => {
     // Enter a new floor
     let result = engine.submitCommand(state, { type: 'TOWN_ACTION', action: 'enter_dungeon' });
     state = result.state;
+    const enemyCountBeforeRetreat = state.run?.enemies.size ?? 0;
 
     expect(state.persistedFloorCache).toBeUndefined();
 
@@ -147,6 +148,7 @@ describe('Floor Persistence & Selection (Phase 5)', () => {
     expect(state.persistedFloorCache?.has(1)).toBe(true);
 
     const storedFloor = state.persistedFloorCache?.get(1);
-    expect(storedFloor?.originalEnemyCount).toBe(storedFloor?.enemies.size);
+    expect(storedFloor?.originalEnemyCount).toBe(enemyCountBeforeRetreat);
+    expect(storedFloor?.enemies.size ?? 0).toBeLessThanOrEqual(enemyCountBeforeRetreat);
   });
 });

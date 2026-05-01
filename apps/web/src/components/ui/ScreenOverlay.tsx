@@ -4,12 +4,12 @@ import { Z_MODAL } from '../../config/ui-config.js';
 
 interface ScreenOverlayProps {
   children: React.ReactNode;
-  /** Override default Z_MODAL layer (e.g. for death/nemesis priority). */
+  /** Override default Z_MODAL layer (e.g. for death or quest-screen priority). */
   zIndex?: number;
 }
 
 /**
- * Full-screen overlay for narrative/game-state screens (death, nemesis,
+ * Full-screen overlay for narrative/game-state screens (death,
  * quest-assigned, start). Uses colors.bg so it feels like part of the app
  * shell, not a transient dialog.
  */

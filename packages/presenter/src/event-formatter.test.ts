@@ -297,6 +297,45 @@ describe('formatEvent', () => {
       timestamp: ts,
     });
   });
+
+  it('formats FACTION_LEADER_EMERGED with readable leader text', () => {
+    const event: DomainEvent = {
+      ...base,
+      type: 'FACTION_LEADER_EMERGED',
+      factionId: 'goblin_warband',
+      factionName: 'Goblin Warband',
+      leaderId: entityId('goblin_warband_leader'),
+      leaderName: 'Brakka',
+      leaderTitle: 'Knife-King',
+      leaderTemplateId: 'goblin_warlord',
+      emergedOnRun: 2,
+      emergedOnDepth: 3,
+    };
+    const result = formatEvent(event);
+    expect(result).toEqual({
+      text: 'Brakka, Knife-King, now leads the Goblin Warband.',
+      type: 'info',
+      timestamp: ts,
+    });
+  });
+
+  it('formats DUNGEON_OGRE_EMERGED with selected depth details', () => {
+    const event: DomainEvent = {
+      ...base,
+      type: 'DUNGEON_OGRE_EMERGED',
+      ogreId: 'dungeon_ogre',
+      emergedAfterRun: 4,
+      emergedAtDepth: 6,
+      eligibleSpawnDepths: [7, 8, 9],
+      selectedSpawnDepth: 8,
+    };
+    const result = formatEvent(event);
+    expect(result).toEqual({
+      text: 'The Dungeon Ogre stirs below. It has claimed floor 8 from depths 7, 8, 9.',
+      type: 'info',
+      timestamp: ts,
+    });
+  });
 });
 
 describe('event format coverage guardrail', () => {
@@ -340,21 +379,6 @@ describe('event format coverage guardrail', () => {
     const result = formatEvent(event);
     expect(result).not.toBeNull();
     expect(result!.text).toBe('Troll notices you!');
-    expect(result!.type).toBe('info');
-  });
-
-  it('formats NEMESIS_PROMOTED showing nemesis name', () => {
-    const event: DomainEvent = {
-      ...base,
-      type: 'NEMESIS_PROMOTED',
-      nemesisId: entityId('e1'),
-      nemesisName: 'Dread Goblin',
-      sourceTemplateId: 'goblin',
-      floor: 3,
-    };
-    const result = formatEvent(event);
-    expect(result).not.toBeNull();
-    expect(result!.text).toBe('A nemesis rises: Dread Goblin — a new threat lurks in the dungeon!');
     expect(result!.type).toBe('info');
   });
 
@@ -650,9 +674,6 @@ describe('formatEvents', () => {
         'ITEM_USED',
         'ENEMY_ALERTED',
         'LEVEL_UP',
-        'NEMESIS_ENCOUNTERED',
-        'NEMESIS_PROMOTED',
-        'NEMESIS_SLAIN',
         'LOOT_DROPPED',
         'QUEST_ASSIGNED',
         'QUEST_COMPLETED',
@@ -716,12 +737,6 @@ describe('formatEvents', () => {
             return { ...base, type, enemyId: entityId('e1'), oldState: 'idle', newState: 'alert', reason: 'spotted' };
           case 'LEVEL_UP':
             return { ...base, type, newLevel: 2, statGains: { maxHealth: 10, attack: 2, defense: 1 } };
-          case 'NEMESIS_ENCOUNTERED':
-            return { ...base, type, nemesisName: 'Archfiend' };
-          case 'NEMESIS_PROMOTED':
-            return { ...base, type, nemesisName: 'Archfiend' };
-          case 'NEMESIS_SLAIN':
-            return { ...base, type, nemesisName: 'Archfiend', lootItemName: null, blueprintUnlocked: null };
           case 'LOOT_DROPPED':
             return { ...base, type, itemName: 'Sword', enemyName: 'Goblin' };
           case 'QUEST_ASSIGNED':

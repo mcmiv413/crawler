@@ -8,14 +8,13 @@ import { StartScreen } from './components/StartScreen.js';
 import { TownPhase } from './components/TownPhase.js';
 import { DungeonPhase } from './components/DungeonPhase.js';
 import { GameOverPhase } from './components/GameOverPhase.js';
-import { NemesisRisenScreen } from './components/NemesisRisenScreen.js';
-import { NemesisSlainScreen } from './components/NemesisSlainScreen.js';
 import { DeathNotificationModal } from './components/DeathNotificationModal.js';
 import { QuestAssignedScreen } from './components/QuestAssignedScreen.js';
 import { MobileNav } from './components/MobileNav.js';
 import { CharacterScreen } from './components/CharacterScreen.js';
 import { InventoryScreen } from './components/InventoryScreen.js';
 import { CombatLogView } from './components/CombatLogView.js';
+import { ProgressNoticeModal } from './components/ProgressNoticeModal.js';
 import * as api from './api/client.js';
 
 type Screen = 'main' | 'inventory' | 'character' | 'log';
@@ -40,9 +39,10 @@ function renderPanel(
   };
 
   if (panelType === 'inventory') {
+    const inventoryNotice = view.notice?.kind === 'EQUIP_BLOCKED' ? view.notice : undefined;
     return (
       <div key="inventory" style={panelStyle}>
-        <InventoryScreen inventory={view.inventory} phase={view.phase} sendCommand={sendCommand} onClose={onClosePanel ?? (() => {})} gold={view.player.gold} notice={view.notice} />
+        <InventoryScreen inventory={view.inventory} phase={view.phase} sendCommand={sendCommand} onClose={onClosePanel ?? (() => {})} gold={view.player.gold} notice={inventoryNotice} />
       </div>
     );
   }
@@ -67,29 +67,25 @@ function renderPanel(
 }
 
 export function App() {
-  const { view, gameId, combatLog, loading, error, deathTransitioning, nemesisSlainTransitioning, createGame, sendCommand, clearError, restoreSession, resetGame } = useGameStore();
+  const { view, gameId, combatLog, loading, error, deathTransitioning, createGame, sendCommand, clearError, restoreSession, resetGame } = useGameStore();
   const { isMobile } = useBreakpoint();
   const [playerName, setPlayerName] = useState('Adventurer');
   const [npcDialogue, setNpcDialogue] = useState<{ name: string; text: string } | null>(null);
   const [talkingTo, setTalkingTo] = useState<string | null>(null);
   const [useSprites, setUseSprites] = useState(import.meta.env.VITE_ASCII_MODE !== 'true');
   const [openPanels, setOpenPanels] = useState<Set<Screen>>(new Set());
-  const [shownRisenNemesisIds, setShownRisenNemesisIds] = useState<Set<string>>(new Set());
-  const [shownSlainNemesisIds, setShownSlainNemesisIds] = useState<Set<string>>(new Set());
+  const [shownDeathIds, setShownDeathIds] = useState<Set<string>>(new Set());
   const [shownQuestIds, setShownQuestIds] = useState<Set<string>>(new Set());
+  const [shownNoticeIds, setShownNoticeIds] = useState<Set<string>>(new Set());
   const [sessionChecked, setSessionChecked] = useState(false);
 
-  // All run-ending / nemesis-kill modals are gated by store-level transition flags.
-  // During the 2s transition the player sees a themed overlay (red for death, green for slain);
-  // the modal appears once the transition completes.
+  // Death modal is gated by store-level transition flag.
+  // During the 2s transition the player sees a themed overlay; the modal appears once it completes.
   const showDeathNotification = !!(
     view?.phase === 'town' &&
     view?.deathContext &&
-    !view?.town?.runSummaryStats?.nemesisPromoted &&
-    !nemesisSlainTransitioning
+    !deathTransitioning
   );
-  const showNemesisRisen = !!(view?.phase === 'town' && view?.town?.runSummaryStats?.nemesisPromoted);
-  const showNemesisSlain = !!view?.recentlyDefeatedNemesis && !nemesisSlainTransitioning;
 
   useEffect(() => {
     if (!gameId) {
@@ -101,9 +97,9 @@ export function App() {
 
   // Reset shown overlay states when starting a new game
   useEffect(() => {
-    setShownRisenNemesisIds(new Set());
-    setShownSlainNemesisIds(new Set());
+    setShownDeathIds(new Set());
     setShownQuestIds(new Set());
+    setShownNoticeIds(new Set());
   }, [gameId]);
 
   function handleNavClick(screen: Screen) {
@@ -161,68 +157,14 @@ export function App() {
     return <GameOverPhase view={view} combatLog={combatLog} error={error} onNewGame={() => { resetGame(); createGame(undefined, view.player.name); }} />;
   }
 
-  // Nemesis risen screen (when a new nemesis is created from your death) — with 2s delay
-  if (showNemesisRisen && view.phase === 'town' && view.town?.runSummaryStats?.nemesisPromoted) {
-    // Extract nemesis name from combat log entry: "A nemesis rises: <Name> <Title> — ..."
-    const nemesisRisenEntry = combatLog.find(e => e.text.includes('A nemesis rises:'));
-    let promotedNemesis: typeof view.town.nemeses[0] | undefined;
-
-    if (nemesisRisenEntry) {
-      // Parse: "A nemesis rises: <Name> <Title> — a new threat lurks in the dungeon!"
-      const match = nemesisRisenEntry.text.match(/A nemesis rises: (.+?) —/);
-      const nameWithTitle = match?.[1];
-      if (nameWithTitle) {
-        // Find nemesis by matching the beginning of name
-        promotedNemesis = view.town.nemeses.find(n => nameWithTitle.includes(n.name));
-      }
-    }
-
-    // Fallback to last active if we can't parse the log
-    const activeNemesis = promotedNemesis ?? view.town.nemeses.filter(n => n.isActive).pop();
-
-    if (activeNemesis && !shownRisenNemesisIds.has(activeNemesis.id)) {
-      return (
-        <NemesisRisenScreen
-          view={view}
-          nemesis={activeNemesis}
-          deathContext={view.deathContext}
-          onDismiss={() => {
-            setShownRisenNemesisIds(new Set([...shownRisenNemesisIds, activeNemesis.id]));
-          }}
-        />
-      );
-    }
-  }
-
-  // Nemesis slain screen (when you defeat a nemesis in dungeon) — with 2s delay
-  // Show after delay when nemesis is defeated, in any phase
-  if (showNemesisSlain && view.recentlyDefeatedNemesis && !shownSlainNemesisIds.has(view.recentlyDefeatedNemesis.id)) {
-    const defeatedNemesis = view.recentlyDefeatedNemesis;
-    return (
-      <NemesisSlainScreen
-        view={view}
-        nemesis={defeatedNemesis}
-        onDismiss={() => {
-          setShownSlainNemesisIds(new Set([...shownSlainNemesisIds, defeatedNemesis.id]));
-          // Mutual exclusion: if the slain turn also ended in death (e.g. bleed/poison),
-          // the player has already seen the celebration — skip the death modal.
-          if (view.deathContext) {
-            setShownRisenNemesisIds(new Set([...shownRisenNemesisIds, 'death-notification']));
-          }
-        }}
-      />
-    );
-  }
-
-  // Death notification modal (when you die without nemesis promotion) — with 2s delay
-  if (showDeathNotification && view.phase === 'town' && view.deathContext && !view.town?.runSummaryStats?.nemesisPromoted) {
-    const notShownDeaths = view.deathContext ? 1 : 0; // Track if we've shown this death
-    if (notShownDeaths > 0 && !shownRisenNemesisIds.has('death-notification')) {
+  // Death notification modal — with 2s delay
+  if (showDeathNotification && view.phase === 'town' && view.deathContext) {
+    if (!shownDeathIds.has('death-notification')) {
       return (
         <DeathNotificationModal
           deathContext={view.deathContext}
           onDismiss={() => {
-            setShownRisenNemesisIds(new Set([...shownRisenNemesisIds, 'death-notification']));
+            setShownDeathIds(new Set([...shownDeathIds, 'death-notification']));
           }}
         />
       );
@@ -267,6 +209,10 @@ export function App() {
   }
 
   // Unified layout for mobile and desktop
+  const progressNotice = view.notice && ['FACTION_LEADER_EMERGED', 'FACTION_LEADER_SLAIN', 'DUNGEON_OGRE_EMERGED'].includes(view.notice.kind)
+    ? view.notice
+    : undefined;
+  const showProgressNotice = progressNotice !== undefined && !shownNoticeIds.has(progressNotice.id);
   const visiblePanels: Screen[] = (['inventory', 'character', 'log'] as Screen[]).filter(p => openPanels.has(p));
   const activeNavScreen: Screen = isMobile && openPanels.size > 0 ? ([...openPanels][0] ?? 'main') : 'main';
   // On mobile, show either main content or panels (switching), not both
@@ -338,34 +284,14 @@ export function App() {
           `}</style>
         </div>
       )}
-      {nemesisSlainTransitioning && (
-        <div
-          style={{
-            position: 'fixed',
-            top: 0,
-            left: 0,
-            right: 0,
-            bottom: 0,
-            backgroundColor: 'rgba(0, 120, 40, 0.5)',
-            zIndex: 9999,
-            pointerEvents: 'auto',
-            animation: 'fadeIn 0.5s ease-in',
-            display: 'flex',
-            alignItems: 'center',
-            justifyContent: 'center',
-            color: '#fff',
-            fontSize: '22px',
-            fontFamily: 'monospace',
-            fontWeight: 'bold',
-            textShadow: '0 0 8px rgba(0, 255, 80, 0.8)',
+      {showProgressNotice && progressNotice ? (
+        <ProgressNoticeModal
+          notice={progressNotice}
+          onDismiss={() => {
+            setShownNoticeIds(new Set([...shownNoticeIds, progressNotice.id]));
           }}
-          onKeyDown={(e) => e.preventDefault()}
-          onKeyUp={(e) => e.preventDefault()}
-          tabIndex={0}
-        >
-          🎉 Nemesis Slain! 🎉
-        </div>
-      )}
+        />
+      ) : null}
     </div>
   );
 }

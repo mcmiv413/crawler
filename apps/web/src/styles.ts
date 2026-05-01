@@ -24,7 +24,7 @@ export const colors = {
   lime:    '#7dc940',  // HP full, loot, primary CTA
   gold:    '#c8963c',  // economy — gold, ATK
   steel:   '#5a8fc7',  // info — XP bar, info log, ACC/EVA
-  blood:   '#c85a4a',  // danger — death, Nemesis, low HP
+  blood:   '#c85a4a',  // danger — death, alerts, low HP
   purple:  '#8a78c8',  // magic — XP gain, enchants, SPD
   teal:    '#4aabb0',  // utility — evasion, enchantment labels
 } as const;
@@ -214,7 +214,7 @@ export const modalCardStyle: React.CSSProperties = {
   overflow: 'hidden',
 };
 
-/** Full-screen overlay used by narrative screens (death, nemesis, quest). */
+/** Full-screen overlay used by narrative screens (death, notice, quest). */
 export const screenOverlayStyle: React.CSSProperties = {
   position: 'fixed',
   inset: 0,

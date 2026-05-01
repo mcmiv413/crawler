@@ -1,6 +1,6 @@
 import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest';
 import { CompositeAiService } from './ai-service-composite.js';
-import type { NpcDialogueContext, RumorContext, RunSummaryContext, NemesisNameContext, NemesisLootContext } from '@dungeon/core/ai/ai-service';
+import type { NpcDialogueContext, RumorContext, RunSummaryContext } from '@dungeon/core/ai/ai-service';
 
 // Mock LM Studio client to control timeout and error behavior
 vi.mock('./lm-studio-client.js', () => ({
@@ -61,23 +61,6 @@ const runSummaryContext: RunSummaryContext = {
   recentEvents: [],
   playerName: 'Adventurer',
   floor: 4,
-};
-
-const nemesisNameContext: NemesisNameContext = {
-  enemyTemplateName: 'Goblin',
-  tier: 2,
-  floor: 5,
-  biome: 'cave' as const,
-};
-
-const nemesisLootContext: NemesisLootContext = {
-  nemesisName: 'Skruk',
-  nemesisTitle: 'the Bloodthirsty',
-  tier: 2,
-  floor: 5,
-  traits: ['berserker', 'resilient'],
-  weaponType: 'blade',
-  rank: 2,
 };
 
 // ============================================================================
@@ -188,15 +171,6 @@ describe('CompositeAiService — Fallback Chain', () => {
     const summary = await service.generateRunSummary(runSummaryContext);
     expect(summary.length).toBeGreaterThan(0);
 
-    // Test nemesis name
-    const nemesisName = await service.generateNemesisName(nemesisNameContext);
-    expect(nemesisName.name).toBeTruthy();
-    expect(nemesisName.title).toBeTruthy();
-
-    // Test nemesis loot
-    const loot = await service.generateNemesisLoot(nemesisLootContext);
-    expect(loot.name).toBeTruthy();
-    expect(loot.description).toBeTruthy();
   });
 
   it('does not duplicate fallback requests for retry', async () => {
@@ -268,29 +242,6 @@ describe('CompositeAiService — Response Formatting', () => {
     expect(summary).not.toBe('');
   });
 
-  it('response is deterministic for same nemesis context with LM response', async () => {
-    const nemesisResponse = JSON.stringify({ name: 'Vorreth', title: 'the Unbroken' });
-    mockQueryLmStudio.mockResolvedValue({ text: nemesisResponse });
-
-    const result1 = await service.generateNemesisName(nemesisNameContext);
-    mockQueryLmStudio.mockResolvedValueOnce({ text: nemesisResponse });
-    const result2 = await service.generateNemesisName(nemesisNameContext);
-
-    expect(result1).toEqual(result2);
-    expect(result1.name).toBe('Vorreth');
-    expect(result1.title).toBe('the Unbroken');
-  });
-
-  it('nemesis loot response includes both name and description', async () => {
-    mockQueryLmStudio.mockRejectedValue(new Error('offline'));
-
-    const loot = await service.generateNemesisLoot(nemesisLootContext);
-
-    expect(loot.name).toBeTruthy();
-    expect(loot.name.length).toBeGreaterThan(0);
-    expect(loot.description).toBeTruthy();
-    expect(loot.description.length).toBeGreaterThan(0);
-  });
 });
 
 // ============================================================================
@@ -360,53 +311,6 @@ describe('CompositeAiService — Edge Cases', () => {
     expect(typeof result).toBe('string');
   });
 
-  it('parses valid JSON for nemesis responses', async () => {
-    const validJson = JSON.stringify({
-      name: 'Skruk',
-      title: 'the Bloodthirsty',
-    });
-    mockQueryLmStudio.mockResolvedValueOnce({ text: validJson });
-
-    const result = await service.generateNemesisName(nemesisNameContext);
-
-    expect(result).toEqual({ name: 'Skruk', title: 'the Bloodthirsty' });
-  });
-
-  it('falls back when nemesis JSON is missing required fields', async () => {
-    // Missing 'title' field
-    mockQueryLmStudio.mockResolvedValueOnce({ text: JSON.stringify({ name: 'OnlyName' }) });
-
-    const result = await service.generateNemesisName(nemesisNameContext);
-
-    // Should use fallback with valid name and title
-    expect(result.name).toBeTruthy();
-    expect(result.title).toBeTruthy();
-  });
-
-  it('falls back when nemesis loot JSON is malformed', async () => {
-    mockQueryLmStudio.mockResolvedValueOnce({ text: '{not valid json}' });
-
-    const result = await service.generateNemesisLoot(nemesisLootContext);
-
-    expect(result.name).toBeTruthy();
-    expect(result.description).toBeTruthy();
-  });
-
-  it('accepts empty nemesis name and generates fallback item description', async () => {
-    const contextWithEmptyName: NemesisLootContext = {
-      ...nemesisLootContext,
-      nemesisName: '',
-    };
-    mockQueryLmStudio.mockRejectedValue(new Error('offline'));
-
-    const result = await service.generateNemesisLoot(contextWithEmptyName);
-
-    expect(result.name).toBeTruthy();
-    expect(result.description).toBeTruthy();
-    // Description should not reference empty nemesis name
-    expect(result.description.length).toBeGreaterThan(0);
-  });
-
   it('response consistency across fallback and LM Studio for non-JSON endpoints', async () => {
     // First call with LM
     mockQueryLmStudio.mockResolvedValueOnce({ text: 'AI: You look strong!' });
@@ -425,43 +329,3 @@ describe('CompositeAiService — Edge Cases', () => {
   });
 });
 
-// ============================================================================
-// TESTS: NEMESIS ENDPOINTS (2 tests)
-// ============================================================================
-
-describe('CompositeAiService — Nemesis Endpoints', () => {
-  let service: CompositeAiService;
-
-  beforeEach(() => {
-    service = new CompositeAiService();
-    vi.clearAllMocks();
-  });
-
-  it('generateNemesisLoot includes weaponType context', async () => {
-    const validJson = JSON.stringify({
-      name: 'Skruk\'s Cleaver',
-      description: 'A wicked blade of shadow and bone.',
-    });
-    mockQueryLmStudio.mockResolvedValueOnce({ text: validJson });
-
-    const result = await service.generateNemesisLoot(nemesisLootContext);
-
-    expect(result).toEqual({
-      name: 'Skruk\'s Cleaver',
-      description: 'A wicked blade of shadow and bone.',
-    });
-  });
-
-  it('generateNemesisLoot fallback includes rank and tier info', async () => {
-    mockQueryLmStudio.mockRejectedValue(new Error('offline'));
-
-    const result = await service.generateNemesisLoot(nemesisLootContext);
-
-    // Fallback should generate a valid response
-    expect(result.name).toBeTruthy();
-    expect(result.description).toBeTruthy();
-    // Name might include nemesis name or be generic
-    expect(result.name.length).toBeGreaterThan(0);
-    expect(result.description.length).toBeGreaterThan(0);
-  });
-});

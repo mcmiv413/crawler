@@ -44,10 +44,10 @@ Status Effects & Debuffs (3 tests)
 ├── Status icons in UI
 └── Effect duration/removal
 
-Boss/Nemesis Encounters (3 tests)
-├── Nemesis spawning
-├── Nemesis UI
-└── Nemesis combat mechanics
+Combat Indicators (3 tests)
+├── Floating damage indicators when the player attacks
+├── Floating damage indicators when the player takes damage
+└── Indicator fade-out timing
 
 Complete Game Loop Journey (2 tests)
 ├── Full session integration
@@ -173,5 +173,5 @@ Update selectors in the GamePage class methods for centralized maintenance.
 ✅ Combat system integration
 ✅ Item and inventory management
 ✅ Status effects application
-✅ Boss/nemesis encounter handling
+✅ Combat encounter feedback and floating damage indicators
 ✅ Full game session stability

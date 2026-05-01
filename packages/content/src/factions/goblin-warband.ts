@@ -7,4 +7,9 @@ export const goblinWarband: FactionDefinition = {
   lore: 'Once a loose rabble of cave-dwellers, these goblins have grown emboldened by the dungeon\'s depths. They hoard treasures and lay crude traps in the warrens they inhabit.',
   initialPower: 40,
   initialDisposition: -30,
+  leader: {
+    templateId: 'goblin_warlord',
+    names: ['Brakka', 'Skritch', 'Mogren'],
+    titles: ['Knife-King', 'Warren Tyrant', 'Banner-Eater'],
+  },
 };

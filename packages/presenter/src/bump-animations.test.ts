@@ -91,7 +91,6 @@ describe('buildBumpAnimations', () => {
               secondaryWeapon: null,
             },
             inventory: [],
-            nemesisId: null,
             aiState: 'idle' as any,
             speedAccumulator: 0,
           } as any,

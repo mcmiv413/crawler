@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import type { GameView, NpcView, NemesisView, FactionView } from '@dungeon/presenter';
+import type { GameView, NpcView, FactionView } from '@dungeon/presenter';
 import { TAB_BAR_HEIGHT } from '../config/ui-config.js';
 import { ItemSpriteIcon } from './ItemSpriteIcon.js';
 import {
@@ -45,6 +45,20 @@ const NPC_ROLE_SPRITES: Record<string, string> = {
   elder: 'aligned priest',
   enchanter: 'wizard',
 };
+
+function titleCase(value: string): string {
+  return value.replace(/_/g, ' ').replace(/\b\w/g, match => match.toUpperCase());
+}
+
+function leaderStateText(faction: FactionView): string {
+  if (faction.leader.state === 'emerged' && faction.leader.name && faction.leader.title) {
+    return `${faction.leader.name}, ${faction.leader.title}`;
+  }
+  if (faction.leader.state === 'slain') {
+    return 'Leader slain';
+  }
+  return 'No active leader';
+}
 
 // ─── NPC card component ────────────────────────────────────────────────────
 function NpcCard({
@@ -229,25 +243,6 @@ function TavernPanel({ view }: { view: GameView }) {
         </InfoCard>
       )}
 
-      {view.town && (
-        <InfoCard borderColor={colors.blood} marginBottom={10}>
-          <SectionLabel label="Known Threats" color={colors.blood} />
-          {view.town.nemeses.length === 0 ? (
-            <div style={{ fontSize: 11, color: colors.muted }}>No known nemeses.</div>
-          ) : (
-            view.town.nemeses.map((n: NemesisView) => (
-              <div
-                key={n.id}
-                style={{ fontSize: 11, color: colors.blood, padding: '2px 0' }}
-              >
-                <strong>{n.name}</strong> {n.title} — Tier {n.tier} · Floor{' '}
-                {n.floorOfAscension} · {n.killCount} kill{n.killCount !== 1 ? 's' : ''}
-              </div>
-            ))
-          )}
-        </InfoCard>
-      )}
-
       {view.activeQuests.length > 0 && (
         <InfoCard borderColor={colors.lime} marginBottom={10}>
           <SectionLabel label="Quest Log" color={colors.lime} />
@@ -298,37 +293,34 @@ function TavernPanel({ view }: { view: GameView }) {
               No faction activity reported.
             </div>
           ) : (
-            view.town.factions.map((f: FactionView) => {
-              const dispositionColor =
-                f.disposition > 0
-                  ? colors.lime
-                  : f.disposition < 0
-                  ? colors.blood
-                  : colors.muted;
-              const trendArrow =
-                f.trend === 'rising'
-                  ? { arrow: ' [rising]', color: colors.blood }
-                  : f.trend === 'falling'
-                  ? { arrow: ' [falling]', color: colors.lime }
-                  : null;
-              return (
-                <div
-                  key={f.id}
-                  style={{ fontSize: 11, color: colors.text, padding: '2px 0' }}
-                >
-                  {f.name} — Power: {f.power}/100
-                  {f.power > 60 ? ' [!]' : f.power === 0 ? ' [cleared]' : ''} | Disposition:{' '}
-                  <span style={{ color: dispositionColor }}>
-                    {f.disposition > 0 ? '+' : ''}
-                    {f.disposition}
-                  </span>
-                  {trendArrow && (
-                    <span style={{ color: trendArrow.color }}>{trendArrow.arrow}</span>
-                  )}
+            view.town.factions.map((faction: FactionView) => (
+              <div
+                key={faction.id}
+                style={{ fontSize: 11, color: colors.text, padding: '4px 0', borderBottom: `1px solid ${colors.border2}` }}
+              >
+                <div style={{ fontWeight: 600 }}>
+                  {faction.name} — Power {faction.power}/100 · {titleCase(faction.powerBand)}
                 </div>
-              );
-            })
+                <div style={{ color: colors.muted, fontSize: 10 }}>
+                  {titleCase(faction.status)} · {leaderStateText(faction)}
+                </div>
+                <div style={{ color: colors.label, fontSize: 10, marginTop: 2 }}>{faction.townEffectText}</div>
+              </div>
+            ))
           )}
+        </InfoCard>
+      )}
+
+      {view.town && (
+        <InfoCard borderColor={colors.steel} marginBottom={10}>
+          <SectionLabel label="Dungeon Ogre" color={colors.steel} />
+          <div style={{ color: colors.text, fontSize: 11 }}>{view.town.ogreProgress.summaryText}</div>
+          {view.town.ogreProgress.eligibleSpawnDepths.length > 0 ? (
+            <div style={{ color: colors.muted, fontSize: 10, marginTop: 4 }}>
+              Eligible depths: {view.town.ogreProgress.eligibleSpawnDepths.join(', ')} · Selected depth:{' '}
+              {view.town.ogreProgress.selectedSpawnDepth ?? 'unknown'}
+            </div>
+          ) : null}
         </InfoCard>
       )}
     </div>
@@ -531,6 +523,18 @@ export function TownPhase({
         )}
 
         {view.town?.runSummaryStats && <RunSummaryPanel stats={view.town.runSummaryStats} />}
+
+        {view.town && (
+          <InfoCard borderColor={colors.steel} marginBottom={0}>
+            <SectionLabel label="Faction Pressure" color={colors.steel} />
+            <div style={{ fontSize: 11, color: colors.text, marginBottom: 6 }}>
+              {view.town.factionPressureSummary}
+            </div>
+            <div style={{ fontSize: 10, color: colors.muted }}>
+              {view.town.ogreProgress.summaryText}
+            </div>
+          </InfoCard>
+        )}
 
         {view.town?.prepAdvice && view.town.prepAdvice.length > 0 && (
           <InfoCard borderColor="#1e4a2a" marginBottom={0}>

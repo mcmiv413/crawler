@@ -183,13 +183,6 @@ export const OBJECT_POOL = {
   rareMinDepth: 3,
 } as const;
 
-/** Nemesis system promotion thresholds */
-export const NEMESIS_PROMOTION = {
-  maxActiveNemeses: 3,
-  minFloorForPromotion: 1,
-  promotionChanceByTier: { 1: 0.40, 2: 0.50, 3: 0.5, 4: 0.75, 5: 1.0 } as Record<number, number>,
-  statMultiplierByRank: { 1: 2.5, 2: 4.0, 3: 6.0 } as Record<number, number>,
-} as const;
 
 export const DEATH_CONSEQUENCES = {
   goldLossPercent: 0.25,
@@ -304,12 +297,56 @@ export const FEAR_ESCALATION = {
   fearCap: 80,
 } as const;
 
-/** Nemesis slain world effect */
-export const NEMESIS_SLAIN_WORLD_EFFECTS = {
-  prosperityGain: 10,
-  corruptionLoss: 5,
-  corruptionPerActiveNemesis: 2,
+export const FACTION_CONFIG = {
+  power: {
+    min: 0,
+    max: 100,
+    memberKillPowerLoss: 1,
+    playerDeathPowerGain: 20,
+    playerDeathWithLeaderPowerGain: 8,
+    leaderKillPowerLoss: 35,
+    newDeepestFloorPowerGain: 1,
+    bands: {
+      weakMax: 24,
+      stableMax: 59,
+      strongMax: 79,
+      dominantMax: 100,
+    },
+  },
+  memberStrength: {
+    multiplierByBand: {
+      broken: 0.8,
+      weak: 0.9,
+      stable: 1.0,
+      strong: 1.1,
+      dominant: 1.2,
+    },
+  },
+  spawning: {
+    weightMultiplierByBand: {
+      broken: 0.35,
+      weak: 0.75,
+      stable: 1.0,
+      strong: 1.5,
+      dominant: 2.0,
+    },
+  },
+  town: {
+    impactByBand: {
+      broken: { prosperityDelta: 2, corruptionDelta: -2 },
+      weak: { prosperityDelta: 1, corruptionDelta: -1 },
+      stable: { prosperityDelta: 0, corruptionDelta: 0 },
+      strong: { prosperityDelta: -1, corruptionDelta: 1 },
+      dominant: { prosperityDelta: -2, corruptionDelta: 2 },
+    },
+    activeLeaderImpactModifier: 1,
+    maxProsperityGainPerRunFromFactions: 5,
+    maxProsperityLossPerRunFromFactions: 5,
+    maxCorruptionGainPerRunFromFactions: 5,
+    maxCorruptionLossPerRunFromFactions: 5,
+  },
 } as const;
+
 
 // ─────────────────────────────────────────────────────────────────
 // World Modifiers: Dungeon generation adjustments by world state

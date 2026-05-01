@@ -5,10 +5,9 @@ import {
   KILL_STREAK_BONUSES,
   NPC_THRESHOLDS,
   FEAR_ESCALATION,
-  NEMESIS_SLAIN_WORLD_EFFECTS,
 } from '@dungeon/content';
-import { tickFactionPowerForNemeses } from './factions.js';
 import { clamp } from '../utils/math.js';
+import { calculateFactionTownImpact } from './factions.js';
 
 function applyTownDelta(
   town: TownState,
@@ -54,26 +53,24 @@ export function applyRunConsequences(
   if (metrics.enemiesKilled >= KILL_STREAK_BONUSES.tier1Kills) prosperityDelta += KILL_STREAK_BONUSES.tier1Bonus;
   if (metrics.enemiesKilled >= KILL_STREAK_BONUSES.tier2Kills) prosperityDelta += KILL_STREAK_BONUSES.tier2Bonus;
 
-  // Corruption from active nemeses
-  const activeNemesisCount = state.world.nemeses.filter(n => n.isActive).length;
-  const corruptionDelta = activeNemesisCount * NEMESIS_SLAIN_WORLD_EFFECTS.corruptionPerActiveNemesis;
+  // Apply base prosperity delta from run outcome
+  const prosperityResult = applyTownDelta(town, state.turnNumber, 'prosperity', prosperityDelta);
+  town = prosperityResult.town;
+  if (prosperityResult.event !== null) events = [...events, prosperityResult.event];
 
-  // Apply deltas
-  let result = applyTownDelta(town, state.turnNumber, 'prosperity', prosperityDelta);
-  town = result.town;
-  if (result.event !== null) events = [...events, result.event];
+  const factionImpact = calculateFactionTownImpact(state.world.factions);
+  const factionProsperityResult = applyTownDelta(town, state.turnNumber, 'prosperity', factionImpact.prosperityDelta);
+  town = factionProsperityResult.town;
+  if (factionProsperityResult.event !== null) events = [...events, factionProsperityResult.event];
 
-  result = applyTownDelta(town, state.turnNumber, 'corruption', corruptionDelta);
-  town = result.town;
-  if (result.event !== null) events = [...events, result.event];
+  const factionCorruptionResult = applyTownDelta(town, state.turnNumber, 'corruption', factionImpact.corruptionDelta);
+  town = factionCorruptionResult.town;
+  if (factionCorruptionResult.event !== null) events = [...events, factionCorruptionResult.event];
 
   let newState: GameState = {
     ...state,
     world: { ...state.world, town, totalRuns: state.world.totalRuns + 1 },
   };
-
-  // Tick faction power for active nemeses
-  newState = tickFactionPowerForNemeses(newState);
 
   // Sync shopkeeper availability based on prosperity
   newState = syncNpcAvailability(newState);
@@ -129,20 +126,6 @@ export function evaluateEventChains(
   const recentDeaths = history.slice(-FEAR_ESCALATION.recentEventWindow).filter(e => e.type === 'PLAYER_DIED').length;
   if (recentDeaths >= FEAR_ESCALATION.deathsToTrigger && town.fear < FEAR_ESCALATION.fearCap) {
     const result = applyTownDelta(town, state.turnNumber, 'fear', FEAR_ESCALATION.fearGain);
-    town = result.town;
-    if (result.event !== null) events = [...events, result.event];
-  }
-
-  // A7: Chain 2: recent nemesis kill → prosperity boost, corruption drop
-  const recentNemesisKills = history.slice(-10).filter(e => e.type === 'NEMESIS_SLAIN').length;
-  const activeNemeses = state.world.nemeses.filter(n => n.isActive).length;
-  if (recentNemesisKills > 0 && activeNemeses === 0) {
-    // All nemeses are slain — reward
-    let result = applyTownDelta(town, state.turnNumber, 'prosperity', NEMESIS_SLAIN_WORLD_EFFECTS.prosperityGain);
-    town = result.town;
-    if (result.event !== null) events = [...events, result.event];
-
-    result = applyTownDelta(town, state.turnNumber, 'corruption', -NEMESIS_SLAIN_WORLD_EFFECTS.corruptionLoss);
     town = result.town;
     if (result.event !== null) events = [...events, result.event];
   }

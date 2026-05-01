@@ -10,7 +10,6 @@ vi.mock('./fallback-ai.js', () => ({
     generateDialogue: vi.fn().mockResolvedValue('fallback dialogue'),
     generateRumor: vi.fn().mockResolvedValue('fallback rumor'),
     generateRunSummary: vi.fn().mockResolvedValue('fallback summary'),
-    generateNemesisName: vi.fn().mockResolvedValue({ name: 'FallbackName', title: 'the Fallen' }),
   })),
 }));
 
@@ -41,13 +40,6 @@ const summaryCtx = {
   recentEvents: [],
   playerName: 'Hero',
   floor: 3,
-};
-
-const nemesisCtx = {
-  enemyTemplateName: 'Goblin',
-  tier: 1 as const,
-  floor: 2,
-  biome: 'cave' as const,
 };
 
 describe('CompositeAiService — fallback on queryLmStudio throw', () => {
@@ -87,21 +79,4 @@ describe('CompositeAiService — fallback on queryLmStudio throw', () => {
     expect(result).toBe('fallback summary');
   });
 
-  it('generateNemesisName uses fallback when queryLmStudio throws', async () => {
-    mockQuery.mockRejectedValueOnce(new Error('connection refused'));
-    const result = await service.generateNemesisName(nemesisCtx);
-    expect(result).toEqual({ name: 'FallbackName', title: 'the Fallen' });
-  });
-
-  it('generateNemesisName uses fallback when JSON parse fails', async () => {
-    mockQuery.mockResolvedValueOnce({ text: 'not valid json' });
-    const result = await service.generateNemesisName(nemesisCtx);
-    expect(result).toEqual({ name: 'FallbackName', title: 'the Fallen' });
-  });
-
-  it('generateNemesisName returns parsed name when LM returns valid JSON', async () => {
-    mockQuery.mockResolvedValueOnce({ text: JSON.stringify({ name: 'Grakthar', title: 'the Unbroken' }) });
-    const result = await service.generateNemesisName(nemesisCtx);
-    expect(result).toEqual({ name: 'Grakthar', title: 'the Unbroken' });
-  });
 });

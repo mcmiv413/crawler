@@ -1,10 +1,8 @@
-import type { GameState, EnemyInstance, AnyItemTemplate, WeaponType } from '@dungeon/contracts';
+import type { GameState, EnemyInstance } from '@dungeon/contracts';
 import type { DomainEvent } from '@dungeon/contracts';
 import { ECONOMY, ITEM_BY_ID, ALL_ITEMS, getDropWeights } from '@dungeon/content';
 import type { SeededRNG } from '../utils/rng.js';
 import { addItemToInventory } from './inventory.js';
-import { entityId } from '@dungeon/contracts';
-import { generateId } from '../utils/id.js';
 
 /** Pick a rarity based on weighted [common, uncommon, rare, epic] */
 function weightedPickRarity(weights: [number, number, number, number], rng: SeededRNG): string {
@@ -45,47 +43,23 @@ export function rollRareLoot(rng: SeededRNG): string | null {
   return rng.pick(weighted).itemId;
 }
 
-/** Generate gold drop for a killed enemy (optional nemesis multiplier) */
-export function rollGoldDrop(enemy: EnemyInstance, rng: SeededRNG, nemesisRank?: number): number {
+/** Generate gold drop for a killed enemy */
+export function rollGoldDrop(enemy: EnemyInstance, rng: SeededRNG): number {
   const tierGold = ECONOMY.goldPerTier[enemy.tier];
   const variance = rng.float(0.7, 1.3);
-  let baseGold = Math.round(tierGold * variance);
-
-  // Apply nemesis multiplier: rank 1 = 3×, rank 2 = 5×, rank 3 = 8×
-  if (nemesisRank !== undefined && nemesisRank >= 1 && nemesisRank <= 3) {
-    const multipliers = [1, 3, 5, 8];
-    baseGold = Math.round(baseGold * multipliers[nemesisRank]!);
-  }
-
-  return baseGold;
+  return Math.round(tierGold * variance);
 }
 
-/** Roll for item drop from enemy (optional nemesis rank for guaranteed drop + rarity boost) */
+/** Roll for item drop from enemy */
 export function rollItemDrop(
   _enemy: EnemyInstance,
   rng: SeededRNG,
   depth: number = 1,
-  nemesisRank?: number,
 ): string | null {
-  // Nemesis guarantees 100% drop; normal enemies have 30% chance
-  if (nemesisRank === undefined && !rng.chance(30)) return null;
+  if (!rng.chance(30)) return null;
 
   const weights = getDropWeights(depth);
-
-  // Shift rarity weights up for nemesis (uncommon minimum for rank 1+, rare minimum for rank 2+)
-  let adjustedWeights = weights;
-  if (nemesisRank === 1) {
-    // Shift weights: reduce common, boost uncommon/rare
-    adjustedWeights = [Math.max(0, weights[0] - 20), weights[1] + 15, weights[2] + 5, weights[3]];
-  } else if (nemesisRank === 2) {
-    // Shift weights more: reduce common/uncommon, boost rare/epic
-    adjustedWeights = [Math.max(0, weights[0] - 30), Math.max(0, weights[1] - 15), weights[2] + 30, weights[3] + 15];
-  } else if (nemesisRank === 3) {
-    // Shift weights even more: rare minimum
-    adjustedWeights = [0, 0, weights[2] + 40, weights[3] + 40];
-  }
-
-  const rarity = weightedPickRarity(adjustedWeights as [number, number, number, number], rng);
+  const rarity = weightedPickRarity(weights, rng);
   const eligible = ALL_ITEMS.filter(item => item.rarity === rarity && item.itemClass !== 'trap');
   if (eligible.length === 0) {
     const fallback = ALL_ITEMS.filter(item => item.rarity === 'common' && item.itemClass !== 'trap');
@@ -97,18 +71,17 @@ export function rollItemDrop(
   return rng.pick(weighted).itemId;
 }
 
-/** Process loot from a killed enemy (optional nemesis rank for enhanced loot) */
+/** Process loot from a killed enemy */
 export function processEnemyLoot(
   state: GameState,
   enemy: EnemyInstance,
   rng: SeededRNG,
-  nemesisRank?: number,
 ): { state: GameState; events: DomainEvent[] } {
   let events: DomainEvent[] = [];
   let currentState = state;
 
-  // Gold drop (with optional nemesis multiplier)
-  const gold = rollGoldDrop(enemy, rng, nemesisRank);
+  // Gold drop
+  const gold = rollGoldDrop(enemy, rng);
   if (gold > 0) {
     currentState = {
       ...currentState,
@@ -128,9 +101,9 @@ export function processEnemyLoot(
     }];
   }
 
-  // Item drop (with optional nemesis boost)
+  // Item drop
   const depth = state.run?.floor.depth ?? 1;
-  const itemId = rollItemDrop(enemy, rng, depth, nemesisRank);
+  const itemId = rollItemDrop(enemy, rng, depth);
   if (itemId !== null) {
     const template = ITEM_BY_ID.get(itemId);
     if (template !== undefined) {
@@ -142,78 +115,4 @@ export function processEnemyLoot(
   }
 
   return { state: currentState, events };
-}
-
-/** Create a unique nemesis loot item template */
-export function rollNemesisLoot(
-  aiLootData: { name: string; description: string },
-  nemesisRank: number,
-  nemesisTier: number,
-  floor: number,
-  weaponType: string | null,
-): AnyItemTemplate {
-  // Determine rarity based on tier and rank
-  let rarity: 'uncommon' | 'rare' | 'epic' | 'legendary';
-  if (nemesisTier >= 4 && nemesisRank === 3) {
-    rarity = 'legendary';
-  } else if (nemesisRank === 3 || (nemesisTier >= 3 && nemesisRank >= 2)) {
-    rarity = 'epic';
-  } else if (nemesisTier >= 2 || nemesisRank >= 2) {
-    rarity = 'rare';
-  } else {
-    rarity = 'uncommon';
-  }
-
-  // Determine item class: weapon if killed by weapon type, else armor
-  const itemClass = weaponType !== null ? 'weapon' : 'armor';
-
-  // Base value scales with tier and floor
-  const baseValue = Math.max(100, 50 * nemesisTier + 20 * Math.floor(floor / 5));
-  // Nemesis loot value has inherent variance (server-side generation, not game-critical)
-  const variance = 0.9 + (Math.abs(Math.sin(nemesisTier * floor)) % 0.2);
-  const value = Math.round(baseValue * variance);
-
-  const itemId = entityId(generateId());
-
-  if (itemClass === 'weapon') {
-    // Create a weapon template
-    return {
-      itemId,
-      name: aiLootData.name,
-      description: aiLootData.description,
-      itemClass: 'weapon',
-      rarity,
-      value,
-      stackable: false,
-      maxStack: 1,
-      weapon: {
-        damage: Math.round(8 + nemesisTier * 4 + nemesisRank),
-        damageType: 'physical',
-        accuracy: 75 + nemesisTier * 3,
-        speed: 5,
-        slot: 'weapon',
-        weaponRange: 1,
-        weaponType: (weaponType ?? 'blade') as WeaponType,
-      },
-    };
-  } else {
-    // Create an armor template
-    return {
-      itemId,
-      name: aiLootData.name,
-      description: aiLootData.description,
-      itemClass: 'armor',
-      rarity,
-      value,
-      stackable: false,
-      maxStack: 1,
-      armor: {
-        defense: Math.round(4 + nemesisTier * 3 + nemesisRank),
-        evasionPenalty: 0,
-        slot: 'chest',
-        enchantmentSlots: nemesisRank >= 2 ? 2 : 1,
-        enchantments: [],
-      },
-    };
-  }
 }

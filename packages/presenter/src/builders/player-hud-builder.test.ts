@@ -1,6 +1,6 @@
 import { describe, it, expect, beforeEach } from 'vitest';
 import { buildPlayerHud } from './player-hud-builder.js';
-import { createTestGameState, createTestRunState, createTestGameStateWithAbility, createTestNemesis } from '@dungeon/core/testing';
+import { createTestGameState, createTestRunState, createTestGameStateWithAbility } from '@dungeon/core/testing';
 import { entityId } from '@dungeon/contracts';
 import type { GameState } from '@dungeon/contracts';
 
@@ -277,65 +277,51 @@ describe('buildPlayerHud', () => {
     });
   });
 
-  describe('nemesis info', () => {
-    it('displays active nemesis information', () => {
-      state = {
-        ...state,
-        world: {
-          ...state.world,
-          nemeses: [
-            createTestNemesis({
-              id: entityId('nemesis1'),
-              name: 'Dread Goblin',
-              title: 'The Feared',
-              isActive: true,
-              tier: 3,
-              killCount: 5,
-              rank: 2,
-              floorOfAscension: 8,
-            }),
-          ],
-        },
-      };
-
-      const hud = buildPlayerHud(state);
-      expect(hud.nemesisInfo).toBeDefined();
-      expect(hud.nemesisInfo?.name).toBe('Dread Goblin');
-      expect(hud.nemesisInfo?.defeats).toBe(5);
-    });
-
-    it('shows null nemesis info when no active nemesis', () => {
-      state = {
-        ...state,
-        world: { ...state.world, nemeses: [] },
-      };
-
-      const hud = buildPlayerHud(state);
-      expect(hud.nemesisInfo).toBeNull();
-    });
-  });
-
-  describe('faction standings', () => {
-    it('displays faction information', () => {
+  describe('faction progress', () => {
+    it('displays faction and ogre progress information', () => {
       state = {
         ...state,
         world: {
           ...state.world,
           factions: [
             {
-              id: 'faction1',
-              name: 'Guild of Thieves',
+              id: 'goblin_warband',
+              name: 'Goblin Warband',
               power: 75,
-              disposition: 20,
+              disposition: -30,
+              status: 'led',
+              activeLeaderId: entityId('goblin_warband_leader'),
+              leader: {
+                id: entityId('goblin_warband_leader'),
+                factionId: 'goblin_warband',
+                name: 'Brakka',
+                title: 'Knife-King',
+                templateId: 'goblin_warlord',
+                isActive: true,
+                isSlain: false,
+                emergedOnRun: 2,
+                emergedOnDepth: 3,
+              },
+              leaderSlain: false,
+              membersKilledByPlayer: 4,
+              leadersKilledByPlayer: 0,
+              playerDeathsCaused: 1,
             },
           ],
+          dungeonOgre: {
+            id: 'dungeon_ogre',
+            status: 'sealed',
+          },
         },
       };
 
       const hud = buildPlayerHud(state);
-      expect(hud.factionStandings).toHaveLength(1);
-      expect(hud.factionStandings[0]?.name).toBe('Guild of Thieves');
-      expect(hud.factionStandings[0]?.standing).toBe(120);
+      expect(hud.factionProgress).toHaveLength(1);
+      expect(hud.factionProgress[0]?.name).toBe('Goblin Warband');
+      expect(hud.factionProgress[0]?.powerBand).toBe('strong');
+      expect(hud.factionProgress[0]?.leader.name).toBe('Brakka');
+      expect(hud.factionProgress[0]?.worldEffectText).toContain('150%');
+      expect(hud.ogreProgress.summaryText).toContain('Break 1 more');
     });
   });
 

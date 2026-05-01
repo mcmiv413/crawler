@@ -5,7 +5,6 @@ import {
   KILL_STREAK_BONUSES,
   NPC_THRESHOLDS,
   FEAR_ESCALATION,
-  NEMESIS_SLAIN_WORLD_EFFECTS,
   CORRUPTION_MODIFIERS,
   FEAR_MODIFIERS,
   WORLD_MODIFIER_CAPS,
@@ -41,11 +40,6 @@ describe('Config Governance: Balance Constants', () => {
     expect(FEAR_ESCALATION.deathsToTrigger).toBeGreaterThan(0);
     expect(FEAR_ESCALATION.fearGain).toBeGreaterThan(0);
     expect(FEAR_ESCALATION.fearCap).toBeGreaterThan(0);
-
-    // Nemesis slain effects are positive
-    expect(NEMESIS_SLAIN_WORLD_EFFECTS.prosperityGain).toBeGreaterThan(0);
-    expect(NEMESIS_SLAIN_WORLD_EFFECTS.corruptionLoss).toBeGreaterThan(0);
-    expect(NEMESIS_SLAIN_WORLD_EFFECTS.corruptionPerActiveNemesis).toBeGreaterThan(0);
 
     // Corruption modifiers are reasonable
     expect(CORRUPTION_MODIFIERS.preferCorruptEnemiesAbove).toBeGreaterThan(0);

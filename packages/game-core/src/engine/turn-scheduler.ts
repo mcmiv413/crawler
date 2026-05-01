@@ -89,29 +89,6 @@ export function processEnemyTurns(
             turnNumber: currentState.turnNumber,
           }];
 
-          // Fire nemesis encountered event if this is a nemesis
-          if (updatedEnemy.nemesisId !== undefined) {
-            alertEvents = [...alertEvents, {
-              type: 'NEMESIS_ENCOUNTERED',
-              nemesisId: updatedEnemy.nemesisId,
-              nemesisName: updatedEnemy.name,
-              floor: currentState.run!.floor.depth,
-              timestamp: Date.now(),
-              turnNumber: currentState.turnNumber,
-            }];
-
-            // Increment encounter count on the nemesis record
-            const updatedNemeses = currentState.world.nemeses.map(n =>
-              n.id === updatedEnemy.nemesisId
-                ? { ...n, encounterCount: n.encounterCount + 1 }
-                : n,
-            );
-            currentState = {
-              ...currentState,
-              world: { ...currentState.world, nemeses: updatedNemeses },
-            };
-          }
-
           // Alert propagation: notify nearby un-alerted enemies
           const neighborsToAlert = Array.from(currentState.run!.enemies.values())
             .filter(neighbor => !neighbor.isAlerted && chebyshevDistance(neighbor.position, updatedEnemy.position) <= 4);

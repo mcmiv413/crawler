@@ -57,8 +57,15 @@ function createMockGameView(overrides?: Partial<GameView>): GameView {
       equippedItems: [],
       statBreakdowns: {},
       activeQuests: [],
-      nemesisInfo: null,
-      factionStandings: [],
+      factionProgress: [],
+      ogreProgress: {
+        status: 'sealed',
+        selectedSpawnDepth: null,
+        eligibleSpawnDepths: [],
+        brokenFactions: 0,
+        totalFactions: 4,
+        summaryText: '0/4 factions broken. Break 4 more to reveal the Dungeon Ogre.',
+      },
     },
     map: {
       width: 20,
@@ -91,7 +98,7 @@ function createMockGameView(overrides?: Partial<GameView>): GameView {
     deathSummary: null,
     deathContext: null,
     inspectableEntities: [],
-    recentlyDefeatedNemesis: null,
+
     debugMode: false,
     animatedEvents: [],
   };

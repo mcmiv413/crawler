@@ -1,4 +1,4 @@
-import type { NpcDialogueContext, RumorContext, RunSummaryContext, NemesisNameContext, NemesisLootContext } from './ai-service.js';
+import type { NpcDialogueContext, RumorContext, RunSummaryContext } from './ai-service.js';
 
 export function buildNpcDialoguePrompt(context: NpcDialogueContext): string {
   const { npc, townState, playerName, playerLevel } = context;
@@ -33,35 +33,6 @@ Stats: ${runMetrics.enemiesKilled} enemies slain, ${runMetrics.damageDealt} dama
 Write a brief narrative recap. Be dramatic but concise. Do not use modern language.`;
 }
 
-export function buildNemesisNamePrompt(context: NemesisNameContext): string {
-  const { enemyTemplateName, tier, floor, biome } = context;
 
-  return `Generate a menacing name and epithet for a nemesis enemy in a dungeon crawler.
 
-The enemy is a tier ${tier} ${enemyTemplateName} that rose to power on floor ${floor} of a ${biome} dungeon.
 
-Respond with ONLY a JSON object in this exact format, nothing else:
-{"name": "Vorreth", "title": "the Unbroken"}
-
-The name should be a single menacing proper noun (1-2 words). The title should be a dark epithet starting with 'the' or a short phrase.`;
-}
-
-export function buildNemesisLootPrompt(context: NemesisLootContext): string {
-  const { nemesisName, nemesisTitle, tier, floor, traits, weaponType, rank } = context;
-
-  const weaponContext = weaponType !== null ? `It was slain using a ${weaponType}. The trophy should reflect this weapon's essence.` : 'Create a generic legendary artifact.';
-  const rankContext = rank === 3 ? 'This is a rank 3 (maximum) nemesis - make the loot truly legendary.' : rank === 2 ? 'This is a rank 2 nemesis - make the loot impressive.' : 'This is a rank 1 nemesis - make the loot notable.';
-
-  return `Generate a unique, lore-driven treasure item dropped by a defeated nemesis.
-
-Nemesis: ${nemesisName} ${nemesisTitle} (Tier ${tier}, Rank ${rank}, Floor ${floor})
-Traits: ${traits.join(', ') || 'none'}
-
-${weaponContext}
-${rankContext}
-
-Respond with ONLY a JSON object in this exact format, nothing else:
-{"name": "Frostbane, Sorrow of the North", "description": "A sword of ice and ancient sorrow, forged by ${nemesisName} in the depths. Its blade never warms."}
-
-The name should be evocative and tied to the nemesis. The description (1-2 sentences) should be lore-rich and atmospheric.`;
-}

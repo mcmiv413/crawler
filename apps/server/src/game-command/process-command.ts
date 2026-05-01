@@ -1,6 +1,4 @@
 import {
-  addItemToInventory,
-  rollNemesisLoot,
   serializeState,
 } from '@dungeon/core';
 import type { GameEngine } from '@dungeon/core';
@@ -19,6 +17,10 @@ import type {
   IGameRepository,
   RunMetrics,
 } from '@dungeon/contracts';
+import {
+  buildDeterministicRunSummary,
+  buildDeterministicTownRumors,
+} from './town-text.js';
 
 const MAX_EVENT_HISTORY = 100;
 
@@ -49,11 +51,6 @@ interface PreparedCommandState {
   readonly finalState: GameState;
   readonly metrics: RunMetrics | null;
   readonly runEnded: boolean;
-}
-
-interface NemesisLootResult {
-  readonly events: readonly DomainEvent[];
-  readonly state: GameState;
 }
 
 export async function processGameCommand(
@@ -89,151 +86,39 @@ async function prepareCommandState(
 ): Promise<PreparedCommandState> {
   const result = args.engine.submitCommand(args.state, args.command);
 
-  let finalState = await applyNemesisPromotionName(
-    result.state,
-    result.events,
-    args.ai,
-  );
-  const lootResult = await applyNemesisLoot(
-    finalState,
-    result.events,
-    args.ai,
-    args.log,
-  );
-  finalState = lootResult.state;
-
+  let finalState = result.state;
   let metrics: RunMetrics | null = null;
   let archivedEvents: readonly DomainEvent[] = [];
 
-  if (result.runEnded && finalState.run?.runMetrics) {
-    metrics = finalState.run.runMetrics;
-    archivedEvents = getArchivedEvents(finalState);
-    finalState = await attachRunSummary(finalState, lootResult.events, args.ai);
-    finalState = await attachRumors(finalState, args.ai, args.log);
+  if (result.runEnded) {
+    const completedMetrics = finalState.run?.runMetrics ?? finalState.lastRunMetrics;
+    if (completedMetrics) {
+      metrics = completedMetrics;
+      archivedEvents = getArchivedEvents(finalState);
+      finalState = attachRunSummary(finalState, result.events);
+      finalState = attachRumors(finalState);
+    }
   }
 
   return {
     archivedEvents,
-    events: lootResult.events,
+    events: result.events,
     finalState,
     metrics,
     runEnded: result.runEnded,
   };
 }
 
-async function applyNemesisPromotionName(
+function attachRunSummary(
   state: GameState,
   events: readonly DomainEvent[],
-  ai: AiService,
-): Promise<GameState> {
-  const newNemesis = events.find(
-    (event): event is Extract<DomainEvent, { type: 'NEMESIS_PROMOTED' }> =>
-      event.type === 'NEMESIS_PROMOTED',
-  );
-  if (newNemesis === undefined) {
-    return state;
-  }
-
-  const promoted = state.world.nemeses.find(
-    nemesis => nemesis.id === newNemesis.nemesisId,
-  );
-  if (promoted === undefined) {
-    return state;
-  }
-
-  const aiName = await ai.generateNemesisName({
-    enemyTemplateName: promoted.sourceTemplateId,
-    tier: promoted.tier,
-    floor: promoted.floorOfAscension,
-    biome: promoted.biomeOfAscension,
-  });
-
-  return {
-    ...state,
-    world: {
-      ...state.world,
-      nemeses: state.world.nemeses.map(nemesis =>
-        nemesis.id === promoted.id
-          ? { ...nemesis, name: aiName.name, title: aiName.title }
-          : nemesis,
-      ),
-    },
-  };
-}
-
-async function applyNemesisLoot(
-  state: GameState,
-  events: readonly DomainEvent[],
-  ai: AiService,
-  log: CommandProcessingLogger,
-): Promise<NemesisLootResult> {
-  const slainEvent = events.find(
-    (event): event is Extract<DomainEvent, { type: 'NEMESIS_SLAIN' }> =>
-      event.type === 'NEMESIS_SLAIN',
-  );
-  if (slainEvent === undefined) {
-    return { events, state };
-  }
-
-  const slainNemesis = state.world.nemeses.find(
-    nemesis => nemesis.id === slainEvent.nemesisId,
-  );
-  if (slainNemesis === undefined) {
-    return { events, state };
-  }
-
-  try {
-    const lootData = await ai.generateNemesisLoot({
-      nemesisName: slainNemesis.name,
-      nemesisTitle: slainNemesis.title,
-      tier: slainNemesis.tier,
-      floor: slainNemesis.floorOfAscension,
-      traits: slainNemesis.traits,
-      weaponType: slainNemesis.killedByWeaponType,
-      rank: slainNemesis.rank,
-    });
-
-    const lootTemplate = rollNemesisLoot(
-      lootData,
-      slainNemesis.rank,
-      slainNemesis.tier,
-      state.player.floor,
-      slainNemesis.killedByWeaponType,
-    );
-
-    const lootResult = addItemToInventory(state, lootTemplate);
-    const updatedEvents = events.map(event =>
-      event.type === 'NEMESIS_SLAIN'
-        ? { ...event, lootItemName: lootData.name }
-        : event,
-    );
-
-    return {
-      events: updatedEvents,
-      state: lootResult.state,
-    };
-  } catch (error) {
-    log.warn({ error }, 'Failed to generate nemesis loot');
-    return { events, state };
-  }
-}
-
-async function attachRunSummary(
-  state: GameState,
-  events: readonly DomainEvent[],
-  ai: AiService,
-): Promise<GameState> {
-  const metrics = state.run?.runMetrics;
+): GameState {
+  const metrics = state.run?.runMetrics ?? state.lastRunMetrics;
   if (metrics === undefined) {
     return state;
   }
 
-  const summary = await ai.generateRunSummary({
-    runMetrics: metrics,
-    recentEvents: events,
-    playerName: state.player.name,
-    floor: state.player.floor,
-  });
+  const summary = buildDeterministicRunSummary(state, metrics, events);
 
   return {
     ...state,
@@ -247,38 +132,19 @@ async function attachRunSummary(
   };
 }
 
-async function attachRumors(
+function attachRumors(
   state: GameState,
-  ai: AiService,
-  log: CommandProcessingLogger,
-): Promise<GameState> {
-  const rumorCount = 3;
-  const rumorArgs = {
-    townState: state.world.town,
-    deepestFloor: state.world.deepestFloor,
-    totalRuns: state.world.totalRuns,
-    recentEvents: state.world.eventHistory.slice(-10),
-  };
-
-  try {
-    const rumors = await Promise.all(
-      Array.from({ length: rumorCount }, () => ai.generateRumor(rumorArgs)),
-    );
-
-    return {
-      ...state,
-      world: {
-        ...state.world,
-        town: {
-          ...state.world.town,
-          rumors,
-        },
+): GameState {
+  return {
+    ...state,
+    world: {
+      ...state.world,
+      town: {
+        ...state.world.town,
+        rumors: buildDeterministicTownRumors(state),
       },
-    };
-  } catch (error) {
-    log.warn({ error }, 'Failed to generate rumors');
-    return state;
-  }
+    },
+  };
 }
 
 function getArchivedEvents(state: GameState): readonly DomainEvent[] {

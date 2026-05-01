@@ -64,8 +64,8 @@ function createTestGameState(playerPos = { x: 5, y: 5 }): GameState {
       eventHistory: [],
       totalRuns: 0,
       deepestFloor: 0,
-      nemeses: [],
       factions: [],
+      dungeonOgre: sealedDungeonOgre,
       unlockedBlueprints: [],
       highestRarityFound: 'common',
     },
@@ -76,6 +76,11 @@ function createTestGameState(playerPos = { x: 5, y: 5 }): GameState {
     activeQuests: [],
   };
 }
+
+const sealedDungeonOgre = {
+  id: 'dungeon_ogre' as const,
+  status: 'sealed' as const,
+};
 
 describe('buildMapView', () => {
   it('renders player on top of objects at same position', () => {

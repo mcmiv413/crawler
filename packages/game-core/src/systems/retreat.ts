@@ -1,6 +1,6 @@
 import type { GameState, StoredFloor } from '@dungeon/contracts';
 import type { DomainEvent } from '@dungeon/contracts';
-import { posKey } from '@dungeon/contracts';
+import { EMPTY_RUN_METRICS, posKey } from '@dungeon/contracts';
 import { randomizeShop } from '../state/world-state.js';
 import type { SeededRNG } from '../utils/rng.js';
 import { AMBIENT_PROFILES } from '@dungeon/content';
@@ -73,6 +73,12 @@ export function executeRetreat(state: GameState, rng: SeededRNG): { state: GameS
   // Save current floor (highest priority, overwrites any cached version)
   updatedCache.set(currentFloorDepth, currentFloorSnapshot);
 
+  const finalRunMetrics = {
+    ...(state.run!.runMetrics ?? EMPTY_RUN_METRICS),
+    causeOfEnd: 'retreat' as const,
+    floorsCleared: state.player.floor - 1,
+  };
+
   return {
     state: {
       ...state,
@@ -80,7 +86,7 @@ export function executeRetreat(state: GameState, rng: SeededRNG): { state: GameS
       run: null,
       persistedFloorCache: updatedCache,
       lastRetreatFloor: currentFloorDepth,
-      lastRunMetrics: state.run!.runMetrics,
+      lastRunMetrics: finalRunMetrics,
       player: {
         ...state.player,
         totalRuns: state.player.totalRuns + 1,

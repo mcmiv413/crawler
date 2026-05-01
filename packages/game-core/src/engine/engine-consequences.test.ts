@@ -46,7 +46,7 @@ describe('GameEngine — applyRunConsequences integration', () => {
       const engine = new GameEngine();
       const state = createTestGameState();
 
-      // Event chains (3+ deaths, nemesis kills, faction checks)
+      // Event chains (3+ deaths, leader kills, faction checks)
       // should be evaluated by engine internally
       expect(state.world.eventHistory).toBeDefined();
     });
