@@ -19,6 +19,7 @@ import { PlayerHud } from './PlayerHud.js';
 import { EnchanterPanel } from './EnchanterPanel.js';
 import { RunSummaryPanel } from './RunSummaryPanel.js';
 import { ShopPanel } from './ShopPanel.js';
+import { FactionDetailModal } from './FactionDetailModal.js';
 import { useBreakpoint } from '../hooks/useBreakpoint.js';
 import { InfoCard, PanelHeader, SectionLabel } from './ui/index.js';
 
@@ -192,7 +193,7 @@ function NpcCard({
 }
 
 // ─── Tavern sub-panel ──────────────────────────────────────────────────────
-function TavernPanel({ view }: { view: GameView }) {
+function TavernPanel({ view, onOpenFactionDetails }: { view: GameView; onOpenFactionDetails: () => void }) {
   return (
     <div style={{ fontFamily: FONT_STACK, color: colors.text }}>
       <h3
@@ -287,7 +288,25 @@ function TavernPanel({ view }: { view: GameView }) {
 
       {view.town && (
         <InfoCard marginBottom={10}>
-          <SectionLabel label="Factions" color={colors.lime} />
+          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 4 }}>
+            <SectionLabel label="Factions" color={colors.lime} />
+            {view.town.factions.length > 0 && (
+              <button
+                onClick={onOpenFactionDetails}
+                style={{
+                  padding: '3px 8px',
+                  background: colors.inset,
+                  color: colors.lime,
+                  border: `1px solid ${colors.border2}`,
+                  fontSize: 10,
+                  cursor: 'pointer',
+                  fontFamily: FONT_STACK,
+                }}
+              >
+                Inspect →
+              </button>
+            )}
+          </div>
           {view.town.factions.length === 0 ? (
             <div style={{ fontSize: 11, color: colors.muted }}>
               No faction activity reported.
@@ -366,6 +385,7 @@ export function TownPhase({
   talkingTo,
 }: TownPhaseProps) {
   const [townPanel, setTownPanel] = useState<TownPanel>('main');
+  const [showFactionsModal, setShowFactionsModal] = useState(false);
   useBreakpoint();
 
   if (townPanel === 'shop') {
@@ -381,7 +401,7 @@ export function TownPhase({
   if (townPanel === 'tavern') {
     return (
       <SubPanel onBack={() => setTownPanel('main')}>
-        <TavernPanel view={view} />
+        <TavernPanel view={view} onOpenFactionDetails={() => setShowFactionsModal(true)} />
       </SubPanel>
     );
   }
@@ -587,6 +607,10 @@ export function TownPhase({
 
         {error && <p style={{ color: colors.blood, fontSize: 11 }}>{error}</p>}
       </div>
+
+      {showFactionsModal && view.town?.factions && (
+        <FactionDetailModal factions={view.town.factions} onClose={() => setShowFactionsModal(false)} />
+      )}
     </div>
   );
 }
