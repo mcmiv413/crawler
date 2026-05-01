@@ -16,7 +16,7 @@ export function handleEquip(state: GameState, itemId: string): CommandResult {
       events: [{
         type: 'EQUIP_BLOCKED',
         reason: 'Cannot change equipment while enemies are in threat range.',
-        timestamp: Date.now(),
+        timestamp: state.turnNumber,
         turnNumber: state.turnNumber,
       }],
       runEnded: false,
@@ -35,7 +35,7 @@ export function handleUnequip(state: GameState, itemId: string): CommandResult {
       events: [{
         type: 'EQUIP_BLOCKED',
         reason: 'Cannot change equipment while enemies are in threat range.',
-        timestamp: Date.now(),
+        timestamp: state.turnNumber,
         turnNumber: state.turnNumber,
       }],
       runEnded: false,

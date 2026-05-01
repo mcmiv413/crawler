@@ -20,6 +20,17 @@ AI assistants are allowed to generate test scaffolding, but every test must be r
 3. Decide whether the failure is a real regression or a brittle test. Prefer fixing the test when it depends on tuned values, live config in the wrong layer, or implementation details.
 4. Finish with `pnpm validate`. Focused test passes help you iterate, but they do not replace full validation.
 
+## Command Map
+
+| Need | Command |
+|---|---|
+| Fast-fail Vitest run | `pnpm test` |
+| Full Vitest output | `pnpm test:verbose` |
+| Changed-file Vitest scope | `pnpm test:changed` |
+| Single Vitest file | `pnpm vitest run path/to/file.test.ts` |
+| Playwright only | `pnpm test:e2e` |
+| Merge gate | `pnpm validate` |
+
 ## Test Layer Decision
 
 | Question | Layer | Location |

@@ -149,7 +149,7 @@ function unlockBlueprints(
     type: 'BLUEPRINT_UNLOCKED',
     playerId: state.player.id,
     blueprintIds: newIds,
-    timestamp: Date.now(),
+    timestamp: state.turnNumber,
     turnNumber: state.turnNumber,
   }];
 

@@ -123,7 +123,7 @@ export function tickPlayerStatuses(
         type: 'STATUS_EXPIRED',
         targetId: state.player.id,
         statusId: status.id,
-        timestamp: Date.now(),
+        timestamp: turnNumber,
         turnNumber,
       }];
     } else {
@@ -234,7 +234,7 @@ export function tickEnemyStatuses(
         type: 'STATUS_EXPIRED',
         targetId: enemy.id,
         statusId: status.id,
-        timestamp: Date.now(),
+        timestamp: turnNumber,
         turnNumber,
       }];
     } else {

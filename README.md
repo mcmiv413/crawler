@@ -38,12 +38,14 @@ The game is **fully playable without LM Studio**. To enable LM Studio locally, s
 | `pnpm dev:server` | Server only — tsx watch mode, auto-reload on changes |
 | `pnpm dev:web` | Web only — Vite dev server with hot module reload |
 | `pnpm build` | Build all packages and apps for production |
-| `pnpm lint` | TypeScript type check across monorepo (tsc --noEmit) |
-| `pnpm test` | Run all unit tests + property tests + E2E tests (Vitest + Playwright) |
+| `pnpm lint` | Run ESLint plus TypeScript checks across the monorepo |
+| `pnpm test` | Run the Vitest suites (unit, property, contract, integration, and balance) with the fast-fail reporter |
+| `pnpm test:verbose` | Run the full Vitest suite with standard output |
 | `pnpm test:watch` | Vitest watch mode — re-run tests on file changes |
 | `pnpm test:e2e` | Run Playwright E2E tests (automatically starts server+web) |
+| `pnpm validate` | Run the repository validation gate: audit guardrails -> lint -> test -> build |
 | `pnpm test:docker` | Build and test Docker images (builds, starts containers, verifies health) |
-| `pnpm test -- <file>` | Run a single test file, e.g., `pnpm test -- packages/game-core/src/systems/combat.test.ts` |
+| `pnpm vitest run <file>` | Run a single Vitest file, e.g., `pnpm vitest run packages/game-core/src/systems/combat.test.ts` |
 | `docker-compose up` | Production mode: server :3000, web :8080 (uses prebuilt Docker images) |
 
 ---
@@ -104,20 +106,23 @@ This is a **pnpm monorepo** organized into two layers:
 ### Running Tests
 
 ```bash
-# All tests (unit + property + E2E)
+# Fast-fail Vitest suites
 pnpm test
+
+# Full Vitest output when you need the failing set
+pnpm test:verbose
 
 # Watch mode (fast iteration during development)
 pnpm test:watch
 
-# E2E tests only (auto-starts server+web)
+# Playwright E2E only (auto-starts server+web)
 pnpm test:e2e
 
 # Single test file
-pnpm test -- packages/game-core/src/systems/combat.test.ts
+pnpm vitest run packages/game-core/src/systems/combat.test.ts
 
-# Test a specific pattern
-pnpm test -- --grep "combat"
+# Final validation gate before merge
+pnpm validate
 
 # Docker build & runtime tests
 pnpm test:docker
@@ -134,12 +139,9 @@ The `pnpm test:docker` command:
 
 This ensures the Docker build works and the containerized app is fully functional before deployment.
 
-### Current Test Status
+### Validation Gate
 
-- ✓ **596+ unit & property tests** — all passing
-- ✓ **14 E2E scenarios** — all passing (full game-loop coverage)
-- ✓ **TypeScript lint** — 0 errors
-- ✓ **Build** — clean, no warnings
+Use `pnpm validate` as the merge gate. It runs audit guardrails, linting, the Vitest suites, and the production builds in the same order CI uses.
 
 ---
 
@@ -192,12 +194,12 @@ This ensures the Docker build works and the containerized app is fully functiona
 
 ## Sprite Assets
 
-The web client uses **Kenney Tiny Dungeon** (CC0, 16×16 tileset) for the canvas renderer (`DungeonCanvas`).
+The web client uses the **DawnLike Atlas** (16x16 sprites) for the canvas renderer.
 
 ### One-Time Setup
 
-1. Download from [kenney.nl/assets/tiny-dungeon](https://kenney.nl/assets/tiny-dungeon) (free, CC0)
-2. Copy `Tilemap/tilemap_packed.png` to `apps/web/public/sprites/kenney-tiny-dungeon.png`
+1. Place the atlas image at `apps/web/public/sprites/dawnlike.png`
+2. Keep the filename stable so `apps/web/src/sprites/sprite-registry.ts` can load it in both dev and production
 
 Without the PNG, the renderer falls back to ASCII characters on a dark background. To force ASCII mode:
 
@@ -205,7 +207,7 @@ Without the PNG, the renderer falls back to ASCII characters on a dark backgroun
 VITE_ASCII_MODE=true pnpm dev:web
 ```
 
-Sprite positions are defined in `apps/web/src/sprites/sprite-map.ts`. Grid formula: tile at column `c`, row `r` (0-indexed, 16px each) → `{ x: c*16, y: r*16, w: 16, h: 16 }`.
+Named atlas lookups live in `packages/content/src/sprites/dawnlike-name-map.ts`, and keyed tile/entity sprite rectangles live in `packages/content/src/sprites/dawnlike-sprite-map.ts`.
 
 **Note**: Binary assets are gitignored — do not commit the PNG.
 

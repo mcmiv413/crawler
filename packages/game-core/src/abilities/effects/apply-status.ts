@@ -50,7 +50,7 @@ export function applyStatus(
     statusId,
     duration: effect.duration ?? 3,
     sourceId: context.player.id,
-    timestamp: Date.now(),
+    timestamp: context.state.turnNumber,
     turnNumber: context.state.turnNumber,
   });
 

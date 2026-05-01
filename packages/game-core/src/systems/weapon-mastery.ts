@@ -25,7 +25,7 @@ export function checkWeaponMasteryUnlocks(
           tier,
           abilityId,
           abilityName: def?.name ?? abilityId,
-          timestamp: Date.now(),
+          timestamp: newState.turnNumber,
           turnNumber: newState.turnNumber,
         }];
       }

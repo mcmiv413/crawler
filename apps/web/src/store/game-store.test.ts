@@ -124,6 +124,7 @@ describe('useGameStore (Zustand)', () => {
     act(() => {
       result.current.resetGame();
     });
+    vi.clearAllMocks();
   });
 
   afterEach(() => {
@@ -442,7 +443,7 @@ describe('useGameStore (Zustand)', () => {
       expect(vi.mocked(mockRestoreGame)).toHaveBeenCalledWith(serializedState);
     });
 
-    it('corruption handling: Both fetch and restore fail → session cleared, returns false', async () => {
+    it('clears the saved session when restore confirms the local save is invalid', async () => {
       const mockGameId = 'game-corrupt-123';
       const serializedState = 'corrupt-state';
 
@@ -458,7 +459,12 @@ describe('useGameStore (Zustand)', () => {
       const { fetchGameView: mockFetchGameView, restoreGame: mockRestoreGame } =
         await import('../api/client.js');
       vi.mocked(mockFetchGameView).mockRejectedValueOnce(new Error('Server error'));
-      vi.mocked(mockRestoreGame).mockRejectedValueOnce(new Error('Corrupt state'));
+      vi.mocked(mockRestoreGame).mockRejectedValueOnce(
+        Object.assign(new Error('Invalid save file'), {
+          status: 400,
+          code: 'INVALID_SAVE_FILE',
+        }),
+      );
 
       // Call restoreSession
       let restored = false;
@@ -469,6 +475,39 @@ describe('useGameStore (Zustand)', () => {
       // Verify session was cleared
       expect(restored).toBe(false);
       expect(sessionPersistence.clearSession).toHaveBeenCalled();
+      expect(result.current.error).toBe('Invalid save file');
+      expect(result.current.loading).toBe(false);
+    });
+
+    it('preserves the saved session when restore fails transiently', async () => {
+      const mockGameId = 'game-transient-123';
+      const serializedState = 'transient-state';
+
+      const { result } = renderHook(() => useGameStore());
+
+      vi.mocked(sessionPersistence.loadSession).mockReturnValueOnce({
+        gameId: mockGameId,
+        serializedState,
+      });
+
+      const { fetchGameView: mockFetchGameView, restoreGame: mockRestoreGame } =
+        await import('../api/client.js');
+      vi.mocked(mockFetchGameView).mockRejectedValueOnce(new Error('Server error'));
+      vi.mocked(mockRestoreGame).mockRejectedValueOnce(
+        Object.assign(new Error('Failed to restore existing game state'), {
+          status: 500,
+          code: 'RESTORE_WARM_LOAD_FAILED',
+        }),
+      );
+
+      let restored = false;
+      await act(async () => {
+        restored = await result.current.restoreSession();
+      });
+
+      expect(restored).toBe(false);
+      expect(sessionPersistence.clearSession).not.toHaveBeenCalled();
+      expect(result.current.error).toBe('Failed to restore existing game state');
       expect(result.current.loading).toBe(false);
     });
 

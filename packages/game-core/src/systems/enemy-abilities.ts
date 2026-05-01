@@ -199,7 +199,7 @@ export function resolveEnemyAbility(
       hit: result.hit,
       critical: result.criticalHit,
       position: state.player.position,
-      timestamp: Date.now(),
+      timestamp: state.turnNumber,
       turnNumber: state.turnNumber,
     }];
 
@@ -258,7 +258,7 @@ export function resolveEnemyAbility(
         statusId: abilityDef.statusId,
         duration: abilityDef.statusDuration,
         sourceId: enemy.id,
-        timestamp: Date.now(),
+        timestamp: state.turnNumber,
         turnNumber: state.turnNumber,
       }];
     } else {
@@ -279,7 +279,7 @@ export function resolveEnemyAbility(
         statusId: abilityDef.statusId,
         duration: abilityDef.statusDuration,
         sourceId: enemy.id,
-        timestamp: Date.now(),
+        timestamp: state.turnNumber,
         turnNumber: state.turnNumber,
       }];
     }

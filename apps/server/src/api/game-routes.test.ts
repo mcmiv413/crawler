@@ -1,10 +1,24 @@
-import { describe, it, expect, beforeEach, afterEach } from 'vitest';
+import { describe, it, expect, beforeEach, afterEach, vi } from 'vitest';
 import type { FastifyInstance } from 'fastify';
 import { buildApp } from '../app.js';
 import { deserializeState, serializeState } from '@dungeon/core';
 import { createTestEnemy, createTestGameStateInCombat } from '@dungeon/core/testing';
 import { entityId } from '@dungeon/contracts';
-import type { EntityId, GameCommand, GameState } from '@dungeon/contracts';
+import type { DomainEvent, EntityId, GameCommand, GameState, IGameRepository, RunMetrics } from '@dungeon/contracts';
+
+function createRepoStub(overrides: Partial<IGameRepository> = {}): IGameRepository {
+  return {
+    createGame: vi.fn(() => Promise.resolve()),
+    loadGame: vi.fn(() => Promise.resolve(null)),
+    saveGame: vi.fn(() => Promise.resolve()),
+    appendEvents: vi.fn(() => Promise.resolve()),
+    getRecentEvents: vi.fn(() => Promise.resolve([] as readonly DomainEvent[])),
+    recordRunMetrics: vi.fn((_metrics: RunMetrics, _gameId?: string) => undefined),
+    getRunMetricsLog: vi.fn(() => [] as readonly RunMetrics[]),
+    commitTick: vi.fn(() => Promise.resolve()),
+    ...overrides,
+  };
+}
 
 describe('Game Routes', () => {
   let app: FastifyInstance;
@@ -427,6 +441,7 @@ describe('Game Routes', () => {
       expect(response.statusCode).toBe(400);
       const body = JSON.parse(response.body);
       expect(body).toHaveProperty('error');
+      expect(body.code).toBe('MISSING_SERIALIZED_STATE');
     });
 
     it('returns 400 when serializedState is not a string', async () => {
@@ -451,6 +466,7 @@ describe('Game Routes', () => {
       expect(response.statusCode).toBe(400);
       const body = JSON.parse(response.body);
       expect(body).toHaveProperty('error');
+      expect(body.code).toBe('INVALID_SAVE_FILE');
     });
 
     it('returns existing game if already in repository', async () => {
@@ -475,6 +491,46 @@ describe('Game Routes', () => {
       const restoreBody = JSON.parse(restoreResponse.body);
       // Should get same gameId back if already in repo
       expect(restoreBody.gameId).toBeDefined();
+    });
+
+    it('returns 500 when warm restore fails unexpectedly without blaming the client save', async () => {
+      const repo = createRepoStub({
+        loadGame: vi.fn(() => Promise.reject(new Error('server storage unavailable'))),
+      });
+      const testApp = await buildApp({ repo });
+      const state = createTestGameStateInCombat();
+
+      const response = await testApp.inject({
+        method: 'POST',
+        url: '/api/games/restore',
+        payload: { serializedState: serializeState(state) },
+      });
+
+      expect(response.statusCode).toBe(500);
+      const body = JSON.parse(response.body);
+      expect(body.error).toBe('Failed to restore existing game state');
+      expect(body.code).toBe('RESTORE_WARM_LOAD_FAILED');
+      await testApp.close();
+    });
+
+    it('returns 500 when cold restore creation fails unexpectedly', async () => {
+      const repo = createRepoStub({
+        createGame: vi.fn(() => Promise.reject(new Error('disk full'))),
+      });
+      const testApp = await buildApp({ repo });
+      const state = createTestGameStateInCombat();
+
+      const response = await testApp.inject({
+        method: 'POST',
+        url: '/api/games/restore',
+        payload: { serializedState: serializeState(state) },
+      });
+
+      expect(response.statusCode).toBe(500);
+      const body = JSON.parse(response.body);
+      expect(body.error).toBe('Failed to restore game state');
+      expect(body.code).toBe('RESTORE_CREATE_FAILED');
+      await testApp.close();
     });
   });
 

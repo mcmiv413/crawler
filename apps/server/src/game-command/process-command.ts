@@ -57,7 +57,7 @@ export async function processGameCommand(
   args: ProcessGameCommandArgs,
 ): Promise<ProcessGameCommandResult> {
   const prepared = await prepareCommandState(args);
-  const persistedState = appendEventHistory(prepared.finalState, prepared.events);
+  const persistedState = prepared.finalState;
 
   await args.repo.commitTick(
     args.gameId,
@@ -154,23 +154,6 @@ function getArchivedEvents(state: GameState): readonly DomainEvent[] {
   }
 
   return state.world.eventHistory.slice(0, historyLength - MAX_EVENT_HISTORY);
-}
-
-function appendEventHistory(
-  state: GameState,
-  events: readonly DomainEvent[],
-): GameState {
-  if (events.length === 0) {
-    return state;
-  }
-
-  return {
-    ...state,
-    world: {
-      ...state.world,
-      eventHistory: [...state.world.eventHistory, ...events],
-    },
-  };
 }
 
 function buildCommandResponse(

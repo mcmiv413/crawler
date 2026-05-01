@@ -96,7 +96,7 @@ export function processEnemyLoot(
       amount: gold,
       newTotal: currentState.player.gold,
       reason: `Looted from ${enemy.name}`,
-      timestamp: Date.now(),
+      timestamp: currentState.turnNumber,
       turnNumber: currentState.turnNumber,
     }];
   }

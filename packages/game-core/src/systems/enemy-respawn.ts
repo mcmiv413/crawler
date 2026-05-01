@@ -103,7 +103,7 @@ export function checkRespawn(
       enemyName: newEnemy.name,
       position: spawnPos,
       reason: 'respawn',
-      timestamp: Date.now(),
+      timestamp: state.turnNumber,
       turnNumber: state.turnNumber,
     }];
   }

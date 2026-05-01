@@ -8,7 +8,7 @@ import {
   isGameStateValid,
 } from './validators.js';
 import { createTestGameState, createTestPlayer, createTestRunState, createTestEnemy } from '../test-utils.js';
-import { entityId } from '@dungeon/contracts';
+import { entityId, type GameState } from '@dungeon/contracts';
 
 describe('state validators', () => {
   describe('validateGameState', () => {
@@ -491,7 +491,7 @@ describe('state validators', () => {
 
     it('rejects emerged ogre without selectedSpawnDepth', () => {
       const state = createTestGameState();
-      const invalid = {
+      const invalid: GameState = {
         ...state,
         world: {
           ...state.world,

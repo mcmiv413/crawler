@@ -16,10 +16,36 @@ export interface CommandResponse {
 
 const BASE = API_BASE_URL;
 
+interface ErrorResponse {
+  readonly code?: string;
+  readonly error?: string;
+  readonly message?: string;
+}
+
+export class ApiError extends Error {
+  readonly status: number;
+  readonly code?: string;
+
+  constructor(
+    status: number,
+    message: string,
+    code?: string,
+  ) {
+    super(message);
+    this.name = 'ApiError';
+    this.status = status;
+    this.code = code;
+  }
+}
+
 async function json<T>(res: Response): Promise<T> {
   if (!res.ok) {
-    const err = await res.json().catch(() => ({ error: res.statusText }));
-    throw new Error((err as { error?: string }).error ?? `HTTP ${res.status}`);
+    const err = await res.json().catch(() => ({ error: res.statusText })) as ErrorResponse;
+    throw new ApiError(
+      res.status,
+      err.message ?? err.error ?? `HTTP ${res.status}`,
+      err.code,
+    );
   }
   return res.json() as Promise<T>;
 }

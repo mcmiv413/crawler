@@ -31,6 +31,33 @@ interface GameStore {
 
 let deathTransitionTimeout: ReturnType<typeof setTimeout> | null = null;
 
+const FATAL_RESTORE_CODES = new Set([
+  'INCOMPATIBLE_SAVE_FILE',
+  'INVALID_GAME_STATE',
+  'INVALID_SAVE_FILE',
+  'MISSING_SERIALIZED_STATE',
+]);
+
+const FATAL_RESTORE_MESSAGES = new Set([
+  'Incompatible save file',
+  'Invalid game state',
+  'Invalid save file',
+  'Missing serializedState',
+]);
+
+function shouldClearSavedSession(error: unknown): boolean {
+  if (!(error instanceof Error)) {
+    return false;
+  }
+
+  const apiError = error as Error & { readonly code?: string; readonly status?: number };
+  if (apiError.status !== 400) {
+    return false;
+  }
+
+  return FATAL_RESTORE_CODES.has(apiError.code ?? '') || FATAL_RESTORE_MESSAGES.has(apiError.message);
+}
+
 export const useGameStore = create<GameStore>((set, get) => ({
   gameId: null,
   view: null,
@@ -177,10 +204,11 @@ export const useGameStore = create<GameStore>((set, get) => ({
       saveSession(result.gameId, result.serializedState);
       set({ gameId: result.gameId, view: result.view, combatLog: [], loading: false });
       return true;
-    } catch {
-      // Saved state is corrupted or incompatible — clear and start fresh
-      clearSession();
-      set({ loading: false });
+    } catch (err) {
+      if (shouldClearSavedSession(err)) {
+        clearSession();
+      }
+      set({ error: (err as Error).message, loading: false });
       return false;
     }
   },

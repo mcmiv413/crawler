@@ -26,7 +26,7 @@ export function buildAbilityUsedEvent(
     targetName: result.targetName,
     damage: result.damage,
     healAmount: result.healAmount,
-    timestamp: Date.now(),
+    timestamp: context.state.turnNumber,
     turnNumber: context.state.turnNumber,
   };
 

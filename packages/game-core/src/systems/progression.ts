@@ -57,7 +57,7 @@ export function checkLevelUp(state: GameState): LevelUpResult {
       playerId: player.id,
       newLevel,
       statGains: gains,
-      timestamp: Date.now(),
+      timestamp: state.turnNumber,
       turnNumber: state.turnNumber,
     }];
 

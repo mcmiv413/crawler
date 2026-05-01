@@ -23,7 +23,7 @@ export function addItemToInventory(
     itemId: itemEntityId,
     itemName: itemTemplate.name,
     playerId: state.player.id,
-    timestamp: Date.now(),
+    timestamp: state.turnNumber,
     turnNumber: state.turnNumber,
   }];
 
@@ -51,7 +51,7 @@ export function addItemToInventory(
         type: 'SHOP_TIER_UNLOCKED',
         unlockedTier: 'uncommon',
         triggerRarity: 'epic',
-        timestamp: Date.now(),
+        timestamp: state.turnNumber,
         turnNumber: state.turnNumber,
       }];
     }
@@ -61,7 +61,7 @@ export function addItemToInventory(
         type: 'SHOP_TIER_UNLOCKED',
         unlockedTier: 'epic',
         triggerRarity: 'legendary',
-        timestamp: Date.now(),
+        timestamp: state.turnNumber,
         turnNumber: state.turnNumber,
       }];
     }
@@ -193,7 +193,7 @@ export function useConsumable(
     itemName: template.name,
     userId: state.player.id,
     effect: consumable.effect,
-    timestamp: Date.now(),
+    timestamp: state.turnNumber,
     turnNumber: state.turnNumber,
   }];
 

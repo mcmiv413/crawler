@@ -66,7 +66,7 @@ function handleTrapHazardDeath(
         killerId: null,
         floor: state.player.floor,
         overkillDamage,
-        timestamp: Date.now(),
+        timestamp: state.turnNumber,
         turnNumber: state.turnNumber,
       },
       {
@@ -74,14 +74,14 @@ function handleTrapHazardDeath(
         runId: run.runId,
         reason: 'permadeath',
         floorsCleared: state.player.floor - 1,
-        timestamp: Date.now(),
+        timestamp: state.turnNumber,
         turnNumber: state.turnNumber,
       },
       {
         type: 'PHASE_CHANGED',
         from: state.phase,
         to: 'game_over',
-        timestamp: Date.now(),
+        timestamp: state.turnNumber,
         turnNumber: state.turnNumber,
       },
     ];
@@ -137,7 +137,7 @@ function handleTrapHazardDeath(
       cause: `Killed by ${hazardName}`,
       goldLost: goldLoss,
       overkillDamage,
-      timestamp: Date.now(),
+      timestamp: state.turnNumber,
       turnNumber: state.turnNumber,
     },
     {
@@ -145,14 +145,14 @@ function handleTrapHazardDeath(
       runId: run.runId,
       reason: 'death',
       floorsCleared: state.player.floor - 1,
-      timestamp: Date.now(),
+      timestamp: state.turnNumber,
       turnNumber: state.turnNumber,
     },
     {
       type: 'PHASE_CHANGED',
       from: state.phase,
       to: 'town',
-      timestamp: Date.now(),
+      timestamp: state.turnNumber,
       turnNumber: state.turnNumber,
     },
   ];
@@ -182,7 +182,7 @@ function handleTrapHazardDeath(
           type: 'EQUIPMENT_DROPPED',
           floor: state.player.floor,
           items: stashItems.map(s => ({ slot: s.slot, itemName: s.item.name })),
-          timestamp: Date.now(),
+          timestamp: state.turnNumber,
           turnNumber: state.turnNumber,
         },
       ]
@@ -276,7 +276,7 @@ function handleEnemyDeath(
         killerId,
         floor: state.player.floor,
         overkillDamage,
-        timestamp: Date.now(),
+        timestamp: state.turnNumber,
         turnNumber: state.turnNumber,
       },
       {
@@ -284,14 +284,14 @@ function handleEnemyDeath(
         runId: run.runId,
         reason: 'permadeath',
         floorsCleared: state.player.floor - 1,
-        timestamp: Date.now(),
+        timestamp: state.turnNumber,
         turnNumber: state.turnNumber,
       },
       {
         type: 'PHASE_CHANGED',
         from: state.phase,
         to: 'game_over',
-        timestamp: Date.now(),
+        timestamp: state.turnNumber,
         turnNumber: state.turnNumber,
       },
     ];
@@ -357,7 +357,7 @@ function handleEnemyDeath(
       cause,
       goldLost: goldLoss,
       overkillDamage: overkillDamage ?? 0,
-      timestamp: Date.now(),
+      timestamp: state.turnNumber,
       turnNumber: state.turnNumber,
     },
     {
@@ -365,14 +365,14 @@ function handleEnemyDeath(
       runId: run.runId,
       reason: 'death',
       floorsCleared: state.player.floor - 1,
-      timestamp: Date.now(),
+      timestamp: state.turnNumber,
       turnNumber: state.turnNumber,
     },
     {
       type: 'PHASE_CHANGED',
       from: state.phase,
       to: 'town',
-      timestamp: Date.now(),
+      timestamp: state.turnNumber,
       turnNumber: state.turnNumber,
     },
   ];
@@ -403,7 +403,7 @@ function handleEnemyDeath(
           type: 'EQUIPMENT_DROPPED',
           floor: state.player.floor,
           items: stashItems.map(s => ({ slot: s.slot, itemName: s.item.name })),
-          timestamp: Date.now(),
+          timestamp: state.turnNumber,
           turnNumber: state.turnNumber,
         },
       ]
@@ -455,7 +455,7 @@ function handleEnemyDeath(
   const factionResult = applyFactionDeathConsequences(
     state.world,
     getPrimaryFactionId(killer?.templateId ?? ''),
-    { timestamp: Date.now(), turnNumber: state.turnNumber, depth: state.player.floor },
+    { timestamp: state.turnNumber, turnNumber: state.turnNumber, depth: state.player.floor },
   );
   events = [...events, ...factionResult.events];
 

@@ -25,7 +25,7 @@ export function createDamageDebugEvent(targetName: string, outcome: DamageOutcom
     bypassResistance: info.bypassResistance,
     isCrit: info.isCrit,
     critMultiplier: info.critMultiplier,
-    timestamp: Date.now(),
+    timestamp: 0,
     turnNumber: 0, // Will be set by caller if needed
   } as DomainEvent;
 }

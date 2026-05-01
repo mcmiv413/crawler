@@ -2,6 +2,7 @@ import { describe, it, expect } from 'vitest';
 import { applyRunConsequences, evaluateEventChains } from './world-consequences.js';
 import type { RunMetrics, NpcState } from '@dungeon/contracts';
 import { entityId, EMPTY_RUN_METRICS } from '@dungeon/contracts';
+import { INITIAL_FACTIONS } from '@dungeon/content';
 import { createTestGameState } from '../test-utils.js';
 
 const metrics = (overrides: Partial<RunMetrics> = {}): RunMetrics => ({
@@ -104,7 +105,7 @@ describe('evaluateEventChains', () => {
       cause: 'test',
       goldLost: 0,
       overkillDamage: 0,
-      timestamp: Date.now(),
+      timestamp: 1,
       turnNumber: 1,
     };
     const state = createTestGameState({
@@ -127,7 +128,7 @@ describe('evaluateEventChains', () => {
       cause: 'test',
       goldLost: 0,
       overkillDamage: 0,
-      timestamp: Date.now(),
+      timestamp: 1,
       turnNumber: 1,
     };
     const state = createTestGameState({
@@ -140,22 +141,32 @@ describe('evaluateEventChains', () => {
     expect(newState.world.town.fear).toBe(state.world.town.fear);
   });
 
-  it('faction at 0 power gets improved disposition', () => {
-    const weakFaction = {
-      id: 'goblin_warband',
-      name: 'Goblin Warband',
-      power: 0,
-      disposition: -30,
-      status: 'leaderless' as const,
-      leader: null,
-      leaderSlain: false,
-      membersKilledByPlayer: 0,
-      leadersKilledByPlayer: 0,
-      playerDeathsCaused: 0,
+  it('considers current command events when checking chain thresholds', () => {
+    const deathEvent = {
+      type: 'PLAYER_DIED' as const,
+      killerId: null,
+      killerName: null,
+      killerSpriteName: null,
+      floor: 1,
+      cause: 'test',
+      goldLost: 0,
+      overkillDamage: 0,
+      timestamp: 1,
+      turnNumber: 1,
     };
-    const state = createTestGameState({ world: { factions: [weakFaction] } });
-    const { state: newState } = evaluateEventChains(state);
-    expect(newState.world.factions[0]!.disposition).toBeGreaterThan(weakFaction.disposition);
+    const state = createTestGameState({
+      world: {
+        eventHistory: [deathEvent, { ...deathEvent, timestamp: 2 }],
+        town: { prosperity: 50, fear: 30, corruption: 10, rumors: [], lastRunSummary: null },
+      },
+    });
+
+    const { state: newState } = evaluateEventChains(
+      state,
+      [...state.world.eventHistory, { ...deathEvent, timestamp: 3 }],
+    );
+
+    expect(newState.world.town.fear).toBeGreaterThan(state.world.town.fear);
   });
 });
 
@@ -165,7 +176,7 @@ describe('event history capping', () => {
       type: 'PLAYER_MOVED' as const,
       from: { x: 0, y: 0 },
       to: { x: 1, y: 0 },
-      timestamp: Date.now(),
+      timestamp: 1,
       turnNumber: 1,
     };
     // Create 150 events
@@ -180,7 +191,7 @@ describe('event history capping', () => {
       type: 'PLAYER_MOVED' as const,
       from: { x: 0, y: 0 },
       to: { x: 1, y: 0 },
-      timestamp: Date.now(),
+      timestamp: 1,
       turnNumber: 1,
     };
     const eventHistory = Array.from({ length: 50 }, () => ({ ...fakeEvent }));
@@ -188,5 +199,29 @@ describe('event history capping', () => {
     const { state: newState } = applyRunConsequences(state, metrics({ causeOfEnd: 'retreat', floorsCleared: 1 }));
     // Should still have all original events (plus any new ones from consequences)
     expect(newState.world.eventHistory.length).toBeGreaterThanOrEqual(50);
+  });
+
+  it('does not mutate faction state on non-faction events', () => {
+    const state = createTestGameState({
+      world: {
+        factions: INITIAL_FACTIONS.map(f => ({
+          ...f,
+          power: 0,
+          disposition: -5,
+        })),
+      },
+    });
+
+    const beforeFactions = state.world.factions;
+    const result = evaluateEventChains(state);
+    const afterFactions = result.state.world.factions;
+
+    for (let i = 0; i < beforeFactions.length; i++) {
+      expect(afterFactions[i]!.id).toBe(beforeFactions[i]!.id);
+      expect(afterFactions[i]!.status).toBe(beforeFactions[i]!.status);
+      expect(afterFactions[i]!.power).toBe(beforeFactions[i]!.power);
+      expect(afterFactions[i]!.disposition).toBe(beforeFactions[i]!.disposition);
+      expect(afterFactions[i]!.leaderSlain).toBe(beforeFactions[i]!.leaderSlain);
+    }
   });
 });
