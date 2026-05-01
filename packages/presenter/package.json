@@ -20,6 +20,11 @@
       "types": "./dist/testing/feature-chain-helpers.d.ts",
       "import": "./dist/testing/feature-chain-helpers.js",
       "default": "./dist/testing/feature-chain-helpers.js"
+    },
+    "./testing/feature-chain-helpers.js": {
+      "types": "./dist/testing/feature-chain-helpers.d.ts",
+      "import": "./dist/testing/feature-chain-helpers.js",
+      "default": "./dist/testing/feature-chain-helpers.js"
     }
   },
   "scripts": {

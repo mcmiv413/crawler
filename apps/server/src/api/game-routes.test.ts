@@ -76,8 +76,10 @@ describe('Game Routes', () => {
 
       expect(response.statusCode).toBe(201);
       const body = JSON.parse(response.body);
+      const state = deserializeState(body.serializedState);
       expect(body.gameId).toBeDefined();
       expect(body.view).toBeDefined();
+      expect(state.seed).toBe(12345);
     });
 
     it('handles missing body gracefully and returns 201', async () => {
@@ -90,7 +92,9 @@ describe('Game Routes', () => {
       // Even with empty body, should succeed with defaults
       expect(response.statusCode).toBe(201);
       const body = JSON.parse(response.body);
+      const state = deserializeState(body.serializedState);
       expect(body.gameId).toBeDefined();
+      expect(typeof state.seed).toBe('number');
     });
 
     it('returns valid response when no playerName provided', async () => {
@@ -416,19 +420,19 @@ describe('Game Routes', () => {
       });
       const createBody = JSON.parse(createResponse.body);
       const serializedState = createBody.serializedState;
-      const stateSignature = createBody.stateSignature;
 
       // Restore the game
       const restoreResponse = await app.inject({
         method: 'POST',
         url: '/api/games/restore',
-        payload: { serializedState, stateSignature },
+        payload: { serializedState },
       });
 
       expect(restoreResponse.statusCode).toBe(200);
       const restoreBody = JSON.parse(restoreResponse.body);
       expect(restoreBody).toHaveProperty('gameId');
       expect(restoreBody).toHaveProperty('view');
+      expect(restoreBody.serializedState).toBe(serializedState);
     });
 
     it('returns 400 when serializedState is missing', async () => {
@@ -469,7 +473,7 @@ describe('Game Routes', () => {
       expect(body.code).toBe('INVALID_SAVE_FILE');
     });
 
-    it('returns existing game if already in repository', async () => {
+    it('returns existing game when the submitted save matches the stored state', async () => {
       // Create a game
       const createResponse = await app.inject({
         method: 'POST',
@@ -478,19 +482,47 @@ describe('Game Routes', () => {
       });
       const createBody = JSON.parse(createResponse.body);
       const serializedState = createBody.serializedState;
-      const stateSignature = createBody.stateSignature;
 
       // Restore same state
       const restoreResponse = await app.inject({
         method: 'POST',
         url: '/api/games/restore',
-        payload: { serializedState, stateSignature },
+        payload: { serializedState },
       });
 
       expect(restoreResponse.statusCode).toBe(200);
       const restoreBody = JSON.parse(restoreResponse.body);
-      // Should get same gameId back if already in repo
-      expect(restoreBody.gameId).toBeDefined();
+      expect(restoreBody.gameId).toBe(createBody.gameId);
+      expect(restoreBody.serializedState).toBe(serializedState);
+    });
+
+    it('returns 409 when the submitted save conflicts with an existing server copy', async () => {
+      const createResponse = await app.inject({
+        method: 'POST',
+        url: '/api/games',
+        payload: { playerName: 'Player1' },
+      });
+      const createBody = JSON.parse(createResponse.body);
+      const storedState = deserializeState(createBody.serializedState);
+      const conflictingState: GameState = {
+        ...storedState,
+        player: {
+          ...storedState.player,
+          gold: storedState.player.gold + 25,
+        },
+      };
+
+      const restoreResponse = await app.inject({
+        method: 'POST',
+        url: '/api/games/restore',
+        payload: { serializedState: serializeState(conflictingState) },
+      });
+
+      expect(restoreResponse.statusCode).toBe(409);
+      const restoreBody = JSON.parse(restoreResponse.body);
+      expect(restoreBody.error).toBe('Restore conflict');
+      expect(restoreBody.code).toBe('RESTORE_STATE_CONFLICT');
+      expect(restoreBody.gameId).toBe(storedState.gameId);
     });
 
     it('returns 500 when warm restore fails unexpectedly without blaming the client save', async () => {

@@ -12,6 +12,7 @@ import {
   type Issue,
 } from '../packages/game-core/src/testing/test-layer-advisor.js';
 import {
+  getDefaultWorkspaceTestRunStatus,
   guessTestLayerFromPath,
   isRecognizedTestFilePath,
   normalizeTestPath,
@@ -21,7 +22,9 @@ import {
 
 interface AuditResult {
   filePath: string;
-   proposedLayer: TestLayer;
+  proposedLayer: TestLayer;
+  includedInDefaultRun: boolean;
+  defaultRunReason: string;
   issues: number;
   warnings: number;
   isValid: boolean;
@@ -81,10 +84,13 @@ export function auditAllTests(dir = '.'): AuditResult[] {
     const content = fs.readFileSync(path.join(repoRoot, filePath), 'utf-8');
     const proposedLayer = guessLayerFromPath(filePath);
     const analysis = analyzeTestFile(content, proposedLayer);
+    const defaultRunStatus = getDefaultWorkspaceTestRunStatus(filePath);
 
     return {
       filePath,
       proposedLayer,
+      includedInDefaultRun: defaultRunStatus.included,
+      defaultRunReason: defaultRunStatus.reason,
       issues: analysis.issues.filter((issue) => issue.severity === 'error').length,
       warnings: analysis.issues.filter((issue) => issue.severity === 'warning').length,
       isValid: analysis.validated,
@@ -118,6 +124,7 @@ export function generateReport(results: AuditResult[]): string {
 
   const validCount = results.filter((result) => result.isValid).length;
   const invalidCount = results.filter((result) => !result.isValid).length;
+  const includedInDefaultRunCount = results.filter((result) => result.includedInDefaultRun).length;
   const totalIssues = results.reduce((sum, result) => sum + result.issues, 0);
   const totalWarnings = results.reduce((sum, result) => sum + result.warnings, 0);
 
@@ -125,6 +132,8 @@ export function generateReport(results: AuditResult[]): string {
   lines.push(`- **Total Test Files:** ${results.length}`);
   lines.push(`- **Valid (no errors):** ${validCount}`);
   lines.push(`- **Invalid (has errors):** ${invalidCount}`);
+  lines.push(`- **Included in default workspace Vitest run:** ${includedInDefaultRunCount}`);
+  lines.push(`- **Excluded from default workspace Vitest run:** ${results.length - includedInDefaultRunCount}`);
   lines.push(`- **Total Issues:** ${totalIssues}`);
   lines.push(`- **Total Warnings:** ${totalWarnings}`);
   lines.push('');
@@ -136,8 +145,10 @@ export function generateReport(results: AuditResult[]): string {
     const tests = byLayer[layer];
     if (tests.length > 0) {
       const valid = tests.filter((test) => test.isValid).length;
+      const includedInDefaultRun = tests.filter((test) => test.includedInDefaultRun).length;
       lines.push(`### ${TEST_LAYER_LABELS[layer]} Tests (${tests.length})`);
       lines.push(`- Valid: ${valid}/${tests.length}`);
+      lines.push(`- Default workspace run: ${includedInDefaultRun}/${tests.length}`);
       lines.push(`- Issues: ${tests.reduce((sum, test) => sum + test.issues, 0)}`);
       lines.push(`- Warnings: ${tests.reduce((sum, test) => sum + test.warnings, 0)}`);
       lines.push('');
@@ -155,6 +166,18 @@ export function generateReport(results: AuditResult[]): string {
     if (errorFiles.length > 10) {
       lines.push(`- ... and ${errorFiles.length - 10} more files with errors`);
     }
+    lines.push('');
+  }
+
+  const excludedFromDefaultRun = results.filter((result) => !result.includedInDefaultRun);
+  if (excludedFromDefaultRun.length > 0) {
+    lines.push('## Recognized but Excluded from Default Workspace Run');
+    lines.push('');
+    excludedFromDefaultRun
+      .sort((a, b) => a.filePath.localeCompare(b.filePath))
+      .forEach((result) => {
+        lines.push(`- **${result.filePath}** — ${result.defaultRunReason}`);
+      });
     lines.push('');
   }
 

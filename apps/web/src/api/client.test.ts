@@ -363,6 +363,28 @@ describe('API Client', () => {
         message: 'Save payload could not be parsed.',
       } satisfies Partial<ApiError>);
     });
+
+    it('throws ApiError for restore conflicts', async () => {
+      const serializedState = '{"version":"1","state":{"player":{"health":50}}}';
+      const mockFetch = vi.mocked(global.fetch);
+      mockFetch.mockResolvedValueOnce(
+        mockResponse(
+          {
+            error: 'Restore conflict',
+            code: 'RESTORE_STATE_CONFLICT',
+            message: 'Submitted save conflicts with existing server state for this game.',
+          },
+          { ok: false, status: 409, statusText: 'Conflict' },
+        ),
+      );
+
+      await expect(restoreGame(serializedState)).rejects.toMatchObject({
+        name: 'ApiError',
+        status: 409,
+        code: 'RESTORE_STATE_CONFLICT',
+        message: 'Submitted save conflicts with existing server state for this game.',
+      } satisfies Partial<ApiError>);
+    });
   });
 
   describe('GameNotFoundError', () => {

@@ -31,6 +31,11 @@ export const TEST_LAYER_LABELS: Readonly<Record<TestLayer, string>> = {
   e2e: 'E2E',
 };
 
+export interface DefaultWorkspaceTestRunStatus {
+  readonly included: boolean;
+  readonly reason: string;
+}
+
 type LayerMatcher = Readonly<{
   layer: TestLayer;
   matches: (normalizedPath: string) => boolean;
@@ -92,4 +97,77 @@ export function guessTestLayerFromPath(filePath: string): TestLayer | null {
 
 export function isRecognizedTestFilePath(filePath: string): boolean {
   return guessTestLayerFromPath(filePath) !== null;
+}
+
+export function getDefaultWorkspaceTestRunStatus(filePath: string): DefaultWorkspaceTestRunStatus {
+  const normalizedPath = normalizeTestPath(filePath);
+
+  if (normalizedPath.startsWith('tests/')) {
+    if (normalizedPath.endsWith('.balance.test.ts')) {
+      return {
+        included: false,
+        reason: 'excluded by tests/vitest.config.ts via ROOT_TEST_EXCLUDE_PATTERNS',
+      };
+    }
+
+    return {
+      included: true,
+      reason: 'included by tests/vitest.config.ts',
+    };
+  }
+
+  if (normalizedPath.startsWith('apps/web/src/')
+    && (normalizedPath.endsWith('.test.ts') || normalizedPath.endsWith('.test.tsx'))) {
+    return {
+      included: true,
+      reason: 'included by apps/web/vitest.config.ts',
+    };
+  }
+
+  if (normalizedPath.startsWith('apps/server/src/') && normalizedPath.endsWith('.test.ts')) {
+    return {
+      included: true,
+      reason: 'included by apps/server/vitest.config.ts',
+    };
+  }
+
+  if (normalizedPath.startsWith('packages/game-core/src/') && normalizedPath.endsWith('.test.ts')) {
+    if (normalizedPath.endsWith('.balance.test.ts')) {
+      return {
+        included: false,
+        reason: 'excluded by packages/game-core/vitest.config.ts',
+      };
+    }
+
+    return {
+      included: true,
+      reason: 'included by packages/game-core/vitest.config.ts',
+    };
+  }
+
+  if (normalizedPath.startsWith('packages/game-contracts/src/') && normalizedPath.endsWith('.test.ts')) {
+    return {
+      included: true,
+      reason: 'included by packages/game-contracts/vitest.config.ts',
+    };
+  }
+
+  if (normalizedPath.startsWith('packages/content/src/') && normalizedPath.endsWith('.test.ts')) {
+    return {
+      included: true,
+      reason: 'included by packages/content/vitest.config.ts',
+    };
+  }
+
+  if (normalizedPath.startsWith('packages/presenter/src/') && normalizedPath.endsWith('.test.ts')) {
+    return {
+      included: true,
+      reason: 'included by packages/presenter/vitest.config.ts',
+    };
+  }
+
+  return {
+    included: false,
+    reason: 'not matched by any workspace Vitest config',
+  };
 }

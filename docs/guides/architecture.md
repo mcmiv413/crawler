@@ -117,6 +117,8 @@ GameView = {
 }
 ```
 
+Presenter code also uses selected public `@dungeon/core/systems/*` helpers for derived stat and quest-text calculations. That dependency is intentional, but tests and other packages should consume it through workspace exports rather than sibling `src/` imports.
+
 ---
 
 ## Server (`apps/server/`)
