@@ -6,15 +6,17 @@
  * CURRENT_SCHEMA_VERSION and add a migration function.
  *
  * Version history:
- * - v1: Initial schema (current as of 2026-04-16)
+ * - v1: Initial schema (until 2026-05-01)
  *   Includes: player, world, run, itemRegistry, phase, activeQuests
+ * - v2: Faction system hardening (2026-05-01)
+ *   Adds: Faction leader/Ogre validation; explicit schema validation for world.factions and world.dungeonOgre
  */
 
 /**
  * Current schema version for serialized GameState.
  * Increment when the serialized format structure changes materially.
  */
-export const CURRENT_SCHEMA_VERSION = 1;
+export const CURRENT_SCHEMA_VERSION = 2;
 
 /**
  * Type for a serialized game state with explicit schema version.

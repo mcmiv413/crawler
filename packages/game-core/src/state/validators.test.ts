@@ -434,4 +434,77 @@ describe('state validators', () => {
       expect(result.errors.length).toBeGreaterThan(0);
     });
   });
+
+  describe('faction validation', () => {
+    it('rejects invalid faction status', () => {
+      const state = createTestGameState();
+      const invalid = {
+        ...state,
+        world: {
+          ...state.world,
+          factions: [
+            ...state.world.factions.slice(1),
+            { ...state.world.factions[0]!, status: 'invalid_status' as any },
+          ],
+        },
+      };
+      const result = validateGameState(invalid);
+      expect(result.isValid).toBe(false);
+      expect(result.errors.some(e => e.path.includes('factions.status'))).toBe(true);
+    });
+
+    it('rejects faction with power out of range', () => {
+      const state = createTestGameState();
+      const invalid = {
+        ...state,
+        world: {
+          ...state.world,
+          factions: [
+            ...state.world.factions.slice(1),
+            { ...state.world.factions[0]!, power: 150 },
+          ],
+        },
+      };
+      const result = validateGameState(invalid);
+      expect(result.isValid).toBe(false);
+      expect(result.errors.some(e => e.path.includes('factions.power'))).toBe(true);
+    });
+  });
+
+  describe('dungeon ogre validation', () => {
+    it('rejects invalid ogre status', () => {
+      const state = createTestGameState();
+      const invalid = {
+        ...state,
+        world: {
+          ...state.world,
+          dungeonOgre: {
+            ...state.world.dungeonOgre,
+            status: 'active' as any,
+          },
+        },
+      };
+      const result = validateGameState(invalid);
+      expect(result.isValid).toBe(false);
+      expect(result.errors.some(e => e.path.includes('dungeonOgre.status'))).toBe(true);
+    });
+
+    it('rejects emerged ogre without selectedSpawnDepth', () => {
+      const state = createTestGameState();
+      const invalid = {
+        ...state,
+        world: {
+          ...state.world,
+          dungeonOgre: {
+            ...state.world.dungeonOgre,
+            status: 'emerged',
+            selectedSpawnDepth: undefined as any,
+          },
+        },
+      };
+      const result = validateGameState(invalid);
+      expect(result.isValid).toBe(false);
+      expect(result.errors.some(e => e.path.includes('dungeonOgre.selectedSpawnDepth'))).toBe(true);
+    });
+  });
 });

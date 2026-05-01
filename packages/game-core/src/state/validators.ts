@@ -211,13 +211,39 @@ export function validateWorldState(world: WorldState): ValidationError[] {
     mutableErrors.push({ path: 'deepestFloor', message: 'deepestFloor must be non-negative' });
   }
 
+  // Validate factions array
   if (!Array.isArray(world.factions)) {
     mutableErrors.push({ path: 'factions', message: 'factions must be an array' });
+  } else {
+    for (const faction of world.factions) {
+      if (typeof faction.id !== 'string' || faction.id === '') {
+        mutableErrors.push({ path: 'factions.id', message: 'each faction must have a non-empty id' });
+      }
+      if (typeof faction.status !== 'string' || !['leaderless', 'led', 'broken'].includes(faction.status)) {
+        mutableErrors.push({ path: 'factions.status', message: 'faction status must be one of: leaderless, led, broken' });
+      }
+      if (typeof faction.power !== 'number' || faction.power < 0 || faction.power > 100) {
+        mutableErrors.push({ path: 'factions.power', message: 'faction power must be between 0 and 100' });
+      }
+      if (typeof faction.leaderSlain !== 'boolean') {
+        mutableErrors.push({ path: 'factions.leaderSlain', message: 'faction leaderSlain must be a boolean' });
+      }
+    }
   }
 
+  // Validate dungeonOgre
   // eslint-disable-next-line @typescript-eslint/no-unnecessary-condition, @typescript-eslint/strict-boolean-expressions
   if (typeof world.dungeonOgre !== 'object' || world.dungeonOgre === null) {
     mutableErrors.push({ path: 'dungeonOgre', message: 'dungeonOgre is required and must be an object' });
+  } else {
+    if (typeof world.dungeonOgre.status !== 'string' || !['sealed', 'emerged', 'slain'].includes(world.dungeonOgre.status)) {
+      mutableErrors.push({ path: 'dungeonOgre.status', message: 'dungeonOgre status must be one of: sealed, emerged, slain' });
+    }
+    if (world.dungeonOgre.status === 'emerged') {
+      if (typeof world.dungeonOgre.selectedSpawnDepth !== 'number' || world.dungeonOgre.selectedSpawnDepth <= 0) {
+        mutableErrors.push({ path: 'dungeonOgre.selectedSpawnDepth', message: 'dungeonOgre selectedSpawnDepth must be a positive integer when status is emerged' });
+      }
+    }
   }
 
   return mutableErrors;
