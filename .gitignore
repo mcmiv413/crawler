@@ -57,7 +57,7 @@ scripts/sync-*.mjs
 
 # Experimental test files
 tests/contracts/
-tests/integration/goofy-local-model.integration.test.ts
+tests/integration/
 
 # GitHub skills (experimental)
 .github/skills/
