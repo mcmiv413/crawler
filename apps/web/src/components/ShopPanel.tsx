@@ -64,12 +64,34 @@ export function ShopPanel({ view, loading, sendCommand }: ShopPanelProps) {
   const [selectedItem, setSelectedItem] = useState<ShopItemView | InventoryItemView | null>(null);
   const [buyFilter, setBuyFilter] = useState<BuyFilter>('all');
   const [buySortBy, setBuySortBy] = useState<SortKey>('name');
+  const [flashItemId, setFlashItemId] = useState<string | null>(null);
+  const [toastText, setToastText] = useState<string>('');
+  const [toastKey, setToastKey] = useState(0);
 
   const shop = view.town?.shop;
   const unequippedItems = view.inventory.items.filter((item) => !item.isEquipped);
   const sellFiltered = useInventoryFilter(unequippedItems);
 
   if (!shop) return null;
+
+  // Inject keyframe CSS for purchase animations
+  const SHOP_ANIM_ID = 'shop-feedback-keyframes';
+  if (typeof document !== 'undefined' && !document.getElementById(SHOP_ANIM_ID)) {
+    const s = document.createElement('style');
+    s.id = SHOP_ANIM_ID;
+    s.textContent = `
+      @keyframes purchaseFlash {
+        0%,60% { opacity:1 }
+        100%   { opacity:0 }
+      }
+      @keyframes toastIn {
+        0%        { opacity:0; transform:translateY(4px) }
+        12%,70%   { opacity:1; transform:translateY(0) }
+        100%      { opacity:0; transform:translateY(-3px) }
+      }
+    `;
+    document.head.appendChild(s);
+  }
 
   const headerStyle: React.CSSProperties = {
     fontSize: 13,
@@ -127,7 +149,7 @@ export function ShopPanel({ view, loading, sendCommand }: ShopPanelProps) {
       });
 
     return (
-      <div style={{ fontFamily: FONT_STACK, color: colors.text }}>
+      <div style={{ fontFamily: FONT_STACK, color: colors.text, position: 'relative' }}>
         <h3 style={headerStyle}>Torben's Wares</h3>
         <div style={goldLineStyle}>Gold: {view.player.gold}g</div>
         {modeToggle}
@@ -151,14 +173,53 @@ export function ShopPanel({ view, loading, sendCommand }: ShopPanelProps) {
                   key={item.itemId}
                   style={{
                     padding: '4px 0',
-                    borderBottom: `1px solid ${colors.border2}`,
+                    paddingLeft: canAfford ? 6 : 0,
+                    borderBottom: canAfford
+                      ? `1px solid rgba(125,201,64,0.12)`
+                      : `1px solid ${colors.border2}`,
                     display: 'flex',
                     justifyContent: 'space-between',
                     alignItems: 'center',
                     cursor: 'pointer',
+                    background: canAfford ? 'rgba(125,201,64,0.04)' : 'transparent',
+                    boxShadow: canAfford ? 'inset 2px 0 0 rgba(125,201,64,0.35)' : 'none',
+                    opacity: canAfford ? 1 : 0.5,
+                    position: 'relative',
+                    transition: 'background 0.15s ease, opacity 0.15s ease',
                   }}
                   onClick={() => setSelectedItem(item)}
                 >
+                  {/* flash overlay for purchase feedback */}
+                  {flashItemId === item.itemId && (
+                    <div
+                      key={toastKey}
+                      style={{
+                        position: 'absolute',
+                        inset: 0,
+                        background: 'rgba(125,201,64,0.12)',
+                        display: 'flex',
+                        alignItems: 'center',
+                        justifyContent: 'center',
+                        pointerEvents: 'none',
+                        animation: 'purchaseFlash 0.85s ease-out forwards',
+                        zIndex: 2,
+                      }}
+                    >
+                      <span
+                        style={{
+                          fontSize: 10,
+                          fontWeight: 600,
+                          letterSpacing: '0.1em',
+                          color: colors.lime,
+                          background: 'rgba(13,13,16,0.85)',
+                          padding: '2px 10px',
+                          border: `1px solid rgba(125,201,64,0.4)`,
+                        }}
+                      >
+                        ✓ Purchased
+                      </span>
+                    </div>
+                  )}
                   <div style={{ flex: 1, display: 'flex', alignItems: 'center', gap: 6 }}>
                     <ItemSpriteIcon spriteName={item.spriteName} size={16} />
                     <span style={{ color: item.rarityColor, marginRight: 4 }}>[{item.rarity}]</span>
@@ -213,6 +274,11 @@ export function ShopPanel({ view, loading, sendCommand }: ShopPanelProps) {
                         action: 'shop_buy',
                         itemId: item.itemId,
                       });
+                      // purchase feedback
+                      setFlashItemId(item.itemId);
+                      setToastText('✓ Purchased');
+                      setToastKey((k) => k + 1);
+                      setTimeout(() => setFlashItemId(null), 900);
                     }}
                     style={{ ...btnStyle, fontSize: 9, padding: '2px 6px' }}
                     disabled={loading || !canAfford}
@@ -234,6 +300,30 @@ export function ShopPanel({ view, loading, sendCommand }: ShopPanelProps) {
             shopMode={true}
             shopPrice={(selectedItem as ShopItemView).effectivePrice}
           />
+        )}
+
+        {/* panel toast for purchase feedback */}
+        {toastText && (
+          <div
+            key={toastKey}
+            style={{
+              position: 'absolute',
+              bottom: 10,
+              right: 10,
+              background: 'rgba(13,13,16,0.92)',
+              border: '1px solid rgba(125,201,64,0.45)',
+              color: colors.lime,
+              fontSize: 10,
+              fontWeight: 600,
+              padding: '4px 12px',
+              letterSpacing: '0.06em',
+              pointerEvents: 'none',
+              animation: 'toastIn 0.9s ease-out forwards',
+              zIndex: 10,
+            }}
+          >
+            {toastText}
+          </div>
         )}
       </div>
     );
