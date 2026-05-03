@@ -19,6 +19,8 @@ import { useBreakpoint } from '../hooks/useBreakpoint.js';
 import { CombatIndicators } from './CombatIndicators.js';
 import { BumpAnimations } from './BumpAnimations.js';
 import { useAnimationOrchestrator } from '../hooks/useAnimationOrchestrator.js';
+import { filterCombatLogForDisplay } from './combat-log-filter.js';
+import { logEntryColor } from '../styles.js';
 
 interface DungeonPhaseProps {
   view: GameView;
@@ -45,8 +47,15 @@ function dangerColor(level: string): string {
   }
 }
 
-function MiniCombatLog({ entries }: { entries: readonly { text: string; type: string }[] }) {
-  const recent = entries.slice(-COMBAT_LOG_MINI_ENTRIES);
+function MiniCombatLog({
+  entries,
+  debugMode,
+}: {
+  entries: readonly { text: string; type: string }[];
+  debugMode: boolean;
+}) {
+  const filtered = filterCombatLogForDisplay(entries, debugMode);
+  const recent = filtered.slice(-COMBAT_LOG_MINI_ENTRIES);
   if (recent.length === 0) return null;
 
   return (
@@ -57,7 +66,7 @@ function MiniCombatLog({ entries }: { entries: readonly { text: string; type: st
           style={{
             fontSize: COMBAT_LOG_MINI_FONT_SIZE,
             lineHeight: COMBAT_LOG_MINI_LINE_HEIGHT,
-            color: entry.type === 'loot' ? '#4f4' : entry.type === 'death' ? '#f44' : '#aaa',
+            color: logEntryColor(entry.type),
           }}
         >
           {entry.text}
@@ -216,7 +225,7 @@ export function DungeonPhase({
       </div>
 
       <div style={{ flexShrink: 0, height: miniLogHeight, borderTop: '1px solid #222', paddingTop: 4, marginBottom: isMobile ? 6 : 8 }}>
-        <MiniCombatLog entries={combatLog} />
+        <MiniCombatLog entries={combatLog} debugMode={view.debugMode} />
       </div>
 
       <div style={{ flexShrink: 0 }}>
