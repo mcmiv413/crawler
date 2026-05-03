@@ -1,17 +1,16 @@
-import React, { useRef, useEffect } from 'react';
-import { COMBAT_LOG_MAX_HEIGHT } from '../config/ui-config.js';
+import { useRef, useEffect } from 'react';
 import { useGameStore } from '../store/game-store.js';
 import { colors, logEntryColor, FONT_STACK } from '../styles.js';
+import { filterCombatLogForDisplay } from './combat-log-filter.js';
 
 interface CombatLogViewProps {
   entries: readonly { text: string; type: string }[];
   debugMode: boolean;
   maxHeight?: number;
-  isMobile?: boolean;
 }
 
-export function CombatLogView({ entries, debugMode, maxHeight, isMobile = false }: CombatLogViewProps) {
-  const computedMaxHeight = maxHeight ?? (isMobile ? 'none' : COMBAT_LOG_MAX_HEIGHT);
+export function CombatLogView({ entries, debugMode, maxHeight }: CombatLogViewProps) {
+  const computedMaxHeight = maxHeight ?? 'none';
   const scrollRef = useRef<HTMLDivElement>(null);
   const { toggleDebugLogging } = useGameStore();
 
@@ -21,10 +20,7 @@ export function CombatLogView({ entries, debugMode, maxHeight, isMobile = false 
     }
   }, [entries]);
 
-  const filteredEntries = entries.filter(entry => {
-    if (!debugMode && entry.text.startsWith('[DEBUG]')) return false;
-    return true;
-  });
+  const filteredEntries = filterCombatLogForDisplay(entries, debugMode);
 
   if (filteredEntries.length === 0) return null;
 

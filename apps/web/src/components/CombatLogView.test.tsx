@@ -256,36 +256,36 @@ describe('CombatLogView Component', () => {
       expect(scrollContainer?.style.maxHeight).toBe('400px');
     });
 
-    it('uses default maxHeight on desktop when not provided', () => {
+    it('defaults to none maxHeight when not provided (fills available panel space)', () => {
       const entries = [{ text: 'Test event', type: 'info' }];
       const { container } = render(
-        <CombatLogView entries={entries} debugMode={false} isMobile={false} />,
+        <CombatLogView entries={entries} debugMode={false} />,
       );
       const scrollContainer = container.querySelector('div[style*="border"]') as HTMLDivElement;
       expect(scrollContainer).toBeDefined();
-      // Desktop should use COMBAT_LOG_MAX_HEIGHT (250px)
-      expect(scrollContainer?.style.maxHeight).toBe('250px');
-    });
-
-    it('uses none maxHeight on mobile to fill available space', () => {
-      const entries = [{ text: 'Test event', type: 'info' }];
-      const { container } = render(
-        <CombatLogView entries={entries} debugMode={false} isMobile={true} />,
-      );
-      const scrollContainer = container.querySelector('div[style*="border"]') as HTMLDivElement;
-      expect(scrollContainer).toBeDefined();
-      // Mobile should use 'none' to fill available flex space
+      // Default behavior: fill the panel with flex: 1
       expect(scrollContainer?.style.maxHeight).toBe('none');
     });
 
-    it('explicit maxHeight overrides isMobile setting', () => {
+    it('uses flex: 1 when maxHeight is none (fills available space)', () => {
       const entries = [{ text: 'Test event', type: 'info' }];
       const { container } = render(
-        <CombatLogView entries={entries} debugMode={false} isMobile={true} maxHeight={200} />,
+        <CombatLogView entries={entries} debugMode={false} />,
       );
       const scrollContainer = container.querySelector('div[style*="border"]') as HTMLDivElement;
       expect(scrollContainer).toBeDefined();
-      // Explicit maxHeight should take precedence
+      // Should have flex: 1 when maxHeight is 'none' (renders as '1 1 0%' due to shorthand)
+      expect(scrollContainer?.style.flex).toMatch(/^1/);
+    });
+
+    it('explicit maxHeight takes precedence over default', () => {
+      const entries = [{ text: 'Test event', type: 'info' }];
+      const { container } = render(
+        <CombatLogView entries={entries} debugMode={false} maxHeight={200} />,
+      );
+      const scrollContainer = container.querySelector('div[style*="border"]') as HTMLDivElement;
+      expect(scrollContainer).toBeDefined();
+      // Explicit maxHeight should override default
       expect(scrollContainer?.style.maxHeight).toBe('200px');
     });
   });
