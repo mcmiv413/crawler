@@ -147,12 +147,24 @@ const auditHelper = spawnSync(
   {
     cwd: repoRoot,
     encoding: 'utf8',
-    stdio: ['ignore', 'ignore', 'pipe'],
+    stdio: ['ignore', 'pipe', 'pipe'],
   },
 );
 
 if (auditHelper.status !== 0) {
   failures.push(`scripts/audit-tests.ts smoke check failed: ${(auditHelper.stderr || '').trim()}`);
+} else {
+  const stdout = auditHelper.stdout || '';
+  const invalidMatch = stdout.match(/\*\*Invalid \(has errors\):\*\*\s+(\d+)/);
+  const invalidCount = invalidMatch ? parseInt(invalidMatch[1], 10) : 0;
+  if (invalidCount > 0) {
+    const errorSection = stdout.match(/## Files with Errors \(High Priority\)\n([\s\S]*?)(?=\n##|$)/);
+    if (errorSection) {
+      failures.push(`audit-tests: ${invalidCount} test file(s) have errors:\n${errorSection[1].trim()}`);
+    } else {
+      failures.push(`audit-tests: ${invalidCount} test file(s) have errors (run scripts/audit-tests.ts for details)`);
+    }
+  }
 }
 
 if (failures.length > 0) {

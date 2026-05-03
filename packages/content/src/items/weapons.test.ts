@@ -2,7 +2,19 @@ import { describe, it, expect } from 'vitest';
 import { WEAPONS } from './weapons/index.js';
 import { WEAPON_TYPES } from '@dungeon/contracts';
 
+/**
+ * Unit tests for the weapon catalog.
+ *
+ * These tests validate structural invariants and schema rules only.
+ * They do NOT assert exact balance values (damage, speed numbers) — those
+ * are balance tuning decisions that change frequently. For exact-value
+ * audits, see tests/contracts/ or tests/balance/.
+ */
 describe('WEAPONS', () => {
+  it('has at least one weapon defined', () => {
+    expect(WEAPONS.length).toBeGreaterThan(0);
+  });
+
   it('every weapon has weaponType defined', () => {
     for (const w of WEAPONS) {
       expect(w.weapon.weaponType, `${w.itemId} missing weaponType`).toBeDefined();
@@ -22,76 +34,32 @@ describe('WEAPONS', () => {
     }
   });
 
-  it('rusty_sword damage === 7', () => {
-    const w = WEAPONS.find(w => w.itemId === 'rusty_sword');
-    expect(w?.weapon.damage).toBe(7);
+  it('every weapon has a valid rarity', () => {
+    const VALID_RARITIES = ['common', 'uncommon', 'rare', 'unique'] as const;
+    for (const w of WEAPONS) {
+      expect(VALID_RARITIES, `${w.itemId} has invalid rarity '${w.rarity}'`).toContain(w.rarity);
+    }
   });
 
-  it('frost_axe damage === 12', () => {
-    const w = WEAPONS.find(w => w.itemId === 'frost_axe');
-    expect(w?.weapon.damage).toBe(12);
-  });
-
-  it('rarity tier damage scaling: common < uncommon < rare', () => {
-    // iron_mace is an exception: common bludgeon weapon needed to ensure every weapon type has a common variant
+  it('rarity tier damage scaling: common max <= uncommon min <= rare min', () => {
+    // iron_mace is a known exception: a common bludgeon needed to cover every weapon type
     const common = WEAPONS.filter(w => w.rarity === 'common' && w.itemId !== 'iron_mace');
     const uncommon = WEAPONS.filter(w => w.rarity === 'uncommon');
     const rare = WEAPONS.filter(w => w.rarity === 'rare');
+
+    if (common.length === 0 || uncommon.length === 0 || rare.length === 0) return;
 
     const commonMax = Math.max(...common.map(w => w.weapon.damage));
     const uncommonMin = Math.min(...uncommon.map(w => w.weapon.damage));
     const rareMin = Math.min(...rare.map(w => w.weapon.damage));
 
-    expect(commonMax).toBeLessThanOrEqual(uncommonMin);
-    expect(uncommonMin).toBeLessThanOrEqual(rareMin);
+    expect(commonMax, 'common max damage should not exceed uncommon min').toBeLessThanOrEqual(uncommonMin);
+    expect(uncommonMin, 'uncommon min damage should not exceed rare min').toBeLessThanOrEqual(rareMin);
   });
 
-  it('iron_mace damage === 9', () => {
-    const w = WEAPONS.find(w => w.itemId === 'iron_mace');
-    expect(w?.weapon.damage).toBe(9);
-  });
-
-  it('short_bow damage === 6', () => {
-    const w = WEAPONS.find(w => w.itemId === 'short_bow');
-    expect(w?.weapon.damage).toBe(6);
-  });
-
-  it('flame_dagger damage === 8', () => {
-    const w = WEAPONS.find(w => w.itemId === 'flame_dagger');
-    expect(w?.weapon.damage).toBe(8);
-  });
-
-  it('venom_blade damage === 9', () => {
-    const w = WEAPONS.find(w => w.itemId === 'venom_blade');
-    expect(w?.weapon.damage).toBe(9);
-  });
-
-  it('war_bow damage === 9', () => {
-    const w = WEAPONS.find(w => w.itemId === 'war_bow');
-    expect(w?.weapon.damage).toBe(9);
-  });
-
-  it('stone_hammer damage === 11', () => {
-    const w = WEAPONS.find(w => w.itemId === 'stone_hammer');
-    expect(w?.weapon.damage).toBe(11);
-  });
-
-  it('iron_sword damage === 10', () => {
-    const w = WEAPONS.find(w => w.itemId === 'iron_sword');
-    expect(w?.weapon.damage).toBe(10);
-  });
-
-  it('frost_axe speed === -2', () => {
-    const w = WEAPONS.find(w => w.itemId === 'frost_axe');
-    expect(w?.weapon.speed).toBe(-2);
-  });
-
-  it('flame_dagger speed === 10', () => {
-    const w = WEAPONS.find(w => w.itemId === 'flame_dagger');
-    expect(w?.weapon.speed).toBe(10);
-  });
-
-  it('has weapons defined', () => {
-    expect(WEAPONS.length).toBeGreaterThan(0);
+  it('every weapon itemId is unique', () => {
+    const ids = WEAPONS.map(w => w.itemId);
+    const unique = new Set(ids);
+    expect(unique.size, 'duplicate weapon itemIds found').toBe(ids.length);
   });
 });

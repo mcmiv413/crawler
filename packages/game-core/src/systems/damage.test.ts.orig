@@ -2,6 +2,7 @@ import { describe, it, expect } from 'vitest';
 import { applyDamageToEnemy, applyDamageToPlayer } from './damage.js';
 import { hazardTypeToDamageType } from './hazard-damage.js';
 import { createTestGameStateInCombat } from '../test-utils.js';
+import { COMBAT } from '@dungeon/content';
 import { posKey } from '@dungeon/contracts';
 
 describe('damage system', () => {
@@ -73,7 +74,7 @@ describe('damage system', () => {
         bypassResistance: false,
       });
 
-      expect(result.finalDamage).toBeGreaterThanOrEqual(1); // invariant: damage system always applies at least 1 damage
+      expect(result.finalDamage).toBeGreaterThanOrEqual(COMBAT.minDamage);
     });
 
     it('does not kill player when health > 0', () => {

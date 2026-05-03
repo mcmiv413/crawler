@@ -63,6 +63,8 @@ The default merge gate excludes balance suites under `tests/balance/` and `packa
 
 ## Hard Rules
 
+**MERGE-BLOCKING AUDIT:** Unit and property tests must NOT import live `@dungeon/content` or build large integrated state. Use builders (PlayerBuilder, EnemyBuilder, SeededRng) or local fixtures instead. Live-registry checks belong in contract suites. This is enforced by `check:audit-guardrails` and blocks merge.
+
 1. No `Math.random()` in tests. Use `SeededRng`.
 2. No live config imports in unit/property tests. Use builders.
 3. No exact assertions on tunable values. Numeric literal `.toBe(...)` is only auto-blocked today in `packages/game-core/src/systems/**/*.test.ts` through `dungeon/no-numeric-toBe`; elsewhere, treat exact tunable assertions as brittle review failures and prefer range or comparative checks.

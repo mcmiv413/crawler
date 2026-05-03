@@ -19,39 +19,44 @@ import {
 } from './config/ui-config.js';
 
 /**
- * Governance test: UI sizing constants are properly exported and accessible
- * This ensures the centralization hub is complete and working.
+ * Governance test: UI sizing constants are properly exported and accessible.
+ * Assertions validate existence, type, and structural invariants — not tuned values.
+ * If a constant is retuned, these tests should still pass.
  */
 
 describe('Config Governance: UI Sizing', () => {
-  it('all UI sizing constants are defined and accessible', () => {
+  it('all UI sizing constants are defined and positive numbers', () => {
     // Panel widths
-    expect(SIDE_PANEL_WIDTH).toBe(320);
-    expect(SIDEBAR_CENTER_WIDTH).toBe(380);
-    expect(ACTIONS_COLUMN_MIN_WIDTH).toBe(250);
+    expect(SIDE_PANEL_WIDTH).toBeGreaterThan(0);
+    expect(SIDEBAR_CENTER_WIDTH).toBeGreaterThan(0);
+    expect(ACTIONS_COLUMN_MIN_WIDTH).toBeGreaterThan(0);
 
-    // Viewport and tiles
-    expect(CELL_SIZE).toBe(24);
-    expect(VP_WIDTH).toBe(30);
-    expect(VP_HEIGHT).toBe(22);
-    expect(VIEWPORT_PX_WIDTH).toBe(VP_WIDTH * CELL_SIZE);
-    expect(VIEWPORT_PX_HEIGHT).toBe(VP_HEIGHT * CELL_SIZE);
+    // Viewport tile counts and cell size
+    expect(CELL_SIZE).toBeGreaterThan(0);
+    expect(VP_WIDTH).toBeGreaterThan(0);
+    expect(VP_HEIGHT).toBeGreaterThan(0);
 
     // Navigation and responsive
-    expect(TAB_BAR_HEIGHT).toBe(56);
-    expect(MOBILE_BREAKPOINT).toBe(768);
+    expect(TAB_BAR_HEIGHT).toBeGreaterThan(0);
+    expect(MOBILE_BREAKPOINT).toBeGreaterThan(0);
 
     // Heights and touch targets
-    expect(COMBAT_LOG_MAX_HEIGHT).toBe(250);
-    expect(QUEST_TRACKER_MAX_HEIGHT).toBe(200);
-    expect(CONSUMABLES_BAR_MAX_HEIGHT).toBe(160);
-    expect(BTN_MIN_HEIGHT).toBe(44);
-    expect(NAV_BTN_MIN_HEIGHT).toBe(48);
-    expect(DPAD_BTN_SIZE).toBe(48);
+    expect(COMBAT_LOG_MAX_HEIGHT).toBeGreaterThan(0);
+    expect(QUEST_TRACKER_MAX_HEIGHT).toBeGreaterThan(0);
+    expect(CONSUMABLES_BAR_MAX_HEIGHT).toBeGreaterThan(0);
+    expect(BTN_MIN_HEIGHT).toBeGreaterThan(0);
+    expect(NAV_BTN_MIN_HEIGHT).toBeGreaterThan(0);
+    expect(DPAD_BTN_SIZE).toBeGreaterThan(0);
   });
 
-  it('computed viewport pixel dimensions match formula', () => {
-    expect(VIEWPORT_PX_WIDTH).toBe(720);
-    expect(VIEWPORT_PX_HEIGHT).toBe(528);
+  it('computed viewport pixel dimensions equal tiles × cell size', () => {
+    // These are derived values — the invariant is the formula, not the pixel total.
+    expect(VIEWPORT_PX_WIDTH).toBe(VP_WIDTH * CELL_SIZE);
+    expect(VIEWPORT_PX_HEIGHT).toBe(VP_HEIGHT * CELL_SIZE);
+  });
+
+  it('nav button touch target meets or exceeds standard button height', () => {
+    // NAV_BTN_MIN_HEIGHT should be at least as large as BTN_MIN_HEIGHT.
+    expect(NAV_BTN_MIN_HEIGHT).toBeGreaterThanOrEqual(BTN_MIN_HEIGHT);
   });
 });

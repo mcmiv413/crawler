@@ -1,8 +1,21 @@
 import { describe, it, expect } from 'vitest';
 import { GameEngine } from './game-engine.js';
 import { entityId } from '@dungeon/contracts';
-import type { GameState, EnemyInstance, DomainEvent } from '@dungeon/contracts';
-import { WEAPONS } from '@dungeon/content';
+import type { GameState, EnemyInstance, DomainEvent, WeaponTemplate } from '@dungeon/contracts';
+
+/** Minimal flame_dagger stub — avoids @dungeon/content runtime import. */
+const STUB_FLAME_DAGGER: WeaponTemplate = {
+  itemId: 'flame_dagger',
+  spriteName: 'elven dagger',
+  name: 'Flame Dagger',
+  description: 'A dagger that burns on contact.',
+  itemClass: 'weapon',
+  rarity: 'uncommon',
+  value: 45,
+  stackable: false,
+  maxStack: 1,
+  weapon: { damage: 8, damageType: 'fire', accuracy: 5, speed: 10, slot: 'weapon', weaponRange: 1, weaponType: 'blade', onHitStatus: 'burn', onHitChance: 20 },
+};
 
 /** Enter dungeon from a fresh game using a fixed seed for reproducibility. */
 function enterDungeon(engine: GameEngine, seed = 42): GameState {
@@ -63,7 +76,7 @@ describe('Combat damage type correctness', () => {
     const engine = new GameEngine();
     const dungeonState = enterDungeon(engine);
 
-    const flameDagger = WEAPONS.find(w => w.itemId === 'flame_dagger')!;
+    const flameDagger = STUB_FLAME_DAGGER;
     const weaponId = entityId('fire_wpn_1');
     const enemy = makeEnemy('e1', 5, 6);
 
@@ -100,7 +113,7 @@ describe('Combat damage type correctness', () => {
     const engine = new GameEngine();
     const dungeonState = enterDungeon(engine);
 
-    const flameDagger = WEAPONS.find(w => w.itemId === 'flame_dagger')!;
+    const flameDagger = STUB_FLAME_DAGGER;
     const weaponId = entityId('fire_wpn_2');
 
     // Enemy with 80% fire resistance

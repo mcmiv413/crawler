@@ -1,12 +1,46 @@
 import { describe, it, expect } from 'vitest';
 import { generateFloor, bfsReachable } from './map-generator.js';
 import { SeededRNG } from '../utils/rng.js';
-import { stoneCrypt, forest, goblinWarrens } from '@dungeon/content';
+import type { BiomeDefinition } from '@dungeon/content';
+
+const STUB_BIOME: BiomeDefinition = {
+  biomeId: 'stub',
+  name: 'Stub',
+  description: 'Test stub biome',
+  floorRange: { min: 1, max: 5 },
+  tileWeights: { floor: 0.55, wall: 0.35, door: 0.1 },
+  ambientColor: '#444444',
+  floorAscii: '.',
+  wallAscii: '#',
+  mapGen: {
+    roomWidth: [3, 5],
+    roomHeight: [2, 4],
+    corridorLength: [1, 3],
+    dugPercentage: 0.38,
+  },
+};
+
+const STUB_BIOME_B: BiomeDefinition = {
+  biomeId: 'stub_b',
+  name: 'Stub B',
+  description: 'Test stub biome B with different mapGen params',
+  floorRange: { min: 1, max: 5 },
+  tileWeights: { floor: 0.6, wall: 0.3, door: 0.1 },
+  ambientColor: '#336633',
+  floorAscii: ',',
+  wallAscii: 'T',
+  mapGen: {
+    roomWidth: [5, 9],
+    roomHeight: [4, 7],
+    corridorLength: [2, 5],
+    dugPercentage: 0.5,
+  },
+};
 
 describe('Map Generation', () => {
   it('generates a floor with entrance and exit', () => {
     const rng = new SeededRNG(42);
-    const { floor, valid } = generateFloor(3, stoneCrypt, rng);
+    const { floor, valid } = generateFloor(3, STUB_BIOME, rng);
 
     expect(valid).toBe(true);
     expect(floor.entrance).toBeDefined();
@@ -23,14 +57,14 @@ describe('Map Generation', () => {
 
   it('floor cells exist and are a Map', () => {
     const rng = new SeededRNG(123);
-    const { floor } = generateFloor(1, stoneCrypt, rng);
+    const { floor } = generateFloor(1, STUB_BIOME, rng);
     expect(floor.cells).toBeInstanceOf(Map);
     expect(floor.cells.size).toBeGreaterThan(0);
   });
 
   it('bfsReachable returns true for connected positions', () => {
     const rng = new SeededRNG(456);
-    const { floor } = generateFloor(1, stoneCrypt, rng);
+    const { floor } = generateFloor(1, STUB_BIOME, rng);
     expect(bfsReachable(floor.cells, floor.entrance, floor.exit)).toBe(true);
   });
 
@@ -46,10 +80,10 @@ describe('Map Generation', () => {
   it('generates valid floor with multiple seeds', () => {
     // Verify that floor generation works with different seeds
     const rng1 = new SeededRNG(9999);
-    const { floor: floor1 } = generateFloor(1, stoneCrypt, rng1);
+    const { floor: floor1 } = generateFloor(1, STUB_BIOME, rng1);
 
     const rng2 = new SeededRNG(8888);
-    const { floor: floor2 } = generateFloor(1, stoneCrypt, rng2);
+    const { floor: floor2 } = generateFloor(1, STUB_BIOME, rng2);
 
     // Both should generate valid floor structures
     expect(floor1.entrance).toBeDefined();
@@ -71,17 +105,17 @@ describe('Map Generation', () => {
   it('mapGen params are applied to floor generation', () => {
     // Same seed, different biomes should produce different layouts due to mapGen
     const rng1 = new SeededRNG(42);
-    const { floor: forestFloor } = generateFloor(2, forest, rng1);
+    const { floor: floorA } = generateFloor(2, STUB_BIOME, rng1);
     const rng2 = new SeededRNG(42);
-    const { floor: goblinFloor } = generateFloor(2, goblinWarrens, rng2);
+    const { floor: floorB } = generateFloor(2, STUB_BIOME_B, rng2);
 
     // With different mapGen params, the layouts should differ
     // Most likely the floor sizes or entrance/exit positions will differ
-    const forestEntrance = `${forestFloor.entrance.x},${forestFloor.entrance.y}`;
-    const goblinEntrance = `${goblinFloor.entrance.x},${goblinFloor.entrance.y}`;
+    const entranceA = `${floorA.entrance.x},${floorA.entrance.y}`;
+    const entranceB = `${floorB.entrance.x},${floorB.entrance.y}`;
 
     // At least the entrance should differ (with high probability)
-    const layoutDiffers = forestEntrance !== goblinEntrance || forestFloor.cells.size !== goblinFloor.cells.size;
+    const layoutDiffers = entranceA !== entranceB || floorA.cells.size !== floorB.cells.size;
     expect(layoutDiffers).toBe(true);
   });
 });

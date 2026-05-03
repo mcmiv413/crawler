@@ -3,8 +3,6 @@ import { processTownAction, processEnchantArmor } from './town.js';
 import { createTestGameState } from '../test-utils.js';
 import { entityId } from '@dungeon/contracts';
 import type { NpcState, ArmorTemplate } from '@dungeon/contracts';
-import { ECONOMY } from '@dungeon/content';
-
 const shopkeeper: NpcState = {
   id: entityId('npc_shopkeeper'),
   name: 'Torben',
@@ -17,12 +15,11 @@ const shopkeeper: NpcState = {
 
 describe('processTownAction rest', () => {
   it('restores HP to max when player can afford full heal', () => {
-    const missingHp = 40;
     const maxHealth = 100;
     const state = createTestGameState({
       player: {
         stats: { maxHealth, health: 60, attack: 10, defense: 5, accuracy: 80, evasion: 10, speed: 100 },
-        gold: missingHp * ECONOMY.healCostPerHp + 10, // more than enough
+        gold: 9999, // deliberately large — ensures the player can always afford a full heal
       },
     });
 

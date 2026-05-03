@@ -39,11 +39,14 @@ describe('enchantment catalog', () => {
 });
 
 describe('getEnchantmentCost', () => {
-  it('returns correct costs per tier', () => {
-    expect(getEnchantmentCost('hp_regen')).toBe(ENCHANTMENT_COSTS[1]);    // T1
-    expect(getEnchantmentCost('defense_boost')).toBe(ENCHANTMENT_COSTS[2]); // T2
-    expect(getEnchantmentCost('exp_bonus')).toBe(ENCHANTMENT_COSTS[3]);   // T3
-    expect(getEnchantmentCost('blink')).toBe(ENCHANTMENT_COSTS['unique']); // Unique
+  it('returns the cost matching the enchantment tier for every catalog entry', () => {
+    for (const ench of ENCHANTMENTS) {
+      const expected = ENCHANTMENT_COSTS[ench.tier as 1 | 2 | 3 | 'unique'];
+      expect(
+        getEnchantmentCost(ench.id),
+        `${ench.id} (tier ${String(ench.tier)}) cost mismatch`,
+      ).toBe(expected);
+    }
   });
 
   it('tier costs stay positive and increase across the standard tiers', () => {
@@ -59,28 +62,12 @@ describe('getEnchantmentCost', () => {
 });
 
 describe('getImpliedBlueprints', () => {
-  it('T1 enchantment only implies itself', () => {
-    const implied = getImpliedBlueprints('hp_regen');
-    expect(implied).toContain('hp_regen');
-    expect(implied.length).toBe(1);
-  });
-
-  it('T2 enchantment only implies itself', () => {
-    const implied = getImpliedBlueprints('defense_boost');
-    expect(implied).toContain('defense_boost');
-    expect(implied.length).toBe(1);
-  });
-
-  it('T3 enchantment only implies itself', () => {
-    const implied = getImpliedBlueprints('exp_bonus');
-    expect(implied).toContain('exp_bonus');
-    expect(implied.length).toBe(1);
-  });
-
-  it('unique enchantment only implies itself', () => {
-    const implied = getImpliedBlueprints('blink');
-    expect(implied).toContain('blink');
-    expect(implied.length).toBe(1);
+  it('every known enchantment implies only itself', () => {
+    for (const ench of ENCHANTMENTS) {
+      const implied = getImpliedBlueprints(ench.id);
+      expect(implied, `${ench.id} should imply itself`).toContain(ench.id);
+      expect(implied.length, `${ench.id} should imply exactly one blueprint`).toBe(1);
+    }
   });
 
   it('returns empty array for unknown enchantment', () => {

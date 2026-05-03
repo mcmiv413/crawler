@@ -1,13 +1,14 @@
 import { describe, it, expect } from 'vitest';
 import { SeededRNG } from '../utils/rng.js';
 import type { RNG } from '@dungeon/contracts';
-import { createDefaultBalanceConfig } from '@dungeon/content';
 
-describe('Balance Coverage — Feature Completeness Tests', () => {
-  // ─────────────────────────────────────────────────────────────────
-  // Test 1: RNG determinism
-  // ─────────────────────────────────────────────────────────────────
-
+/**
+ * Unit tests: RNG determinism and interface compliance.
+ *
+ * Tests pure SeededRNG behavior — no live @dungeon/content imports.
+ * BalanceConfig creation tests live in tests/contracts/balance-constants.contract.test.ts.
+ */
+describe('Balance Coverage — RNG Unit Tests', () => {
   it('RNG determinism: same seed produces identical sequences', () => {
     const rng1 = new SeededRNG(42);
     const rng2 = new SeededRNG(42);
@@ -16,10 +17,6 @@ describe('Balance Coverage — Feature Completeness Tests', () => {
       expect(rng1.next()).toBe(rng2.next());
     }
   });
-
-  // ─────────────────────────────────────────────────────────────────
-  // Test 2: RNG interface compliance
-  // ─────────────────────────────────────────────────────────────────
 
   it('SeededRNG implements RNG interface correctly', () => {
     const rng: RNG = new SeededRNG(42);
@@ -49,54 +46,9 @@ describe('Balance Coverage — Feature Completeness Tests', () => {
     // shuffle() should return new array
     const original = [1, 2, 3, 4, 5];
     const shuffled = rng.shuffle(original);
-    expect(original).not.toEqual(shuffled); // Usually different (with high probability)
     expect(shuffled).toHaveLength(5);
     expect(shuffled.sort((a, b) => a - b)).toEqual([1, 2, 3, 4, 5]); // Same elements
   });
-
-  // ─────────────────────────────────────────────────────────────────
-  // Test 3: BalanceConfig creation
-  // ─────────────────────────────────────────────────────────────────
-
-  it('createDefaultBalanceConfig produces valid config', () => {
-    const config = createDefaultBalanceConfig();
-
-    // Combat config
-    expect(config.combat).toBeDefined();
-    expect(config.combat.baseHitChance).toBeGreaterThan(0);
-    expect(config.combat.critChance).toBeGreaterThan(0);
-    expect(config.combat.defenseDivisor).toBeGreaterThan(0);
-
-    // Floor scaling config
-    expect(config.floorScaling).toBeDefined();
-    expect(config.floorScaling.healthMultiplier).toBeGreaterThan(1);
-    expect(config.floorScaling.attackMultiplier).toBeGreaterThan(1);
-  });
-
-  // ─────────────────────────────────────────────────────────────────
-  // Test 4: Config injection in combat system
-  // ─────────────────────────────────────────────────────────────────
-
-  it('BalanceConfig can be injected into combat resolution', () => {
-    const baseConfig = createDefaultBalanceConfig();
-    const tweakedConfig = {
-      ...baseConfig,
-      combat: {
-        ...baseConfig.combat,
-        defenseDivisor: 100, // Increase defense
-      },
-    };
-
-    // This test validates that the type system supports config injection
-    // Actual combat resolution test would require GameEngine integration
-    expect(tweakedConfig.combat.defenseDivisor).toBeGreaterThan(50);
-    expect(tweakedConfig.combat.defenseDivisor).toBeLessThan(200);
-    expect(baseConfig.combat.defenseDivisor).not.toEqual(100); // Immutable
-  });
-
-  // ─────────────────────────────────────────────────────────────────
-  // Test 5: RNG usage in policies (sanity check)
-  // ─────────────────────────────────────────────────────────────────
 
   it('RNG.chance() with percentage values works correctly', () => {
     const rng = new SeededRNG(42);
@@ -124,10 +76,6 @@ describe('Balance Coverage — Feature Completeness Tests', () => {
     expect(trueCount).toBeGreaterThan(400);
     expect(trueCount).toBeLessThan(600);
   });
-
-  // ─────────────────────────────────────────────────────────────────
-  // Test 6: getSeed() method
-  // ─────────────────────────────────────────────────────────────────
 
   it('getSeed() returns the seed used to initialize RNG', () => {
     const seed = 123456;
