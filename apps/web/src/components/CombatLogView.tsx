@@ -2,6 +2,8 @@ import { useRef, useEffect } from 'react';
 import { useGameStore } from '../store/game-store.js';
 import { colors, logEntryColor, FONT_STACK } from '../styles.js';
 import { filterCombatLogForDisplay } from './combat-log-filter.js';
+import { useBreakpoint } from '../hooks/useBreakpoint.js';
+import { TAB_BAR_HEIGHT } from '../config/ui-config.js';
 
 interface CombatLogViewProps {
   entries: readonly { text: string; type: string }[];
@@ -13,6 +15,7 @@ export function CombatLogView({ entries, debugMode, maxHeight }: CombatLogViewPr
   const computedMaxHeight = maxHeight ?? 'none';
   const scrollRef = useRef<HTMLDivElement>(null);
   const { toggleDebugLogging } = useGameStore();
+  const { isMobile } = useBreakpoint();
 
   useEffect(() => {
     if (scrollRef.current) {
@@ -26,11 +29,10 @@ export function CombatLogView({ entries, debugMode, maxHeight }: CombatLogViewPr
 
   return (
     <div
-      ref={scrollRef}
       style={{
         marginTop: 10,
         maxHeight: computedMaxHeight,
-        overflowY: 'auto',
+        overflow: 'hidden',
         border: `1px solid ${colors.border}`,
         padding: 5,
         background: colors.inset,
@@ -83,7 +85,16 @@ export function CombatLogView({ entries, debugMode, maxHeight }: CombatLogViewPr
       </div>
 
       {/* Entries */}
-      <div style={{ overflow: 'auto', flex: 1, minHeight: 0 }}>
+      <div
+        ref={scrollRef}
+        data-testid="combat-log-entries"
+        style={{
+          overflow: 'auto',
+          flex: 1,
+          minHeight: 0,
+          paddingBottom: isMobile ? TAB_BAR_HEIGHT : 0,
+        }}
+      >
         {filteredEntries.map((entry, index) => (
           <div
             key={`${index}-${entry.type}-${entry.text}`}

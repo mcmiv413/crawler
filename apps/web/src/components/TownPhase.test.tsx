@@ -5,9 +5,16 @@
  * and NPC action buttons on both desktop and mobile, with all UI
  * elements visible within the viewport and responsive to user actions.
  */
-import { describe, it, expect, vi } from 'vitest';
+import { afterEach, beforeEach, describe, it, expect, vi } from 'vitest';
 import React from 'react';
 import { render, screen, fireEvent } from '@testing-library/react';
+
+vi.mock('../hooks/useBreakpoint.js', () => ({
+  useBreakpoint: vi.fn(() => ({ isMobile: false })),
+}));
+
+import { useBreakpoint } from '../hooks/useBreakpoint.js';
+import { TAB_BAR_HEIGHT } from '../config/ui-config.js';
 import { TownPhase } from './TownPhase.js';
 import type { GameView, ShopItemView, FactionView, NpcView } from '@dungeon/presenter';
 
@@ -173,6 +180,10 @@ const createMockGameView = (overrides?: Partial<GameView>): GameView => ({
 });
 
 describe('TownPhase Component', () => {
+  beforeEach(() => {
+    vi.mocked(useBreakpoint).mockReturnValue({ isMobile: false });
+  });
+
   describe('Shop Rendering', () => {
     it('displays shop section when items exist', () => {
       const view = createMockGameView();
@@ -677,6 +688,14 @@ describe('TownPhase Component', () => {
   });
 
   describe('Mobile Rendering', () => {
+    beforeEach(() => {
+      vi.mocked(useBreakpoint).mockReturnValue({ isMobile: true });
+    });
+
+    afterEach(() => {
+      vi.mocked(useBreakpoint).mockReturnValue({ isMobile: false });
+    });
+
     it('displays shop on mobile and is visible', () => {
       const view = createMockGameView();
       render(
@@ -763,6 +782,29 @@ describe('TownPhase Component', () => {
 
       const shopButton = screen.getByRole('button', { name: /Shop →/i });
       expect(shopButton).toBeVisible();
+    });
+
+    it('adds tab bar clearance to town subpanels', () => {
+      const view = createMockGameView();
+      render(
+        <TownPhase
+          view={view}
+          combatLog={[]}
+          loading={false}
+          error={null}
+          sendCommand={vi.fn()}
+          talkToNpc={vi.fn()}
+          npcDialogue={null}
+          setNpcDialogue={vi.fn()}
+          talkingTo={null}
+        />
+      );
+
+      fireEvent.click(screen.getByRole('button', { name: /Shop/i }));
+
+      expect(screen.getByTestId('town-subpanel')).toHaveStyle(
+        `padding-bottom: ${TAB_BAR_HEIGHT}px`,
+      );
     });
   });
 

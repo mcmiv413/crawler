@@ -7,6 +7,7 @@ import { ItemSpriteIcon } from './ItemSpriteIcon.js';
 import { DismissibleNoticeModal } from './ui/DismissibleNoticeModal.js';
 import { useInventoryFilter } from '../hooks/useInventoryFilter.js';
 import { useBreakpoint } from '../hooks/useBreakpoint.js';
+import { TAB_BAR_HEIGHT } from '../config/ui-config.js';
 
 function getItemStats(item: InventoryItemView): string {
   let text = '';
@@ -163,7 +164,15 @@ export function InventoryScreen({
           </div>
 
           {/* Item list - scrolls internally */}
-          <div style={{ flex: 1, minHeight: 0, overflow: 'auto' }}>
+          <div
+            data-testid="inventory-item-list"
+            style={{
+              flex: 1,
+              minHeight: 0,
+              overflow: 'auto',
+              paddingBottom: isMobile ? TAB_BAR_HEIGHT : 0,
+            }}
+          >
             {sorted.map((item, idx) => {
               const quantity = item.quantity ?? 1;
               const isEquippable = item.itemClass !== 'consumable';

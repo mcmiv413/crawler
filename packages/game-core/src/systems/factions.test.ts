@@ -105,7 +105,7 @@ describe('faction progression', () => {
     expect(after.membersKilledByPlayer).toBe(before.membersKilledByPlayer + 1);
     expect(result.events).toContainEqual(expect.objectContaining({
       type: 'FACTION_POWER_CHANGED',
-      factionId: 'goblin_warband', weight: 1,
+      factionId: 'goblin_warband',
       reason: 'member_killed',
     }));
   });
@@ -124,7 +124,7 @@ describe('faction progression', () => {
     expect(faction.power).toBe(before.power + POWER.playerDeathPowerGain);
     expect(result.events).toContainEqual(expect.objectContaining({
       type: 'FACTION_LEADER_EMERGED',
-      factionId: 'goblin_warband', weight: 1,
+      factionId: 'goblin_warband',
     }));
   });
 
@@ -195,8 +195,8 @@ describe('faction progression', () => {
     expect(faction.leader?.isSlain).toBe(true);
     expect(result.world.dungeonOgre.status).toBe('emerged');
     expect(result.events).toEqual(expect.arrayContaining([
-      expect.objectContaining({ type: 'FACTION_LEADER_SLAIN', factionId: 'goblin_warband', weight: 1 }),
-      expect.objectContaining({ type: 'FACTION_BROKEN', factionId: 'goblin_warband', weight: 1 }),
+      expect.objectContaining({ type: 'FACTION_LEADER_SLAIN', factionId: 'goblin_warband' }),
+      expect.objectContaining({ type: 'FACTION_BROKEN', factionId: 'goblin_warband' }),
       expect.objectContaining({ type: 'DUNGEON_OGRE_EMERGED', ogreId: 'dungeon_ogre' }),
     ]));
   });

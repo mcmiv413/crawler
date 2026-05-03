@@ -208,4 +208,10 @@ describe('App progress notices', () => {
 
     expect(screen.getByText(/game over/i)).toBeInTheDocument();
   });
+
+  it('renders the tab bar on desktop layouts', () => {
+    render(<App />);
+
+    expect(screen.getByText('nav')).toBeInTheDocument();
+  });
 });

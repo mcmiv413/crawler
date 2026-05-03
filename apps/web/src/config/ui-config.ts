@@ -27,8 +27,23 @@ export const MAP_SCALE_MIN = 0.5;
 export const MAP_MOBILE_PADDING = 16;
 
 // ── Responsive ──────────────────────────────────────────────────
-/** Screen width (px) below which mobile layout activates. */
+/** Screen width (px) below which mobile layout activates. Alias of BREAKPOINT_MD. */
 export const MOBILE_BREAKPOINT = 768;
+
+/** Android minimum supported width (px); also "very small" CSS override threshold. */
+export const BREAKPOINT_XS = 360;
+
+/** iOS minimum supported width (px) — iPhone 6/7/8, SE 2/3, mini. */
+export const BREAKPOINT_SM = 375;
+
+/** Mobile/desktop layout boundary (px). Alias of MOBILE_BREAKPOINT. */
+export const BREAKPOINT_MD = 768;
+
+/** Desktop layout width threshold (px). */
+export const BREAKPOINT_LG = 1024;
+
+/** MobileNav icon+label vs icon-only threshold (px). */
+export const BREAKPOINT_NAV_LABEL = 450;
 
 // ── Navigation ──────────────────────────────────────────────────
 /** Height (px) of the mobile bottom tab bar. Used to offset content above it. */
@@ -106,6 +121,9 @@ export const TOWN_MESSAGES_SECTION_MIN_HEIGHT = 200;
 // ── Z-Index Layers ──────────────────────────────────────────────
 // All modals, overlays, and floating UI use these constants so stacking order
 // is coherent and no one invents their own z-index (bug prevention).
+/** Mobile tab bar z-index — above main content but below modals. */
+export const Z_TAB_BAR = 100;
+
 /** Modal backdrop layer — behind modal cards, above app chrome. */
 export const Z_MODAL_BACKDROP = 900;
 /** Standard modal card / full-screen overlay layer. */

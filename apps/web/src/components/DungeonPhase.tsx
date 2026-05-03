@@ -1,8 +1,7 @@
-import React, { useEffect, useMemo, useState } from 'react';
+import React, { useEffect, useMemo, useRef, useState } from 'react';
 import type { GameView } from '@dungeon/presenter';
-import { VP_WIDTH, VP_HEIGHT } from '../config/ui-config.js';
+import { VP_WIDTH, VP_HEIGHT, CELL_SIZE } from '../config/ui-config.js';
 import {
-  TAB_BAR_HEIGHT,
   COMBAT_INDICATOR_FADEOUT_MS,
   COMBAT_LOG_MINI_FONT_SIZE,
   COMBAT_LOG_MINI_LINE_HEIGHT,
@@ -54,13 +53,30 @@ function MiniCombatLog({
   entries: readonly { text: string; type: string }[];
   debugMode: boolean;
 }) {
+  const scrollRef = useRef<HTMLDivElement>(null);
   const filtered = filterCombatLogForDisplay(entries, debugMode);
-  const recent = filtered.slice(-COMBAT_LOG_MINI_ENTRIES);
-  if (recent.length === 0) return null;
+
+  useEffect(() => {
+    if (scrollRef.current) {
+      scrollRef.current.scrollTop = scrollRef.current.scrollHeight;
+    }
+  }, [filtered.length]);
+
+  if (filtered.length === 0) return null;
 
   return (
-    <div style={{ marginTop: 8, borderTop: '1px solid #222', paddingTop: 4 }}>
-      {recent.map((entry, index) => (
+    <div
+      ref={scrollRef}
+      data-testid="dungeon-mini-combat-log"
+      style={{
+        height: '100%',
+        minHeight: 0,
+        overflowY: 'auto',
+        borderTop: '1px solid #222',
+        paddingTop: 4,
+      }}
+    >
+      {filtered.map((entry, index) => (
         <div
           key={`${index}-${entry.type}-${entry.text}`}
           style={{
@@ -92,7 +108,7 @@ function MapDisplay({
       const container = displayContainerRef.current;
       if (container === null) return;
 
-      const cellSize = 24;
+      const cellSize = CELL_SIZE;
       const availableWidth = container.offsetWidth;
       const availableHeight = container.offsetHeight;
 
@@ -126,44 +142,39 @@ function MapDisplay({
 
   if (map === null) return null;
 
-  const canvasPxWidth = vpTilesWidth * 24;
-  const canvasPxHeight = vpTilesHeight * 24;
-  const cellSize = 24;
+  const canvasPxWidth = vpTilesWidth * CELL_SIZE;
+  const canvasPxHeight = vpTilesHeight * CELL_SIZE;
+  const cellSize = CELL_SIZE;
 
   return (
-    <>
-      <div style={{ fontSize: 13, color: dangerColor(map.dangerLevel), marginBottom: 4 }}>
-        Danger: {map.dangerLevel.charAt(0).toUpperCase() + map.dangerLevel.slice(1)}
+    <div
+      ref={displayContainerRef}
+      style={{
+        flex: 1,
+        minHeight: 0,
+        overflow: 'hidden',
+        marginBottom: 8,
+        imageRendering: 'pixelated' as const,
+        display: 'flex',
+        alignItems: 'center',
+        justifyContent: 'center',
+        background: '#0a0a0a',
+        position: 'relative',
+      }}
+    >
+      <div style={{ width: canvasPxWidth, height: canvasPxHeight, position: 'relative' }}>
+        {useSprites
+          ? <DungeonCanvas map={map} vpTilesWidth={vpTilesWidth} vpTilesHeight={vpTilesHeight} />
+          : <DungeonView map={map} vpTilesWidth={vpTilesWidth} vpTilesHeight={vpTilesHeight} />}
+        <BumpAnimations />
+        <CombatIndicators
+          vpLeft={vpLeft}
+          vpTop={vpTop}
+          cellSize={cellSize}
+          fadeOutDuration={COMBAT_INDICATOR_FADEOUT_MS}
+        />
       </div>
-      <div
-        ref={displayContainerRef}
-        style={{
-          flex: 1,
-          minHeight: 0,
-          overflow: 'hidden',
-          marginBottom: 8,
-          imageRendering: 'pixelated' as const,
-          display: 'flex',
-          alignItems: 'center',
-          justifyContent: 'center',
-          background: '#0a0a0a',
-          position: 'relative',
-        }}
-      >
-        <div style={{ width: canvasPxWidth, height: canvasPxHeight, position: 'relative' }}>
-          {useSprites
-            ? <DungeonCanvas map={map} vpTilesWidth={vpTilesWidth} vpTilesHeight={vpTilesHeight} />
-            : <DungeonView map={map} vpTilesWidth={vpTilesWidth} vpTilesHeight={vpTilesHeight} />}
-          <BumpAnimations />
-          <CombatIndicators
-            vpLeft={vpLeft}
-            vpTop={vpTop}
-            cellSize={cellSize}
-            fadeOutDuration={COMBAT_INDICATOR_FADEOUT_MS}
-          />
-        </div>
-      </div>
-    </>
+    </div>
   );
 }
 
@@ -191,12 +202,39 @@ export function DungeonPhase({
 
   const sharedContent = (
     <>
-      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 10, flexShrink: 0 }}>
-        <div style={{ display: 'flex', gap: 8, alignItems: 'center' }}>
+      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', gap: 8, marginBottom: 10, flexShrink: 0 }}>
+        <div style={{ display: 'flex', gap: 8, alignItems: 'center', flexWrap: 'wrap', minWidth: 0, flex: 1 }}>
           <h2 style={{ margin: 0, color: '#88cc44', fontSize: isMobile ? 18 : 20 }}>Dungeon</h2>
-          <div style={{ display: 'flex', gap: 4, alignItems: 'center' }}>
+          {view.map !== null && (
+            <span
+              data-testid="danger-indicator"
+              style={{
+                fontSize: isMobile ? 10 : 11,
+                color: dangerColor(view.map.dangerLevel),
+                padding: isMobile ? '1px 5px' : '2px 6px',
+                border: `1px solid ${dangerColor(view.map.dangerLevel)}`,
+                background: '#161616',
+                borderRadius: 999,
+                whiteSpace: 'nowrap',
+              }}
+            >
+              Danger: {view.map.dangerLevel.charAt(0).toUpperCase() + view.map.dangerLevel.slice(1)}
+            </span>
+          )}
+          <div style={{ display: 'flex', gap: 4, alignItems: 'center', minWidth: 0 }}>
             <ItemSpriteIcon spriteName={equippedWeapon?.spriteName} size={16} />
-            <span style={{ fontSize: isMobile ? 13 : 14, color: '#aaa' }}>{weaponDisplay}</span>
+            <span
+              style={{
+                fontSize: isMobile ? 13 : 14,
+                color: '#aaa',
+                minWidth: 0,
+                overflow: 'hidden',
+                textOverflow: 'ellipsis',
+                whiteSpace: 'nowrap',
+              }}
+            >
+              {weaponDisplay}
+            </span>
           </div>
         </div>
         {view.map !== null && (
@@ -224,7 +262,7 @@ export function DungeonPhase({
         <MapDisplay map={view.map} useSprites={useSprites} />
       </div>
 
-      <div style={{ flexShrink: 0, height: miniLogHeight, borderTop: '1px solid #222', paddingTop: 4, marginBottom: isMobile ? 6 : 8 }}>
+      <div style={{ flexShrink: 0, height: miniLogHeight, minHeight: miniLogHeight, marginBottom: isMobile ? 6 : 8 }}>
         <MiniCombatLog entries={combatLog} debugMode={view.debugMode} />
       </div>
 
@@ -267,7 +305,6 @@ export function DungeonPhase({
         display: 'flex',
         flexDirection: 'column',
         minHeight: 0,
-        paddingBottom: TAB_BAR_HEIGHT + 8,
       }}
     >
       {sharedContent}

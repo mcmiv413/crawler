@@ -6,5 +6,13 @@
  * in the contract layer, not the unit layer.
  */
 
-// This file intentionally left empty — no unit tests belong here.
-export {};
+import { existsSync } from 'node:fs';
+import { describe, expect, it } from 'vitest';
+
+describe('config test migration note', () => {
+  it('keeps balance-constants coverage in the contract layer', () => {
+    expect(
+      existsSync(new URL('../../../tests/contracts/balance-constants.contract.test.ts', import.meta.url)),
+    ).toBe(true);
+  });
+});

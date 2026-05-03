@@ -6,7 +6,7 @@ import { findPath } from '../utils/pathfinding.js';
 import { useGameStore } from '../store/game-store.js';
 import { useBumpAnimationState } from '../hooks/useBumpAnimationState.js';
 import { useMoveAnimationState } from '../hooks/useMoveAnimationState.js';
-import { BUMP_ANIMATION_DURATION_MS } from '../config/ui-config.js';
+import { BUMP_ANIMATION_DURATION_MS, CELL_SIZE } from '../config/ui-config.js';
 import { VP_WIDTH, VP_HEIGHT } from '../config/ui-config.js';
 
 interface Props {
@@ -23,7 +23,6 @@ export function DungeonCanvas({ map, vpTilesWidth, vpTilesHeight }: Props) {
 
   const vp_width  = vpTilesWidth  ?? VP_WIDTH;
   const vp_height = vpTilesHeight ?? VP_HEIGHT;
-  const cellSize  = 24;
 
   const minX = map.cells.length > 0 ? Math.min(...map.cells.map(c => c.x)) : 0;
   const minY = map.cells.length > 0 ? Math.min(...map.cells.map(c => c.y)) : 0;
@@ -45,8 +44,8 @@ export function DungeonCanvas({ map, vpTilesWidth, vpTilesHeight }: Props) {
     if (!canvas) return;
 
     const dpr = window.devicePixelRatio;
-    const cssWidth  = vp_width  * cellSize;
-    const cssHeight = vp_height * cellSize;
+    const cssWidth  = vp_width  * CELL_SIZE;
+    const cssHeight = vp_height * CELL_SIZE;
 
     canvas.width  = cssWidth  * dpr;
     canvas.height = cssHeight * dpr;

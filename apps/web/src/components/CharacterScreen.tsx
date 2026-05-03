@@ -6,6 +6,8 @@ import { MasteryDetailModal } from './MasteryDetailModal.js';
 import { QuestDetailModal } from './QuestDetailModal.js';
 import { FactionDetailModal } from './FactionDetailModal.js';
 import { EnchantmentDetailModal } from './EnchantmentDetailModal.js';
+import { useBreakpoint } from '../hooks/useBreakpoint.js';
+import { TAB_BAR_HEIGHT } from '../config/ui-config.js';
 
 interface CharacterScreenProps {
   player: PlayerHudView;
@@ -304,6 +306,7 @@ function FactionProgressSection({ player, onOpenDetails }: { player: PlayerHudVi
 }
 
 export function CharacterScreen({ player, activeQuests, sendCommand }: CharacterScreenProps) {
+  const { isMobile } = useBreakpoint();
   const [selectedAbilityId, setSelectedAbilityId] = useState<string | null>(null);
   const [showQuestsModal, setShowQuestsModal] = useState(false);
   const [showFactionsModal, setShowFactionsModal] = useState(false);
@@ -322,112 +325,123 @@ export function CharacterScreen({ player, activeQuests, sendCommand }: Character
         display: 'flex',
         flexDirection: 'column',
         height: '100%',
-        overflow: 'auto',
+        minHeight: 0,
+        overflow: 'hidden',
         padding: '8px',
         background: '#111',
         color: '#ccc',
         fontFamily: 'monospace',
       }}
-    >
-      {/* Header with player name and gold on same line */}
-      <div style={{ marginBottom: 12, paddingBottom: 8, borderBottom: '1px solid #333' }}>
-        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 4 }}>
-          <div style={{ fontSize: 16, fontWeight: 'bold', color: '#fff' }}>
-            {player.name}
+      >
+        {/* Header with player name and gold on same line */}
+        <div style={{ marginBottom: 12, paddingBottom: 8, borderBottom: '1px solid #333', flexShrink: 0 }}>
+          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 4 }}>
+            <div style={{ fontSize: 16, fontWeight: 'bold', color: '#fff' }}>
+              {player.name}
+            </div>
+            <div style={{ fontSize: 14, fontWeight: 'bold', color: '#cc8' }}>
+              {player.gold}g
+            </div>
           </div>
-          <div style={{ fontSize: 14, fontWeight: 'bold', color: '#cc8' }}>
-            {player.gold}g
-          </div>
+          <div style={{ fontSize: 12, color: '#888' }}>Level {player.level}</div>
         </div>
-        <div style={{ fontSize: 12, color: '#888' }}>Level {player.level}</div>
-      </div>
 
-      {/* Experience bar */}
-      <XpProgressSection player={player} />
+        <div
+          data-testid="character-scroll-content"
+          style={{
+            flex: 1,
+            minHeight: 0,
+            overflow: 'auto',
+            paddingBottom: isMobile ? TAB_BAR_HEIGHT : 0,
+          }}
+        >
+          {/* Experience bar */}
+          <XpProgressSection player={player} />
 
-      {/* Core stats */}
-      <ClickableStatGrid player={player} />
+          {/* Core stats */}
+          <ClickableStatGrid player={player} />
 
-      {/* Info buttons section - stacked */}
-      <div style={{ marginBottom: 12, display: 'flex', gap: '6px', flexWrap: 'wrap' }}>
-        {hasQuests && (
-          <button
-            onClick={() => setShowQuestsModal(true)}
-            style={{
-              padding: '4px 8px',
-              background: '#1a2a3a',
-              color: '#6af',
-              border: '1px solid #2a4a6a',
-              fontSize: 11,
-              cursor: 'pointer',
-            }}
-          >
-            Quests ({quests.length})
-          </button>
-        )}
-        {hasMasteries && (
-          <button
-            onClick={() => setShowMasteryModal('list')}
-            style={{
-              padding: '4px 8px',
-              background: '#2a1a2a',
-              color: '#f0a',
-              border: '1px solid #6a2a6a',
-              fontSize: 11,
-              cursor: 'pointer',
-            }}
-          >
-            Masteries
-          </button>
-        )}
-        {hasEnchantments ? (
-          <button
-            onClick={() => setShowEnchantsModal(true)}
-            style={{
-              padding: '4px 8px',
-              background: '#1a3a2a',
-              color: '#6f6',
-              border: '1px solid #2a6a4a',
-              fontSize: 11,
-              cursor: 'pointer',
-            }}
-          >
-            Enchantments
-          </button>
-        ) : (
-          <button
-            disabled
-            style={{
-              padding: '4px 8px',
-              background: '#0a1a0a',
-              color: '#444',
-              border: '1px solid #1a3a1a',
-              fontSize: 11,
-              cursor: 'not-allowed',
-              opacity: 0.5,
-            }}
-          >
-            Enchantments
-          </button>
-        )}
-      </div>
+          {/* Info buttons section - stacked */}
+          <div style={{ marginBottom: 12, display: 'flex', gap: '6px', flexWrap: 'wrap' }}>
+            {hasQuests && (
+              <button
+                onClick={() => setShowQuestsModal(true)}
+                style={{
+                  padding: '4px 8px',
+                  background: '#1a2a3a',
+                  color: '#6af',
+                  border: '1px solid #2a4a6a',
+                  fontSize: 11,
+                  cursor: 'pointer',
+                }}
+              >
+                Quests ({quests.length})
+              </button>
+            )}
+            {hasMasteries && (
+              <button
+                onClick={() => setShowMasteryModal('list')}
+                style={{
+                  padding: '4px 8px',
+                  background: '#2a1a2a',
+                  color: '#f0a',
+                  border: '1px solid #6a2a6a',
+                  fontSize: 11,
+                  cursor: 'pointer',
+                }}
+              >
+                Masteries
+              </button>
+            )}
+            {hasEnchantments ? (
+              <button
+                onClick={() => setShowEnchantsModal(true)}
+                style={{
+                  padding: '4px 8px',
+                  background: '#1a3a2a',
+                  color: '#6f6',
+                  border: '1px solid #2a6a4a',
+                  fontSize: 11,
+                  cursor: 'pointer',
+                }}
+              >
+                Enchantments
+              </button>
+            ) : (
+              <button
+                disabled
+                style={{
+                  padding: '4px 8px',
+                  background: '#0a1a0a',
+                  color: '#444',
+                  border: '1px solid #1a3a1a',
+                  fontSize: 11,
+                  cursor: 'not-allowed',
+                  opacity: 0.5,
+                }}
+              >
+                Enchantments
+              </button>
+            )}
+          </div>
 
-      {/* Resistances */}
-      <ResistancesSection player={player} />
+          {/* Resistances */}
+          <ResistancesSection player={player} />
 
-      {hasFactions && (
-        <FactionProgressSection player={player} onOpenDetails={() => setShowFactionsModal(true)} />
-      )}
+          {hasFactions && (
+            <FactionProgressSection player={player} onOpenDetails={() => setShowFactionsModal(true)} />
+          )}
 
-      {/* Status effects */}
-      <StatusSection player={player} />
+          {/* Status effects */}
+          <StatusSection player={player} />
 
-      {/* Abilities */}
-      <AbilitiesSection
-        player={player}
-        selectedAbilityId={selectedAbilityId}
-        onSelectAbility={setSelectedAbilityId}
-      />
+          {/* Abilities */}
+          <AbilitiesSection
+            player={player}
+            selectedAbilityId={selectedAbilityId}
+            onSelectAbility={setSelectedAbilityId}
+          />
+        </div>
 
       {/* Modals */}
       {showQuestsModal && hasQuests && (

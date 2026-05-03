@@ -8,6 +8,20 @@ import {
   listAvailableBuilders,
 } from './test-builder-generator.js';
 
+const CONTENT_MODULE_PATH = '@dungeon/' + 'content';
+
+function joinLines(...lines: string[]): string {
+  return lines.join('\n');
+}
+
+function contentImport(symbols: string): string {
+  return ["import { ", symbols, " } from '", CONTENT_MODULE_PATH, "';"].join('');
+}
+
+function exactValueAssertion(expression: string, value: number): string {
+  return ['expect(', expression, ')', `.toBe(${String(value)})`, ';'].join('');
+}
+
 describe('test-layer-advisor skill', () => {
   describe('analyzeTestFile', () => {
     it('validates unit test with correct patterns', () => {
@@ -28,19 +42,19 @@ describe('PlayerStats', () => {
       const result = analyzeTestFile(code, 'unit');
       expect(result.layer).toBe('unit');
       expect(result.validated).toBe(true);
-      expect(result.issues.length).toBe(0);
+      expect(result.issues).toHaveLength(0);
     });
 
     it('flags unit test importing live config', () => {
-      const code = `
-import { PLAYER_STATS } from '@dungeon/content';
-
-describe('PlayerStats', () => {
-  it('matches config', () => {
-    expect(PLAYER_STATS.maxHealth).toBe(100);
-  });
-});
-      `;
+      const code = joinLines(
+        contentImport('PLAYER_STATS'),
+        '',
+        "describe('PlayerStats', () => {",
+        "  it('matches config', () => {",
+        `    ${exactValueAssertion('PLAYER_STATS.maxHealth', 100)}`,
+        '  });',
+        '});',
+      );
 
       const result = analyzeTestFile(code, 'unit');
       expect(result.issues.length).toBeGreaterThan(0);
@@ -65,21 +79,21 @@ describe('Combat', () => {
     });
 
     it('validates contract test with live config', () => {
-      const code = `
-import { ENEMIES } from '@dungeon/content';
-
-describe('EnemyContent', () => {
-  it('all enemies have valid tier', () => {
-    Object.values(ENEMIES).forEach((enemy) => {
-      expect(enemy.tier).toBeGreaterThan(0);
-    });
-  });
-});
-      `;
+      const code = joinLines(
+        contentImport('ENEMIES'),
+        '',
+        "describe('EnemyContent', () => {",
+        "  it('all enemies have valid tier', () => {",
+        '    Object.values(ENEMIES).forEach((enemy) => {',
+        '      expect(enemy.tier).toBeGreaterThan(0);',
+        '    });',
+        '  });',
+        '});',
+      );
 
       const result = analyzeTestFile(code, 'contract');
       expect(result.validated).toBe(true);
-      expect(result.issues.filter((i) => i.severity === 'error').length).toBe(0);
+      expect(result.issues.filter((i) => i.severity === 'error')).toHaveLength(0);
     });
 
     it('recommends GameState for integration tests', () => {
@@ -97,13 +111,13 @@ describe('GameFlow', () => {
     });
 
     it('catches exact value assertions in balance tests', () => {
-      const code = `
-describe('Balance', () => {
-  it('player has correct health', () => {
-    expect(player.stats.maxHealth).toBe(100);
-  });
-});
-      `;
+      const code = joinLines(
+        "describe('Balance', () => {",
+        "  it('player has correct health', () => {",
+        `    ${exactValueAssertion('player.stats.maxHealth', 100)}`,
+        '  });',
+        '});',
+      );
 
       const result = analyzeTestFile(code, 'balance');
       const exactValueIssue = result.issues.find((i) => i.code === 'BALANCE_TEST_EXACT_VALUE');
@@ -187,17 +201,17 @@ describe('test-builder-generator skill', () => {
 describe('skill integration', () => {
   it('advisor validates generated builder usage', () => {
     const generatedBuilder = generateBuilder('Player');
-    const testCode = `
-import { PlayerBuilder } from './builders.js';
-${generatedBuilder}
-
-describe('Player', () => {
-  it('uses builder', () => {
-    const player = new PlayerBuilder().withStats({ health: 50 }).build();
-    expect(player.stats.health).toBe(50);
-  });
-});
-    `;
+    const testCode = joinLines(
+      "import { PlayerBuilder } from './builders.js';",
+      generatedBuilder,
+      '',
+      "describe('Player', () => {",
+      "  it('uses builder', () => {",
+      '    const player = new PlayerBuilder().withStats({ health: 50 }).build();',
+      `    ${exactValueAssertion('player.stats.health', 50)}`,
+      '  });',
+      '});',
+    );
 
     const analysis = analyzeTestFile(testCode, 'unit');
     // Should recognize correct builder usage

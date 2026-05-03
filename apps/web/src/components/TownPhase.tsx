@@ -1,6 +1,5 @@
 import React, { useState } from 'react';
 import type { GameView, NpcView, FactionView } from '@dungeon/presenter';
-import { TAB_BAR_HEIGHT } from '../config/ui-config.js';
 import { ItemSpriteIcon } from './ItemSpriteIcon.js';
 import {
   colors,
@@ -22,6 +21,7 @@ import { ShopPanel } from './ShopPanel.js';
 import { FactionDetailModal } from './FactionDetailModal.js';
 import { useBreakpoint } from '../hooks/useBreakpoint.js';
 import { InfoCard, PanelHeader, SectionLabel } from './ui/index.js';
+import { TAB_BAR_HEIGHT } from '../config/ui-config.js';
 
 type TownPanel = 'main' | 'shop' | 'tavern' | 'enchanter';
 
@@ -350,14 +350,18 @@ function TavernPanel({ view, onOpenFactionDetails }: { view: GameView; onOpenFac
 function SubPanel({
   onBack,
   children,
+  isMobile,
 }: {
   onBack: () => void;
   children: React.ReactNode;
+  isMobile: boolean;
 }) {
   return (
     <div
+      data-testid="town-subpanel"
       style={{
         padding: 8,
+        paddingBottom: isMobile ? TAB_BAR_HEIGHT : 8,
         fontFamily: FONT_STACK,
         color: colors.text,
         background: colors.panel,
@@ -386,11 +390,11 @@ export function TownPhase({
 }: TownPhaseProps) {
   const [townPanel, setTownPanel] = useState<TownPanel>('main');
   const [showFactionsModal, setShowFactionsModal] = useState(false);
-  useBreakpoint();
+  const { isMobile } = useBreakpoint();
 
   if (townPanel === 'shop') {
     return (
-      <SubPanel onBack={() => setTownPanel('main')}>
+      <SubPanel onBack={() => setTownPanel('main')} isMobile={isMobile}>
         {view.town?.shop ? (
           <ShopPanel view={view} loading={loading} sendCommand={sendCommand} />
         ) : null}
@@ -400,7 +404,7 @@ export function TownPhase({
 
   if (townPanel === 'tavern') {
     return (
-      <SubPanel onBack={() => setTownPanel('main')}>
+      <SubPanel onBack={() => setTownPanel('main')} isMobile={isMobile}>
         <TavernPanel view={view} onOpenFactionDetails={() => setShowFactionsModal(true)} />
       </SubPanel>
     );
@@ -408,7 +412,7 @@ export function TownPhase({
 
   if (townPanel === 'enchanter') {
     return (
-      <SubPanel onBack={() => setTownPanel('main')}>
+      <SubPanel onBack={() => setTownPanel('main')} isMobile={isMobile}>
         {view.town ? (
           <EnchanterPanel
             town={view.town}
@@ -430,7 +434,6 @@ export function TownPhase({
         display: 'flex',
         flexDirection: 'column',
         minHeight: 0,
-        paddingBottom: TAB_BAR_HEIGHT + 8,
       }}
     >
       {/* Header — fixed */}
@@ -517,11 +520,13 @@ export function TownPhase({
 
       {/* Messages section — scrolls internally */}
       <div
+        data-testid="town-main-messages"
         style={{
           flex: 1,
           minHeight: 0,
           overflow: 'auto',
           padding: 8,
+          paddingBottom: isMobile ? TAB_BAR_HEIGHT : 8,
           display: 'flex',
           flexDirection: 'column',
           gap: 10,
