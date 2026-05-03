@@ -48,3 +48,16 @@ mcp-config.json
 
 # Windows zone identifier files
 *:Zone.Identifier
+
+# Experimental local model and skill sync scripts
+scripts/*goofy*
+scripts/*ollama*
+scripts/local-ai/
+scripts/sync-*.mjs
+
+# Experimental test files
+tests/contracts/
+tests/integration/goofy-local-model.integration.test.ts
+
+# GitHub skills (experimental)
+.github/skills/
