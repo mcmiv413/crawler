@@ -4,9 +4,16 @@
  * Verifies that the full-screen inventory view correctly displays
  * equipment slots, bag items, and item inspection modal.
  */
-import { describe, it, expect, vi } from 'vitest';
+import { beforeEach, describe, it, expect, vi } from 'vitest';
 import React from 'react';
 import { render, screen, fireEvent } from '@testing-library/react';
+
+vi.mock('../hooks/useBreakpoint.js', () => ({
+  useBreakpoint: vi.fn(() => ({ isMobile: false })),
+}));
+
+import { useBreakpoint } from '../hooks/useBreakpoint.js';
+import { TAB_BAR_HEIGHT } from '../config/ui-config.js';
 import { InventoryScreen } from './InventoryScreen.js';
 import type { InventoryView, DismissibleNotice } from '@dungeon/presenter';
 
@@ -98,6 +105,10 @@ const emptyInventory: InventoryView = {
 };
 
 describe('InventoryScreen Component', () => {
+  beforeEach(() => {
+    vi.mocked(useBreakpoint).mockReturnValue({ isMobile: false });
+  });
+
   describe('Header and Navigation', () => {
     it('renders inventory title', () => {
       render(
@@ -351,6 +362,29 @@ describe('InventoryScreen Component', () => {
       fireEvent.click(itemButton);
       // Modal should render with item description
       expect(screen.getByText(/Restores health/)).toBeInTheDocument();
+    });
+  });
+
+  describe('Responsive scroll clearance', () => {
+    it('adds tab bar clearance to the bag list on mobile', () => {
+      vi.mocked(useBreakpoint).mockReturnValue({ isMobile: true });
+      const inventory: InventoryView = {
+        items: [mockConsumable],
+        equipped: emptyEquipped,
+      };
+
+      render(
+        <InventoryScreen
+          inventory={inventory}
+          phase="dungeon"
+          onClose={vi.fn()}
+          sendCommand={vi.fn()}
+        />
+      );
+
+      expect(screen.getByTestId('inventory-item-list')).toHaveStyle(
+        `padding-bottom: ${TAB_BAR_HEIGHT}px`,
+      );
     });
   });
 

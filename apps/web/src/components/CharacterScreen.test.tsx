@@ -1,8 +1,15 @@
 /// <reference types="@testing-library/jest-dom" />
 import React from 'react';
-import { describe, it, expect, vi } from 'vitest';
+import { beforeEach, describe, it, expect, vi } from 'vitest';
 import { fireEvent, render, screen } from '@testing-library/react';
 import type { PlayerHudView } from '@dungeon/presenter';
+
+vi.mock('../hooks/useBreakpoint.js', () => ({
+  useBreakpoint: vi.fn(() => ({ isMobile: false })),
+}));
+
+import { useBreakpoint } from '../hooks/useBreakpoint.js';
+import { TAB_BAR_HEIGHT } from '../config/ui-config.js';
 import { CharacterScreen } from './CharacterScreen.js';
 
 function createPlayer(overrides?: Partial<PlayerHudView>): PlayerHudView {
@@ -71,6 +78,10 @@ function createPlayer(overrides?: Partial<PlayerHudView>): PlayerHudView {
 }
 
 describe('CharacterScreen faction progress', () => {
+  beforeEach(() => {
+    vi.mocked(useBreakpoint).mockReturnValue({ isMobile: false });
+  });
+
   it('shows faction progress and ogre progress from presenter data', () => {
     render(<CharacterScreen player={createPlayer()} sendCommand={vi.fn()} />);
 
@@ -90,5 +101,14 @@ describe('CharacterScreen faction progress', () => {
     expect(screen.getAllByText(/Brakka, Knife-King/i).length).toBeGreaterThan(1);
     expect(screen.getByText(/Town effect per run: prosperity -2, corruption \+2\./i)).toBeInTheDocument();
     expect(screen.getByText(/Members Slain/i)).toBeInTheDocument();
+  });
+
+  it('adds tab bar clearance to the scrollable body on mobile', () => {
+    vi.mocked(useBreakpoint).mockReturnValue({ isMobile: true });
+    render(<CharacterScreen player={createPlayer()} sendCommand={vi.fn()} />);
+
+    expect(screen.getByTestId('character-scroll-content')).toHaveStyle(
+      `padding-bottom: ${TAB_BAR_HEIGHT}px`,
+    );
   });
 });

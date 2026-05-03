@@ -535,6 +535,32 @@ describe('DungeonPhase Component', () => {
       expect(screen.getByText(/Hero -> Goblin/)).toBeInTheDocument();
       expect(screen.getByText(/Goblin defeated/)).toBeInTheDocument();
     });
+
+    it('keeps the mini combat log scrollable while showing older entries', () => {
+      const view = createMockGameView();
+      const combatLog = [
+        { text: 'Oldest entry', type: 'info' },
+        { text: 'Second entry', type: 'info' },
+        { text: 'Third entry', type: 'attack' },
+        { text: 'Newest entry', type: 'loot' },
+      ];
+
+      render(
+        <DungeonPhase
+          view={view}
+          combatLog={combatLog}
+          loading={false}
+          error={null}
+          sendCommand={vi.fn()}
+          useSprites={false}
+          setUseSprites={vi.fn()}
+        />
+      );
+
+      expect(screen.getByTestId('dungeon-mini-combat-log')).toHaveStyle('overflow-y: auto');
+      expect(screen.getByText('Oldest entry')).toBeInTheDocument();
+      expect(screen.getByText('Newest entry')).toBeInTheDocument();
+    });
   });
 
   describe('Error Display', () => {

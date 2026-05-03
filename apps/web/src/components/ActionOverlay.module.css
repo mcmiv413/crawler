@@ -34,7 +34,7 @@
   flex-direction: column;
   width: 100%;
   max-width: 100%;
-  max-height: 80vh;
+  max-height: min(80vh, calc(100dvh - 0.75rem));
   box-shadow: 0 -4px 16px rgba(0, 0, 0, 0.5);
   animation: slideInUp 0.3s ease-out;
 }
@@ -54,7 +54,7 @@
   display: flex;
   justify-content: space-between;
   align-items: flex-start;
-  padding: 1rem;
+  padding: clamp(0.75rem, 2.5vw, 1rem);
   border-bottom: 1px solid #3a4a6a;
   flex-shrink: 0;
 }
@@ -71,7 +71,7 @@
 
 .title {
   margin: 0;
-  font-size: 1.125rem;
+  font-size: clamp(1rem, 3vw, 1.125rem);
   font-weight: 600;
   color: #e0e8f0;
   text-transform: capitalize;
@@ -82,9 +82,9 @@
   border: 1px solid #4a5a8a;
   border-radius: 4px;
   color: #e0e8f0;
-  font-size: 1.25rem;
-  width: 2rem;
-  height: 2rem;
+  font-size: clamp(1rem, 3vw, 1.25rem);
+  width: clamp(1.75rem, 5vw, 2rem);
+  height: clamp(1.75rem, 5vw, 2rem);
   padding: 0;
   cursor: pointer;
   display: flex;
@@ -101,12 +101,12 @@
 .content {
   overflow-y: auto;
   flex: 1;
-  padding: 1rem;
+  padding: clamp(0.75rem, 2.5vw, 1rem);
 }
 
 .footer {
   display: flex;
-  padding: 1rem;
+  padding: clamp(0.75rem, 2.5vw, 1rem);
   border-top: 1px solid #3a4a6a;
   flex-shrink: 0;
 }
@@ -131,37 +131,4 @@
 .cancelButton:active {
   background-color: #1a2a4a;
   transform: scale(0.98);
-}
-
-/* Mobile adjustments */
-@media (max-width: 640px) {
-  .container {
-    width: 100%;
-    max-width: 100%;
-    border-radius: 8px 8px 0 0;
-    height: auto;
-    max-height: 70vh;
-  }
-
-  .title {
-    font-size: 1rem;
-  }
-
-  .closeButton {
-    width: 1.75rem;
-    height: 1.75rem;
-    font-size: 1rem;
-  }
-
-  .header {
-    padding: 0.75rem;
-  }
-
-  .content {
-    padding: 0.75rem;
-  }
-
-  .footer {
-    padding: 0.75rem;
-  }
 }

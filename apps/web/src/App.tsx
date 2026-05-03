@@ -3,7 +3,6 @@ import { useGameStore } from './store/game-store.js';
 import { useKeyboard } from './hooks/useKeyboard.js';
 import { useAutoWalk } from './hooks/useAutoWalk.js';
 import { useBreakpoint } from './hooks/useBreakpoint.js';
-import { TAB_BAR_HEIGHT } from './config/ui-config.js';
 import { StartScreen } from './components/StartScreen.js';
 import { TownPhase } from './components/TownPhase.js';
 import { DungeonPhase } from './components/DungeonPhase.js';
@@ -67,7 +66,7 @@ function renderPanel(
 }
 
 export function App() {
-  const { view, gameId, combatLog, loading, error, deathTransitioning, createGame, sendCommand, clearError, restoreSession, resetGame } = useGameStore();
+  const { view, gameId, combatLog, loading, error, deathTransitioning, createGame, sendCommand, restoreSession, resetGame } = useGameStore();
   const { isMobile } = useBreakpoint();
   const [playerName, setPlayerName] = useState('Adventurer');
   const [npcDialogue, setNpcDialogue] = useState<{ name: string; text: string } | null>(null);
@@ -214,7 +213,6 @@ export function App() {
     : undefined;
   const showProgressNotice = progressNotice !== undefined && !shownNoticeIds.has(progressNotice.id);
   const visiblePanels: Screen[] = (['inventory', 'character', 'log'] as Screen[]).filter(p => openPanels.has(p));
-  const activeNavScreen: Screen = isMobile && openPanels.size > 0 ? ([...openPanels][0] ?? 'main') : 'main';
   // On mobile, show either main content or panels (switching), not both
   const showMainContent = !isMobile || visiblePanels.length === 0;
 
@@ -251,7 +249,7 @@ export function App() {
         {!isMobile && visiblePanels.map(p => renderPanel(p, view, combatLog, sendCommand, isMobile, () => handleNavClick(p)))}
         {isMobile && visiblePanels.length > 0 && visiblePanels.map(p => renderPanel(p, view, combatLog, sendCommand, isMobile, () => handleNavClick(p)))}
       </div>
-      <MobileNav activeScreen={activeNavScreen} onScreenChange={handleNavClick} phase={view.phase as 'town' | 'dungeon'} onNewGame={resetGame} />
+      <MobileNav openScreens={openPanels} onScreenChange={handleNavClick} phase={view.phase as 'town' | 'dungeon'} onNewGame={resetGame} />
       {deathTransitioning && (
         <div
           style={{

@@ -6,12 +6,23 @@
  *
  * Part of Phase 4: React Component Tests (Feature Completeness Framework)
  */
-import { describe, it, expect, vi } from 'vitest';
+import { beforeEach, describe, it, expect, vi } from 'vitest';
 import React from 'react';
 import { render, screen } from '@testing-library/react';
+
+vi.mock('../hooks/useBreakpoint.js', () => ({
+  useBreakpoint: vi.fn(() => ({ isMobile: false })),
+}));
+
+import { useBreakpoint } from '../hooks/useBreakpoint.js';
+import { TAB_BAR_HEIGHT } from '../config/ui-config.js';
 import { CombatLogView } from './CombatLogView.js';
 
 describe('CombatLogView Component', () => {
+  beforeEach(() => {
+    vi.mocked(useBreakpoint).mockReturnValue({ isMobile: false });
+  });
+
   describe('Basic Rendering', () => {
     it('renders null when entries are empty', () => {
       const { container } = render(<CombatLogView entries={[]} debugMode={false} />);
@@ -78,7 +89,7 @@ describe('CombatLogView Component', () => {
         <CombatLogView entries={[{ text: 'Entry 1', type: 'info' }]} debugMode={false} />,
       );
 
-      const scrollContainer = document.querySelector('[style*="overflowY"]') as HTMLDivElement;
+      const scrollContainer = screen.getByTestId('combat-log-entries');
       const initialScrollTop = scrollContainer?.scrollTop ?? 0;
 
       // Add new entries to trigger re-render
@@ -287,6 +298,20 @@ describe('CombatLogView Component', () => {
       expect(scrollContainer).toBeDefined();
       // Explicit maxHeight should override default
       expect(scrollContainer?.style.maxHeight).toBe('200px');
+    });
+
+    it('adds tab bar clearance to the entry list on mobile', () => {
+      vi.mocked(useBreakpoint).mockReturnValue({ isMobile: true });
+      render(
+        <CombatLogView
+          entries={[{ text: 'Test event', type: 'info' }]}
+          debugMode={false}
+        />,
+      );
+
+      expect(screen.getByTestId('combat-log-entries')).toHaveStyle(
+        `padding-bottom: ${TAB_BAR_HEIGHT}px`,
+      );
     });
   });
 });

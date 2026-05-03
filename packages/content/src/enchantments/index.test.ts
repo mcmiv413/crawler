@@ -41,7 +41,7 @@ describe('enchantment catalog', () => {
 describe('getEnchantmentCost', () => {
   it('returns the cost matching the enchantment tier for every catalog entry', () => {
     for (const ench of ENCHANTMENTS) {
-      const expected = ENCHANTMENT_COSTS[ench.tier as 1 | 2 | 3 | 'unique'];
+      const expected = ENCHANTMENT_COSTS[ench.tier];
       expect(
         getEnchantmentCost(ench.id),
         `${ench.id} (tier ${String(ench.tier)}) cost mismatch`,

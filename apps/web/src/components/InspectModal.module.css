@@ -93,7 +93,7 @@
 }
 
 .entityList {
-  flex: 0 0 220px;
+  flex: 0 0 clamp(8.75rem, 38vw, 13.75rem);
   /* colors.border2 divider */
   border-right: 1px solid #1e2228;
   overflow-y: auto;
@@ -199,6 +199,7 @@
 
 .detailsPanel {
   flex: 1;
+  min-width: 0;
   padding: 12px;
   overflow-y: auto;
   background-color: #111318;
@@ -354,7 +355,7 @@
 
 .label {
   color: #7b8090;
-  min-width: 60px;
+  min-width: 3.75rem;
   flex-shrink: 0;
 }
 
