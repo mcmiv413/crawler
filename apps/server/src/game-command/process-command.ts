@@ -21,8 +21,7 @@ import {
   buildDeterministicRunSummary,
   buildDeterministicTownRumors,
 } from './town-text.js';
-
-const MAX_EVENT_HISTORY = 100;
+import { MAX_EVENT_HISTORY } from '@dungeon/content';
 
 export interface CommandProcessingLogger {
   warn(...args: unknown[]): void;

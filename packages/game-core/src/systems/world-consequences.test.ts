@@ -2,7 +2,6 @@ import { describe, it, expect } from 'vitest';
 import { applyRunConsequences, evaluateEventChains } from './world-consequences.js';
 import type { RunMetrics, NpcState } from '@dungeon/contracts';
 import { entityId, EMPTY_RUN_METRICS } from '@dungeon/contracts';
-import { INITIAL_FACTIONS } from '@dungeon/content';
 import { createTestGameState } from '../test-utils.js';
 
 const metrics = (overrides: Partial<RunMetrics> = {}): RunMetrics => ({
@@ -202,9 +201,10 @@ describe('event history capping', () => {
   });
 
   it('does not mutate faction state on non-faction events', () => {
+    const baseFactions = createTestGameState().world.factions;
     const state = createTestGameState({
       world: {
-        factions: INITIAL_FACTIONS.map(f => ({
+        factions: baseFactions.map(f => ({
           ...f,
           power: 0,
           disposition: -5,

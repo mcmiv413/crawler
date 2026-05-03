@@ -3,8 +3,7 @@ import { processEnemyTurns } from './turn-scheduler.js';
 import { SeededRNG } from '../utils/rng.js';
 import { entityId, posKey, EMPTY_WEAPON_MASTERY, EMPTY_RUN_METRICS } from '@dungeon/contracts';
 import type { GameState, EnemyInstance, MapCell, RunState } from '@dungeon/contracts';
-import { createTestGameState, createTestEnemy } from '../test-utils.js';
-import { INITIAL_FACTIONS, ITEM_BY_ID } from '@dungeon/content';
+import { createTestGameState, createTestEnemy, createTestGameStateInCombat } from '../test-utils.js';
 
 // ---------------------------------------------------------------------------
 // Helpers
@@ -70,7 +69,7 @@ function makeTurnState(
       statuses: options?.playerStatuses ?? [],
     },
     run,
-    itemRegistry: { items: new Map(ITEM_BY_ID) as any },
+    itemRegistry: createTestGameStateInCombat().itemRegistry,
   };
 }
 

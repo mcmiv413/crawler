@@ -1,7 +1,6 @@
 import { describe, expect, it } from 'vitest';
 import { buildWorldModifiers } from './world-modifiers.js';
 import { createTestGameState } from '../test-utils.js';
-import { INITIAL_FACTIONS } from '@dungeon/content';
 
 describe('buildWorldModifiers', () => {
   it('default world returns empty preferences and stable faction multipliers', () => {
@@ -36,9 +35,10 @@ describe('buildWorldModifiers', () => {
   });
 
   it('faction status maps to spawn weight multipliers', () => {
+    const baseFactions = createTestGameState().world.factions;
     const state = createTestGameState({
       world: {
-        factions: INITIAL_FACTIONS.map((faction, index) => {
+        factions: baseFactions.map((faction, index) => {
           if (index === 0) return { ...faction, status: 'broken' as const, leaderSlain: true, power: 0 };
           if (index === 1) return { ...faction, status: 'led' as const, power: 85 };
           return faction;

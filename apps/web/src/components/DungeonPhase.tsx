@@ -1,6 +1,6 @@
 import React, { useEffect, useMemo, useState } from 'react';
 import type { GameView } from '@dungeon/presenter';
-import { VP_WIDTH, VP_HEIGHT } from '../utils/viewport.js';
+import { VP_WIDTH, VP_HEIGHT } from '../config/ui-config.js';
 import {
   TAB_BAR_HEIGHT,
   COMBAT_INDICATOR_FADEOUT_MS,

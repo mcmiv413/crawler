@@ -1,28 +1,44 @@
 import { describe, it, expect } from 'vitest';
 import { calculateEquippedStats } from './equipment.js';
-import { ENCHANTMENT_BY_ID } from '@dungeon/content';
-import { BASE_PLAYER_STATS } from '@dungeon/content';
 import { entityId } from '@dungeon/contracts';
-import type { Equipment, AnyItemTemplate, EntityId } from '@dungeon/contracts';
+import type { Equipment, AnyItemTemplate, EntityId, PlayerStats } from '@dungeon/contracts';
+
+/**
+ * Unit tests for calculateEquippedStats with resistAll enchantments.
+ *
+ * Uses hardcoded enchantment IDs as string references — no live @dungeon/content imports.
+ * Contract tests for enchantment content structure live in
+ * tests/contracts/enchantment-catalog.contract.test.ts.
+ */
+
+/**
+ * Minimal PlayerStats stub for unit tests.
+ * Avoids importing from test-utils (which pulls in @dungeon/content via a circular chain).
+ * Values match the shape required by calculateEquippedStats — not tuned balance numbers.
+ */
+const BASE_PLAYER_STATS: PlayerStats = {
+  maxHealth: 36,
+  health: 36,
+  attack: 4,
+  defense: 4,
+  accuracy: 6,
+  evasion: 8,
+  speed: 100,
+};
+
+/**
+ * Documentation stub showing the resistAll field shape used by real enchantments.
+ * NOTE: This map is NOT used by calculateEquippedStats — the function reads the real
+ * ENCHANTMENT_BY_ID from @dungeon/content. This stub only supports the extensibility
+ * documentation test at the bottom of this file.
+ * Values match the actual content definitions in packages/content/src/enchantments/.
+ */
+const ENCHANTMENT_BY_ID = new Map([
+  ['arcane_ward', { enchantmentId: 'arcane_ward', name: 'Arcane Ward', resistAll: ['fire', 'shock', 'frost'] }],
+  ['blight_ward', { enchantmentId: 'blight_ward', name: 'Blight Ward', resistAll: ['poison', 'corruption'] }],
+]);
 
 describe('Enchantment resistAll field', () => {
-  describe('resistAll is defined on enchantments', () => {
-    it('arcane_ward has resistAll defined with multiple elements', () => {
-      const arcaneWard = ENCHANTMENT_BY_ID.get('arcane_ward');
-      expect(arcaneWard).toBeDefined();
-      expect(arcaneWard?.resistAll).toBeDefined();
-      expect(Array.isArray(arcaneWard?.resistAll)).toBe(true);
-      expect((arcaneWard?.resistAll as any[])?.length).toBeGreaterThan(0);
-    });
-
-    it('blight_ward has resistAll defined', () => {
-      const blightWard = ENCHANTMENT_BY_ID.get('blight_ward');
-      expect(blightWard).toBeDefined();
-      expect(blightWard?.resistAll).toBeDefined();
-      expect(Array.isArray(blightWard?.resistAll)).toBe(true);
-      expect((blightWard?.resistAll as any[])?.length).toBeGreaterThan(0);
-    });
-  });
 
   describe('calculateEquippedStats applies resistAll without hardcoded logic', () => {
     it('applies arcane_ward resistance to protected elements', () => {

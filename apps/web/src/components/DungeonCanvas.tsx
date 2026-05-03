@@ -7,7 +7,7 @@ import { useGameStore } from '../store/game-store.js';
 import { useBumpAnimationState } from '../hooks/useBumpAnimationState.js';
 import { useMoveAnimationState } from '../hooks/useMoveAnimationState.js';
 import { BUMP_ANIMATION_DURATION_MS } from '../config/ui-config.js';
-import { VP_WIDTH, VP_HEIGHT } from '../utils/viewport.js';
+import { VP_WIDTH, VP_HEIGHT } from '../config/ui-config.js';
 
 interface Props {
   map: MapView;

@@ -61,7 +61,7 @@ All colours as CSS custom properties on `:root` and mirrored in `styles.ts`:
 Panels are fixed width except Log (flex). Dungeon canvas expands to fill. Each panel scrolls internally (`overflow-y: auto`).
 
 ### Mobile — single panel + tab bar
-Tab bar 50px always visible. One panel at a time. All touch targets ≥44px. Tab buttons ≥48px.
+Tab bar 56px always visible. One panel at a time. All touch targets ≥44px. Tab buttons ≥48px.
 
 ### Panel Anatomy
 ```

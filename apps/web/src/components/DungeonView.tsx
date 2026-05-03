@@ -1,6 +1,6 @@
 import React, { useCallback } from 'react';
 import type { MapView, EntityView, MapCellView } from '@dungeon/presenter';
-import { VP_WIDTH, VP_HEIGHT, CELL_SIZE } from '../utils/viewport.js';
+import { VP_WIDTH, VP_HEIGHT, CELL_SIZE } from '../config/ui-config.js';
 import { findPath } from '../utils/pathfinding.js';
 import { useGameStore } from '../store/game-store.js';
 import { FONT_STACK, colors } from '../styles.js';

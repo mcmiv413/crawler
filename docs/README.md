@@ -25,6 +25,7 @@ Each guide below includes a "Quick Start" section that reminds you to run this c
 | [Testing](guides/testing.md) | Writing tests, anti-patterns, helpers, balance testing |
 | [How to Audit the Codebase](guides/how-to-audit.md) | Performing a rigorous structural audit and turning findings into a fix plan |
 | [Audit Tooling Guide](guides/audit-tooling.md) | CLI paths, audit workflow (Serena for symbol lookup, Fossil for leads), and external-semantics fallback |
+| [Goofy Local Model](guides/goofy-local-model.md) | Syncing the live Goofy launcher, installing local Ollama aliases, and rerunning the backing-model benchmark |
 | [Adding a Game Mechanic](guides/adding-mechanic.md) | Implementing a new system end-to-end (the 6-hop chain) |
 | [Adding an Ability](guides/adding-ability.md) | Data-driven ability definitions and the execution pipeline |
 | [Adding an Enemy](guides/adding-enemy.md) | Enemy templates, archetypes, spawning, AI behavior |

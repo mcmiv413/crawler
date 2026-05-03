@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { getPrimaryFactionId, INITIAL_FACTIONS, frozenDepths, stoneCrypt } from '@dungeon/content';
+import type { BiomeDefinition } from '@dungeon/content';
 import { posKey } from '@dungeon/contracts';
 import { populateFloor } from './floor-populator.js';
 import type { WorldModifiers } from '../systems/world-modifiers.js';
@@ -8,6 +8,47 @@ import { chebyshevDistance } from '../utils/grid.js';
 import { SeededRNG } from '../utils/rng.js';
 import { buildWorldModifiers } from '../systems/world-modifiers.js';
 import { createTestGameState } from '../test-utils.js';
+
+// ---------------------------------------------------------------------------
+// Local biome fixtures -- avoids importing live @dungeon/content in unit tests
+// ---------------------------------------------------------------------------
+
+const stoneCrypt: BiomeDefinition = {
+  biomeId: 'stone_crypt',
+  name: 'Stone Crypt',
+  description: 'Ancient burial chambers carved from grey stone.',
+  floorRange: { min: 1, max: 3 },
+  tileWeights: { floor: 0.55, wall: 0.35, door: 0.1 },
+  ambientColor: '#444444',
+  floorAscii: '.',
+  wallAscii: '#',
+  mapGen: {
+    roomWidth: [3, 5],
+    roomHeight: [2, 4],
+    corridorLength: [1, 3],
+    dugPercentage: 0.38,
+  },
+};
+
+const frozenDepths: BiomeDefinition = {
+  biomeId: 'frozen_depths',
+  name: 'Frozen Depths',
+  description: 'Ice-coated corridors where breath crystallizes instantly.',
+  floorRange: { min: 4, max: 6 },
+  tileWeights: { floor: 0.50, wall: 0.40, door: 0.10 },
+  ambientColor: '#3a5a7a',
+  floorAscii: '.',
+  wallAscii: '█',
+  mapGen: {
+    roomWidth: [2, 4],
+    roomHeight: [2, 3],
+    corridorLength: [3, 9],
+    dugPercentage: 0.35,
+    algorithm: 'cellular',
+    fillProbability: 0.48,
+    iterations: 5,
+  },
+};
 
 function makeFloor(seed = 42, depth = 1) {
   const rng = new SeededRNG(seed);
@@ -21,7 +62,7 @@ function makeWorldMods(overrides: Partial<WorldModifiers> = {}): WorldModifiers 
     preferredArchetypes: [],
     preferredDamageTypes: [],
     factionWeightMultipliers: {},
-    factions: INITIAL_FACTIONS,
+    factions: createTestGameState().world.factions,
     enemyHealthMultiplier: 1,
     tierUpgradeChance: 0,
     reservedEncounterSlots: 0,
@@ -95,8 +136,8 @@ describe('populateFloor', () => {
         makeWorldMods({ factionWeightMultipliers: { beast_swarm: 3 } }),
       );
 
-      baseBeastSpawns += [...base.enemies.values()].filter(enemy => getPrimaryFactionId(enemy.templateId) === 'beast_swarm').length;
-      boostedBeastSpawns += [...boosted.enemies.values()].filter(enemy => getPrimaryFactionId(enemy.templateId) === 'beast_swarm').length;
+      baseBeastSpawns += [...base.enemies.values()].filter(enemy => enemy.factions?.[0]?.factionId === 'beast_swarm').length;
+      boostedBeastSpawns += [...boosted.enemies.values()].filter(enemy => enemy.factions?.[0]?.factionId === 'beast_swarm').length;
     }
 
     expect(boostedBeastSpawns).toBeGreaterThan(baseBeastSpawns);
@@ -112,14 +153,14 @@ describe('populateFloor', () => {
       const stableWorld = createTestGameState().world;
       const dominantWorld = createTestGameState({
         world: {
-          factions: INITIAL_FACTIONS.map(faction => faction.id === 'beast_swarm'
+          factions: createTestGameState().world.factions.map(faction => faction.id === 'beast_swarm'
             ? { ...faction, power: 85, status: 'led' as const }
             : faction),
         },
       }).world;
       const brokenWorld = createTestGameState({
         world: {
-          factions: INITIAL_FACTIONS.map(faction => faction.id === 'beast_swarm'
+          factions: createTestGameState().world.factions.map(faction => faction.id === 'beast_swarm'
             ? { ...faction, power: 5, status: 'broken' as const, leaderSlain: true }
             : faction),
         },
@@ -129,9 +170,9 @@ describe('populateFloor', () => {
       const dominant = populateFloor(floor, stoneCrypt, new SeededRNG(seed), buildWorldModifiers(dominantWorld, 1));
       const broken = populateFloor(floor, stoneCrypt, new SeededRNG(seed), buildWorldModifiers(brokenWorld, 1));
 
-      stableFactionSpawns += [...stable.enemies.values()].filter(enemy => getPrimaryFactionId(enemy.templateId) === 'beast_swarm').length;
-      dominantFactionSpawns += [...dominant.enemies.values()].filter(enemy => getPrimaryFactionId(enemy.templateId) === 'beast_swarm').length;
-      brokenFactionSpawns += [...broken.enemies.values()].filter(enemy => getPrimaryFactionId(enemy.templateId) === 'beast_swarm').length;
+      stableFactionSpawns += [...stable.enemies.values()].filter(enemy => enemy.factions?.[0]?.factionId === 'beast_swarm').length;
+      dominantFactionSpawns += [...dominant.enemies.values()].filter(enemy => enemy.factions?.[0]?.factionId === 'beast_swarm').length;
+      brokenFactionSpawns += [...broken.enemies.values()].filter(enemy => enemy.factions?.[0]?.factionId === 'beast_swarm').length;
     }
 
     expect(dominantFactionSpawns).toBeGreaterThan(stableFactionSpawns);

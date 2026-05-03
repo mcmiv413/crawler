@@ -1,6 +1,5 @@
 import { describe, it, expect } from 'vitest';
 import { ALL_ABILITY_DEFINITIONS, buildRegistry } from './index.js';
-import { BASE_PLAYER_STATS, XP_TABLE } from '@dungeon/content';
 import { WEAPON_TYPES } from '@dungeon/contracts';
 
 /**
@@ -11,8 +10,7 @@ import { WEAPON_TYPES } from '@dungeon/contracts';
  */
 
 const ABILITY_REGISTRY = buildRegistry(ALL_ABILITY_DEFINITIONS);
-const MAX_PLAYER_LEVEL = XP_TABLE.length - 1; // 10
-const BASE_MAX_HEALTH = BASE_PLAYER_STATS.maxHealth; // 30
+const MAX_PLAYER_LEVEL = 20;
 
 describe('Ability Registry Structure', () => {
   it('all abilities have required fields', () => {

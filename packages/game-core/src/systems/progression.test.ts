@@ -1,6 +1,5 @@
 import { describe, it, expect } from 'vitest';
 import { checkLevelUp } from './progression.js';
-import { BASE_PLAYER_STATS } from '@dungeon/content';
 import { BASE_TEST_STATS, createTestGameState } from '../test-utils.js';
 
 
@@ -35,10 +34,10 @@ describe('checkLevelUp', () => {
     const state = createTestGameState({ player: { experience: 100 } });
     const result = checkLevelUp(state);
     const p = result.state.player;
-    expect(p.stats.maxHealth).toBeGreaterThan(BASE_PLAYER_STATS.maxHealth);
-    expect(p.stats.attack).toBeGreaterThan(BASE_PLAYER_STATS.attack);
-    expect(p.stats.defense).toBeGreaterThan(BASE_PLAYER_STATS.defense);
-    expect(p.baseStats.maxHealth).toBeGreaterThan(BASE_PLAYER_STATS.maxHealth);
+    expect(p.stats.maxHealth).toBeGreaterThan(BASE_TEST_STATS.maxHealth);
+    expect(p.stats.attack).toBeGreaterThan(BASE_TEST_STATS.attack);
+    expect(p.stats.defense).toBeGreaterThan(BASE_TEST_STATS.defense);
+    expect(p.baseStats.maxHealth).toBeGreaterThan(BASE_TEST_STATS.maxHealth);
   });
 
   it('heals HP on level up', () => {

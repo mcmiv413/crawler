@@ -1,7 +1,71 @@
-import { FACTION_RUMORS, INITIAL_FACTIONS } from '@dungeon/content';
 import { createTestGameState } from '@dungeon/core/testing';
-import type { GameState } from '@dungeon/contracts';
+import type { FactionState, GameState } from '@dungeon/contracts';
 import { buildDeterministicRunSummary, buildDeterministicTownRumors } from './town-text.js';
+
+// ---------------------------------------------------------------------------
+// Local stubs — avoids @dungeon/content runtime imports.
+// ---------------------------------------------------------------------------
+
+/** Minimal faction states matching the real IDs used by town-text logic. */
+const STUB_FACTIONS: readonly FactionState[] = [
+  {
+    id: 'goblin_warband',
+    name: 'Goblin Warband',
+    power: 40,
+    disposition: -30,
+    status: 'leaderless',
+    leader: null,
+    leaderSlain: false,
+    membersKilledByPlayer: 0,
+    leadersKilledByPlayer: 0,
+    playerDeathsCaused: 0,
+  },
+  {
+    id: 'undead_legion',
+    name: 'Undead Legion',
+    power: 40,
+    disposition: -20,
+    status: 'leaderless',
+    leader: null,
+    leaderSlain: false,
+    membersKilledByPlayer: 0,
+    leadersKilledByPlayer: 0,
+    playerDeathsCaused: 0,
+  },
+  {
+    id: 'beast_swarm',
+    name: 'Beast Swarm',
+    power: 35,
+    disposition: -10,
+    status: 'leaderless',
+    leader: null,
+    leaderSlain: false,
+    membersKilledByPlayer: 0,
+    leadersKilledByPlayer: 0,
+    playerDeathsCaused: 0,
+  },
+  {
+    id: 'shadow_cult',
+    name: 'Shadow Cult',
+    power: 30,
+    disposition: -25,
+    status: 'leaderless',
+    leader: null,
+    leaderSlain: false,
+    membersKilledByPlayer: 0,
+    leadersKilledByPlayer: 0,
+    playerDeathsCaused: 0,
+  },
+];
+
+/** Known goblin_warband faction rumor strings (subset of content) used to
+ *  validate the rumor picker without importing @dungeon/content at runtime. */
+const GOBLIN_WARBAND_RUMORS: readonly string[] = [
+  'The goblin patrols have grown bold — they were spotted at the third gate last night.',
+  'Traders refuse to use the east road. Too many goblin ambushes near the dungeon mouth.',
+  'The warband has a leader now. Something changed them.',
+  'I saw smoke rising from deep below — goblin cookfires, they say. Many of them.',
+];
 
 function buildFactionTownState(): GameState {
   return {
@@ -13,7 +77,7 @@ function buildFactionTownState(): GameState {
       world: {
         totalRuns: 4,
         deepestFloor: 4,
-        factions: INITIAL_FACTIONS.map((faction) => {
+        factions: STUB_FACTIONS.map((faction) => {
           if (faction.id === 'goblin_warband') {
             return {
               ...faction,
@@ -71,7 +135,7 @@ describe('deterministic town text', () => {
 
     expect(firstPass).toEqual(secondPass);
     expect(firstPass).toHaveLength(3);
-    expect(firstPass.some(rumor => FACTION_RUMORS['goblin_warband']!.includes(rumor))).toBe(true);
+    expect(firstPass.some(rumor => GOBLIN_WARBAND_RUMORS.includes(rumor))).toBe(true);
     expect(firstPass.some(rumor => rumor.includes('Ogre'))).toBe(false);
   });
 

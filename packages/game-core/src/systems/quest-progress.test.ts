@@ -1,7 +1,6 @@
 import { describe, it, expect } from 'vitest';
 import type { GameState, Quest } from '@dungeon/contracts';
 import { entityId } from '@dungeon/contracts';
-import { ITEM_BY_ID } from '@dungeon/content';
 import { evaluateQuestProgress, redeemQuest, getObjectiveText } from './quest-progress.js';
 import { createTestGameState } from '../test-utils.js';
 
@@ -19,7 +18,18 @@ function createQuestState(options?: {
       },
     }),
     itemRegistry: {
-      items: new Map([...ITEM_BY_ID].map(([itemId, item]) => [entityId(itemId), item] as const)),
+      items: new Map([
+        [entityId('iron_sword'), {
+          itemId: 'iron_sword',
+          name: 'Iron Sword',
+          itemClass: 'weapon' as const,
+          description: '',
+          rarity: 'common' as const,
+          value: 10,
+          stackable: false,
+          maxStack: 1,
+        }],
+      ]),
     },
   };
 }

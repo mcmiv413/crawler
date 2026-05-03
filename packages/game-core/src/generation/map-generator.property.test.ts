@@ -2,10 +2,61 @@ import { describe, it, expect } from 'vitest';
 import * as fc from 'fast-check';
 import { generateFloor, bfsReachable } from './map-generator.js';
 import { SeededRNG } from '../utils/rng.js';
-import { stoneCrypt, goblinWarrens, mossCaverns } from '@dungeon/content';
+import type { BiomeDefinition } from '@dungeon/content';
 import { posKey } from '@dungeon/contracts';
 
-const biomes = [stoneCrypt, goblinWarrens, mossCaverns];
+const STUB_BIOME_A: BiomeDefinition = {
+  biomeId: 'stub_a',
+  name: 'Stub A',
+  description: 'Test stub biome A',
+  floorRange: { min: 1, max: 5 },
+  tileWeights: { floor: 0.55, wall: 0.35, door: 0.1 },
+  ambientColor: '#444444',
+  floorAscii: '.',
+  wallAscii: '#',
+  mapGen: {
+    roomWidth: [3, 5],
+    roomHeight: [2, 4],
+    corridorLength: [1, 3],
+    dugPercentage: 0.38,
+  },
+};
+
+const STUB_BIOME_B: BiomeDefinition = {
+  biomeId: 'stub_b',
+  name: 'Stub B',
+  description: 'Test stub biome B',
+  floorRange: { min: 1, max: 5 },
+  tileWeights: { floor: 0.6, wall: 0.3, door: 0.1 },
+  ambientColor: '#336633',
+  floorAscii: ',',
+  wallAscii: 'T',
+  mapGen: {
+    roomWidth: [5, 9],
+    roomHeight: [4, 7],
+    corridorLength: [2, 5],
+    dugPercentage: 0.5,
+  },
+};
+
+const STUB_BIOME_C: BiomeDefinition = {
+  biomeId: 'stub_c',
+  name: 'Stub C',
+  description: 'Test stub biome C',
+  floorRange: { min: 1, max: 5 },
+  tileWeights: { floor: 0.5, wall: 0.4, door: 0.1 },
+  ambientColor: '#334433',
+  floorAscii: '~',
+  wallAscii: 'o',
+  mapGen: {
+    roomWidth: [4, 7],
+    roomHeight: [3, 6],
+    corridorLength: [1, 4],
+    dugPercentage: 0.45,
+  },
+};
+
+const biomes = [STUB_BIOME_A, STUB_BIOME_B, STUB_BIOME_C];
 
 describe('map-generator property tests', () => {
   it('should produce valid connected maps for 100 random seeds', () => {
@@ -57,7 +108,7 @@ describe('map-generator property tests', () => {
         fc.integer({ min: 1, max: 100_000 }),
         (seed) => {
           const rng = new SeededRNG(seed);
-          const { floor } = generateFloor(1, stoneCrypt, rng);
+          const { floor } = generateFloor(1, STUB_BIOME_A, rng);
           expect(posKey(floor.entrance)).not.toBe(posKey(floor.exit));
         },
       ),

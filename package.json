@@ -49,7 +49,15 @@
     "docker:down": "docker-compose down",
     "docker:restart": "docker-compose down && docker-compose up -d --build",
     "parse-atlas": "tsx --tsconfig scripts/tsconfig.json scripts/parse-dawnlike-atlas.ts",
-    "generate:indexes": "tsx --tsconfig scripts/tsconfig.json scripts/generate-indexes.ts"
+    "generate:indexes": "tsx --tsconfig scripts/tsconfig.json scripts/generate-indexes.ts",
+    "goofy:sync": "node scripts/sync-goofy-profile.mjs",
+    "goofy:check": "node scripts/sync-goofy-profile.mjs --check",
+    "goofy:model:install": "node scripts/install-goofy-ollama-models.mjs",
+    "goofy:model:test": "vitest run --config tests/vitest.config.ts tests/integration/goofy-local-model.integration.test.ts",
+    "goofy:model:eval": "node scripts/run-goofy-model-evals.mjs",
+    "skill:model-orchestrator:sync": "node scripts/sync-model-orchestrator-skill.mjs",
+    "skill:model-orchestrator:check": "node scripts/sync-model-orchestrator-skill.mjs --check",
+    "skill:model-orchestrator:uninstall": "node scripts/sync-model-orchestrator-skill.mjs --uninstall"
   },
   "devDependencies": {
     "@fast-check/vitest": "^0.1.0",

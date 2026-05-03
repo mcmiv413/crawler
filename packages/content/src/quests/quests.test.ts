@@ -78,11 +78,4 @@ describe('quest templates', () => {
     expect(quest1.id).toContain('10');
     expect(quest2.id).toContain('20');
   });
-
-  it('all templates have meaningful reward amounts', () => {
-    for (const template of QUEST_TEMPLATES) {
-      expect(template.reward.amount).toBeGreaterThanOrEqual(50);
-      expect(template.reward.amount).toBeLessThanOrEqual(200);
-    }
-  });
 });

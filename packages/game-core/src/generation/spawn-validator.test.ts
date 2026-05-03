@@ -1,16 +1,37 @@
-import { describe, it, expect } from 'vitest';
+import { describe, it, expect, beforeAll } from 'vitest';
 import { validateSpawns } from './spawn-validator.js';
 import { generateFloor } from './map-generator.js';
 import { SeededRNG } from '../utils/rng.js';
-import { stoneCrypt } from '@dungeon/content';
+import type { BiomeDefinition } from '@dungeon/content';
 import { posKey } from '@dungeon/contracts';
-import type { EnemyInstance } from '@dungeon/contracts';
+import type { EnemyInstance, DungeonFloor } from '@dungeon/contracts';
 import { createTestEnemy } from '../test-utils.js';
+
+const STUB_BIOME: BiomeDefinition = {
+  biomeId: 'stub',
+  name: 'Stub',
+  description: 'Test stub biome',
+  floorRange: { min: 1, max: 5 },
+  tileWeights: { floor: 0.55, wall: 0.35, door: 0.1 },
+  ambientColor: '#444444',
+  floorAscii: '.',
+  wallAscii: '#',
+  mapGen: {
+    roomWidth: [3, 5],
+    roomHeight: [2, 4],
+    corridorLength: [1, 3],
+    dugPercentage: 0.38,
+  },
+};
 
 describe('validateSpawns', () => {
   // Generate a real floor so entrance/exit are valid
-  const rng = new SeededRNG(42);
-  const { floor } = generateFloor(1, stoneCrypt, rng);
+  let floor: DungeonFloor;
+
+  beforeAll(() => {
+    const rng = new SeededRNG(42);
+    ({ floor } = generateFloor(1, STUB_BIOME, rng));
+  });
 
   it('returns valid when no enemies are present', () => {
     const result = validateSpawns(floor, new Map());

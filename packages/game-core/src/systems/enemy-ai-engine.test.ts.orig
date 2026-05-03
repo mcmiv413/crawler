@@ -3,6 +3,7 @@ import { scoreEnemyActions } from './enemy-ai-engine.js';
 import type { ArchetypeDefinition } from '@dungeon/contracts';
 import { createTestGameStateInCombat, createTestEnemy } from '../test-utils.js';
 import { SeededRNG } from '../utils/rng.js';
+import { entityId } from '@dungeon/contracts';
 
 /**
  * Minimal archetype stubs for unit-level testing — no @dungeon/content import needed.
