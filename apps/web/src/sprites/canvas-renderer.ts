@@ -24,11 +24,24 @@ interface MoveAnimationState {
   progress: number;
 }
 
+interface ConsumableAnimationState {
+  id: string;
+  effect: 'heal' | 'buff' | 'cure' | 'damage';
+  playerPos: { x: number; y: number };
+  blastPositions: readonly { x: number; y: number }[];
+  startTime: number;
+  progress: number;
+  durationMs: number;
+}
+
+/** Player-level effects driven by active status conditions (not time-limited animations). */
+interface PlayerEffects {
+  /** When true the player sprite is drawn at 1.35× and gets a pulsing gold border. */
+  hasStrengthBuff?: boolean;
+}
+
 // ── Easing functions (progress 0 → 1) ────────────────────────────
 
-/**
- * Returns the eased position fraction (0 = at origin, 1 = at destination).
- */
 function applyMoveEasing(style: MoveAnimStyle, p: number): number {
   switch (style) {
     case 'step':
@@ -134,7 +147,10 @@ function drawCell(
   }
 }
 
-/** Draw an entity sprite or ASCII fallback, with optional pixel offset. */
+/**
+ * Draw an entity sprite with optional pixel offset and scale.
+ * scale > 1 grows the sprite centered on the cell (used for strength buff).
+ */
 function drawEntity(
   ctx: CanvasRenderingContext2D,
   entity: EntityView,
@@ -142,9 +158,12 @@ function drawEntity(
   screenY: number,
   offsetX: number = 0,
   offsetY: number = 0,
+  scale: number = 1.0,
 ): void {
-  const finalX = screenX + offsetX;
-  const finalY = screenY + offsetY;
+  const scaledSize  = CELL_SIZE * scale;
+  const scaleOffset = (CELL_SIZE - scaledSize) / 2;
+  const finalX = screenX + offsetX + scaleOffset;
+  const finalY = screenY + offsetY + scaleOffset;
 
   let sprite = null;
   if ('spriteName' in entity && entity.spriteName) {
@@ -155,13 +174,265 @@ function drawEntity(
 
   if (sprite) {
     const { image, rect } = sprite;
-    ctx.drawImage(image, rect.x, rect.y, rect.w, rect.h, finalX, finalY, CELL_SIZE, CELL_SIZE);
+    ctx.drawImage(image, rect.x, rect.y, rect.w, rect.h, finalX, finalY, scaledSize, scaledSize);
   } else {
     ctx.fillStyle = entity.color;
-    ctx.font = `${CELL_SIZE - 2}px monospace`;
+    ctx.font = `${scaledSize - 2}px monospace`;
     ctx.textAlign = 'center';
     ctx.textBaseline = 'middle';
-    ctx.fillText(entity.ascii, finalX + CELL_SIZE / 2, finalY + CELL_SIZE / 2);
+    ctx.fillText(entity.ascii, finalX + scaledSize / 2, finalY + scaledSize / 2);
+  }
+}
+
+// ── Consumable effect drawing ─────────────────────────────────────
+//HUMANNNOTE: these animations feel like they should either be there own standalong definitions per file per function or be defined with the object itself. At the very least the consumable objects should import the animation to be used and the animation to be used should be imported from the consumable at the time the user consumes the item.
+/**
+ * Heal — three red heart sprites float upward from the player tile,
+ * staggered 15% apart, each rising ~1.8 cells and fading to transparent.
+ */
+function drawHealEffect(
+  ctx: CanvasRenderingContext2D,
+  anim: ConsumableAnimationState,
+  vpLeft: number,
+  vpTop: number,
+): void {
+  const sx = (anim.playerPos.x - vpLeft) * CELL_SIZE;
+  const sy = (anim.playerPos.y - vpTop)  * CELL_SIZE;
+  const HEART_SIZE = Math.round(CELL_SIZE * 0.7);
+  const heartSprite = spriteRegistry.getSpriteByAtlasName('red heart full');
+
+  for (let i = 0; i < 3; i++) {
+    const delay  = i * 0.15;
+    const hp     = Math.max(0, (anim.progress - delay) / (1 - delay));
+    if (hp <= 0) continue;
+
+    const alpha  = 1 - hp;
+    const riseY  = hp * CELL_SIZE * 1.8;
+    const xOff   = (i - 1) * CELL_SIZE * 0.45;
+
+    ctx.globalAlpha = alpha;
+    if (heartSprite) {
+      ctx.drawImage(
+        heartSprite.image,
+        heartSprite.rect.x, heartSprite.rect.y,
+        heartSprite.rect.w, heartSprite.rect.h,
+        sx + xOff + (CELL_SIZE - HEART_SIZE) / 2,
+        sy - riseY + (CELL_SIZE - HEART_SIZE) / 2,
+        HEART_SIZE, HEART_SIZE,
+      );
+    } else {
+      // Fallback: simple red cross
+      ctx.fillStyle = '#ff4455';
+      ctx.fillRect(sx + xOff + 8, sy - riseY + 4,  4, 10);
+      ctx.fillRect(sx + xOff + 4, sy - riseY + 8,  12, 4);
+    }
+  }
+  ctx.globalAlpha = 1;
+}
+
+/**
+ * Buff (strength elixir) — two concentric gold rings burst outward from the
+ * player tile and fade, signalling the power surge on use.
+ * The persistent 1.35× scale + pulsing gold border are applied in renderMap
+ * whenever playerEffects.hasStrengthBuff is true.
+ */
+function drawBuffEffect(
+  ctx: CanvasRenderingContext2D,
+  anim: ConsumableAnimationState,
+  vpLeft: number,
+  vpTop: number,
+): void {
+  const sx = (anim.playerPos.x - vpLeft) * CELL_SIZE;
+  const sy = (anim.playerPos.y - vpTop)  * CELL_SIZE;
+  const p  = anim.progress;
+
+  // Outer ring — expands to 1.5× cell width
+  const outerExpand = Math.min(1, p * 1.8) * CELL_SIZE * 0.75;
+  const outerAlpha  = Math.max(0, 1 - p);
+  ctx.globalAlpha   = outerAlpha;
+  ctx.strokeStyle   = '#ffd700';
+  ctx.lineWidth     = 2;
+  ctx.strokeRect(
+    sx - outerExpand / 2,
+    sy - outerExpand / 2,
+    CELL_SIZE + outerExpand,
+    CELL_SIZE + outerExpand,
+  );
+
+  // Inner ring — slightly slower, more saturated orange
+  const innerExpand = Math.min(1, p * 1.4) * CELL_SIZE * 0.45;
+  ctx.globalAlpha   = outerAlpha * 0.7;
+  ctx.strokeStyle   = '#ffaa00';
+  ctx.lineWidth     = 1.5;
+  ctx.strokeRect(
+    sx - innerExpand / 2,
+    sy - innerExpand / 2,
+    CELL_SIZE + innerExpand,
+    CELL_SIZE + innerExpand,
+  );
+
+  ctx.globalAlpha = 1;
+  ctx.lineWidth   = 1;
+}
+
+/**
+ * Cure (antidote) — brief green flash on the player tile, then eight green
+ * sparkle dots radiate outward and fade.
+ */
+function drawCureEffect(
+  ctx: CanvasRenderingContext2D,
+  anim: ConsumableAnimationState,
+  vpLeft: number,
+  vpTop: number,
+): void {
+  const sx = (anim.playerPos.x - vpLeft) * CELL_SIZE;
+  const sy = (anim.playerPos.y - vpTop)  * CELL_SIZE;
+  const cx = sx + CELL_SIZE / 2;
+  const cy = sy + CELL_SIZE / 2;
+  const p  = anim.progress;
+
+  // Green tile flash (first 30% of animation)
+  if (p < 0.3) {
+    ctx.globalAlpha = ((0.3 - p) / 0.3) * 0.45;
+    ctx.fillStyle   = '#44ff88';
+    ctx.fillRect(sx, sy, CELL_SIZE, CELL_SIZE);
+  }
+
+  // Eight sparkle dots radiating outward
+  const PARTICLE_COUNT = 8;
+  for (let i = 0; i < PARTICLE_COUNT; i++) {
+    const angle  = (i / PARTICLE_COUNT) * Math.PI * 2;
+    const radius = p * CELL_SIZE * 1.5;
+    const px     = cx + Math.cos(angle) * radius;
+    const py     = cy + Math.sin(angle) * radius;
+    const alpha  = Math.max(0, 1 - p);
+
+    ctx.globalAlpha = alpha;
+    ctx.fillStyle   = '#55ee88';
+    ctx.beginPath();
+    ctx.arc(px, py, 2.5, 0, Math.PI * 2);
+    ctx.fill();
+  }
+
+  ctx.globalAlpha = 1;
+}
+
+/**
+ * Damage (bomb) — two phases:
+ *   Phase 1 (0–35%): fire bomb sprite scales up on the player tile with a
+ *     slight overshoot, like a primed grenade.
+ *   Phase 2 (35–100%): fire burst center + 8 directional fire burst tiles
+ *     expand outward from the player's Chebyshev-1 blast radius, each tile
+ *     popping in fast then fading.
+ */
+function drawDamageEffect(
+  ctx: CanvasRenderingContext2D,
+  anim: ConsumableAnimationState,
+  vpLeft: number,
+  vpTop: number,
+): void {
+  const { playerPos, blastPositions, progress: p } = anim;
+  const sx = (playerPos.x - vpLeft) * CELL_SIZE;
+  const sy = (playerPos.y - vpTop)  * CELL_SIZE;
+
+  const DETONATE_AT = 0.35;
+
+  if (p < DETONATE_AT) {
+    // ── Phase 1: bomb arm ──────────────────────────────────────────
+    const armProg = p / DETONATE_AT;
+    // Scale: 0 → 1 for first 60%, then a slight overshoot bounce
+    const scale = armProg < 0.6
+      ? armProg / 0.6
+      : 1 + Math.sin(((armProg - 0.6) / 0.4) * Math.PI) * 0.18;
+    const scaledSize = CELL_SIZE * scale;
+    const scaleOff   = (CELL_SIZE - scaledSize) / 2;
+
+    const bombSprite = spriteRegistry.getSpriteByAtlasName('fire bomb');
+    if (bombSprite) {
+      ctx.drawImage(
+        bombSprite.image,
+        bombSprite.rect.x, bombSprite.rect.y,
+        bombSprite.rect.w, bombSprite.rect.h,
+        sx + scaleOff, sy + scaleOff,
+        scaledSize, scaledSize,
+      );
+    } else {
+      ctx.fillStyle = '#ff6600';
+      ctx.fillRect(sx + scaleOff, sy + scaleOff, scaledSize, scaledSize);
+    }
+  } else {
+    // ── Phase 2: blast expansion ───────────────────────────────────
+    const blastProg = (p - DETONATE_AT) / (1 - DETONATE_AT);
+    // Directions order must match blastPositions order built in animation-sequence.ts:
+    // c, n, ne, e, se, s, sw, w, nw
+    const directions = ['c', 'n', 'ne', 'e', 'se', 's', 'sw', 'w', 'nw'] as const;
+
+    for (let i = 0; i < blastPositions.length && i < directions.length; i += 1) {
+      const pos = blastPositions[i];
+      if (!pos) continue;
+
+      const bsx = (pos.x - vpLeft) * CELL_SIZE;
+      const bsy = (pos.y - vpTop)  * CELL_SIZE;
+
+      // Centre fires immediately; outer tiles lag by 15%
+      const isCenter  = i === 0;
+      const tileDelay = isCenter ? 0 : 0.15;
+      const tileProg  = Math.max(0, Math.min(1, (blastProg - tileDelay) / (1 - tileDelay)));
+      if (tileProg <= 0) continue;
+
+      // Fast scale-in, then hold, then fade out
+      const tileScale = tileProg < 0.3 ? tileProg / 0.3 : 1.0;
+      const tileAlpha = tileProg > 0.55
+        ? Math.max(0, 1 - (tileProg - 0.55) / 0.45)
+        : 1.0;
+
+      const scaledSize = CELL_SIZE * tileScale;
+      const scaleOff   = (CELL_SIZE - scaledSize) / 2;
+
+      ctx.globalAlpha = tileAlpha;
+
+      const dir        = directions[i]!;
+      const spriteName = isCenter ? 'fire burst c' : `fire burst ${dir}`;
+      const sprite     = spriteRegistry.getSpriteByAtlasName(spriteName);
+
+      if (sprite) {
+        ctx.drawImage(
+          sprite.image,
+          sprite.rect.x, sprite.rect.y,
+          sprite.rect.w, sprite.rect.h,
+          bsx + scaleOff, bsy + scaleOff,
+          scaledSize, scaledSize,
+        );
+      } else {
+        // Fallback gradient orange rect
+        ctx.fillStyle = '#ff6600';
+        ctx.fillRect(bsx + scaleOff, bsy + scaleOff, scaledSize, scaledSize);
+      }
+    }
+
+    ctx.globalAlpha = 1;
+  }
+}
+
+/**
+ * Dispatch to the appropriate per-effect drawing function.
+ * Called after the entity layer so effects appear on top.
+ */
+function drawConsumableEffects(
+  ctx: CanvasRenderingContext2D,
+  animations: ConsumableAnimationState[],
+  vpLeft: number,
+  vpTop: number,
+): void {
+  for (const anim of animations) {
+    ctx.save();
+    switch (anim.effect) {
+      case 'heal':   drawHealEffect(ctx, anim, vpLeft, vpTop);   break;
+      case 'buff':   drawBuffEffect(ctx, anim, vpLeft, vpTop);   break;
+      case 'cure':   drawCureEffect(ctx, anim, vpLeft, vpTop);   break;
+      case 'damage': drawDamageEffect(ctx, anim, vpLeft, vpTop); break;
+    }
+    ctx.restore();
   }
 }
 
@@ -177,6 +448,8 @@ export function renderMap(
   vpHeight: number,
   bumpAnimations: BumpAnimationState[] = [],
   moveAnimations: MoveAnimationState[] = [],
+  consumableAnimations: ConsumableAnimationState[] = [],
+  playerEffects: PlayerEffects = {},
 ): void {
   ctx.clearRect(0, 0, vpWidth * CELL_SIZE, vpHeight * CELL_SIZE);
   ctx.fillStyle = '#000';
@@ -204,7 +477,7 @@ export function renderMap(
     moveLookup.set(anim.entityId, anim);
   }
 
-  // Draw cells, then entities on top
+  // ── Draw cells, then entities on top ──────────────────────────────
   for (let gy = vpTop; gy < vpTop + vpHeight; gy++) {
     for (let gx = vpLeft; gx < vpLeft + vpWidth; gx++) {
       const screenX = (gx - vpLeft) * CELL_SIZE;
@@ -248,9 +521,30 @@ export function renderMap(
         offsetY += (bump.defenderPos.y - bump.attackerPos.y) * CELL_SIZE * distance * easeProgress;
       }
 
-      drawEntity(ctx, entity, screenX, screenY, offsetX, offsetY);
+      // ── Entity scale: 1.35× for player while strength buff is active ──
+      //HUMANNOTE: This again seems like a bad way to do this, we are hard referencign an item and even worse hard referencing a value.  This screams poor implementation.
+      const isPlayer    = entity.type === 'player';
+      const entityScale = (isPlayer && playerEffects.hasStrengthBuff) ? 1.35 : 1.0;
 
-      // Instance color square for disambiguation when 2+ of same type visible
+      drawEntity(ctx, entity, screenX, screenY, offsetX, offsetY, entityScale);
+
+      // ── Persistent strength buff ring ────────────────────────────────
+      // Pulsing gold border drawn on top of the (scaled) player sprite.
+      if (isPlayer && playerEffects.hasStrengthBuff) {
+        const pulse     = 0.5 + 0.5 * Math.sin(Date.now() / 180);
+        ctx.strokeStyle = `rgba(255, 200, 0, ${0.35 + pulse * 0.45})`;
+        ctx.lineWidth   = 1.5;
+        ctx.strokeRect(
+          screenX + offsetX - 2,
+          screenY + offsetY - 2,
+          CELL_SIZE + 4,
+          CELL_SIZE + 4,
+        );
+        ctx.lineWidth = 1;
+      }
+
+
+      // ── Instance colour square for disambiguation ─────────────────────
       if (entity.instanceColor) {
         // Dark backdrop: 5×6px at (CELL_SIZE - 5, 0)
         ctx.fillStyle = 'rgba(0, 0, 0, 0.70)';
@@ -261,4 +555,7 @@ export function renderMap(
       }
     }
   }
+
+  // ── Consumable effects (drawn above the entity layer) ────────────
+  drawConsumableEffects(ctx, consumableAnimations, vpLeft, vpTop);
 }

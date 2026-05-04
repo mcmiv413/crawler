@@ -4,17 +4,21 @@ import type {
   CombatIndicatorEntry,
   MoveAnimationEntry,
   MoveAnimStyle,
+  ConsumableAnimationEntry,
 } from './game-view.js';
 
+//HUMANNOTE: This file is responsible for taking a list of events and the current game state, and building a sequenced list of animation instructions for the view layer. The logic for determining animation styles, durations, staggering, and batching currently lives in this file, but it would make more sense to define that information alongside the relevant entities (e.g. consumable definitions should include their animation info) or in a dedicated animation module, and then just pull that information in here to build the sequence. As is, this file is doing too much and has too many responsibilities.
+
 export interface AnimatedEvent {
-  type: 'bump' | 'damage' | 'heal' | 'status' | 'move';
+  type: 'bump' | 'damage' | 'heal' | 'status' | 'move' | 'consumable';
   sequenceIndex: number;
   delayMs: number;
   batchId: string;
-  data: BumpAnimationEntry | CombatIndicatorEntry | MoveAnimationEntry;
+  data: BumpAnimationEntry | CombatIndicatorEntry | MoveAnimationEntry | ConsumableAnimationEntry;
 }
 
 // ── Duration per style (ms) ──────────────────────────────────────
+//HUMANNOTE: These violate the principals of defining things in one place, we should consoldiate all animation related constants and functions into a single file or module. At the very least the durations should be defined alongside the animation definitions themselves.
 const MOVE_DURATIONS: Record<MoveAnimStyle, number> = {
   step:  140,
   slide: 180,
@@ -26,6 +30,15 @@ const MOVE_DURATIONS: Record<MoveAnimStyle, number> = {
 
 // ── Stagger between successive enemy moves (ms) ──────────────────
 const MOVE_STAGGER_MS = 120;
+
+// ── Duration per consumable effect (ms) ─────────────────────────
+//HUMANNOTE: Same note as above, this is the wrong place for this......
+const CONSUMABLE_DURATIONS: Record<string, number> = {
+  heal:   700,
+  buff:   600,
+  cure:   500,
+  damage: 900,
+};
 
 // ────────────────────────────────────────────────────────────────
 
@@ -181,7 +194,7 @@ export function buildAnimationSequence(
       style,
       durationMs,
     };
-
+//HUMANNOTE: I don't undertand why it is ok for this to be mutable.
     mutableAnimations.push({
       type: 'move',
       sequenceIndex: i,
@@ -223,7 +236,7 @@ export function buildAnimationSequence(
       attackerPos,
       defenderPos,
     };
-
+//HUMANNOTE: I don't undertand why it is ok for this to be mutable.
     mutableAnimations.push({
       type: 'bump',
       sequenceIndex,
@@ -239,13 +252,69 @@ export function buildAnimationSequence(
       x: defenderPos.x,
       y: defenderPos.y,
     };
-
+//HUMANNOTE: I don't undertand why it is ok for this to be mutable.
     mutableAnimations.push({
       type: 'damage',
       sequenceIndex,
       delayMs: baseDelay + 150,
       batchId,
       data: damageEntry,
+    });
+  }
+
+  // ── 3. Consumable animations ────────────────────────────────────
+  // One consumable per turn max. Fires at delay 0 — concurrent with movement.
+  // The bomb blast positions mirror the AoE radius the engine applies (Chebyshev 1).
+  //HUMANNOTE: This is the wrong place for this logic, we should be defining the animations to be used for each consumable alongside the consumable definitions themselves, and then just pulling that information in here to build the sequence. This would also allow us to support multiple different consumable animations instead of hardcoding this one case for bombs.
+
+  const itemUsedEvents = events.filter(
+    (e): e is Extract<DomainEvent, { type: 'ITEM_USED' }> => e.type === 'ITEM_USED',
+  );
+
+  for (let i = 0; i < itemUsedEvents.length; i += 1) {
+    const event = itemUsedEvents[i];
+    if (!event) continue;
+
+    const effect = event.effect as 'heal' | 'buff' | 'cure' | 'damage';
+    const playerPos = state.player.position;
+    const durationMs = CONSUMABLE_DURATIONS[effect] ?? 600;
+
+    // Blast positions for bomb: 9 tiles centered on player, ordered c/n/ne/e/se/s/sw/w/nw
+    // (matches the direction order in canvas-renderer drawDamageEffect)
+    // eslint-disable-next-line dungeon/no-array-mutation
+    const blastPositions: { x: number; y: number }[] = [];
+    if (effect === 'damage') {
+      // eslint-disable-next-line dungeon/no-array-mutation
+      blastPositions.push(
+        { x: playerPos.x,     y: playerPos.y     }, // c
+        { x: playerPos.x,     y: playerPos.y - 1 }, // n
+        { x: playerPos.x + 1, y: playerPos.y - 1 }, // ne
+        { x: playerPos.x + 1, y: playerPos.y     }, // e
+        { x: playerPos.x + 1, y: playerPos.y + 1 }, // se
+        { x: playerPos.x,     y: playerPos.y + 1 }, // s
+        { x: playerPos.x - 1, y: playerPos.y + 1 }, // sw
+        { x: playerPos.x - 1, y: playerPos.y     }, // w
+        { x: playerPos.x - 1, y: playerPos.y - 1 }, // nw
+      );
+    }
+
+    const entry: ConsumableAnimationEntry = {
+      effect,
+      playerPos,
+      blastPositions,
+      durationMs,
+    };
+
+    const sequenceIndex = orderedMoves.length + attacksWithSpeeds.length + i;
+
+    // eslint-disable-next-line dungeon/no-array-mutation
+    //HUMANNOTE: I don't undertand why it is ok for this to be mutable.
+    mutableAnimations.push({
+      type: 'consumable',
+      sequenceIndex,
+      delayMs: 0,
+      batchId,
+      data: entry,
     });
   }
 

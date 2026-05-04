@@ -1,4 +1,4 @@
-import type { BumpAnimationEntry, MoveAnimationEntry } from '@dungeon/presenter';
+import type { BumpAnimationEntry, MoveAnimationEntry, ConsumableAnimationEntry } from '@dungeon/presenter';
 
 /**
  * BumpAnimations is a stub — animation rendering happens on the canvas.
@@ -15,4 +15,9 @@ export function emitBumpAnimation(animation: BumpAnimationEntry): void {
 /** Emit a move (step) animation event. */
 export function emitMoveAnimation(animation: MoveAnimationEntry): void {
   window.dispatchEvent(new CustomEvent('move-animation', { detail: animation }));
+}
+
+/** Emit a consumable-use animation event (heal, buff, cure, damage). */
+export function emitConsumableAnimation(animation: ConsumableAnimationEntry): void {
+  window.dispatchEvent(new CustomEvent('consumable-animation', { detail: animation }));
 }
