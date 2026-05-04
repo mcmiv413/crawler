@@ -6,6 +6,7 @@ import { findPath } from '../utils/pathfinding.js';
 import { useGameStore } from '../store/game-store.js';
 import { useBumpAnimationState } from '../hooks/useBumpAnimationState.js';
 import { useMoveAnimationState } from '../hooks/useMoveAnimationState.js';
+import { useConsumableAnimationState } from '../hooks/useConsumableAnimationState.js';
 import { BUMP_ANIMATION_DURATION_MS, CELL_SIZE } from '../config/ui-config.js';
 import { VP_WIDTH, VP_HEIGHT } from '../config/ui-config.js';
 
@@ -18,8 +19,16 @@ interface Props {
 export function DungeonCanvas({ map, vpTilesWidth, vpTilesHeight }: Props) {
   const canvasRef = useRef<HTMLCanvasElement>(null);
   const [spritesReady, setSpritesReady] = useState(spriteRegistry.isReady());
-  const { animations: bumpAnimations } = useBumpAnimationState(BUMP_ANIMATION_DURATION_MS);
-  const { animations: moveAnimations } = useMoveAnimationState();
+  const { animations: bumpAnimations }       = useBumpAnimationState(BUMP_ANIMATION_DURATION_MS);
+  const { animations: moveAnimations }       = useMoveAnimationState();
+  const { animations: consumableAnimations } = useConsumableAnimationState();
+
+  // Strength buff drives the persistent player scale in the renderer.
+  // This selector re-renders the canvas whenever the status is gained or lost.
+  //HUMANNOTE: This seems like the wrong place for this, it should be looked at later for how to properly implement this and effects like it.
+  const hasStrengthBuff = useGameStore(
+    (s) => s.view?.player.statuses.some((st) => st.id === 'strength') ?? false,
+  );
 
   const vp_width  = vpTilesWidth  ?? VP_WIDTH;
   const vp_height = vpTilesHeight ?? VP_HEIGHT;
@@ -65,8 +74,10 @@ export function DungeonCanvas({ map, vpTilesWidth, vpTilesHeight }: Props) {
       vp_height,
       bumpAnimations,
       moveAnimations,
+      consumableAnimations,
+      { hasStrengthBuff },
     );
-  }, [map, spritesReady, vp_width, vp_height, bumpAnimations, moveAnimations]);
+  }, [map, spritesReady, vp_width, vp_height, bumpAnimations, moveAnimations, consumableAnimations, hasStrengthBuff]);
 
   const handleClick = useCallback((e: React.MouseEvent<HTMLCanvasElement>) => {
     const canvas = canvasRef.current;

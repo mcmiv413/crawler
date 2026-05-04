@@ -1,10 +1,16 @@
 import { useEffect, useRef } from 'react';
-import type { AnimatedEvent, BumpAnimationEntry, CombatIndicatorEntry, MoveAnimationEntry } from '@dungeon/presenter';
-import { emitBumpAnimation, emitMoveAnimation } from '../components/BumpAnimations.js';
+import type {
+  AnimatedEvent,
+  BumpAnimationEntry,
+  CombatIndicatorEntry,
+  MoveAnimationEntry,
+  ConsumableAnimationEntry,
+} from '@dungeon/presenter';
+import { emitBumpAnimation, emitMoveAnimation, emitConsumableAnimation } from '../components/BumpAnimations.js';
 import { emitCombatIndicator } from '../components/CombatIndicators.js';
 
 /**
- * Central orchestrator for all combat and movement animations.
+ * Central orchestrator for all combat, movement, and consumable animations.
  * Takes sequenced animation events from the presenter and emits them
  * at the correct times to create a fluid, turn-based animation sequence.
  */
@@ -36,6 +42,8 @@ export function useAnimationOrchestrator(animatedEvents: readonly AnimatedEvent[
             emitBumpAnimation(animEvent.data as BumpAnimationEntry);
           } else if (animEvent.type === 'move') {
             emitMoveAnimation(animEvent.data as MoveAnimationEntry);
+          } else if (animEvent.type === 'consumable') {
+            emitConsumableAnimation(animEvent.data as ConsumableAnimationEntry);
           } else if (
             animEvent.type === 'damage' ||
             animEvent.type === 'heal' ||
@@ -66,9 +74,20 @@ export function useAnimationOrchestrator(animatedEvents: readonly AnimatedEvent[
 }
 
 function isSameAnimationData(
-  a: BumpAnimationEntry | CombatIndicatorEntry | MoveAnimationEntry,
-  b: BumpAnimationEntry | CombatIndicatorEntry | MoveAnimationEntry,
+  a: BumpAnimationEntry | CombatIndicatorEntry | MoveAnimationEntry | ConsumableAnimationEntry,
+  b: BumpAnimationEntry | CombatIndicatorEntry | MoveAnimationEntry | ConsumableAnimationEntry,
 ): boolean {
+  // ConsumableAnimationEntry — has 'effect' field (check first; no overlap with other types)
+  if ('effect' in a && 'effect' in b) {
+    const ca = a as ConsumableAnimationEntry;
+    const cb = b as ConsumableAnimationEntry;
+    return (
+      ca.effect      === cb.effect &&
+      ca.playerPos.x === cb.playerPos.x &&
+      ca.playerPos.y === cb.playerPos.y
+    );
+  }
+
   // MoveAnimationEntry — has entityId
   if ('entityId' in a && 'entityId' in b) {
     const ma = a as MoveAnimationEntry;
@@ -87,12 +106,12 @@ function isSameAnimationData(
     const ba = a as BumpAnimationEntry;
     const bb = b as BumpAnimationEntry;
     return (
-      ba.attackerId     === bb.attackerId &&
-      ba.defenderId     === bb.defenderId &&
-      ba.attackerPos.x  === bb.attackerPos.x &&
-      ba.attackerPos.y  === bb.attackerPos.y &&
-      ba.defenderPos.x  === bb.defenderPos.x &&
-      ba.defenderPos.y  === bb.defenderPos.y
+      ba.attackerId    === bb.attackerId &&
+      ba.defenderId    === bb.defenderId &&
+      ba.attackerPos.x === bb.attackerPos.x &&
+      ba.attackerPos.y === bb.attackerPos.y &&
+      ba.defenderPos.x === bb.defenderPos.x &&
+      ba.defenderPos.y === bb.defenderPos.y
     );
   }
 

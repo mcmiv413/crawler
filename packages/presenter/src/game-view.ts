@@ -283,6 +283,21 @@ export interface BumpAnimationEntry {
   readonly defenderPos: { readonly x: number; readonly y: number };
 }
 
+export interface ConsumableAnimationEntry {
+  /** Which consumable effect triggered this animation. */
+  readonly effect: 'heal' | 'buff' | 'cure' | 'damage';
+  /** Player's grid position at the moment of use. */
+  readonly playerPos: { readonly x: number; readonly y: number };
+  /**
+   * Tiles to show fire-burst sprites on for the damage (bomb) effect.
+   * Order matches the directions array: c, n, ne, e, se, s, sw, w, nw.
+   * Empty for non-damage effects.
+   */
+  readonly blastPositions: readonly { readonly x: number; readonly y: number }[];
+  /** Total wall-clock duration of this animation in milliseconds. */
+  readonly durationMs: number;
+}
+
 export interface AvailableAction {
   readonly id: string;
   readonly label: string;
