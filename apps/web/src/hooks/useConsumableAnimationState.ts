@@ -51,6 +51,7 @@ export function useConsumableAnimationState(): UseConsumableAnimationStateReturn
     return () => {
       window.removeEventListener('consumable-animation', handleConsumableAnimation);
       timersRef.current.forEach((t) => clearTimeout(t));
+      timersRef.current = [];
     };
   }, []);
 

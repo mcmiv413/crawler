@@ -20,6 +20,8 @@ export function DungeonView({ map, vpTilesWidth, vpTilesHeight }: Props) {
 
   const entityMap = buildPositionMap(map.entities);
 
+  if (map.cells.length === 0) return <></>;
+
   const minX = Math.min(...map.cells.map((c: MapCellView) => c.x));
   const minY = Math.min(...map.cells.map((c: MapCellView) => c.y));
 

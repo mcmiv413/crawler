@@ -33,3 +33,4 @@ Each guide below includes a "Quick Start" section that reminds you to run this c
 | [Adding an Enchantment](guides/adding-enchantment.md) | Enchantment definitions, hook system, stacking rules |
 | [UI Design](guides/ui-design.md) | Design system, colour tokens, sprite system, layout rules |
 | [Maintaining Docs](MAINTAINING-DOCS.md) | How to update this documentation system |
+| [Enhancements](enhancements/ENH-movement-discoverability.md) | Future UX or product improvements that are not current bugs |

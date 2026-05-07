@@ -168,3 +168,10 @@ export class SqliteRepository implements IGameRepository {
     this.db.close();
   }
 }
+//HUMANNOTE:   1. Inconsistent Error Handling: In saveGame() and commitTick(), you're throwing generic Error objects, but in loadGame() you're properly re-throwing specific schema validation errors. This creates inconsistency in error handling.
+  // 2. Potential SQL Injection Vulnerability: While you're using prepared statements, in commitTick() you're constructing SQL strings with string interpolation for error messages, which could be a security risk if user input is involved.
+  // 3. Duplicated Logic: The event insertion logic is duplicated between appendEvents() and commitTick() - both have similar code for inserting events.
+  // 4. Missing Input Validation: There's no validation of the gameId parameter in loadGame() or saveGame() to ensure it's not null/undefined.
+  // 5. Potential Performance Issue: In getRecentEvents(), you're using rows.reverse().map() which creates an unnecessary array copy and mapping operation.
+  // 6. Error Message Clarity: In commitTick(), the error messages could be more specific about what went wrong.
+  // 7. Resource Management: While you have a close() method, there's no explicit handling of database connection errors or graceful shutdown.

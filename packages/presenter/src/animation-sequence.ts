@@ -308,8 +308,7 @@ export function buildAnimationSequence(
     const sequenceIndex = orderedMoves.length + attacksWithSpeeds.length + i;
 
     // eslint-disable-next-line dungeon/no-array-mutation
-    //HUMANNOTE: I don't undertand why it is ok for this to be mutable.
-    mutableAnimations.push({
+      mutableAnimations.push({
       type: 'consumable',
       sequenceIndex,
       delayMs: 0,
