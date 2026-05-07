@@ -94,15 +94,9 @@ function AbilityDetailPanel({
   if (!def) return null;
 
   // Check weapon requirement status
-  let equippedWeaponType: string | null = null;
-  const weaponItem = player.equippedItems.find(i => i.slot === 'weapon');
-  if (weaponItem) {
-    // We'd need the weapon type from the registry, but for now we can show it's equipped
-    equippedWeaponType = 'equipped';
-  }
-
   const hasWeaponRequirement = def.requiresWeaponTypes && def.requiresWeaponTypes.length > 0;
-  const weaponRequirementMet = !hasWeaponRequirement || equippedWeaponType !== null;
+  // Note: Full weapon type validation requires registry lookups; for now, flag as unmet if required
+  const weaponRequirementMet = !hasWeaponRequirement;
 
   return (
     <div style={{ marginBottom: 12, padding: 8, background: '#1a2a3a', border: '1px solid #2a4a6a' }}>

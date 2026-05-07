@@ -2,6 +2,7 @@ import Database from 'better-sqlite3';
 import type { IGameRepository, GameState, EntityId, DomainEvent, RunMetrics } from '@dungeon/contracts';
 import { SchemaVersionMismatchError, SchemaParseError } from '@dungeon/contracts';
 import { serializeState, deserializeState } from '@dungeon/core';
+import { ConcurrentModificationError } from './errors.js';
 
 export class SqliteRepository implements IGameRepository {
   private db: Database.Database;
@@ -72,7 +73,7 @@ export class SqliteRepository implements IGameRepository {
 
     // Check if the update affected any rows (optimistic concurrency control)
     if (result.changes === 0) {
-      throw new Error(`Concurrent modification detected for game ${gameId}. Please retry the command.`);
+      throw new ConcurrentModificationError(`Concurrent modification detected for game ${gameId}. Please retry the command.`);
     }
   }
 
@@ -131,26 +132,18 @@ export class SqliteRepository implements IGameRepository {
         .get(gameId) as { version: number } | undefined;
 
       if (!currentRow || currentRow.version !== prevVersion) {
-        throw new Error(
+        throw new ConcurrentModificationError(
           `Concurrent modification detected for game ${gameId}. ` +
             `Expected version ${prevVersion}, got ${currentRow?.version ?? 'not found'}. ` +
             `Please retry the command.`,
         );
       }
 
-      // Step 2: Update state and version (same OCC check as saveGame)
+      // Step 2: Update state and version (OCC check above guards this)
       const updateStmt = this.db.prepare(
         "UPDATE games SET state_json = ?, version = ?, updated_at = datetime('now') WHERE game_id = ? AND version = ?",
       );
-      const result = updateStmt.run(serializeState(nextState), prevVersion + 1, gameId, prevVersion);
-
-      if (result.changes === 0) {
-        throw new Error(
-          `Concurrent modification detected for game ${gameId}. ` +
-            `Expected version ${prevVersion}, got ${currentRow.version}. ` +
-            `Please retry the command.`,
-        );
-      }
+      updateStmt.run(serializeState(nextState), prevVersion + 1, gameId, prevVersion);
 
       // Step 3: Append events (same logic as appendEvents)
       const insertStmt = this.db.prepare(
