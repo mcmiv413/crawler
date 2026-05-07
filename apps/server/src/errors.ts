@@ -12,6 +12,7 @@ export function handleRouteError(error: unknown, reply: FastifyReply): boolean {
   if (error instanceof SchemaVersionMismatchError) {
     reply.code(400).send({
       error: 'Incompatible save file',
+      code: 'INCOMPATIBLE_SAVE_FILE',
       message: getSchemaVersionErrorMessage(error.foundVersion),
     });
     return true;
@@ -19,6 +20,7 @@ export function handleRouteError(error: unknown, reply: FastifyReply): boolean {
   if (error instanceof SchemaParseError) {
     reply.code(400).send({
       error: 'Invalid save file',
+      code: 'INVALID_SAVE_FILE',
       message: error.message,
     });
     return true;
