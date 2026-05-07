@@ -3,21 +3,11 @@ import type { DeathContext } from '@dungeon/presenter';
 import { ItemSpriteIcon } from './ItemSpriteIcon.js';
 import { btnStashStyle, colors } from '../styles.js';
 import { ScreenOverlay, InfoCard } from './ui/index.js';
+import { getPermadeathProximityMessage } from '../utils/permadeath-message.js';
 
 interface DeathNotificationModalProps {
   deathContext: DeathContext;
   onDismiss: () => void;
-}
-
-function getPermadeathProximityMessage(overkillDamage: number, threshold: number): string {
-  if (overkillDamage === 0) {
-    return 'The blow that killed you was clean — no risk of permanent death.';
-  }
-  const percentOfThreshold = (overkillDamage / threshold) * 100;
-  if (percentOfThreshold < 50) {
-    return 'A stronger blow could have ended you for good.';
-  }
-  return 'That was dangerously close to permanent death.';
 }
 
 export function DeathNotificationModal({ deathContext, onDismiss }: DeathNotificationModalProps) {

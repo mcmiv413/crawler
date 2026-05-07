@@ -45,6 +45,12 @@ export function useAutoWalk(): void {
           }
         }
 
+        // Check if move was blocked (player position didn't change)
+        const newPlayerPos = newStore.view?.map?.playerPosition;
+        if (newPlayerPos && (newPlayerPos.x !== next.x || newPlayerPos.y !== next.y)) {
+          break;
+        }
+
         // Check if player took damage (health decreased)
         const prevHealth = store.view?.player.health;
         const newHealth = newStore.view?.player.health;

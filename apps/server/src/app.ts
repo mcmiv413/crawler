@@ -370,3 +370,20 @@ export async function buildApp(options: BuildAppOptions = {}): Promise<FastifyIn
 
   return app;
 }
+//HUMANNOTE: Major Issues:
+
+//  1. Inconsistent Error Handling: The code has duplicated error handling logic across multiple routes (lines 114-128, 134-150, 176-192, 217-238, 318-342). This violates DRY principles and makes maintenance
+//  harder.
+//  2. Potential Race Condition in Restore Logic: In the restore endpoint (lines 292-296), there's a potential race condition where the check for existing state and the creation of new state happen in separate
+//  operations.
+//  3. Inefficient State Serialization: The getCanonicalSerializedState function (lines 49-51) does unnecessary double serialization/deserialization which could impact performance.
+//  4. Missing Input Validation: The /api/games/:id/view endpoint (lines 317-343) doesn't validate that the gameId parameter is properly formatted.
+//  5. Poor Error Response Consistency: Error responses are inconsistent in structure and status codes across different routes.
+
+//  Suggestions for Improvement:
+
+//  1. Extract Common Error Handling: Create reusable error handling functions for the duplicated logic.
+//  2. Add Input Validation: Validate route parameters more thoroughly.
+//  3. Improve Restore Logic: Use atomic operations or transactions to prevent race conditions.
+//  4. Optimize Serialization: Remove unnecessary double serialization in getCanonicalSerializedState.
+//  5. Standardize Error Responses: Make error response structures consistent across all endpoints.

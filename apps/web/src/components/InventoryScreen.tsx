@@ -8,25 +8,7 @@ import { DismissibleNoticeModal } from './ui/DismissibleNoticeModal.js';
 import { useInventoryFilter } from '../hooks/useInventoryFilter.js';
 import { useBreakpoint } from '../hooks/useBreakpoint.js';
 import { TAB_BAR_HEIGHT } from '../config/ui-config.js';
-
-function getItemStats(item: InventoryItemView): string {
-  let text = '';
-  if (item.weaponStats) {
-    const ws = item.weaponStats;
-    const dmg = ws.damageMin != null ? `${ws.damageMin}–${ws.damageMax}` : `${ws.damage}`;
-    text += `${dmg} ${ws.damageType} dmg`;
-    if (ws.weaponRange && ws.weaponRange > 1) {
-      text += ` | range: ${ws.weaponRange}`;
-    }
-  }
-  if (item.armorStats) {
-    text += `${item.armorStats.defense} def`;
-    if (item.armorStats.evasionPenalty) {
-      text += ` | eva penalty: -${item.armorStats.evasionPenalty}`;
-    }
-  }
-  return text;
-}
+import { getItemStats } from '../utils/item-stats.js';
 
 interface InventoryScreenProps {
   inventory: InventoryView;
