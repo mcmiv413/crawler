@@ -3,13 +3,14 @@ import Fastify, { type FastifyInstance } from 'fastify';
 import cors from '@fastify/cors';
 import { GameEngine, serializeState, deserializeState } from '@dungeon/core';
 import { buildGameView, formatEvents, buildAnimationSequence } from '@dungeon/presenter';
-import { GameCommandSchema, CreateGameSchema, SchemaVersionMismatchError, SchemaParseError, getSchemaVersionErrorMessage } from '@dungeon/contracts';
+import { GameCommandSchema, CreateGameSchema } from '@dungeon/contracts';
 import type { AiService } from '@dungeon/core/ai/ai-service.js';
 import type { GameCommand, EntityId, GameState, IGameRepository, RunMetrics } from '@dungeon/contracts';
 import { CompositeAiService } from './ai/ai-service-composite.js';
 import { processGameCommand } from './game-command/process-command.js';
 import { InMemoryRepository } from './in-memory-repository.js';
 import { registerDebugRoutes } from './routes/debug.js';
+import { handleRouteError } from './errors.js';
 
 interface BuildAppOptions {
   readonly ai?: AiService;
@@ -112,19 +113,9 @@ export async function buildApp(options: BuildAppOptions = {}): Promise<FastifyIn
       const view = buildGameView(state);
       return view;
     } catch (error) {
-      if (error instanceof SchemaVersionMismatchError) {
-        return reply.code(400).send({
-          error: 'Incompatible save file',
-          message: getSchemaVersionErrorMessage(error.foundVersion),
-        });
+      if (!handleRouteError(error, reply)) {
+        throw error;
       }
-      if (error instanceof SchemaParseError) {
-        return reply.code(400).send({
-          error: 'Invalid save file',
-          message: error.message,
-        });
-      }
-      throw error;
     }
   });
 
@@ -134,19 +125,10 @@ export async function buildApp(options: BuildAppOptions = {}): Promise<FastifyIn
     try {
       state = await repo.loadGame(request.params.id as EntityId);
     } catch (error) {
-      if (error instanceof SchemaVersionMismatchError) {
-        return reply.code(400).send({
-          error: 'Incompatible save file',
-          message: getSchemaVersionErrorMessage(error.foundVersion),
-        });
+      if (!handleRouteError(error, reply)) {
+        throw error;
       }
-      if (error instanceof SchemaParseError) {
-        return reply.code(400).send({
-          error: 'Invalid save file',
-          message: error.message,
-        });
-      }
-      throw error;
+      return;
     }
 
     if (!state) return reply.code(404).send({ error: 'Game not found' });
@@ -176,19 +158,10 @@ export async function buildApp(options: BuildAppOptions = {}): Promise<FastifyIn
       try {
         state = await repo.loadGame(request.params.id as EntityId);
       } catch (error) {
-        if (error instanceof SchemaVersionMismatchError) {
-          return reply.code(400).send({
-            error: 'Incompatible save file',
-            message: getSchemaVersionErrorMessage(error.foundVersion),
-          });
+        if (!handleRouteError(error, reply)) {
+          throw error;
         }
-        if (error instanceof SchemaParseError) {
-          return reply.code(400).send({
-            error: 'Invalid save file',
-            message: error.message,
-          });
-        }
-        throw error;
+        return;
       }
 
       if (!state) return reply.code(404).send({ error: 'Game not found' });
@@ -222,19 +195,9 @@ export async function buildApp(options: BuildAppOptions = {}): Promise<FastifyIn
         const events = await repo.getRecentEvents(request.params.id as EntityId, limit);
         return { events };
       } catch (error) {
-        if (error instanceof SchemaVersionMismatchError) {
-          return reply.code(400).send({
-            error: 'Incompatible save file',
-            message: getSchemaVersionErrorMessage(error.foundVersion),
-          });
+        if (!handleRouteError(error, reply)) {
+          throw error;
         }
-        if (error instanceof SchemaParseError) {
-          return reply.code(400).send({
-            error: 'Invalid save file',
-            message: error.message,
-          });
-        }
-        throw error;
       }
     },
   );
@@ -255,21 +218,10 @@ export async function buildApp(options: BuildAppOptions = {}): Promise<FastifyIn
       state = deserializeState(serializedState);
       canonicalSerializedState = serializeState(state);
     } catch (error) {
-      if (error instanceof SchemaVersionMismatchError) {
-        return reply.code(400).send({
-          error: 'Incompatible save file',
-          code: 'INCOMPATIBLE_SAVE_FILE',
-          message: getSchemaVersionErrorMessage(error.foundVersion),
-        });
+      if (!handleRouteError(error, reply)) {
+        throw error;
       }
-      if (error instanceof SchemaParseError) {
-        return reply.code(400).send({
-          error: 'Invalid save file',
-          code: 'INVALID_SAVE_FILE',
-          message: error.message,
-        });
-      }
-      throw error;
+      return;
     }
 
     if (!state.gameId) {
@@ -326,19 +278,10 @@ export async function buildApp(options: BuildAppOptions = {}): Promise<FastifyIn
 
       return { ...view, combatLog, animatedEvents };
     } catch (error) {
-      if (error instanceof SchemaVersionMismatchError) {
-        return reply.code(400).send({
-          error: 'Incompatible save file',
-          message: getSchemaVersionErrorMessage(error.foundVersion),
-        });
+      if (!handleRouteError(error, reply)) {
+        throw error;
       }
-      if (error instanceof SchemaParseError) {
-        return reply.code(400).send({
-          error: 'Invalid save file',
-          message: error.message,
-        });
-      }
-      throw error;
+      return;
     }
   });
 
