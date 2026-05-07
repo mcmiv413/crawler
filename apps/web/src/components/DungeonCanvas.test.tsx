@@ -29,9 +29,12 @@ vi.mock('../utils/pathfinding.js', () => ({
 }));
 
 vi.mock('../store/game-store.js', () => ({
-  useGameStore: {
-    getState: () => ({ startAutoWalk: vi.fn() }),
-  },
+  useGameStore: vi.fn((selector) => {
+    if (typeof selector === 'function') {
+      return selector({ startAutoWalk: vi.fn() });
+    }
+    return { startAutoWalk: vi.fn() };
+  }),
 }));
 
 import { renderMap } from '../sprites/canvas-renderer.js';
