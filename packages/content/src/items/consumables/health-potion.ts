@@ -1,6 +1,7 @@
-import type { ConsumableTemplate } from '@dungeon/contracts';
+import { animationRefs } from '../../animation-refs/index.js';
+import type { AnimatedConsumableDefinition } from '../types.js';
 
-export const healthPotion: ConsumableTemplate = {
+export const healthPotion: AnimatedConsumableDefinition = {
   itemId: 'health_potion',
   name: 'Health Potion',
   description: 'Restores 30 health.',
@@ -11,4 +12,5 @@ export const healthPotion: ConsumableTemplate = {
   maxStack: 5,
   spriteName: 'purple red potion',
   consumable: { effect: 'heal', magnitude: 30 },
+  animation: { id: animationRefs.self.healingPulse.id },
 };

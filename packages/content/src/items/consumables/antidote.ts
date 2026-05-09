@@ -1,6 +1,7 @@
-import type { ConsumableTemplate } from '@dungeon/contracts';
+import { animationRefs } from '../../animation-refs/index.js';
+import type { AnimatedConsumableDefinition } from '../types.js';
 
-export const antidote: ConsumableTemplate = {
+export const antidote: AnimatedConsumableDefinition = {
   itemId: 'antidote',
   name: 'Antidote',
   description: 'Cures poison.',
@@ -11,4 +12,5 @@ export const antidote: ConsumableTemplate = {
   maxStack: 5,
   spriteName: 'dark green potion',
   consumable: { effect: 'cure', magnitude: 0, targetStatus: 'poison' },
+  animation: { id: animationRefs.self.cureSparkle.id },
 };

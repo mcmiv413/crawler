@@ -5,8 +5,9 @@ import type {
   CombatIndicatorEntry,
   MoveAnimationEntry,
   ConsumableAnimationEntry,
+  AbilityAnimationEntry,
 } from '@dungeon/presenter';
-import { emitBumpAnimation, emitMoveAnimation, emitConsumableAnimation } from '../components/BumpAnimations.js';
+import { emitBumpAnimation, emitMoveAnimation, emitConsumableAnimation, emitAbilityAnimation } from '../components/BumpAnimations.js';
 import { emitCombatIndicator } from '../components/CombatIndicators.js';
 
 /**
@@ -44,6 +45,8 @@ export function useAnimationOrchestrator(animatedEvents: readonly AnimatedEvent[
             emitMoveAnimation(animEvent.data as MoveAnimationEntry);
           } else if (animEvent.type === 'consumable') {
             emitConsumableAnimation(animEvent.data as ConsumableAnimationEntry);
+          } else if (animEvent.type === 'ability') {
+            emitAbilityAnimation(animEvent.data as AbilityAnimationEntry);
           } else if (
             animEvent.type === 'damage' ||
             animEvent.type === 'heal' ||
@@ -74,8 +77,8 @@ export function useAnimationOrchestrator(animatedEvents: readonly AnimatedEvent[
 }
 
 function isSameAnimationData(
-  a: BumpAnimationEntry | CombatIndicatorEntry | MoveAnimationEntry | ConsumableAnimationEntry,
-  b: BumpAnimationEntry | CombatIndicatorEntry | MoveAnimationEntry | ConsumableAnimationEntry,
+  a: BumpAnimationEntry | CombatIndicatorEntry | MoveAnimationEntry | ConsumableAnimationEntry | AbilityAnimationEntry,
+  b: BumpAnimationEntry | CombatIndicatorEntry | MoveAnimationEntry | ConsumableAnimationEntry | AbilityAnimationEntry,
 ): boolean {
   // ConsumableAnimationEntry — has 'effect' field (check first; no overlap with other types)
   if ('effect' in a && 'effect' in b) {
@@ -85,6 +88,17 @@ function isSameAnimationData(
       ca.effect      === cb.effect &&
       ca.playerPos.x === cb.playerPos.x &&
       ca.playerPos.y === cb.playerPos.y
+    );
+  }
+
+  // AbilityAnimationEntry — has 'abilityId' field
+  if ('abilityId' in a && 'abilityId' in b) {
+    const aa = a as AbilityAnimationEntry;
+    const ab = b as AbilityAnimationEntry;
+    return (
+      aa.abilityId    === ab.abilityId &&
+      aa.playerPos.x === ab.playerPos.x &&
+      aa.playerPos.y === ab.playerPos.y
     );
   }
 

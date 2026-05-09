@@ -11,6 +11,7 @@ export * from './factions/index.js';
 export * from './factions/utilities.js';
 export * from './abilities/index.js';
 export * from './abilities/mastery.js';
+export * from './animation-refs/index.js';
 export * from './enchantments/index.js';
 export * from './enchantments/utilities.js';
 export * from './quests/index.js';
