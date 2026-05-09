@@ -176,100 +176,9 @@ export function buildAnimationSequence(
     });
   }
 
-  // ── 2. Attack (bump + damage indicator) animations ──────────────
-  // Same logic as before: sorted by speed, staggered by shared timing metadata.
-
-  let attacksWithSpeeds = events
-    .filter((event): event is Extract<DomainEvent, { type: 'ATTACK_PERFORMED' }> => event.type === 'ATTACK_PERFORMED')
-    .map((attackEvent) => ({
-      attackerId: attackEvent.attackerId,
-      speed: getEntitySpeed(attackEvent.attackerId, state),
-      event: attackEvent,
-    }));
-
-  // eslint-disable-next-line dungeon/no-array-mutation
-  const mutableSorted = [...attacksWithSpeeds].sort((a, b) => b.speed - a.speed);
-  attacksWithSpeeds = mutableSorted;
-
-  for (let i = 0; i < attacksWithSpeeds.length; i += 1) {
-    const attack = attacksWithSpeeds[i];
-    if (!attack) continue;
-
-    const sequenceIndex = orderedMoves.length + i; // continue sequence after moves
-    const baseDelay = i * ANIMATION_TIMING.attackStaggerMs;
-
-    const attackerPos = getEntityPosition(attack.event.attackerId, state);
-    const defenderPos = getEntityPosition(attack.event.defenderId, state) || attack.event.position;
-    if (!attackerPos || !defenderPos) continue;
-
-    const bumpEntry: BumpAnimationEntry = {
-      attackerId: attack.event.attackerId,
-      defenderId: attack.event.defenderId,
-      attackerPos,
-      defenderPos,
-    };
-//HUMANNOTE: I don't undertand why it is ok for this to be mutable.
-    mutableAnimations.push({
-      type: 'bump',
-      sequenceIndex,
-      delayMs: baseDelay,
-      batchId,
-      data: bumpEntry,
-    });
-
-    const damageText = attack.event.hit ? `-${attack.event.damage}` : 'miss';
-    const damageEntry: CombatIndicatorEntry = {
-      text: damageText,
-      type: 'damage',
-      x: defenderPos.x,
-      y: defenderPos.y,
-    };
-//HUMANNOTE: I don't undertand why it is ok for this to be mutable.
-    mutableAnimations.push({
-      type: 'damage',
-      sequenceIndex,
-      delayMs: baseDelay + ANIMATION_TIMING.damageIndicatorDelayMs,
-      batchId,
-      data: damageEntry,
-    });
-  }
-
-  // ── 3. Consumable animations ────────────────────────────────────
-  // One consumable per turn max. Fires at delay 0 — concurrent with movement.
-
-  const itemUsedEvents = events.filter(
-    (e): e is Extract<DomainEvent, { type: 'ITEM_USED' }> => e.type === 'ITEM_USED',
-  );
-
-  for (let i = 0; i < itemUsedEvents.length; i += 1) {
-    const event = itemUsedEvents[i];
-    if (!event) continue;
-
-    const playerPos = state.player.position;
-    const { effect, presentation } = getConsumableAnimationMetadata(event.effect);
-    const blastPositions = getConsumableBlastPositions(playerPos, presentation);
-
-    const entry: ConsumableAnimationEntry = {
-      effect,
-      playerPos,
-      blastPositions,
-      durationMs: presentation.durationMs,
-      presentation,
-    };
-
-    const sequenceIndex = orderedMoves.length + attacksWithSpeeds.length + i;
-
-    mutableAnimations.push({
-      type: 'consumable',
-      sequenceIndex,
-      delayMs: 0,
-      batchId,
-      data: entry,
-    });
-  }
-
-  // ── 4. Ability animations ───────────────────────────────────────
+  // ── 2. Ability animations ───────────────────────────────────────
   // Resolved from ABILITY_USED events using the ability catalog.
+  // Fire FIRST (before attacks/damage) at the start of the turn.
 
   const abilityUsedEvents = events.filter(
     (e): e is Extract<DomainEvent, { type: 'ABILITY_USED' }> => e.type === 'ABILITY_USED',
@@ -323,7 +232,7 @@ export function buildAnimationSequence(
       }
     }
 
-    const sequenceIndex = orderedMoves.length + attacksWithSpeeds.length + itemUsedEvents.length + i;
+    const sequenceIndex = orderedMoves.length + i;
 
     mutableAnimations.push({
       type: 'ability',
@@ -340,6 +249,110 @@ export function buildAnimationSequence(
         durationMs: animRef.durationMs,
         suppressActorBump: 'suppressActorBump' in animRef && animRef.suppressActorBump ? true : false,
       } satisfies AbilityAnimationEntry,
+    });
+  }
+
+  // Calculate max ability animation duration to stagger attacks after them
+  let maxAbilityDurationMs = 0;
+  for (const event of abilityUsedEvents) {
+    const abilityDef = ABILITY_DEFINITIONS.get(event.abilityId);
+    if (abilityDef?.animation?.id) {
+      const animRef = ANIMATION_REF_BY_ID.get(abilityDef.animation.id as keyof typeof animRef);
+      if (animRef && animRef.durationMs > maxAbilityDurationMs) {
+        maxAbilityDurationMs = animRef.durationMs;
+      }
+    }
+  }
+
+  // ── 3. Attack (bump + damage indicator) animations ──────────────
+  // Sorted by speed, staggered, and delayed until after abilities complete.
+
+  let attacksWithSpeeds = events
+    .filter((event): event is Extract<DomainEvent, { type: 'ATTACK_PERFORMED' }> => event.type === 'ATTACK_PERFORMED')
+    .map((attackEvent) => ({
+      attackerId: attackEvent.attackerId,
+      speed: getEntitySpeed(attackEvent.attackerId, state),
+      event: attackEvent,
+    }));
+
+  // eslint-disable-next-line dungeon/no-array-mutation
+  const mutableSorted = [...attacksWithSpeeds].sort((a, b) => b.speed - a.speed);
+  attacksWithSpeeds = mutableSorted;
+
+  for (let i = 0; i < attacksWithSpeeds.length; i += 1) {
+    const attack = attacksWithSpeeds[i];
+    if (!attack) continue;
+
+    const sequenceIndex = orderedMoves.length + abilityUsedEvents.length + i; // continue sequence after moves and abilities
+    const baseDelay = maxAbilityDurationMs + i * ANIMATION_TIMING.attackStaggerMs;
+
+    const attackerPos = getEntityPosition(attack.event.attackerId, state);
+    const defenderPos = getEntityPosition(attack.event.defenderId, state) || attack.event.position;
+    if (!attackerPos || !defenderPos) continue;
+
+    const bumpEntry: BumpAnimationEntry = {
+      attackerId: attack.event.attackerId,
+      defenderId: attack.event.defenderId,
+      attackerPos,
+      defenderPos,
+    };
+//HUMANNOTE: I don't undertand why it is ok for this to be mutable.
+    mutableAnimations.push({
+      type: 'bump',
+      sequenceIndex,
+      delayMs: baseDelay,
+      batchId,
+      data: bumpEntry,
+    });
+
+    const damageText = attack.event.hit ? `-${attack.event.damage}` : 'miss';
+    const damageEntry: CombatIndicatorEntry = {
+      text: damageText,
+      type: 'damage',
+      x: defenderPos.x,
+      y: defenderPos.y,
+    };
+//HUMANNOTE: I don't undertand why it is ok for this to be mutable.
+    mutableAnimations.push({
+      type: 'damage',
+      sequenceIndex,
+      delayMs: baseDelay + ANIMATION_TIMING.damageIndicatorDelayMs,
+      batchId,
+      data: damageEntry,
+    });
+  }
+
+  // ── 4. Consumable animations ────────────────────────────────────
+  // One consumable per turn max. Fires at delay 0 — concurrent with movement.
+
+  const itemUsedEvents = events.filter(
+    (e): e is Extract<DomainEvent, { type: 'ITEM_USED' }> => e.type === 'ITEM_USED',
+  );
+
+  for (let i = 0; i < itemUsedEvents.length; i += 1) {
+    const event = itemUsedEvents[i];
+    if (!event) continue;
+
+    const playerPos = state.player.position;
+    const { effect, presentation } = getConsumableAnimationMetadata(event.effect);
+    const blastPositions = getConsumableBlastPositions(playerPos, presentation);
+
+    const entry: ConsumableAnimationEntry = {
+      effect,
+      playerPos,
+      blastPositions,
+      durationMs: presentation.durationMs,
+      presentation,
+    };
+
+    const sequenceIndex = orderedMoves.length + abilityUsedEvents.length + attacksWithSpeeds.length + i;
+
+    mutableAnimations.push({
+      type: 'consumable',
+      sequenceIndex,
+      delayMs: maxAbilityDurationMs + (attacksWithSpeeds.length * ANIMATION_TIMING.attackStaggerMs),
+      batchId,
+      data: entry,
     });
   }
 
