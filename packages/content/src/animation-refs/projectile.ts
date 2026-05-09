@@ -3,7 +3,18 @@
  * Key: suppressActorBump must be explicitly declared (typically true to show multiple projectiles).
  */
 
-// Projectile animation refs go here in later phases.
-// Examples (Phase 4):
-// - singleArrow: Ranged Pin (suppressActorBump: false)
-// - arrowVolley: Ranged Volley (suppressActorBump: true)
+import type { AnimationRef } from './types.js';
+
+export const singleArrow: AnimationRef = {
+  id: 'fx.projectile.single-arrow',
+  category: 'projectile',
+  durationMs: 300,
+  suppressActorBump: false,
+};
+
+export const arrowVolley: AnimationRef = {
+  id: 'fx.projectile.arrow-volley',
+  category: 'projectile',
+  durationMs: 400,
+  suppressActorBump: true,
+};

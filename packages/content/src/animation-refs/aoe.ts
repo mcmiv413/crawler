@@ -11,3 +11,17 @@ export const bombBlast = {
   durationMs: 800,
   suppressActorBump: false,
 } as const satisfies AnimationRef;
+
+export const cleaveArc = {
+  id: 'fx.aoe.cleave-arc',
+  category: 'aoe',
+  durationMs: 450,
+  suppressActorBump: false,
+} as const satisfies AnimationRef;
+
+export const shatterBurst = {
+  id: 'fx.aoe.shatter-burst',
+  category: 'aoe',
+  durationMs: 420,
+  suppressActorBump: false,
+} as const satisfies AnimationRef;
