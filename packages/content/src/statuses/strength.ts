@@ -1,3 +1,4 @@
+import { animationRefs } from '../animation-refs/index.js';
 import type { StatusDefinition } from './types.js';
 
 export const strength: StatusDefinition = {
@@ -10,4 +11,5 @@ export const strength: StatusDefinition = {
   tickMagnitudeKey: '',
   modifiesStat: 'attack',
   statMultiplierKey: null,
+  overlay: { id: animationRefs.status.goldRingPulse.id },
 };

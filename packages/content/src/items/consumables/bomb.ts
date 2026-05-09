@@ -1,6 +1,7 @@
-import type { ConsumableTemplate } from '@dungeon/contracts';
+import { animationRefs } from '../../animation-refs/index.js';
+import type { AnimatedConsumableDefinition } from '../types.js';
 
-export const bomb: ConsumableTemplate = {
+export const bomb: AnimatedConsumableDefinition = {
   itemId: 'bomb',
   name: 'Bomb',
   description: 'Deals 25 fire damage to an adjacent enemy.',
@@ -11,4 +12,5 @@ export const bomb: ConsumableTemplate = {
   maxStack: 3,
   spriteName: 'fire bomb',
   consumable: { effect: 'damage', magnitude: 25 },
+  animation: { id: animationRefs.aoe.bombBlast.id },
 };

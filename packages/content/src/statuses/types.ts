@@ -10,4 +10,5 @@ export interface StatusDefinition {
   readonly tickMagnitudeKey: string;
   readonly modifiesStat: string | null;
   readonly statMultiplierKey: string | null;
+  readonly overlay?: { readonly id: string };
 }
