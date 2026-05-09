@@ -22,3 +22,9 @@ export const cureSparkle = {
   category: 'self',
   durationMs: 1000,
 } as const satisfies AnimationRef;
+
+export const secondWindBuff = {
+  id: 'fx.self.second-wind-buff',
+  category: 'self',
+  durationMs: 800,
+} as const satisfies AnimationRef;
