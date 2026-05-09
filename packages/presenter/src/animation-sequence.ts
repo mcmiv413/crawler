@@ -314,8 +314,13 @@ export function buildAnimationSequence(
       });
       blastPositions = volleyPositions;
     } else if (event.abilityId === 'axe_execute') {
-      // Execute: would compute HP fraction, but stats not directly on EnemyInstance
-      // This can be extended in Phase 4 when we have full entity info
+      // Execute: compute HP fraction from target's current health
+      if (event.targetId) {
+        const targetEnemy = state.run.enemies.get(event.targetId);
+        if (targetEnemy && targetEnemy.stats.maxHealth > 0) {
+          targetHpFraction = targetEnemy.stats.health / targetEnemy.stats.maxHealth;
+        }
+      }
     }
 
     const sequenceIndex = orderedMoves.length + attacksWithSpeeds.length + itemUsedEvents.length + i;
@@ -333,7 +338,7 @@ export function buildAnimationSequence(
         blastPositions,
         targetHpFraction,
         durationMs: animRef.durationMs,
-        suppressActorBump: 'suppressActorBump' in animRef ? animRef.suppressActorBump : false,
+        suppressActorBump: 'suppressActorBump' in animRef && animRef.suppressActorBump ? true : false,
       } satisfies AbilityAnimationEntry,
     });
   }

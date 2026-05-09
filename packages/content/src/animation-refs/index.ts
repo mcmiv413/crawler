@@ -19,34 +19,69 @@
  * All other consumers must dot-walk through this object.
  */
 
-import { healingPulse, staminaSurge, cureSparkle } from './self.js';
-import { bombBlast } from './aoe.js';
+import { healingPulse, staminaSurge, cureSparkle, secondWindBuff } from './self.js';
+import { bombBlast, cleaveArc, shatterBurst } from './aoe.js';
 import { goldRingPulse } from './status.js';
+import {
+  radialImpactBurst,
+  forwardSlash,
+  cleaveArc as cleaveArcImpact,
+  executionStrike,
+  staggerShockwave,
+  shatterBurst as shatterBurstImpact,
+  riposteGlint,
+  bleedingStrike,
+  disarmStrike,
+} from './impact.js';
+import { singleArrow, arrowVolley } from './projectile.js';
+import { trapSpark, trapPlacement } from './utility.js';
 
 export const animationRefs = {
-  impact: {},
-  projectile: {},
+  impact: {
+    radialImpactBurst,
+    forwardSlash,
+    cleaveArcImpact,
+    executionStrike,
+    staggerShockwave,
+    shatterBurstImpact,
+    riposteGlint,
+    bleedingStrike,
+    disarmStrike,
+  },
+  projectile: {
+    singleArrow,
+    arrowVolley,
+  },
   self: {
     healingPulse,
     staminaSurge,
     cureSparkle,
+    secondWindBuff,
   },
   aoe: {
     bombBlast,
+    cleaveArc,
+    shatterBurst,
   },
   status: {
     goldRingPulse,
   },
-  utility: {},
+  utility: {
+    trapSpark,
+    trapPlacement,
+  },
 } as const;
 
 
 /** Flat O(1) lookup map of all animation refs by ID. Used by the presenter for fast ref resolution. */
 export const ANIMATION_REF_BY_ID = new Map(
   [
+    ...Object.values(animationRefs.impact),
+    ...Object.values(animationRefs.projectile),
     ...Object.values(animationRefs.self),
     ...Object.values(animationRefs.aoe),
     ...Object.values(animationRefs.status),
+    ...Object.values(animationRefs.utility),
   ].map(ref => [ref.id, ref] as const)
 );
 
