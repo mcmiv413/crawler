@@ -8,4 +8,5 @@ export const daggerDisarm: AbilityDefinition = {
   requiresTarget: false,
   unlockLevel: 0,
   requiresWeaponTypes: ['dagger'],
+  animation: { id: 'fx.impact.disarm-strike' },
 };

@@ -1,77 +1,101 @@
-import { useEffect, useRef, useState } from 'react';
+import { useState, useEffect, useRef } from 'react';
+import type { AbilityAnimationEntry, AnimatedEvent } from '@dungeon/presenter';
 
-export type ActiveFxAnimation<TEntry extends { readonly durationMs: number }> = TEntry & {
+interface ActiveFxAnimation extends AbilityAnimationEntry {
   id: string;
   startTime: number;
   progress: number;
-};
+}
+
+interface UseFxAnimationStateReturn {
+  animations: ActiveFxAnimation[];
+}
 
 /**
- * Generic FX animation hook factory.
- * Creates a hook that listens to CustomEvent on a specified channel,
- * tracks active animations with per-entry durationMs, and updates progress 0→1.
- *
- * Usage:
- *   export const useMyAnimationState = createFxHook<MyAnimationEntry>('my-channel');
+ * Hook to track active ability FX animations with progress (0→1).
+ * Listens for animated events from the game view and maintains animation state.
+ * Used by canvas renderer to draw ability visual effects.
  */
-export function createFxHook<TEntry extends { readonly durationMs: number }>(channel: string) {
-  return function useFxAnimation(): { animations: readonly ActiveFxAnimation<TEntry>[] } {
-    const [animations, setAnimations] = useState<ActiveFxAnimation<TEntry>[]>([]);
-    const rafRef = useRef<number | undefined>(undefined);
-    const nextIdRef = useRef(0);
-    const timersRef = useRef<ReturnType<typeof setTimeout>[]>([]);
+export function useFxAnimationState(
+  animatedEvents: readonly AnimatedEvent[],
+): UseFxAnimationStateReturn {
+  const [animations, setAnimations] = useState<ActiveFxAnimation[]>([]);
+  const rafRef = useRef<number | undefined>(undefined);
+  const nextIdRef = useRef(0);
+  const seenBatchIdsRef = useRef<Set<string>>(new Set());
+  const timersRef = useRef<ReturnType<typeof setTimeout>[]>([]);
 
-    useEffect(() => {
-      const handleAnimation = (event: Event) => {
-        const customEvent = event as CustomEvent<TEntry>;
-        const entry = customEvent.detail;
-        const now = Date.now();
+  useEffect(() => {
+    const now = Date.now();
 
-        const animation: ActiveFxAnimation<TEntry> = {
-          ...entry,
-          id: `${channel}-${nextIdRef.current++}`,
-          startTime: now,
-          progress: 0,
-        };
+    // Process new animation events
+    const newAnimations: ActiveFxAnimation[] = [];
+    for (const event of animatedEvents) {
+      if (event.type !== 'ability') continue;
 
-        setAnimations(prev => [...prev, animation]);
+      const data = event.data as AbilityAnimationEntry;
+      // Skip if animation ID is invalid
 
-        const timer = setTimeout(() => {
-          setAnimations(prev => prev.filter(a => a.id !== animation.id));
-        }, entry.durationMs);
+      // Skip if we've already seen this batch
+      if (seenBatchIdsRef.current.has(event.batchId)) continue;
+      seenBatchIdsRef.current.add(event.batchId);
 
-        timersRef.current.push(timer);
+      const animation: ActiveFxAnimation = {
+        id: `fx-${nextIdRef.current++}`,
+        ...data,
+        startTime: now + event.delayMs,
+        progress: 0,
       };
 
-      window.addEventListener(`${channel}-animation`, handleAnimation);
-      return () => {
-        window.removeEventListener(`${channel}-animation`, handleAnimation);
-        timersRef.current.forEach(t => clearTimeout(t));
-        timersRef.current = [];
-      };
-    }, []);
+      newAnimations.push(animation);
 
-    useEffect(() => {
-      const tick = () => {
-        const now = Date.now();
-        setAnimations(prev =>
-          prev.map(anim => {
-            const elapsed = now - anim.startTime;
+      // Schedule removal after animation duration
+      const timer = setTimeout(() => {
+        setAnimations((prev) => prev.filter((a) => a.id !== animation.id));
+      }, event.delayMs + animation.durationMs + 50);
+
+      timersRef.current.push(timer);
+    }
+
+    if (newAnimations.length > 0) {
+      setAnimations((prev) => [...prev, ...newAnimations]);
+    }
+
+    return () => {
+      timersRef.current.forEach((t) => clearTimeout(t));
+      if (rafRef.current) {
+        cancelAnimationFrame(rafRef.current);
+      }
+    };
+  }, [animatedEvents]);
+
+  // Update progress values on every frame
+  useEffect(() => {
+    const updateProgress = () => {
+      setAnimations((prev) =>
+        prev
+          .map((anim) => {
+            const elapsed = Date.now() - anim.startTime;
+            if (elapsed < 0) {
+              return { ...anim, progress: 0 };
+            }
             const progress = Math.min(elapsed / anim.durationMs, 1);
             return { ...anim, progress };
           })
-        );
-        rafRef.current = requestAnimationFrame(tick);
-      };
+          .filter((anim) => anim.progress < 1),
+      );
 
-      rafRef.current = requestAnimationFrame(tick);
-      return () => {
-        if (rafRef.current !== undefined) {
-          cancelAnimationFrame(rafRef.current);
-        }
-      };
-    }, []);
+      rafRef.current = requestAnimationFrame(updateProgress);
+    };
 
-    return { animations };
-  };
+    rafRef.current = requestAnimationFrame(updateProgress);
+
+    return () => {
+      if (rafRef.current) {
+        cancelAnimationFrame(rafRef.current);
+      }
+    };
+  }, []);
+
+  return { animations };
 }

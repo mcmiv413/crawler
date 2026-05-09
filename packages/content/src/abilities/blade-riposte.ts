@@ -8,4 +8,5 @@ export const bladeRiposte: AbilityDefinition = {
   requiresTarget: true,
   unlockLevel: 0,
   requiresWeaponTypes: ['blade'],
+  animation: { id: 'fx.impact.riposte-glint' },
 };

@@ -8,4 +8,5 @@ export const rangedVolley: AbilityDefinition = {
   requiresTarget: false,
   unlockLevel: 0,
   requiresWeaponTypes: ['ranged'],
+  animation: { id: 'fx.projectile.arrow-volley' },
 };
