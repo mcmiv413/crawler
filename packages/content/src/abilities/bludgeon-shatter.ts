@@ -8,4 +8,5 @@ export const bludgeonShatter: AbilityDefinition = {
   requiresTarget: true,
   unlockLevel: 0,
   requiresWeaponTypes: ['bludgeon'],
+  animation: { id: 'fx.aoe.shatter-burst' },
 };

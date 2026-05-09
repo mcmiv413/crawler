@@ -8,5 +8,5 @@ export interface AbilityDefinition {
   readonly requiresTarget: boolean;
   readonly unlockLevel: number;
   readonly requiresWeaponTypes?: readonly WeaponType[];
-  readonly animation?: { readonly id: string };
+  readonly animation: { readonly id: string };
 }

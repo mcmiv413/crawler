@@ -28,6 +28,14 @@ vi.mock('../hooks/useConsumableAnimationState.js', () => ({
   useConsumableAnimationState: () => ({ animations: [] }),
 }));
 
+vi.mock('../hooks/useFxAnimationState.js', () => ({
+  useFxAnimationState: () => ({ animations: [] }),
+}));
+
+vi.mock('../animations/generated/index.js', () => ({
+  initializeAnimationModules: vi.fn(),
+}));
+
 vi.mock('../utils/pathfinding.js', () => ({
   findPath: () => [],
 }));
@@ -38,6 +46,7 @@ vi.mock('../store/game-store.js', () => ({
       return selector({
         startAutoWalk: vi.fn(),
         view: {
+          animatedEvents: [],
           player: {
             statuses: [
               {
@@ -112,7 +121,7 @@ describe('DungeonCanvas', () => {
     expect(canvas?.width).toBe(5 * CELL_SIZE);
     expect(canvas?.height).toBe(4 * CELL_SIZE);
     expect(renderMap).toHaveBeenCalled();
-    expect(vi.mocked(renderMap).mock.calls[0]?.[9]).toEqual({
+    expect(vi.mocked(renderMap).mock.calls[0]?.[10]).toEqual({
       statusPresentations: [{ entityScale: 1.25 }],
     });
   });

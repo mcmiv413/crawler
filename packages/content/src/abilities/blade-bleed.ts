@@ -8,4 +8,5 @@ export const bladeBleed: AbilityDefinition = {
   requiresTarget: true,
   unlockLevel: 0,
   requiresWeaponTypes: ['blade'],
+  animation: { id: 'fx.impact.bleeding-strike' },
 };

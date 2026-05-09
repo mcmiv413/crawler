@@ -3,7 +3,7 @@
  * Green tile flash followed by radiating sparkle dots.
  */
 
-import { animationRefs } from '@dungeon/content/animation-refs';
+import { animationRefs } from '@dungeon/content';
 import type { AnimationModule, AnimationDrawContext, RendererHelpers } from '../types.js';
 
 export const cureSparkleModule: AnimationModule = {

@@ -8,4 +8,5 @@ export const axeCleave: AbilityDefinition = {
   requiresTarget: true,
   unlockLevel: 0,
   requiresWeaponTypes: ['axe'],
+  animation: { id: 'fx.aoe.cleave-arc' },
 };

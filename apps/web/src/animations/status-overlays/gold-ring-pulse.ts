@@ -3,7 +3,7 @@
  * Pulsing gold ring around entity while status is active.
  */
 
-import { animationRefs } from '@dungeon/content/animation-refs';
+import { animationRefs } from '@dungeon/content';
 import type { AnimationModule, AnimationDrawContext, RendererHelpers } from '../types.js';
 
 export const goldRingPulseModule: AnimationModule = {

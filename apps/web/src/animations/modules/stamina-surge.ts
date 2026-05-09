@@ -3,7 +3,7 @@
  * Concentric rings expand and fade.
  */
 
-import { animationRefs } from '@dungeon/content/animation-refs';
+import { animationRefs } from '@dungeon/content';
 import type { AnimationModule, AnimationDrawContext, RendererHelpers } from '../types.js';
 
 export const staminaSurgeModule: AnimationModule = {

@@ -7,4 +7,5 @@ export const secondWind: AbilityDefinition = {
   cooldown: 4,
   requiresTarget: false,
   unlockLevel: 4,
+  animation: { id: 'fx.self.second-wind-buff' },
 };

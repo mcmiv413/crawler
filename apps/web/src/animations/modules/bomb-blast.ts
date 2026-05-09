@@ -3,7 +3,7 @@
  * Bomb sprite scales in with overshoot, then blast sprites expand over blast positions.
  */
 
-import { animationRefs } from '@dungeon/content/animation-refs';
+import { animationRefs } from '@dungeon/content';
 import type { AnimationModule, AnimationDrawContext, RendererHelpers } from '../types.js';
 
 export const bombBlastModule: AnimationModule = {

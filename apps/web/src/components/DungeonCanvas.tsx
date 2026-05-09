@@ -7,6 +7,8 @@ import { useGameStore } from '../store/game-store.js';
 import { useBumpAnimationState } from '../hooks/useBumpAnimationState.js';
 import { useMoveAnimationState } from '../hooks/useMoveAnimationState.js';
 import { useConsumableAnimationState } from '../hooks/useConsumableAnimationState.js';
+import { useFxAnimationState } from '../hooks/useFxAnimationState.js';
+import { initializeAnimationModules } from '../animations/generated/index.js';
 import { BUMP_ANIMATION_DURATION_MS, CELL_SIZE } from '../config/ui-config.js';
 import { VP_WIDTH, VP_HEIGHT } from '../config/ui-config.js';
 
@@ -24,6 +26,8 @@ export function DungeonCanvas({ map, vpTilesWidth, vpTilesHeight }: Props) {
   const { animations: bumpAnimations }       = useBumpAnimationState(BUMP_ANIMATION_DURATION_MS);
   const { animations: moveAnimations }       = useMoveAnimationState();
   const { animations: consumableAnimations } = useConsumableAnimationState();
+  const animatedEvents = useGameStore((s) => s.view?.animatedEvents ?? []);
+  const { animations: fxAnimations } = useFxAnimationState(animatedEvents);
 
   const playerStatuses = useGameStore((s) => s.view?.player.statuses ?? EMPTY_STATUSES);
   const statusPresentations: readonly StatusPresentationView[] = useMemo(
@@ -49,6 +53,11 @@ export function DungeonCanvas({ map, vpTilesWidth, vpTilesHeight }: Props) {
     if (!spriteRegistry.isReady()) {
       spriteRegistry.load().catch(() => {});
     }
+  }, []);
+
+  // Initialize animation modules on mount
+  useEffect(() => {
+    initializeAnimationModules();
   }, []);
 
   useEffect(() => {
@@ -78,9 +87,10 @@ export function DungeonCanvas({ map, vpTilesWidth, vpTilesHeight }: Props) {
       bumpAnimations,
       moveAnimations,
       consumableAnimations,
+      fxAnimations,
       { statusPresentations },
     );
-  }, [map, spritesReady, vp_width, vp_height, bumpAnimations, moveAnimations, consumableAnimations, statusPresentations]);
+  }, [map, spritesReady, vp_width, vp_height, bumpAnimations, moveAnimations, consumableAnimations, fxAnimations, statusPresentations]);
 
   const handleClick = useCallback((e: React.MouseEvent<HTMLCanvasElement>) => {
     const canvas = canvasRef.current;

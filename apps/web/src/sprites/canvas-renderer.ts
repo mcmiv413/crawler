@@ -1,10 +1,22 @@
 import type { MapView, MapCellView, EntityView } from '@dungeon/presenter';
 import type { MoveAnimStyle, StatusPresentationView, ConsumableAnimationPresentationView } from '@dungeon/presenter';
+import { resolveModule } from '../animations/registry.js';
 import { CELL_SIZE } from '../config/ui-config.js';
 import { spriteRegistry } from './sprite-registry.js';
 
 // ── Animation state interfaces ────────────────────────────────────
 // Defined locally so the renderer has no dependency on React hooks.
+
+// Stub RendererHelpers for animation modules (mostly unused by current modules)
+const rendererHelpers = {
+  drawStarBurst: () => {},
+  drawRing: () => {},
+  drawParticleStream: () => {},
+  drawArrowAlong: () => {},
+  easeOutCubic: (t: number) => 1 - Math.pow(1 - t, 3),
+  easeInCubic: (t: number) => t * t * t,
+  decayingSine: (t: number, freq: number) => Math.sin(t * freq) * Math.exp(-t),
+};
 
 interface BumpAnimationState {
   id: string;
@@ -33,6 +45,19 @@ interface ConsumableAnimationState {
   progress: number;
   durationMs: number;
   presentation: ConsumableAnimationPresentationView;
+}
+
+interface FxAnimationState {
+  readonly id: string;
+  readonly abilityId: string;
+  readonly animationId: string;
+  readonly playerPos: { readonly x: number; readonly y: number };
+  readonly targetPos?: { readonly x: number; readonly y: number };
+  readonly blastPositions: readonly { readonly x: number; readonly y: number }[];
+  readonly targetHpFraction?: number;
+  readonly durationMs: number;
+  readonly suppressActorBump: boolean;
+  readonly progress: number;
 }
 
 /** Player-level effects driven by active status conditions (not time-limited animations). */
@@ -428,6 +453,42 @@ function drawDamageEffect(
 }
 
 /**
+ * Draw all active FX animations using their registered modules.
+ */
+function drawFxAnimations(
+  ctx: CanvasRenderingContext2D,
+  animations: FxAnimationState[],
+  vpLeft: number,
+  vpTop: number,
+): void {
+  for (const anim of animations) {
+    const module = resolveModule(anim.animationId as any);
+    if (!module) continue;
+
+    ctx.save();
+
+    // Convert world position to screen position
+    const screenX = (anim.playerPos.x - vpLeft) * CELL_SIZE;
+    const screenY = (anim.playerPos.y - vpTop) * CELL_SIZE;
+
+    // Call the animation module's draw function
+    module.draw(ctx, {
+      x: screenX + CELL_SIZE / 2,
+      y: screenY + CELL_SIZE / 2,
+      progress: anim.progress,
+      durationMs: anim.durationMs,
+      targetPos: anim.targetPos ? {
+        x: (anim.targetPos.x - vpLeft) * CELL_SIZE + CELL_SIZE / 2,
+        y: (anim.targetPos.y - vpTop) * CELL_SIZE + CELL_SIZE / 2,
+      } : undefined,
+      targetHpFraction: anim.targetHpFraction,
+    }, rendererHelpers);
+
+    ctx.restore();
+  }
+}
+
+/**
  * Dispatch to the appropriate per-effect drawing function.
  * Called after the entity layer so effects appear on top.
  */
@@ -462,6 +523,7 @@ export function renderMap(
   bumpAnimations: BumpAnimationState[] = [],
   moveAnimations: MoveAnimationState[] = [],
   consumableAnimations: ConsumableAnimationState[] = [],
+  fxAnimations: FxAnimationState[] = [],
   playerEffects: PlayerEffects = {},
 ): void {
   ctx.clearRect(0, 0, vpWidth * CELL_SIZE, vpHeight * CELL_SIZE);
@@ -568,4 +630,7 @@ export function renderMap(
 
   // ── Consumable effects (drawn above the entity layer) ────────────
   drawConsumableEffects(ctx, consumableAnimations, vpLeft, vpTop);
+
+  // ── FX animations (drawn above consumable effects) ─────────────
+  drawFxAnimations(ctx, fxAnimations, vpLeft, vpTop);
 }
