@@ -10,7 +10,15 @@ import {
 } from '../styles.js';
 import { ItemInspectModal } from './ItemInspectModal.js';
 import { ItemSpriteIcon } from './ItemSpriteIcon.js';
-import { useInventoryFilter } from '../hooks/useInventoryFilter.js';
+import {
+  INVENTORY_FILTER_OPTIONS,
+  INVENTORY_SORT_OPTIONS,
+  filterInventoryItems,
+  sortInventoryItems,
+  useInventoryFilter,
+  type InventoryFilterType,
+  type InventorySortType,
+} from '../hooks/useInventoryFilter.js';
 import { SectionLabel } from './ui/index.js';
 
 interface ShopPanelProps {
@@ -19,21 +27,6 @@ interface ShopPanelProps {
   sendCommand: (command: unknown) => Promise<void>;
   isMobile?: boolean;
 }
-
-type BuyFilter = 'all' | 'weapons' | 'armor' | 'consumables';
-type SortKey = 'name' | 'rarity';
-
-const BUY_FILTERS: ReadonlyArray<{ value: BuyFilter; label: string }> = [
-  { value: 'all', label: 'All' },
-  { value: 'weapons', label: 'Weapons' },
-  { value: 'armor', label: 'Armor' },
-  { value: 'consumables', label: 'Consumables' },
-];
-
-const SORT_OPTIONS: ReadonlyArray<{ value: SortKey; label: string }> = [
-  { value: 'name', label: 'Name' },
-  { value: 'rarity', label: 'Rarity' },
-];
 
 function FilterGroup<T extends string>({
   options,
@@ -62,8 +55,8 @@ function FilterGroup<T extends string>({
 export function ShopPanel({ view, loading, sendCommand }: ShopPanelProps) {
   const [mode, setMode] = useState<'buy' | 'sell'>('buy');
   const [selectedItem, setSelectedItem] = useState<ShopItemView | InventoryItemView | null>(null);
-  const [buyFilter, setBuyFilter] = useState<BuyFilter>('all');
-  const [buySortBy, setBuySortBy] = useState<SortKey>('name');
+  const [buyFilter, setBuyFilter] = useState<InventoryFilterType>('all');
+  const [buySortBy, setBuySortBy] = useState<InventorySortType>('name');
   const [flashItemId, setFlashItemId] = useState<string | null>(null);
   const [toastText, setToastText] = useState<string>('');
   const [toastKey, setToastKey] = useState(0);
@@ -129,24 +122,7 @@ export function ShopPanel({ view, loading, sendCommand }: ShopPanelProps) {
 
   // ── Buy mode ─────────────────────────────────────────────────────────────
   if (mode === 'buy') {
-    const buyItems = shop.items
-      .filter((item) => {
-        if (buyFilter === 'all') return true;
-        if (buyFilter === 'weapons') return item.itemClass === 'weapon';
-        if (buyFilter === 'armor') return item.itemClass === 'armor';
-        return item.itemClass === 'consumable';
-      })
-      .sort((a, b) => {
-        if (buySortBy === 'name') return a.name.localeCompare(b.name);
-        const rarityOrder: Record<string, number> = {
-          common: 0,
-          uncommon: 1,
-          rare: 2,
-          epic: 3,
-          legendary: 4,
-        };
-        return (rarityOrder[b.rarity] ?? -1) - (rarityOrder[a.rarity] ?? -1);
-      });
+    const buyItems = sortInventoryItems(filterInventoryItems(shop.items, buyFilter), buySortBy);
 
     return (
       <div style={{ fontFamily: FONT_STACK, color: colors.text, position: 'relative' }}>
@@ -156,8 +132,8 @@ export function ShopPanel({ view, loading, sendCommand }: ShopPanelProps) {
 
         <SectionLabel label="Filter" />
         <div style={{ display: 'flex', flexDirection: 'column', gap: 4, marginBottom: 10 }}>
-          <FilterGroup options={BUY_FILTERS} value={buyFilter} onChange={setBuyFilter} />
-          <FilterGroup options={SORT_OPTIONS} value={buySortBy} onChange={setBuySortBy} />
+          <FilterGroup options={INVENTORY_FILTER_OPTIONS} value={buyFilter} onChange={setBuyFilter} />
+          <FilterGroup options={INVENTORY_SORT_OPTIONS} value={buySortBy} onChange={setBuySortBy} />
         </div>
 
         <SectionLabel label="Buy Items" marginTop={4} />
@@ -340,8 +316,8 @@ export function ShopPanel({ view, loading, sendCommand }: ShopPanelProps) {
 
       <SectionLabel label="Filter" />
       <div style={{ display: 'flex', flexDirection: 'column', gap: 4, marginBottom: 10 }}>
-        <FilterGroup options={BUY_FILTERS} value={filter as BuyFilter} onChange={setFilter as (v: BuyFilter) => void} />
-        <FilterGroup options={SORT_OPTIONS} value={sortBy as SortKey} onChange={setSortBy as (v: SortKey) => void} />
+        <FilterGroup options={INVENTORY_FILTER_OPTIONS} value={filter} onChange={setFilter} />
+        <FilterGroup options={INVENTORY_SORT_OPTIONS} value={sortBy} onChange={setSortBy} />
       </div>
 
       {shop.canUndo && (

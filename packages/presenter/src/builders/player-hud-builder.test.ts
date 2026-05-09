@@ -1,5 +1,6 @@
 import { describe, it, expect, beforeEach } from 'vitest';
 import { buildPlayerHud } from './player-hud-builder.js';
+import { PLAYER_STATUS_PRESENTATION } from '../animation-metadata.js';
 import { createTestGameState, createTestRunState, createTestGameStateWithAbility } from '@dungeon/core/testing';
 import { entityId } from '@dungeon/contracts';
 import type { GameState } from '@dungeon/contracts';
@@ -173,6 +174,22 @@ describe('buildPlayerHud', () => {
       expect(hud.statuses).toHaveLength(2);
       expect(hud.statuses[0]?.id).toBe('poison');
       expect(hud.statuses[0]?.turnsRemaining).toBe(3);
+    });
+
+    it('attaches presentation metadata for statuses with player effects', () => {
+      state = {
+        ...state,
+        player: {
+          ...state.player,
+          statuses: [
+            { id: 'strength', turnsRemaining: 3, magnitude: 3, sourceId: null },
+          ],
+        },
+      };
+
+      const hud = buildPlayerHud(state);
+
+      expect(hud.statuses[0]?.presentation).toBe(PLAYER_STATUS_PRESENTATION.strength);
     });
 
     it('shows no statuses when player is healthy', () => {

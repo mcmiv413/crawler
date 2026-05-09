@@ -70,6 +70,8 @@ describe('audit-tests script', () => {
 
     expect(results).toHaveLength(7);
     expect(byPath.get('tests/e2e/game-loop.spec.ts')?.proposedLayer).toBe('e2e');
+    expect(byPath.get('tests/e2e/game-loop.spec.ts')?.includedInDefaultRun).toBe(false);
+    expect(byPath.get('tests/e2e/game-loop.spec.ts')?.defaultRunReason).toContain('Playwright-only');
     expect(byPath.get('tests/contracts/game-config.contract.test.ts')?.proposedLayer).toBe('contract');
     expect(byPath.get('tests/integration/game-loop.integration.test.ts')?.proposedLayer).toBe('integration');
     expect(byPath.get('tests/balance/drop-rates.balance.test.ts')?.proposedLayer).toBe('balance');
@@ -79,8 +81,10 @@ describe('audit-tests script', () => {
     expect(byPath.get('packages/game-core/src/systems/enemy-ai.balance.test.ts')?.includedInDefaultRun).toBe(false);
     expect(byPath.get('packages/game-core/src/systems/enemy-ai.test.ts')?.proposedLayer).toBe('unit');
     expect(report).toContain('### E2E Tests (1)');
+    expect(report).toContain('Runner: Playwright-only');
     expect(report).toContain('### Property Tests (1)');
     expect(report).toContain('## Recognized but Excluded from Default Workspace Run');
+    expect(report).toContain('tests/e2e/game-loop.spec.ts');
     expect(report).toContain('packages/game-core/src/systems/enemy-ai.balance.test.ts');
   });
 });

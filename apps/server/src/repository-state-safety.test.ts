@@ -10,7 +10,7 @@
  * - Serialization: Complex nested structures survive round-trips
  * - Concurrent access: Multiple operations maintain consistency
  *
- * Tests: 16 total (4 immutability + 3 isolation + 3 lifecycle + 3 serialization + 3 concurrent)
+ * Tests: 16 total (4 boundary safety + 3 isolation + 3 lifecycle + 3 serialization + 3 concurrent)
  */
 
 import { describe, it, expect, beforeEach } from 'vitest';
@@ -40,25 +40,28 @@ describe('Repository: State Safety', () => {
   });
 
   // ============================================================================
-  // STATE IMMUTABILITY (4 tests)
+  // STATE BOUNDARY SAFETY (4 tests)
   // ============================================================================
 
-  describe('State Immutability', () => {
-    it('should store and retrieve the same state object reference', async () => {
+  describe('State Boundary Safety', () => {
+    it('should clone state on create and load', async () => {
       const gameId = entityId('game_1');
       const originalState = createMinimalGameState({ gameId });
       const originalHealth = originalState.player.stats.health;
 
       await repo.createGame(originalState);
 
-      // Note: InMemoryRepository stores references directly
       const retrieved = await repo.loadGame(gameId);
       expect(retrieved).not.toBeNull();
-      expect(retrieved).toBe(originalState); // Same reference
+      expect(retrieved).not.toBe(originalState);
+      expect(retrieved!.gameId).toBe(originalState.gameId);
+      expect(retrieved!.player).toEqual(originalState.player);
+      expect(retrieved!.turnNumber).toBe(originalState.turnNumber);
+      expect(retrieved!.version).toBe(originalState.version);
       expect(retrieved!.player.stats.health).toBe(originalHealth);
     });
 
-    it('should return the same reference on repeated retrievals', async () => {
+    it('should return independent clones on repeated retrievals', async () => {
       const gameId = entityId('game_2');
       const state = createMinimalGameState({ gameId });
       await repo.createGame(state);
@@ -66,12 +69,11 @@ describe('Repository: State Safety', () => {
       const first = await repo.loadGame(gameId);
       const second = await repo.loadGame(gameId);
 
-      // InMemoryRepository returns the same reference
-      expect(first).toBe(second);
+      expect(first).not.toBe(second);
       expect(first).toEqual(second);
     });
 
-    it('should reflect mutations to retrieved state in subsequent retrievals', async () => {
+    it('should not leak mutations from loaded state into repository contents', async () => {
       const gameId = entityId('game_3');
       const state = createMinimalGameState({ gameId, turnNumber: 0 });
       await repo.createGame(state);
@@ -79,12 +81,14 @@ describe('Repository: State Safety', () => {
       const retrieval1 = await repo.loadGame(gameId);
       const mutated = retrieval1 as any;
       mutated.turnNumber = 999;
+      mutated.player.stats.health = 1;
 
       const retrieval2 = await repo.loadGame(gameId);
-      expect(retrieval2!.turnNumber).toBe(999); // Mutation persisted
+      expect(retrieval2!.turnNumber).toBe(0);
+      expect(retrieval2!.player.stats.health).toBe(state.player.stats.health);
     });
 
-    it('should properly isolate state when using saveGame to store a new version', async () => {
+    it('should not leak mutations from a saved input after saveGame returns', async () => {
       const gameId = entityId('game_4');
       const state1 = createMinimalGameState({
         gameId,
@@ -104,10 +108,14 @@ describe('Repository: State Safety', () => {
       });
 
       await repo.saveGame(gameId, state2);
+      const mutated = state2 as any;
+      mutated.player.gold = 999;
+      mutated.turnNumber = 999;
 
       // The new state should be stored with incremented version
       const retrieved = await repo.loadGame(gameId);
       expect(retrieved!.player.gold).toBe(500);
+      expect(retrieved!.turnNumber).not.toBe(999);
       expect(retrieved!.version).toBe(state2.version + 1); // Version should be incremented
     });
   });
@@ -321,6 +329,7 @@ describe('Repository: State Safety', () => {
       ];
 
       await repo.appendEvents(gameId, complexEvents);
+      (complexEvents[0] as any).damage = 999;
       const retrieved = await repo.getRecentEvents(gameId, 10);
 
       expect(retrieved).toHaveLength(3);
@@ -441,6 +450,9 @@ describe('Repository: State Safety', () => {
 
       expect(log).toHaveLength(1);
       expect(log[0]).toEqual(metrics1);
+
+      (log[0] as any).damageDealt = 999;
+      expect(repo.getRunMetricsLog()[0]).toEqual(metrics1);
     });
 
     it('should accumulate multiple run metrics', () => {

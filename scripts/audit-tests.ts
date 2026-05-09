@@ -147,6 +147,9 @@ export function generateReport(results: AuditResult[]): string {
       const valid = tests.filter((test) => test.isValid).length;
       const includedInDefaultRun = tests.filter((test) => test.includedInDefaultRun).length;
       lines.push(`### ${TEST_LAYER_LABELS[layer]} Tests (${tests.length})`);
+      if (layer === 'e2e') {
+        lines.push('- Runner: Playwright-only (`pnpm test:e2e`)');
+      }
       lines.push(`- Valid: ${valid}/${tests.length}`);
       lines.push(`- Default workspace run: ${includedInDefaultRun}/${tests.length}`);
       lines.push(`- Issues: ${tests.reduce((sum, test) => sum + test.issues, 0)}`);

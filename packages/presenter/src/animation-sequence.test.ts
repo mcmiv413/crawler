@@ -1,6 +1,7 @@
 import { describe, it, expect } from 'vitest';
 import type { DomainEvent, GameState } from '@dungeon/contracts';
 import { buildAnimationSequence } from './animation-sequence.js';
+import { ANIMATION_TIMING, CONSUMABLE_ANIMATION_METADATA } from './animation-metadata.js';
 
 describe('buildAnimationSequence', () => {
   const mockGameState: GameState = {
@@ -258,7 +259,7 @@ describe('buildAnimationSequence', () => {
   });
 
   describe('timing delays', () => {
-    it('calculates bump animation delay as sequenceIndex * 500ms', () => {
+    it('calculates bump animation delay from attack timing metadata', () => {
       const events: DomainEvent[] = [
         {
           type: 'ATTACK_PERFORMED',
@@ -293,11 +294,11 @@ describe('buildAnimationSequence', () => {
       const bumps = sequence.filter(a => a.type === 'bump');
       expect(bumps[0]).toBeDefined();
       expect(bumps[1]).toBeDefined();
-      expect(bumps[0]!.delayMs).toBe(0); // index 0 * 500
-      expect(bumps[1]!.delayMs).toBe(500); // index 1 * 500
+      expect(bumps[0]!.delayMs).toBe(0);
+      expect(bumps[1]!.delayMs).toBe(ANIMATION_TIMING.attackStaggerMs);
     });
 
-    it('calculates damage indicator delay as sequenceIndex * 500 + 150ms', () => {
+    it('calculates damage indicator delay from attack timing metadata', () => {
       const events: DomainEvent[] = [
         {
           type: 'ATTACK_PERFORMED',
@@ -318,7 +319,7 @@ describe('buildAnimationSequence', () => {
 
       const damages = sequence.filter(a => a.type === 'damage');
       expect(damages[0]).toBeDefined();
-      expect(damages[0]!.delayMs).toBe(150); // 0 * 500 + 150
+      expect(damages[0]!.delayMs).toBe(ANIMATION_TIMING.damageIndicatorDelayMs);
     });
 
     it('handles multiple attacks with proper spacing', () => {
@@ -353,8 +354,6 @@ describe('buildAnimationSequence', () => {
 
       const sequence = buildAnimationSequence(events, mockGameState);
 
-      // Bump 0 at 0ms, Damage 0 at 150ms, Bump 1 at 500ms, Damage 1 at 650ms
-      // eslint-disable-next-line dungeon/no-array-mutation
       const ordered = [...sequence].sort((a, b) => a.delayMs - b.delayMs);
       expect(ordered).toHaveLength(4);
       expect(ordered[0]).toBeDefined();
@@ -363,12 +362,46 @@ describe('buildAnimationSequence', () => {
       expect(ordered[3]).toBeDefined();
       expect(ordered[0]!.delayMs).toBe(0);
       expect(ordered[0]!.type).toBe('bump');
-      expect(ordered[1]!.delayMs).toBe(150);
+      expect(ordered[1]!.delayMs).toBe(ANIMATION_TIMING.damageIndicatorDelayMs);
       expect(ordered[1]!.type).toBe('damage');
-      expect(ordered[2]!.delayMs).toBe(500);
+      expect(ordered[2]!.delayMs).toBe(ANIMATION_TIMING.attackStaggerMs);
       expect(ordered[2]!.type).toBe('bump');
-      expect(ordered[3]!.delayMs).toBe(650);
+      expect(ordered[3]!.delayMs).toBe(
+        ANIMATION_TIMING.attackStaggerMs + ANIMATION_TIMING.damageIndicatorDelayMs,
+      );
       expect(ordered[3]!.type).toBe('damage');
+    });
+  });
+
+  describe('consumable metadata', () => {
+    it('emits resolved damage animation metadata and blast positions', () => {
+      const events: DomainEvent[] = [
+        {
+          type: 'ITEM_USED',
+          timestamp: 1000,
+          turnNumber: 1,
+          itemId: 'bomb-1' as any,
+          itemName: 'Bomb',
+          userId: 'player-1' as any,
+          effect: 'damage',
+        } as any,
+      ];
+
+      const sequence = buildAnimationSequence(events, mockGameState);
+      const consumable = sequence.find((animation) => animation.type === 'consumable');
+
+      expect(consumable).toBeDefined();
+      if (consumable?.type === 'consumable' && 'effect' in consumable.data) {
+        expect(consumable.data.effect).toBe('damage');
+        expect(consumable.data.durationMs).toBe(CONSUMABLE_ANIMATION_METADATA.damage.durationMs);
+        expect(consumable.data.presentation).toBe(CONSUMABLE_ANIMATION_METADATA.damage);
+        expect(consumable.data.blastPositions).toEqual(
+          CONSUMABLE_ANIMATION_METADATA.damage.blastOffsets?.map((offset) => ({
+            x: mockGameState.player.position.x + offset.x,
+            y: mockGameState.player.position.y + offset.y,
+          })),
+        );
+      }
     });
   });
 

@@ -155,6 +155,9 @@ if (auditHelper.status !== 0) {
   failures.push(`scripts/audit-tests.ts smoke check failed: ${(auditHelper.stderr || '').trim()}`);
 } else {
   const stdout = auditHelper.stdout || '';
+  if (stdout.includes('### E2E Tests') && stdout.includes('Runner: Playwright-only (`pnpm test:e2e`)') === false) {
+    failures.push('audit-tests: E2E tests must be reported as Playwright-only coverage');
+  }
   const invalidMatch = stdout.match(/\*\*Invalid \(has errors\):\*\*\s+(\d+)/);
   const invalidCount = invalidMatch ? parseInt(invalidMatch[1], 10) : 0;
   if (invalidCount > 0) {

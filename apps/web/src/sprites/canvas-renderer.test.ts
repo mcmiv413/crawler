@@ -1,6 +1,7 @@
 import { describe, it, expect, vi } from 'vitest';
 import type { MapView, EntityView } from '@dungeon/presenter';
 import { renderMap } from './canvas-renderer.js';
+import { CELL_SIZE } from '../config/ui-config.js';
 
 describe('canvas-renderer with bump animations', () => {
   function createMockMapView(): MapView {
@@ -92,5 +93,46 @@ describe('canvas-renderer with bump animations', () => {
     expect(() => {
       renderMap(mockCtx, map, 0, 0, 30, 22);
     }).not.toThrow();
+  });
+
+  it('draws player status presentation without renderer-side status IDs', () => {
+    const map = createMockMapView();
+    const mockCtx = {
+      clearRect: vi.fn(),
+      fillStyle: '',
+      fillRect: vi.fn(),
+      drawImage: vi.fn(),
+      globalAlpha: 1,
+      strokeStyle: '',
+      lineWidth: 0,
+      strokeRect: vi.fn(),
+      fillText: vi.fn(),
+      font: '',
+      textAlign: 'center' as const,
+      textBaseline: 'middle' as const,
+    } as unknown as CanvasRenderingContext2D;
+
+    renderMap(mockCtx, map, 0, 0, 30, 22, [], [], [], {
+      statusPresentations: [
+        {
+          entityScale: 1.5,
+          ring: {
+            colorRgb: '1, 2, 3',
+            alphaBase: 0.2,
+            alphaAmplitude: 0,
+            pulsePeriodMs: 100,
+            lineWidth: 3,
+            paddingPx: 4,
+          },
+        },
+      ],
+    });
+
+    expect(mockCtx.strokeRect).toHaveBeenCalledWith(
+      10 * CELL_SIZE - 4,
+      10 * CELL_SIZE - 4,
+      CELL_SIZE + 8,
+      CELL_SIZE + 8,
+    );
   });
 });

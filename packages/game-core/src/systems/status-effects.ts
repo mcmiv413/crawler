@@ -210,10 +210,11 @@ export function tickEnemyStatuses(
     }
     if ('healPerTurn' in defaults) {
       const healAmount = (defaults as { healPerTurn: number }).healPerTurn;
-      const updatedEnemy = currentState.run?.enemies.get(`${enemy.id}`);
+      const enemyKey = posKey(enemy.position);
+      const updatedEnemy = currentState.run?.enemies.get(enemyKey);
       if (updatedEnemy !== undefined) {
         const newEnemies = new Map(currentState.run!.enemies);
-        newEnemies.set(`${enemy.id}`, {
+        newEnemies.set(enemyKey, {
           ...updatedEnemy,
           stats: {
             ...updatedEnemy.stats,

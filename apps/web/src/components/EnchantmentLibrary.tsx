@@ -69,19 +69,25 @@ export function EnchantmentLibrary({ player }: EnchantmentLibraryProps) {
     }
   }
 
-  if (enchantmentMap.size === 0) return null;
+  const validEnchantmentEntries = Array.from(enchantmentMap.entries()).filter(([enchId]) =>
+    ENCHANTMENT_BY_ID.has(enchId),
+  );
 
-  const selectedEnchantment = selectedEnchantmentId ? ENCHANTMENT_BY_ID.get(selectedEnchantmentId) : null;
+  if (validEnchantmentEntries.length === 0) return null;
+
+  const selectedEnchantmentEntry = validEnchantmentEntries.find(([enchId]) => enchId === selectedEnchantmentId);
+  const selectedEnchantment = selectedEnchantmentEntry
+    ? ENCHANTMENT_BY_ID.get(selectedEnchantmentEntry[0])
+    : null;
 
   return (
     <>
       <div style={{ marginBottom: 12 }}>
         <div style={{ color: '#888', fontSize: 11, marginBottom: 4, fontWeight: 'bold' }}>ENCHANTMENTS</div>
         <div style={{ display: 'flex', flexWrap: 'wrap', gap: '4px' }}>
-          {Array.from(enchantmentMap.entries()).map(([enchId, items]) => {
+          {validEnchantmentEntries.map(([enchId]) => {
             const enchDef = ENCHANTMENT_BY_ID.get(enchId);
             if (!enchDef) return null;
-
             return (
               <button
                 key={enchId}
@@ -104,10 +110,10 @@ export function EnchantmentLibrary({ player }: EnchantmentLibraryProps) {
         </div>
       </div>
 
-      {selectedEnchantment && selectedEnchantmentId && (
+      {selectedEnchantment && selectedEnchantmentEntry && (
         <EnchantmentDetailModal
-          enchantmentId={selectedEnchantmentId}
-          itemsUsing={enchantmentMap.get(selectedEnchantmentId) ?? []}
+          enchantmentId={selectedEnchantmentEntry[0]}
+          itemsUsing={selectedEnchantmentEntry[1]}
           onClose={() => setSelectedEnchantmentId(null)}
         />
       )}

@@ -58,8 +58,42 @@ describe('PlayerStats', () => {
 
       const result = analyzeTestFile(code, 'unit');
       expect(result.issues.length).toBeGreaterThan(0);
-      const configIssue = result.issues.find((i) => i.code === 'CONFIG_IMPORT_IN_UNIT');
+      const configIssue = result.issues.find((i) => i.code === 'LIVE_CONTENT_IMPORT_IN_ISOLATED_TEST');
       expect(configIssue).toBeDefined();
+    });
+
+    it('flags property test importing live config', () => {
+      const code = joinLines(
+        contentImport('MAP_GENERATION'),
+        "import fc from 'fast-check';",
+        '',
+        "describe('spawn property', () => {",
+        "  it('checks generated values', () => {",
+        '    fc.assert(fc.property(fc.integer(), (value) => value <= MAP_GENERATION.maxWidth));',
+        '  });',
+        '});',
+      );
+
+      const result = analyzeTestFile(code, 'property');
+      const configIssue = result.issues.find((i) => i.code === 'LIVE_CONTENT_IMPORT_IN_ISOLATED_TEST');
+      expect(configIssue).toBeDefined();
+      expect(configIssue?.severity).toBe('error');
+    });
+
+    it('allows type-only content imports in isolated tests', () => {
+      const code = joinLines(
+        "import type { BiomeDefinition } from '@dungeon/content';",
+        '',
+        "describe('biome fixture', () => {",
+        "  it('uses a local typed fixture', () => {",
+        "    const biome = { biomeId: 'fixture' } as BiomeDefinition;",
+        '    expect(biome.biomeId).toBeDefined();',
+        '  });',
+        '});',
+      );
+
+      const result = analyzeTestFile(code, 'unit');
+      expect(result.issues.find((i) => i.code === 'LIVE_CONTENT_IMPORT_IN_ISOLATED_TEST')).toBeUndefined();
     });
 
     it('flags unseeded randomness', () => {

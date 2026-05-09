@@ -9,7 +9,6 @@ export type TestLayer =
 export const ROOT_TEST_INCLUDE_PATTERNS = [
   'tests/**/*.test.ts',
   'tests/**/*.test.tsx',
-  'tests/**/*.spec.ts',
   'tests/**/*.e2e.test.ts',
   'tests/**/*.integration.test.ts',
   'tests/**/*.contract.test.ts',
@@ -19,6 +18,8 @@ export const ROOT_TEST_INCLUDE_PATTERNS = [
 export const ROOT_TEST_EXCLUDE_PATTERNS = [
   '**/node_modules/**',
   '**/dist/**',
+  'tests/e2e/**',
+  'tests/**/*.spec.ts',
   'tests/**/*.balance.test.ts',
 ] as const;
 
@@ -103,6 +104,13 @@ export function getDefaultWorkspaceTestRunStatus(filePath: string): DefaultWorks
   const normalizedPath = normalizeTestPath(filePath);
 
   if (normalizedPath.startsWith('tests/')) {
+    if (normalizedPath.includes('/tests/e2e/') || normalizedPath.startsWith('tests/e2e/') || normalizedPath.endsWith('.spec.ts')) {
+      return {
+        included: false,
+        reason: 'Playwright-only; run pnpm test:e2e',
+      };
+    }
+
     if (normalizedPath.endsWith('.balance.test.ts')) {
       return {
         included: false,

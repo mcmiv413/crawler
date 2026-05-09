@@ -1,5 +1,5 @@
 import type React from 'react';
-import { BTN_MIN_HEIGHT, NAV_BTN_MIN_HEIGHT } from './config/ui-config.js';
+import { BTN_MIN_HEIGHT, MODAL_CARD_MAX_WIDTH, NAV_BTN_MIN_HEIGHT } from './config/ui-config.js';
 
 // ─── Font ──────────────────────────────────────────────────────────────────
 export const FONT_STACK = `'IBM Plex Mono', 'Courier New', monospace`;
@@ -205,7 +205,7 @@ export const modalCardStyle: React.CSSProperties = {
   background: colors.panel,
   border: `1px solid ${colors.border}`,
   borderRadius: '2px',
-  maxWidth: 500,
+  maxWidth: MODAL_CARD_MAX_WIDTH,
   maxHeight: '80vh',
   display: 'flex',
   flexDirection: 'column',
