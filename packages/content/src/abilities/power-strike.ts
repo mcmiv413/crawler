@@ -8,4 +8,5 @@ export const powerStrike: AbilityDefinition = {
   requiresTarget: true,
   unlockLevel: 2,
   requiresWeaponTypes: ['blade', 'bludgeon', 'axe'],
+  animation: { id: 'fx.impact.radial-impact-burst' },
 };

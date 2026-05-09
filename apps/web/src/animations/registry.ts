@@ -5,7 +5,7 @@
  * In dev, missing module lookups warn once per session and fall back to a fallback module to avoid blank frames.
  */
 
-import type { AnimationId } from '@dungeon/content/animation-refs';
+import type { AnimationId } from '@dungeon/content';
 import type { AnimationModule } from './types.js';
 
 const modules = new Map<AnimationId, AnimationModule>();

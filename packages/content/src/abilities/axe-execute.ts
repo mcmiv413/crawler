@@ -8,4 +8,5 @@ export const axeExecute: AbilityDefinition = {
   requiresTarget: true,
   unlockLevel: 0,
   requiresWeaponTypes: ['axe'],
+  animation: { id: 'fx.impact.execution-strike' },
 };

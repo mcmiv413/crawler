@@ -8,4 +8,5 @@ export const rangedPin: AbilityDefinition = {
   requiresTarget: true,
   unlockLevel: 0,
   requiresWeaponTypes: ['ranged'],
+  animation: { id: 'fx.projectile.single-arrow' },
 };

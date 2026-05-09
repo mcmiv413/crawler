@@ -8,4 +8,5 @@ export const bludgeonStagger: AbilityDefinition = {
   requiresTarget: true,
   unlockLevel: 0,
   requiresWeaponTypes: ['bludgeon'],
+  animation: { id: 'fx.impact.stagger-shockwave' },
 };

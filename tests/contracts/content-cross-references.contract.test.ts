@@ -2,6 +2,7 @@ import { describe, it, expect } from 'vitest';
 import { QUEST_TEMPLATES } from '@dungeon/content';
 import { ITEM_BY_ID } from '@dungeon/content';
 import { ENEMY_TEMPLATES } from '@dungeon/content';
+import { ABILITY_DEFINITIONS, ANIMATION_REF_BY_ID } from '@dungeon/content';
 
 /**
  * Content Cross-Reference Contract Tests
@@ -89,6 +90,52 @@ describe('Content Cross-References', () => {
           ).toBeDefined();
           expect(quest.objective.targetCount ?? 0).toBeGreaterThan(0);
         }
+      }
+    });
+  });
+
+  describe('Animations', () => {
+    it('every ability has a valid animation ID that exists in ANIMATION_REF_BY_ID', () => {
+      for (const [abilityId, ability] of ABILITY_DEFINITIONS) {
+        expect(
+          ability.animation,
+          `Ability "${abilityId}" is missing animation property`,
+        ).toBeDefined();
+
+        const animationId = ability.animation.id;
+        expect(
+          animationId,
+          `Ability "${abilityId}" animation is missing id`,
+        ).toBeDefined();
+
+        const animRef = ANIMATION_REF_BY_ID.get(animationId);
+        expect(
+          animRef,
+          `Ability "${abilityId}" references non-existent animation ID "${animationId}"`,
+        ).toBeDefined();
+      }
+    });
+
+    it('every consumable item has a valid animation ID that exists in ANIMATION_REF_BY_ID', () => {
+      for (const [itemId, item] of ITEM_BY_ID) {
+        if (item.itemClass !== 'consumable') continue;
+
+        expect(
+          (item as any).animation,
+          `Consumable "${itemId}" is missing animation property`,
+        ).toBeDefined();
+
+        const animationId = (item as any).animation.id;
+        expect(
+          animationId,
+          `Consumable "${itemId}" animation is missing id`,
+        ).toBeDefined();
+
+        const animRef = ANIMATION_REF_BY_ID.get(animationId);
+        expect(
+          animRef,
+          `Consumable "${itemId}" references non-existent animation ID "${animationId}"`,
+        ).toBeDefined();
       }
     });
   });

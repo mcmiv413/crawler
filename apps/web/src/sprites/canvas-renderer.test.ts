@@ -112,7 +112,7 @@ describe('canvas-renderer with bump animations', () => {
       textBaseline: 'middle' as const,
     } as unknown as CanvasRenderingContext2D;
 
-    renderMap(mockCtx, map, 0, 0, 30, 22, [], [], [], {
+    renderMap(mockCtx, map, 0, 0, 30, 22, [], [], [], [], {
       statusPresentations: [
         {
           entityScale: 1.5,

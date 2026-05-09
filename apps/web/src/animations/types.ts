@@ -5,7 +5,7 @@
  * Web modules under apps/web/src/animations/modules/ export one module per catalog ref.
  */
 
-import type { AnimationId, AnimationCategory } from '@dungeon/content/animation-refs';
+import type { AnimationId, AnimationCategory } from '@dungeon/content';
 
 /**
  * Context passed to AnimationModule.draw each frame.

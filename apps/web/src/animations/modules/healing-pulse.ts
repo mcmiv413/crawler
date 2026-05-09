@@ -3,7 +3,7 @@
  * Red heart sprites float upward with fade.
  */
 
-import { animationRefs } from '@dungeon/content/animation-refs';
+import { animationRefs } from '@dungeon/content';
 import type { AnimationModule, AnimationDrawContext, RendererHelpers } from '../types.js';
 
 export const healingPulseModule: AnimationModule = {
