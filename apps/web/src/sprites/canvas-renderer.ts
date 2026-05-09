@@ -1,5 +1,5 @@
 import type { MapView, MapCellView, EntityView } from '@dungeon/presenter';
-import type { MoveAnimStyle } from '@dungeon/presenter';
+import type { MoveAnimStyle, StatusPresentationView, ConsumableAnimationPresentationView } from '@dungeon/presenter';
 import { CELL_SIZE } from '../config/ui-config.js';
 import { spriteRegistry } from './sprite-registry.js';
 
@@ -32,12 +32,32 @@ interface ConsumableAnimationState {
   startTime: number;
   progress: number;
   durationMs: number;
+  presentation: ConsumableAnimationPresentationView;
 }
 
 /** Player-level effects driven by active status conditions (not time-limited animations). */
 interface PlayerEffects {
-  /** When true the player sprite is drawn at 1.35× and gets a pulsing gold border. */
-  hasStrengthBuff?: boolean;
+  readonly statusPresentations?: readonly StatusPresentationView[];
+}
+
+interface ResolvedPlayerEffects {
+  readonly entityScale: number;
+  readonly ring?: NonNullable<StatusPresentationView['ring']>;
+}
+
+function resolvePlayerEffects(playerEffects: PlayerEffects): ResolvedPlayerEffects {
+  const presentations = playerEffects.statusPresentations ?? [];
+  let entityScale = 1;
+  let ring: NonNullable<StatusPresentationView['ring']> | undefined;
+
+  for (const presentation of presentations) {
+    if (presentation.entityScale !== undefined) {
+      entityScale = Math.max(entityScale, presentation.entityScale);
+    }
+    ring ??= presentation.ring;
+  }
+
+  return ring === undefined ? { entityScale } : { entityScale, ring };
 }
 
 // ── Easing functions (progress 0 → 1) ────────────────────────────
@@ -149,7 +169,7 @@ function drawCell(
 
 /**
  * Draw an entity sprite with optional pixel offset and scale.
- * scale > 1 grows the sprite centered on the cell (used for strength buff).
+ * scale > 1 grows the sprite centered on the cell.
  */
 function drawEntity(
   ctx: CanvasRenderingContext2D,
@@ -231,10 +251,7 @@ function drawHealEffect(
 }
 
 /**
- * Buff (strength elixir) — two concentric gold rings burst outward from the
- * player tile and fade, signalling the power surge on use.
- * The persistent 1.35× scale + pulsing gold border are applied in renderMap
- * whenever playerEffects.hasStrengthBuff is true.
+ * Buff — two concentric gold rings burst outward from the player tile and fade.
  */
 function drawBuffEffect(
   ctx: CanvasRenderingContext2D,
@@ -318,12 +335,8 @@ function drawCureEffect(
 }
 
 /**
- * Damage (bomb) — two phases:
- *   Phase 1 (0–35%): fire bomb sprite scales up on the player tile with a
- *     slight overshoot, like a primed grenade.
- *   Phase 2 (35–100%): fire burst center + 8 directional fire burst tiles
- *     expand outward from the player's Chebyshev-1 blast radius, each tile
- *     popping in fast then fading.
+ * Damage — arms a sprite on the player tile, then expands configured blast
+ * sprites over the presenter-provided blast positions.
  */
 function drawDamageEffect(
   ctx: CanvasRenderingContext2D,
@@ -335,11 +348,12 @@ function drawDamageEffect(
   const sx = (playerPos.x - vpLeft) * CELL_SIZE;
   const sy = (playerPos.y - vpTop)  * CELL_SIZE;
 
-  const DETONATE_AT = 0.35;
+  const detonateAt = anim.presentation.detonateAtProgress;
+  if (detonateAt === undefined) return;
 
-  if (p < DETONATE_AT) {
+  if (p < detonateAt) {
     // ── Phase 1: bomb arm ──────────────────────────────────────────
-    const armProg = p / DETONATE_AT;
+    const armProg = p / detonateAt;
     // Scale: 0 → 1 for first 60%, then a slight overshoot bounce
     const scale = armProg < 0.6
       ? armProg / 0.6
@@ -347,7 +361,9 @@ function drawDamageEffect(
     const scaledSize = CELL_SIZE * scale;
     const scaleOff   = (CELL_SIZE - scaledSize) / 2;
 
-    const bombSprite = spriteRegistry.getSpriteByAtlasName('fire bomb');
+    const bombSprite = anim.presentation.armSpriteName === undefined
+      ? null
+      : spriteRegistry.getSpriteByAtlasName(anim.presentation.armSpriteName);
     if (bombSprite) {
       ctx.drawImage(
         bombSprite.image,
@@ -362,12 +378,10 @@ function drawDamageEffect(
     }
   } else {
     // ── Phase 2: blast expansion ───────────────────────────────────
-    const blastProg = (p - DETONATE_AT) / (1 - DETONATE_AT);
-    // Directions order must match blastPositions order built in animation-sequence.ts:
-    // c, n, ne, e, se, s, sw, w, nw
-    const directions = ['c', 'n', 'ne', 'e', 'se', 's', 'sw', 'w', 'nw'] as const;
+    const blastProg = (p - detonateAt) / (1 - detonateAt);
+    const spriteNames = anim.presentation.blastSpriteNames ?? [];
 
-    for (let i = 0; i < blastPositions.length && i < directions.length; i += 1) {
+    for (let i = 0; i < blastPositions.length; i += 1) {
       const pos = blastPositions[i];
       if (!pos) continue;
 
@@ -391,9 +405,8 @@ function drawDamageEffect(
 
       ctx.globalAlpha = tileAlpha;
 
-      const dir        = directions[i]!;
-      const spriteName = isCenter ? 'fire burst c' : `fire burst ${dir}`;
-      const sprite     = spriteRegistry.getSpriteByAtlasName(spriteName);
+      const spriteName = spriteNames[i];
+      const sprite = spriteName === undefined ? null : spriteRegistry.getSpriteByAtlasName(spriteName);
 
       if (sprite) {
         ctx.drawImage(
@@ -426,11 +439,11 @@ function drawConsumableEffects(
 ): void {
   for (const anim of animations) {
     ctx.save();
-    switch (anim.effect) {
-      case 'heal':   drawHealEffect(ctx, anim, vpLeft, vpTop);   break;
-      case 'buff':   drawBuffEffect(ctx, anim, vpLeft, vpTop);   break;
-      case 'cure':   drawCureEffect(ctx, anim, vpLeft, vpTop);   break;
-      case 'damage': drawDamageEffect(ctx, anim, vpLeft, vpTop); break;
+    switch (anim.presentation.kind) {
+      case 'heal_hearts':   drawHealEffect(ctx, anim, vpLeft, vpTop);   break;
+      case 'buff_rings':    drawBuffEffect(ctx, anim, vpLeft, vpTop);   break;
+      case 'cure_sparkles': drawCureEffect(ctx, anim, vpLeft, vpTop);   break;
+      case 'bomb_blast':    drawDamageEffect(ctx, anim, vpLeft, vpTop); break;
     }
     ctx.restore();
   }
@@ -454,6 +467,7 @@ export function renderMap(
   ctx.clearRect(0, 0, vpWidth * CELL_SIZE, vpHeight * CELL_SIZE);
   ctx.fillStyle = '#000';
   ctx.fillRect(0, 0, vpWidth * CELL_SIZE, vpHeight * CELL_SIZE);
+  const resolvedPlayerEffects = resolvePlayerEffects(playerEffects);
 
   // Build fast lookup maps
   const cellLookup = new Map<string, MapCellView>();
@@ -521,28 +535,24 @@ export function renderMap(
         offsetY += (bump.defenderPos.y - bump.attackerPos.y) * CELL_SIZE * distance * easeProgress;
       }
 
-      // ── Entity scale: 1.35× for player while strength buff is active ──
-      //HUMANNOTE: This again seems like a bad way to do this, we are hard referencign an item and even worse hard referencing a value.  This screams poor implementation.
-      const isPlayer    = entity.type === 'player';
-      const entityScale = (isPlayer && playerEffects.hasStrengthBuff) ? 1.35 : 1.0;
+      const isPlayer = entity.type === 'player';
+      const entityScale = isPlayer ? resolvedPlayerEffects.entityScale : 1.0;
 
       drawEntity(ctx, entity, screenX, screenY, offsetX, offsetY, entityScale);
 
-      // ── Persistent strength buff ring ────────────────────────────────
-      // Pulsing gold border drawn on top of the (scaled) player sprite.
-      if (isPlayer && playerEffects.hasStrengthBuff) {
-        const pulse     = 0.5 + 0.5 * Math.sin(Date.now() / 180);
-        ctx.strokeStyle = `rgba(255, 200, 0, ${0.35 + pulse * 0.45})`;
-        ctx.lineWidth   = 1.5;
+      const ring = isPlayer ? resolvedPlayerEffects.ring : undefined;
+      if (ring !== undefined) {
+        const pulse = 0.5 + 0.5 * Math.sin(Date.now() / ring.pulsePeriodMs);
+        ctx.strokeStyle = `rgba(${ring.colorRgb}, ${ring.alphaBase + pulse * ring.alphaAmplitude})`;
+        ctx.lineWidth = ring.lineWidth;
         ctx.strokeRect(
-          screenX + offsetX - 2,
-          screenY + offsetY - 2,
-          CELL_SIZE + 4,
-          CELL_SIZE + 4,
+          screenX + offsetX - ring.paddingPx,
+          screenY + offsetY - ring.paddingPx,
+          CELL_SIZE + ring.paddingPx * 2,
+          CELL_SIZE + ring.paddingPx * 2,
         );
         ctx.lineWidth = 1;
       }
-
 
       // ── Instance colour square for disambiguation ─────────────────────
       if (entity.instanceColor) {

@@ -14,38 +14,81 @@ import { ENEMY_TEMPLATES } from '@dungeon/content';
 
 describe('Content Cross-References', () => {
   describe('Quest Templates', () => {
-    it('every quest targetItemId references an existing item', () => {
+    it('every collect_item objective targetId references an existing item', () => {
       for (const quest of QUEST_TEMPLATES) {
-        if (quest.targetItemId) {
-          const item = ITEM_BY_ID.get(quest.targetItemId);
+        if (quest.objective.type === 'collect_item') {
+          const targetId = quest.objective.targetId;
+          expect(
+            targetId,
+            `Quest "${quest.id}" collect_item objective is missing targetId`,
+          ).toBeDefined();
+
+          const item = ITEM_BY_ID.get(targetId ?? '');
           expect(
             item,
-            `Quest "${quest.id}" references non-existent item "${quest.targetItemId}"`,
+            `Quest "${quest.id}" references non-existent item "${targetId}"`,
           ).toBeDefined();
         }
       }
     });
 
-    it('every quest targetEnemyTemplateId references an existing enemy', () => {
+    it('every defeat_enemy objective targetId references an existing enemy', () => {
       for (const quest of QUEST_TEMPLATES) {
-        if (quest.targetEnemyTemplateId) {
-          const exists = ENEMY_TEMPLATES.has(quest.targetEnemyTemplateId);
+        if (quest.objective.type === 'defeat_enemy') {
+          const targetId = quest.objective.targetId;
+          expect(
+            targetId,
+            `Quest "${quest.id}" defeat_enemy objective is missing targetId`,
+          ).toBeDefined();
+
+          const exists = ENEMY_TEMPLATES.has(targetId ?? '');
           expect(
             exists,
-            `Quest "${quest.id}" references non-existent enemy "${quest.targetEnemyTemplateId}"`,
+            `Quest "${quest.id}" references non-existent enemy "${targetId}"`,
           ).toBe(true);
         }
       }
     });
 
-    it('every quest has at least one target (item, enemy, or depth)', () => {
+    it('every reach_floor objective targetCount is a reachable depth target', () => {
       for (const quest of QUEST_TEMPLATES) {
-        const hasTarget =
-          quest.targetItemId || quest.targetEnemyTemplateId || quest.targetFloorDepth;
+        if (quest.objective.type !== 'reach_floor') continue;
+
         expect(
-          Boolean(hasTarget),
-          `Quest "${quest.id}" has no target (missing targetItemId, targetEnemyTemplateId, or targetFloorDepth)`,
-        ).toBe(true);
+          quest.objective.targetCount,
+          `Quest "${quest.id}" reach_floor objective is missing targetCount`,
+        ).toBeDefined();
+        expect(Number.isInteger(quest.objective.targetCount)).toBe(true);
+        expect(quest.objective.targetCount ?? 0).toBeGreaterThan(0);
+        expect(
+          quest.objective.targetId,
+          `Quest "${quest.id}" reach_floor objective should not use targetId`,
+        ).toBeUndefined();
+      }
+    });
+
+    it('every quest objective has the required target fields for its type', () => {
+      for (const quest of QUEST_TEMPLATES) {
+        expect(
+          ['collect_item', 'defeat_enemy', 'reach_floor'],
+          `Quest "${quest.id}" has unsupported objective type "${quest.objective.type}"`,
+        ).toContain(quest.objective.type);
+        expect(
+          quest.objective.progress,
+          `Quest "${quest.id}" objective progress should start at zero in templates`,
+        ).toBe(0);
+
+        if (quest.objective.type === 'collect_item' || quest.objective.type === 'defeat_enemy') {
+          expect(
+            quest.objective.targetId,
+            `Quest "${quest.id}" ${quest.objective.type} objective is missing targetId`,
+          ).toBeDefined();
+          expect(
+            quest.objective.targetCount,
+            `Quest "${quest.id}" ${quest.objective.type} objective is missing targetCount`,
+          ).toBeDefined();
+          expect(quest.objective.targetCount ?? 0).toBeGreaterThan(0);
+        }
       }
     });
   });

@@ -195,6 +195,19 @@ export interface StatusView {
   readonly name: string;
   readonly turnsRemaining: number;
   readonly beneficial: boolean;
+  readonly presentation?: StatusPresentationView;
+}
+
+export interface StatusPresentationView {
+  readonly entityScale?: number;
+  readonly ring?: {
+    readonly colorRgb: string;
+    readonly alphaBase: number;
+    readonly alphaAmplitude: number;
+    readonly pulsePeriodMs: number;
+    readonly lineWidth: number;
+    readonly paddingPx: number;
+  };
 }
 
 export interface MapView {
@@ -296,6 +309,17 @@ export interface ConsumableAnimationEntry {
   readonly blastPositions: readonly { readonly x: number; readonly y: number }[];
   /** Total wall-clock duration of this animation in milliseconds. */
   readonly durationMs: number;
+  /** Rendering metadata resolved by the presenter for the web canvas. */
+  readonly presentation: ConsumableAnimationPresentationView;
+}
+
+export interface ConsumableAnimationPresentationView {
+  readonly kind: 'heal_hearts' | 'buff_rings' | 'cure_sparkles' | 'bomb_blast';
+  readonly durationMs: number;
+  readonly detonateAtProgress?: number;
+  readonly armSpriteName?: string;
+  readonly blastOffsets?: readonly { readonly x: number; readonly y: number }[];
+  readonly blastSpriteNames?: readonly string[];
 }
 
 export interface AvailableAction {

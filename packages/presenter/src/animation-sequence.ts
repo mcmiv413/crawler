@@ -6,8 +6,13 @@ import type {
   MoveAnimStyle,
   ConsumableAnimationEntry,
 } from './game-view.js';
-
-//HUMANNOTE: This file is responsible for taking a list of events and the current game state, and building a sequenced list of animation instructions for the view layer. The logic for determining animation styles, durations, staggering, and batching currently lives in this file, but it would make more sense to define that information alongside the relevant entities (e.g. consumable definitions should include their animation info) or in a dedicated animation module, and then just pull that information in here to build the sequence. As is, this file is doing too much and has too many responsibilities.
+import {
+  ANIMATION_TIMING,
+  getConsumableAnimationMetadata,
+  getConsumableBlastPositions,
+  getMoveAnimationStyle,
+  getMoveDurationMs,
+} from './animation-metadata.js';
 
 export interface AnimatedEvent {
   type: 'bump' | 'damage' | 'heal' | 'status' | 'move' | 'consumable';
@@ -16,31 +21,6 @@ export interface AnimatedEvent {
   batchId: string;
   data: BumpAnimationEntry | CombatIndicatorEntry | MoveAnimationEntry | ConsumableAnimationEntry;
 }
-
-// ── Duration per style (ms) ──────────────────────────────────────
-//HUMANNOTE: These violate the principals of defining things in one place, we should consoldiate all animation related constants and functions into a single file or module. At the very least the durations should be defined alongside the animation definitions themselves.
-const MOVE_DURATIONS: Record<MoveAnimStyle, number> = {
-  step:  140,
-  slide: 180,
-  dart:  150,
-  drift: 240,
-  stomp: 200,
-  lurch: 220,
-};
-
-// ── Stagger between successive enemy moves (ms) ──────────────────
-const MOVE_STAGGER_MS = 120;
-
-// ── Duration per consumable effect (ms) ─────────────────────────
-//HUMANNOTE: Same note as above, this is the wrong place for this......
-const CONSUMABLE_DURATIONS: Record<string, number> = {
-  heal:   700,
-  buff:   600,
-  cure:   500,
-  damage: 900,
-};
-
-// ────────────────────────────────────────────────────────────────
 
 function getEntitySpeed(id: EntityId, state: GameState): number {
   if (state.run == null) return 0;
@@ -69,28 +49,19 @@ function getEntityPosition(
  * substring matching, then defaults to 'slide'.
  */
 function getMoveStyle(entityId: EntityId, state: GameState): MoveAnimStyle {
-  if (entityId === state.player.id) return 'step';
+  if (entityId === state.player.id) {
+    return getMoveAnimationStyle({ isPlayer: true });
+  }
   if (state.run == null) return 'slide';
 
   for (const enemy of state.run.enemies.values()) {
     if (enemy.id !== entityId) continue;
-
-    // movementBehaviorId → most specific mapping
-    switch (enemy.movementBehaviorId) {
-      case 'wall_stalker':      return 'dart';
-      case 'rearline_anchor':   return 'drift';
-      case 'chokepoint_holder': return 'stomp';
-      case 'ambush_idle':       return 'lurch';
-    }
-
-    // Archetype substring fallbacks
-    const arch = enemy.archetype.toLowerCase();
-    if (arch.includes('rogue') || arch.includes('shadow') || arch.includes('assassin')) return 'dart';
-    if (arch.includes('mage') || arch.includes('ranged') || arch.includes('archer'))    return 'drift';
-    if (arch.includes('brute') || arch.includes('guardian') || arch.includes('tank'))   return 'stomp';
-    if (arch.includes('horror') || arch.includes('beast') || arch.includes('lurker'))   return 'lurch';
-
-    return 'slide';
+    const movementBehavior = enemy.movementBehaviorId;
+    return getMoveAnimationStyle({
+      isPlayer: false,
+      archetype: enemy.archetype,
+      ...(movementBehavior !== undefined ? { movementBehaviorId: movementBehavior } : {}),
+    });
   }
 
   return 'slide';
@@ -159,7 +130,6 @@ export function buildAnimationSequence(
 
   // Build ordered list: player first, then enemies by speed
   interface MoveEntry { entityId: EntityId; from: { x: number; y: number }; to: { x: number; y: number } }
-  // eslint-disable-next-line dungeon/no-array-mutation
   const orderedMoves: MoveEntry[] = [];
 
   if (playerMoveEvent) {
@@ -185,7 +155,7 @@ export function buildAnimationSequence(
     if (!move) continue;
 
     const style = getMoveStyle(move.entityId, state);
-    const durationMs = MOVE_DURATIONS[style];
+    const durationMs = getMoveDurationMs(style);
 
     const entry: MoveAnimationEntry = {
       entityId: move.entityId,
@@ -198,14 +168,14 @@ export function buildAnimationSequence(
     mutableAnimations.push({
       type: 'move',
       sequenceIndex: i,
-      delayMs: i * MOVE_STAGGER_MS,
+      delayMs: i * ANIMATION_TIMING.moveStaggerMs,
       batchId,
       data: entry,
     });
   }
 
   // ── 2. Attack (bump + damage indicator) animations ──────────────
-  // Same logic as before — sorted by speed, staggered at 500ms each.
+  // Same logic as before: sorted by speed, staggered by shared timing metadata.
 
   let attacksWithSpeeds = events
     .filter((event): event is Extract<DomainEvent, { type: 'ATTACK_PERFORMED' }> => event.type === 'ATTACK_PERFORMED')
@@ -224,7 +194,7 @@ export function buildAnimationSequence(
     if (!attack) continue;
 
     const sequenceIndex = orderedMoves.length + i; // continue sequence after moves
-    const baseDelay = i * 500;
+    const baseDelay = i * ANIMATION_TIMING.attackStaggerMs;
 
     const attackerPos = getEntityPosition(attack.event.attackerId, state);
     const defenderPos = getEntityPosition(attack.event.defenderId, state) || attack.event.position;
@@ -256,7 +226,7 @@ export function buildAnimationSequence(
     mutableAnimations.push({
       type: 'damage',
       sequenceIndex,
-      delayMs: baseDelay + 150,
+      delayMs: baseDelay + ANIMATION_TIMING.damageIndicatorDelayMs,
       batchId,
       data: damageEntry,
     });
@@ -264,8 +234,6 @@ export function buildAnimationSequence(
 
   // ── 3. Consumable animations ────────────────────────────────────
   // One consumable per turn max. Fires at delay 0 — concurrent with movement.
-  // The bomb blast positions mirror the AoE radius the engine applies (Chebyshev 1).
-  //HUMANNOTE: This is the wrong place for this logic, we should be defining the animations to be used for each consumable alongside the consumable definitions themselves, and then just pulling that information in here to build the sequence. This would also allow us to support multiple different consumable animations instead of hardcoding this one case for bombs.
 
   const itemUsedEvents = events.filter(
     (e): e is Extract<DomainEvent, { type: 'ITEM_USED' }> => e.type === 'ITEM_USED',
@@ -275,40 +243,21 @@ export function buildAnimationSequence(
     const event = itemUsedEvents[i];
     if (!event) continue;
 
-    const effect = event.effect as 'heal' | 'buff' | 'cure' | 'damage';
     const playerPos = state.player.position;
-    const durationMs = CONSUMABLE_DURATIONS[effect] ?? 600;
-
-    // Blast positions for bomb: 9 tiles centered on player, ordered c/n/ne/e/se/s/sw/w/nw
-    // (matches the direction order in canvas-renderer drawDamageEffect)
-    // eslint-disable-next-line dungeon/no-array-mutation
-    const blastPositions: { x: number; y: number }[] = [];
-    if (effect === 'damage') {
-      // eslint-disable-next-line dungeon/no-array-mutation
-      blastPositions.push(
-        { x: playerPos.x,     y: playerPos.y     }, // c
-        { x: playerPos.x,     y: playerPos.y - 1 }, // n
-        { x: playerPos.x + 1, y: playerPos.y - 1 }, // ne
-        { x: playerPos.x + 1, y: playerPos.y     }, // e
-        { x: playerPos.x + 1, y: playerPos.y + 1 }, // se
-        { x: playerPos.x,     y: playerPos.y + 1 }, // s
-        { x: playerPos.x - 1, y: playerPos.y + 1 }, // sw
-        { x: playerPos.x - 1, y: playerPos.y     }, // w
-        { x: playerPos.x - 1, y: playerPos.y - 1 }, // nw
-      );
-    }
+    const { effect, presentation } = getConsumableAnimationMetadata(event.effect);
+    const blastPositions = getConsumableBlastPositions(playerPos, presentation);
 
     const entry: ConsumableAnimationEntry = {
       effect,
       playerPos,
       blastPositions,
-      durationMs,
+      durationMs: presentation.durationMs,
+      presentation,
     };
 
     const sequenceIndex = orderedMoves.length + attacksWithSpeeds.length + i;
 
-    // eslint-disable-next-line dungeon/no-array-mutation
-      mutableAnimations.push({
+    mutableAnimations.push({
       type: 'consumable',
       sequenceIndex,
       delayMs: 0,

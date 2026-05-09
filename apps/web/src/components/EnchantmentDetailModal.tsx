@@ -20,12 +20,18 @@ export function EnchantmentDetailModal({ player, onClose }: EnchantmentDetailMod
     }
   }
 
-  const [selectedEnchantmentId, setSelectedEnchantmentId] = useState<string>(
-    enchantmentMap.size > 0 ? Array.from(enchantmentMap.keys())[0]! : '',
+  const validEnchantmentEntries = Array.from(enchantmentMap.entries()).filter(([enchId]) =>
+    ENCHANTMENT_BY_ID.has(enchId),
   );
 
-  const selectedEnchantment = selectedEnchantmentId
-    ? ENCHANTMENT_BY_ID.get(selectedEnchantmentId)
+  const [selectedEnchantmentId, setSelectedEnchantmentId] = useState<string>(
+    validEnchantmentEntries[0]?.[0] ?? '',
+  );
+
+  const selectedEnchantmentEntry = validEnchantmentEntries.find(([enchId]) => enchId === selectedEnchantmentId);
+
+  const selectedEnchantment = selectedEnchantmentEntry
+    ? ENCHANTMENT_BY_ID.get(selectedEnchantmentEntry[0])
     : null;
 
   return (
@@ -44,7 +50,7 @@ export function EnchantmentDetailModal({ player, onClose }: EnchantmentDetailMod
               paddingRight: 10,
             }}
           >
-            {Array.from(enchantmentMap.entries()).map(([enchId]) => {
+            {validEnchantmentEntries.map(([enchId]) => {
               const enchDef = ENCHANTMENT_BY_ID.get(enchId);
               if (!enchDef) return null;
               const isSelected = selectedEnchantmentId === enchId;
@@ -95,7 +101,7 @@ export function EnchantmentDetailModal({ player, onClose }: EnchantmentDetailMod
                 </div>
 
                 {(() => {
-                  const usedOn = enchantmentMap.get(selectedEnchantmentId);
+                  const usedOn = selectedEnchantmentEntry?.[1];
                   if (!usedOn || usedOn.length === 0) return null;
                   return (
                     <div>

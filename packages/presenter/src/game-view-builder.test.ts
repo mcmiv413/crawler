@@ -1766,4 +1766,58 @@ describe('Quest view and death context', () => {
     expect(view.notice?.detail).toContain('7, 8, 9');
     expect(view.notice?.spriteName).toBe('ogre');
   });
+
+  it('sorts visible enemies by nearest distance first', () => {
+    let state = createTestGameStateInCombat();
+    if (!state.run) throw new Error('No run');
+
+    // Create enemies at different distances from player (at 0,0)
+    const nearEnemy = createTestEnemy({ position: { x: 1, y: 0 } }); // distance ~1
+    const farEnemy = createTestEnemy({ position: { x: 5, y: 0 } }); // distance ~5
+    const midEnemy = createTestEnemy({ position: { x: 3, y: 0 } }); // distance ~3
+
+    const nearKey = posKey(nearEnemy.position);
+    const midKey = posKey(midEnemy.position);
+    const farKey = posKey(farEnemy.position);
+
+    // Add to state in arbitrary order (far, mid, near) to test sorting
+    const enemies = new Map([
+      [farKey, farEnemy],
+      [midKey, midEnemy],
+      [nearKey, nearEnemy],
+    ]);
+
+    // Make all visible
+    const cells = new Map(state.run.floor.cells);
+    cells.set(nearKey, { tile: { type: 'floor', walkable: true, blocksVision: false, ascii: '.', color: '#fff' }, visibility: 'visible' as const });
+    cells.set(midKey, { tile: { type: 'floor', walkable: true, blocksVision: false, ascii: '.', color: '#fff' }, visibility: 'visible' as const });
+    cells.set(farKey, { tile: { type: 'floor', walkable: true, blocksVision: false, ascii: '.', color: '#fff' }, visibility: 'visible' as const });
+
+    state = {
+      ...state,
+      run: {
+        ...state.run,
+        floor: { ...state.run.floor, cells },
+        enemies,
+      },
+    };
+
+    const view = buildGameView(state);
+    const inspectables = view.inspectableEntities;
+
+    // Should be sorted by distance: near, mid, far
+    expect(inspectables.length).toBeGreaterThanOrEqual(3);
+    const nearIdx = inspectables.findIndex(e => e.id === nearEnemy.id);
+    const midIdx = inspectables.findIndex(e => e.id === midEnemy.id);
+    const farIdx = inspectables.findIndex(e => e.id === farEnemy.id);
+
+    // All should be found
+    expect(nearIdx).toBeGreaterThanOrEqual(0);
+    expect(midIdx).toBeGreaterThanOrEqual(0);
+    expect(farIdx).toBeGreaterThanOrEqual(0);
+
+    // Near should come before mid, mid before far
+    expect(nearIdx).toBeLessThan(midIdx);
+    expect(midIdx).toBeLessThan(farIdx);
+  });
 });

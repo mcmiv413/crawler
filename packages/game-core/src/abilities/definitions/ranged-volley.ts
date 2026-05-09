@@ -5,7 +5,7 @@ export const RANGED_VOLLEY_DEFINITION: AbilityDefinition = {
   name: 'Ranged Volley',
   description: 'Rain down arrows on all visible enemies for 70% damage each.',
   tags: ['ranged', 'attack'],
-  cooldown: 3,
+  cooldown: 4,
   unlocks: [{ kind: 'mastery', weaponType: 'ranged', masteryIndex: 2 }],
   requirements: [
     { kind: 'weapon_type', weaponType: 'ranged' },

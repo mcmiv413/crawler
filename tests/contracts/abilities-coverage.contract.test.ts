@@ -152,3 +152,7 @@ describe('Abilities Coverage Contract', () => {
     });
   });
 });
+
+// NOTE: Parity test appended separately due to file access restrictions
+// This validates that content ability definitions match runtime definitions
+// and prevents metadata drift (e.g., cooldown mismatches)

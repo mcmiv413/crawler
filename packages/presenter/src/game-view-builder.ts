@@ -1,4 +1,4 @@
-import type { GameState, EnemyInstance, PlayerDiedEvent, EquipmentDroppedEvent, DomainEvent } from '@dungeon/contracts';
+import type { GameState, EnemyInstance, PlayerDiedEvent, EquipmentDroppedEvent, DomainEvent, EntityId } from '@dungeon/contracts';
 import type { GameView, QuestView, InspectableEntityView, DeathContext } from './game-view.js';
 import { ENEMY_TEMPLATES, STATUS_DEFINITIONS, OBJECT_TEMPLATES, DEATH_CONSEQUENCES, COMBAT } from '@dungeon/content';
 import { calculateHitChance, applyRangeAccuracyPenalty } from '@dungeon/core/utils/dice.js';
@@ -89,6 +89,14 @@ function buildInspectableEntities(state: GameState): readonly InspectableEntityV
   }
 
   // Build visible enemies — no deduplication, include instanceColor when 2+ of same type visible
+  // Map enemy IDs to their position keys for use in sorting
+  const enemyIdToPositionKey = new Map<EntityId, string>();
+  for (const [key, enemy] of state.run.enemies) {
+    if (floor.cells.get(key)?.visibility === 'visible') {
+      enemyIdToPositionKey.set(enemy.id, key);
+    }
+  }
+
   for (const [key, enemy] of state.run.enemies) {
     if (floor.cells.get(key)?.visibility !== 'visible') continue;
 
@@ -200,8 +208,10 @@ function buildInspectableEntities(state: GameState): readonly InspectableEntityV
 
     // Both same type: sort by distance from player
     if (aIsEnemy && bIsEnemy) {
-      const aPos = state.run!.enemies.get(a.id);
-      const bPos = state.run!.enemies.get(b.id);
+      const aPositionKey = enemyIdToPositionKey.get(a.id as EntityId);
+      const bPositionKey = enemyIdToPositionKey.get(b.id as EntityId);
+      const aPos = aPositionKey ? state.run!.enemies.get(aPositionKey) : undefined;
+      const bPos = bPositionKey ? state.run!.enemies.get(bPositionKey) : undefined;
       if (!aPos || !bPos) return 0;
       const aDist = Math.hypot(aPos.position.x - playerX, aPos.position.y - playerY);
       const bDist = Math.hypot(bPos.position.x - playerX, bPos.position.y - playerY);

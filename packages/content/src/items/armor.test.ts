@@ -15,14 +15,13 @@ describe('armor catalog', () => {
   it('enchantmentSlots matches ENCHANTMENT_SLOTS_BY_RARITY[rarity]', () => {
     for (const item of ARMOR) {
       const expected = ENCHANTMENT_SLOTS_BY_RARITY[item.rarity];
-      expect(item.armor.enchantmentSlots, `${item.itemId} enchantmentSlots`).toBe(expected);
+      expect(item.armor.enchantmentSlots).toBe(expected);
     }
   });
 
   it('enchantments array length equals enchantmentSlots', () => {
     for (const item of ARMOR) {
-      expect(item.armor.enchantments.length, `${item.itemId} enchantments length`)
-        .toBe(item.armor.enchantmentSlots);
+      expect(item.armor.enchantments.length).toBe(item.armor.enchantmentSlots);
     }
   });
 
@@ -34,7 +33,7 @@ describe('armor catalog', () => {
       // Each item is either all-null or has at least one non-null enchantment
       expect(
         hasAnyEnchantment || allAreNull,
-        `${item.itemId} has mixed null/non-null enchantments`,
+        `has mixed null/non-null enchantments`,
       ).toBe(true);
     }
   });
@@ -45,7 +44,7 @@ describe('armor catalog', () => {
       bySlot[item.armor.slot] = (bySlot[item.armor.slot] ?? 0) + 1;
     }
     for (const slot of VALID_ARMOR_SLOTS) {
-      expect(bySlot[slot] ?? 0, `slot ${slot} needs at least 2 items`).toBeGreaterThanOrEqual(2);
+      expect(bySlot[slot] ?? 0).toBeGreaterThanOrEqual(2);
     }
   });
 
@@ -53,7 +52,7 @@ describe('armor catalog', () => {
     for (const item of ARMOR) {
       for (const enc of item.armor.enchantments) {
         if (enc !== null) {
-          expect(ENCHANTMENT_BY_ID.has(enc), `${enc} not in enchantment catalog`).toBe(true);
+          expect(ENCHANTMENT_BY_ID.has(enc)).toBe(true);
         }
       }
     }

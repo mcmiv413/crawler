@@ -4,6 +4,7 @@ import { ItemSpriteIcon } from './ItemSpriteIcon.js';
 import { btnStashStyle, colors } from '../styles.js';
 import { ScreenOverlay, InfoCard } from './ui/index.js';
 import { getPermadeathProximityMessage } from '../utils/permadeath-message.js';
+import { MODAL_CARD_MAX_WIDTH } from '../config/ui-config.js';
 
 interface DeathNotificationModalProps {
   deathContext: DeathContext;
@@ -13,7 +14,7 @@ interface DeathNotificationModalProps {
 export function DeathNotificationModal({ deathContext, onDismiss }: DeathNotificationModalProps) {
   return (
     <ScreenOverlay>
-      <div style={{ textAlign: 'center', maxWidth: 500, width: '100%' }}>
+      <div style={{ textAlign: 'center', maxWidth: MODAL_CARD_MAX_WIDTH, width: '100%' }}>
         <h2 style={{ color: colors.blood, fontSize: 28, marginBottom: 20 }}>You Were Slain</h2>
 
         <InfoCard

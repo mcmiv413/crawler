@@ -312,6 +312,10 @@ export function CharacterScreen({ player, activeQuests, sendCommand }: Character
   const hasFactions = player.factionProgress.length > 0;
   const hasEnchantments = player.equippedItems.some(item => item.enchantments.length > 0);
   const hasMasteries = player.weaponMastery && Object.keys(player.weaponMastery).length > 0;
+  const selectedMasteryProgress =
+    showMasteryModal && showMasteryModal !== 'list' && player.weaponMastery
+      ? player.weaponMastery[showMasteryModal as keyof typeof player.weaponMastery]
+      : undefined;
 
   return (
     <div
@@ -454,11 +458,11 @@ export function CharacterScreen({ player, activeQuests, sendCommand }: Character
           onClose={() => setShowMasteryModal(null)}
         />
       )}
-      {showMasteryModal && showMasteryModal !== 'list' && player.weaponMastery && (
+      {showMasteryModal && showMasteryModal !== 'list' && typeof selectedMasteryProgress === 'number' && (
         <MasteryDetailModal
           weaponType={showMasteryModal}
-          progress={player.weaponMastery[showMasteryModal as keyof typeof player.weaponMastery]}
-          tier={calculateMasteryTier(player.weaponMastery[showMasteryModal as keyof typeof player.weaponMastery])}
+          progress={selectedMasteryProgress}
+          tier={calculateMasteryTier(selectedMasteryProgress)}
           onClose={() => setShowMasteryModal(null)}
         />
       )}

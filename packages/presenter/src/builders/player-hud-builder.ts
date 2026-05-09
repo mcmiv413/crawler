@@ -5,6 +5,7 @@ import { getEffectiveStat } from '@dungeon/core/systems/status-effects.js';
 import type { AbilityView, EnchantmentView, EquippedItemView, PlayerHudView, StatusView } from '../game-view.js';
 import { calculateStatBreakdown } from './stat-breakdown-builder.js';
 import { buildFactionView, buildOgreProgressView } from './faction-progress-builder.js';
+import { getStatusPresentation } from '../animation-metadata.js';
 
 export function buildPlayerHud(state: GameState): PlayerHudView {
   const p = state.player;
@@ -76,11 +77,13 @@ export function buildPlayerHud(state: GameState): PlayerHudView {
 
   const statusList: StatusView[] = p.statuses.map(s => {
     const def = STATUS_DEFINITIONS.get(s.id);
+    const presentation = getStatusPresentation(s.id);
     return {
       id: s.id,
       name: def?.name ?? s.id,
       turnsRemaining: s.turnsRemaining,
       beneficial: def?.beneficial ?? false,
+      ...(presentation !== undefined ? { presentation } : {}),
     } satisfies StatusView;
   });
 

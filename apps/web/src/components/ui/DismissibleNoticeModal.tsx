@@ -30,13 +30,15 @@ export function DismissibleNoticeModal({
     [notice, dismissedNoticeIds]
   );
 
-  if (!isVisible) return null;
+  if (!isVisible || !notice) return null;
+
+  const visibleNotice = notice;
 
   return (
-    <ModalBackdrop onClose={() => notice && onDismiss(notice.id)}>
+    <ModalBackdrop onClose={() => onDismiss(visibleNotice.id)}>
       <ModalCard
         title={title}
-        onClose={() => notice && onDismiss(notice.id)}
+        onClose={() => onDismiss(visibleNotice.id)}
         accentColor={accentColor}
       >
         <div
@@ -47,7 +49,7 @@ export function DismissibleNoticeModal({
             wordWrap: 'break-word',
           }}
         >
-          {notice?.message}
+          {visibleNotice.message}
         </div>
       </ModalCard>
     </ModalBackdrop>

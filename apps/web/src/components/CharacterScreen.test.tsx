@@ -111,4 +111,31 @@ describe('CharacterScreen faction progress', () => {
       `padding-bottom: ${TAB_BAR_HEIGHT}px`,
     );
   });
+
+  it('does not render stale mastery detail state for a missing weapon key', () => {
+    const { rerender } = render(
+      <CharacterScreen
+        player={createPlayer({
+          weaponMastery: { blade: 12, bludgeon: 0, axe: 0, ranged: 0 },
+        })}
+        sendCommand={vi.fn()}
+      />,
+    );
+
+    fireEvent.click(screen.getByRole('button', { name: 'Masteries' }));
+    fireEvent.click(screen.getByRole('button', { name: /blade/i }));
+
+    expect(screen.getByText(/blade Mastery/i)).toBeInTheDocument();
+
+    rerender(
+      <CharacterScreen
+        player={createPlayer({
+          weaponMastery: { axe: 5 } as PlayerHudView['weaponMastery'],
+        })}
+        sendCommand={vi.fn()}
+      />,
+    );
+
+    expect(screen.queryByText(/blade Mastery/i)).not.toBeInTheDocument();
+  });
 });

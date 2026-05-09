@@ -33,7 +33,7 @@ export function analyzeTestFile(code: string, proposedLayer: string): TestAnalys
 
   // Parse imports
   const imports = parseImports(code);
-  const usesLiveConfig = imports.some((i) => i.from === '@dungeon/content');
+  const usesLiveConfig = imports.some((i) => i.from === '@dungeon/content' && i.typeOnly !== true);
   const usesSeededRng = imports.some((i) => i.name === 'SeededRng' || i.name === 'Rng');
 
   // Analyze code patterns
@@ -86,11 +86,11 @@ export function analyzeTestFile(code: string, proposedLayer: string): TestAnalys
     mutableSuggestions.push('Replace value assertions with behavior assertions (e.g., damage > 0)');
   }
 
-  if (usesLiveConfig === true && proposedLayer === 'unit') {
+  if (usesLiveConfig === true && (proposedLayer === 'unit' || proposedLayer === 'property')) {
     mutableIssues.push({
       severity: 'error',
-      code: 'CONFIG_IMPORT_IN_UNIT',
-      description: 'Unit test imports @dungeon/content directly. Use fixtures and builders instead.',
+      code: 'LIVE_CONTENT_IMPORT_IN_ISOLATED_TEST',
+      description: 'Unit/property test imports @dungeon/content directly. Use fixtures and builders instead.',
     });
     mutableSuggestions.push('Use test fixtures or builders instead of live config');
   }
@@ -255,20 +255,28 @@ function validateE2eLayer(
 interface ImportDecl {
   name: string;
   from: string;
+  typeOnly: boolean;
 }
 
 function parseImports(code: string): ImportDecl[] {
   const mutableImports: ImportDecl[] = [];
-  const importRegex = /import\s+(?:\{([^}]+)\}|(\w+))\s+from\s+['\"]([^'\"]+)['\"]/g;
+  const importRegex = /import\s+(type\s+)?(?:(?:\{([^}]+)\})|(?:\*\s+as\s+(\w+))|(\w+)(?:\s*,\s*\{([^}]+)\})?)\s+from\s+['\"]([^'\"]+)['\"]/g;
 
   let match;
   while ((match = importRegex.exec(code))) {
-    const groupNames = match[1] ?? match[2];
-    const names = (groupNames ?? '') !== '' ? (groupNames ?? '').split(',').map((n) => n.trim()) : [];
-    const from = match[3] ?? '';
+    const typeOnly = match[1] !== undefined;
+    const namedImports = match[2] ?? match[5];
+    const namespaceImport = match[3];
+    const defaultImport = match[4];
+    const names = [
+      ...(defaultImport !== undefined ? [defaultImport] : []),
+      ...(namespaceImport !== undefined ? [namespaceImport] : []),
+      ...((namedImports ?? '') !== '' ? (namedImports ?? '').split(',').map((n) => n.trim()) : []),
+    ];
+    const from = match[6] ?? '';
     names.forEach((name) => {
       if (name !== '' && from !== '') {
-        mutableImports.push({ name, from });
+        mutableImports.push({ name: name.replace(/\s+as\s+\w+$/, ''), from, typeOnly });
       }
     });
   }

@@ -359,3 +359,60 @@ describe('Health clamping and edge cases (Phase 3)', () => {
     expect(tickedState.player.stats.health).toBeLessThanOrEqual(healthBefore);
   });
 });
+
+describe('Enemy regeneration and position-key storage', () => {
+  it('enemy with regeneration status heals and remains stored under position key', () => {
+    let state = createTestGameState();
+    const enemy = createTestEnemy({
+      position: { x: 2, y: 3 },
+      isAlerted: true,
+      lastKnownPlayerPos: null,
+      stats: { maxHealth: 100, health: 50, attack: 8, defense: 3, accuracy: 70, evasion: 15, speed: 100 },
+    });
+    const regenEnemy = {
+      ...enemy,
+      statuses: [{ id: 'regeneration' as StatusId, turnsRemaining: 3, magnitude: 15, sourceId: null }],
+    };
+    const enemyKey = posKey(regenEnemy.position);
+    state = { ...state, run: { ...state.run!, enemies: new Map([[enemyKey, regenEnemy]]) } };
+
+    const healthBefore = regenEnemy.stats.health;
+    const { state: tickedState } = tickEnemyStatuses(state, regenEnemy, 1);
+
+    // Verify enemy is stored under position key after tick
+    const tickedEnemy = tickedState.run?.enemies.get(enemyKey);
+    expect(tickedEnemy).toBeDefined();
+    
+    // Verify health increased from regeneration
+    if (tickedEnemy) {
+      expect(tickedEnemy.stats.health).toBeGreaterThan(healthBefore);
+      // Should not exceed max health
+      expect(tickedEnemy.stats.health).toBeLessThanOrEqual(tickedEnemy.stats.maxHealth);
+    }
+  });
+
+  it('enemy regeneration does not exceed max health', () => {
+    let state = createTestGameState();
+    const enemy = createTestEnemy({
+      position: { x: 2, y: 3 },
+      isAlerted: true,
+      lastKnownPlayerPos: null,
+      stats: { maxHealth: 100, health: 50, attack: 8, defense: 3, accuracy: 70, evasion: 15, speed: 100 },
+    });
+    const regenEnemy = {
+      ...enemy,
+      statuses: [{ id: 'regeneration' as StatusId, turnsRemaining: 3, magnitude: 200, sourceId: null }],
+    };
+    const enemyKey = posKey(regenEnemy.position);
+    state = { ...state, run: { ...state.run!, enemies: new Map([[enemyKey, regenEnemy]]) } };
+
+    const { state: tickedState } = tickEnemyStatuses(state, regenEnemy, 1);
+    const tickedEnemy = tickedState.run?.enemies.get(enemyKey);
+
+    // Health should heal and clamp to maxHealth, not exceed it
+    if (tickedEnemy) {
+      expect(tickedEnemy.stats.health).toBeGreaterThan(50);
+      expect(tickedEnemy.stats.health).toBeLessThanOrEqual(tickedEnemy.stats.maxHealth);
+    }
+  });
+});

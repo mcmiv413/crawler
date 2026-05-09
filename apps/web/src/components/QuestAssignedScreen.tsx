@@ -2,6 +2,7 @@ import React from 'react';
 import type { GameView, NpcView } from '@dungeon/presenter';
 import { btnPrimaryStyle, colors } from '../styles.js';
 import { ScreenOverlay, InfoCard, SectionLabel } from './ui/index.js';
+import { MODAL_CARD_MAX_WIDTH } from '../config/ui-config.js';
 
 interface QuestAssignedScreenProps {
   view: GameView;
@@ -21,7 +22,7 @@ export function QuestAssignedScreen({
 }: QuestAssignedScreenProps) {
   return (
     <ScreenOverlay>
-      <div style={{ textAlign: 'center', maxWidth: 500, width: '100%' }}>
+      <div style={{ textAlign: 'center', maxWidth: MODAL_CARD_MAX_WIDTH, width: '100%' }}>
         <h2 style={{ color: colors.steel, fontSize: 28, marginBottom: 10 }}>New Quest</h2>
 
         <div style={{ color: colors.steel, fontSize: 13, marginBottom: 20 }}>
