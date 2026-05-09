@@ -313,6 +313,18 @@ export interface ConsumableAnimationEntry {
   readonly presentation: ConsumableAnimationPresentationView;
 }
 
+
+export interface AbilityAnimationEntry {
+  readonly abilityId: string;
+  readonly animationId: string;
+  readonly playerPos: { readonly x: number; readonly y: number };
+  readonly targetPos?: { readonly x: number; readonly y: number };
+  readonly blastPositions: readonly { readonly x: number; readonly y: number }[];
+  readonly targetHpFraction?: number;
+  readonly durationMs: number;
+  readonly suppressActorBump: boolean;
+}
+
 export interface ConsumableAnimationPresentationView {
   readonly kind: 'heal_hearts' | 'buff_rings' | 'cure_sparkles' | 'bomb_blast';
   readonly durationMs: number;

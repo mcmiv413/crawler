@@ -5,6 +5,7 @@ import type {
   MoveAnimationEntry,
   MoveAnimStyle,
   ConsumableAnimationEntry,
+  AbilityAnimationEntry,
 } from './game-view.js';
 import {
   ANIMATION_TIMING,
@@ -13,13 +14,14 @@ import {
   getMoveAnimationStyle,
   getMoveDurationMs,
 } from './animation-metadata.js';
+import { ABILITY_DEFINITIONS, ANIMATION_REF_BY_ID } from '@dungeon/content';
 
 export interface AnimatedEvent {
-  type: 'bump' | 'damage' | 'heal' | 'status' | 'move' | 'consumable';
+  type: 'bump' | 'damage' | 'heal' | 'status' | 'move' | 'consumable' | 'ability';
   sequenceIndex: number;
   delayMs: number;
   batchId: string;
-  data: BumpAnimationEntry | CombatIndicatorEntry | MoveAnimationEntry | ConsumableAnimationEntry;
+  data: BumpAnimationEntry | CombatIndicatorEntry | MoveAnimationEntry | ConsumableAnimationEntry | AbilityAnimationEntry;
 }
 
 function getEntitySpeed(id: EntityId, state: GameState): number {
@@ -263,6 +265,76 @@ export function buildAnimationSequence(
       delayMs: 0,
       batchId,
       data: entry,
+    });
+  }
+
+  // ── 4. Ability animations ───────────────────────────────────────
+  // Resolved from ABILITY_USED events using the ability catalog.
+
+  const abilityUsedEvents = events.filter(
+    (e): e is Extract<DomainEvent, { type: 'ABILITY_USED' }> => e.type === 'ABILITY_USED',
+  );
+
+  for (let i = 0; i < abilityUsedEvents.length; i += 1) {
+    const event = abilityUsedEvents[i];
+    if (!event) continue;
+
+    const abilityDef = ABILITY_DEFINITIONS.get(event.abilityId);
+    if (!abilityDef || !abilityDef.animation?.id) continue;
+
+    const animRef = ANIMATION_REF_BY_ID.get(abilityDef.animation.id as keyof typeof animRef);
+    if (!animRef) continue;
+
+    const playerPos = state.player.position;
+    const targetPos = event.targetId ? getEntityPosition(event.targetId, state) : undefined;
+
+    let blastPositions: Array<{ x: number; y: number }> = [];
+    let targetHpFraction: number | undefined;
+
+    // Handle special ability shapes based on ability ID
+    if (event.abilityId === 'axe_cleave' && targetPos) {
+      // Cleave: 8 adjacent tiles around target
+      const directions = [
+        { x: 0, y: -1 },   // n
+        { x: 1, y: -1 },   // ne
+        { x: 1, y: 0 },    // e
+        { x: 1, y: 1 },    // se
+        { x: 0, y: 1 },    // s
+        { x: -1, y: 1 },   // sw
+        { x: -1, y: 0 },   // w
+        { x: -1, y: -1 },  // nw
+      ];
+      blastPositions = directions.map(d => ({ x: targetPos.x + d.x, y: targetPos.y + d.y }));
+    } else if (event.abilityId === 'ranged_volley') {
+      // Volley: all visible enemy positions
+      const volleyPositions: Array<{ x: number; y: number }> = [];
+      state.run.enemies.forEach(enemy => {
+        // eslint-disable-next-line dungeon/no-array-mutation
+        volleyPositions.push(enemy.position);
+      });
+      blastPositions = volleyPositions;
+    } else if (event.abilityId === 'axe_execute') {
+      // Execute: would compute HP fraction, but stats not directly on EnemyInstance
+      // This can be extended in Phase 4 when we have full entity info
+    }
+
+    const sequenceIndex = orderedMoves.length + attacksWithSpeeds.length + itemUsedEvents.length + i;
+
+    mutableAnimations.push({
+      type: 'ability',
+      sequenceIndex,
+      delayMs: 0,
+      batchId,
+      data: {
+        abilityId: event.abilityId,
+        animationId: animRef.id,
+        playerPos,
+        targetPos: targetPos ?? undefined,
+        blastPositions,
+        targetHpFraction,
+        durationMs: animRef.durationMs,
+        suppressActorBump: 'suppressActorBump' in animRef ? animRef.suppressActorBump : false,
+      } satisfies AbilityAnimationEntry,
     });
   }
 
