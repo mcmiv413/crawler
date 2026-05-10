@@ -140,6 +140,7 @@ describe('useGameStore (Zustand)', () => {
       const mockGameId = 'game-abc123';
       const mockView = createMockGameView({ gameId: mockGameId });
       const serializedState = 'state-serialized-123';
+      const sessionToken = 'session-token-123';
 
       // Mock the API
       const { createGame: mockCreateGame } = await import('../api/client.js');
@@ -147,6 +148,7 @@ describe('useGameStore (Zustand)', () => {
         gameId: mockGameId,
         view: mockView,
         serializedState,
+        sessionToken,
       });
 
       const { result } = renderHook(() => useGameStore());
@@ -169,9 +171,10 @@ describe('useGameStore (Zustand)', () => {
       expect(result.current.loading).toBe(false);
       expect(result.current.error).toBeNull();
       expect(result.current.combatLog).toHaveLength(0);
+      expect(result.current.sessionToken).toBe(sessionToken);
 
       // Verify saveSession was called
-      expect(sessionPersistence.saveSession).toHaveBeenCalledWith(mockGameId, serializedState);
+      expect(sessionPersistence.saveSession).toHaveBeenCalledWith(mockGameId, serializedState, sessionToken);
     });
 
     it('error: Network failure → error state set, gameId remains null', async () => {
@@ -253,6 +256,7 @@ describe('useGameStore (Zustand)', () => {
     it('GameNotFoundError recovery: 404 → loads session → retries → succeeds', async () => {
       const mockGameId = 'game-recovery-123';
       const serializedState = 'recovered-state';
+      const sessionToken = 'recovered-token';
       const recoveredView = createMockGameView({ gameId: mockGameId });
 
       const { result } = renderHook(() => useGameStore());
@@ -261,6 +265,7 @@ describe('useGameStore (Zustand)', () => {
       vi.mocked(sessionPersistence.loadSession).mockReturnValueOnce({
         gameId: mockGameId,
         serializedState,
+        sessionToken,
       });
 
       // Mock API: first call throws 404, second call succeeds
@@ -280,6 +285,7 @@ describe('useGameStore (Zustand)', () => {
         gameId: mockGameId,
         view: recoveredView,
         serializedState,
+        sessionToken,
       });
 
       // Set up initial state
@@ -296,7 +302,7 @@ describe('useGameStore (Zustand)', () => {
 
       // Verify recovery path was taken
       expect(sessionPersistence.loadSession).toHaveBeenCalled();
-      expect(vi.mocked(mockRestoreGame)).toHaveBeenCalledWith(serializedState);
+      expect(vi.mocked(mockRestoreGame)).toHaveBeenCalledWith(serializedState, sessionToken);
 
       // Verify final state is consistent
       expect(result.current.gameId).toBe(mockGameId);
@@ -410,6 +416,7 @@ describe('useGameStore (Zustand)', () => {
     it('cold start: Fallback to restoreGame → restores state OR clears on corruption', async () => {
       const mockGameId = 'game-cold-123';
       const serializedState = 'cold-state';
+      const sessionToken = 'cold-token';
       const restoredView = createMockGameView({ gameId: mockGameId });
 
       const { result } = renderHook(() => useGameStore());
@@ -418,6 +425,7 @@ describe('useGameStore (Zustand)', () => {
       vi.mocked(sessionPersistence.loadSession).mockReturnValueOnce({
         gameId: mockGameId,
         serializedState,
+        sessionToken,
       });
 
       // Mock API: fetchGameView fails, but restoreGame succeeds (cold start)
@@ -428,6 +436,7 @@ describe('useGameStore (Zustand)', () => {
         gameId: mockGameId,
         view: restoredView,
         serializedState,
+        sessionToken,
       });
 
       // Call restoreSession
@@ -440,7 +449,7 @@ describe('useGameStore (Zustand)', () => {
       expect(restored).toBe(true);
       expect(result.current.gameId).toBe(mockGameId);
       expect(result.current.view).not.toBeNull();
-      expect(vi.mocked(mockRestoreGame)).toHaveBeenCalledWith(serializedState);
+      expect(vi.mocked(mockRestoreGame)).toHaveBeenCalledWith(serializedState, sessionToken);
     });
 
     it('clears the saved session when restore confirms the local save is invalid', async () => {
@@ -773,6 +782,7 @@ describe('useGameStore (Zustand)', () => {
         useGameStore.setState({
           gameId: 'game-123',
           view: createMockGameView(),
+          sessionToken: 'debug-token',
         });
       });
 
@@ -793,7 +803,7 @@ describe('useGameStore (Zustand)', () => {
       // Verify sendCommand was called with TOGGLE_DEBUG
       expect(vi.mocked(mockSendCommand)).toHaveBeenCalledWith('game-123', {
         type: 'TOGGLE_DEBUG',
-      });
+      }, 'debug-token');
     });
   });
 });

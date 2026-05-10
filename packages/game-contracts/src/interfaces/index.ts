@@ -48,6 +48,16 @@ export interface IGameRepository {
    * @throws Error if version mismatch (concurrent write detected)
    */
   commitTick(gameId: EntityId, prevVersion: number, nextState: GameState, events: readonly DomainEvent[]): Promise<void>;
+
+  /**
+   * Set the session token for a game. Used for server-side session isolation.
+   */
+  setGameSessionToken(gameId: EntityId, token: string): Promise<void>;
+
+  /**
+   * Get the session token for a game, or null if no token is set.
+   */
+  getGameSessionToken(gameId: EntityId): Promise<string | null>;
 }
 
 /** Stub for Phase 1+ AI narrative integration */

@@ -175,6 +175,53 @@ describe('abilities/runtime', () => {
       expect(result.valid).toBe(true);
     });
 
+    it('should pass target_in_weapon_range for a ranged weapon target', () => {
+      const state = createTestGameStateInCombat({
+        equippedWeaponId: 'short_bow',
+        enemyAt: { x: 3, y: 0 },
+      });
+      const enemy = [...state.run!.enemies.values()][0]!;
+
+      const context: AbilityContext = {
+        state,
+        rng: new SeededRNG(42),
+        player: state.player,
+        run: state.run,
+        equippedWeaponId: state.player.equipment.weapon,
+        target: {
+          instance: enemy,
+          key: `${enemy.position.x},${enemy.position.y}`,
+        },
+      };
+
+      const result = validateRequirements(context, [{ kind: 'target_in_weapon_range' }]);
+      expect(result.valid).toBe(true);
+    });
+
+    it('should fail target_in_weapon_range when a bow target is too close', () => {
+      const state = createTestGameStateInCombat({
+        equippedWeaponId: 'short_bow',
+        enemyAt: { x: 1, y: 0 },
+      });
+      const enemy = [...state.run!.enemies.values()][0]!;
+
+      const context: AbilityContext = {
+        state,
+        rng: new SeededRNG(42),
+        player: state.player,
+        run: state.run,
+        equippedWeaponId: state.player.equipment.weapon,
+        target: {
+          instance: enemy,
+          key: `${enemy.position.x},${enemy.position.y}`,
+        },
+      };
+
+      const result = validateRequirements(context, [{ kind: 'target_in_weapon_range' }]);
+      expect(result.valid).toBe(false);
+      expect(result.reason).toContain('too close');
+    });
+
     it('should pass target_visible (always for selected targets)', () => {
       const state = createTestGameStateInCombat();
       const enemy = [...state.run!.enemies.values()][0]!;

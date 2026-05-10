@@ -13,22 +13,40 @@ export const healingPulseModule: AnimationModule = {
 
   draw(ctx: CanvasRenderingContext2D, anim: AnimationDrawContext, helpers: RendererHelpers): void {
     const { x, y, progress } = anim;
-    const riseAmount = progress * 1.8 * 16; // 1.8 cells rise
-    const alpha = 1 - progress;
+    const easeOutCubic = (t: number) => 1 - Math.pow(1 - t, 3);
+
+    let alpha: number;
+    if (progress < 0.3) {
+      alpha = easeOutCubic(progress / 0.3);
+    } else if (progress < 0.6) {
+      alpha = 1;
+    } else {
+      const fadeProgress = (progress - 0.6) / 0.4;
+      const easeInCubic = (t: number) => t * t * t;
+      alpha = 1 - easeInCubic(fadeProgress);
+    }
+
+    const riseAmount = progress * 2.2 * 16;
 
     ctx.save();
     ctx.globalAlpha = alpha;
-    ctx.fillStyle = 'red';
 
-    // Draw 3 heart sprites (simplified as circles)
+    // Draw 3 heart sprites rising
     for (let i = 0; i < 3; i++) {
       const offsetX = (i - 1) * 8;
-      const offsetY = -riseAmount + (i * 0.15 * riseAmount);
+      const offsetY = -riseAmount + (i * 0.12 * riseAmount);
+      
+      ctx.fillStyle = `rgba(220, 50, 50, ${alpha})`;
       ctx.beginPath();
-      ctx.arc(x + offsetX, y + offsetY, 3, 0, Math.PI * 2);
+      ctx.arc(x + offsetX, y + offsetY, 4, 0, Math.PI * 2);
       ctx.fill();
+      
+      // Outer glow
+      ctx.strokeStyle = `rgba(255, 100, 100, ${alpha * 0.6})`;
+      ctx.lineWidth = 1;
+      ctx.stroke();
     }
 
     ctx.restore();
   },
-};
+};;

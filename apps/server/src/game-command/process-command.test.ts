@@ -36,6 +36,8 @@ function createRepoStub(): IGameRepository {
     recordRunMetrics: vi.fn(),
     getRunMetricsLog: vi.fn(() => []),
     commitTick: vi.fn(() => Promise.resolve()),
+    setGameSessionToken: vi.fn(() => Promise.resolve()),
+    getGameSessionToken: vi.fn(() => Promise.resolve(null)),
   };
 }
 

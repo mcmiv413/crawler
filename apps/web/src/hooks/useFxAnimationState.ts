@@ -1,5 +1,5 @@
 import { useState, useEffect, useRef } from 'react';
-import type { AbilityAnimationEntry, AnimatedEvent } from '@dungeon/presenter';
+import type { AbilityAnimationEntry } from '@dungeon/presenter';
 
 interface ActiveFxAnimation extends AbilityAnimationEntry {
   id: string;
@@ -16,58 +16,46 @@ interface UseFxAnimationStateReturn {
  * Listens for animated events from the game view and maintains animation state.
  * Used by canvas renderer to draw ability visual effects.
  */
-export function useFxAnimationState(
-  animatedEvents: readonly AnimatedEvent[],
-): UseFxAnimationStateReturn {
+export function useFxAnimationState(): UseFxAnimationStateReturn {
   const [animations, setAnimations] = useState<ActiveFxAnimation[]>([]);
   const rafRef = useRef<number | undefined>(undefined);
   const nextIdRef = useRef(0);
-  const seenBatchIdsRef = useRef<Set<string>>(new Set());
   const timersRef = useRef<ReturnType<typeof setTimeout>[]>([]);
 
   useEffect(() => {
-    const now = Date.now();
-
-    // Process new animation events
-    const newAnimations: ActiveFxAnimation[] = [];
-    for (const event of animatedEvents) {
-      if (event.type !== 'ability') continue;
-
-      const data = event.data as AbilityAnimationEntry;
-      // Skip if animation ID is invalid
-
-      // Skip if we've already seen this batch
-      if (seenBatchIdsRef.current.has(event.batchId)) continue;
-      seenBatchIdsRef.current.add(event.batchId);
+    const handleAbilityAnimation = (event: Event) => {
+      const customEvent = event as CustomEvent<AbilityAnimationEntry>;
+      const data = customEvent.detail;
+      const now = Date.now();
 
       const animation: ActiveFxAnimation = {
         id: `fx-${nextIdRef.current++}`,
         ...data,
-        startTime: now + event.delayMs,
+        startTime: now,
         progress: 0,
       };
 
-      newAnimations.push(animation);
+      setAnimations((prev) => [...prev, animation]);
 
       // Schedule removal after animation duration
       const timer = setTimeout(() => {
         setAnimations((prev) => prev.filter((a) => a.id !== animation.id));
-      }, event.delayMs + animation.durationMs + 50);
+      }, animation.durationMs + 50);
 
       timersRef.current.push(timer);
-    }
+    };
 
-    if (newAnimations.length > 0) {
-      setAnimations((prev) => [...prev, ...newAnimations]);
-    }
-
+    window.addEventListener('ability-animation', handleAbilityAnimation);
     return () => {
-      timersRef.current.forEach((t) => clearTimeout(t));
+      window.removeEventListener('ability-animation', handleAbilityAnimation);
+      const timers = timersRef.current;
+      timers.forEach((t) => clearTimeout(t));
+      timersRef.current = [];
       if (rafRef.current) {
         cancelAnimationFrame(rafRef.current);
       }
     };
-  }, [animatedEvents]);
+  }, []);
 
   // Update progress values on every frame
   useEffect(() => {

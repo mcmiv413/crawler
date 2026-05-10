@@ -237,6 +237,60 @@ describe('InventoryScreen Component', () => {
 
       expect(screen.getByText(/x3/)).toBeInTheDocument(); // quantity badge
     });
+
+    it('expands and collapses the bag list without leaving the inventory screen', () => {
+      const inventory: InventoryView = {
+        items: [mockWeapon, mockConsumable, mockArmor],
+        equipped: emptyEquipped,
+      };
+
+      render(
+        <InventoryScreen
+          inventory={inventory}
+          phase="dungeon"
+          onClose={vi.fn()}
+          sendCommand={vi.fn()}
+        />
+      );
+
+      const toggle = screen.getByRole('button', { name: /expand list/i });
+      expect(toggle).toHaveAttribute('aria-expanded', 'false');
+      expect(screen.getByText(/Main Hand/i)).toBeInTheDocument();
+
+      fireEvent.click(toggle);
+
+      expect(screen.getByRole('button', { name: /collapse list/i })).toHaveAttribute('aria-expanded', 'true');
+      expect(screen.queryByText(/Main Hand/i)).not.toBeInTheDocument();
+      expect(screen.getByText(/Back to Game/i)).toBeInTheDocument();
+      expect(screen.getByText('Health Potion')).toBeInTheDocument();
+
+      fireEvent.click(screen.getByRole('button', { name: /collapse list/i }));
+
+      expect(screen.getByRole('button', { name: /expand list/i })).toHaveAttribute('aria-expanded', 'false');
+      expect(screen.getByText(/Main Hand/i)).toBeInTheDocument();
+    });
+
+    it('keeps bag actions working while expanded', () => {
+      const sendCommand = vi.fn();
+      const inventory: InventoryView = {
+        items: [mockWeapon, mockArmor],
+        equipped: emptyEquipped,
+      };
+
+      render(
+        <InventoryScreen
+          inventory={inventory}
+          phase="dungeon"
+          onClose={vi.fn()}
+          sendCommand={sendCommand}
+        />
+      );
+
+      fireEvent.click(screen.getByRole('button', { name: /expand list/i }));
+      fireEvent.click(screen.getByRole('button', { name: /equip/i }));
+
+      expect(sendCommand).toHaveBeenCalledWith({ type: 'EQUIP', itemId: 'a1' });
+    });
   });
 
   describe('Item Inspection', () => {

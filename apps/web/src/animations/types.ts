@@ -19,6 +19,7 @@ export interface AnimationDrawContext {
   readonly targetPos?: { readonly x: number; readonly y: number };
   readonly blastPositions?: readonly { readonly x: number; readonly y: number }[];
   readonly targetHpFraction?: number;
+  readonly category?: 'impact' | 'projectile' | 'self' | 'aoe' | 'status' | 'utility';
 }
 
 /**

@@ -11,6 +11,9 @@ import { processGameCommand } from './game-command/process-command.js';
 import { InMemoryRepository } from './in-memory-repository.js';
 import { registerDebugRoutes } from './routes/debug.js';
 import { handleRouteError } from './errors.js';
+import { MAX_EVENT_HISTORY } from '@dungeon/content';
+
+const RESTORE_BODY_LIMIT_BYTES = 5 * 1024 * 1024;
 
 interface BuildAppOptions {
   readonly ai?: AiService;
@@ -20,12 +23,14 @@ interface BuildAppOptions {
 
 function buildRestoreResponse(
   state: GameState,
+  sessionToken: string,
   serializedState: string = getCanonicalSerializedState(state),
-): { gameId: string; serializedState: string; view: ReturnType<typeof buildGameView> } {
+): { gameId: string; serializedState: string; view: ReturnType<typeof buildGameView>; sessionToken: string } {
   return {
     gameId: state.gameId,
     view: buildGameView(state),
     serializedState,
+    sessionToken,
   };
 }
 
@@ -48,7 +53,21 @@ function generateServerSeed(): number {
 }
 
 function getCanonicalSerializedState(state: GameState): string {
-  return serializeState(deserializeState(serializeState(state)));
+  return serializeState(trimStateEventHistory(deserializeState(serializeState(state))));
+}
+
+function trimStateEventHistory(state: GameState): GameState {
+  if (state.world.eventHistory.length <= MAX_EVENT_HISTORY) {
+    return state;
+  }
+
+  return {
+    ...state,
+    world: {
+      ...state.world,
+      eventHistory: state.world.eventHistory.slice(-MAX_EVENT_HISTORY),
+    },
+  };
 }
 
 function getRestoreSerializedState(body: unknown): string | null {
@@ -58,6 +77,54 @@ function getRestoreSerializedState(body: unknown): string | null {
   }
 
   return restoreBody.serializedState;
+}
+
+async function generateSessionToken(): Promise<string> {
+  const { randomBytes } = await import('node:crypto');
+  return randomBytes(32).toString('hex');
+}
+
+type SessionCheckResult = 
+  | { ok: true }
+  | { ok: false; statusCode: number; body: Record<string, unknown> };
+
+async function checkSessionToken(
+  repo: IGameRepository,
+  gameId: string,
+  providedToken: string | undefined,
+): Promise<SessionCheckResult> {
+  const storedToken = await repo.getGameSessionToken(gameId as EntityId);
+  
+  // No stored token (legacy game)
+  if (storedToken === null) {
+    return { ok: true };
+  }
+  
+  // Token required but not provided
+  if (!providedToken) {
+    return {
+      ok: false,
+      statusCode: 403,
+      body: {
+        error: 'Session token required',
+        code: 'SESSION_FORBIDDEN',
+      },
+    };
+  }
+  
+  // Token mismatch
+  if (providedToken !== storedToken) {
+    return {
+      ok: false,
+      statusCode: 403,
+      body: {
+        error: 'Invalid session token',
+        code: 'SESSION_FORBIDDEN',
+      },
+    };
+  }
+  
+  return { ok: true };
 }
 
 export async function buildApp(options: BuildAppOptions = {}): Promise<FastifyInstance> {
@@ -94,6 +161,9 @@ export async function buildApp(options: BuildAppOptions = {}): Promise<FastifyIn
     }
 
     await repo.createGame(state);
+    const sessionToken = await generateSessionToken();
+    await repo.setGameSessionToken(state.gameId as EntityId, sessionToken);
+
     const view = buildGameView(state);
     const serializedState = getCanonicalSerializedState(state);
 
@@ -101,12 +171,18 @@ export async function buildApp(options: BuildAppOptions = {}): Promise<FastifyIn
       gameId: state.gameId,
       view,
       serializedState,
+      sessionToken,
     });
   });
 
   // GET /api/games/:id — get current game view
   app.get<{ Params: { id: string } }>('/api/games/:id', async (request, reply) => {
     try {
+      const check = await checkSessionToken(repo, request.params.id, request.headers['x-dungeon-session'] as string | undefined);
+      if (!check.ok) {
+        return reply.code(check.statusCode).send(check.body);
+      }
+
       const state = await repo.loadGame(request.params.id as EntityId);
       if (!state) return reply.code(404).send({ error: 'Game not found' });
 
@@ -121,6 +197,18 @@ export async function buildApp(options: BuildAppOptions = {}): Promise<FastifyIn
 
   // POST /api/games/:id/commands — submit a game command
   app.post<{ Params: { id: string } }>('/api/games/:id/commands', async (request, reply) => {
+    try {
+      const check = await checkSessionToken(repo, request.params.id, request.headers['x-dungeon-session'] as string | undefined);
+      if (!check.ok) {
+        return reply.code(check.statusCode).send(check.body);
+      }
+    } catch (error) {
+      if (!handleRouteError(error, reply)) {
+        throw error;
+      }
+      return;
+    }
+
     let state: GameState | null;
     try {
       state = await repo.loadGame(request.params.id as EntityId);
@@ -154,6 +242,18 @@ export async function buildApp(options: BuildAppOptions = {}): Promise<FastifyIn
   app.get<{ Params: { id: string; npcId: string } }>(
     '/api/games/:id/npc/:npcId/dialogue',
     async (request, reply) => {
+      try {
+        const check = await checkSessionToken(repo, request.params.id, request.headers['x-dungeon-session'] as string | undefined);
+        if (!check.ok) {
+          return reply.code(check.statusCode).send(check.body);
+        }
+      } catch (error) {
+        if (!handleRouteError(error, reply)) {
+          throw error;
+        }
+        return;
+      }
+
       let state: GameState | null;
       try {
         state = await repo.loadGame(request.params.id as EntityId);
@@ -188,6 +288,11 @@ export async function buildApp(options: BuildAppOptions = {}): Promise<FastifyIn
     '/api/games/:id/events',
     async (request, reply) => {
       try {
+        const check = await checkSessionToken(repo, request.params.id, request.headers['x-dungeon-session'] as string | undefined);
+        if (!check.ok) {
+          return reply.code(check.statusCode).send(check.body);
+        }
+
         const state = await repo.loadGame(request.params.id as EntityId);
         if (!state) return reply.code(404).send({ error: 'Game not found' });
 
@@ -203,7 +308,7 @@ export async function buildApp(options: BuildAppOptions = {}): Promise<FastifyIn
   );
 
   // POST /api/games/restore — restore a game from client-side serialized state
-  app.post('/api/games/restore', async (request, reply) => {
+  app.post('/api/games/restore', { bodyLimit: RESTORE_BODY_LIMIT_BYTES }, async (request, reply) => {
     const serializedState = getRestoreSerializedState(request.body);
     if (serializedState === null) {
       return reply.code(400).send({
@@ -215,7 +320,7 @@ export async function buildApp(options: BuildAppOptions = {}): Promise<FastifyIn
     let state: GameState;
     let canonicalSerializedState: string;
     try {
-      state = deserializeState(serializedState);
+      state = trimStateEventHistory(deserializeState(serializedState));
       canonicalSerializedState = serializeState(state);
     } catch (error) {
       if (!handleRouteError(error, reply)) {
@@ -231,6 +336,8 @@ export async function buildApp(options: BuildAppOptions = {}): Promise<FastifyIn
       });
     }
 
+    const providedToken = request.headers['x-dungeon-session'] as string | undefined;
+
     let existing: GameState | null;
     try {
       existing = await repo.loadGame(state.gameId as EntityId);
@@ -242,24 +349,44 @@ export async function buildApp(options: BuildAppOptions = {}): Promise<FastifyIn
     }
 
     if (existing) {
+      const existingToken = await repo.getGameSessionToken(state.gameId as EntityId);
+      
+      // Existing game with token: require matching token
+      if (existingToken !== null) {
+        if (!providedToken || providedToken !== existingToken) {
+          return reply.code(403).send({
+            error: 'Invalid session token',
+            code: 'SESSION_FORBIDDEN',
+          });
+        }
+      }
+      
+      // Check state match
       const existingSerializedState = getCanonicalSerializedState(existing);
       if (existingSerializedState !== canonicalSerializedState) {
         return reply.code(409).send(buildRestoreConflictResponse(state.gameId));
       }
 
-      return buildRestoreResponse(existing, existingSerializedState);
+      if (existingToken === null) {
+        const sessionToken = providedToken ?? await generateSessionToken();
+        await repo.setGameSessionToken(state.gameId as EntityId, sessionToken);
+        return buildRestoreResponse(existing, sessionToken, existingSerializedState);
+      }
+
+      return buildRestoreResponse(existing, existingToken, existingSerializedState);
     }
 
     try {
       await repo.createGame(state);
+      const sessionToken = providedToken ?? await generateSessionToken();
+      await repo.setGameSessionToken(state.gameId as EntityId, sessionToken);
+      return buildRestoreResponse(state, sessionToken, canonicalSerializedState);
     } catch {
       return reply.code(500).send({
         error: 'Failed to restore game state',
         code: 'RESTORE_CREATE_FAILED',
       });
     }
-
-    return buildRestoreResponse(state, canonicalSerializedState);
   });
 
   // Debug routes (dev only)
@@ -268,6 +395,11 @@ export async function buildApp(options: BuildAppOptions = {}): Promise<FastifyIn
   // GET /api/games/:id/view — get game view model
   app.get<{ Params: { id: string } }>('/api/games/:id/view', async (request, reply) => {
     try {
+      const check = await checkSessionToken(repo, request.params.id, request.headers['x-dungeon-session'] as string | undefined);
+      if (!check.ok) {
+        return reply.code(check.statusCode).send(check.body);
+      }
+
       const state = await repo.loadGame(request.params.id as EntityId);
       if (!state) return reply.code(404).send({ error: 'Game not found' });
 
@@ -288,7 +420,14 @@ export async function buildApp(options: BuildAppOptions = {}): Promise<FastifyIn
   // GET /api/runs/metrics — get aggregated session metrics
   app.get<{ Querystring: { gameId?: string; limit?: string } }>(
     '/api/runs/metrics',
-    async (request) => {
+    async (request, reply) => {
+      if (request.query.gameId) {
+        const check = await checkSessionToken(repo, request.query.gameId, request.headers['x-dungeon-session'] as string | undefined);
+        if (!check.ok) {
+          return reply.code(check.statusCode).send(check.body);
+        }
+      }
+
       // Query the database for run metrics
       type RepoWithMetrics = { getRunMetricsLog?: () => readonly (RunMetrics & { gameId?: string })[] };
       const allMetrics = (repo as RepoWithMetrics).getRunMetricsLog?.() ?? [];

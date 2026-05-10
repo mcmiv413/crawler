@@ -4,9 +4,11 @@
 
 import { useMemo, useState } from 'react';
 import type { AbilityView, EntityView, InventoryItemView } from '@dungeon/presenter';
-import { getValidDisarmableTraps, getValidEnemyTargets, getValidTrapPlacementDirections } from '@dungeon/presenter/targeting';
+import { getEffectiveRange, getValidDisarmableTraps, getValidTrapPlacementDirections } from '@dungeon/presenter/targeting';
 import type { Direction } from '@dungeon/contracts';
 import styles from './ActionDropdowns.module.css';
+
+type AbilityWithTargeting = AbilityView & { readonly isRanged?: boolean };
 
 type AbilitySelection = {
   abilityId: string;
@@ -33,9 +35,10 @@ const DIRECTION_BUTTONS: ReadonlyArray<{ readonly direction: Direction; readonly
 ];
 
 export interface AbilityDropdownProps {
-  readonly abilities: readonly AbilityView[];
+  readonly abilities: readonly AbilityWithTargeting[];
   readonly enemies: readonly EntityView[];
   readonly inventory: readonly InventoryItemView[];
+  readonly equippedWeapon?: InventoryItemView | null;
   readonly playerX: number;
   readonly playerY: number;
   readonly mapObjects?: readonly EntityView[];
@@ -80,6 +83,7 @@ export function AbilityDropdown({
   abilities,
   enemies,
   inventory,
+  equippedWeapon = null,
   playerX,
   playerY,
   mapObjects = [],
@@ -100,10 +104,15 @@ export function AbilityDropdown({
     [mapObjects, playerX, playerY],
   );
 
-  const targetableEnemies = useMemo(
-    () => getValidEnemyTargets(enemies, playerPosition),
-    [enemies, playerX, playerY],
-  );
+  const getTargetableEnemiesForAbility = (ability: AbilityWithTargeting): EntityView[] => {
+    const range = getEffectiveRange(ability, equippedWeapon);
+    return enemies
+      .filter((enemy) => enemy.type === 'enemy')
+      .filter((enemy) => {
+        const distance = calculateDistance(playerX, playerY, enemy.x, enemy.y);
+        return distance > 0 && distance <= range.max && distance >= range.min;
+      });
+  };
 
   const validTrapPlacementDirections = useMemo(() => {
     const mutableDirections = new Set<Direction>();
@@ -146,13 +155,14 @@ export function AbilityDropdown({
     }
 
     if (ability.requiresTarget === true) {
-      if (targetableEnemies.length === 1) {
-        const target = targetableEnemies[0]!;
+      const abilityTargets = getTargetableEnemiesForAbility(ability);
+      if (abilityTargets.length === 1) {
+        const target = abilityTargets[0]!;
         onSelect({ abilityId: ability.id, targetId: target.id });
         return;
       }
 
-      if (targetableEnemies.length > 1) {
+      if (abilityTargets.length > 1) {
         setSelectedAbilityId(ability.id);
         return;
       }
@@ -282,6 +292,7 @@ export function AbilityDropdown({
 
   // Target chooser for abilities with multiple targets
   const selectedAbility = selectedAbilityId ? abilities.find((a) => a.id === selectedAbilityId) : undefined;
+  const targetableEnemies = selectedAbility === undefined ? [] : getTargetableEnemiesForAbility(selectedAbility);
   if (selectedAbilityId !== null && selectedAbility?.requiresTarget === true && targetableEnemies.length > 1 && selectedAbilityId !== 'dagger_disarm' && selectedAbilityId !== 'dagger_set_trap') {
     return (
       <div className={styles.listContainer}>
@@ -379,7 +390,7 @@ export function AbilityDropdown({
             : ability.id === 'dagger_set_trap'
               ? (trapItems.length === 0 ? 'No traps in inventory' : undefined)
               : ability.requiresTarget
-                ? (targetableEnemies.length === 0 ? 'No valid targets' : undefined)
+                ? (getTargetableEnemiesForAbility(ability).length === 0 ? 'No valid targets' : undefined)
                 : undefined;
         const isDisabled = disabledReason !== undefined && disabledReason !== 'Ready';
 
