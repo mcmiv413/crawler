@@ -22,6 +22,7 @@ export type AbilityRequirement =
   | { kind: 'no_target' }
   | { kind: 'player_missing_hp' }
   | { kind: 'target_in_melee_range' }
+  | { kind: 'target_in_weapon_range' }
   | { kind: 'target_visible' }
   | { kind: 'target_below_hp_pct'; percentage: number };
 

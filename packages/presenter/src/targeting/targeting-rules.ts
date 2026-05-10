@@ -38,12 +38,13 @@ export function getEffectiveRange(
 export function getValidEnemyTargets(
   enemies: readonly EntityView[],
   playerPos: Position,
+  range: { readonly max: number; readonly min: number } = { max: 1, min: 0 },
 ): EntityView[] {
   const enemyEntities = enemies.filter((enemy) => enemy.type === 'enemy');
 
   return enemyEntities.filter((enemy) => {
     const distance = chebyshevDistance(playerPos, { x: enemy.x, y: enemy.y });
-    return distance > 0 && distance <= 1;
+    return distance > 0 && distance <= range.max && distance >= range.min;
   });
 }
 

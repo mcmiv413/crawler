@@ -29,4 +29,14 @@ export interface AnimationRef {
    * Default: false. Must be explicitly declared for projectile/aoe refs.
    */
   readonly suppressActorBump?: boolean;
+  /**
+   * Optional hit-stop duration in milliseconds. When set, the orchestrator pauses
+   * animation progress for the specified duration at impact.
+   */
+  readonly hitStopMs?: number;
+  /**
+   * Optional impact flash on defender. When true, the defender's tile flashes
+   * white and shakes briefly on impact.
+   */
+  readonly impactFlash?: boolean;
 }

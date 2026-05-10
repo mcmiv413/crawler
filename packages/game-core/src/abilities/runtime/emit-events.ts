@@ -6,6 +6,7 @@ interface AbilityExecutionResult {
   healAmount?: number;
   targetId?: EntityId;
   targetName?: string;
+  damageByTarget?: ReadonlyMap<EntityId, number>;
 }
 
 /**
@@ -17,6 +18,10 @@ export function buildAbilityUsedEvent(
   abilityName: string,
   result: AbilityExecutionResult,
 ): DomainEvent[] {
+  const damage = result.damageByTarget !== undefined
+    ? Array.from(result.damageByTarget.values()).reduce((sum, val) => sum + val, 0)
+    : result.damage;
+
   const event: DomainEvent = {
     type: 'ABILITY_USED',
     playerId: context.player.id,
@@ -24,8 +29,9 @@ export function buildAbilityUsedEvent(
     abilityName,
     targetId: result.targetId,
     targetName: result.targetName,
-    damage: result.damage,
+    damage,
     healAmount: result.healAmount,
+    damageByTarget: result.damageByTarget,
     timestamp: context.state.turnNumber,
     turnNumber: context.state.turnNumber,
   };

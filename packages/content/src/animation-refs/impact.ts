@@ -9,6 +9,8 @@ export const radialImpactBurst: AnimationRef = {
   id: 'fx.impact.radial-impact-burst',
   category: 'impact',
   durationMs: 400,
+  hitStopMs: 50,
+  impactFlash: true,
 };
 
 export const forwardSlash: AnimationRef = {
@@ -27,18 +29,24 @@ export const executionStrike: AnimationRef = {
   id: 'fx.impact.execution-strike',
   category: 'impact',
   durationMs: 500,
+  hitStopMs: 80,
+  impactFlash: true,
 };
 
 export const staggerShockwave: AnimationRef = {
   id: 'fx.impact.stagger-shockwave',
   category: 'impact',
   durationMs: 380,
+  hitStopMs: 40,
+  impactFlash: true,
 };
 
 export const shatterBurst: AnimationRef = {
   id: 'fx.impact.shatter-burst',
   category: 'impact',
   durationMs: 420,
+  hitStopMs: 50,
+  impactFlash: true,
 };
 
 export const riposteGlint: AnimationRef = {
@@ -51,6 +59,8 @@ export const bleedingStrike: AnimationRef = {
   id: 'fx.impact.bleeding-strike',
   category: 'impact',
   durationMs: 400,
+  hitStopMs: 50,
+  impactFlash: true,
 };
 
 export const disarmStrike: AnimationRef = {

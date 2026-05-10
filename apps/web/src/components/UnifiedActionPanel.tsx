@@ -283,6 +283,7 @@ export function UnifiedActionPanel({
                 abilities={view.player.abilities}
                 enemies={enemies}
                 inventory={view.inventory.items}
+                equippedWeapon={view.inventory.equipped.weapon}
                 playerX={playerPos.x}
                 playerY={playerPos.y}
                 mapObjects={objects}

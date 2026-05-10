@@ -3,38 +3,32 @@
  * Arrow travels from source to target with impact flash.
  */
 
-import type { AnimationModule, AnimationDrawContext } from '../types.js';
+import { animationRefs } from '@dungeon/content';
+import type { AnimationModule, AnimationDrawContext, RendererHelpers } from '../types.js';
 
 export const rangedPinModule: AnimationModule = {
-  id: 'fx.projectile.single-arrow',
-  durationMs: 300,
-  category: 'projectile',
-  suppressActorBump: false,
+  id: animationRefs.projectile.singleArrow.id,
+  durationMs: animationRefs.projectile.singleArrow.durationMs,
+  category: animationRefs.projectile.singleArrow.category,
+  suppressActorBump: animationRefs.projectile.singleArrow.suppressActorBump,
 
-  draw(ctx: CanvasRenderingContext2D, anim: AnimationDrawContext): void {
-    const { x, y, progress } = anim;
-    const alpha = Math.max(0, 1 - progress);
+  draw(ctx: CanvasRenderingContext2D, anim: AnimationDrawContext, helpers: RendererHelpers): void {
+    const { x, y, progress, targetPos } = anim;
+    const targetX = targetPos?.x ?? x;
+    const targetY = targetPos?.y ?? y;
+    const travelProgress = Math.min(progress / 0.78, 1);
+    const impactProgress = Math.max(0, (progress - 0.72) / 0.28);
+
+    const alpha = progress < 0.75 ? 1 : 1 - helpers.easeInCubic((progress - 0.75) / 0.25);
 
     ctx.save();
-    ctx.fillStyle = `rgba(180, 150, 100, ${alpha * 0.8})`;
-    ctx.strokeStyle = `rgba(100, 50, 0, ${alpha})`;
-    ctx.lineWidth = 1;
+    ctx.globalAlpha = alpha;
+    helpers.drawArrowAlong(ctx, x, y, targetX, targetY, helpers.easeOutCubic(travelProgress));
 
-    // Draw arrow shaft
-    const arrowLength = 16;
-    ctx.beginPath();
-    ctx.moveTo(x - arrowLength / 2, y);
-    ctx.lineTo(x + arrowLength / 2, y);
-    ctx.stroke();
-
-    // Draw arrow head
-    const headSize = 4;
-    ctx.beginPath();
-    ctx.moveTo(x + arrowLength / 2, y);
-    ctx.lineTo(x + arrowLength / 2 - headSize, y - headSize / 2);
-    ctx.lineTo(x + arrowLength / 2 - headSize, y + headSize / 2);
-    ctx.closePath();
-    ctx.fill();
+    if (impactProgress > 0) {
+      const ringAlpha = 1 - helpers.easeInCubic(Math.min(impactProgress, 1));
+      helpers.drawRing(ctx, targetX, targetY, 6 + impactProgress * 16, 2, '255, 200, 100', ringAlpha);
+    }
 
     ctx.restore();
   },

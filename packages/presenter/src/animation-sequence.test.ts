@@ -1,5 +1,5 @@
 import { describe, it, expect } from 'vitest';
-import type { DomainEvent, GameState } from '@dungeon/contracts';
+import type { DomainEvent, EntityId, GameState } from '@dungeon/contracts';
 import { buildAnimationSequence } from './animation-sequence.js';
 import { ANIMATION_TIMING, CONSUMABLE_ANIMATION_METADATA } from './animation-metadata.js';
 
@@ -521,6 +521,78 @@ describe('buildAnimationSequence', () => {
       const batchId2 = (animations2[0] as any).batchId;
 
       expect(batchId1).not.toBe(batchId2);
+    });
+  });
+
+  describe('ability damage indicators', () => {
+    it('emits damage indicators for single-target abilities', () => {
+      const events: DomainEvent[] = [
+        {
+          type: 'ABILITY_USED',
+          playerId: 'player-1' as any,
+          abilityId: 'power_strike',
+          abilityName: 'Power Strike',
+          targetId: 'enemy-1' as any,
+          targetName: 'Slow Goblin',
+          damage: 25,
+          timestamp: 0,
+          turnNumber: 1,
+        },
+      ];
+
+      const animations = buildAnimationSequence(events, mockGameState);
+
+      // Should have one ability animation and one damage indicator
+      const abilityAnims = animations.filter(a => a.type === 'ability');
+      const damageAnims = animations.filter(a => a.type === 'damage');
+
+      expect(abilityAnims).toHaveLength(1);
+      expect(damageAnims).toHaveLength(1);
+
+      // Damage indicator should be at enemy position
+      const damageAnim = damageAnims[0];
+      expect(damageAnim?.data).toMatchObject({
+        x: 51, // enemy-1 position
+        y: 50,
+        text: '-25',
+        type: 'damage',
+      });
+
+      // Damage indicator should be delayed after ability animation completes
+      const abilityAnim = abilityAnims[0];
+      expect(damageAnim?.delayMs).toBeGreaterThan(abilityAnim?.delayMs ?? 0);
+    });
+
+    it('emits multiple damage indicators for AoE abilities like cleave', () => {
+      const events: DomainEvent[] = [
+        {
+          type: 'ABILITY_USED',
+          playerId: 'player-1' as any,
+          abilityId: 'axe_cleave',
+          abilityName: 'Cleave',
+          targetId: 'enemy-1' as any,
+          targetName: 'Slow Goblin',
+          damage: 15,
+          damageByTarget: new Map<EntityId, number>([
+            ['enemy-1' as EntityId, 15],
+            ['enemy-2' as EntityId, 15],
+          ]),
+          timestamp: 0,
+          turnNumber: 1,
+        },
+      ];
+
+      const animations = buildAnimationSequence(events, mockGameState);
+
+      // For cleave hitting 2 enemies, should have damage indicators at both positions
+      const damageAnims = animations.filter(a => a.type === 'damage');
+      
+      expect(damageAnims.length).toBeGreaterThanOrEqual(2);
+      
+      // Should have damage indicators at the affected positions
+      const positions = damageAnims.map(a => ({ x: (a.data as any).x, y: (a.data as any).y }));
+      expect(positions).toContainEqual({ x: 51, y: 50 }); // enemy-1
+      expect(positions).toContainEqual({ x: 52, y: 50 }); // enemy-2
     });
   });
 });

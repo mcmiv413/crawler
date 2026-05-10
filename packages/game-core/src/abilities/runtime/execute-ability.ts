@@ -43,8 +43,9 @@ export function executeAbility(
   // Execute effects in sequence
   let newContext = context;
   let accumulatedEvents: DomainEvent[] = [];
-  let resultData: { damage?: number; healAmount?: number } = {};
+  let resultData: { damage?: number; healAmount?: number; damageByTarget?: ReadonlyMap<EntityId, number> } = {};
   let lastAttackHit = false;
+  const damageByTarget = new Map<EntityId, number>();
 
   for (const effect of definition.effects) {
     if (effect.kind === 'heal') {
@@ -61,20 +62,26 @@ export function executeAbility(
       }
     } else if (targets.length > 0) {
       // Target-based effects
-      for (const { key: targetKey } of targets) {
+      for (const { key: targetKey, enemy } of targets) {
         const effectResult = applyEffect(newContext, effect, targetKey, lastAttackHit);
         newContext = { ...newContext, state: effectResult.state };
         accumulatedEvents = [...accumulatedEvents, ...effectResult.events];
         // Update lastAttackHit if this was an attack effect
         if (effect.kind === 'attack') {
           lastAttackHit = effectResult.hit ?? false;
-          // Capture damage from attack effect
+          // Capture damage from attack effect and accumulate per victim
           if (effectResult.damage !== undefined) {
             resultData.damage = effectResult.damage;
+            damageByTarget.set(enemy.id, (damageByTarget.get(enemy.id) ?? 0) + effectResult.damage);
           }
         }
       }
     }
+  }
+
+  // Build damageByTarget map if we have per-victim damage
+  if (damageByTarget.size > 0) {
+    resultData.damageByTarget = new Map(damageByTarget);
   }
 
   // Emit ability used event

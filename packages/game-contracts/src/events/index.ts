@@ -274,6 +274,7 @@ export interface AbilityUsedEvent extends BaseEvent {
   readonly targetName?: string;
   readonly damage?: number;
   readonly healAmount?: number;
+  readonly damageByTarget?: ReadonlyMap<EntityId, number>;
 }
 
 export interface MasteryUnlockedEvent extends BaseEvent {

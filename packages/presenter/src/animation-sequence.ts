@@ -1,4 +1,4 @@
-import type { DomainEvent, GameState, EntityId } from '@dungeon/contracts';
+import type { DomainEvent, GameState, EntityId, EnemyInstance } from '@dungeon/contracts';
 import type {
   BumpAnimationEntry,
   CombatIndicatorEntry,
@@ -15,13 +15,23 @@ import {
   getMoveDurationMs,
 } from './animation-metadata.js';
 import { ABILITY_DEFINITIONS, ANIMATION_REF_BY_ID } from '@dungeon/content';
+import type { AnimationId } from '@dungeon/content';
+
+export interface HitStopEntry {
+  durationMs: number;
+}
+
+export interface DefenderHitEntry {
+  entityId: string;
+  durationMs: number;
+}
 
 export interface AnimatedEvent {
-  type: 'bump' | 'damage' | 'heal' | 'status' | 'move' | 'consumable' | 'ability';
+  type: 'bump' | 'damage' | 'heal' | 'status' | 'move' | 'consumable' | 'ability' | 'hit-stop' | 'defender-hit';
   sequenceIndex: number;
   delayMs: number;
   batchId: string;
-  data: BumpAnimationEntry | CombatIndicatorEntry | MoveAnimationEntry | ConsumableAnimationEntry | AbilityAnimationEntry;
+  data: BumpAnimationEntry | CombatIndicatorEntry | MoveAnimationEntry | ConsumableAnimationEntry | AbilityAnimationEntry | HitStopEntry | DefenderHitEntry;
 }
 
 function getEntitySpeed(id: EntityId, state: GameState): number {
@@ -43,6 +53,28 @@ function getEntityPosition(
     if (enemy.id === id) return enemy.position;
   }
   return null;
+}
+
+function getEnemyById(
+  id: EntityId,
+  state: GameState,
+): EnemyInstance | null {
+  if (state.run == null) return null;
+  for (const enemy of state.run.enemies.values()) {
+    if (enemy.id === id) return enemy;
+  }
+  return null;
+}
+
+function getConsumableAnimationId(
+  event: Extract<DomainEvent, { type: 'ITEM_USED' }>,
+  state: GameState,
+): AnimationId | undefined {
+  const template = state.itemRegistry.items.get(event.itemId);
+  if (template === undefined || !('animation' in template)) return undefined;
+
+  const animation = (template as { readonly animation?: { readonly id?: string } }).animation;
+  return animation?.id as AnimationId | undefined;
 }
 
 /**
@@ -191,7 +223,7 @@ export function buildAnimationSequence(
     const abilityDef = ABILITY_DEFINITIONS.get(event.abilityId);
     if (!abilityDef || !abilityDef.animation?.id) continue;
 
-    const animRef = ANIMATION_REF_BY_ID.get(abilityDef.animation.id as keyof typeof animRef);
+    const animRef = ANIMATION_REF_BY_ID.get(abilityDef.animation.id as AnimationId);
     if (!animRef) continue;
 
     const playerPos = state.player.position;
@@ -201,31 +233,24 @@ export function buildAnimationSequence(
     let targetHpFraction: number | undefined;
 
     // Handle special ability shapes based on ability ID
-    if (event.abilityId === 'axe_cleave' && targetPos) {
-      // Cleave: 8 adjacent tiles around target
-      const directions = [
-        { x: 0, y: -1 },   // n
-        { x: 1, y: -1 },   // ne
-        { x: 1, y: 0 },    // e
-        { x: 1, y: 1 },    // se
-        { x: 0, y: 1 },    // s
-        { x: -1, y: 1 },   // sw
-        { x: -1, y: 0 },   // w
-        { x: -1, y: -1 },  // nw
-      ];
-      blastPositions = directions.map(d => ({ x: targetPos.x + d.x, y: targetPos.y + d.y }));
-    } else if (event.abilityId === 'ranged_volley') {
-      // Volley: all visible enemy positions
-      const volleyPositions: Array<{ x: number; y: number }> = [];
-      state.run.enemies.forEach(enemy => {
-        // eslint-disable-next-line dungeon/no-array-mutation
-        volleyPositions.push(enemy.position);
+    if (event.abilityId === 'axe_cleave' && event.damageByTarget) {
+      // Cleave: animation at each affected enemy position
+      blastPositions = Array.from(event.damageByTarget.keys()).flatMap((targetId) => {
+        const position = getEntityPosition(targetId, state);
+        return position === null ? [] : [position];
       });
-      blastPositions = volleyPositions;
+    } else if (event.abilityId === 'ranged_volley') {
+      // Volley: prefer actual hit positions, then fall back to visible enemies.
+      blastPositions = event.damageByTarget
+        ? Array.from(event.damageByTarget.keys()).flatMap((targetId) => {
+            const position = getEntityPosition(targetId, state);
+            return position === null ? [] : [position];
+          })
+        : Array.from(state.run.enemies.values()).map(enemy => enemy.position);
     } else if (event.abilityId === 'axe_execute') {
       // Execute: compute HP fraction from target's current health
       if (event.targetId) {
-        const targetEnemy = state.run.enemies.get(event.targetId);
+        const targetEnemy = getEnemyById(event.targetId, state);
         if (targetEnemy && targetEnemy.stats.maxHealth > 0) {
           targetHpFraction = targetEnemy.stats.health / targetEnemy.stats.maxHealth;
         }
@@ -257,10 +282,71 @@ export function buildAnimationSequence(
   for (const event of abilityUsedEvents) {
     const abilityDef = ABILITY_DEFINITIONS.get(event.abilityId);
     if (abilityDef?.animation?.id) {
-      const animRef = ANIMATION_REF_BY_ID.get(abilityDef.animation.id as keyof typeof animRef);
+      const animRef = ANIMATION_REF_BY_ID.get(abilityDef.animation.id as AnimationId);
       if (animRef && animRef.durationMs > maxAbilityDurationMs) {
         maxAbilityDurationMs = animRef.durationMs;
       }
+    }
+  }
+
+  // ── 2b. Ability damage indicators ────────────────────────────────
+  // Create damage indicators for abilities that deal damage.
+  // These appear at the target position(s), delayed until after animation starts.
+
+  for (let i = 0; i < abilityUsedEvents.length; i += 1) {
+    const event = abilityUsedEvents[i];
+    if (!event) continue;
+
+    const abilityDef = ABILITY_DEFINITIONS.get(event.abilityId);
+    if (!abilityDef || !abilityDef.animation?.id) continue;
+
+    const animRef = ANIMATION_REF_BY_ID.get(abilityDef.animation.id as AnimationId);
+    if (!animRef) continue;
+
+    // Determine damage positions and amounts based on ability type
+    let mutableDamagePositions: Array<{ pos: { x: number; y: number }; damage: number }> = [];
+
+    if (event.abilityId === 'axe_cleave' && event.damageByTarget) {
+      // Cleave: damage at each affected position
+      for (const [targetId, damage] of event.damageByTarget.entries()) {
+        const position = getEntityPosition(targetId, state);
+        if (position) {
+          mutableDamagePositions.push({ pos: position, damage });
+        }
+      }
+    } else if (event.abilityId === 'ranged_volley' && event.damageByTarget) {
+      // Volley: damage at each hit enemy position
+      for (const [targetId, damage] of event.damageByTarget.entries()) {
+        const position = getEntityPosition(targetId, state);
+        if (position) {
+          mutableDamagePositions.push({ pos: position, damage });
+        }
+      }
+    } else if (event.targetId && event.damage !== undefined && event.damage > 0) {
+      // Single-target ability with damage
+      const targetPos = getEntityPosition(event.targetId, state);
+      if (targetPos) {
+        mutableDamagePositions.push({ pos: targetPos, damage: event.damage });
+      }
+    }
+
+    // Create damage indicators for each position
+    for (const { pos, damage } of mutableDamagePositions) {
+      const damageEntry: CombatIndicatorEntry = {
+        text: `-${damage}`,
+        type: 'damage',
+        x: pos.x,
+        y: pos.y,
+      };
+
+      const sequenceIndex = orderedMoves.length + abilityUsedEvents.length + i;
+      mutableAnimations.push({
+        type: 'damage',
+        sequenceIndex,
+        delayMs: animRef.durationMs * 0.3,  // Appear during animation, not after
+        batchId,
+        data: damageEntry,
+      });
     }
   }
 
@@ -335,14 +421,17 @@ export function buildAnimationSequence(
 
     const playerPos = state.player.position;
     const { effect, presentation } = getConsumableAnimationMetadata(event.effect);
+    const animationId = getConsumableAnimationId(event, state);
+    const animationRef = animationId === undefined ? undefined : ANIMATION_REF_BY_ID.get(animationId);
     const blastPositions = getConsumableBlastPositions(playerPos, presentation);
 
     const entry: ConsumableAnimationEntry = {
       effect,
       playerPos,
       blastPositions,
-      durationMs: presentation.durationMs,
+      durationMs: animationRef?.durationMs ?? presentation.durationMs,
       presentation,
+      ...(animationRef !== undefined ? { animationId: animationRef.id } : {}),
     };
 
     const sequenceIndex = orderedMoves.length + abilityUsedEvents.length + attacksWithSpeeds.length + i;

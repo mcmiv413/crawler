@@ -15,6 +15,8 @@ export class InMemoryRepository implements IGameRepository {
   private runMetricsLog: RunMetrics[] = [];
   // Track version numbers per game for OCC (Optimistic Concurrency Control)
   private versions = new Map<string, number>();
+  // Track session tokens per game
+  private sessionTokens = new Map<string, string>();
 
   async createGame(state: GameState): Promise<void> {
     this.games.set(state.gameId, cloneGameState(state));
@@ -80,5 +82,13 @@ export class InMemoryRepository implements IGameRepository {
     this.versions.set(gameId, nextVersion);
     const existing = this.events.get(gameId) ?? [];
     this.events.set(gameId, [...existing, ...cloneJson(events)]);
+  }
+
+  async setGameSessionToken(gameId: EntityId, token: string): Promise<void> {
+    this.sessionTokens.set(gameId, token);
+  }
+
+  async getGameSessionToken(gameId: EntityId): Promise<string | null> {
+    return this.sessionTokens.get(gameId) ?? null;
   }
 }

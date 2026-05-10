@@ -4,7 +4,7 @@ import type { IGameEngine, CommandResult } from '@dungeon/contracts';
 import type { DomainEvent } from '@dungeon/contracts';
 import { chebyshevDistance } from '../utils/grid.js';
 import { generateId } from '../utils/id.js';
-import { BASE_PLAYER_STATS, ECONOMY, BIOME_BY_FLOOR, ENEMY_TEMPLATES } from '@dungeon/content';
+import { BASE_PLAYER_STATS, ECONOMY, ENEMY_TEMPLATES, MAX_EVENT_HISTORY, selectBiomeForFloor } from '@dungeon/content';
 import { EMPTY_RUN_METRICS, EMPTY_WEAPON_MASTERY } from '@dungeon/contracts';
 import { SeededRNG } from '../utils/rng.js';
 import { handleCommand } from './command-handler.js';
@@ -151,11 +151,13 @@ export class GameEngine implements IGameEngine {
       return state;
     }
 
+    const eventHistory = [...state.world.eventHistory, ...events].slice(-MAX_EVENT_HISTORY);
+
     return {
       ...state,
       world: {
         ...state.world,
-        eventHistory: [...state.world.eventHistory, ...events],
+        eventHistory,
       },
     };
   }
@@ -165,7 +167,7 @@ export class GameEngine implements IGameEngine {
     const defaultDepth = state.lastRetreatFloor !== undefined ? Math.max(1, Math.min(state.lastRetreatFloor, maxAllowed)) : 1;
     const depth = startDepth !== undefined ? Math.max(1, Math.min(startDepth, maxAllowed)) : defaultDepth;
 
-    const biome = BIOME_BY_FLOOR(depth, rng);
+    const biome = selectBiomeForFloor(depth, state.world, rng);
     const cachedFloor = state.persistedFloorCache?.get(depth);
     let events: DomainEvent[] = [];
 
@@ -277,7 +279,6 @@ export class GameEngine implements IGameEngine {
     previousEvents: readonly DomainEvent[],
   ): CommandResult {
     const newDepth = (state.run?.floor.depth ?? 0) + 1;
-    const biome = BIOME_BY_FLOOR(newDepth, rng);
     let events = [...previousEvents];
     const previousDeepestFloor = state.world.deepestFloor;
 
@@ -292,6 +293,7 @@ export class GameEngine implements IGameEngine {
       worldForDepth = pressureResult.world;
       events = [...events, ...pressureResult.events];
     }
+    const biome = selectBiomeForFloor(newDepth, worldForDepth, rng);
 
     const snapshot: StoredFloor = {
       floor: state.run!.floor,
@@ -398,7 +400,7 @@ export class GameEngine implements IGameEngine {
 
     const currentDepth = state.run.floor.depth;
     const targetDepth = currentDepth - 1;
-    const biome = BIOME_BY_FLOOR(targetDepth, rng);
+    const biome = selectBiomeForFloor(targetDepth, state.world, rng);
 
     const cacheSnapshot: StoredFloor = {
       floor: state.run.floor,

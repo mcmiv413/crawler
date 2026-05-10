@@ -17,6 +17,7 @@ interface GameStore {
   autoWalkKnownEnemyIds: Set<string>;
   debugLogging: boolean;
   deathTransitioning: boolean;
+  sessionToken: string | null;
 
   createGame: (seed?: number, playerName?: string) => Promise<void>;
   sendCommand: (command: unknown) => Promise<void>;
@@ -51,6 +52,13 @@ function shouldClearSavedSession(error: unknown): boolean {
   }
 
   const apiError = error as Error & { readonly code?: string; readonly status?: number };
+  
+  // 403 SESSION_FORBIDDEN is fatal — clear the saved session
+  if (apiError.status === 403 && apiError.code === 'SESSION_FORBIDDEN') {
+    return true;
+  }
+
+  // Legacy 400 errors
   if (apiError.status !== 400) {
     return false;
   }
@@ -68,18 +76,20 @@ export const useGameStore = create<GameStore>((set, get) => ({
   autoWalkKnownEnemyIds: new Set(),
   debugLogging: false,
   deathTransitioning: false,
+  sessionToken: null,
 
   createGame: async (seed, playerName) => {
     set({ loading: true, error: null });
     try {
       const api = await import('../api/client.js');
       const result = await api.createGame(seed, playerName);
-      saveSession(result.gameId, result.serializedState);
+      saveSession(result.gameId, result.serializedState, result.sessionToken);
       set({
         gameId: result.gameId,
         view: result.view,
         combatLog: [],
         loading: false,
+        sessionToken: result.sessionToken,
       });
     } catch (err) {
       set({ error: (err as Error).message, loading: false });
@@ -87,7 +97,7 @@ export const useGameStore = create<GameStore>((set, get) => ({
   },
 
   sendCommand: async (command) => {
-    const { gameId, debugLogging } = get();
+    const { gameId, sessionToken, debugLogging } = get();
     if (!gameId) return;
 
     set({ loading: true, error: null });
@@ -103,15 +113,18 @@ export const useGameStore = create<GameStore>((set, get) => ({
         });
       }
       let result: Awaited<ReturnType<typeof api.sendCommand>>;
+      let currentSessionToken = sessionToken ?? undefined;
       try {
-        result = await api.sendCommand(gameId, command);
+        result = await api.sendCommand(gameId, command, currentSessionToken);
       } catch (err) {
         if (err instanceof api.GameNotFoundError) {
           // Server lost state (cold start) — restore and retry
           const saved = loadSession();
           if (saved) {
-            await api.restoreGame(saved.serializedState);
-            result = await api.sendCommand(gameId, command);
+            const restored = await api.restoreGame(saved.serializedState, saved.sessionToken);
+            currentSessionToken = restored.sessionToken;
+            set({ sessionToken: currentSessionToken });
+            result = await api.sendCommand(gameId, command, restored.sessionToken);
           } else {
             throw new Error('Game session expired. Please start a new game.');
           }
@@ -119,7 +132,7 @@ export const useGameStore = create<GameStore>((set, get) => ({
           throw err;
         }
       }
-      saveSession(gameId, result.serializedState);
+      saveSession(gameId, result.serializedState, currentSessionToken);
       if (debugLogging && result.view.combatLog.length > 0) {
         const lastEntry = result.view.combatLog[result.view.combatLog.length - 1];
         // eslint-disable-next-line no-console
@@ -166,19 +179,27 @@ export const useGameStore = create<GameStore>((set, get) => ({
         });
       }
     } catch (err) {
+      if (shouldClearSavedSession(err)) {
+        clearSession();
+        set({ sessionToken: null });
+      }
       set({ error: (err as Error).message, loading: false });
     }
   },
 
   refreshView: async () => {
-    const { gameId } = get();
+    const { gameId, sessionToken } = get();
     if (!gameId) return;
 
     try {
       const api = await import('../api/client.js');
-      const view = await api.fetchGameView(gameId);
+      const view = await api.fetchGameView(gameId, sessionToken ?? undefined);
       set({ view });
     } catch (err) {
+      if (shouldClearSavedSession(err)) {
+        clearSession();
+        set({ sessionToken: null });
+      }
       set({ error: (err as Error).message });
     }
   },
@@ -194,21 +215,21 @@ export const useGameStore = create<GameStore>((set, get) => ({
       const api = await import('../api/client.js');
       // Try fetching view directly (server may still have it warm)
       try {
-        const view = await api.fetchGameView(saved.gameId);
-        set({ gameId: saved.gameId, view, combatLog: [], loading: false });
+        const view = await api.fetchGameView(saved.gameId, saved.sessionToken);
+        set({ gameId: saved.gameId, view, combatLog: [], loading: false, sessionToken: saved.sessionToken ?? null });
         return true;
       } catch {
         // Server lost it (cold start) — restore from client state
       }
-      const result = await api.restoreGame(saved.serializedState);
-      saveSession(result.gameId, result.serializedState);
-      set({ gameId: result.gameId, view: result.view, combatLog: [], loading: false });
+      const result = await api.restoreGame(saved.serializedState, saved.sessionToken);
+      saveSession(result.gameId, result.serializedState, result.sessionToken);
+      set({ gameId: result.gameId, view: result.view, combatLog: [], loading: false, sessionToken: result.sessionToken });
       return true;
     } catch (err) {
       if (shouldClearSavedSession(err)) {
         clearSession();
       }
-      set({ error: (err as Error).message, loading: false });
+      set({ error: (err as Error).message, loading: false, sessionToken: null });
       return false;
     }
   },
@@ -217,7 +238,7 @@ export const useGameStore = create<GameStore>((set, get) => ({
     if (deathTransitionTimeout) clearTimeout(deathTransitionTimeout);
     deathTransitionTimeout = null;
     clearSession();
-    set({ gameId: null, view: null, combatLog: [], error: null, autoWalkPath: [], autoWalkKnownEnemyIds: new Set(), deathTransitioning: false });
+    set({ gameId: null, view: null, combatLog: [], error: null, autoWalkPath: [], autoWalkKnownEnemyIds: new Set(), deathTransitioning: false, sessionToken: null });
   },
 
   startAutoWalk: (path) => {

@@ -292,7 +292,7 @@ describe('buildCombatIndicators', () => {
       });
     });
 
-    it('skips non-healing abilities', () => {
+    it('emits damage indicators for damage abilities', () => {
       const events: DomainEvent[] = [
         {
           type: 'ABILITY_USED',
@@ -309,7 +309,13 @@ describe('buildCombatIndicators', () => {
 
       const indicators = buildCombatIndicators(events, mockGameState);
 
-      expect(indicators).toHaveLength(0);
+      expect(indicators).toHaveLength(1);
+      expect(indicators[0]).toEqual({
+        text: '-30',
+        type: 'damage',
+        x: 51,
+        y: 50,
+      });
     });
   });
 

@@ -1,22 +1,13 @@
 import type { MapView, MapCellView, EntityView } from '@dungeon/presenter';
 import type { MoveAnimStyle, StatusPresentationView, ConsumableAnimationPresentationView } from '@dungeon/presenter';
+import type { AnimationId } from '@dungeon/content';
 import { resolveModule } from '../animations/registry.js';
+import * as rendererHelpers from '../animations/helpers.js';
 import { CELL_SIZE } from '../config/ui-config.js';
 import { spriteRegistry } from './sprite-registry.js';
 
 // ── Animation state interfaces ────────────────────────────────────
 // Defined locally so the renderer has no dependency on React hooks.
-
-// Stub RendererHelpers for animation modules (mostly unused by current modules)
-const rendererHelpers = {
-  drawStarBurst: () => {},
-  drawRing: () => {},
-  drawParticleStream: () => {},
-  drawArrowAlong: () => {},
-  easeOutCubic: (t: number) => 1 - Math.pow(1 - t, 3),
-  easeInCubic: (t: number) => t * t * t,
-  decayingSine: (t: number, freq: number) => Math.sin(t * freq) * Math.exp(-t),
-};
 
 interface BumpAnimationState {
   id: string;
@@ -45,6 +36,7 @@ interface ConsumableAnimationState {
   progress: number;
   durationMs: number;
   presentation: ConsumableAnimationPresentationView;
+  animationId?: string;
 }
 
 interface FxAnimationState {
@@ -462,29 +454,50 @@ function drawFxAnimations(
   vpTop: number,
 ): void {
   for (const anim of animations) {
-    const module = resolveModule(anim.animationId as any);
+    const module = resolveModule(anim.animationId as AnimationId);
     if (!module) continue;
 
-    ctx.save();
+    const worldAnchors = module.category === 'aoe' && anim.blastPositions.length > 0
+      ? anim.blastPositions
+      : (module.category === 'impact' || module.category === 'aoe') && anim.targetPos
+        ? [anim.targetPos]
+        : [anim.playerPos];
 
-    // Convert world position to screen position
-    const screenX = (anim.playerPos.x - vpLeft) * CELL_SIZE;
-    const screenY = (anim.playerPos.y - vpTop) * CELL_SIZE;
+    const positions = worldAnchors.map((pos) => ({
+      x: (pos.x - vpLeft) * CELL_SIZE + CELL_SIZE / 2,
+      y: (pos.y - vpTop) * CELL_SIZE + CELL_SIZE / 2,
+    }));
 
-    // Call the animation module's draw function
-    module.draw(ctx, {
-      x: screenX + CELL_SIZE / 2,
-      y: screenY + CELL_SIZE / 2,
-      progress: anim.progress,
-      durationMs: anim.durationMs,
-      targetPos: anim.targetPos ? {
+    // Draw at each position
+    for (const screenPos of positions) {
+      ctx.save();
+
+      // Convert world target position if needed
+      const screenTargetPos = anim.targetPos ? {
         x: (anim.targetPos.x - vpLeft) * CELL_SIZE + CELL_SIZE / 2,
         y: (anim.targetPos.y - vpTop) * CELL_SIZE + CELL_SIZE / 2,
-      } : undefined,
-      targetHpFraction: anim.targetHpFraction,
-    }, rendererHelpers);
+      } : undefined;
 
-    ctx.restore();
+      // Convert blast positions to screen coordinates
+      const screenBlastPositions = anim.blastPositions.map(pos => ({
+        x: (pos.x - vpLeft) * CELL_SIZE + CELL_SIZE / 2,
+        y: (pos.y - vpTop) * CELL_SIZE + CELL_SIZE / 2,
+      }));
+
+      // Call the animation module's draw function
+      module.draw(ctx, {
+        x: screenPos.x,
+        y: screenPos.y,
+        progress: anim.progress,
+        durationMs: anim.durationMs,
+        targetPos: screenTargetPos,
+        blastPositions: screenBlastPositions,
+        targetHpFraction: anim.targetHpFraction,
+        category: module.category,
+      }, rendererHelpers);
+
+      ctx.restore();
+    }
   }
 }
 
@@ -499,6 +512,32 @@ function drawConsumableEffects(
   vpTop: number,
 ): void {
   for (const anim of animations) {
+    if (anim.animationId !== undefined) {
+      const module = resolveModule(anim.animationId as AnimationId);
+      if (module !== undefined) {
+        const screenPlayerPos = {
+          x: (anim.playerPos.x - vpLeft) * CELL_SIZE + CELL_SIZE / 2,
+          y: (anim.playerPos.y - vpTop) * CELL_SIZE + CELL_SIZE / 2,
+        };
+        const screenBlastPositions = anim.blastPositions.map(pos => ({
+          x: (pos.x - vpLeft) * CELL_SIZE + CELL_SIZE / 2,
+          y: (pos.y - vpTop) * CELL_SIZE + CELL_SIZE / 2,
+        }));
+
+        ctx.save();
+        module.draw(ctx, {
+          x: screenPlayerPos.x,
+          y: screenPlayerPos.y,
+          progress: anim.progress,
+          durationMs: anim.durationMs,
+          blastPositions: screenBlastPositions,
+          category: module.category,
+        }, rendererHelpers);
+        ctx.restore();
+        continue;
+      }
+    }
+
     ctx.save();
     switch (anim.presentation.kind) {
       case 'heal_hearts':   drawHealEffect(ctx, anim, vpLeft, vpTop);   break;

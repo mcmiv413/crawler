@@ -515,7 +515,7 @@ export function handleUseAbility(
   const abilityResult = executeAbility(newState, abilityId, rng, targetId);
   if (abilityResult.events.length === 0) {
     // Ability not found or failed validation
-    return { state: newState, events: [], runEnded: false };
+    return { state, events: [], runEnded: false };
   }
 
   let resultState = abilityResult.state;

@@ -7,36 +7,56 @@ import type { AnimationModule, AnimationDrawContext } from '../types.js';
 
 export const axeExecuteModule: AnimationModule = {
   id: 'fx.impact.execution-strike',
-  durationMs: 500,
+  durationMs: 400,
   category: 'impact',
 
   draw(ctx: CanvasRenderingContext2D, anim: AnimationDrawContext): void {
     const { x, y, progress } = anim;
-    const downwardDistance = progress * 30;
-    const alpha = Math.max(0, 1 - progress);
+    const easeOutCubic = (t: number) => 1 - Math.pow(1 - t, 3);
+
+    let alpha: number;
+    if (progress < 0.35) {
+      alpha = easeOutCubic(progress / 0.35);
+    } else if (progress < 0.55) {
+      alpha = 1;
+    } else {
+      const fadeProgress = (progress - 0.55) / 0.45;
+      const easeInCubic = (t: number) => t * t * t;
+      alpha = 1 - easeInCubic(fadeProgress);
+    }
+
+    const maxRadius = 56;
+    const displayProgress = progress < 0.35 ? easeOutCubic(progress / 0.35) : 1;
+    const radius = displayProgress * maxRadius;
 
     ctx.save();
     ctx.fillStyle = `rgba(255, 150, 100, ${alpha * 0.5})`;
-
-    // Downward impact shape
     ctx.beginPath();
-    ctx.arc(x, y + downwardDistance, 20 - progress * 10, 0, Math.PI * 2);
+    ctx.arc(x, y, radius, 0, Math.PI * 2);
     ctx.fill();
 
-    // Impact rays
     ctx.strokeStyle = `rgba(255, 100, 50, ${alpha * 0.7})`;
     ctx.lineWidth = 2;
-    for (let i = 0; i < 4; i++) {
-      const angle = (i / 4) * Math.PI * 2;
-      const rayLength = 25;
+    ctx.stroke();
+
+    // Heavy downward impact rays
+    for (let i = 0; i < 6; i++) {
+      const angle = (i / 6) * Math.PI * 2;
+      const rayLength = 32;
       const endX = x + Math.cos(angle) * rayLength;
-      const endY = y + downwardDistance + Math.sin(angle) * rayLength;
+      const endY = y + Math.sin(angle) * rayLength;
       ctx.beginPath();
-      ctx.moveTo(x, y + downwardDistance);
+      ctx.moveTo(x, y);
       ctx.lineTo(endX, endY);
       ctx.stroke();
     }
 
+    // Central finisher glow
+    ctx.fillStyle = `rgba(255, 180, 120, ${alpha * 0.6})`;
+    ctx.beginPath();
+    ctx.arc(x, y, radius * 0.35, 0, Math.PI * 2);
+    ctx.fill();
+
     ctx.restore();
   },
-};
+};;

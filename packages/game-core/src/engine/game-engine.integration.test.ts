@@ -1,8 +1,8 @@
 import { describe, it, expect } from 'vitest';
 import { GameEngine } from './game-engine.js';
 import { entityId } from '@dungeon/contracts';
-import type { GameState, StoredFloor, EnemyInstance } from '@dungeon/contracts';
-import { WEAPONS } from '@dungeon/content';
+import type { GameState, StoredFloor, EnemyInstance, DomainEvent } from '@dungeon/contracts';
+import { MAX_EVENT_HISTORY, WEAPONS } from '@dungeon/content';
 
 /** Enter dungeon from a fresh game using a fixed seed for reproducibility. */
 function enterDungeon(engine: GameEngine, seed = 42): GameState {
@@ -83,6 +83,27 @@ describe('GameEngine floor navigation', () => {
     const engine = new GameEngine();
     const state = enterDungeon(engine);
     expect(state.run!.floorHistory).toHaveLength(0);
+  });
+
+  it('caps world event history while a long active run continues', () => {
+    const engine = new GameEngine();
+    const state = engine.createNewGame(42);
+    const priorEvents: DomainEvent[] = Array.from({ length: MAX_EVENT_HISTORY }, (_, index) => ({
+      type: 'PHASE_CHANGED',
+      from: 'town',
+      to: 'dungeon',
+      timestamp: index,
+      turnNumber: index,
+    }));
+
+    const result = engine.submitCommand(
+      { ...state, world: { ...state.world, eventHistory: priorEvents } },
+      { type: 'TOWN_ACTION', action: 'enter_dungeon' },
+    );
+
+    expect(result.runEnded).toBe(false);
+    expect(result.state.world.eventHistory).toHaveLength(MAX_EVENT_HISTORY);
+    expect(result.state.world.eventHistory.at(-1)?.type).toBe('FLOOR_ENTERED');
   });
 
   it('ASCEND on floor 1 (no history) retreats to town', () => {
