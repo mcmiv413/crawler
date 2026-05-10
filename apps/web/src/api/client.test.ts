@@ -117,6 +117,7 @@ class CreateGameResponseBuilder {
     gameId: randomUUID(),
     view: new GameViewBuilder().build(),
     serializedState: '{"version":"1","state":{}}',
+    sessionToken: 'session-token',
   };
 
   withGameId(gameId: string): this {
@@ -129,6 +130,7 @@ class CreateGameResponseBuilder {
       gameId: this.data.gameId ?? randomUUID(),
       view: this.data.view ?? new GameViewBuilder().build(),
       serializedState: this.data.serializedState ?? '{"version":"1","state":{}}',
+      sessionToken: this.data.sessionToken ?? 'session-token',
     };
   }
 }

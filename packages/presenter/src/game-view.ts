@@ -115,6 +115,7 @@ export interface AbilityView {
   readonly cooldownRemaining: number;
   readonly requiresTarget: boolean;
   readonly requiresDirection?: boolean;
+  readonly isRanged?: boolean;
 }
 
 export interface WeaponMasteryView {
@@ -311,6 +312,8 @@ export interface ConsumableAnimationEntry {
   readonly durationMs: number;
   /** Rendering metadata resolved by the presenter for the web canvas. */
   readonly presentation: ConsumableAnimationPresentationView;
+  /** Catalog-driven animation module ID, when the consumable definition declares one. */
+  readonly animationId?: string;
 }
 
 

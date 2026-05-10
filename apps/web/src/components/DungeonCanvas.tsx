@@ -26,8 +26,7 @@ export function DungeonCanvas({ map, vpTilesWidth, vpTilesHeight }: Props) {
   const { animations: bumpAnimations }       = useBumpAnimationState(BUMP_ANIMATION_DURATION_MS);
   const { animations: moveAnimations }       = useMoveAnimationState();
   const { animations: consumableAnimations } = useConsumableAnimationState();
-  const animatedEvents = useGameStore((s) => s.view?.animatedEvents ?? []);
-  const { animations: fxAnimations } = useFxAnimationState(animatedEvents);
+  const { animations: fxAnimations } = useFxAnimationState();
 
   const playerStatuses = useGameStore((s) => s.view?.player.statuses ?? EMPTY_STATUSES);
   const statusPresentations: readonly StatusPresentationView[] = useMemo(

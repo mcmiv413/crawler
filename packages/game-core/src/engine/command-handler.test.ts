@@ -63,19 +63,16 @@ describe('handleUseAbility', () => {
       expect(result.state.turnNumber).toBeGreaterThan(state.turnNumber);
     });
 
-    it('without targetId: cooldown consumed but no effect (Bug 2)', () => {
+    it('without targetId: rejected without consuming turn or cooldown', () => {
       const state = createTestGameStateWithAbility('power_strike');
       const rng = new SeededRNG(1);
 
       const result = useAbility(state, 'power_strike', rng); // no targetId
 
-      // Cooldown was consumed (bug: this should arguably not happen)
-      // The ability went on cooldown before target validation
-      // Documenting Bug 1 & 2: cooldown consumed, turn consumed, but no ABILITY_USED event
       const abilityUsedEvents = result.events.filter((e) => e.type === 'ABILITY_USED');
       expect(abilityUsedEvents).toHaveLength(0);
-      // Turn was still consumed (Bug 1: turn incremented before ability logic)
-      expect(result.state.turnNumber).toBeGreaterThan(state.turnNumber);
+      expect(result.state.turnNumber).toBe(state.turnNumber);
+      expect(result.state.player.abilities).toEqual(state.player.abilities);
     });
   });
 

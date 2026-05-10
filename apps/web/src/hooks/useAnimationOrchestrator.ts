@@ -7,8 +7,11 @@ import type {
   ConsumableAnimationEntry,
   AbilityAnimationEntry,
 } from '@dungeon/presenter';
+import type { EntityId } from '@dungeon/contracts';
 import { emitBumpAnimation, emitMoveAnimation, emitConsumableAnimation, emitAbilityAnimation } from '../components/BumpAnimations.js';
 import { emitCombatIndicator } from '../components/CombatIndicators.js';
+import { triggerDefenderHit } from './useDefenderHitState.js';
+import { triggerHitStop } from './useHitStop.js';
 
 /**
  * Central orchestrator for all combat, movement, and consumable animations.
@@ -47,6 +50,12 @@ export function useAnimationOrchestrator(animatedEvents: readonly AnimatedEvent[
             emitConsumableAnimation(animEvent.data as ConsumableAnimationEntry);
           } else if (animEvent.type === 'ability') {
             emitAbilityAnimation(animEvent.data as AbilityAnimationEntry);
+          } else if (animEvent.type === 'hit-stop') {
+            const entry = animEvent.data as { durationMs: number };
+            triggerHitStop(entry.durationMs);
+          } else if (animEvent.type === 'defender-hit') {
+            const entry = animEvent.data as { entityId: string; durationMs: number };
+            triggerDefenderHit(entry.entityId as EntityId, entry.durationMs);
           } else if (
             animEvent.type === 'damage' ||
             animEvent.type === 'heal' ||
@@ -77,8 +86,8 @@ export function useAnimationOrchestrator(animatedEvents: readonly AnimatedEvent[
 }
 
 function isSameAnimationData(
-  a: BumpAnimationEntry | CombatIndicatorEntry | MoveAnimationEntry | ConsumableAnimationEntry | AbilityAnimationEntry,
-  b: BumpAnimationEntry | CombatIndicatorEntry | MoveAnimationEntry | ConsumableAnimationEntry | AbilityAnimationEntry,
+  a: BumpAnimationEntry | CombatIndicatorEntry | MoveAnimationEntry | ConsumableAnimationEntry | AbilityAnimationEntry | { durationMs: number } | { entityId: string; durationMs: number },
+  b: BumpAnimationEntry | CombatIndicatorEntry | MoveAnimationEntry | ConsumableAnimationEntry | AbilityAnimationEntry | { durationMs: number } | { entityId: string; durationMs: number },
 ): boolean {
   // ConsumableAnimationEntry — has 'effect' field (check first; no overlap with other types)
   if ('effect' in a && 'effect' in b) {
@@ -139,6 +148,20 @@ function isSameAnimationData(
       ia.text === ib.text &&
       ia.type === ib.type
     );
+  }
+
+  // HitStopEntry — has only durationMs
+  if ('durationMs' in a && !('entityId' in a) && 'durationMs' in b && !('entityId' in b)) {
+    const ha = a as { durationMs: number };
+    const hb = b as { durationMs: number };
+    return ha.durationMs === hb.durationMs;
+  }
+
+  // DefenderHitEntry — has entityId and durationMs
+  if ('entityId' in a && 'durationMs' in a && 'entityId' in b && 'durationMs' in b) {
+    const da = a as { entityId: string; durationMs: number };
+    const db = b as { entityId: string; durationMs: number };
+    return da.entityId === db.entityId && da.durationMs === db.durationMs;
   }
 
   return false;

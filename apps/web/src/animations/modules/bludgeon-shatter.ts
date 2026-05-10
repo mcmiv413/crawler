@@ -7,14 +7,27 @@ import type { AnimationModule, AnimationDrawContext } from '../types.js';
 
 export const bludgeonShatterModule: AnimationModule = {
   id: 'fx.aoe.shatter-burst',
-  durationMs: 420,
+  durationMs: 350,
   category: 'aoe',
 
   draw(ctx: CanvasRenderingContext2D, anim: AnimationDrawContext): void {
     const { x, y, progress } = anim;
-    const maxRadius = 64;
-    const radius = progress * maxRadius;
-    const alpha = Math.max(0, 1 - progress);
+    const easeOutCubic = (t: number) => 1 - Math.pow(1 - t, 3);
+
+    let alpha: number;
+    if (progress < 0.3) {
+      alpha = easeOutCubic(progress / 0.3);
+    } else if (progress < 0.5) {
+      alpha = 1;
+    } else {
+      const fadeProgress = (progress - 0.5) / 0.5;
+      const easeInCubic = (t: number) => t * t * t;
+      alpha = 1 - easeInCubic(fadeProgress);
+    }
+
+    const maxRadius = 72;
+    const displayProgress = progress < 0.3 ? easeOutCubic(progress / 0.3) : 1;
+    const radius = displayProgress * maxRadius;
 
     ctx.save();
     ctx.fillStyle = `rgba(255, 220, 100, ${alpha * 0.4})`;
@@ -27,15 +40,21 @@ export const bludgeonShatterModule: AnimationModule = {
     ctx.stroke();
 
     // Draw debris chunks
-    for (let i = 0; i < 8; i++) {
-      const angle = (i / 8) * Math.PI * 2;
-      const distance = progress * 50;
+    for (let i = 0; i < 12; i++) {
+      const angle = (i / 12) * Math.PI * 2;
+      const distance = displayProgress * 56;
       const chunkX = x + Math.cos(angle) * distance;
       const chunkY = y + Math.sin(angle) * distance;
       ctx.fillStyle = `rgba(200, 150, 80, ${alpha * 0.5})`;
       ctx.fillRect(chunkX - 2, chunkY - 2, 4, 4);
     }
 
+    // Central bright core
+    ctx.fillStyle = `rgba(255, 240, 150, ${alpha * 0.6})`;
+    ctx.beginPath();
+    ctx.arc(x, y, radius * 0.3, 0, Math.PI * 2);
+    ctx.fill();
+
     ctx.restore();
   },
-};
+};;

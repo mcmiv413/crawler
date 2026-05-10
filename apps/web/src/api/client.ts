@@ -5,6 +5,7 @@ export interface CreateGameResponse {
   gameId: string;
   view: GameView;
   serializedState: string;
+  sessionToken: string;
 }
 
 export interface CommandResponse {
@@ -59,8 +60,12 @@ export async function createGame(seed?: number, playerName?: string): Promise<Cr
   return json<CreateGameResponse>(res);
 }
 
-export async function fetchGameView(gameId: string): Promise<GameView> {
-  const res = await fetch(`${BASE}/games/${gameId}/view`);
+export async function fetchGameView(gameId: string, sessionToken?: string): Promise<GameView> {
+  const headers: HeadersInit = {};
+  if (sessionToken) {
+    headers['X-Dungeon-Session'] = sessionToken;
+  }
+  const res = await fetch(`${BASE}/games/${gameId}/view`, { headers });
   return json<GameView>(res);
 }
 
@@ -70,15 +75,23 @@ export interface NpcDialogueResponse {
   dialogue: string;
 }
 
-export async function fetchNpcDialogue(gameId: string, npcId: string): Promise<NpcDialogueResponse> {
-  const res = await fetch(`${BASE}/games/${gameId}/npc/${npcId}/dialogue`);
+export async function fetchNpcDialogue(gameId: string, npcId: string, sessionToken?: string): Promise<NpcDialogueResponse> {
+  const headers: HeadersInit = {};
+  if (sessionToken) {
+    headers['X-Dungeon-Session'] = sessionToken;
+  }
+  const res = await fetch(`${BASE}/games/${gameId}/npc/${npcId}/dialogue`, { headers });
   return json<NpcDialogueResponse>(res);
 }
 
-export async function sendCommand(gameId: string, command: unknown): Promise<CommandResponse> {
+export async function sendCommand(gameId: string, command: unknown, sessionToken?: string): Promise<CommandResponse> {
+  const headers: HeadersInit = { 'Content-Type': 'application/json' };
+  if (sessionToken) {
+    headers['X-Dungeon-Session'] = sessionToken;
+  }
   const res = await fetch(`${BASE}/games/${gameId}/commands`, {
     method: 'POST',
-    headers: { 'Content-Type': 'application/json' },
+    headers,
     body: JSON.stringify(command),
   });
   if (res.status === 404) {
@@ -96,10 +109,14 @@ export class GameNotFoundError extends Error {
   }
 }
 
-export async function restoreGame(serializedState: string): Promise<CreateGameResponse> {
+export async function restoreGame(serializedState: string, sessionToken?: string): Promise<CreateGameResponse> {
+  const headers: HeadersInit = { 'Content-Type': 'application/json' };
+  if (sessionToken) {
+    headers['X-Dungeon-Session'] = sessionToken;
+  }
   const res = await fetch(`${BASE}/games/restore`, {
     method: 'POST',
-    headers: { 'Content-Type': 'application/json' },
+    headers,
     body: JSON.stringify({ serializedState }),
   });
   return json<CreateGameResponse>(res);

@@ -7,32 +7,47 @@ import type { AnimationModule, AnimationDrawContext } from '../types.js';
 
 export const secondWindModule: AnimationModule = {
   id: 'fx.self.second-wind-buff',
-  durationMs: 800,
+  durationMs: 600,
   category: 'self',
 
   draw(ctx: CanvasRenderingContext2D, anim: AnimationDrawContext): void {
     const { x, y, progress } = anim;
-    const alpha = progress < 0.5 ? progress : Math.max(0, 1 - progress);
+    const easeOutCubic = (t: number) => 1 - Math.pow(1 - t, 3);
+
+    let alpha: number;
+    if (progress < 0.3) {
+      alpha = easeOutCubic(progress / 0.3);
+    } else if (progress < 0.5) {
+      alpha = 1;
+    } else {
+      const fadeProgress = (progress - 0.5) / 0.5;
+      const easeInCubic = (t: number) => t * t * t;
+      alpha = 1 - easeInCubic(fadeProgress);
+    }
+
+    const maxRadius = 52;
+    const displayProgress = progress < 0.3 ? easeOutCubic(progress / 0.3) : 1;
+    const radius = displayProgress * maxRadius;
 
     ctx.save();
     ctx.strokeStyle = `rgba(100, 200, 100, ${alpha * 0.6})`;
     ctx.lineWidth = 2;
 
-    // Draw spiral aura
+    // Draw 3 spiral rings
     for (let i = 0; i < 3; i++) {
-      const offset = (progress + i / 3) % 1;
-      const radius = 12 + offset * 12;
+      const offset = (progress * 1.5 + i / 3) % 1;
+      const ringRadius = radius * (0.5 + offset * 0.5);
       ctx.beginPath();
-      ctx.arc(x, y, radius, 0, Math.PI * 2);
+      ctx.arc(x, y, ringRadius, 0, Math.PI * 2);
       ctx.stroke();
     }
 
-    // Center glow
-    ctx.fillStyle = `rgba(150, 220, 150, ${alpha * 0.4})`;
+    // Center buff glow
+    ctx.fillStyle = `rgba(150, 220, 150, ${alpha * 0.5})`;
     ctx.beginPath();
-    ctx.arc(x, y, 6, 0, Math.PI * 2);
+    ctx.arc(x, y, radius * 0.25, 0, Math.PI * 2);
     ctx.fill();
 
     ctx.restore();
   },
-};
+};;

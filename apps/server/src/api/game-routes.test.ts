@@ -16,8 +16,14 @@ function createRepoStub(overrides: Partial<IGameRepository> = {}): IGameReposito
     recordRunMetrics: vi.fn((_metrics: RunMetrics, _gameId?: string) => undefined),
     getRunMetricsLog: vi.fn(() => [] as readonly RunMetrics[]),
     commitTick: vi.fn(() => Promise.resolve()),
+    setGameSessionToken: vi.fn(() => Promise.resolve()),
+    getGameSessionToken: vi.fn(() => Promise.resolve(null)),
     ...overrides,
   };
+}
+
+function sessionHeaders(sessionToken: string): Record<string, string> {
+  return { 'x-dungeon-session': sessionToken };
 }
 
 describe('Game Routes', () => {
@@ -113,6 +119,7 @@ describe('Game Routes', () => {
 
   describe('POST /api/games/:id/commands', () => {
     let gameId: EntityId;
+    let sessionToken: string;
 
     beforeEach(async () => {
       // Create game through app API so it's stored in app's internal repo
@@ -123,6 +130,7 @@ describe('Game Routes', () => {
       });
       const createBody = JSON.parse(createResponse.body);
       gameId = createBody.gameId as EntityId;
+      sessionToken = createBody.sessionToken;
     });
 
     it('submits a valid command and returns 200 with updated view', async () => {
@@ -133,6 +141,7 @@ describe('Game Routes', () => {
       const response = await app.inject({
         method: 'POST',
         url: `/api/games/${gameId}/commands`,
+        headers: sessionHeaders(sessionToken),
         payload: command,
       });
 
@@ -162,6 +171,7 @@ describe('Game Routes', () => {
       const response = await app.inject({
         method: 'POST',
         url: `/api/games/${gameId}/commands`,
+        headers: sessionHeaders(sessionToken),
         payload: {
           type: 'INVALID_COMMAND_TYPE',
         },
@@ -176,6 +186,7 @@ describe('Game Routes', () => {
       const response = await app.inject({
         method: 'POST',
         url: `/api/games/${gameId}/commands`,
+        headers: sessionHeaders(sessionToken),
         payload: {
           // Missing 'type' field
         },
@@ -209,6 +220,7 @@ describe('Game Routes', () => {
       await app.inject({
         method: 'POST',
         url: `/api/games/${gameId}/commands`,
+        headers: sessionHeaders(sessionToken),
         payload: command,
       });
 
@@ -216,6 +228,7 @@ describe('Game Routes', () => {
       const getResponse = await app.inject({
         method: 'GET',
         url: `/api/games/${gameId}/view`,
+        headers: sessionHeaders(sessionToken),
       });
 
       expect(getResponse.statusCode).toBe(200);
@@ -281,10 +294,12 @@ describe('Game Routes', () => {
         payload: { serializedState: serializeState(victoryState) },
       });
       expect(restoreResponse.statusCode).toBe(200);
+      const restoreBody = JSON.parse(restoreResponse.body);
 
       const attackResponse = await app.inject({
         method: 'POST',
         url: `/api/games/${victoryState.gameId}/commands`,
+        headers: sessionHeaders(restoreBody.sessionToken),
         payload: {
           type: 'ATTACK',
           targetId: boss.id,
@@ -304,6 +319,7 @@ describe('Game Routes', () => {
 
   describe('GET /api/games/:id/view', () => {
     let gameId: EntityId;
+    let sessionToken: string;
 
     beforeEach(async () => {
       // Create game through app API
@@ -314,12 +330,14 @@ describe('Game Routes', () => {
       });
       const createBody = JSON.parse(createResponse.body);
       gameId = createBody.gameId as EntityId;
+      sessionToken = createBody.sessionToken;
     });
 
     it('returns 200 with current GameView when game exists', async () => {
       const response = await app.inject({
         method: 'GET',
         url: `/api/games/${gameId}/view`,
+        headers: sessionHeaders(sessionToken),
       });
 
       expect(response.statusCode).toBe(200);
@@ -355,6 +373,7 @@ describe('Game Routes', () => {
       const commandResponse = await app.inject({
         method: 'POST',
         url: `/api/games/${gameId}/commands`,
+        headers: sessionHeaders(sessionToken),
         payload: { type: 'WAIT' },
       });
       expect(commandResponse.statusCode).toBe(200);
@@ -363,6 +382,7 @@ describe('Game Routes', () => {
       const viewResponse = await app.inject({
         method: 'GET',
         url: `/api/games/${gameId}/view`,
+        headers: sessionHeaders(sessionToken),
       });
 
       expect(viewResponse.statusCode).toBe(200);
@@ -374,6 +394,7 @@ describe('Game Routes', () => {
 
   describe('GET /api/games/:id', () => {
     let gameId: EntityId;
+    let sessionToken: string;
 
     beforeEach(async () => {
       // Create game through app API
@@ -384,12 +405,14 @@ describe('Game Routes', () => {
       });
       const createBody = JSON.parse(createResponse.body);
       gameId = createBody.gameId as EntityId;
+      sessionToken = createBody.sessionToken;
     });
 
     it('returns 200 with GameView (alias for /view endpoint)', async () => {
       const response = await app.inject({
         method: 'GET',
         url: `/api/games/${gameId}`,
+        headers: sessionHeaders(sessionToken),
       });
 
       expect(response.statusCode).toBe(200);
@@ -425,6 +448,7 @@ describe('Game Routes', () => {
       const restoreResponse = await app.inject({
         method: 'POST',
         url: '/api/games/restore',
+        headers: sessionHeaders(createBody.sessionToken),
         payload: { serializedState },
       });
 
@@ -487,6 +511,7 @@ describe('Game Routes', () => {
       const restoreResponse = await app.inject({
         method: 'POST',
         url: '/api/games/restore',
+        headers: sessionHeaders(createBody.sessionToken),
         payload: { serializedState },
       });
 
@@ -515,6 +540,7 @@ describe('Game Routes', () => {
       const restoreResponse = await app.inject({
         method: 'POST',
         url: '/api/games/restore',
+        headers: sessionHeaders(createBody.sessionToken),
         payload: { serializedState: serializeState(conflictingState) },
       });
 
@@ -568,6 +594,7 @@ describe('Game Routes', () => {
 
   describe('State Consistency', () => {
     let gameId: EntityId;
+    let sessionToken: string;
 
     beforeEach(async () => {
       const createResponse = await app.inject({
@@ -577,6 +604,7 @@ describe('Game Routes', () => {
       });
       const createBody = JSON.parse(createResponse.body);
       gameId = createBody.gameId as EntityId;
+      sessionToken = createBody.sessionToken;
     });
 
     it('persists state on subsequent GET requests after command submission', async () => {
@@ -584,6 +612,7 @@ describe('Game Routes', () => {
       const cmd1 = await app.inject({
         method: 'POST',
         url: `/api/games/${gameId}/commands`,
+        headers: sessionHeaders(sessionToken),
         payload: { type: 'WAIT' },
       });
       expect(cmd1.statusCode).toBe(200);
@@ -592,6 +621,7 @@ describe('Game Routes', () => {
       const view1 = await app.inject({
         method: 'GET',
         url: `/api/games/${gameId}/view`,
+        headers: sessionHeaders(sessionToken),
       });
       expect(view1.statusCode).toBe(200);
       const body1 = JSON.parse(view1.body);
@@ -601,6 +631,7 @@ describe('Game Routes', () => {
       const view2 = await app.inject({
         method: 'GET',
         url: `/api/games/${gameId}/view`,
+        headers: sessionHeaders(sessionToken),
       });
       expect(view2.statusCode).toBe(200);
       const body2 = JSON.parse(view2.body);
@@ -617,6 +648,7 @@ describe('Game Routes', () => {
       const cmd1 = await app.inject({
         method: 'POST',
         url: `/api/games/${gameId}/commands`,
+        headers: sessionHeaders(sessionToken),
         payload: { type: 'WAIT' },
       });
       expect(cmd1.statusCode).toBe(200);
@@ -625,6 +657,7 @@ describe('Game Routes', () => {
       const cmd2 = await app.inject({
         method: 'POST',
         url: `/api/games/${gameId}/commands`,
+        headers: sessionHeaders(sessionToken),
         payload: { type: 'WAIT' },
       });
       expect(cmd2.statusCode).toBe(200);
@@ -633,6 +666,7 @@ describe('Game Routes', () => {
       const view = await app.inject({
         method: 'GET',
         url: `/api/games/${gameId}/view`,
+        headers: sessionHeaders(sessionToken),
       });
       expect(view.statusCode).toBe(200);
       const body = JSON.parse(view.body);
@@ -644,6 +678,7 @@ describe('Game Routes', () => {
       const cmd1 = await app.inject({
         method: 'POST',
         url: `/api/games/${gameId}/commands`,
+        headers: sessionHeaders(sessionToken),
         payload: { type: 'WAIT' },
       });
       expect(cmd1.statusCode).toBe(200);
@@ -652,6 +687,7 @@ describe('Game Routes', () => {
       const cmd2 = await app.inject({
         method: 'POST',
         url: `/api/games/${gameId}/commands`,
+        headers: sessionHeaders(sessionToken),
         payload: { type: 'WAIT' },
       });
       expect(cmd2.statusCode).toBe(200);
@@ -660,6 +696,7 @@ describe('Game Routes', () => {
       const view = await app.inject({
         method: 'GET',
         url: `/api/games/${gameId}/view`,
+        headers: sessionHeaders(sessionToken),
       });
       expect(view.statusCode).toBe(200);
       const body = JSON.parse(view.body);
@@ -670,6 +707,7 @@ describe('Game Routes', () => {
 
   describe('Response Headers and Content-Type', () => {
     let gameId: EntityId;
+    let sessionToken: string;
 
     beforeEach(async () => {
       const createResponse = await app.inject({
@@ -679,12 +717,14 @@ describe('Game Routes', () => {
       });
       const createBody = JSON.parse(createResponse.body);
       gameId = createBody.gameId as EntityId;
+      sessionToken = createBody.sessionToken;
     });
 
     it('returns application/json content-type for GET /api/games/:id/view', async () => {
       const response = await app.inject({
         method: 'GET',
         url: `/api/games/${gameId}/view`,
+        headers: sessionHeaders(sessionToken),
       });
 
       expect(response.statusCode).toBe(200);
@@ -703,6 +743,7 @@ describe('Game Routes', () => {
       const response400 = await app.inject({
         method: 'POST',
         url: `/api/games/${gameId}/commands`,
+        headers: sessionHeaders(sessionToken),
         payload: { type: 'INVALID' },
       });
       expect(response400.statusCode).toBe(400);
@@ -719,6 +760,7 @@ describe('Game Routes', () => {
       });
       const createBody = JSON.parse(createResponse.body);
       const gameId = createBody.gameId as EntityId;
+      const sessionToken = createBody.sessionToken;
 
       // Send command with large payload (should be rejected or handled)
       const largePayload = {
@@ -730,6 +772,7 @@ describe('Game Routes', () => {
       const response = await app.inject({
         method: 'POST',
         url: `/api/games/${gameId}/commands`,
+        headers: sessionHeaders(sessionToken),
         payload: largePayload,
       });
 
@@ -746,11 +789,13 @@ describe('Game Routes', () => {
       });
       const createBody = JSON.parse(createResponse.body);
       const gameId = createBody.gameId as EntityId;
+      const sessionToken = createBody.sessionToken;
 
       // Send command without type field
       const response = await app.inject({
         method: 'POST',
         url: `/api/games/${gameId}/commands`,
+        headers: sessionHeaders(sessionToken),
         payload: {},
       });
 
@@ -768,11 +813,13 @@ describe('Game Routes', () => {
       });
       const createBody = JSON.parse(createResponse.body);
       const gameId = createBody.gameId as EntityId;
+      const sessionToken = createBody.sessionToken;
 
       // Send multiple commands sequentially
       const cmd1 = await app.inject({
         method: 'POST',
         url: `/api/games/${gameId}/commands`,
+        headers: sessionHeaders(sessionToken),
         payload: { type: 'WAIT' },
       });
       expect(cmd1.statusCode).toBe(200);
@@ -780,6 +827,7 @@ describe('Game Routes', () => {
       const cmd2 = await app.inject({
         method: 'POST',
         url: `/api/games/${gameId}/commands`,
+        headers: sessionHeaders(sessionToken),
         payload: { type: 'WAIT' },
       });
       expect(cmd2.statusCode).toBe(200);
@@ -788,6 +836,7 @@ describe('Game Routes', () => {
       const view = await app.inject({
         method: 'GET',
         url: `/api/games/${gameId}/view`,
+        headers: sessionHeaders(sessionToken),
       });
       expect(view.statusCode).toBe(200);
     });

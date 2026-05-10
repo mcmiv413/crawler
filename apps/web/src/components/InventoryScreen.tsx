@@ -33,6 +33,7 @@ export function InventoryScreen({
   const { isMobile } = useBreakpoint();
   const [selectedItem, setSelectedItem] = useState<InventoryItemView | null>(null);
   const [dismissedNoticeIds, setDismissedNoticeIds] = useState<Set<string>>(new Set());
+  const [bagExpanded, setBagExpanded] = useState(false);
 
   const handleDismissNotice = (noticeId: string) => {
     setDismissedNoticeIds(prev => new Set(prev).add(noticeId));
@@ -95,19 +96,40 @@ export function InventoryScreen({
         </button>
       </div>
 
-      {/* Equipment Section - always visible */}
-      <div style={{ marginBottom: 24, flexShrink: 0 }}>
-        <h2 style={{ fontSize: 14, color: '#888', marginBottom: 8 }}>Equipment</h2>
-        <EquipmentDoll
-          equipped={inventory.equipped}
-          onSlotClick={(item) => setSelectedItem(item)}
-        />
-      </div>
+      {/* Equipment Section */}
+      {!bagExpanded && (
+        <div style={{ marginBottom: 24, flexShrink: 0 }}>
+          <h2 style={{ fontSize: 14, color: '#888', marginBottom: 8 }}>Equipment</h2>
+          <EquipmentDoll
+            equipped={inventory.equipped}
+            onSlotClick={(item) => setSelectedItem(item)}
+          />
+        </div>
+      )}
 
       {/* Bag Section - scrolls internally */}
       {bagItems.length > 0 && (
         <div style={{ flex: 1, minHeight: 0, display: 'flex', flexDirection: 'column', overflow: 'hidden' }}>
-          <h2 style={{ fontSize: 14, color: '#888', marginBottom: 8, flexShrink: 0 }}>Bag</h2>
+          <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 8, marginBottom: 8, flexShrink: 0 }}>
+            <h2 style={{ fontSize: 14, color: '#888', margin: 0 }}>Bag</h2>
+            <button
+              type="button"
+              aria-expanded={bagExpanded}
+              data-testid="inventory-bag-toggle"
+              onClick={() => setBagExpanded(expanded => !expanded)}
+              style={{
+                ...compactBtnStyle,
+                background: bagExpanded ? '#2a2a2a' : '#1a2a3a',
+                border: '1px solid #4a8',
+                color: '#8cf',
+                whiteSpace: 'nowrap',
+                minHeight: 28,
+              }}
+              title={bagExpanded ? 'Collapse inventory list' : 'Expand inventory list'}
+            >
+              {bagExpanded ? 'Collapse list' : 'Expand list'}
+            </button>
+          </div>
 
           {/* Filter/Sort Controls - always visible */}
           <div style={{ fontSize: 10, marginBottom: 8, display: 'flex', gap: 6, flexWrap: 'wrap', flexShrink: 0 }}>

@@ -44,12 +44,37 @@ const createTrapItem = (id: string, name: string = 'Spike Trap'): InventoryItemV
   templateId: 'trap_spikes',
 });
 
+const createBow = (): InventoryItemView => ({
+  id: 'bow1',
+  name: 'Short Bow',
+  itemClass: 'weapon',
+  description: 'A ranged weapon',
+  rarity: 'common',
+  rarityColor: '#888888',
+  value: 10,
+  sellPrice: 5,
+  isEquipped: true,
+  quantity: 1,
+  stackEntityIds: ['bow1'],
+  templateId: 'short_bow',
+  weaponStats: {
+    damage: 6,
+    damageMin: 5,
+    damageMax: 7,
+    damageType: 'physical',
+    accuracy: 14,
+    speed: 5,
+    weaponRange: 5,
+    minRange: 2,
+  },
+});
+
 describe('AbilityDropdown', () => {
   describe('Self-targeted abilities', () => {
     it('does not assign targetId for self-targeted abilities', () => {
       const onSelect = vi.fn();
 
-      const abilities: AbilityView[] = [
+      const abilities: Array<AbilityView & { readonly isRanged?: boolean }> = [
         {
           id: 'second_wind',
           name: 'Second Wind',
@@ -180,6 +205,39 @@ describe('AbilityDropdown', () => {
 
       const button = screen.getByText('Power Strike').closest('button');
       expect(button).toBeDisabled();
+    });
+
+    it('uses equipped weapon range for ranged abilities', () => {
+      const onSelect = vi.fn();
+
+      const abilities: AbilityView[] = [
+        {
+          id: 'ranged_pin',
+          name: 'Ranged Pin',
+          description: 'Pin an enemy at range',
+          ready: true,
+          cooldownRemaining: 0,
+          requiresTarget: true,
+          requiresDirection: false,
+          isRanged: true,
+        },
+      ];
+
+      render(
+        <AbilityDropdown
+          abilities={abilities}
+          enemies={[createEnemy('enemy1', 3, 0)]}
+          inventory={[]}
+          equippedWeapon={createBow()}
+          playerX={0}
+          playerY={0}
+          onSelect={onSelect}
+        />
+      );
+
+      fireEvent.click(screen.getByText('Ranged Pin'));
+
+      expect(onSelect).toHaveBeenCalledWith({ abilityId: 'ranged_pin', targetId: 'enemy1' });
     });
   });
 

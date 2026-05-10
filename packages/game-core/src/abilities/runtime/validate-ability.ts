@@ -1,4 +1,5 @@
 import type { AbilityContext, AbilityRequirement } from '../types.js';
+import type { WeaponTemplate } from '@dungeon/contracts';
 import { getEquippedWeaponType } from '../../engine/handlers/combat.js';
 
 /**
@@ -58,6 +59,31 @@ function validateSingleRequirement(
       );
       if (dist > 1) {
         return { valid: false, reason: 'Target out of melee range' };
+      }
+      return { valid: true };
+    }
+    case 'target_in_weapon_range': {
+      if (context.target === undefined) {
+        return { valid: false, reason: 'No target selected' };
+      }
+
+      const weaponId = context.state.player.equipment.weapon;
+      const weaponTemplate = weaponId === null ? undefined : context.state.itemRegistry.items.get(weaponId);
+      const weapon = weaponTemplate?.itemClass === 'weapon'
+        ? (weaponTemplate as WeaponTemplate).weapon
+        : undefined;
+      const maxRange = weapon?.weaponRange ?? 1;
+      const minRange = weapon?.minRange ?? 0;
+      const dist = Math.max(
+        Math.abs(context.player.position.x - context.target.instance.position.x),
+        Math.abs(context.player.position.y - context.target.instance.position.y),
+      );
+
+      if (dist > maxRange) {
+        return { valid: false, reason: 'Target out of weapon range' };
+      }
+      if (dist < minRange) {
+        return { valid: false, reason: 'Target too close for weapon' };
       }
       return { valid: true };
     }

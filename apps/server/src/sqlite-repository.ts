@@ -20,6 +20,7 @@ export class SqliteRepository implements IGameRepository {
         game_id TEXT PRIMARY KEY,
         state_json TEXT NOT NULL,
         version INTEGER NOT NULL DEFAULT 1,
+        session_token TEXT,
         updated_at TEXT NOT NULL DEFAULT (datetime('now'))
       );
       CREATE TABLE IF NOT EXISTS events (
@@ -38,7 +39,17 @@ export class SqliteRepository implements IGameRepository {
         metrics_json TEXT NOT NULL,
         created_at TEXT NOT NULL DEFAULT (datetime('now'))
       );
+      
+      -- Add session_token column if it doesn't exist (backwards compatibility)
+      -- This is safe to run even if the column already exists
+      PRAGMA table_info(games);
     `);
+
+    // Check if session_token column exists, add it if not
+    const columns = this.db.pragma('table_info(games)') as Array<{ name: string }>;
+    if (!columns.some((col) => col.name === 'session_token')) {
+      this.db.exec('ALTER TABLE games ADD COLUMN session_token TEXT;');
+    }
   }
 
   async createGame(state: GameState): Promise<void> {
@@ -155,6 +166,18 @@ export class SqliteRepository implements IGameRepository {
     });
 
     commit();
+  }
+
+  async setGameSessionToken(gameId: EntityId, token: string): Promise<void> {
+    const stmt = this.db.prepare('UPDATE games SET session_token = ? WHERE game_id = ?');
+    stmt.run(token, gameId);
+  }
+
+  async getGameSessionToken(gameId: EntityId): Promise<string | null> {
+    const row = this.db
+      .prepare('SELECT session_token FROM games WHERE game_id = ?')
+      .get(gameId) as { session_token: string | null } | undefined;
+    return row?.session_token ?? null;
   }
 
   close(): void {

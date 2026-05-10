@@ -105,6 +105,7 @@ export function buildPlayerHud(state: GameState): PlayerHudView {
         cooldownRemaining: a.cooldownRemaining,
         requiresTarget: def?.requiresTarget ?? false,
         requiresDirection: a.id === daggerDisarm.id || a.id === daggerSetTrap.id,
+        isRanged: def?.requiresWeaponTypes?.includes('ranged') === true ? true : undefined,
       } satisfies AbilityView;
     });
 

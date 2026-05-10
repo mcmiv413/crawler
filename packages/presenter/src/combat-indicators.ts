@@ -55,6 +55,22 @@ function handleAbilityUsed(
   state: GameState,
   indicators: CombatIndicatorEntry[],
 ): void {
+  // Emit damage indicators
+  if (event.damageByTarget && event.damageByTarget.size > 0) {
+    for (const [targetId, damage] of event.damageByTarget) {
+      const pos = getPos(targetId, state);
+      if (pos) {
+        addIndicator(indicators, `-${damage}`, 'damage', pos.x, pos.y);
+      }
+    }
+  } else if (event.damage !== undefined && event.damage > 0 && event.targetId !== undefined) {
+    const pos = getPos(event.targetId, state);
+    if (pos) {
+      addIndicator(indicators, `-${event.damage}`, 'damage', pos.x, pos.y);
+    }
+  }
+
+  // Emit heal indicators
   if (event.healAmount === undefined || event.healAmount <= 0) return;
   if (event.targetId === undefined) return;
   const pos = getPos(event.targetId, state);
