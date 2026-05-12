@@ -64,6 +64,16 @@ describe('Schema Versioning', () => {
       expect(() => deserializeState(modified)).toThrow(SchemaVersionMismatchError);
     });
 
+    it('should reject explicit legacy schema versions even when the payload shape still looks valid', () => {
+      const serialized = serializeState(baseState);
+      const parsed = JSON.parse(serialized);
+      parsed.schemaVersion = CURRENT_SCHEMA_VERSION - 1;
+
+      expect(() => deserializeState(JSON.stringify(parsed))).toThrow(
+        SchemaVersionMismatchError,
+      );
+    });
+
     it('should throw SchemaVersionMismatchError with correct version info', () => {
       const serialized = serializeState(baseState);
       const parsed = JSON.parse(serialized);

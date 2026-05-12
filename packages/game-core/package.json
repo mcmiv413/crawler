@@ -104,6 +104,7 @@
     "rot-js": "^2.2.0"
   },
   "devDependencies": {
+    "@dungeon/presenter": "workspace:*",
     "vitest": "^3.0.0",
     "fast-check": "^4.0.0"
   }

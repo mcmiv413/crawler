@@ -1,8 +1,8 @@
 #!/usr/bin/env bash
 set -euo pipefail
 
-echo "Pre-commit: running type check..."
+echo "Pre-commit: running check:fast..."
 cd "$(git rev-parse --show-toplevel)"
-pnpm lint:types:all
+pnpm run check:fast
 
-echo "Pre-commit: type check passed."
+echo "Pre-commit: check:fast passed."
