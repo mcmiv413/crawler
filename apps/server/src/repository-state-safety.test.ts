@@ -15,10 +15,11 @@
 
 import { describe, it, expect, beforeEach } from 'vitest';
 import { InMemoryRepository } from './in-memory-repository.js';
-import type { GameState, DomainEvent } from '@dungeon/contracts';
+import type { GameState, DomainEvent, StoredFloor } from '@dungeon/contracts';
 import { entityId } from '@dungeon/contracts';
 import {
   createTestGameState,
+  createTestGameStateInCombat,
   createTestPlayer,
   createTestEnemy,
   createTestRunState,
@@ -29,6 +30,19 @@ function createMinimalGameState(overrides?: Partial<GameState>): GameState {
   return {
     ...baseState,
     ...overrides,
+  };
+}
+
+function createStoredFloorSnapshot(state: GameState): StoredFloor {
+  const runState = state.run ?? createTestRunState();
+
+  return {
+    floor: runState.floor,
+    enemies: runState.enemies,
+    objects: runState.objects,
+    playerPosition: state.player.position,
+    originalEnemyCount: runState.enemies.size,
+    lastSimulatedTurn: 11,
   };
 }
 
@@ -281,6 +295,44 @@ describe('Repository: State Safety', () => {
       // Get run metrics from empty repo
       const metrics = repo.getRunMetricsLog();
       expect(metrics).toEqual([]);
+    });
+
+    it('preserves floor history and persisted floor cache across create -> load -> save -> reload', async () => {
+      const combatState = createTestGameStateInCombat();
+      const storedFloor = createStoredFloorSnapshot(combatState);
+      const gameId = entityId('lifecycle_floor_cache');
+      const state = createMinimalGameState({
+        ...combatState,
+        gameId,
+        run: {
+          ...combatState.run!,
+          floorHistory: [storedFloor],
+          floorCache: new Map([[2, storedFloor]]),
+        },
+        persistedFloorCache: new Map([[5, storedFloor]]),
+      });
+
+      await repo.createGame(state);
+
+      const loaded = await repo.loadGame(gameId);
+      expect(loaded?.run?.floorHistory[0]?.lastSimulatedTurn).toBe(11);
+      expect(loaded?.run?.floorCache?.get(2)?.originalEnemyCount).toBe(
+        storedFloor.originalEnemyCount,
+      );
+      expect(loaded?.persistedFloorCache?.get(5)?.playerPosition).toEqual(
+        combatState.player.position,
+      );
+
+      await repo.saveGame(gameId, loaded!);
+
+      const reloaded = await repo.loadGame(gameId);
+      expect(reloaded?.run?.floorHistory[0]?.lastSimulatedTurn).toBe(11);
+      expect(reloaded?.run?.floorCache?.get(2)?.playerPosition).toEqual(
+        combatState.player.position,
+      );
+      expect(reloaded?.persistedFloorCache?.get(5)?.originalEnemyCount).toBe(
+        storedFloor.originalEnemyCount,
+      );
     });
   });
 

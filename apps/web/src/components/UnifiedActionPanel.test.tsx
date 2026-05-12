@@ -483,6 +483,282 @@ describe('UnifiedActionPanel', () => {
       });
     });
 
+    it('dispatches USE_ABILITY for a no-target ability', async () => {
+      const baseView = createMockGameView();
+      const view = createMockGameView({
+        player: {
+          ...baseView.player,
+          abilities: [
+            {
+              id: 'second_wind',
+              name: 'Second Wind',
+              description: 'Recover health.',
+              ready: true,
+              cooldownRemaining: 0,
+              requiresTarget: false,
+              requiresDirection: false,
+            },
+          ],
+        },
+      });
+      const user = userEvent.setup();
+
+      render(
+        <UnifiedActionPanel
+          view={view}
+          onSendCommand={mockSendCommand}
+          onInspectOpen={mockInspectOpen}
+        />
+      );
+
+      await user.click(findActionButton('Ability')!);
+      await waitFor(() => {
+        expect(screen.getByText('Second Wind')).toBeInTheDocument();
+      });
+      await user.click(screen.getByText('Second Wind'));
+
+      expect(mockSendCommand).toHaveBeenCalledWith({
+        type: 'USE_ABILITY',
+        abilityId: 'second_wind',
+        targetId: undefined,
+        direction: undefined,
+      });
+    });
+
+    it('dispatches USE_ABILITY for a single-target ability with one enemy in range', async () => {
+      const baseView = createMockGameView();
+      const view = createMockGameView({
+        player: {
+          ...baseView.player,
+          abilities: [
+            {
+              id: 'power_strike',
+              name: 'Power Strike',
+              description: 'Hit a single enemy.',
+              ready: true,
+              cooldownRemaining: 0,
+              requiresTarget: true,
+              requiresDirection: false,
+            },
+          ],
+        },
+      });
+      const user = userEvent.setup();
+
+      render(
+        <UnifiedActionPanel
+          view={view}
+          onSendCommand={mockSendCommand}
+          onInspectOpen={mockInspectOpen}
+        />
+      );
+
+      await user.click(findActionButton('Ability')!);
+      await waitFor(() => {
+        expect(screen.getByText('Power Strike')).toBeInTheDocument();
+      });
+      await user.click(screen.getByText('Power Strike'));
+
+      expect(mockSendCommand).toHaveBeenCalledWith({
+        type: 'USE_ABILITY',
+        abilityId: 'power_strike',
+        targetId: 'goblin1',
+        direction: undefined,
+      });
+    });
+
+    it('dispatches USE_ABILITY after selecting from a multi-target chooser', async () => {
+      const baseView = createMockGameView();
+      const view = createMockGameView({
+        player: {
+          ...baseView.player,
+          abilities: [
+            {
+              id: 'power_strike',
+              name: 'Power Strike',
+              description: 'Hit a single enemy.',
+              ready: true,
+              cooldownRemaining: 0,
+              requiresTarget: true,
+              requiresDirection: false,
+            },
+          ],
+        },
+        map: {
+          ...baseView.map!,
+          entities: [
+            {
+              id: 'goblin1',
+              name: 'Goblin One',
+              x: 6,
+              y: 5,
+              ascii: 'g',
+              color: '#0f0',
+              type: 'enemy',
+              health: 30,
+              maxHealth: 30,
+              templateId: 'goblin',
+            },
+            {
+              id: 'goblin2',
+              name: 'Goblin Two',
+              x: 5,
+              y: 6,
+              ascii: 'g',
+              color: '#0f0',
+              type: 'enemy',
+              health: 30,
+              maxHealth: 30,
+              templateId: 'goblin',
+            },
+          ],
+        },
+      });
+      const user = userEvent.setup();
+
+      render(
+        <UnifiedActionPanel
+          view={view}
+          onSendCommand={mockSendCommand}
+          onInspectOpen={mockInspectOpen}
+        />
+      );
+
+      await user.click(findActionButton('Ability')!);
+      await waitFor(() => {
+        expect(screen.getByText('Power Strike')).toBeInTheDocument();
+      });
+      await user.click(screen.getByText('Power Strike'));
+
+      await waitFor(() => {
+        expect(screen.getByText('Goblin One')).toBeInTheDocument();
+        expect(screen.getByText('Goblin Two')).toBeInTheDocument();
+      });
+      await user.click(screen.getByText('Goblin Two'));
+
+      expect(mockSendCommand).toHaveBeenCalledWith({
+        type: 'USE_ABILITY',
+        abilityId: 'power_strike',
+        targetId: 'goblin2',
+        direction: undefined,
+      });
+    });
+
+    it('dispatches USE_ABILITY for a direction-required ability', async () => {
+      const baseView = createMockGameView();
+      const view = createMockGameView({
+        player: {
+          ...baseView.player,
+          abilities: [
+            {
+              id: 'cinder_wake',
+              name: 'Cinder Wake',
+              description: 'Burn enemies in a line.',
+              ready: true,
+              cooldownRemaining: 0,
+              requiresTarget: false,
+              requiresDirection: true,
+            },
+          ],
+        },
+      });
+      const user = userEvent.setup();
+
+      render(
+        <UnifiedActionPanel
+          view={view}
+          onSendCommand={mockSendCommand}
+          onInspectOpen={mockInspectOpen}
+        />
+      );
+
+      await user.click(findActionButton('Ability')!);
+      await waitFor(() => {
+        expect(screen.getByText('Cinder Wake')).toBeInTheDocument();
+      });
+      await user.click(screen.getByText('Cinder Wake'));
+      await waitFor(() => {
+        expect(screen.getByText('Select direction for Cinder Wake')).toBeInTheDocument();
+      });
+      await user.click(screen.getByText('→'));
+
+      expect(mockSendCommand).toHaveBeenCalledWith({
+        type: 'USE_ABILITY',
+        abilityId: 'cinder_wake',
+        targetId: undefined,
+        direction: 'E',
+      });
+    });
+
+    it('dispatches SET_TRAP with trap item and direction', async () => {
+      const baseView = createMockGameView();
+      const view = createMockGameView({
+        player: {
+          ...baseView.player,
+          abilities: [
+            {
+              id: 'dagger_set_trap',
+              name: 'Set Trap',
+              description: 'Place a trap.',
+              ready: true,
+              cooldownRemaining: 0,
+              requiresTarget: false,
+              requiresDirection: true,
+            },
+          ],
+        },
+        inventory: {
+          ...baseView.inventory,
+          items: [
+            ...baseView.inventory.items,
+            {
+              id: 'trap-stack-1',
+              name: 'Spike Trap',
+              description: 'Placeable trap.',
+              itemClass: 'trap',
+              rarity: 'common',
+              rarityColor: '#a0a0a0',
+              value: 30,
+              sellPrice: 15,
+              isEquipped: false,
+              quantity: 1,
+              stackEntityIds: ['trap_entity_1'],
+              templateId: 'trap_spikes',
+            },
+          ],
+        },
+      });
+      const user = userEvent.setup();
+
+      render(
+        <UnifiedActionPanel
+          view={view}
+          onSendCommand={mockSendCommand}
+          onInspectOpen={mockInspectOpen}
+        />
+      );
+
+      await user.click(findActionButton('Ability')!);
+      await waitFor(() => {
+        expect(screen.getByText('Set Trap')).toBeInTheDocument();
+      });
+      await user.click(screen.getByText('Set Trap'));
+      await waitFor(() => {
+        expect(screen.getByText('Spike Trap')).toBeInTheDocument();
+      });
+      await user.click(screen.getByText('Spike Trap'));
+      await waitFor(() => {
+        expect(screen.getByText('Select trap placement direction')).toBeInTheDocument();
+      });
+      await user.click(screen.getByText('↑'));
+
+      expect(mockSendCommand).toHaveBeenCalledWith({
+        type: 'SET_TRAP',
+        direction: 'N',
+        itemEntityId: 'trap_entity_1',
+      });
+    });
+
     it('dispatches USE_ITEM command when consumable selected', async () => {
       const view = createMockGameView();
       const user = userEvent.setup();

@@ -7,6 +7,7 @@ export const daggerSetTrap: AbilityDefinition = {
   description: 'Place a trap on an adjacent empty tile.',
   cooldown: 0,
   requiresTarget: false,
+  requiresDirection: true,
   unlockLevel: 0,
   requiresWeaponTypes: ['dagger'],
   animation: { id: animationRefs.utility.trapPlacement.id },

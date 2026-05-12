@@ -1,17 +1,19 @@
 import { describe, it, expect } from 'vitest';
-import type { DomainEvent, GameState } from '@dungeon/contracts';
+import { entityId, type DomainEvent, type GameState } from '@dungeon/contracts';
+import { createTestEnemy, createTestGameStateInCombat } from '@dungeon/core/testing';
 import { buildCombatIndicators } from './combat-indicators.js';
 
 describe('buildCombatIndicators', () => {
+  const baseState = createTestGameStateInCombat();
   const mockGameState: GameState = {
-    gameId: 'game-1' as any,
-    phase: 'dungeon',
+    ...baseState,
+    gameId: entityId('game-1'),
     player: {
-      id: 'player-1' as any,
-      name: 'Hero',
-      level: 1,
-      experience: 0,
+      ...baseState.player,
+      id: entityId('player-1'),
+      position: { x: 50, y: 50 },
       stats: {
+        ...baseState.player.stats,
         maxHealth: 100,
         health: 100,
         attack: 10,
@@ -21,6 +23,7 @@ describe('buildCombatIndicators', () => {
         speed: 10,
       },
       baseStats: {
+        ...baseState.player.baseStats,
         maxHealth: 100,
         health: 100,
         attack: 10,
@@ -29,34 +32,14 @@ describe('buildCombatIndicators', () => {
         evasion: 20,
         speed: 10,
       },
-      position: { x: 50, y: 50 },
-      equipment: {
-        weapon: null,
-        secondaryWeapon: null,
-        chest: null,
-        head: null,
-        gloves: null,
-        boots: null,
-        ring1: null,
-        ring2: null,
-      },
-      inventory: [],
-      statuses: [],
-      abilities: [],
-      gold: 50,
-      floor: 1,
-      totalKills: 0,
-      totalDeaths: 0,
-      totalRuns: 0,
-      deathStash: null,
     },
     run: {
-      runId: 'run-1' as any,
+      ...baseState.run!,
+      runId: entityId('run-1'),
       floor: {
+        ...baseState.run!.floor,
         width: 100,
         height: 100,
-        depth: 1,
-        biomeId: 'dungeon',
         cells: new Map(),
         entrance: { x: 0, y: 0 },
         exit: { x: 99, y: 99 },
@@ -65,10 +48,11 @@ describe('buildCombatIndicators', () => {
       enemies: new Map([
         [
           'enemy-1',
-          {
-            id: 'enemy-1' as any,
+          createTestEnemy({
+            id: entityId('enemy-1'),
             name: 'Goblin',
             templateId: 'goblin',
+            position: { x: 51, y: 50 },
             stats: {
               maxHealth: 20,
               health: 20,
@@ -78,68 +62,27 @@ describe('buildCombatIndicators', () => {
               evasion: 10,
               speed: 8,
             },
-            position: { x: 51, y: 50 },
-            statuses: [],
-            equipment: {
-              weapon: null,
-              chest: null,
-              head: null,
-              gloves: null,
-              boots: null,
-              ring1: null,
-              ring2: null,
-              secondaryWeapon: null,
-            },
-            inventory: [],
-            aiState: 'idle' as any,
-            speedAccumulator: 0,
-          } as any,
+          }),
         ],
       ]),
       objects: new Map(),
       turnCount: 1,
       isActive: true,
       floorHistory: [],
-      weaponMastery: {
-        blade: 0,
-        bludgeon: 0,
-        axe: 0,
-        ranged: 0,
-        dagger: 0,
-      },
       speedAccumulators: {},
     },
     world: {
-      town: {
-        prosperity: 50,
-        fear: 0,
-        corruption: 0,
-        npcs: [],
-        shop: { items: [] },
-        rumors: [],
-        lastRunSummary: null,
-        nemeses: [],
-        slainNemeses: [],
-        factions: [],
-        atmosphereDescription: '',
-        unlockedBlueprints: [],
-      },
-      npcs: [],
-      shop: { items: [] },
+      ...baseState.world,
       eventHistory: [],
       totalRuns: 0,
       deepestFloor: 1,
-      nemeses: [],
-      factions: [],
-      unlockedBlueprints: [],
-      highestRarityFound: 'common',
     },
     itemRegistry: { items: new Map() },
     seed: 42,
     turnNumber: 1,
     version: 1,
     activeQuests: [],
-  } as unknown as GameState;
+  };
 
   describe('ATTACK_PERFORMED', () => {
     it('creates damage indicator on defender position for hit attack', () => {

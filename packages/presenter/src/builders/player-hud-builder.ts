@@ -1,5 +1,5 @@
 import type { GameState, WeaponType } from '@dungeon/contracts';
-import { STATUS_DEFINITIONS, ABILITY_DEFINITIONS, ENCHANTMENT_BY_ID, XP_TABLE, getRarityColor, BIOMES, daggerDisarm, daggerSetTrap, getDamageBand, getWeaponDamageProfile, RING_SPELL_BY_ID, RING_SCHOOLS } from '@dungeon/content';
+import { STATUS_DEFINITIONS, ABILITY_DEFINITIONS, ENCHANTMENT_BY_ID, XP_TABLE, getRarityColor, BIOMES, getDamageBand, getWeaponDamageProfile, RING_SPELL_BY_ID, RING_SCHOOLS } from '@dungeon/content';
 import { getObjectiveText } from '@dungeon/core/systems/quest-progress.js';
 import { getEffectiveStat } from '@dungeon/core/systems/status-effects.js';
 import type { AbilityView, EnchantmentView, EquippedItemView, LearnedSpellView, PlayerHudView, RingSchoolMasteryView, RingSpellView, StatusView } from '../game-view.js';
@@ -110,7 +110,7 @@ export function buildPlayerHud(state: GameState): PlayerHudView {
         manaCost,
         unlockLevel: def?.unlockLevel ?? 0,
         requiresTarget: def?.requiresTarget ?? false,
-        requiresDirection: def?.requiresDirection === true || a.id === daggerDisarm.id || a.id === daggerSetTrap.id,
+        requiresDirection: def?.requiresDirection === true,
         isRanged: def?.requiresWeaponTypes?.includes('ranged') === true ? true : undefined,
         weaponRequirement: def?.requiresWeaponTypes && def.requiresWeaponTypes.length > 0
           ? {

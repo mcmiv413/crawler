@@ -7,6 +7,7 @@ export const daggerDisarm: AbilityDefinition = {
   description: 'Remove an adjacent trap and add it to your inventory.',
   cooldown: 0,
   requiresTarget: false,
+  requiresDirection: true,
   unlockLevel: 0,
   requiresWeaponTypes: ['dagger'],
   animation: { id: animationRefs.impact.disarmStrike.id },
