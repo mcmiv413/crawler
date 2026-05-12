@@ -97,7 +97,7 @@ export function CombatLogView({ entries, debugMode, maxHeight }: CombatLogViewPr
       >
         {filteredEntries.map((entry, index) => (
           <div
-            key={`${index}-${entry.type}-${entry.text}`}
+            key={`${entry.type}-${entry.text}`}
             style={{
               fontSize: 11,
               lineHeight: 1.4,

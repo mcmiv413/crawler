@@ -42,15 +42,9 @@ export function ClickableStatGrid({ player }: ClickableStatGridProps) {
       sub: '',
       detail: `${Math.round(player.defense / (player.defense + 35) * 100)}% mit`,
     },
-    ...(player.accuracy !== undefined
-      ? [{ key: 'accuracy', label: 'ACC', value: `+${player.accuracy}`, sub: '', detail: `${Math.min(95, Math.max(15, 65 + player.accuracy))}% base hit` }]
-      : []),
-    ...(player.evasion !== undefined
-      ? [{ key: 'evasion', label: 'EVA', value: `+${player.evasion}`, sub: '', detail: `-${player.evasion}% enemy hit` }]
-      : []),
-    ...(player.speed !== undefined
-      ? [{ key: 'speed', label: 'SPD', value: player.speed.toString(), sub: '', detail: '' }]
-      : []),
+    { key: 'accuracy', label: 'ACC', value: `+${player.accuracy}`, sub: '', detail: `${Math.min(95, Math.max(15, 65 + player.accuracy))}% base hit` },
+    { key: 'evasion', label: 'EVA', value: `+${player.evasion}`, sub: '', detail: `-${player.evasion}% enemy hit` },
+    { key: 'speed', label: 'SPD', value: player.speed.toString(), sub: '', detail: '' },
   ];
 
   const selectedBreakdown = selectedStat ? player.statBreakdowns[selectedStat] : null;

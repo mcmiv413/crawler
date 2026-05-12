@@ -9,7 +9,7 @@ function itemStatText(item: InventoryItemView): string {
   let text = '';
   if (item.weaponStats) {
     const ws = item.weaponStats;
-    const dmg = ws.damageMin != null ? `${ws.damageMin}–${ws.damageMax}` : `${ws.damage}`;
+    const dmg = `${ws.damageMin}–${ws.damageMax}`;
     text += `${dmg} ${ws.damageType} dmg`;
     if (ws.weaponRange && ws.weaponRange > 1) {
       text += ` | range: ${ws.weaponRange}`;
@@ -102,9 +102,9 @@ export function InventoryPanel({ inventory, phase, gold }: InventoryPanelProps) 
 
       {sorted.map((item, idx) => {
         const stats = itemStatText(item);
-        const isEquipped = item.isEquipped ?? false;
-        const quantity = item.quantity ?? 1;
-        const actionItemId = item.stackEntityIds?.[0] ?? item.id;
+        const isEquipped = item.isEquipped;
+        const quantity = item.quantity;
+        const actionItemId = item.stackEntityIds[0] ?? item.id;
 
         let buttonContent: React.ReactNode = null;
         if (item.itemClass === 'weapon' || item.itemClass === 'armor') {
@@ -141,7 +141,7 @@ export function InventoryPanel({ inventory, phase, gold }: InventoryPanelProps) 
           );
         }
 
-        if (phase === 'town' && item.sellPrice !== undefined) {
+        if (phase === 'town') {
           buttonContent = (
             <button
               onClick={() => sendCommand({ type: 'TOWN_ACTION', action: 'shop_sell', targetId: actionItemId })}
@@ -155,7 +155,7 @@ export function InventoryPanel({ inventory, phase, gold }: InventoryPanelProps) 
 
         return (
           <div
-            key={`${item.id}-${idx}`}
+            key={item.id}
             style={{
               fontSize: 11,
               color: colors.text,

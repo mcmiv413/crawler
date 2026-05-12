@@ -30,12 +30,11 @@ export function resolveModule(id: AnimationId): AnimationModule | undefined {
     return module;
   }
 
-  if (typeof import.meta !== 'undefined' && import.meta.env?.DEV && !devWarningsShown.has(id)) {
+  if (import.meta.env.DEV && !devWarningsShown.has(id)) {
     devWarningsShown.add(id);
-    console.warn(`[animations] Missing module for animation ID: ${id}. Falling back to radial impact burst.`);
   }
 
-  if (typeof import.meta !== 'undefined' && import.meta.env?.DEV) {
+  if (import.meta.env.DEV) {
     // Return fallback module for dev; in production, caller handles missing modules
     return modules.get(animationRefs.impact.radialImpactBurst.id);
   }

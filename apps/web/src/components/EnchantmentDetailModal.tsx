@@ -1,6 +1,6 @@
 import React, { useState } from 'react';
 import type { EnchantmentView, PlayerHudView } from '@dungeon/presenter';
-import { ItemSpriteIcon } from './ItemSpriteIcon';
+import { ItemSpriteIcon } from './ItemSpriteIcon.js';
 import { colors, FONT_STACK, btnStyle } from '../styles.js';
 import { ModalBackdrop, ModalCard, SectionLabel } from './ui/index.js';
 
@@ -29,7 +29,8 @@ export function EnchantmentDetailModal({ player, onClose }: EnchantmentDetailMod
   );
 
   const selectedEnchantmentEntry = enchantmentEntries.find(([enchId]) => enchId === selectedEnchantmentId);
-  const selectedEnchantment = selectedEnchantmentEntry?.[1].enchantment;
+  const selectedEnchantmentDetails = selectedEnchantmentEntry?.[1];
+  const selectedEnchantment = selectedEnchantmentDetails?.enchantment;
 
   return (
     <ModalBackdrop onClose={onClose}>
@@ -78,7 +79,7 @@ export function EnchantmentDetailModal({ player, onClose }: EnchantmentDetailMod
 
           {/* Enchantment Details */}
           <div style={{ flex: 1, display: 'flex', flexDirection: 'column', minWidth: 0 }}>
-            {selectedEnchantment && selectedEnchantmentId ? (
+            {selectedEnchantment !== undefined && selectedEnchantmentDetails !== undefined ? (
               <>
                 <div style={{ marginBottom: 12 }}>
                   <div style={{ fontSize: 14, fontWeight: 600, color: colors.teal, marginBottom: 4 }}>
@@ -96,16 +97,13 @@ export function EnchantmentDetailModal({ player, onClose }: EnchantmentDetailMod
                   </div>
                 </div>
 
-                {(() => {
-                  const usedOn = selectedEnchantmentEntry?.[1].usedOn;
-                  if (!usedOn || usedOn.length === 0) return null;
-                  return (
+                {selectedEnchantmentDetails.usedOn.length > 0 && (
                     <div>
                       <SectionLabel label="Used On" />
                       <div style={{ display: 'flex', flexDirection: 'column', gap: 3 }}>
-                        {usedOn.map((item, idx) => (
+                        {selectedEnchantmentDetails.usedOn.map((item) => (
                           <div
-                            key={idx}
+                            key={`${item.name}-${item.spriteName ?? 'none'}`}
                             style={{
                               fontSize: 10,
                               color: colors.text,
@@ -122,8 +120,7 @@ export function EnchantmentDetailModal({ player, onClose }: EnchantmentDetailMod
                         ))}
                       </div>
                     </div>
-                  );
-                })()}
+                )}
               </>
             ) : (
               <div style={{ color: colors.muted, fontSize: 11 }}>

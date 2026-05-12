@@ -236,7 +236,7 @@ function TavernPanel({ view, onOpenFactionDetails }: { view: GameView; onOpenFac
           <SectionLabel label="Rumors" />
           {view.town.rumors.map((rumor: string, i: number) => (
             <div
-              key={i}
+              key={rumor}
               style={{
                 fontSize: 11,
                 color: colors.label,
@@ -635,9 +635,9 @@ export function TownPhase({
         {view.town?.prepAdvice && view.town.prepAdvice.length > 0 && (
           <InfoCard borderColor="#1e4a2a" marginBottom={0}>
             <SectionLabel label="Preparation" color={colors.lime} />
-            {view.town.prepAdvice.map((advice: string, i: number) => (
+            {view.town.prepAdvice.map((advice: string) => (
               <div
-                key={i}
+                key={advice}
                 style={{ fontSize: 11, color: colors.text, padding: '1px 0' }}
               >
                 &rsaquo; {advice}

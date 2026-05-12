@@ -136,7 +136,7 @@ function buildInspectableEntities(state: GameState): readonly InspectableEntityV
     let enemyAccuracy = getEffectiveStat(enemy.stats.accuracy, 'accuracy', enemy.statuses);
     let enemyWeaponRange = 1;
     let enemyMinRange = 0;
-    // eslint-disable-next-line @typescript-eslint/no-unnecessary-condition
+     
     if (enemy.equipment?.weapon) {
       enemyWeaponRange = enemy.equipment.weapon.weaponRange;
       enemyMinRange = enemy.equipment.weapon.minRange ?? 0;

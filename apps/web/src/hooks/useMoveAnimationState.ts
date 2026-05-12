@@ -23,9 +23,10 @@ export function useMoveAnimationState(): UseMoveAnimationStateReturn {
   const [animations, setAnimations] = useState<ActiveMoveAnimation[]>([]);
   const rafRef = useRef<number | undefined>(undefined);
   const nextIdRef = useRef(0);
-  const timersRef = useRef<ReturnType<typeof setTimeout>[]>([]);
+  const mutableTimersRef = useRef<ReturnType<typeof setTimeout>[]>([]);
 
   useEffect(() => {
+    const mutableTimers = mutableTimersRef.current;
     const handleMoveAnimation = (event: Event) => {
       const customEvent = event as CustomEvent<MoveAnimationEntry>;
       const entry = customEvent.detail;
@@ -50,13 +51,13 @@ export function useMoveAnimationState(): UseMoveAnimationStateReturn {
         setAnimations((prev) => prev.filter((a) => a.id !== animation.id));
       }, entry.durationMs);
 
-      timersRef.current.push(timer);
+      mutableTimers.push(timer);
     };
 
     window.addEventListener('move-animation', handleMoveAnimation);
     return () => {
       window.removeEventListener('move-animation', handleMoveAnimation);
-      timersRef.current.forEach((t) => clearTimeout(t));
+      mutableTimers.forEach((t) => clearTimeout(t));
     };
   }, []);
 

@@ -18,7 +18,7 @@ interface EquipmentOverviewProps {
 }
 
 export function EquipmentOverview({ player }: EquipmentOverviewProps) {
-  if (!player.equippedItems || player.equippedItems.length === 0) return null;
+  if (player.equippedItems.length === 0) return null;
 
   // Sort items by slot order
   const sortedItems = [...player.equippedItems].sort(

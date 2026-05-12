@@ -110,7 +110,7 @@ export function DungeonCanvas({ map, vpTilesWidth, vpTilesHeight }: Props) {
     };
 
     const cell = map.cells.find(c => c.x === grid.x && c.y === grid.y);
-    if (!cell || !cell.walkable) return;
+    if (!cell?.walkable) return;
 
     const path = findPath(map, map.playerPosition, grid);
     if (path.length === 0) return;

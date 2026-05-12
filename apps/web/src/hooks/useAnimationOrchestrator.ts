@@ -20,15 +20,16 @@ import { triggerHitStop } from './useHitStop.js';
  */
 export function useAnimationOrchestrator(animatedEvents: readonly AnimatedEvent[]): void {
   const previousRef = useRef<readonly AnimatedEvent[]>([]);
-  const timeoutsRef = useRef<ReturnType<typeof setTimeout>[]>([]);
+  const mutableTimeoutsRef = useRef<ReturnType<typeof setTimeout>[]>([]);
 
   useEffect(() => {
     const previous = previousRef.current;
+    const mutableTimeouts = mutableTimeoutsRef.current;
 
-    for (const timeout of timeoutsRef.current) {
+    for (const timeout of mutableTimeouts) {
       clearTimeout(timeout);
     }
-    timeoutsRef.current = [];
+    mutableTimeouts.length = 0;
 
     for (const animEvent of animatedEvents) {
       const wasAlreadyEmitted = previous.some(
@@ -57,32 +58,36 @@ export function useAnimationOrchestrator(animatedEvents: readonly AnimatedEvent[
             const entry = animEvent.data as { entityId: string; durationMs: number };
             triggerDefenderHit(entry.entityId as EntityId, entry.durationMs);
           } else if (
-            animEvent.type === 'damage' ||
-            animEvent.type === 'heal' ||
-            animEvent.type === 'status'
+            isCombatIndicatorType(animEvent.type)
           ) {
             emitCombatIndicator(
               (animEvent.data as CombatIndicatorEntry).x,
               (animEvent.data as CombatIndicatorEntry).y,
               (animEvent.data as CombatIndicatorEntry).text,
-              animEvent.type as 'damage' | 'heal' | 'status' | 'gold',
+              animEvent.type,
             );
           }
         }, animEvent.delayMs);
 
-        timeoutsRef.current.push(timeout);
+        mutableTimeouts.push(timeout);
       }
     }
 
     previousRef.current = animatedEvents;
 
     return () => {
-      for (const timeout of timeoutsRef.current) {
+      for (const timeout of mutableTimeouts) {
         clearTimeout(timeout);
       }
-      timeoutsRef.current = [];
+      mutableTimeouts.length = 0;
     };
   }, [animatedEvents]);
+}
+
+function isCombatIndicatorType(
+  type: AnimatedEvent['type'],
+): type is 'damage' | 'heal' | 'status' {
+  return type === 'damage' || type === 'heal' || type === 'status';
 }
 
 function isSameAnimationData(

@@ -149,8 +149,8 @@ export function FactionDetailModal({ factions, onClose }: FactionDetailModalProp
                   <div>
                     <SectionLabel label="Seen In Current Run" />
                     <div style={{ display: 'flex', flexDirection: 'column', gap: 3 }}>
-                      {selectedFaction.currentDungeonEnemies.map((enemy, index) => (
-                        <div key={`${enemy}-${index}`} style={{ fontSize: 10, color: colors.blood }}>
+                      {selectedFaction.currentDungeonEnemies.map((enemy) => (
+                        <div key={enemy} style={{ fontSize: 10, color: colors.blood }}>
                           • {enemy}
                         </div>
                       ))}

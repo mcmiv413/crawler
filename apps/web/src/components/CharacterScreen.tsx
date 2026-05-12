@@ -15,7 +15,6 @@ interface CharacterScreenProps {
 }
 
 function ResistancesSection({ player }: { player: PlayerHudView }) {
-  if (!player.resistances) return null;
   const hasAffinities = Object.values(player.resistances).some((v) => v !== 0);
   if (!hasAffinities) return null;
 
@@ -51,7 +50,7 @@ function ResistancesSection({ player }: { player: PlayerHudView }) {
 }
 
 function StatusSection({ player }: { player: PlayerHudView }) {
-  if (!player.statuses || player.statuses.length === 0) return null;
+  if (player.statuses.length === 0) return null;
 
   return (
     <div style={{ marginBottom: 12 }}>
@@ -154,7 +153,7 @@ function AbilitiesSection({
   selectedAbilityId: string | null;
   onSelectAbility: (id: string | null) => void;
 }) {
-  if (!player.abilities || player.abilities.length === 0) return null;
+  if (player.abilities.length === 0) return null;
 
   const selectedAbility = player.abilities.find((a) => a.id === selectedAbilityId);
 
@@ -291,7 +290,7 @@ export function CharacterScreen({ player, activeQuests, sendCommand }: Character
   const [showMasteryModal, setShowMasteryModal] = useState<string | null>(null);
   const [showEnchantsModal, setShowEnchantsModal] = useState(false);
 
-  const quests = (activeQuests ?? player.activeQuests ?? []);
+  const quests = activeQuests ?? player.activeQuests;
   const hasQuests = quests.length > 0;
   const hasFactions = player.factionProgress.length > 0;
   const hasEnchantments = player.equippedItems.some(item => item.enchantments.length > 0);
@@ -409,17 +408,17 @@ export function CharacterScreen({ player, activeQuests, sendCommand }: Character
           </div>
 
           {/* Ring Magic */}
-          {player.ringSchoolMasteries && player.ringSchoolMasteries.length > 0 && (
+          {player.ringSchoolMasteries.length > 0 && (
             <section style={{ marginBottom: 12 }}>
               <div style={{ fontSize: 11, color: '#888', marginBottom: 4 }}>RING MAGIC</div>
               {player.ringSchoolMasteries.map(m => (
                 <div key={m.school} style={{ fontSize: 12, color: '#cc8', marginBottom: 2 }}>
-                  {m.school} — Lv {m.level} ({m.xp} XP{m.nextLevelXp != null ? ` / ${m.nextLevelXp}` : ''})
+                  {m.school} — Lv {m.level} ({m.xp} XP / {m.nextLevelXp})
                 </div>
               ))}
             </section>
           )}
-          {player.learnedSpells && player.learnedSpells.length > 0 && (
+          {player.learnedSpells.length > 0 && (
             <section style={{ marginBottom: 12 }}>
               <div style={{ fontSize: 11, color: '#888', marginBottom: 4 }}>LEARNED SPELLS</div>
               {player.learnedSpells.map(spell => (
