@@ -4,21 +4,7 @@ import type { PlayerHudView } from '@dungeon/presenter';
 import { EnchantmentDetailModal } from './EnchantmentDetailModal.js';
 import { EnchantmentLibrary } from './EnchantmentLibrary.js';
 
-vi.mock('@dungeon/content', () => ({
-  ENCHANTMENT_BY_ID: new Map([
-    [
-      'keen_edge',
-      {
-        id: 'keen_edge',
-        name: 'Keen Edge',
-        description: 'Adds a sharper edge.',
-        tier: 1,
-      },
-    ],
-  ]),
-}));
-
-function createPlayer(enchantmentIds: readonly string[]): PlayerHudView {
+function createPlayer(enchantments: readonly { id: string; name: string }[]): PlayerHudView {
   return {
     name: 'Hero',
     level: 1,
@@ -49,10 +35,10 @@ function createPlayer(enchantmentIds: readonly string[]): PlayerHudView {
         rarity: 'common',
         rarityColor: '#888888',
         baseBonus: 1,
-        enchantments: enchantmentIds.map(id => ({
-          id,
-          name: id,
-          description: `${id} description`,
+        enchantments: enchantments.map(enchantment => ({
+          id: enchantment.id,
+          name: enchantment.name,
+          description: `${enchantment.name} description`,
           tier: 1,
         })),
       },
@@ -68,34 +54,35 @@ function createPlayer(enchantmentIds: readonly string[]): PlayerHudView {
       totalFactions: 4,
       summaryText: 'No factions broken.',
     },
+    ringSchoolMasteries: [],
+    learnedSpells: [],
+    studyableSpells: [],
   };
 }
 
 describe('EnchantmentDetailModal', () => {
-  it('selects only enchantments that exist in the catalog', () => {
+  it('renders presenter-provided enchantment details', () => {
     render(
       <EnchantmentDetailModal
-        player={createPlayer(['missing_enchantment', 'keen_edge'])}
+        player={createPlayer([{ id: 'keen_edge', name: 'Keen Edge' }])}
         onClose={vi.fn()}
       />,
     );
 
     expect(screen.getByText('Keen Edge')).toBeInTheDocument();
     expect(screen.getByText(/Test Sword/)).toBeInTheDocument();
-    expect(screen.queryByText('missing_enchantment')).not.toBeInTheDocument();
   });
 
-  it('renders the empty detail state when equipped enchantments are missing from the catalog', () => {
-    render(<EnchantmentDetailModal player={createPlayer(['missing_enchantment'])} onClose={vi.fn()} />);
+  it('renders the empty detail state when presenter supplies no equipped enchantments', () => {
+    render(<EnchantmentDetailModal player={createPlayer([])} onClose={vi.fn()} />);
 
     expect(screen.getByText('Select an enchantment to view details')).toBeInTheDocument();
-    expect(screen.queryByText('missing_enchantment')).not.toBeInTheDocument();
   });
 });
 
 describe('EnchantmentLibrary', () => {
-  it('does not render if no equipped enchantments exist in the catalog', () => {
-    render(<EnchantmentLibrary player={createPlayer(['missing_enchantment'])} />);
+  it('does not render if presenter supplies no equipped enchantments', () => {
+    render(<EnchantmentLibrary player={createPlayer([])} />);
 
     expect(screen.queryByText('ENCHANTMENTS')).not.toBeInTheDocument();
   });

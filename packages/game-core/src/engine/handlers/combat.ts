@@ -4,8 +4,8 @@ import type {
 import { entityId } from '@dungeon/contracts';
 import type { CommandResult } from './shared.js';
 import type { SeededRNG } from '../../utils/rng.js';
-import { COMBAT, getPrimaryFactionId, getWeaponDamageProfile } from '@dungeon/content';
-import { updateRunMetrics } from './shared.js';
+import { ABILITY_DEFINITIONS, COMBAT, MAGIC, STATUS_DEFAULTS, daggerDisarm, daggerSetTrap, getPrimaryFactionId, getWeaponDamageProfile } from '@dungeon/content';
+import { applyActiveTurnManaRegen, updateRunMetrics } from './shared.js';
 import { executeAbility } from '../../abilities/runtime/execute-ability.js';
 import { resolveAttack } from '../../systems/combat.js';
 import { getEffectiveStat, applyStatusToEnemy } from '../../systems/status-effects.js';
@@ -17,12 +17,19 @@ import { applyDungeonOgreSlain, applyFactionLeaderSlain, applyFactionMemberKill 
 import { canUseAbility, setAbilityCooldown } from '../../systems/abilities.js';
 import { applyLifeStealOnKill, getExpBonusMultiplier } from '../../systems/enchantment-hooks.js';
 import { checkWeaponMasteryUnlocks } from '../../systems/weapon-mastery.js';
-import { ABILITY_DEFINITIONS, STATUS_DEFAULTS, daggerDisarm, daggerSetTrap } from '@dungeon/content';
 import { chebyshevDistance } from '../../utils/grid.js';
 import { processEnemyTurns } from '../turn-scheduler.js';
 import { tickAbilityCooldowns } from '../../systems/abilities.js';
 import { handleDisarmTrap } from './disarm-trap.js';
 import { handleSetTrap } from './set-trap.js';
+import { spreadBurnFromDeadEnemy } from '../../systems/burn-spread.js';
+import {
+  canFireMasteryRestoreManaOnBurnKill,
+  gainSchoolXp,
+  getFireBurnDuration,
+  getFireBurnMagnitude,
+} from '../../systems/magic-xp.js';
+import { restorePlayerMana } from '../../systems/mana.js';
 
 /** Returns the WeaponType of the currently equipped weapon, or null if none/unknown */
 export function getEquippedWeaponType(state: GameState): WeaponType | null {
@@ -64,6 +71,7 @@ export function processEnemyKill(
   // 1. Remove enemy from map
   const newEnemies = new Map(newState.run!.enemies);
   newEnemies.delete(enemyPosKey);
+  const hadBurn = enemy.statuses.some(status => status.id === 'burn');
 
   // 2. Emit ENTITY_DIED
   events = [...events, {
@@ -108,6 +116,23 @@ export function processEnemyKill(
       stats: { ...newState.player.stats, health: newHealthAfterSteal },
     },
   };
+
+  if (hadBurn === true) {
+    const spreadResult = spreadBurnFromDeadEnemy(newState, enemy, rng);
+    const playerWithSchoolXp = gainSchoolXp(newState.player, 'fire', MAGIC.schoolXpPerBurningKill);
+    newState = {
+      ...newState,
+      run: newState.run === null ? null : { ...newState.run, enemies: spreadResult.enemies },
+      player: playerWithSchoolXp,
+    };
+    events = [...events, ...spreadResult.events];
+
+    if (canFireMasteryRestoreManaOnBurnKill(playerWithSchoolXp) === true) {
+      const manaResult = restorePlayerMana(newState, MAGIC.burnKillManaRestore, 'Burning kill');
+      newState = manaResult.state;
+      events = [...events, ...manaResult.events];
+    }
+  }
 
   // 6. Process loot + gold tracking
   const goldBeforeLoot = newState.player.gold;
@@ -434,6 +459,23 @@ export function handleAttack(
     }
     events = [...events, ...statusEvents];
 
+    const heatSurgeActive = newState.player.statuses.some(status => status.id === 'heat_surge');
+    if (heatSurgeActive === true && killed === false) {
+      const burnDefaults = STATUS_DEFAULTS.burn;
+      const burnDuration = getFireBurnDuration(newState.player, burnDefaults.defaultDuration);
+      const burnMagnitude = getFireBurnMagnitude(newState.player);
+      updatedEnemy = applyStatusToEnemy(updatedEnemy, 'burn', burnDuration, burnMagnitude, state.player.id);
+      events = [...events, {
+        type: 'STATUS_APPLIED',
+        targetId: targetEnemy.id,
+        statusId: 'burn',
+        duration: burnDuration,
+        sourceId: state.player.id,
+        timestamp: newState.turnNumber,
+        turnNumber: newState.turnNumber,
+      }];
+    }
+
     if (killed === true) {
       // Enemy died — use shared kill handling logic
       const killResult = processEnemyKill(newState, targetEnemy, targetKey, rng);
@@ -465,6 +507,10 @@ export function handleAttack(
       events = [...events, ...masteryResult.events];
     }
   }
+
+  const manaResult = applyActiveTurnManaRegen(newState, events);
+  newState = manaResult.state;
+  events = manaResult.events;
 
   // Process enemy turns with player speed for speed-based action accumulation, then tick ability cooldowns
   const enemyResult = processEnemyTurns(newState, rng, newState.player.stats.speed);
@@ -512,7 +558,7 @@ export function handleUseAbility(
   newState = updateRunMetrics(newState, { turnsElapsed: 1 });
 
   // Execute ability using data-driven engine
-  const abilityResult = executeAbility(newState, abilityId, rng, targetId);
+  const abilityResult = executeAbility(newState, abilityId, rng, targetId, direction);
   if (abilityResult.events.length === 0) {
     // Ability not found or failed validation
     return { state, events: [], runEnded: false };
@@ -520,6 +566,10 @@ export function handleUseAbility(
 
   let resultState = abilityResult.state;
   let resultEvents: DomainEvent[] = [...abilityResult.events];
+
+  const manaResult = applyActiveTurnManaRegen(resultState, resultEvents);
+  resultState = manaResult.state;
+  resultEvents = manaResult.events;
 
   // Enemy turns with player speed for speed-based action accumulation, then tick cooldowns
   const enemyResult = processEnemyTurns(resultState, rng, resultState.player.stats.speed);

@@ -25,7 +25,7 @@ export {
 export {
   leatherVest, chainShirt, plateArmor, fireWardCloak, regenVest, leatherCap, ironHelm, leatherGloves, chainGauntlets,
   leatherBoots, steelSabatons, copperRing, silverBand, spikedLeather, emberCloak, shadowVest, boneGuardPlate, plagueMantle,
-  wardenHelm, ironCrown, mindVeil, swiftBoots, phaseSteps, gripGauntlets, leechWraps, venomRing, blessedRing, ironBand, emberRing, shadowRing,
+  wardenHelm, ironCrown, mindVeil, swiftBoots, phaseSteps, gripGauntlets, leechWraps, venomRing, blessedRing, ironBand, emberRing, shadowRing, fireRing,
 } from './armor/index.js';
 export {
   healthPotion, greaterHealthPotion, antidote, strengthElixir, bomb,

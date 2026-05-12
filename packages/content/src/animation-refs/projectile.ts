@@ -18,3 +18,10 @@ export const arrowVolley: AnimationRef = {
   durationMs: 400,
   suppressActorBump: true,
 };
+
+export const emberBolt: AnimationRef = {
+  id: 'fx.projectile.ember-bolt',
+  category: 'projectile',
+  durationMs: 360,
+  suppressActorBump: true,
+};

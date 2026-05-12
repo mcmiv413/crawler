@@ -3,12 +3,13 @@
  * Fast red slash with sparkle.
  */
 
+import { animationRefs } from '@dungeon/content';
 import type { AnimationModule, AnimationDrawContext } from '../types.js';
 
 export const daggerDisarmModule: AnimationModule = {
-  id: 'fx.impact.disarm-strike',
-  durationMs: 320,
-  category: 'impact',
+  id: animationRefs.impact.disarmStrike.id,
+  durationMs: animationRefs.impact.disarmStrike.durationMs,
+  category: animationRefs.impact.disarmStrike.category,
 
   draw(ctx: CanvasRenderingContext2D, anim: AnimationDrawContext): void {
     const { x, y, progress } = anim;

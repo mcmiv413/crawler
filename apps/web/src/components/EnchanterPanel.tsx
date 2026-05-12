@@ -1,7 +1,6 @@
 import React from 'react';
 import type { TownView, InventoryView } from '@dungeon/presenter';
 import { useGameStore } from '../store/game-store.js';
-import { ENCHANTMENT_BY_ID, getEnchantmentCost } from '@dungeon/content';
 import { colors, FONT_STACK } from '../styles.js';
 import { InfoCard, SectionLabel } from './ui/index.js';
 
@@ -45,7 +44,7 @@ const headerStyle: React.CSSProperties = {
 
 export function EnchanterPanel({ town, inventory, playerGold }: Props) {
   const { sendCommand, loading } = useGameStore();
-  const blueprints = town.unlockedBlueprints;
+  const blueprints = town.unlockedEnchantmentBlueprints ?? [];
 
   if (blueprints.length === 0) {
     return (
@@ -77,6 +76,9 @@ export function EnchanterPanel({ town, inventory, playerGold }: Props) {
         const filledCount = armorStats.enchantments.filter((e) => e !== null).length;
         const freeSlots = armorStats.enchantmentSlots - filledCount;
         const appliedEnchantments = armorStats.enchantments.filter((e): e is string => e !== null);
+        const appliedEnchantmentNames = (armorStats.enchantmentDetails ?? [])
+          .filter(detail => detail.enchantmentId !== null)
+          .map(detail => detail.enchantmentName ?? detail.enchantmentId);
 
         return (
           <div key={slot} style={{ marginBottom: 10 }}>
@@ -96,28 +98,25 @@ export function EnchanterPanel({ town, inventory, playerGold }: Props) {
                   marginBottom: 4,
                 }}
               >
-                Applied: {appliedEnchantments.map((id) => ENCHANTMENT_BY_ID.get(id)?.name ?? id).join(', ')}
+                Applied: {appliedEnchantmentNames.join(', ')}
               </div>
             )}
             {freeSlots > 0 && (
               <div style={{ display: 'flex', flexWrap: 'wrap' }}>
-                {blueprints.map((enchId) => {
-                  if (appliedEnchantments.includes(enchId)) return null;
-                  const enchDef = ENCHANTMENT_BY_ID.get(enchId);
-                  if (!enchDef) return null;
-                  const cost = getEnchantmentCost(enchId);
-                  const canAfford = playerGold >= cost;
+                {blueprints.map((enchantment) => {
+                  if (appliedEnchantments.includes(enchantment.id)) return null;
+                  const canAfford = playerGold >= enchantment.cost;
                   return (
                     <button
-                      key={enchId}
+                      key={enchantment.id}
                       style={{ ...enchantBtnStyle, opacity: canAfford ? 1 : 0.4 }}
                       disabled={loading || !canAfford}
                       onClick={() =>
-                        sendCommand({ type: 'ENCHANT_ARMOR', equipSlot: slot, enchantmentId: enchId })
+                        sendCommand({ type: 'ENCHANT_ARMOR', equipSlot: slot, enchantmentId: enchantment.id })
                       }
-                      title={canAfford ? `Cost: ${cost}g` : `Need ${cost}g (you have ${playerGold}g)`}
+                      title={canAfford ? `Cost: ${enchantment.cost}g` : `Need ${enchantment.cost}g (you have ${playerGold}g)`}
                     >
-                      {enchDef.name} — {cost}g
+                      {enchantment.name} — {enchantment.cost}g
                     </button>
                   );
                 })}

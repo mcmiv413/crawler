@@ -1,8 +1,8 @@
 import type { GameState, EntityId, NpcState } from '@dungeon/contracts';
 import type { DomainEvent } from '@dungeon/contracts';
-import { createQuestFromTemplate, selectRandomQuestTemplate } from '@dungeon/content';
 import type { SeededRNG } from '../utils/rng.js';
 import { SeededRNG as SeededRNGImpl } from '../utils/rng.js';
+import { createQuestFromTemplate, selectRandomQuestTemplate } from './quest-selection.js';
 
 /**
  * Updates an NPC's disposition by a delta amount (clamped to 0-100).

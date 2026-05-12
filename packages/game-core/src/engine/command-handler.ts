@@ -79,7 +79,7 @@ export function handleCommand(
       return handleRetreatCommand(state, rng);
     case 'TOWN_ACTION': {
       if (!isTownActionCommand(command)) return { state, events: [], runEnded: false };
-      return handleTownAction(state, command.action, rng, command.targetId as EntityId | undefined, command.itemId);
+      return handleTownAction(state, command.action, rng, command.targetId as EntityId | undefined, command.itemId, command.spellId);
     }
     case 'EQUIP': {
       if (!isEquipCommand(command)) return { state, events: [], runEnded: false };

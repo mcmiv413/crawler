@@ -93,6 +93,28 @@ export const PLAYER_STATUS_PRESENTATION: Readonly<Record<string, StatusPresentat
       paddingPx: 2,
     },
   },
+  heat_surge: {
+    entityScale: 1.25,
+    ring: {
+      colorRgb: '255, 96, 32',
+      alphaBase: 0.28,
+      alphaAmplitude: 0.42,
+      pulsePeriodMs: 160,
+      lineWidth: 1.5,
+      paddingPx: 2,
+    },
+  },
+  arcane_charge: {
+    entityScale: 1.18,
+    ring: {
+      colorRgb: '74, 163, 255',
+      alphaBase: 0.24,
+      alphaAmplitude: 0.36,
+      pulsePeriodMs: 220,
+      lineWidth: 1.5,
+      paddingPx: 2,
+    },
+  },
 } as const;
 
 export function getMoveDurationMs(style: MoveAnimStyle): number {

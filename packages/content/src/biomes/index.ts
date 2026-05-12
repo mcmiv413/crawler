@@ -27,6 +27,4 @@ export {
   crystalCave, forest, frozenDepths, goblinWarrens, mossCaverns, stoneCrypt, volcanic,
 };
 
-export * from './utilities.js';
-
 // Add custom utilities below this line ↓

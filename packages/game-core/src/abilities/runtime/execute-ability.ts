@@ -1,4 +1,4 @@
-import type { GameState, EntityId, DomainEvent } from '@dungeon/contracts';
+import type { GameState, EntityId, DomainEvent, Direction } from '@dungeon/contracts';
 import type { SeededRNG } from '../../utils/rng.js';
 import type { CommandResult } from '../../engine/handlers/shared.js';
 import { buildContext } from './build-context.js';
@@ -8,7 +8,10 @@ import { buildAbilityUsedEvent } from './emit-events.js';
 import { applyEffect } from '../effects/apply-effect.js';
 import { ALL_ABILITY_DEFINITIONS } from '../definitions/index.js';
 import { buildRegistry } from '../registry.js';
+import { spendMana } from '../../systems/mana.js';
 
+import { canUseLearnedRingSpell } from '../../systems/ring-spell-availability.js';
+import { RING_SPELL_BY_ID } from '@dungeon/content';
 const ABILITY_REGISTRY = buildRegistry(ALL_ABILITY_DEFINITIONS);
 
 /**
@@ -20,6 +23,7 @@ export function executeAbility(
   abilityId: string,
   rng: SeededRNG,
   targetId?: EntityId,
+  direction?: Direction,
 ): CommandResult {
   const definition = ABILITY_REGISTRY.get(abilityId);
 
@@ -29,7 +33,7 @@ export function executeAbility(
   }
 
   // New data-driven engine
-  const context = buildContext(state, rng, targetId);
+  const context = buildContext(state, rng, targetId, direction);
 
   // Validate requirements
   const validation = validateRequirements(context, definition.requirements);
@@ -37,34 +41,66 @@ export function executeAbility(
     return { state, events: [], runEnded: false };
   }
 
+  // Check ring spell eligibility (learned + equipped rings)
+  const ringSpell = RING_SPELL_BY_ID.get(abilityId);
+  if (ringSpell !== undefined) {
+    const equippedItemIds = Object.values(state.player.equipment)
+      .filter((id): id is EntityId => id !== null)
+      .map(entityId => state.itemRegistry.items.get(entityId)?.itemId)
+      .filter((id): id is string => id !== undefined);
+    if (!canUseLearnedRingSpell(state.player, abilityId, equippedItemIds)) {
+      return { state, events: [], runEnded: false };
+    }
+  }
+
+  const manaRequirement = definition.requirements.find(requirement => requirement.kind === 'has_mana');
+  let spendResult: { state: GameState; events: DomainEvent[] } = { state, events: [] };
+  if (manaRequirement !== undefined) {
+    spendResult = spendMana(state, manaRequirement.amount, definition.name);
+  }
+
+  const paidContext = { ...context, state: spendResult.state, player: spendResult.state.player };
+
   // Resolve targets
-  const targets = resolveTargets(context, definition.targeting, targetId);
+  const targets = resolveTargets(paidContext, definition.targeting, targetId);
 
   // Execute effects in sequence
-  let newContext = context;
-  let accumulatedEvents: DomainEvent[] = [];
+  let newContext = paidContext;
+  let accumulatedEvents: DomainEvent[] = [...spendResult.events];
   let resultData: { damage?: number; healAmount?: number; damageByTarget?: ReadonlyMap<EntityId, number> } = {};
   let lastAttackHit = false;
   const damageByTarget = new Map<EntityId, number>();
 
   for (const effect of definition.effects) {
-    if (effect.kind === 'heal') {
+    if (effect.kind === 'heal' || (effect.kind === 'status' && effect.target === 'player')) {
       // Heal effects are self-targeted
       const healResult = applyEffect(newContext, effect);
-      newContext = { ...newContext, state: healResult.state };
+      newContext = {
+        ...newContext,
+        state: healResult.state,
+        player: healResult.state.player,
+        run: healResult.state.run,
+      };
       accumulatedEvents = [...accumulatedEvents, ...healResult.events];
       // Extract heal amount
-      const maxHealth = newContext.player.stats.maxHealth;
-      if (effect.percentageOfMaxHealth !== undefined) {
-        resultData.healAmount = Math.floor(maxHealth * effect.percentageOfMaxHealth);
-      } else if (effect.flatAmount !== undefined) {
-        resultData.healAmount = effect.flatAmount;
+      if (effect.kind === 'heal') {
+        const maxHealth = newContext.player.stats.maxHealth;
+        if (effect.percentageOfMaxHealth !== undefined) {
+          resultData.healAmount = Math.floor(maxHealth * effect.percentageOfMaxHealth);
+        } else if (effect.flatAmount !== undefined) {
+          resultData.healAmount = effect.flatAmount;
+        }
       }
     } else if (targets.length > 0) {
       // Target-based effects
       for (const { key: targetKey, enemy } of targets) {
         const effectResult = applyEffect(newContext, effect, targetKey, lastAttackHit);
-        newContext = { ...newContext, state: effectResult.state };
+        newContext = {
+          ...newContext,
+          state: effectResult.state,
+          player: effectResult.state.player,
+          run: effectResult.state.run,
+        };
         accumulatedEvents = [...accumulatedEvents, ...effectResult.events];
         // Update lastAttackHit if this was an attack effect
         if (effect.kind === 'attack') {
@@ -91,6 +127,7 @@ export function executeAbility(
     ...resultData,
     targetId: eventTargetId,
     targetName: targets[0]?.enemy.name,
+    affectedTargetIds: targets.map(target => target.enemy.id),
   });
   accumulatedEvents = [...accumulatedEvents, ...abilityEvent];
 

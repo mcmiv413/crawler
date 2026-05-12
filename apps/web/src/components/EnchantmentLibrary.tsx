@@ -1,23 +1,19 @@
 import React, { useState } from 'react';
-import type { PlayerHudView } from '@dungeon/presenter';
-import { ENCHANTMENT_BY_ID } from '@dungeon/content';
+import type { EnchantmentView, PlayerHudView } from '@dungeon/presenter';
 
 interface EnchantmentDetailModalProps {
-  enchantmentId: string;
+  enchantment: EnchantmentView;
   itemsUsing: string[];
   onClose: () => void;
 }
 
-function EnchantmentDetailModal({ enchantmentId, itemsUsing, onClose }: EnchantmentDetailModalProps) {
-  const enchDef = ENCHANTMENT_BY_ID.get(enchantmentId);
-  if (!enchDef) return null;
-
+function EnchantmentDetailModal({ enchantment, itemsUsing, onClose }: EnchantmentDetailModalProps) {
   return (
     <div style={{ marginBottom: 12, padding: 8, background: '#1a3a1a', border: '1px solid #2a6a2a' }}>
       <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 8 }}>
         <div>
-          <div style={{ fontSize: 13, fontWeight: 'bold', color: '#6af' }}>{enchDef.name}</div>
-          <div style={{ fontSize: 10, color: '#888' }}>Tier {enchDef.tier}</div>
+          <div style={{ fontSize: 13, fontWeight: 'bold', color: '#6af' }}>{enchantment.name}</div>
+          <div style={{ fontSize: 10, color: '#888' }}>Tier {enchantment.tier}</div>
         </div>
         <button
           onClick={onClose}
@@ -35,7 +31,7 @@ function EnchantmentDetailModal({ enchantmentId, itemsUsing, onClose }: Enchantm
       </div>
 
       <div style={{ fontSize: 11, color: '#aaa', marginBottom: 6, lineHeight: 1.4 }}>
-        {enchDef.description}
+        {enchantment.description}
       </div>
 
       {itemsUsing.length > 0 && (
@@ -60,34 +56,32 @@ export function EnchantmentLibrary({ player }: EnchantmentLibraryProps) {
   const [selectedEnchantmentId, setSelectedEnchantmentId] = useState<string | null>(null);
 
   // Collect all enchantments from equipped items
-  const enchantmentMap = new Map<string, string[]>();
+  const enchantmentMap = new Map<string, { enchantment: EnchantmentView; itemsUsing: string[] }>();
   
   for (const item of player.equippedItems) {
     for (const ench of item.enchantments) {
-      const existing = enchantmentMap.get(ench.id) ?? [];
-      enchantmentMap.set(ench.id, [...existing, item.name]);
+      const existing = enchantmentMap.get(ench.id);
+      enchantmentMap.set(ench.id, {
+        enchantment: ench,
+        itemsUsing: [...(existing?.itemsUsing ?? []), item.name],
+      });
     }
   }
 
-  const validEnchantmentEntries = Array.from(enchantmentMap.entries()).filter(([enchId]) =>
-    ENCHANTMENT_BY_ID.has(enchId),
-  );
+  const enchantmentEntries = Array.from(enchantmentMap.entries());
 
-  if (validEnchantmentEntries.length === 0) return null;
+  if (enchantmentEntries.length === 0) return null;
 
-  const selectedEnchantmentEntry = validEnchantmentEntries.find(([enchId]) => enchId === selectedEnchantmentId);
-  const selectedEnchantment = selectedEnchantmentEntry
-    ? ENCHANTMENT_BY_ID.get(selectedEnchantmentEntry[0])
-    : null;
+  const selectedEnchantmentEntry = enchantmentEntries.find(([enchId]) => enchId === selectedEnchantmentId);
+  const selectedEnchantment = selectedEnchantmentEntry?.[1].enchantment;
 
   return (
     <>
       <div style={{ marginBottom: 12 }}>
         <div style={{ color: '#888', fontSize: 11, marginBottom: 4, fontWeight: 'bold' }}>ENCHANTMENTS</div>
         <div style={{ display: 'flex', flexWrap: 'wrap', gap: '4px' }}>
-          {validEnchantmentEntries.map(([enchId]) => {
-            const enchDef = ENCHANTMENT_BY_ID.get(enchId);
-            if (!enchDef) return null;
+          {enchantmentEntries.map(([enchId, entry]) => {
+            const enchDef = entry.enchantment;
             return (
               <button
                 key={enchId}
@@ -111,9 +105,9 @@ export function EnchantmentLibrary({ player }: EnchantmentLibraryProps) {
       </div>
 
       {selectedEnchantment && selectedEnchantmentEntry && (
-        <EnchantmentDetailModal
-          enchantmentId={selectedEnchantmentEntry[0]}
-          itemsUsing={selectedEnchantmentEntry[1]}
+          <EnchantmentDetailModal
+          enchantment={selectedEnchantment}
+          itemsUsing={selectedEnchantmentEntry[1].itemsUsing}
           onClose={() => setSelectedEnchantmentId(null)}
         />
       )}

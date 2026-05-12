@@ -4,7 +4,9 @@
 
 Tests define required behavior, not current implementation.
 
-> For agents, the mandatory execution workflow lives in `CLAUDE.md`. This guide provides the layer rules, helpers, and examples that support that workflow.
+> For agents, the mandatory execution workflow lives in `AGENTS.md` and `CLAUDE.md`. This guide provides the layer rules, helpers, and examples that support that workflow.
+
+For cross-project ownership rules, generated-index ownership, and presenter/UI boundaries, also read [Architecture Patterns](architecture-patterns.md).
 
 AI assistants are allowed to generate test scaffolding, but every test must be reviewed for:
 - correct layer
@@ -76,6 +78,7 @@ The default merge gate excludes balance suites under `tests/balance/` and `packa
 8. Tests must validate intended behavior, not mirror implementation details.
 9. Do not mix layers. If a test needs `GameEngine`, it is not a unit test.
 10. Prefer one clear requirement per test.
+11. Generated-index and live-registry checks belong in contract tests, not unit/property tests.
 
 ## Anti-Patterns
 
@@ -87,7 +90,7 @@ expect(calculateDamage(player, enemy)).toBe(25);
 
 // Right
 expect(calculateDamage(player, enemy)).toBeGreaterThan(0);
-````
+```
 
 ### Live Config in Unit Tests
 
@@ -213,6 +216,7 @@ Write a contract test when:
 * content in one package references content in another package
 * invalid references would make a feature invisible, broken, or impossible to complete
 * AI generated or modified content references
+* generated registries or catalog indexes need live integrity coverage
 
 Contract tests should use live config.
 

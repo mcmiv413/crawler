@@ -1,5 +1,16 @@
-import type { EnemyInstance, EntityId } from '@dungeon/contracts';
+import type { Direction, EnemyInstance, EntityId, Position } from '@dungeon/contracts';
 import type { AbilityContext, AbilityTargeting, TargetSelector } from '../types.js';
+
+const DIRECTION_DELTAS: Readonly<Record<Direction, Position>> = {
+  N: { x: 0, y: -1 },
+  S: { x: 0, y: 1 },
+  E: { x: 1, y: 0 },
+  W: { x: -1, y: 0 },
+  NE: { x: 1, y: -1 },
+  NW: { x: -1, y: -1 },
+  SE: { x: 1, y: 1 },
+  SW: { x: -1, y: 1 },
+};
 
 /**
  * Resolve target(s) based on the targeting specification.
@@ -83,6 +94,28 @@ function resolveSelector(
         }
       }
       return mutableTargets;
+    }
+
+    case 'line_from_player': {
+      if (context.direction === undefined) {
+        return [];
+      }
+
+      const delta = DIRECTION_DELTAS[context.direction];
+      const linePositions = Array.from({ length: selector.range }, (_, index) => ({
+        x: context.player.position.x + delta.x * (index + 1),
+        y: context.player.position.y + delta.y * (index + 1),
+      }));
+
+      return linePositions.flatMap((position) => {
+        const target = Array.from(context.run!.enemies.entries()).find(([, enemy]) =>
+          enemy.position.x === position.x && enemy.position.y === position.y,
+        );
+        if (target === undefined) return [];
+        const [key, enemy] = target;
+        const cell = context.run!.floor.cells.get(key);
+        return cell?.visibility === 'visible' ? [{ enemy, key }] : [];
+      });
     }
 
     case 'target_plus_adjacent_enemies': {

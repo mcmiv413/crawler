@@ -385,7 +385,9 @@ export function AbilityDropdown({
           : 'Ready';
         const disabledReason = ability.cooldownRemaining > 0
           ? cooldownStatus
-          : ability.id === 'dagger_disarm'
+          : ability.ready !== true
+            ? 'Not enough mana'
+            : ability.id === 'dagger_disarm'
             ? (disarmableTraps.length === 0 ? 'No adjacent traps' : undefined)
             : ability.id === 'dagger_set_trap'
               ? (trapItems.length === 0 ? 'No traps in inventory' : undefined)
@@ -408,7 +410,9 @@ export function AbilityDropdown({
                 {disabledReason ?? cooldownStatus}
               </span>
             </div>
-            <div className={styles.itemDescription}>{ability.description}</div>
+            <div className={styles.itemDescription}>
+              {ability.description}{ability.manaCost !== undefined ? ` (${ability.manaCost} MP)` : ''}
+            </div>
           </button>
         );
       })}

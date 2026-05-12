@@ -1,6 +1,6 @@
 import type { GameState, StoredFloor, RunState, EntityId, AnyItemTemplate, MapCell, EnemyInstance, DungeonFloor, ObjectInstance } from '@dungeon/contracts';
 import { CURRENT_SCHEMA_VERSION, validateSchemaVersion, EMPTY_WEAPON_MASTERY } from '@dungeon/contracts';
-import { BASE_PLAYER_STATS } from '@dungeon/content';
+import { BASE_PLAYER_STATS, MAGIC } from '@dungeon/content';
 
 /** Plain-object (JSON) form of a StoredFloor (Maps become Record). */
 interface StoredFloorJson {
@@ -129,6 +129,10 @@ export function deserializeState(json: string): GameState {
 
   const player = {
     ...playerObj,
+    mana: playerObj.mana ?? MAGIC.initialMana,
+    maxMana: playerObj.maxMana ?? MAGIC.initialMana,
+    ringMastery: playerObj.ringMastery ?? {},
+    learnedRingSpellIds: playerObj.learnedRingSpellIds ?? [],
     stats: playerStats,
   };
 

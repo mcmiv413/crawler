@@ -4,6 +4,8 @@
 
 Dungeon crawl roguelike — pnpm monorepo, TypeScript, Fastify backend + React frontend.
 
+For normative cross-project patterns such as layer ownership, entity source files, generated indexes, central pipelines, and presenter/UI boundaries, read [Architecture Patterns](architecture-patterns.md) first.
+
 ```
 Frontend (React SPA)          → HTTP API →  Fastify Server
   apps/web                                   apps/server
@@ -53,10 +55,25 @@ Frontend (React SPA)          → HTTP API →  Fastify Server
 ## Key Design Rules
 
 - **GameState is immutable** — never modified in place, always return new state
+- **Content is static** — `packages/content` declares catalog facts; `game-core` and `server` own runtime decisions
+- **Entities live in source files** — add catalog data as individual files, then run `pnpm generate:indexes`; never hand-edit generated indexes
 - **Presenter is pure** — `buildGameView(state)` has zero side effects; frontend only sees `GameView`
+- **Web renders views** — React components should consume `GameView` and shared pipelines instead of duplicating content display logic
 - **AI is optional** — CompositeAiService tries LM Studio (2s timeout), falls back to static content from `@dungeon/content`
 - **Commands use SCREAMING_SNAKE_CASE** — `'MOVE'`, `'ATTACK'`, `'USE_ITEM'`, `'USE_ABILITY'`
 - **All imports use `.js` extension** — strict ESM, even for `.ts` source files
+
+## Entity And Index Pattern
+
+New catalog entries use one source file per entity. The generated-index workflow currently covers enemies, biomes, objects, archetypes, ambient profiles, enchantments, statuses, factions, quests, item subcategories, ability metadata, ring spells, and ring schools.
+
+Run:
+
+```bash
+pnpm generate:indexes
+```
+
+Do not edit generated `index.ts` files directly. If an export is missing, fix the entity file or generator configuration in `scripts/generate-indexes.ts` and regenerate.
 
 ---
 

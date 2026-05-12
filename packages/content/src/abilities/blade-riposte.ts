@@ -1,4 +1,5 @@
 import type { AbilityDefinition } from './types.js';
+import { animationRefs } from '../animation-refs/index.js';
 
 export const bladeRiposte: AbilityDefinition = {
   id: 'blade_riposte',
@@ -8,5 +9,5 @@ export const bladeRiposte: AbilityDefinition = {
   requiresTarget: true,
   unlockLevel: 0,
   requiresWeaponTypes: ['blade'],
-  animation: { id: 'fx.impact.riposte-glint' },
+  animation: { id: animationRefs.impact.riposteGlint.id },
 };

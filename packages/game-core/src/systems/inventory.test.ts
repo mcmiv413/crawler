@@ -70,6 +70,30 @@ const strengthElixirTemplate = {
   consumable: { effect: 'buff' as const, magnitude: 5, duration: 10 },
 };
 
+const manaPotionTemplate = {
+  itemId: 'mana_potion',
+  name: 'Mana Potion',
+  itemClass: 'consumable' as const,
+  description: 'Restores mana.',
+  rarity: 'common' as const,
+  value: 15,
+  stackable: true,
+  maxStack: 5,
+  consumable: { effect: 'mana' as const, magnitude: 10 },
+};
+
+const arcanePowderTemplate = {
+  itemId: 'arcane_powder',
+  name: 'Arcane Powder',
+  itemClass: 'consumable' as const,
+  description: 'Charges the next spell.',
+  rarity: 'uncommon' as const,
+  value: 25,
+  stackable: true,
+  maxStack: 5,
+  consumable: { effect: 'buff' as const, magnitude: 1, duration: 5, targetStatus: 'arcane_charge' as const },
+};
+
 describe('Inventory System', () => {
   let state: ReturnType<typeof createTestGameState>;
 
@@ -160,6 +184,35 @@ describe('Inventory System', () => {
     expect(strengthStatus?.magnitude).toBeLessThan(10);
     // After fix: attack stat itself is unchanged; boost comes via getEffectiveStat
     expect(after.player.stats.attack).toBe(state.player.stats.attack);
+  });
+
+  it('mana potion restores mana up to max and emits mana change before item used', () => {
+    const lowMana = 3;
+    const lowManaState = createTestGameState({
+      player: {
+        mana: lowMana,
+      },
+    });
+    const { state: stateWithPotion } = addItemToInventory(lowManaState, manaPotionTemplate);
+    const potionId = stateWithPotion.player.inventory[0]!;
+
+    const { state: after, events } = useConsumable(stateWithPotion, potionId);
+
+    expect(after.player.mana).toBeGreaterThan(lowMana);
+    expect(after.player.mana).toBeLessThanOrEqual(after.player.maxMana);
+    expect(after.player.inventory).not.toContain(potionId);
+    expect(events[0]?.type).toBe('MANA_CHANGED');
+    expect(events.some(event => event.type === 'ITEM_USED' && event.effect === 'mana')).toBe(true);
+  });
+
+  it('arcane powder applies arcane_charge instead of the default strength status', () => {
+    const { state: stateWithPowder } = addItemToInventory(state, arcanePowderTemplate);
+    const powderId = stateWithPowder.player.inventory[0]!;
+
+    const { state: after } = useConsumable(stateWithPowder, powderId);
+
+    expect(after.player.statuses.some(status => status.id === 'arcane_charge')).toBe(true);
+    expect(after.player.statuses.some(status => status.id === 'strength')).toBe(false);
   });
 
   it('Bug 1: buff consumable applies stat via status only (no direct mutation)', () => {

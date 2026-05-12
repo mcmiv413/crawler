@@ -3,12 +3,13 @@
  * Large orange/red burst with downward direction.
  */
 
+import { animationRefs } from '@dungeon/content';
 import type { AnimationModule, AnimationDrawContext } from '../types.js';
 
 export const axeExecuteModule: AnimationModule = {
-  id: 'fx.impact.execution-strike',
-  durationMs: 400,
-  category: 'impact',
+  id: animationRefs.impact.executionStrike.id,
+  durationMs: animationRefs.impact.executionStrike.durationMs,
+  category: animationRefs.impact.executionStrike.category,
 
   draw(ctx: CanvasRenderingContext2D, anim: AnimationDrawContext): void {
     const { x, y, progress } = anim;

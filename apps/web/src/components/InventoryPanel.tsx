@@ -20,8 +20,10 @@ function itemStatText(item: InventoryItemView): string {
     if (item.armorStats.evasionPenalty) {
       text += ` | eva penalty: -${item.armorStats.evasionPenalty}`;
     }
-    if (item.armorStats.enchantments && item.armorStats.enchantments.length > 0) {
-      const enchantmentNames = item.armorStats.enchantments.filter((e): e is string => e !== null);
+    if (item.armorStats.enchantmentDetails && item.armorStats.enchantmentDetails.length > 0) {
+      const enchantmentNames = item.armorStats.enchantmentDetails
+        .filter(detail => detail.enchantmentId !== null)
+        .map(detail => detail.enchantmentName ?? detail.enchantmentId);
       if (enchantmentNames.length > 0) {
         text += ` | enchant: ${enchantmentNames.join(', ')}`;
       }

@@ -4,7 +4,7 @@ import type {
   Equipment, PlayerStats, DamageType,
 } from '@dungeon/contracts';
 import type { DomainEvent } from '@dungeon/contracts';
-import { ENCHANTMENT_BY_ID, getImpliedBlueprints } from '@dungeon/content';
+import { ENCHANTMENT_BY_ID, RING_GRANTED_ABILITY_IDS, getImpliedBlueprints, getSpellsForRing } from '@dungeon/content';
 
 const ARMOR_EQUIP_SLOTS: readonly (keyof Equipment)[] = ['chest', 'head', 'gloves', 'boots', 'ring1', 'ring2'];
 
@@ -38,11 +38,62 @@ function withRecalculatedStats(
     newEquipment,
     state.itemRegistry.items,
   );
-  return {
+  const player = {
     ...state.player,
     equipment: newEquipment,
     stats: newStats,
   };
+  return syncEquipmentGrantedAbilities(player, state.itemRegistry.items);
+}
+
+export function syncEquipmentGrantedAbilities(
+  player: Player,
+  registry: ReadonlyMap<EntityId, AnyItemTemplate>,
+): Player {
+  const grantIds = collectEquipmentAbilityGrants(player, registry);
+  const ringGrantableIds = new Set(RING_GRANTED_ABILITY_IDS);
+  const retainedAbilities = player.abilities.filter(ability =>
+    ringGrantableIds.has(ability.id) === false || grantIds.has(ability.id) === true,
+  );
+  const retainedIds = new Set(retainedAbilities.map(ability => ability.id));
+  const grantedAbilities = Array.from(grantIds)
+    .filter(abilityId => retainedIds.has(abilityId) === false)
+    .map(abilityId => ({ id: abilityId, cooldownRemaining: 0 }));
+
+  return {
+    ...player,
+    abilities: [...retainedAbilities, ...grantedAbilities],
+  };
+}
+
+function collectEquipmentAbilityGrants(
+  player: Player,
+  registry: ReadonlyMap<EntityId, AnyItemTemplate>,
+): Set<string> {
+  const grants = new Set<string>();
+  const slots: readonly (keyof Equipment)[] = ['weapon', 'secondaryWeapon', ...ARMOR_EQUIP_SLOTS];
+
+  for (const slot of slots) {
+    const itemId = player.equipment[slot];
+    if (itemId === null) continue;
+
+    const template = registry.get(itemId);
+    if (template?.itemClass !== 'armor') continue;
+    const armor = (template as ArmorTemplate).armor;
+
+    for (const enchantmentId of armor.enchantments) {
+      if (enchantmentId === null) continue;
+      const enchantment = ENCHANTMENT_BY_ID.get(enchantmentId);
+      const abilityId = enchantment?.effect.type === 'grant_ability' ? enchantment.effect.abilityId : undefined;
+      if (abilityId !== undefined) grants.add(abilityId);
+    }
+
+    for (const spellId of getSpellsForRing(template.itemId)) {
+      if (player.learnedRingSpellIds.includes(spellId)) grants.add(spellId);
+    }
+  }
+
+  return grants;
 }
 
 /**

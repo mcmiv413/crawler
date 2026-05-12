@@ -121,6 +121,10 @@ describe('Movement Behaviors', () => {
           totalDeaths: 0,
           totalRuns: 0,
           deathStash: null,
+          mana: 20,
+          maxMana: 20,
+          ringMastery: {},
+          learnedRingSpellIds: [],
         },
         run: null,
         world: {

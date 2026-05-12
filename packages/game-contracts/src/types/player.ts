@@ -47,6 +47,8 @@ export interface Equipment {
   readonly ring2: EntityId | null;
 }
 
+export type RingMasteryState = Record<string, { readonly xp: number }>
+
 export interface Player {
   readonly id: EntityId;
   readonly name: string;
@@ -65,4 +67,8 @@ export interface Player {
   readonly totalDeaths: number;
   readonly totalRuns: number;
   readonly deathStash: DeathStash | null;
+  readonly mana: number;
+  readonly maxMana: number;
+  readonly ringMastery: RingMasteryState;
+  readonly learnedRingSpellIds: readonly string[];
 }

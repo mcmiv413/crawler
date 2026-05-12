@@ -1,11 +1,12 @@
 import type { GameState, WeaponType } from '@dungeon/contracts';
-import { STATUS_DEFINITIONS, ABILITY_DEFINITIONS, ENCHANTMENT_BY_ID, XP_TABLE, getRarityColor, BIOMES, daggerDisarm, daggerSetTrap, getDamageBand, getWeaponDamageProfile } from '@dungeon/content';
+import { STATUS_DEFINITIONS, ABILITY_DEFINITIONS, ENCHANTMENT_BY_ID, XP_TABLE, getRarityColor, BIOMES, daggerDisarm, daggerSetTrap, getDamageBand, getWeaponDamageProfile, RING_SPELL_BY_ID, RING_SCHOOLS } from '@dungeon/content';
 import { getObjectiveText } from '@dungeon/core/systems/quest-progress.js';
 import { getEffectiveStat } from '@dungeon/core/systems/status-effects.js';
-import type { AbilityView, EnchantmentView, EquippedItemView, PlayerHudView, StatusView } from '../game-view.js';
+import type { AbilityView, EnchantmentView, EquippedItemView, LearnedSpellView, PlayerHudView, RingSchoolMasteryView, RingSpellView, StatusView } from '../game-view.js';
 import { calculateStatBreakdown } from './stat-breakdown-builder.js';
 import { buildFactionView, buildOgreProgressView } from './faction-progress-builder.js';
 import { getStatusPresentation } from '../animation-metadata.js';
+import { buildMasteryTierInfo } from './mastery-tier-builder.js';
 
 export function buildPlayerHud(state: GameState): PlayerHudView {
   const p = state.player;
@@ -97,15 +98,26 @@ export function buildPlayerHud(state: GameState): PlayerHudView {
     })
     .map(a => {
       const def = ABILITY_DEFINITIONS.get(a.id);
+      const manaCost = def?.manaCost;
+      const hasEnoughMana = manaCost === undefined || p.mana >= manaCost;
       return {
         id: a.id,
         name: def?.name ?? a.id,
         description: def?.description ?? '',
-        ready: a.cooldownRemaining === 0,
+        cooldown: def?.cooldown ?? 0,
+        ready: a.cooldownRemaining === 0 && hasEnoughMana,
         cooldownRemaining: a.cooldownRemaining,
+        manaCost,
+        unlockLevel: def?.unlockLevel ?? 0,
         requiresTarget: def?.requiresTarget ?? false,
-        requiresDirection: a.id === daggerDisarm.id || a.id === daggerSetTrap.id,
+        requiresDirection: def?.requiresDirection === true || a.id === daggerDisarm.id || a.id === daggerSetTrap.id,
         isRanged: def?.requiresWeaponTypes?.includes('ranged') === true ? true : undefined,
+        weaponRequirement: def?.requiresWeaponTypes && def.requiresWeaponTypes.length > 0
+          ? {
+              label: def.requiresWeaponTypes.join(', '),
+              met: equippedWeaponType !== null && def.requiresWeaponTypes.includes(equippedWeaponType as WeaponType),
+            }
+          : undefined,
       } satisfies AbilityView;
     });
 
@@ -137,6 +149,77 @@ export function buildPlayerHud(state: GameState): PlayerHudView {
     return buildFactionView(faction, mutableCurrentDungeonEnemies);
   });
 
+  // Build ring school mastery info
+  const ringSchoolMasteries: RingSchoolMasteryView[] = RING_SCHOOLS.map(school => {
+    const xpData = (p.ringMastery as Record<string, { xp: number }>)[school.id];
+    const currentXp = xpData?.xp ?? 0;
+    const level = currentXp >= 60 ? 2 : (currentXp >= 20 ? 1 : 0);
+    const nextLevelXp = level >= 2 ? 60 : (level >= 1 ? 60 : 20);
+    return {
+      school: school.id,
+      xp: currentXp,
+      level,
+      nextLevelXp,
+    };
+  });
+
+  // Build learned spells info
+  const mutableLearnedSpells: LearnedSpellView[] = [];
+  const learnedSpellIds = p.learnedRingSpellIds ?? [];
+  for (const spellId of learnedSpellIds) {
+    const spell = RING_SPELL_BY_ID.get(spellId);
+    if (spell !== undefined) {
+      mutableLearnedSpells.push({
+        spellId: spell.id,
+        name: spell.name,
+        description: spell.description,
+        schools: spell.schools,
+        cooldown: spell.cooldown,
+        manaCost: spell.manaCost ?? 0,
+        learned: true,
+        unlocked: true,
+      });
+    }
+  }
+  const learnedSpells = mutableLearnedSpells;
+
+  // Build studyable spells info
+  // TODO: Consolidate with town-view-builder's evaluateAllRingSpellStudy; currently web uses town.studyableSpells
+  // This duplicate logic ignores equippedSchools and prerequisite requirements (use shared evaluator instead)
+  const studyableSpells = [...RING_SPELL_BY_ID.values()]
+    .filter(spell => !learnedSpellIds.includes(spell.id))
+    .map(spell => {
+      const schoolMastery = ringSchoolMasteries.find(m => m.school === spell.schools[0]);
+      const minXpReq = spell.studyRequirements.find(r => 'kind' in r && r.kind === 'minimumSchoolXp');
+      const goldCostReq = spell.studyRequirements.find(r => 'kind' in r && r.kind === 'goldCost');
+      const requiredSchoolXp = minXpReq && 'xp' in minXpReq ? minXpReq.xp : 0;
+      const goldCost = goldCostReq && 'gold' in goldCostReq ? goldCostReq.gold : 0;
+      const currentSchoolXp = schoolMastery?.xp ?? 0;
+
+      return {
+        spellId: spell.id,
+        name: spell.name,
+        description: spell.description,
+        schools: spell.schools,
+        cooldown: spell.cooldown,
+        manaCost: spell.manaCost ?? 0,
+        baseDamage: spell.baseDamage ?? 0,
+        range: spell.range ?? 0,
+        unlockLevel: spell.unlockLevel ?? 0,
+        learned: false,
+        unlocked: false,
+        affordable: p.gold >= goldCost,
+        canStudy: spell.studyRequirements.every(req => {
+          if ('kind' in req && req.kind === 'goldCost') return 'gold' in req ? p.gold >= req.gold : false;
+          if ('kind' in req && req.kind === 'minimumSchoolXp') return 'xp' in req ? currentSchoolXp >= req.xp : false;
+          return true;
+        }),
+        requiredSchoolXp,
+        goldCost,
+        currentSchoolXp,
+      } satisfies RingSpellView;
+    });
+
   // Calculate total damage range (effective attack stat + weapon damage range)
   const effectiveAttack = getEffectiveStat(p.stats.attack, 'attack', p.statuses);
   let totalDamageMin = effectiveAttack;
@@ -157,6 +240,8 @@ export function buildPlayerHud(state: GameState): PlayerHudView {
     level: p.level,
     health: p.stats.health,
     maxHealth: p.stats.maxHealth,
+    mana: p.mana,
+    maxMana: p.maxMana,
     attack: effectiveAttack,
     defense: p.stats.defense,
     accuracy: p.stats.accuracy,
@@ -174,10 +259,14 @@ export function buildPlayerHud(state: GameState): PlayerHudView {
     statuses: statusList,
     abilities: abilityList,
     weaponMastery: state.run ? { ...state.weaponMastery } : null,
+    weaponMasteryTiers: state.run ? buildMasteryTierInfo(state.weaponMastery) : [],
     equippedItems: mutableEquippedItems,
     statBreakdowns: calculateStatBreakdown(state),
     activeQuests,
     factionProgress,
     ogreProgress: buildOgreProgressView(state.world),
+    ringSchoolMasteries,
+    learnedSpells,
+    studyableSpells,
   };
 }

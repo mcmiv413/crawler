@@ -3,12 +3,13 @@
  * Concentric rings with purple/blue coloring for crowd control.
  */
 
+import { animationRefs } from '@dungeon/content';
 import type { AnimationModule, AnimationDrawContext } from '../types.js';
 
 export const bludgeonStaggerModule: AnimationModule = {
-  id: 'fx.impact.stagger-shockwave',
-  durationMs: 300,
-  category: 'impact',
+  id: animationRefs.impact.staggerShockwave.id,
+  durationMs: animationRefs.impact.staggerShockwave.durationMs,
+  category: animationRefs.impact.staggerShockwave.category,
 
   draw(ctx: CanvasRenderingContext2D, anim: AnimationDrawContext): void {
     const { x, y, progress } = anim;

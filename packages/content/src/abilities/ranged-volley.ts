@@ -1,4 +1,5 @@
 import type { AbilityDefinition } from './types.js';
+import { animationRefs } from '../animation-refs/index.js';
 
 export const rangedVolley: AbilityDefinition = {
   id: 'ranged_volley',
@@ -8,5 +9,5 @@ export const rangedVolley: AbilityDefinition = {
   requiresTarget: false,
   unlockLevel: 0,
   requiresWeaponTypes: ['ranged'],
-  animation: { id: 'fx.projectile.arrow-volley' },
+  animation: { id: animationRefs.projectile.arrowVolley.id },
 };

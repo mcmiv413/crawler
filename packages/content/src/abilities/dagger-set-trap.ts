@@ -1,4 +1,5 @@
 import type { AbilityDefinition } from './types.js';
+import { animationRefs } from '../animation-refs/index.js';
 
 export const daggerSetTrap: AbilityDefinition = {
   id: 'dagger_set_trap',
@@ -8,5 +9,5 @@ export const daggerSetTrap: AbilityDefinition = {
   requiresTarget: false,
   unlockLevel: 0,
   requiresWeaponTypes: ['dagger'],
-  animation: { id: 'fx.utility.trap-placement' },
+  animation: { id: animationRefs.utility.trapPlacement.id },
 };

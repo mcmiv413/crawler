@@ -35,6 +35,50 @@ const testArmor: ArmorTemplate = {
   armor: { defense: 6, evasionPenalty: 2, slot: 'chest', enchantmentSlots: 0, enchantments: [] },
 };
 
+const EMBER_ABILITY_ID = 'ember';
+const HEAT_SURGE_ABILITY_ID = 'heat_surge';
+const FIRE_RING_ENCHANTMENT_ID = 'fire_ring_ember';
+
+const fireRingTemplate: ArmorTemplate = {
+  itemId: 'fire_ring',
+  name: 'Fire Ring',
+  description: 'A ring bound to ember magic.',
+  itemClass: 'armor',
+  rarity: 'rare',
+  value: 100,
+  stackable: false,
+  maxStack: 1,
+  armor: {
+    defense: 0,
+    evasionPenalty: 0,
+    slot: 'ring',
+    enchantmentSlots: 1,
+    enchantments: [FIRE_RING_ENCHANTMENT_ID],
+  },
+};
+
+const plainRingTemplate: ArmorTemplate = {
+  itemId: 'plain_ring',
+  name: 'Plain Ring',
+  description: 'A plain ring.',
+  itemClass: 'armor',
+  rarity: 'common',
+  value: 10,
+  stackable: false,
+  maxStack: 1,
+  armor: {
+    defense: 0,
+    evasionPenalty: 0,
+    slot: 'ring',
+    enchantmentSlots: 0,
+    enchantments: [],
+  },
+};
+
+function abilityIds(state: ReturnType<typeof createTestGameState>): string[] {
+  return state.player.abilities.map(ability => ability.id);
+}
+
 describe('calculateEquippedStats', () => {
   it('returns base stats when nothing is equipped', () => {
     const result = calculateEquippedStats(
@@ -167,6 +211,66 @@ describe('equipItem stat recalculation', () => {
     expect(withBoth.player.equipment.secondaryWeapon).toBe(heavyId);
     // Stats should be based on primary (light) weapon
     expect(withBoth.player.stats.attack).toBeGreaterThan(s2.player.baseStats.attack);
+  });
+
+  it('grants Fire Ring abilities while equipped and revokes them on unequip', () => {
+    const state = createTestGameState({
+      player: {
+        abilities: [{ id: 'power_strike', cooldownRemaining: 0 }],
+      },
+    });
+    const { state: withRingInInventory } = addItemToInventory(state, fireRingTemplate);
+    const ringId = withRingInInventory.player.inventory[0]!;
+
+    const { state: equipped } = equipItem(withRingInInventory, ringId);
+    expect(abilityIds(equipped)).toContain(EMBER_ABILITY_ID);
+    expect(abilityIds(equipped)).toContain('power_strike');
+
+    const { state: unequipped } = unequipItem(equipped, ringId);
+    expect(abilityIds(unequipped)).not.toContain(EMBER_ABILITY_ID);
+    expect(abilityIds(unequipped)).toContain('power_strike');
+  });
+
+  it('grants learned Fire Ring spells only while a Fire Ring is equipped', () => {
+    const state = createTestGameState({
+      player: {
+        ringMastery: {
+          fire: {
+            xp: 100,
+          },
+        },
+        learnedRingSpellIds: ['ember', 'heat_surge'],
+      },
+    });
+    const { state: withRingInInventory } = addItemToInventory(state, fireRingTemplate);
+    const ringId = withRingInInventory.player.inventory[0]!;
+
+    const { state: equipped } = equipItem(withRingInInventory, ringId);
+    expect(abilityIds(equipped)).toContain(EMBER_ABILITY_ID);
+    expect(abilityIds(equipped)).toContain(HEAT_SURGE_ABILITY_ID);
+
+    const { state: unequipped } = unequipItem(equipped, ringId);
+    expect(abilityIds(unequipped)).not.toContain(EMBER_ABILITY_ID);
+    expect(abilityIds(unequipped)).not.toContain(HEAT_SURGE_ABILITY_ID);
+  });
+
+  it('keeps a ring-granted ability when another equipped ring still grants it', () => {
+    const state = createTestGameState();
+    const { state: s1 } = addItemToInventory(state, fireRingTemplate);
+    const { state: s2 } = addItemToInventory(s1, fireRingTemplate);
+    const { state: s3 } = addItemToInventory(s2, plainRingTemplate);
+    const firstFireRingId = s3.player.inventory[0]!;
+    const secondFireRingId = s3.player.inventory[1]!;
+    const plainRingId = s3.player.inventory[2]!;
+
+    const { state: withFirstRing } = equipItem(s3, firstFireRingId);
+    const { state: withBothFireRings } = equipItem(withFirstRing, secondFireRingId);
+    expect(abilityIds(withBothFireRings)).toContain(EMBER_ABILITY_ID);
+
+    const { state: afterReplacement } = equipItem(withBothFireRings, plainRingId);
+    expect(afterReplacement.player.equipment.ring1).toBe(plainRingId);
+    expect(afterReplacement.player.equipment.ring2).toBe(secondFireRingId);
+    expect(abilityIds(afterReplacement)).toContain(EMBER_ABILITY_ID);
   });
 });
 

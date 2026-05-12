@@ -5,7 +5,7 @@ import { posKey } from '@dungeon/contracts';
 import { ITEM_BY_ID, OBJECT_TEMPLATES } from '@dungeon/content';
 import type { SeededRNG } from '../../utils/rng.js';
 import type { CommandResult } from './shared.js';
-import { updateRunMetrics } from './shared.js';
+import { applyActiveTurnManaRegen, updateRunMetrics } from './shared.js';
 import { validateMove } from '../../systems/movement.js';
 import { computeFov } from '../../systems/fov.js';
 import { moveInDirection } from '../../utils/grid.js';
@@ -124,6 +124,10 @@ export function handleMove(
       run: { ...newState.run, floor: updatedFloor },
     };
   }
+
+  const manaResult = applyActiveTurnManaRegen(newState, events);
+  newState = manaResult.state;
+  events = manaResult.events;
 
   // Process enemy turns with player speed for kiting system, then tick ability cooldowns
   const enemyResult = processEnemyTurns(newState, rng, newState.player.stats.speed);

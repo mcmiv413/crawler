@@ -23,7 +23,7 @@ import { useBreakpoint } from '../hooks/useBreakpoint.js';
 import { InfoCard, PanelHeader, SectionLabel } from './ui/index.js';
 import { TAB_BAR_HEIGHT } from '../config/ui-config.js';
 
-type TownPanel = 'main' | 'shop' | 'tavern' | 'enchanter';
+type TownPanel = 'main' | 'shop' | 'tavern' | 'enchanter' | 'elder';
 
 interface TownPhaseProps {
   view: GameView;
@@ -74,6 +74,7 @@ function NpcCard({
   onHeal,
   onTavern,
   onEnchanter,
+  onElder,
 }: {
   npc: NpcView;
   playerHealth: number;
@@ -86,6 +87,7 @@ function NpcCard({
   onHeal: () => void;
   onTavern: () => void;
   onEnchanter: () => void;
+  onElder: () => void;
 }) {
   const healCost = Math.max(0, playerMaxHealth - playerHealth);
   const canHeal = playerHealth < playerMaxHealth && playerGold >= healCost;
@@ -185,6 +187,12 @@ function NpcCard({
         {npc.role === 'enchanter' && (
           <button onClick={onEnchanter} style={npcBtnEnchant} disabled={loading}>
             Enchant →
+          </button>
+        )}
+
+        {npc.role === 'elder' && (
+          <button onClick={onElder} style={npcBtnTalk} disabled={loading}>
+            Study →
           </button>
         )}
       </div>
@@ -377,6 +385,60 @@ function SubPanel({
   );
 }
 
+function ElderPanel({
+  view,
+  loading,
+  sendCommand,
+}: {
+  view: GameView;
+  loading: boolean;
+  sendCommand: (command: unknown) => Promise<void>;
+}) {
+  const spells = view.town?.studyableSpells ?? [];
+  return (
+    <div style={{ fontFamily: FONT_STACK, color: colors.text }}>
+      <h3 style={{ color: colors.purple, fontSize: 13, fontWeight: 600, margin: 0, marginBottom: 10 }}>
+        Ring Study
+      </h3>
+      {spells.map((spell: typeof spells[number]) => {
+        const disabled = loading || spell.learned === true || spell.affordable === false || spell.canStudy === false;
+        // Calculate mastery level from XP: level 0 (0-19), level 1 (20-59), level 2 (60+)
+        const currentLevel = spell.currentSchoolXp >= 60 ? 2 : spell.currentSchoolXp >= 20 ? 1 : 0;
+        // Calculate required level from XP threshold
+        const requiredLevel = spell.requiredSchoolXp >= 60 ? 2 : spell.requiredSchoolXp >= 20 ? 1 : 0;
+        const status = spell.learned
+          ? 'Learned'
+          : spell.canStudy === false
+            ? spell.affordable === false
+              ? `${spell.goldCost}g`
+              : `Requires Level ${requiredLevel}`
+            : 'Ready';
+        return (
+          <InfoCard key={spell.spellId} borderColor={disabled ? colors.border : colors.purple} marginBottom={8}>
+            <div style={{ display: 'flex', justifyContent: 'space-between', gap: 8, alignItems: 'flex-start' }}>
+              <div style={{ minWidth: 0 }}>
+                <div style={{ fontSize: 12, fontWeight: 600, color: colors.text }}>{spell.name}</div>
+                <div style={{ fontSize: 10, color: colors.label, marginTop: 3 }}>{spell.description}</div>
+                <div style={{ fontSize: 10, color: colors.muted, marginTop: 5 }}>
+                  Level {currentLevel} · {spell.goldCost}g
+                </div>
+              </div>
+              <button
+                style={{ ...btnStyle, margin: 0, minWidth: 72 }}
+                disabled={disabled}
+                onClick={() => sendCommand({ type: 'TOWN_ACTION', action: 'study_spell', spellId: spell.spellId })}
+                title={status}
+              >
+                {status}
+              </button>
+            </div>
+          </InfoCard>
+        );
+      })}
+    </div>
+  );
+}
+
 // ─── Main component ────────────────────────────────────────────────────────
 export function TownPhase({
   view,
@@ -420,6 +482,14 @@ export function TownPhase({
             playerGold={view.player.gold}
           />
         ) : null}
+      </SubPanel>
+    );
+  }
+
+  if (townPanel === 'elder') {
+    return (
+      <SubPanel onBack={() => setTownPanel('main')} isMobile={isMobile}>
+        <ElderPanel view={view} loading={loading} sendCommand={sendCommand} />
       </SubPanel>
     );
   }
@@ -513,6 +583,7 @@ export function TownPhase({
                 onHeal={() => sendCommand({ type: 'TOWN_ACTION', action: 'rest' })}
                 onTavern={() => setTownPanel('tavern')}
                 onEnchanter={() => setTownPanel('enchanter')}
+                onElder={() => setTownPanel('elder')}
               />
             ))}
         </div>

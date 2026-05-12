@@ -84,6 +84,9 @@ const createMockGameView = (overrides?: Partial<GameView>): GameView => ({
     activeQuests: [],
     factionProgress: [],
     ogreProgress: baseOgreProgress,
+    ringSchoolMasteries: [],
+    learnedSpells: [],
+    studyableSpells: [],
   },
   map: null,
   combatLog: [],
@@ -154,6 +157,7 @@ const createMockGameView = (overrides?: Partial<GameView>): GameView => ({
       canUndo: false,
     },
     unlockedBlueprints: [],
+    studyableSpells: [],
   },
   inventory: {
     items: [],
@@ -684,6 +688,70 @@ describe('TownPhase Component', () => {
       // Enchanter should have an Enchant button
       const enchantButton = screen.getByRole('button', { name: /Enchant/i });
       expect(enchantButton).toBeVisible();
+    });
+  });
+
+  describe('Elder NPC Interactivity', () => {
+    it('opens Elder study and sends study_spell with spellId', () => {
+      const sendCommand = vi.fn();
+      const view = createMockGameView({
+        town: {
+          ...createMockGameView().town!,
+          npcs: [
+            {
+              id: 'npc_elder',
+              name: 'Abelson',
+              role: 'elder',
+              available: true,
+            } as NpcView,
+          ],
+          studyableSpells: [
+            {
+              spellId: 'heat_surge',
+              name: 'Heat Surge',
+              description: 'Ignite enemies with attacks for a short time.',
+              schools: ['fire'],
+              cooldown: 2,
+              manaCost: 20,
+              baseDamage: 0,
+              range: 1,
+              unlockLevel: 1,
+              requiredSchoolXp: 1,
+              goldCost: 80,
+              currentSchoolXp: 200,
+              learned: false,
+              unlocked: false,
+              affordable: true,
+              canStudy: true,
+            },
+          ],
+        },
+      });
+
+      render(
+        <TownPhase
+          view={view}
+          combatLog={[]}
+          loading={false}
+          error={null}
+          sendCommand={sendCommand}
+          talkToNpc={vi.fn()}
+          npcDialogue={null}
+          setNpcDialogue={vi.fn()}
+          talkingTo={null}
+        />
+      );
+
+      fireEvent.click(screen.getByRole('button', { name: /Study →/i }));
+      expect(screen.getByRole('heading', { name: /Ring Study/i })).toBeVisible();
+
+      fireEvent.click(screen.getByRole('button', { name: /Ready/i }));
+
+      expect(sendCommand).toHaveBeenCalledWith({
+        type: 'TOWN_ACTION',
+        action: 'study_spell',
+        spellId: 'heat_surge',
+      });
     });
   });
 

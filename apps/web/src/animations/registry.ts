@@ -5,7 +5,7 @@
  * In dev, missing module lookups warn once per session and fall back to a fallback module to avoid blank frames.
  */
 
-import type { AnimationId } from '@dungeon/content';
+import { animationRefs, type AnimationId } from '@dungeon/content';
 import type { AnimationModule } from './types.js';
 
 const modules = new Map<AnimationId, AnimationModule>();
@@ -37,7 +37,7 @@ export function resolveModule(id: AnimationId): AnimationModule | undefined {
 
   if (typeof import.meta !== 'undefined' && import.meta.env?.DEV) {
     // Return fallback module for dev; in production, caller handles missing modules
-    return modules.get('fx.impact.radial-impact-burst' as AnimationId);
+    return modules.get(animationRefs.impact.radialImpactBurst.id);
   }
 
   return undefined;

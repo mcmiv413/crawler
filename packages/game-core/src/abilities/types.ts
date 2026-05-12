@@ -1,4 +1,4 @@
-import type { WeaponType, EntityId, GameState, EnemyInstance } from '@dungeon/contracts';
+import type { WeaponType, EntityId, GameState, EnemyInstance, DamageType, Direction } from '@dungeon/contracts';
 import type { SeededRNG } from '../utils/rng.js';
 
 /**
@@ -24,14 +24,17 @@ export type AbilityRequirement =
   | { kind: 'target_in_melee_range' }
   | { kind: 'target_in_weapon_range' }
   | { kind: 'target_visible' }
-  | { kind: 'target_below_hp_pct'; percentage: number };
+  | { kind: 'target_below_hp_pct'; percentage: number }
+  | { kind: 'has_mana'; amount: number }
+  | { kind: 'has_direction' };
 
 /**
  * Conditions for conditional effects.
  */
 export type AbilityCondition =
   | { kind: 'attack_hit' }
-  | { kind: 'target_below_hp_pct'; percentage: number };
+  | { kind: 'target_below_hp_pct'; percentage: number }
+  | { kind: 'target_has_status'; statusId: string };
 
 /**
  * Target selection strategies.
@@ -42,6 +45,7 @@ export type TargetSelector =
   | { kind: 'nearest_enemy_melee' }
   | { kind: 'nearest_visible_enemy' }
   | { kind: 'all_visible_enemies' }
+  | { kind: 'line_from_player'; range: number }
   | { kind: 'target_plus_adjacent_enemies' };
 
 /**
@@ -71,7 +75,9 @@ export interface AttackEffect {
   damageMultiplier: number;
   flatBonus?: number;
   accuracyBonus?: number;
+  damageType?: DamageType;
   forceHit?: boolean;
+  spell?: boolean;
   trackMastery?: boolean;
 }
 
@@ -91,9 +97,11 @@ export interface StatusEffect {
   kind: 'status';
   statusId: string;
   statusName: string;
+  target?: 'enemy' | 'player';
   trigger: 'always' | 'on_hit';
   chance?: number; // 0-1, default 1.0
   duration?: number; // turns, default from status definition
+  magnitude?: number;
 }
 
 /**
@@ -143,5 +151,6 @@ export interface AbilityContext {
   readonly player: GameState['player'];
   readonly run: GameState['run'];
   readonly equippedWeaponId: GameState['player']['equipment']['weapon'];
+  readonly direction?: Direction;
   readonly target?: { instance: EnemyInstance; key: string };
 }

@@ -1,4 +1,4 @@
-import type { GameState, EntityId, EnemyInstance } from '@dungeon/contracts';
+import type { GameState, EntityId, EnemyInstance, Direction } from '@dungeon/contracts';
 import type { SeededRNG } from '../../utils/rng.js';
 import type { AbilityContext } from '../types.js';
 
@@ -10,6 +10,7 @@ export function buildContext(
   state: GameState,
   rng: SeededRNG,
   targetId?: EntityId,
+  direction?: Direction,
 ): AbilityContext {
   let target: { instance: EnemyInstance; key: string } | undefined;
 
@@ -28,6 +29,7 @@ export function buildContext(
     player: state.player,
     run: state.run,
     equippedWeaponId: state.player.equipment.weapon,
+    direction,
     target,
   };
 }

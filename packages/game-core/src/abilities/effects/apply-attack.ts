@@ -1,10 +1,42 @@
-import type { DomainEvent } from '@dungeon/contracts';
+import type { DomainEvent, EnemyInstance } from '@dungeon/contracts';
 import type { AbilityContext, AttackEffect } from '../types.js';
-import { getEffectiveStat } from '../../systems/status-effects.js';
+import { applyStatusToEnemy, getEffectiveStat } from '../../systems/status-effects.js';
 import { resolveAttack } from '../../systems/combat.js';
 import { checkWeaponMasteryUnlocks } from '../../systems/weapon-mastery.js';
 import { processEnemyKill, getEquippedWeaponType, getEquippedWeaponDamageType } from '../../engine/handlers/combat.js';
 import { updateRunMetrics } from '../../engine/handlers/shared.js';
+import { STATUS_DEFAULTS, MAGIC } from '@dungeon/content';
+import { getFireBurnDuration, getFireBurnMagnitude } from '../../systems/magic-xp.js';
+
+function arcaneChargeBonus(statuses: AbilityContext['player']['statuses']): number {
+  const arcaneCharge = statuses.find(status => status.id === 'arcane_charge');
+  return arcaneCharge?.magnitude ?? 0;
+}
+
+function applyHeatSurgeBurn(
+  enemy: EnemyInstance,
+  context: AbilityContext,
+): { enemy: EnemyInstance; events: DomainEvent[] } {
+  const hasHeatSurge = context.state.player.statuses.some(status => status.id === 'heat_surge');
+  if (hasHeatSurge === false) return { enemy, events: [] };
+
+  const defaults = STATUS_DEFAULTS.burn;
+  const duration = getFireBurnDuration(context.player, defaults.defaultDuration);
+  const magnitude = getFireBurnMagnitude(context.player);
+  const updatedEnemy = applyStatusToEnemy(enemy, 'burn', duration, magnitude, context.player.id);
+  return {
+    enemy: updatedEnemy,
+    events: [{
+      type: 'STATUS_APPLIED',
+      targetId: enemy.id,
+      statusId: 'burn',
+      duration,
+      sourceId: context.player.id,
+      timestamp: context.state.turnNumber,
+      turnNumber: context.state.turnNumber,
+    }],
+  };
+}
 
 /**
  * Apply an attack effect to a target.
@@ -29,7 +61,7 @@ export function applyAttack(
   }
 
   const defenderDefense = getEffectiveStat(target.stats.defense, 'defense', target.statuses);
-  const abilityWeaponDamageType = getEquippedWeaponDamageType(newState);
+  const abilityWeaponDamageType = effect.damageType ?? getEquippedWeaponDamageType(newState);
   // eslint-disable-next-line @typescript-eslint/no-unnecessary-condition
   const affinityValue = target.affinities?.[abilityWeaponDamageType];
   const abilityDefenderResistance = affinityValue ?? 0;
@@ -50,7 +82,8 @@ export function applyAttack(
     }
   }
 
-  const effectiveAttack = getEffectiveStat(newState.player.stats.attack, 'attack', newState.player.statuses) * damageMultiplier + (effect.flatBonus ?? 0);
+  const spellBonus = effect.spell === true ? Math.min(MAGIC.arcaneChargeMaxStacks, arcaneChargeBonus(newState.player.statuses)) : 0;
+  const effectiveAttack = getEffectiveStat(newState.player.stats.attack, 'attack', newState.player.statuses) * damageMultiplier + (effect.flatBonus ?? 0) + spellBonus;
   const accuracyBonus = effect.accuracyBonus ?? 0;
   const forceHit = effect.forceHit === true;
   const trackMastery = effect.trackMastery === true;
@@ -81,7 +114,12 @@ export function applyAttack(
     } else if (newState.run !== null) {
       const currentRun = newState.run;
       const newEnemies = new Map(currentRun.enemies);
-      newEnemies.set(targetKey, { ...target, stats: { ...target.stats, health: newHealth } });
+      const heatSurgeResult = applyHeatSurgeBurn(
+        { ...target, stats: { ...target.stats, health: newHealth } },
+        context,
+      );
+      generatedEvents = [...generatedEvents, ...heatSurgeResult.events];
+      newEnemies.set(targetKey, heatSurgeResult.enemy);
       newState = { ...newState, run: { ...currentRun, enemies: newEnemies } };
     }
 
