@@ -255,6 +255,11 @@ export function buildAnimationSequence(
           targetHpFraction = targetEnemy.stats.health / targetEnemy.stats.maxHealth;
         }
       }
+    } else if (event.abilityId === 'cinder_wake' && event.affectedTargetIds !== undefined) {
+      blastPositions = event.affectedTargetIds.flatMap((targetId) => {
+        const position = getEntityPosition(targetId, state);
+        return position === null ? [] : [position];
+      });
     }
 
     const sequenceIndex = orderedMoves.length + i;

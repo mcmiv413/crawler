@@ -3,12 +3,13 @@
  * Green spiraling energy around player.
  */
 
+import { animationRefs } from '@dungeon/content';
 import type { AnimationModule, AnimationDrawContext } from '../types.js';
 
 export const secondWindModule: AnimationModule = {
-  id: 'fx.self.second-wind-buff',
-  durationMs: 600,
-  category: 'self',
+  id: animationRefs.self.secondWindBuff.id,
+  durationMs: animationRefs.self.secondWindBuff.durationMs,
+  category: animationRefs.self.secondWindBuff.category,
 
   draw(ctx: CanvasRenderingContext2D, anim: AnimationDrawContext): void {
     const { x, y, progress } = anim;

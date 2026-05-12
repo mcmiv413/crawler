@@ -1,4 +1,5 @@
 import type { AbilityDefinition } from './types.js';
+import { animationRefs } from '../animation-refs/index.js';
 
 export const daggerDisarm: AbilityDefinition = {
   id: 'dagger_disarm',
@@ -8,5 +9,5 @@ export const daggerDisarm: AbilityDefinition = {
   requiresTarget: false,
   unlockLevel: 0,
   requiresWeaponTypes: ['dagger'],
-  animation: { id: 'fx.impact.disarm-strike' },
+  animation: { id: animationRefs.impact.disarmStrike.id },
 };

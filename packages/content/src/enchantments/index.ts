@@ -6,6 +6,7 @@ import { blink } from './blink.js';
 import { defenseBoost } from './defense-boost.js';
 import { evasionBoost } from './evasion-boost.js';
 import { expBonus } from './exp-bonus.js';
+import { fireRingEmber } from './fire-ring-ember.js';
 import { hpRegen } from './hp-regen.js';
 import { lifeSteal } from './life-steal.js';
 import { resistFire } from './resist-fire.js';
@@ -22,6 +23,7 @@ export const ENCHANTMENTS: readonly EnchantmentDefinition[] = [
   defenseBoost,
   evasionBoost,
   expBonus,
+  fireRingEmber,
   hpRegen,
   lifeSteal,
   resistFire,
@@ -37,7 +39,7 @@ export const ENCHANTMENT_BY_ID: ReadonlyMap<string, EnchantmentDefinition> = new
 );
 
 export {
-  arcaneWard, blightWard, blink, defenseBoost, evasionBoost, expBonus, hpRegen, lifeSteal, resistFire, resistFrost, resistPoison, speedBoost, spikes, thorns,
+  arcaneWard, blightWard, blink, defenseBoost, evasionBoost, expBonus, fireRingEmber, hpRegen, lifeSteal, resistFire, resistFrost, resistPoison, speedBoost, spikes, thorns,
 };
 
 export * from './utilities.js';

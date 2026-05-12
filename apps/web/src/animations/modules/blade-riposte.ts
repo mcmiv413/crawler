@@ -3,12 +3,13 @@
  * Bright white glint with quick animation for swift counterattack.
  */
 
+import { animationRefs } from '@dungeon/content';
 import type { AnimationModule, AnimationDrawContext } from '../types.js';
 
 export const bladeRiposteModule: AnimationModule = {
-  id: 'fx.impact.riposte-glint',
-  durationMs: 250,
-  category: 'impact',
+  id: animationRefs.impact.riposteGlint.id,
+  durationMs: animationRefs.impact.riposteGlint.durationMs,
+  category: animationRefs.impact.riposteGlint.category,
 
   draw(ctx: CanvasRenderingContext2D, anim: AnimationDrawContext): void {
     const { x, y, progress } = anim;

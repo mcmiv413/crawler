@@ -46,6 +46,98 @@ function firstEnemyId(state: GameState): string {
 // ---------------------------------------------------------------------------
 
 describe('handleUseAbility', () => {
+  describe('ember', () => {
+    it('deducts mana and applies burn on a valid cast', () => {
+      const state = createTestGameStateWithAbility('ember', { enemyHealth: 100 });
+      const targetId = firstEnemyId(state);
+      const initialMana = state.player.mana;
+      const rng = new SeededRNG(1);
+
+      const result = useAbility(state, 'ember', rng, targetId);
+
+      expect(result.state.player.mana).toBeLessThan(initialMana);
+      expect(result.events.some(event => event.type === 'MANA_CHANGED' && event.amount < 0)).toBe(true);
+      expect(result.events.some(event => event.type === 'ABILITY_USED' && event.abilityId === 'ember')).toBe(true);
+      expect(result.events.some(event => event.type === 'STATUS_APPLIED' && event.statusId === 'burn')).toBe(true);
+    });
+
+    it('rejects a cast without enough mana without consuming the turn', () => {
+      const state = createTestGameStateWithAbility('ember', { enemyHealth: 100 });
+      const targetId = firstEnemyId(state);
+      const noManaState = {
+        ...state,
+        player: {
+          ...state.player,
+          mana: 0,
+        },
+      };
+      const rng = new SeededRNG(1);
+
+      const result = useAbility(noManaState, 'ember', rng, targetId);
+
+      expect(result.state).toBe(noManaState);
+      expect(result.events).toHaveLength(0);
+    });
+  });
+
+  describe('cinder_wake', () => {
+    it('uses command direction to affect enemies in a line', () => {
+      const state = createTestGameStateWithAbility('cinder_wake', {
+        enemyPosition: { x: 1, y: 0 },
+        enemyHealth: 100,
+        additionalEnemies: [
+          { id: 'line_enemy', position: { x: 2, y: 0 }, health: 100 },
+          { id: 'off_line_enemy', position: { x: 0, y: 1 }, health: 100 },
+        ],
+      });
+      const cells = new Map(state.run!.floor.cells);
+      const visibleFloor = {
+        tile: { type: 'floor' as const, walkable: true, blocksVision: false, ascii: '.', color: '#aaa' },
+        visibility: 'visible' as const,
+      };
+      cells.set('2,0', visibleFloor);
+      const stateWithVisibleLine = {
+        ...state,
+        run: {
+          ...state.run!,
+          floor: { ...state.run!.floor, cells },
+        },
+      };
+      const rng = new SeededRNG(1);
+
+      const result = handleCommand(
+        stateWithVisibleLine,
+        { type: 'USE_ABILITY', abilityId: 'cinder_wake', direction: 'E' },
+        rng,
+      );
+
+      const abilityEvent = result.events.find(event =>
+        event.type === 'ABILITY_USED' && event.abilityId === 'cinder_wake',
+      );
+      expect(abilityEvent).toBeDefined();
+      if (abilityEvent?.type === 'ABILITY_USED') {
+        expect(abilityEvent.affectedTargetIds?.length ?? 0).toBeGreaterThanOrEqual(2);
+      }
+      expect(result.events.some(event => event.type === 'STATUS_APPLIED' && event.statusId === 'burn')).toBe(true);
+      const offLineEnemy = Array.from(result.state.run!.enemies.values()).find(enemy => enemy.id === entityId('off_line_enemy'));
+      expect(offLineEnemy?.statuses.some(status => status.id === 'burn')).toBe(false);
+    });
+
+    it('rejects a directional spell without direction before spending mana', () => {
+      const state = createTestGameStateWithAbility('cinder_wake');
+      const rng = new SeededRNG(1);
+
+      const result = handleCommand(
+        state,
+        { type: 'USE_ABILITY', abilityId: 'cinder_wake' },
+        rng,
+      );
+
+      expect(result.state).toBe(state);
+      expect(result.events).toHaveLength(0);
+    });
+  });
+
   // ---- power_strike ----
   describe('power_strike', () => {
     it('deals 2x attack damage and emits ABILITY_USED', () => {
@@ -589,6 +681,42 @@ describe('handleAttack', () => {
     const diedEvent = result.events.find((e) => e.type === 'ENTITY_DIED');
     expect(diedEvent).toBeDefined();
     expect(result.state.player.experience).toBeGreaterThan(state.player.experience);
+  });
+
+  it('burning kills award fire school XP and restore mana at high fire mastery level', () => {
+    const state = createTestGameStateInCombat();
+    const enemies = new Map(state.run!.enemies);
+    const [key, enemy] = [...enemies.entries()][0]!;
+    enemies.set(key, {
+      ...enemy,
+      stats: { ...enemy.stats, health: 1, evasion: 0 },
+      statuses: [{ id: 'burn', turnsRemaining: 2, magnitude: 1, sourceId: state.player.id }],
+    });
+    const masteredState: GameState = {
+      ...state,
+      run: { ...state.run!, enemies },
+      player: {
+        ...state.player,
+        mana: 0,
+        ringMastery: {
+          fire: {
+            xp: 10_000,
+          },
+        },
+        stats: {
+          ...state.player.stats,
+          accuracy: 100,
+        },
+      },
+    };
+    const targetId = firstEnemyId(masteredState);
+    const rng = new SeededRNG(1);
+
+    const result = handleCommand(masteredState, createAttackCommand(entityId(targetId)), rng);
+
+    expect(result.state.player.ringMastery.fire?.xp).toBeGreaterThan(masteredState.player.ringMastery.fire?.xp ?? 0);
+    expect(result.state.player.mana).toBeGreaterThan(masteredState.player.mana);
+    expect(result.events.some(event => event.type === 'MANA_CHANGED' && event.reason === 'Burning kill')).toBe(true);
   });
 
   it('out of range: no state change, no turn consumed', () => {

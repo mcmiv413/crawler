@@ -8,6 +8,7 @@ import type { DomainEvent } from '@dungeon/contracts';
 import { applyStatusToPlayer } from './status-effects.js';
 import { chebyshevDistance } from '../utils/grid.js';
 import { applyDamageToEnemy } from './damage.js';
+import { restorePlayerMana } from './mana.js';
 
 const RARITY_RANK: Record<string, number> = {
   common: 0, uncommon: 1, rare: 2, epic: 3, legendary: 4,
@@ -110,6 +111,7 @@ export function useConsumable(
   const consumable = (template as ConsumableTemplate).consumable;
   let newPlayer = { ...state.player };
   let newState = state;
+  let extraEvents: DomainEvent[] = [];
 
   switch (consumable.effect) {
     case 'heal': {
@@ -135,6 +137,13 @@ export function useConsumable(
           ),
         };
       }
+      break;
+    }
+    case 'mana': {
+      const manaResult = restorePlayerMana(newState, consumable.magnitude, 'Mana potion');
+      newState = manaResult.state;
+      newPlayer = newState.player;
+      extraEvents = [...extraEvents, ...manaResult.events];
       break;
     }
     case 'damage': {
@@ -180,14 +189,13 @@ export function useConsumable(
     }
     case 'buff': {
       const duration = consumable.duration ?? 10;
-      // Apply status effect only; let getEffectiveStat handle the stat modification
-      // (Do not directly mutate stats — status effect will provide the boost when queried)
-      newPlayer = applyStatusToPlayer(newPlayer, 'strength', duration, consumable.magnitude, null);
+      const statusId = consumable.targetStatus ?? 'strength';
+      newPlayer = applyStatusToPlayer(newPlayer, statusId, duration, consumable.magnitude, null);
       break;
     }
   }
 
-  const events: DomainEvent[] = [{
+  const events: DomainEvent[] = [...extraEvents, {
     type: 'ITEM_USED',
     itemId,
     itemName: template.name,

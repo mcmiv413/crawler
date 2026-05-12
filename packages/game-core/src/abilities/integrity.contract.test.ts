@@ -160,6 +160,7 @@ describe('Targeting Type Validation', () => {
       'nearest_enemy_melee',
       'nearest_visible_enemy',
       'all_visible_enemies',
+      'line_from_player',
       'target_plus_adjacent_enemies',
     ]);
 
@@ -303,6 +304,8 @@ describe('Ability Requirements', () => {
       'target_in_weapon_range',
       'target_visible',
       'target_below_hp_pct',
+      'has_mana',
+      'has_direction',
     ]);
 
     for (const ability of ALL_ABILITY_DEFINITIONS) {

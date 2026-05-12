@@ -4,6 +4,8 @@
 
 Every game mechanic must complete the **6-hop end-to-end chain**. If any hop is missing, the feature is incomplete — it either can't be triggered, can't be seen, or can't be tested.
 
+Before implementation, check [Architecture Patterns](architecture-patterns.md). Content should remain static declarations, runtime decisions belong in `game-core` or `server`, presenter output should be display-ready, and web should render `GameView` instead of duplicating content logic.
+
 ---
 
 ## The 6-Hop Chain
@@ -24,6 +26,8 @@ Every game mechanic must complete the **6-hop end-to-end chain**. If any hop is 
 ---
 
 ## Step-by-Step Implementation
+
+If the mechanic adds catalog data, create individual source files under `packages/content/src/**`, reference other content through imported definitions where practical, and run `pnpm generate:indexes`. Do not hand-edit generated indexes.
 
 ### 1. Define the Command
 
@@ -125,6 +129,9 @@ Before marking done:
 - [ ] **Format** — `formatEvent()` returns non-null, readable text
 - [ ] **View** — `buildGameView()` exposes data to frontend
 - [ ] **UI** — React component renders the view data
+- [ ] **Ownership** — Content, core/server, presenter, and web responsibilities match [Architecture Patterns](architecture-patterns.md)
+- [ ] **Generated Indexes** — New catalog entities are source files and `pnpm generate:indexes` has been run if needed
+- [ ] **Persistence/Restore** — State shape changes include schema, migration/default, and restore compatibility checks
 - [ ] **Cross-Reference Validation** — All content IDs (items, enemies, abilities) actually exist
 - [ ] **Test** — `assertFeatureChain()` validates all 6 hops (including `entryCheck` and `uiCheck` if applicable)
 - [ ] **Validate** — `pnpm validate` passes

@@ -1,6 +1,5 @@
 import React, { useState } from 'react';
-import { ENCHANTMENT_BY_ID } from '@dungeon/content';
-import type { PlayerHudView } from '@dungeon/presenter';
+import type { EnchantmentView, PlayerHudView } from '@dungeon/presenter';
 import { ItemSpriteIcon } from './ItemSpriteIcon';
 import { colors, FONT_STACK, btnStyle } from '../styles.js';
 import { ModalBackdrop, ModalCard, SectionLabel } from './ui/index.js';
@@ -11,28 +10,26 @@ interface EnchantmentDetailModalProps {
 }
 
 export function EnchantmentDetailModal({ player, onClose }: EnchantmentDetailModalProps) {
-  const enchantmentMap = new Map<string, Array<{ name: string; spriteName?: string }>>();
+  const enchantmentMap = new Map<string, { enchantment: EnchantmentView; usedOn: Array<{ name: string; spriteName?: string }> }>();
 
   for (const item of player.equippedItems) {
     for (const ench of item.enchantments) {
-      const existing = enchantmentMap.get(ench.id) ?? [];
-      enchantmentMap.set(ench.id, [...existing, { name: item.name, spriteName: item.spriteName }]);
+      const existing = enchantmentMap.get(ench.id);
+      enchantmentMap.set(ench.id, {
+        enchantment: ench,
+        usedOn: [...(existing?.usedOn ?? []), { name: item.name, spriteName: item.spriteName }],
+      });
     }
   }
 
-  const validEnchantmentEntries = Array.from(enchantmentMap.entries()).filter(([enchId]) =>
-    ENCHANTMENT_BY_ID.has(enchId),
-  );
+  const enchantmentEntries = Array.from(enchantmentMap.entries());
 
   const [selectedEnchantmentId, setSelectedEnchantmentId] = useState<string>(
-    validEnchantmentEntries[0]?.[0] ?? '',
+    enchantmentEntries[0]?.[0] ?? '',
   );
 
-  const selectedEnchantmentEntry = validEnchantmentEntries.find(([enchId]) => enchId === selectedEnchantmentId);
-
-  const selectedEnchantment = selectedEnchantmentEntry
-    ? ENCHANTMENT_BY_ID.get(selectedEnchantmentEntry[0])
-    : null;
+  const selectedEnchantmentEntry = enchantmentEntries.find(([enchId]) => enchId === selectedEnchantmentId);
+  const selectedEnchantment = selectedEnchantmentEntry?.[1].enchantment;
 
   return (
     <ModalBackdrop onClose={onClose}>
@@ -50,9 +47,8 @@ export function EnchantmentDetailModal({ player, onClose }: EnchantmentDetailMod
               paddingRight: 10,
             }}
           >
-            {validEnchantmentEntries.map(([enchId]) => {
-              const enchDef = ENCHANTMENT_BY_ID.get(enchId);
-              if (!enchDef) return null;
+            {enchantmentEntries.map(([enchId, entry]) => {
+              const enchDef = entry.enchantment;
               const isSelected = selectedEnchantmentId === enchId;
               return (
                 <button
@@ -101,7 +97,7 @@ export function EnchantmentDetailModal({ player, onClose }: EnchantmentDetailMod
                 </div>
 
                 {(() => {
-                  const usedOn = selectedEnchantmentEntry?.[1];
+                  const usedOn = selectedEnchantmentEntry?.[1].usedOn;
                   if (!usedOn || usedOn.length === 0) return null;
                   return (
                     <div>

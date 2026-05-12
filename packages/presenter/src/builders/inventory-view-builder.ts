@@ -1,6 +1,19 @@
 import type { GameState, EntityId, WeaponTemplate, ArmorTemplate } from '@dungeon/contracts';
-import { getRarityColor, getDamageBand, getWeaponDamageProfile } from '@dungeon/content';
-import type { InventoryView, InventoryItemView } from '../game-view.js';
+import { ENCHANTMENT_BY_ID, getRarityColor, getDamageBand, getWeaponDamageProfile } from '@dungeon/content';
+import type { EnchantmentSlotView, InventoryView, InventoryItemView } from '../game-view.js';
+
+function buildEnchantmentSlotViews(enchantments: readonly (string | null)[]): readonly EnchantmentSlotView[] {
+  return enchantments.map((enchantmentId, index) => {
+    const definition = enchantmentId !== null ? ENCHANTMENT_BY_ID.get(enchantmentId) : undefined;
+    return {
+      index,
+      enchantmentId,
+      enchantmentName: definition?.name ?? null,
+      enchantmentDescription: definition?.description,
+      enchantmentTier: definition?.tier,
+    };
+  });
+}
 
 export function buildInventoryView(state: GameState): InventoryView {
   const buybackMultiplier = state.world.shop.buybackMultiplier;
@@ -54,7 +67,14 @@ export function buildInventoryView(state: GameState): InventoryView {
         })()
         : undefined,
       armorStats: template.itemClass === 'armor'
-        ? { defense: (template as ArmorTemplate).armor.defense, evasionPenalty: (template as ArmorTemplate).armor.evasionPenalty, slot: (template as ArmorTemplate).armor.slot, enchantmentSlots: (template as ArmorTemplate).armor.enchantmentSlots, enchantments: (template as ArmorTemplate).armor.enchantments }
+        ? {
+            defense: (template as ArmorTemplate).armor.defense,
+            evasionPenalty: (template as ArmorTemplate).armor.evasionPenalty,
+            slot: (template as ArmorTemplate).armor.slot,
+            enchantmentSlots: (template as ArmorTemplate).armor.enchantmentSlots,
+            enchantments: (template as ArmorTemplate).armor.enchantments,
+            enchantmentDetails: buildEnchantmentSlotViews((template as ArmorTemplate).armor.enchantments),
+          }
         : undefined,
     };
   };

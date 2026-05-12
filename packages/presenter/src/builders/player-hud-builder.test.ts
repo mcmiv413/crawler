@@ -255,6 +255,26 @@ describe('buildPlayerHud', () => {
       const hud = buildPlayerHud(state);
       expect(hud.abilities.map(ability => ability.id)).toEqual(['second_wind']);
     });
+
+    it('exposes mana and marks spells unavailable when mana is too low', () => {
+      const currentMana = 0;
+      state = createTestGameStateWithAbility('ember');
+      state = {
+        ...state,
+        player: {
+          ...state.player,
+          mana: currentMana,
+        },
+      };
+
+      const hud = buildPlayerHud(state);
+      const ember = hud.abilities.find(ability => ability.id === 'ember');
+
+      expect(hud.mana).toBe(currentMana);
+      expect(hud.maxMana).toBeGreaterThan(currentMana);
+      expect(ember?.manaCost).toBeGreaterThan(currentMana);
+      expect(ember?.ready).toBe(false);
+    });
   });
 
   describe('quests', () => {

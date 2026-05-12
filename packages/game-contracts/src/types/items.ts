@@ -26,10 +26,11 @@ export interface WeaponData {
 }
 
 export interface EnchantmentEffect {
-  readonly type: 'stat_bonus' | 'regen' | 'thorns' | 'resist' | 'exp_bonus' | 'life_steal' | 'blink';
+  readonly type: 'stat_bonus' | 'regen' | 'thorns' | 'resist' | 'exp_bonus' | 'life_steal' | 'blink' | 'grant_ability';
   readonly stat?: 'defense' | 'evasion' | 'speed';
   readonly value?: number;
   readonly damageType?: DamageType;
+  readonly abilityId?: string;
 }
 
 export interface EnchantmentDefinition {
@@ -51,7 +52,7 @@ export interface ArmorData {
 }
 
 export interface ConsumableData {
-  readonly effect: 'heal' | 'cure' | 'buff' | 'damage';
+  readonly effect: 'heal' | 'cure' | 'buff' | 'damage' | 'mana';
   readonly magnitude: number;
   readonly duration?: number;
   readonly targetStatus?: StatusId;

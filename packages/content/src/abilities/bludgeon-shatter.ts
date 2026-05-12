@@ -1,4 +1,5 @@
 import type { AbilityDefinition } from './types.js';
+import { animationRefs } from '../animation-refs/index.js';
 
 export const bludgeonShatter: AbilityDefinition = {
   id: 'bludgeon_shatter',
@@ -8,5 +9,5 @@ export const bludgeonShatter: AbilityDefinition = {
   requiresTarget: true,
   unlockLevel: 0,
   requiresWeaponTypes: ['bludgeon'],
-  animation: { id: 'fx.aoe.shatter-burst' },
+  animation: { id: animationRefs.aoe.shatterBurst.id },
 };

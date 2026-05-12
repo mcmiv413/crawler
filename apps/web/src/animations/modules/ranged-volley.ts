@@ -3,13 +3,14 @@
  * Many arrows spreading outward from player position.
  */
 
+import { animationRefs } from '@dungeon/content';
 import type { AnimationModule, AnimationDrawContext } from '../types.js';
 
 export const rangedVolleyModule: AnimationModule = {
-  id: 'fx.projectile.arrow-volley',
-  durationMs: 400,
-  category: 'projectile',
-  suppressActorBump: true,
+  id: animationRefs.projectile.arrowVolley.id,
+  durationMs: animationRefs.projectile.arrowVolley.durationMs,
+  category: animationRefs.projectile.arrowVolley.category,
+  suppressActorBump: animationRefs.projectile.arrowVolley.suppressActorBump,
 
   draw(ctx: CanvasRenderingContext2D, anim: AnimationDrawContext, helpers: any): void {
     const { x, y, progress, blastPositions = [] } = anim;

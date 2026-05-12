@@ -66,6 +66,9 @@ function createMockGameView(overrides?: Partial<GameView>): GameView {
         totalFactions: 4,
         summaryText: '0/4 factions broken. Break 4 more to reveal the Dungeon Ogre.',
       },
+      ringSchoolMasteries: [],
+      learnedSpells: [],
+      studyableSpells: [],
     },
     map: {
       width: 20,

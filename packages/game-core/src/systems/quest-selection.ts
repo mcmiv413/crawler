@@ -1,6 +1,5 @@
-import type { Quest } from '@dungeon/contracts';
-import type { QuestTemplate } from './types.js';
-import { QUEST_TEMPLATES } from './index.js';
+import type { EntityId, Quest } from '@dungeon/contracts';
+import { QUEST_TEMPLATES, type QuestTemplate } from '@dungeon/content';
 
 export function selectRandomQuestTemplate(rng: () => number): QuestTemplate {
   const idx = Math.floor(rng() * QUEST_TEMPLATES.length);
@@ -9,7 +8,7 @@ export function selectRandomQuestTemplate(rng: () => number): QuestTemplate {
 
 export function createQuestFromTemplate(
   template: QuestTemplate,
-  giverNpcId: string,
+  giverNpcId: EntityId,
   turnNumber: number,
 ): Quest {
   return {

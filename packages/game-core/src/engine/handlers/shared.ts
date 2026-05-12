@@ -1,5 +1,6 @@
 import type { GameState, DomainEvent, RunMetrics, StoredFloor } from '@dungeon/contracts';
 import { EMPTY_RUN_METRICS } from '@dungeon/contracts';
+import { regenerateManaForActiveTurn } from '../../systems/mana.js';
 
 export interface CommandResult {
   readonly state: GameState;
@@ -50,5 +51,16 @@ export function updateFloorCacheForCurrentFloor(state: GameState): GameState {
       ...state.run,
       floorCache: newCache,
     },
+  };
+}
+
+export function applyActiveTurnManaRegen(
+  state: GameState,
+  events: readonly DomainEvent[],
+): { state: GameState; events: DomainEvent[] } {
+  const manaResult = regenerateManaForActiveTurn(state);
+  return {
+    state: manaResult.state,
+    events: [...events, ...manaResult.events],
   };
 }

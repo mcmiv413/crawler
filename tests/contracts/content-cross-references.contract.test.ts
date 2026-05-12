@@ -3,6 +3,8 @@ import { QUEST_TEMPLATES } from '@dungeon/content';
 import { ITEM_BY_ID } from '@dungeon/content';
 import { ENEMY_TEMPLATES } from '@dungeon/content';
 import { ABILITY_DEFINITIONS, ANIMATION_REF_BY_ID } from '@dungeon/content';
+import { ENCHANTMENT_BY_ID, RING_SPELL_BY_ID, STATUS_DEFINITIONS } from '@dungeon/content';
+import type { StatusId } from '@dungeon/contracts';
 
 /**
  * Content Cross-Reference Contract Tests
@@ -12,6 +14,28 @@ import { ABILITY_DEFINITIONS, ANIMATION_REF_BY_ID } from '@dungeon/content';
  *
  * Run before every commit to prevent shipping incomplete features.
  */
+
+const CONTRACT_STATUS_IDS = [
+  'poison',
+  'burn',
+  'slow',
+  'stun',
+  'bleed',
+  'weaken',
+  'vulnerability',
+  'regeneration',
+  'strength',
+  'panic',
+  'heat_surge',
+  'arcane_charge',
+] as const satisfies readonly StatusId[];
+
+type MissingStatusIds = Exclude<StatusId, (typeof CONTRACT_STATUS_IDS)[number]>;
+type ExtraStatusIds = Exclude<(typeof CONTRACT_STATUS_IDS)[number], StatusId>;
+
+const statusIdListIsExhaustive: [MissingStatusIds, ExtraStatusIds] extends [never, never]
+  ? true
+  : never = true;
 
 describe('Content Cross-References', () => {
   describe('Quest Templates', () => {
@@ -136,6 +160,84 @@ describe('Content Cross-References', () => {
           animRef,
           `Consumable "${itemId}" references non-existent animation ID "${animationId}"`,
         ).toBeDefined();
+      }
+    });
+  });
+
+  describe('Status Catalog', () => {
+    it('tracks every contracted StatusId in this guardrail', () => {
+      expect(statusIdListIsExhaustive).toBe(true);
+    });
+
+    it('has one generated catalog entry for every contracted StatusId', () => {
+      expect(new Set(STATUS_DEFINITIONS.keys())).toEqual(new Set(CONTRACT_STATUS_IDS));
+    });
+
+    it('keeps each status definition aligned with its catalog key', () => {
+      for (const statusId of CONTRACT_STATUS_IDS) {
+        const definition = STATUS_DEFINITIONS.get(statusId);
+
+        expect(definition, `Missing status definition for "${statusId}"`).toBeDefined();
+        expect(definition?.id).toBe(statusId);
+        expect(definition?.name.length).toBeGreaterThan(0);
+        expect(definition?.description.length).toBeGreaterThan(0);
+      }
+    });
+  });
+
+  describe('Magic Ring Content', () => {
+    it('Fire Ring exists and grants an ability that exists in the ability catalog', () => {
+      const fireRing = ITEM_BY_ID.get('fire_ring');
+      expect(fireRing, 'Fire Ring item is missing').toBeDefined();
+      expect(fireRing?.itemClass).toBe('armor');
+      if (fireRing?.itemClass !== 'armor') return;
+
+      const grantEnchantments = fireRing.armor.enchantments
+        .filter((enchantmentId): enchantmentId is string => enchantmentId !== null)
+        .map(enchantmentId => ENCHANTMENT_BY_ID.get(enchantmentId))
+        .filter(enchantment => enchantment?.effect.type === 'grant_ability');
+
+      expect(grantEnchantments.length, 'Fire Ring should grant at least one ability').toBeGreaterThan(0);
+      for (const enchantment of grantEnchantments) {
+        const abilityId = enchantment?.effect.type === 'grant_ability' ? enchantment.effect.abilityId : undefined;
+        expect(
+          ABILITY_DEFINITIONS.has(abilityId ?? ''),
+          `Fire Ring grant references missing ability "${abilityId}"`,
+        ).toBe(true);
+      }
+    });
+
+    it('Ring spell IDs reference existing abilities across all magic schools', () => {
+      expect(RING_SPELL_BY_ID.size).toBeGreaterThan(0);
+
+      for (const [spellId, spell] of RING_SPELL_BY_ID) {
+        expect(
+          ABILITY_DEFINITIONS.has(spellId),
+          `Ring spell "${spellId}" is missing from ability catalog`,
+        ).toBe(true);
+        expect(
+          Array.isArray(spell.schools),
+          `Ring spell "${spellId}" must have schools array`,
+        ).toBe(true);
+        expect(
+          spell.schools.length,
+          `Ring spell "${spellId}" must have at least one school`,
+        ).toBeGreaterThan(0);
+        for (const school of spell.schools) {
+          expect(
+            ['fire', 'frost', 'lightning', 'arcane'].includes(school),
+            `Ring spell "${spellId}" has invalid school "${school}"`,
+          ).toBe(true);
+        }
+      }
+    });
+
+    it('magic statuses exist for Fire Ring spell effects', () => {
+      for (const statusId of ['burn', 'panic', 'heat_surge', 'arcane_charge']) {
+        expect(
+          STATUS_DEFINITIONS.has(statusId),
+          `Magic status "${statusId}" is missing from status catalog`,
+        ).toBe(true);
       }
     });
   });

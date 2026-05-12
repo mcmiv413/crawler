@@ -12,6 +12,8 @@ export { canRetreat, executeRetreat } from './retreat.js';
 export { handlePlayerDeath } from './death.js';
 export { processTownAction } from './town.js';
 export { processTalkNpc, updateNpcDisposition } from './npc.js';
+export { selectBiomeForFloor } from './biome-selection.js';
+export { createQuestFromTemplate, selectRandomQuestTemplate } from './quest-selection.js';
 export { checkLevelUp } from './progression.js';
 export { grantAbility, canUseAbility, tickAbilityCooldowns } from './abilities.js';
 export { getValidTrapPlacementDirections } from './trap-placement.js';
@@ -34,3 +36,13 @@ export { buildWorldModifiers } from './world-modifiers.js';
 export type { WorldModifiers } from './world-modifiers.js';
 export { evaluateQuestProgress, getObjectiveText, redeemQuest } from './quest-progress.js';
 export { completeFloorDepthQuests } from './quests.js';
+export {
+  getSchoolMasteryLevel,
+  getStudyableRingSpells,
+  getEquippedRingItemIds,
+  evaluateRingSpellStudy,
+  evaluateAllRingSpellStudy,
+  canUseLearnedRingSpell,
+  type StudyRequirementStatus,
+  type SpellStudyEvaluation,
+} from './ring-spell-availability.js';

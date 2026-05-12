@@ -9,8 +9,9 @@ export function handleTownAction(
   rng: SeededRNG,
   targetId?: EntityId,
   itemId?: string,
+  spellId?: string,
 ): CommandResult {
   if (state.phase !== 'town') return { state, events: [], runEnded: false };
-  const result = processTownAction(state, action, targetId, itemId, rng);
+  const result = processTownAction(state, action, targetId, itemId, rng, spellId);
   return { state: result.state, events: result.events, runEnded: false };
 }

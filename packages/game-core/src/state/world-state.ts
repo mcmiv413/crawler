@@ -2,7 +2,7 @@ import type { WorldState, TownState, NpcState, ShopInventory } from '@dungeon/co
 import { entityId } from '@dungeon/contracts';
 import { ECONOMY, CONSUMABLES, WEAPONS, ARMOR, INITIAL_DUNGEON_OGRE, INITIAL_FACTIONS, rustySword, ironMace, shortBow,
   handAxe, flameDagger, venomBlade, warBow, stoneHammer, frostAxe, ironSword, leatherVest,
-  leatherCap, leatherGloves, leatherBoots, copperRing, chainShirt, ironHelm, chainGauntlets } from '@dungeon/content';
+  leatherCap, leatherGloves, leatherBoots, copperRing, chainShirt, ironHelm, chainGauntlets, fireRing } from '@dungeon/content';
 import type { SeededRNG } from '../utils/rng.js';
 
 /** Create initial world state for a new game */
@@ -122,8 +122,15 @@ function createInitialShop(rng: SeededRNG): ShopInventory {
     stock: 15,
   }));
 
+  // Always include Fire Ring for testing
+  const fireRingShopItem = {
+    itemId: fireRing.itemId,
+    price: Math.round(fireRing.value * ECONOMY.shopMarkup),
+    stock: 1,
+  };
+
   return {
-    items: [...consumableItems, ...weaponItems, ...armorItems],
+    items: [...consumableItems, ...weaponItems, ...armorItems, fireRingShopItem],
     buybackMultiplier: ECONOMY.buybackRate,
   };
 }
@@ -159,8 +166,15 @@ export function randomizeShop(rng: SeededRNG): ShopInventory {
     stock: 15,
   }));
 
+  // Always include Fire Ring for testing
+  const fireRingShopItem = {
+    itemId: fireRing.itemId,
+    price: Math.round(fireRing.value * ECONOMY.shopMarkup),
+    stock: 1,
+  };
+
   return {
-    items: [...consumableItems, ...weaponItems, ...armorItems],
+    items: [...consumableItems, ...weaponItems, ...armorItems, fireRingShopItem],
     buybackMultiplier: ECONOMY.buybackRate,
   };
 }

@@ -231,6 +231,31 @@ export const STATUS_DEFAULTS = {
   vulnerability: { defenseMultiplier: 0.5, defaultDuration: 3 },
   regeneration: { healPerTurn: 5, defaultDuration: 3 },
   strength: { defaultDuration: 10 },
+  panic: { defaultDuration: 3 },
+  heat_surge: { defaultDuration: 5 },
+  arcane_charge: { defaultDuration: 5 },
+} as const;
+
+export const MAGIC = {
+  initialMana: 20,
+  manaRegenPerActiveTurn: 1,
+  manaPerMasteryTier: 5,
+  schoolXpPerBurningKill: 10,
+  burnSpreadRadius: 4,
+  burnSpreadChancePct: 70,
+  burnDamagePerMasteryLevel: 1,
+  burnDurationPerMasteryLevel: 1,
+  burnSpreadRadiusPerMasteryLevel: 1,
+  panicOnBurnSpreadMasteryLevel: 2,
+  panicOnBurnSpreadChancePct: 25,
+  burnKillManaRestoreMasteryLevel: 2,
+  burnKillManaRestore: 5,
+  emberManaCost: 5,
+  heatSurgeManaCost: 8,
+  cinderWakeManaCost: 12,
+  cinderWakeRange: 5,
+  arcaneChargeMaxStacks: 3,
+  panicStatMultiplier: 0.7,
 } as const;
 
 /** Rarity ranking system: determines which items can be purchased in shop */

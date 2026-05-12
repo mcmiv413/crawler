@@ -71,6 +71,21 @@ export interface GoldChangedEvent extends BaseEvent {
   readonly reason: string;
 }
 
+export interface ManaChangedEvent extends BaseEvent {
+  readonly type: 'MANA_CHANGED';
+  readonly playerId: EntityId;
+  readonly amount: number;
+  readonly newTotal: number;
+  readonly reason: string;
+}
+
+export interface SpellUnlockedEvent extends BaseEvent {
+  readonly type: 'SPELL_UNLOCKED';
+  readonly playerId: EntityId;
+  readonly spellId: string;
+  readonly spellName: string;
+}
+
 export interface FloorEnteredEvent extends BaseEvent {
   readonly type: 'FLOOR_ENTERED';
   readonly depth: number;
@@ -275,6 +290,7 @@ export interface AbilityUsedEvent extends BaseEvent {
   readonly damage?: number;
   readonly healAmount?: number;
   readonly damageByTarget?: ReadonlyMap<EntityId, number>;
+  readonly affectedTargetIds?: readonly EntityId[];
 }
 
 export interface MasteryUnlockedEvent extends BaseEvent {
@@ -419,6 +435,8 @@ export type DomainEvent =
   | StatusExpiredEvent
   | LootAcquiredEvent
   | GoldChangedEvent
+  | ManaChangedEvent
+  | SpellUnlockedEvent
   | FloorEnteredEvent
   | PlayerDiedEvent
   | RunStartedEvent

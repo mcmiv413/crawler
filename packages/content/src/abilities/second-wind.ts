@@ -1,4 +1,5 @@
 import type { AbilityDefinition } from './types.js';
+import { animationRefs } from '../animation-refs/index.js';
 
 export const secondWind: AbilityDefinition = {
   id: 'second_wind',
@@ -7,5 +8,5 @@ export const secondWind: AbilityDefinition = {
   cooldown: 4,
   requiresTarget: false,
   unlockLevel: 4,
-  animation: { id: 'fx.self.second-wind-buff' },
+  animation: { id: animationRefs.self.secondWindBuff.id },
 };

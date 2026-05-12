@@ -73,6 +73,9 @@ function createPlayer(overrides?: Partial<PlayerHudView>): PlayerHudView {
       totalFactions: 4,
       summaryText: '1/4 factions broken. Break 3 more to reveal the Dungeon Ogre.',
     },
+    ringSchoolMasteries: [],
+    learnedSpells: [],
+    studyableSpells: [],
     ...overrides,
   };
 }
@@ -117,6 +120,20 @@ describe('CharacterScreen faction progress', () => {
       <CharacterScreen
         player={createPlayer({
           weaponMastery: { blade: 12, bludgeon: 0, axe: 0, ranged: 0 },
+          weaponMasteryTiers: [
+            {
+              weaponType: 'blade',
+              uses: 12,
+              tier: 1,
+              listProgressLabel: '12/25',
+              nextTier: {
+                tier: 2,
+                progress: 2,
+                requiredUses: 15,
+                totalRequiredUses: 25,
+              },
+            },
+          ],
         })}
         sendCommand={vi.fn()}
       />,
@@ -131,6 +148,20 @@ describe('CharacterScreen faction progress', () => {
       <CharacterScreen
         player={createPlayer({
           weaponMastery: { axe: 5 } as PlayerHudView['weaponMastery'],
+          weaponMasteryTiers: [
+            {
+              weaponType: 'axe',
+              uses: 5,
+              tier: 0,
+              listProgressLabel: '5/10',
+              nextTier: {
+                tier: 1,
+                progress: 5,
+                requiredUses: 10,
+                totalRequiredUses: 10,
+              },
+            },
+          ],
         })}
         sendCommand={vi.fn()}
       />,

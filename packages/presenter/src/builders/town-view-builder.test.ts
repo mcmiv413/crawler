@@ -2,10 +2,23 @@ import { describe, it, expect, beforeEach } from 'vitest';
 import { buildTownView } from './town-view-builder.js';
 import { createTestGameState } from '@dungeon/core/testing';
 import { entityId } from '@dungeon/contracts';
-import type { GameState } from '@dungeon/contracts';
+import type { GameState, ArmorTemplate } from '@dungeon/contracts';
 
 describe('buildTownView', () => {
   let state: GameState;
+
+  const fireRingFixture: ArmorTemplate = {
+    itemId: 'fire_ring',
+    spriteName: 'ruby ring',
+    name: 'Fire Ring',
+    description: 'A smoldering ring that grants command over flame.',
+    itemClass: 'armor',
+    rarity: 'common',
+    value: 20,
+    stackable: false,
+    maxStack: 1,
+    armor: { defense: 0, evasionPenalty: 0, slot: 'ring', enchantmentSlots: 0, enchantments: [] },
+  };
 
   beforeEach(() => {
     state = createTestGameState({ phase: 'town' });
@@ -356,6 +369,72 @@ describe('buildTownView', () => {
       const view = buildTownView(state);
       expect(view.unlockedBlueprints).toContain('shield_of_thorns');
       expect(view.unlockedBlueprints).toContain('helm_of_vigor');
+    });
+  });
+
+  describe('learnable spells', () => {
+    it('exposes Elder study spell affordability and Fire XP requirements', () => {
+      const fireRingEntity = entityId('fire_ring_1');
+      state = {
+        ...state,
+        player: {
+          ...state.player,
+          gold: 500,
+          ringMastery: {
+            fire: {
+              xp: 100,
+            },
+          },
+          equipment: {
+            ...state.player.equipment,
+            ring1: fireRingEntity,
+          },
+          learnedRingSpellIds: [],
+        },
+        itemRegistry: {
+          items: new Map([
+            [fireRingEntity, fireRingFixture],
+          ]),
+        },
+      };
+
+      const view = buildTownView(state);
+      const heatSurge = view.studyableSpells.find(spell => spell.spellId === 'heat_surge');
+
+      expect(heatSurge).toBeDefined();
+      expect(heatSurge?.affordable).toBe(true);
+      expect(heatSurge?.canStudy).toBe(true);
+      expect(heatSurge?.learned).toBe(false);
+    });
+
+    it('marks an Elder spell learned when it is already unlocked', () => {
+      const fireRingEntity = entityId('fire_ring_1');
+      state = {
+        ...state,
+        player: {
+          ...state.player,
+          ringMastery: {
+            fire: {
+              xp: 100,
+            },
+          },
+          equipment: {
+            ...state.player.equipment,
+            ring1: fireRingEntity,
+          },
+          learnedRingSpellIds: ['heat_surge'],
+        },
+        itemRegistry: {
+          items: new Map([
+            [fireRingEntity, fireRingFixture],
+          ]),
+        },
+      };
+
+      const view = buildTownView(state);
+      const heatSurge = view.studyableSpells.find(spell => spell.spellId === 'heat_surge');
+
+      expect(heatSurge?.unlocked).toBe(true);
     });
   });
 });

@@ -1,7 +1,8 @@
 import type { GameState, TownState } from '@dungeon/contracts';
-import { ITEM_BY_ID, TOWN_DESCRIPTIONS, isRarityBuyable, getRarityColor, getDamageBand, getWeaponDamageProfile } from '@dungeon/content';
-import type { ShopItemView, RunSummaryStats, TownView } from '../game-view.js';
+import { ABILITY_DEFINITIONS, ENCHANTMENT_BY_ID, ITEM_BY_ID, TOWN_DESCRIPTIONS, getEnchantmentCost, isRarityBuyable, getRarityColor, getDamageBand, getWeaponDamageProfile, getSchoolForRing } from '@dungeon/content';
+import type { EnchantmentBlueprintView, ShopItemView, RunSummaryStats, TownView, RingSpellView } from '../game-view.js';
 import { buildFactionPressureSummary, buildFactionView, buildOgreProgressView } from './faction-progress-builder.js';
+import { evaluateAllRingSpellStudy, getEquippedRingItemIds } from '@dungeon/core';
 
 function shopkeeperDiscountPct(state: GameState): number {
   const shopkeeper = state.world.npcs.find(n => n.role === 'shopkeeper');
@@ -75,6 +76,56 @@ function buildPrepAdvice(state: GameState): string[] {
   return advice;
 }
 
+function buildStudyableSpells(state: GameState): readonly RingSpellView[] {
+  const equippedItemIds = getEquippedRingItemIds(state.player.equipment, state.itemRegistry.items);
+  const equippedSchools = new Set(
+    equippedItemIds
+      .map(itemId => getSchoolForRing(itemId))
+      .filter(Boolean) as string[]
+  );
+  
+  return evaluateAllRingSpellStudy(state.player, equippedItemIds)
+    .filter(evalResult => evalResult.spell.schools.some(school => equippedSchools.has(school)))
+    .map(evalResult => {
+      const ability = ABILITY_DEFINITIONS.get(evalResult.spell.id);
+      
+      return {
+        spellId: evalResult.spell.id,
+        name: evalResult.spell.name,
+        description: evalResult.spell.description,
+        schools: evalResult.spell.schools,
+        cooldown: ability?.cooldown ?? 0,
+        manaCost: ability?.manaCost ?? 0,
+        baseDamage: 0,
+        range: 1,
+        unlockLevel: evalResult.requiredSchoolXp,
+        learned: evalResult.alreadyLearned,
+        unlocked: evalResult.alreadyLearned,
+        affordable: evalResult.affordable,
+        canStudy: evalResult.canStudy,
+        requiredSchoolXp: evalResult.requiredSchoolXp,
+        goldCost: evalResult.goldCost,
+        currentSchoolXp: evalResult.currentSchoolXp,
+      } as RingSpellView;
+    });
+}
+
+function buildUnlockedEnchantmentBlueprints(state: GameState): readonly EnchantmentBlueprintView[] {
+  return state.world.unlockedBlueprints
+    .map(enchantmentId => {
+      const definition = ENCHANTMENT_BY_ID.get(enchantmentId);
+      if (definition === undefined) return null;
+      return {
+        id: definition.id,
+        name: definition.name,
+        description: definition.description,
+        tier: definition.tier,
+        cost: getEnchantmentCost(definition.id),
+      } satisfies EnchantmentBlueprintView;
+    })
+    .filter((blueprint): blueprint is EnchantmentBlueprintView => blueprint !== null);
+}
+
 export function buildTownView(state: GameState): TownView {
   const discountPct = shopkeeperDiscountPct(state);
   return {
@@ -143,8 +194,10 @@ export function buildTownView(state: GameState): TownView {
       canUndo: !!state.world.shop.lastTransaction,
     },
     unlockedBlueprints: state.world.unlockedBlueprints,
+    unlockedEnchantmentBlueprints: buildUnlockedEnchantmentBlueprints(state),
     runSummaryStats: buildRunSummaryStats(state),
     prepAdvice: buildPrepAdvice(state),
+    studyableSpells: buildStudyableSpells(state),
     lastRetreatFloor: state.lastRetreatFloor,
   };
 }

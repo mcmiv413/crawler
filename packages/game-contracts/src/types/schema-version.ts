@@ -10,13 +10,17 @@
  *   Includes: player, world, run, itemRegistry, phase, activeQuests
  * - v2: Faction system hardening (2026-05-01)
  *   Adds: Faction leader/Ogre validation; explicit schema validation for world.factions and world.dungeonOgre
+ * - v3: Magic ring system (2026-05-10)
+ *   Adds: player mana, maxMana, and ringMastery state
+ * - v4: Ring magic generalization (2026-05-11)
+ *   Changes: ringMastery shape from Record<'fire', {xp, spellsUnlocked}> to Record<school, {xp}>; spellsUnlocked removed (use learnedRingSpellIds)
  */
 
 /**
  * Current schema version for serialized GameState.
  * Increment when the serialized format structure changes materially.
  */
-export const CURRENT_SCHEMA_VERSION = 2;
+export const CURRENT_SCHEMA_VERSION = 4;
 
 /**
  * Type for a serialized game state with explicit schema version.

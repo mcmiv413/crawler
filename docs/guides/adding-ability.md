@@ -4,6 +4,8 @@
 
 Abilities are **data-driven** — define the ability as a declarative structure and the runtime handles execution, events, and UI automatically.
 
+This guide follows [Architecture Patterns](architecture-patterns.md): content ability metadata lives in one file per ability, generated content indexes are regenerated, and runtime behavior stays in `packages/game-core`.
+
 ---
 
 ## Quick Start (Content Abilities)
@@ -52,6 +54,8 @@ export const myAbility: AbilityDefinition = {
   // Implementation depends on your game mechanics
 };
 ```
+
+When referencing animation refs, statuses, or related content, import the definition and dot-walk to the ID where practical instead of repeating raw literals.
 
 ---
 
@@ -102,7 +106,8 @@ export const MASTERY_ABILITIES: Record<WeaponType, Record<1 | 2, string>> = {
 ## Key Files Reference
 
 | Purpose | File |
-|---------|------|\n| Content abilities | `packages/content/src/abilities/` |
+|---------|------|
+| Content abilities | `packages/content/src/abilities/` |
 | Ability granting | `packages/content/src/abilities/mastery.ts` |
 | Type definitions | `packages/content/src/abilities/types.ts` |
 | Auto-generated index | `packages/content/src/abilities/index.ts` |
@@ -117,7 +122,8 @@ If you need to create an ability in `packages/game-core/src/abilities/definition
 ### Files to Touch
 
 | Step | File | What to do |
-|------|------|-----------|\n| 1. Define | `packages/game-core/src/abilities/definitions/my-ability.ts` | Create `AbilityDefinition` |
+|------|------|-----------|
+| 1. Define | `packages/game-core/src/abilities/definitions/my-ability.ts` | Create `AbilityDefinition` |
 | 2. Register | `packages/game-core/src/abilities/definitions/index.ts` | Add to `ALL_ABILITY_DEFINITIONS` |
 | 3. Test | `packages/game-core/src/abilities/definitions/my-ability.test.ts` | Unit test the definition |
 
@@ -180,6 +186,8 @@ export const ALL_ABILITY_DEFINITIONS: AbilityDefinition[] = [
 ```
 
 The `AbilityRegistry` (built via `buildRegistry()` in `packages/game-core/src/abilities/registry.ts`) automatically picks it up.
+
+Unlike content ability metadata, `packages/game-core/src/abilities/definitions/index.ts` is currently hand-authored runtime registration. Do not apply the generated-index rule to that file unless the generator is extended.
 
 ---
 

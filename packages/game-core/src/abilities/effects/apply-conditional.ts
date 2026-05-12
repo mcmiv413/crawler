@@ -44,6 +44,9 @@ function evaluateCondition(_context: AbilityContext, condition: AbilityCondition
       return hpPct < condition.percentage;
     }
 
+    case 'target_has_status':
+      return target?.statuses.some(status => status.id === condition.statusId) === true;
+
     default:
       // eslint-disable-next-line @typescript-eslint/no-explicit-any
       throw new Error(`Unknown condition kind: ${(condition as any).kind}`);

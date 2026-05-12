@@ -3,12 +3,13 @@
  * Sparkle and placement effect.
  */
 
+import { animationRefs } from '@dungeon/content';
 import type { AnimationModule, AnimationDrawContext } from '../types.js';
 
 export const daggerSetTrapModule: AnimationModule = {
-  id: 'fx.utility.trap-placement',
-  durationMs: 400,
-  category: 'utility',
+  id: animationRefs.utility.trapPlacement.id,
+  durationMs: animationRefs.utility.trapPlacement.durationMs,
+  category: animationRefs.utility.trapPlacement.category,
 
   draw(ctx: CanvasRenderingContext2D, anim: AnimationDrawContext): void {
     const { x, y, progress } = anim;

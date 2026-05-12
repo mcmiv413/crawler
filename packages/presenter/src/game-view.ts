@@ -112,10 +112,17 @@ export interface AbilityView {
   readonly name: string;
   readonly description: string;
   readonly ready: boolean;
+  readonly cooldown?: number;
   readonly cooldownRemaining: number;
+  readonly manaCost?: number;
+  readonly unlockLevel?: number;
   readonly requiresTarget: boolean;
   readonly requiresDirection?: boolean;
   readonly isRanged?: boolean;
+  readonly weaponRequirement?: {
+    readonly label: string;
+    readonly met: boolean;
+  };
 }
 
 export interface WeaponMasteryView {
@@ -129,6 +136,13 @@ export interface MasteryTierInfo {
   readonly weaponType: string;
   readonly uses: number;
   readonly tier: number;
+  readonly listProgressLabel: string;
+  readonly nextTier: {
+    readonly tier: number;
+    readonly progress: number;
+    readonly requiredUses: number;
+    readonly totalRequiredUses: number;
+  } | null;
 }
 
 export interface StatBonusSource {
@@ -142,6 +156,12 @@ export interface StatBreakdown {
   readonly base: number;
   readonly bonuses: readonly StatBonusSource[];
   readonly total: number;
+  readonly description?: string;
+  readonly effect?: {
+    readonly label: string;
+    readonly value: string;
+    readonly description: string;
+  };
 }
 
 export interface EnchantmentView {
@@ -149,6 +169,10 @@ export interface EnchantmentView {
   readonly name: string;
   readonly description: string;
   readonly tier: 1 | 2 | 3 | 'unique';
+}
+
+export interface EnchantmentBlueprintView extends EnchantmentView {
+  readonly cost: number;
 }
 
 export interface EquippedItemView {
@@ -167,6 +191,8 @@ export interface PlayerHudView {
   readonly level: number;
   readonly health: number;
   readonly maxHealth: number;
+  readonly mana?: number;
+  readonly maxMana?: number;
   readonly attack: number;
   readonly defense: number;
   readonly accuracy: number;
@@ -184,11 +210,15 @@ export interface PlayerHudView {
   readonly statuses: readonly StatusView[];
   readonly abilities: readonly AbilityView[];
   readonly weaponMastery: WeaponMasteryView | null;
+  readonly weaponMasteryTiers?: readonly MasteryTierInfo[];
   readonly equippedItems: readonly EquippedItemView[];
   readonly statBreakdowns: Record<string, StatBreakdown>;
   readonly activeQuests: readonly QuestView[];
   readonly factionProgress: readonly FactionView[];
   readonly ogreProgress: OgreProgressView;
+  readonly ringSchoolMasteries: readonly RingSchoolMasteryView[];
+  readonly learnedSpells: readonly LearnedSpellView[];
+  readonly studyableSpells: readonly RingSpellView[];
 }
 
 export interface StatusView {
@@ -351,6 +381,8 @@ export interface EnchantmentSlotView {
   readonly index: number;
   readonly enchantmentId: string | null;
   readonly enchantmentName: string | null;
+  readonly enchantmentDescription?: string;
+  readonly enchantmentTier?: 1 | 2 | 3 | 'unique';
 }
 
 export interface TownView {
@@ -366,9 +398,50 @@ export interface TownView {
   readonly ogreProgress: OgreProgressView;
   readonly atmosphereDescription: string;
   readonly unlockedBlueprints: readonly string[];
+  readonly unlockedEnchantmentBlueprints?: readonly EnchantmentBlueprintView[];
   readonly runSummaryStats: RunSummaryStats | null;
   readonly prepAdvice: readonly string[];
+  readonly studyableSpells: readonly RingSpellView[];
   readonly lastRetreatFloor?: number;  // Floor player last retreated from (for continue button)
+}
+
+
+
+export interface LearnedSpellView {
+  readonly spellId: string;
+  readonly name: string;
+  readonly description: string;
+  readonly schools: readonly string[];
+  readonly cooldown: number;
+  readonly manaCost: number;
+  readonly learned: true;
+  readonly unlocked: boolean;
+}
+
+export interface RingSchoolMasteryView {
+  readonly school: string;
+  readonly xp: number;
+  readonly level: number;
+  readonly nextLevelXp: number;
+}
+
+export interface RingSpellView {
+  readonly spellId: string;
+  readonly name: string;
+  readonly description: string;
+  readonly schools: readonly string[];
+  readonly cooldown: number;
+  readonly manaCost: number;
+  readonly baseDamage: number;
+  readonly range: number;
+  readonly unlockLevel: number;
+  readonly learned: boolean;
+  readonly unlocked: boolean;
+  readonly affordable: boolean;
+  readonly canStudy: boolean;
+  readonly requiredSchoolXp: number;
+  readonly goldCost: number;
+  readonly currentSchoolXp: number;
 }
 
 export interface NpcView {
@@ -427,7 +500,7 @@ export interface InventoryItemView {
   readonly templateId: string;        // itemId from template, for grouping
   readonly spriteName?: string;       // Atlas sprite name for rendering
   readonly weaponStats?: { damage: number; damageMin: number; damageMax: number; damageType: string; accuracy: number; speed: number; weaponRange: number; minRange?: number; onHitStatus?: string; onHitChance?: number };
-  readonly armorStats?: { defense: number; evasionPenalty: number; slot: string; enchantmentSlots: number; enchantments: readonly (string | null)[] };
+  readonly armorStats?: { defense: number; evasionPenalty: number; slot: string; enchantmentSlots: number; enchantments: readonly (string | null)[]; enchantmentDetails?: readonly EnchantmentSlotView[] };
 }
 
 // ── Movement animation types ──────────────────────────────────────────────

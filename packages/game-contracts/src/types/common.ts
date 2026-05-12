@@ -22,7 +22,7 @@ export type Direction = 'N' | 'S' | 'E' | 'W' | 'NE' | 'NW' | 'SE' | 'SW';
 export type DamageType = 'physical' | 'fire' | 'frost' | 'poison' | 'shock' | 'corruption' | 'arcane' | 'shadow';
 
 /** Status effect identifiers */
-export type StatusId = 'poison' | 'burn' | 'slow' | 'stun' | 'bleed' | 'weaken' | 'vulnerability' | 'regeneration' | 'strength';
+export type StatusId = 'poison' | 'burn' | 'slow' | 'stun' | 'bleed' | 'weaken' | 'vulnerability' | 'regeneration' | 'strength' | 'panic' | 'heat_surge' | 'arcane_charge';
 
 /** Tile types on a dungeon map */
 export type TileType = 'floor' | 'wall' | 'door' | 'obstacle' | 'hazard' | 'chest' | 'stairs_down' | 'stairs_up' | 'event' | 'interactable';
@@ -68,7 +68,7 @@ export type EquipSlot = 'weapon' | 'chest' | 'head' | 'gloves' | 'boots' | 'ring
 export type GamePhase = 'town' | 'dungeon' | 'combat' | 'game_over';
 
 /** Town action types */
-export type TownActionType = 'shop_buy' | 'shop_sell' | 'shop_undo' | 'rest' | 'talk_npc' | 'enter_dungeon' | 'enchant_armor' | 'turn_in_quest';
+export type TownActionType = 'shop_buy' | 'shop_sell' | 'shop_undo' | 'rest' | 'talk_npc' | 'enter_dungeon' | 'enchant_armor' | 'turn_in_quest' | 'study_spell';
 
 /** Create a branded EntityId from a string */
 export function entityId(id: string): EntityId {

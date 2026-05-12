@@ -4,7 +4,7 @@
  */
 import type { Player, EnemyInstance, GameState, GamePhase, WorldState, PlayerStats, PlayerAbility, RunState, WeaponMastery, Position, EntityId, AnyItemTemplate } from '@dungeon/contracts';
 import { entityId, EMPTY_WEAPON_MASTERY, EMPTY_RUN_METRICS } from '@dungeon/contracts';
-import { BASE_PLAYER_STATS, INITIAL_DUNGEON_OGRE, INITIAL_FACTIONS, ITEM_BY_ID } from '@dungeon/content';
+import { BASE_PLAYER_STATS, INITIAL_DUNGEON_OGRE, INITIAL_FACTIONS, ITEM_BY_ID, MAGIC, RING_SPELL_BY_ID } from '@dungeon/content';
 import { ALL_ABILITY_DEFINITIONS } from './abilities/definitions/index.js';
 
 export const BASE_TEST_STATS: PlayerStats = { ...BASE_PLAYER_STATS };
@@ -34,6 +34,10 @@ export function createTestPlayer(overrides?: Partial<Player>): Player {
     totalDeaths: 0,
     totalRuns: 0,
     deathStash: null,
+    mana: MAGIC.initialMana,
+    maxMana: MAGIC.initialMana,
+    ringMastery: {},
+    learnedRingSpellIds: [],
     ...overrides,
   };
 }
@@ -222,15 +226,40 @@ export function createTestGameStateWithAbility(abilityId: string, options?: {
 
   const base = createTestGameStateInCombat({ equippedWeaponId: weaponId, enemyAt: enemyPos });
 
+  // Setup ring spells: equip required rings and add to learned spells
+  let equipment = base.player.equipment;
+  let itemRegistry = base.itemRegistry;
+  
+  if (RING_SPELL_BY_ID.has(abilityId)) {
+    const spell = RING_SPELL_BY_ID.get(abilityId)!;
+    
+    // Equip fire ring if the spell requires fire school
+    if (spell.schools.includes('fire')) {
+      const fireRingEntity = entityId('fire_ring_1');
+      const fireRingItem = ITEM_BY_ID.get('fire_ring')!;
+      itemRegistry = {
+        ...itemRegistry,
+        items: new Map([...itemRegistry.items, [fireRingEntity, fireRingItem]]),
+      };
+      equipment = {
+        ...equipment,
+        ring1: fireRingEntity,
+      };
+    }
+  }
+
   return {
     ...base,
     run: {
       ...base.run!,
       enemies,
     },
+    itemRegistry,
     player: {
       ...base.player,
+      equipment,
       abilities: [{ id: abilityId, cooldownRemaining: 0 }],
+      learnedRingSpellIds: RING_SPELL_BY_ID.has(abilityId) ? [abilityId] : [],
     },
   };
 }
@@ -343,4 +372,3 @@ export function createAscendCommand(): { type: 'ASCEND' } {
     type: 'ASCEND' as const,
   };
 }
-

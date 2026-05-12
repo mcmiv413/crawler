@@ -1,4 +1,5 @@
 import type { AbilityDefinition } from './types.js';
+import { animationRefs } from '../animation-refs/index.js';
 
 export const bladeBleed: AbilityDefinition = {
   id: 'blade_bleed',
@@ -8,5 +9,5 @@ export const bladeBleed: AbilityDefinition = {
   requiresTarget: true,
   unlockLevel: 0,
   requiresWeaponTypes: ['blade'],
-  animation: { id: 'fx.impact.bleeding-strike' },
+  animation: { id: animationRefs.impact.bleedingStrike.id },
 };

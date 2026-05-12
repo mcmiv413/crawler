@@ -362,6 +362,7 @@ describe('Game Command Schema Contract', () => {
       { type: 'USE_ABILITY', abilityId: 'power_strike', targetId: 'enemy-1' },
       { type: 'EQUIP', itemId: 'sword-1' },
       { type: 'UNEQUIP', itemId: 'armor-1' },
+      { type: 'TOWN_ACTION', action: 'study_spell', spellId: 'heat_surge' },
     ];
 
     for (const cmd of validCommands) {
