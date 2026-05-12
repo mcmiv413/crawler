@@ -31,6 +31,28 @@ interface NoImplicitBooleanOptions {
   allowedPatterns?: string[];
 }
 
+type TsAsExpressionNode = {
+  readonly type: "TSAsExpression";
+  readonly expression: unknown;
+  readonly typeAnnotation: unknown;
+};
+
+type TsQualifiedNameNode = {
+  readonly type: "TSQualifiedName";
+  readonly left: unknown;
+  readonly right: unknown;
+};
+
+type TsTypeReferenceNode = {
+  readonly type: "TSTypeReference";
+  readonly typeName: unknown;
+};
+
+type TsIntersectionTypeNode = {
+  readonly type: "TSIntersectionType";
+  readonly types: readonly unknown[];
+};
+
 const DEFAULT_ALLOWED_VARIABLES: readonly string[] = [] as const;
 const DEFAULT_MUTATING_METHODS = [
   "push",
@@ -155,6 +177,71 @@ const countThenChain = (startNode: CallExpression): number => {
     return 0;
   };
   return countRecursive(startNode);
+};
+
+const PUBLIC_TEST_CONTRACT_TYPES = new Set([
+  "GameState",
+  "GameView",
+  "GameCommand",
+  "DomainEvent",
+]);
+
+const isTsAsExpression = (node: unknown): node is TsAsExpressionNode =>
+  Boolean(node) &&
+  typeof node === "object" &&
+  "type" in (node as Record<string, unknown>) &&
+  (node as { type: string }).type === "TSAsExpression";
+
+const getNodeType = (node: unknown): string | null =>
+  Boolean(node) &&
+  typeof node === "object" &&
+  "type" in (node as Record<string, unknown>)
+    ? String((node as { type: unknown }).type)
+    : null;
+
+const isTsUnknownKeyword = (node: unknown): boolean =>
+  getNodeType(node) === "TSUnknownKeyword";
+
+const getTsTypeName = (node: unknown): string | null => {
+  const nodeType = getNodeType(node);
+  if (nodeType === "Identifier") {
+    return String((node as Identifier).name);
+  }
+  if (nodeType === "TSQualifiedName") {
+    const qualified = node as TsQualifiedNameNode;
+    const left = getTsTypeName(qualified.left);
+    const right = getTsTypeName(qualified.right);
+    return left && right ? `${left}.${right}` : left ?? right;
+  }
+  return null;
+};
+
+const collectReferencedTypeNames = (
+  node: unknown,
+  names: Set<string> = new Set(),
+): Set<string> => {
+  switch (getNodeType(node)) {
+    case "TSTypeReference": {
+      const typeName = getTsTypeName((node as TsTypeReferenceNode).typeName);
+      if (typeName) {
+        names.add(typeName);
+      }
+      return names;
+    }
+    case "TSIntersectionType": {
+      for (const member of (node as TsIntersectionTypeNode).types) {
+        collectReferencedTypeNames(member, names);
+      }
+      return names;
+    }
+    case "TSParenthesizedType":
+      return collectReferencedTypeNames(
+        (node as { readonly typeAnnotation: unknown }).typeAnnotation,
+        names,
+      );
+    default:
+      return names;
+  }
 };
 
 // Rule Definitions
@@ -573,6 +660,68 @@ const rules: Record<string, Rule.RuleModule> = {
               });
             }
           }
+        },
+      };
+    },
+  },
+
+  "no-unsafe-test-contract-cast": {
+    meta: {
+      type: "problem",
+      docs: {
+        description:
+          "Disallow `as unknown as ...` chains to public contract/view/event types in tests. " +
+          "Use builders, satisfies, or narrower partial fixtures instead.",
+        category: "Testing",
+        recommended: true,
+      },
+      messages: {
+        noUnsafeTestContractCast:
+          "Avoid `as unknown as {{typeName}}` in tests for public contract surfaces. " +
+          "Use builders, `satisfies`, or a narrower partial fixture instead.",
+      },
+      schema: [],
+    },
+    create(context: any): Rule.RuleListener {
+      const fileName = context.getFilename();
+      const isTestFile =
+        /\.test\.[tj]sx?$/.test(fileName) ||
+        /\.property\.test\.ts$/.test(fileName);
+
+      if (!isTestFile) {
+        return {};
+      }
+
+      return {
+        TSAsExpression(node: any): void {
+          const outerCast = node as TsAsExpressionNode;
+          if (isTsAsExpression(outerCast.expression) === false) {
+            return;
+          }
+
+          const innerCast = outerCast.expression;
+          if (isTsUnknownKeyword(innerCast.typeAnnotation) === false) {
+            return;
+          }
+
+          const targetTypeNames = collectReferencedTypeNames(
+            outerCast.typeAnnotation,
+          );
+          const matchedType = [...PUBLIC_TEST_CONTRACT_TYPES].find((typeName) =>
+            targetTypeNames.has(typeName),
+          );
+
+          if (!matchedType) {
+            return;
+          }
+
+          context.report({
+            node,
+            messageId: "noUnsafeTestContractCast",
+            data: {
+              typeName: matchedType,
+            },
+          });
         },
       };
     },

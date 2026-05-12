@@ -294,18 +294,24 @@ When adding new features or tests:
 1. Keep code modular: systems in `packages/game-core/src/systems/`, content in `packages/content/src/`
 2. Write tests colocated with source files
 3. Use Zod schemas for all API shapes (contracts)
-4. Run `pnpm validate` before committing
-5. Ensure E2E tests pass: `pnpm test:e2e`
+4. Use the repo gate that matches your stage: `pnpm run check:fast` while iterating, `pnpm validate:quick` before review, `pnpm validate` before merge
+5. Ensure E2E tests pass with `pnpm test:e2e` when browser flows change
 
-### Merge Gate
+### Validation Gates
 
-Before opening or merging a PR, run:
+Use the smallest repo gate that matches what you are doing:
 
 ```bash
-pnpm validate
+pnpm run check:fast   # pre-commit: audit + workspace wiring + cached ESLint + full typecheck
+pnpm validate:quick   # local confidence: generation + check:fast + ability contracts + changed tests + build
+pnpm validate         # canonical merge gate: generation + guardrails + lint + full tests + build + exports
 ```
 
-This is the canonical repository gate and the same command CI enforces. It runs the repo guardrails, lint, the default workspace Vitest suites, the build, and package export validation.
+The installed pre-commit hook runs `pnpm run check:fast`.
+
+`pnpm validate` is the canonical repository gate and the same command CI enforces. It runs audit guardrails, workspace wiring, ability contract checks, lint, the default workspace Vitest suites, the build, and package export validation.
+
+`check:exports` intentionally stays out of pre-commit because it depends on built artifacts and consumer-context package resolution.
 
 Balance suites (`tests/balance/**/*.balance.test.ts` and `packages/game-core/src/**/*.balance.test.ts`) stay outside the default gate. Run `pnpm test:balance` when you are changing tuning or balance simulations.
 

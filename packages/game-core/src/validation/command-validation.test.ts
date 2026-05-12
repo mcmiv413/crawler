@@ -21,7 +21,8 @@ import {
   createTestGameState,
   createTestGameStateWithAbility,
 } from '../test-utils.js';
-import type { GameCommand, GameState } from '@dungeon/contracts';
+import { GameCommandSchema } from '@dungeon/contracts';
+import type { GameState } from '@dungeon/contracts';
 import { entityId } from '@dungeon/contracts';
 
 // ============================================================================
@@ -30,55 +31,26 @@ import { entityId } from '@dungeon/contracts';
 
 describe('Command Validation: Invalid Commands', () => {
   it('rejects unknown command type', () => {
-    const state = createTestGameState();
-    const rng = new SeededRNG(42);
-
-    // TypeScript prevents this at compile time, but at runtime we validate
-    const invalidCommand = { type: 'UNKNOWN_COMMAND' } as unknown as GameCommand;
-
-    // Since the command handler does exhaustiveness checking, this will fail
-    // We test that malformed commands don't corrupt state
-    const beforeState = state;
-    expect(beforeState).toBeDefined();
+    const parseResult = GameCommandSchema.safeParse({ type: 'UNKNOWN_COMMAND' });
+    expect(parseResult.success).toBe(false);
   });
 
   it('detects missing required fields in MOVE command', () => {
-    const state = createTestGameStateInCombat();
-    const rng = new SeededRNG(42);
-
-    // MOVE requires 'direction' field
-    const incompleteCommand = { type: 'MOVE' } as unknown as GameCommand;
-
-    // Command should be rejected (likely via type system)
-    // We verify that incomplete commands don't execute
-    expect(state).toBeDefined();
+    const parseResult = GameCommandSchema.safeParse({ type: 'MOVE' });
+    expect(parseResult.success).toBe(false);
   });
 
   it('detects malformed ATTACK command without target', () => {
-    const state = createTestGameStateInCombat();
-    const rng = new SeededRNG(42);
-
-    // ATTACK requires 'targetId'
-    const result = handleCommand(state, { type: 'ATTACK' } as unknown as GameCommand, rng);
-
-    // Command should not execute successfully
-    expect(result.events.length).toBe(0);
-    expect(result.state).toEqual(state);
+    const parseResult = GameCommandSchema.safeParse({ type: 'ATTACK' });
+    expect(parseResult.success).toBe(false);
   });
 
   it('rejects invalid direction in MOVE command', () => {
-    const state = createTestGameStateInCombat();
-    const rng = new SeededRNG(42);
-
-    // Direction should be one of: NORTH, SOUTH, EAST, WEST
-    const result = handleCommand(
-      state,
-      { type: 'MOVE', direction: 'INVALID' as any } as unknown as GameCommand,
-      rng,
-    );
-
-    // Invalid direction should be handled gracefully
-    expect(result.events.length).toBe(0);
+    const parseResult = GameCommandSchema.safeParse({
+      type: 'MOVE',
+      direction: 'INVALID',
+    });
+    expect(parseResult.success).toBe(false);
   });
 });
 

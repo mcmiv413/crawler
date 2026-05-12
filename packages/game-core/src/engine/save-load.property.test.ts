@@ -1,6 +1,6 @@
 import { describe, it, expect } from 'vitest';
 import * as fc from 'fast-check';
-import { entityId, type GameState } from '@dungeon/contracts';
+import { entityId, type GameState, type StoredFloor } from '@dungeon/contracts';
 import { GameEngine } from './game-engine.js';
 import { serializeState, deserializeState } from '../state/serialization.js';
 import { createTestGameStateInCombat, createWaitCommand } from '../test-utils.js';
@@ -14,6 +14,51 @@ function normalizeNewGameState(state: GameState): GameState {
       id: entityId('normalized-player'),
     },
   };
+}
+
+function createStoredFloorSnapshot(state: GameState): StoredFloor {
+  if (state.run === null) {
+    throw new Error('Expected an active run to build a stored floor snapshot');
+  }
+
+  return {
+    floor: state.run.floor,
+    enemies: state.run.enemies,
+    objects: state.run.objects,
+    playerPosition: state.player.position,
+    originalEnemyCount: state.run.enemies.size,
+    lastSimulatedTurn: 23,
+  };
+}
+
+function collectNonEnumerablePaths(
+  value: unknown,
+  path: string,
+  failures: string[],
+): void {
+  if (value === null || typeof value !== 'object') {
+    return;
+  }
+
+  if (value instanceof Map) {
+    return;
+  }
+
+  if (Array.isArray(value)) {
+    for (let index = 0; index < value.length; index += 1) {
+      collectNonEnumerablePaths(value[index], `${path}[${index}]`, failures);
+    }
+    return;
+  }
+
+  const objectValue = value as Record<string, unknown>;
+  for (const key of Object.getOwnPropertyNames(objectValue)) {
+    const descriptor = Object.getOwnPropertyDescriptor(objectValue, key);
+    if (descriptor?.enumerable === false) {
+      failures.push(`${path}.${key}`);
+    }
+    collectNonEnumerablePaths(objectValue[key], `${path}.${key}`, failures);
+  }
 }
 
 describe('save/load roundtrip property tests', () => {
@@ -275,6 +320,51 @@ describe('save/load roundtrip property tests', () => {
       ),
       { numRuns: 100 },
     );
+  });
+
+  it('preserves nested stored-floor metadata and numeric cache keys through roundtrip', () => {
+    const baseState = createTestGameStateInCombat();
+    const storedFloor = createStoredFloorSnapshot(baseState);
+    const stateWithCaches: GameState = {
+      ...baseState,
+      run: {
+        ...baseState.run!,
+        floorHistory: [storedFloor],
+        floorCache: new Map([[3, storedFloor]]),
+      },
+      persistedFloorCache: new Map([[7, storedFloor]]),
+    };
+
+    const restored = deserializeState(serializeState(stateWithCaches));
+
+    expect(restored.run?.floorHistory[0]?.originalEnemyCount).toBe(storedFloor.originalEnemyCount);
+    expect(restored.run?.floorHistory[0]?.lastSimulatedTurn).toBe(23);
+    expect([...restored.run!.floorCache!.keys()]).toEqual([3]);
+    expect(restored.run?.floorCache?.get(3)?.playerPosition).toEqual(baseState.player.position);
+    expect([...restored.persistedFloorCache!.keys()]).toEqual([7]);
+    expect(restored.persistedFloorCache?.get(7)?.lastSimulatedTurn).toBe(23);
+  });
+
+  it('keeps persisted plain-object surfaces enumerable so JSON clone paths cannot silently drop fields', () => {
+    const baseState = createTestGameStateInCombat();
+    const storedFloor = createStoredFloorSnapshot(baseState);
+    const stateWithCaches: GameState = {
+      ...baseState,
+      run: {
+        ...baseState.run!,
+        floorHistory: [storedFloor],
+        floorCache: new Map([[3, storedFloor]]),
+      },
+      persistedFloorCache: new Map([[7, storedFloor]]),
+    };
+
+    const failures: string[] = [];
+    collectNonEnumerablePaths(stateWithCaches.player, 'player', failures);
+    collectNonEnumerablePaths(stateWithCaches.world, 'world', failures);
+    collectNonEnumerablePaths(stateWithCaches.run, 'run', failures);
+    collectNonEnumerablePaths(storedFloor, 'storedFloor', failures);
+
+    expect(failures).toEqual([]);
   });
 
   /**

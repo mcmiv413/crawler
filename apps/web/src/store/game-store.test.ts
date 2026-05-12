@@ -27,9 +27,11 @@ vi.mock('./session-persistence.js', () => ({
 // Mock API module
 vi.mock('../api/client.js');
 
+type CommandView = GameView & { combatLog: CombatLogEntry[] };
+
 // Helper to create a minimal but valid GameView
-function createMockGameView(overrides?: Partial<GameView>): GameView {
-  const baseView: GameView = {
+function createMockGameView(overrides?: Partial<CommandView>): CommandView {
+  const baseView: CommandView = {
     gameId: 'test-game-1',
     phase: 'dungeon',
     player: {
@@ -225,7 +227,7 @@ describe('useGameStore (Zustand)', () => {
 
       const { sendCommand: mockSendCommand } = await import('../api/client.js');
       vi.mocked(mockSendCommand).mockResolvedValueOnce({
-        view: updatedView as unknown as GameView & { combatLog: CombatLogEntry[] },
+        view: updatedView,
         events: [],
         runEnded: false,
         serializedState: 'state-cmd-123',
@@ -278,7 +280,7 @@ describe('useGameStore (Zustand)', () => {
       vi.mocked(mockSendCommand)
         .mockRejectedValueOnce(new GameNotFoundError(mockGameId))
         .mockResolvedValueOnce({
-          view: recoveredView as unknown as GameView & { combatLog: CombatLogEntry[] },
+          view: recoveredView,
           events: [],
           runEnded: false,
           serializedState,
@@ -792,7 +794,7 @@ describe('useGameStore (Zustand)', () => {
       // Mock sendCommand
       const { sendCommand: mockSendCommand } = await import('../api/client.js');
       vi.mocked(mockSendCommand).mockResolvedValueOnce({
-        view: createMockGameView() as unknown as GameView & { combatLog: CombatLogEntry[] },
+        view: createMockGameView(),
         events: [],
         runEnded: false,
         serializedState: 'state',

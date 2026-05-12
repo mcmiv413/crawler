@@ -26,6 +26,21 @@ function sessionHeaders(sessionToken: string): Record<string, string> {
   return { 'x-dungeon-session': sessionToken };
 }
 
+function createStoredFloorSnapshot(state: GameState) {
+  if (state.run === null) {
+    throw new Error('Expected an active run');
+  }
+
+  return {
+    floor: state.run.floor,
+    enemies: state.run.enemies,
+    objects: state.run.objects,
+    playerPosition: state.player.position,
+    originalEnemyCount: state.run.enemies.size,
+    lastSimulatedTurn: 19,
+  };
+}
+
 describe('Game Routes', () => {
   let app: FastifyInstance;
 
@@ -519,6 +534,59 @@ describe('Game Routes', () => {
       const restoreBody = JSON.parse(restoreResponse.body);
       expect(restoreBody.gameId).toBe(createBody.gameId);
       expect(restoreBody.serializedState).toBe(serializedState);
+    });
+
+    it('returns canonical serialized state by trimming oversized event history while preserving floor caches', async () => {
+      const state = createTestGameStateInCombat();
+      const storedFloor = createStoredFloorSnapshot(state);
+      const longEventHistory: GameState['world']['eventHistory'] = Array.from(
+        { length: 512 },
+        (_, index) => ({
+          type: 'ATTACK_PERFORMED',
+          timestamp: index,
+          turnNumber: index + 1,
+          attackerId: entityId('player-1'),
+          defenderId: entityId('enemy-1'),
+          attackerName: 'Hero',
+          defenderName: 'Goblin',
+          damage: 1,
+          damageType: 'physical',
+          hit: true,
+          critical: false,
+          position: state.player.position,
+        }),
+      );
+      const stateWithHistory: GameState = {
+        ...state,
+        world: {
+          ...state.world,
+          eventHistory: longEventHistory,
+        },
+        persistedFloorCache: new Map([[1, storedFloor]]),
+      };
+      const submittedSerializedState = serializeState(stateWithHistory);
+
+      const response = await app.inject({
+        method: 'POST',
+        url: '/api/games/restore',
+        payload: { serializedState: submittedSerializedState },
+      });
+
+      expect(response.statusCode).toBe(200);
+      const body = JSON.parse(response.body);
+      expect(body.serializedState).not.toBe(submittedSerializedState);
+
+      const restoredState = deserializeState(body.serializedState);
+      expect(restoredState.world.eventHistory.length).toBeLessThan(longEventHistory.length);
+      expect(restoredState.world.eventHistory.at(-1)?.turnNumber).toBe(
+        longEventHistory.at(-1)?.turnNumber,
+      );
+      expect(restoredState.persistedFloorCache?.get(1)?.lastSimulatedTurn).toBe(
+        storedFloor.lastSimulatedTurn,
+      );
+      expect(restoredState.persistedFloorCache?.get(1)?.originalEnemyCount).toBe(
+        storedFloor.originalEnemyCount,
+      );
     });
 
     it('returns 409 when the submitted save conflicts with an existing server copy', async () => {

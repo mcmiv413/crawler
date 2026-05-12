@@ -61,8 +61,14 @@ scripts/local-ai/
 scripts/sync-*.mjs
 
 # Experimental test files
-tests/contracts/
-tests/integration/
+!tests/contracts/
+tests/contracts/*
+!tests/contracts/ability-contracts.contract.test.ts
+!tests/integration/
+tests/integration/*
+!tests/integration/ability-contracts.integration.test.ts
+!tests/integration/eslint-plugin-dungeon.integration.test.ts
+!tests/integration/workspace-wiring.integration.test.ts
 
 # GitHub skills (experimental)
 .github/skills/

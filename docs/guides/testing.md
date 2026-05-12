@@ -20,7 +20,8 @@ AI assistants are allowed to generate test scaffolding, but every test must be r
 1. Start with the smallest affected scope (`pnpm vitest run path/to/file.test.ts` or `pnpm test:changed`).
 2. If a quiet run fails, rerun the failing scope with full output (`pnpm test:verbose`, targeted Vitest, and `.validate-logs/test.log`) before diagnosing.
 3. Decide whether the failure is a real regression or a brittle test. Prefer fixing the test when it depends on tuned values, live config in the wrong layer, or implementation details.
-4. Finish with `pnpm validate`. Focused test passes help you iterate, but they do not replace full validation.
+4. Widen through the repo gates in order: `pnpm run check:fast`, then `pnpm validate:quick`, then `pnpm validate`.
+5. Finish with `pnpm validate`. Focused test passes help you iterate, but they do not replace full validation.
 
 ## Command Map
 
@@ -31,6 +32,10 @@ AI assistants are allowed to generate test scaffolding, but every test must be r
 | Full Vitest output | `pnpm test:verbose` |
 | Changed-file Vitest scope | `pnpm test:changed` |
 | Single Vitest file | `pnpm vitest run path/to/file.test.ts` |
+| Fast pre-commit gate | `pnpm run check:fast` |
+| Local confidence gate | `pnpm validate:quick` |
+| Workspace wiring guardrail | `pnpm run check:workspace-wiring` |
+| Ability contract guardrail | `pnpm run check:ability-contracts` |
 | Playwright only | `pnpm test:e2e` |
 | Repo-wide test layer audit | `pnpm exec tsx scripts/audit-tests.ts` |
 | Merge gate | `pnpm validate` |
@@ -40,6 +45,8 @@ AI assistants are allowed to generate test scaffolding, but every test must be r
 Use `pnpm exec tsx scripts/audit-tests.ts` when you need a repo-wide layer map before or during an audit. It reports both the recognized layer (`Unit`, `Property`, `Contract`, `Integration`, `Balance`, `E2E`) and whether each file participates in the default workspace Vitest run.
 
 The default merge gate excludes balance suites under `tests/balance/` and `packages/game-core/src/**/*.balance.test.ts`. Run `pnpm test:balance` when you need those suites.
+
+`pnpm run check:ability-contracts` is intentionally invariant-based instead of snapshot-based: it validates live registry/schema alignment, command payload requirements, and animation coverage without forcing per-ability test updates every time new content is added.
 
 ## Test Layer Decision
 
