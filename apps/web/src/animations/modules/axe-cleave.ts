@@ -3,12 +3,14 @@
  * Concentric semicircles showing sweep direction.
  */
 
+import { animationRefs } from '@dungeon/content';
 import type { AnimationModule, AnimationDrawContext } from '../types.js';
 
 export const axeCleavModule: AnimationModule = {
-  id: 'fx.aoe.cleave-arc',
-  durationMs: 450,
-  category: 'aoe',
+  id: animationRefs.aoe.cleaveArc.id,
+  durationMs: animationRefs.aoe.cleaveArc.durationMs,
+  category: animationRefs.aoe.cleaveArc.category,
+  suppressActorBump: animationRefs.aoe.cleaveArc.suppressActorBump,
 
   draw(ctx: CanvasRenderingContext2D, anim: AnimationDrawContext, helpers: any): void {
     const { x, y, progress, durationMs } = anim;

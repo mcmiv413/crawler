@@ -2,7 +2,7 @@ import type { Player, EnemyInstance, EntityId, StatusId, GameState, DamageType }
 import type { StatusEffect } from '@dungeon/contracts';
 import type { DomainEvent } from '@dungeon/contracts';
 import { posKey } from '@dungeon/contracts';
-import { STATUS_DEFAULTS } from '@dungeon/content';
+import { MAGIC, STATUS_DEFAULTS } from '@dungeon/content';
 import { applyDamageToPlayer, applyDamageToEnemy, createDamageDebugEvent } from './damage.js';
 
 /** Map status IDs that deal damage to their damage types */
@@ -17,8 +17,19 @@ function statusToDamageType(statusId: StatusId): DamageType | null {
     vulnerability: null,
     strength: null,
     regeneration: null,
+    panic: null,
+    heat_surge: null,
+    arcane_charge: null,
   };
   return map[statusId] ?? null;
+}
+
+function getStatusDamageAmount(status: StatusEffect): number | null {
+  const defaults = STATUS_DEFAULTS[status.id];
+  if (!('damagePerTurn' in defaults)) return null;
+  const baseDamage = (defaults as { damagePerTurn: number }).damagePerTurn;
+  if (status.id !== 'burn') return baseDamage;
+  return baseDamage + Math.max(0, status.magnitude - 1);
 }
 
 function applyStatusEffect<T extends { readonly statuses: readonly StatusEffect[] }>(
@@ -31,6 +42,21 @@ function applyStatusEffect<T extends { readonly statuses: readonly StatusEffect[
   // Don't stack — refresh duration instead
   const existing = entity.statuses.find(s => s.id === statusId);
   if (existing !== undefined) {
+    if (statusId === 'arcane_charge') {
+      return {
+        ...entity,
+        statuses: entity.statuses.map(s =>
+          s.id === statusId
+            ? {
+                ...s,
+                turnsRemaining: Math.max(s.turnsRemaining, duration),
+                magnitude: Math.min(MAGIC.arcaneChargeMaxStacks, s.magnitude + magnitude),
+              }
+            : s,
+        ),
+      } as T;
+    }
+
     return {
       ...entity,
       statuses: entity.statuses.map(s =>
@@ -78,8 +104,8 @@ export function tickPlayerStatuses(
   // Apply damage from damaging statuses via central damage system
   for (const status of state.player.statuses) {
     const defaults = STATUS_DEFAULTS[status.id];
-    if ('damagePerTurn' in defaults) {
-      const damageAmount = (defaults as { damagePerTurn: number }).damagePerTurn;
+    const damageAmount = getStatusDamageAmount(status);
+    if (damageAmount !== null) {
       const damageType = statusToDamageType(status.id);
       // DoT only applies resistance, not defense
       const damageResult = applyDamageToPlayer(currentState, {
@@ -165,7 +191,12 @@ export function getEffectiveStat(
     }
     // Future-proof: accuracy can be modified by status effects (currently none, but extensible)
     if (statName === 'accuracy') {
-      // Placeholder for accuracy-modifying statuses
+      if (status.id === 'panic') {
+        value = Math.round(value * MAGIC.panicStatMultiplier);
+      }
+    }
+    if (statName === 'evasion' && status.id === 'panic') {
+      value = Math.round(value * MAGIC.panicStatMultiplier);
     }
   }
 
@@ -187,8 +218,8 @@ export function tickEnemyStatuses(
   // Apply damage from damaging statuses via central damage system
   for (const status of initialStatuses) {
     const defaults = STATUS_DEFAULTS[status.id];
-    if ('damagePerTurn' in defaults) {
-      const damageAmount = (defaults as { damagePerTurn: number }).damagePerTurn;
+    const damageAmount = getStatusDamageAmount(status);
+    if (damageAmount !== null) {
       const damageType = statusToDamageType(status.id);
       // DoT only applies resistance, not defense
       const damageResult = applyDamageToEnemy(currentState, enemy.id, {

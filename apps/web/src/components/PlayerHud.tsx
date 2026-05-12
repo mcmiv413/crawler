@@ -122,12 +122,16 @@ function StatBar({
 export function PlayerHud({ player, compact = false }: PlayerHudProps) {
   const { isMobile } = useBreakpoint();
   const hpPct = (player.health / player.maxHealth) * 100;
+  const mana = player.mana ?? 0;
+  const maxMana = player.maxMana ?? 0;
+  const hasMana = maxMana > 0;
+  const mpPct = hasMana ? (mana / maxMana) * 100 : 0;
   const xpPct = player.experienceForNextLevel > 0
     ? (player.experience / player.experienceForNextLevel) * 100
     : 0;
   const biomeName = formatBiomeName(player.biomeId);
   const hpLow = hpPct <= 30;
-  const useDenseCompactBars = compact && isMobile && player.experienceForNextLevel > 0;
+  const useDenseCompactBars = compact && isMobile && (player.experienceForNextLevel > 0 || hasMana);
 
   // Inject @keyframes hpPulse once on first mount
   useEffect(() => { injectHpPulse(); }, []);
@@ -180,27 +184,38 @@ export function PlayerHud({ player, compact = false }: PlayerHudProps) {
           data-testid="compact-player-hud-bars"
           style={{
             display: 'grid',
-            gridTemplateColumns: useDenseCompactBars ? 'repeat(2, minmax(0, 1fr))' : '1fr',
-            gap: useDenseCompactBars ? 6 : 0,
+            gridTemplateColumns: hasMana ? 'repeat(3, minmax(0, 1fr))' : 'repeat(2, minmax(0, 1fr))',
+            gap: 4,
           }}
         >
           <StatBar
             label="HP"
             fillColor={hpBarColor(player.health, player.maxHealth)}
             pct={hpPct}
-            valueLabel={useDenseCompactBars ? `${player.health}/${player.maxHealth}` : `${player.health} / ${player.maxHealth}`}
+            valueLabel={`${player.health}/${player.maxHealth}`}
             pulse={hpLow}
-            layout={useDenseCompactBars ? 'compact-inline' : 'inline'}
+            layout="compact-inline"
             testId="compact-hp-bar"
           />
+
+          {hasMana && (
+            <StatBar
+              label="MP"
+              fillColor="#4aa3ff"
+              pct={mpPct}
+              valueLabel={`${mana}/${maxMana}`}
+              layout="compact-inline"
+              testId="compact-mp-bar"
+            />
+          )}
 
           {player.experienceForNextLevel > 0 && (
             <StatBar
               label="XP"
               fillColor={colors.steel}
               pct={xpPct}
-              valueLabel={useDenseCompactBars ? `${player.experience}/${player.experienceForNextLevel}` : `${player.experience} / ${player.experienceForNextLevel}`}
-              layout={useDenseCompactBars ? 'compact-inline' : 'inline'}
+              valueLabel={`${player.experience}/${player.experienceForNextLevel}`}
+              layout="compact-inline"
               testId="compact-xp-bar"
             />
           )}
@@ -269,6 +284,16 @@ export function PlayerHud({ player, compact = false }: PlayerHudProps) {
         pulse={hpLow}
       />
 
+      {hasMana && (
+        <StatBar
+          label="MP"
+          fillColor="#4aa3ff"
+          pct={mpPct}
+          valueLabel={`${mana} / ${maxMana}`}
+          testId="mp-bar"
+        />
+      )}
+
       {player.experienceForNextLevel > 0 && (
         <StatBar
           label="XP"
@@ -328,7 +353,7 @@ export function PlayerHud({ player, compact = false }: PlayerHudProps) {
                 border: `1px solid ${a.ready ? '#2a4a6a' : colors.border2}`,
               }}
             >
-              {a.name}{!a.ready && ` (${a.cooldownRemaining})`}
+              {a.name}{a.manaCost !== undefined ? ` ${a.manaCost}MP` : ''}{!a.ready && a.cooldownRemaining > 0 && ` (${a.cooldownRemaining})`}
             </span>
           ))}
         </div>

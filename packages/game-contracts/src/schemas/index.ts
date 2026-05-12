@@ -2,7 +2,7 @@ import { z } from 'zod';
 
 const DirectionSchema = z.enum(['N', 'S', 'E', 'W', 'NE', 'NW', 'SE', 'SW']);
 
-const TownActionSchema = z.enum(['shop_buy', 'shop_sell', 'shop_undo', 'rest', 'talk_npc', 'enter_dungeon', 'enchant_armor', 'turn_in_quest']);
+const TownActionSchema = z.enum(['shop_buy', 'shop_sell', 'shop_undo', 'rest', 'talk_npc', 'enter_dungeon', 'enchant_armor', 'turn_in_quest', 'study_spell']);
 
 export const MoveCommandSchema = z.object({
   type: z.literal('MOVE'),
@@ -38,6 +38,7 @@ export const TownActionCommandSchema = z.object({
   action: TownActionSchema,
   targetId: z.string().optional(),
   itemId: z.string().optional(),
+  spellId: z.string().optional(),
   startDepth: z.number().int().optional(),
 });
 

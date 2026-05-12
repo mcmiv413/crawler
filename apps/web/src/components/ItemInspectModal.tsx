@@ -1,6 +1,5 @@
 import React from 'react';
 import type { InventoryItemView, ShopItemView } from '@dungeon/presenter';
-import { ENCHANTMENT_BY_ID } from '@dungeon/content';
 import { Z_INSPECT } from '../config/ui-config.js';
 import { btnStyle, colors, modalCardStyle } from '../styles.js';
 import { ModalBackdrop, SectionLabel, InfoCard } from './ui/index.js';
@@ -123,16 +122,16 @@ export function ItemInspectModal({
                 {(item as InventoryItemView).armorStats!.evasionPenalty > 0 && (
                   <div>Evasion Penalty: {(item as InventoryItemView).armorStats!.evasionPenalty}</div>
                 )}
-                <div>Enchantment Slots: {(item as InventoryItemView).armorStats!.enchantmentSlots}</div>
-                {(item as InventoryItemView).armorStats!.enchantments &&
-                  (item as InventoryItemView).armorStats!.enchantments.length > 0 && (
-                    <div style={{ marginTop: 8 }}>
-                      Enchantments:
-                      {(item as InventoryItemView).armorStats!.enchantments.map((enchId, idx) => {
-                        const enchDef = enchId ? ENCHANTMENT_BY_ID.get(enchId) : null;
-                        const enchName = enchDef?.name ?? enchId ?? '[empty]';
-                        const enchDesc = enchDef?.description ?? null;
-                        return (
+	                <div>Enchantment Slots: {(item as InventoryItemView).armorStats!.enchantmentSlots}</div>
+	                {(item as InventoryItemView).armorStats!.enchantments &&
+	                  (item as InventoryItemView).armorStats!.enchantments.length > 0 && (
+	                    <div style={{ marginTop: 8 }}>
+	                      Enchantments:
+	                      {(item as InventoryItemView).armorStats!.enchantments.map((enchId, idx) => {
+	                        const enchantmentDetail = (item as InventoryItemView).armorStats!.enchantmentDetails?.[idx];
+	                        const enchName = enchantmentDetail?.enchantmentName ?? enchId ?? '[empty]';
+	                        const enchDesc = enchantmentDetail?.enchantmentDescription ?? null;
+	                        return (
                           <div key={idx} style={{ marginLeft: 12, fontSize: 10, marginBottom: 4 }}>
                             <span style={{ color: enchId ? colors.teal : colors.muted }}>
                               Slot {idx + 1}: {enchName}

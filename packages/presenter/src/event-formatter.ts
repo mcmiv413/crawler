@@ -72,13 +72,38 @@ const EVENT_FORMATTERS = {
   }),
 
   'GOLD_CHANGED': (event) => {
-    const verb = event.amount > 0 ? 'Gained' : 'Lost';
-    return {
-      text: `${verb} ${Math.abs(event.amount)} gold. (${event.reason})`,
-      type: 'loot',
-      timestamp: event.timestamp,
-    };
+    if (event.amount > 0) {
+      const reasonText = event.reason !== undefined ? `. (${event.reason})` : '';
+      return {
+        text: `Gained ${event.amount} gold${reasonText}`,
+        type: 'loot',
+        timestamp: event.timestamp,
+      };
+    }
+    return null;
   },
+  'MANA_CHANGED': (event) => {
+    if (event.amount > 0) {
+      return {
+        text: `Restored ${event.amount} mana`,
+        type: 'info',
+        timestamp: event.timestamp,
+      };
+    } else if (event.amount < 0) {
+      return {
+        text: `Used ${Math.abs(event.amount)} mana`,
+        type: 'info',
+        timestamp: event.timestamp,
+      };
+    }
+    return null;
+  },
+
+  'SPELL_UNLOCKED': (event) => ({
+    text: `Learned ${event.spellName}.`,
+    type: 'info',
+    timestamp: event.timestamp,
+  }),
 
   'FLOOR_ENTERED': (event) => ({
     text: `Entered floor ${event.depth}.`,

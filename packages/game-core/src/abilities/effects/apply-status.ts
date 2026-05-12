@@ -1,6 +1,7 @@
 import type { DomainEvent, StatusId } from '@dungeon/contracts';
 import type { AbilityContext, StatusEffect } from '../types.js';
-import { applyStatusToEnemy } from '../../systems/status-effects.js';
+import { applyStatusToEnemy, applyStatusToPlayer } from '../../systems/status-effects.js';
+import { getFireBurnDuration, getFireBurnMagnitude } from '../../systems/magic-xp.js';
 
 /**
  * Apply a status effect to a target.
@@ -25,6 +26,27 @@ export function applyStatus(
     return { state: newState, events };
   }
 
+  const statusId = effect.statusId as StatusId;
+  const baseDuration = effect.duration ?? 3;
+  const duration = statusId === 'burn' ? getFireBurnDuration(context.player, baseDuration) : baseDuration;
+  const magnitude = statusId === 'burn' ? getFireBurnMagnitude(context.player) : (effect.magnitude ?? 1);
+
+  if (effect.target === 'player') {
+    const updatedPlayer = applyStatusToPlayer(newState.player, statusId, duration, magnitude, context.player.id);
+    return {
+      state: { ...newState, player: updatedPlayer },
+      events: [{
+        type: 'STATUS_APPLIED',
+        targetId: newState.player.id,
+        statusId,
+        duration,
+        sourceId: context.player.id,
+        timestamp: context.state.turnNumber,
+        turnNumber: context.state.turnNumber,
+      }],
+    };
+  }
+
   // Apply the status to the target
   if (newState.run === null) {
     return { state: newState, events };
@@ -35,8 +57,7 @@ export function applyStatus(
     return { state: newState, events };
   }
 
-  const statusId = effect.statusId as StatusId;
-  const statusedEnemy = applyStatusToEnemy(target, statusId, effect.duration ?? 3, 2, context.player.id);
+  const statusedEnemy = applyStatusToEnemy(target, statusId, duration, magnitude, context.player.id);
 
   const mutableEvents = [...events];
   const currentRun = newState.run;
@@ -48,7 +69,7 @@ export function applyStatus(
     type: 'STATUS_APPLIED',
     targetId: target.id,
     statusId,
-    duration: effect.duration ?? 3,
+    duration,
     sourceId: context.player.id,
     timestamp: context.state.turnNumber,
     turnNumber: context.state.turnNumber,

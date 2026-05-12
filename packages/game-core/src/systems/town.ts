@@ -1,11 +1,14 @@
 import type { GameState, TownActionType, EntityId, EquipSlot, ArmorTemplate } from '@dungeon/contracts';
 import type { DomainEvent } from '@dungeon/contracts';
-import { ECONOMY, ITEM_BY_ID, ENCHANTMENT_BY_ID, getEnchantmentCost, isRarityBuyable } from '@dungeon/content';
+import { ECONOMY, ITEM_BY_ID, ENCHANTMENT_BY_ID, getEnchantmentCost, isRarityBuyable, getStudySpell } from '@dungeon/content';
 import { redeemQuest } from './quest-progress.js';
 import type { SeededRNG } from '../utils/rng.js';
 import { addItemToInventory, removeItemFromInventory } from './inventory.js';
 import { calculateEquippedStats } from './equipment.js';
 import { processTalkNpc } from './npc.js';
+import { learnRingSpell } from './magic-xp.js';
+import { syncEquipmentGrantedAbilities } from './equipment.js';
+import { evaluateRingSpellStudy, getEquippedRingItemIds } from './ring-spell-availability.js';
 
 /** Process enchanting an equipped armor piece */
 export function processEnchantArmor(
@@ -97,13 +100,59 @@ export function processEnchantArmor(
   };
 }
 
-/** Process a town action */
+function processStudySpell(
+  state: GameState,
+  spellId?: string,
+): { state: GameState; events: DomainEvent[] } {
+  if (spellId === undefined || spellId.length === 0) return { state, events: [] };
+
+  const spell = getStudySpell(spellId);
+  if (spell === undefined) return { state, events: [] };
+
+  const equippedItemIds = getEquippedRingItemIds(state.player.equipment, state.itemRegistry.items);
+  const evalResult = evaluateRingSpellStudy(state.player, equippedItemIds, spell);
+
+  if (evalResult.canStudy === false) {
+    return { state, events: [] };
+  }
+
+  const learnedPlayer = learnRingSpell(
+    { ...state.player, gold: state.player.gold - evalResult.goldCost },
+    spellId,
+  );
+  const updatedPlayer = syncEquipmentGrantedAbilities(learnedPlayer, state.itemRegistry.items);
+
+  return {
+    state: {
+      ...state,
+      player: updatedPlayer,
+    },
+    events: [{
+      type: 'GOLD_CHANGED',
+      playerId: state.player.id,
+      amount: -evalResult.goldCost,
+      newTotal: updatedPlayer.gold,
+      reason: `Studied ${spell.name}`,
+      timestamp: state.turnNumber,
+      turnNumber: state.turnNumber,
+    }, {
+      type: 'SPELL_UNLOCKED',
+      playerId: state.player.id,
+      spellId,
+      spellName: spell.name,
+      timestamp: state.turnNumber,
+      turnNumber: state.turnNumber,
+    }],
+  };
+}
+
 export function processTownAction(
   state: GameState,
   action: TownActionType,
   targetId?: EntityId,
   itemId?: string,
   rng?: SeededRNG,
+  spellId?: string,
 ): { state: GameState; events: DomainEvent[] } {
   switch (action) {
     case 'rest':
@@ -115,13 +164,15 @@ export function processTownAction(
     case 'shop_undo':
       return processShopUndo(state);
     case 'enter_dungeon':
-      return { state, events: [] }; // Handled separately by engine
+      return { state, events: [] };
     case 'talk_npc':
       return processTalkNpc(state, targetId, rng);
     case 'enchant_armor':
-      return { state, events: [] }; // Handled by ENCHANT_ARMOR command directly
+      return { state, events: [] };
     case 'turn_in_quest':
       return processTurnInQuest(state, targetId);
+    case 'study_spell':
+      return processStudySpell(state, spellId ?? itemId);
   }
 }
 

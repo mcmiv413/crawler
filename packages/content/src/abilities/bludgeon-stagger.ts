@@ -1,4 +1,5 @@
 import type { AbilityDefinition } from './types.js';
+import { animationRefs } from '../animation-refs/index.js';
 
 export const bludgeonStagger: AbilityDefinition = {
   id: 'bludgeon_stagger',
@@ -8,5 +9,5 @@ export const bludgeonStagger: AbilityDefinition = {
   requiresTarget: true,
   unlockLevel: 0,
   requiresWeaponTypes: ['bludgeon'],
-  animation: { id: 'fx.impact.stagger-shockwave' },
+  animation: { id: animationRefs.impact.staggerShockwave.id },
 };

@@ -1,4 +1,5 @@
 import type { AbilityDefinition } from './types.js';
+import { animationRefs } from '../animation-refs/index.js';
 
 export const powerStrike: AbilityDefinition = {
   id: 'power_strike',
@@ -8,5 +9,5 @@ export const powerStrike: AbilityDefinition = {
   requiresTarget: true,
   unlockLevel: 2,
   requiresWeaponTypes: ['blade', 'bludgeon', 'axe'],
-  animation: { id: 'fx.impact.radial-impact-burst' },
+  animation: { id: animationRefs.impact.radialImpactBurst.id },
 };

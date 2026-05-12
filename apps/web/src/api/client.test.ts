@@ -55,6 +55,9 @@ const BASE_PLAYER = {
     totalFactions: 4,
     summaryText: '0/4 factions broken. Break 4 more to reveal the Dungeon Ogre.',
   },
+  ringSchoolMasteries: [] as never[],
+  learnedSpells: [] as never[],
+  studyableSpells: [] as never[],
 };
 
 class GameViewBuilder {

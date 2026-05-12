@@ -25,6 +25,10 @@ function createTestGameState(playerPos = { x: 5, y: 5 }): GameState {
       totalDeaths: 0,
       totalRuns: 0,
       deathStash: null,
+      mana: 20,
+      maxMana: 20,
+      ringMastery: {},
+      learnedRingSpellIds: [],
     },
     run: {
       runId: entityId('run1'),

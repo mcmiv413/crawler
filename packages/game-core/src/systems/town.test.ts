@@ -3,6 +3,59 @@ import { processTownAction, processEnchantArmor } from './town.js';
 import { createTestGameState } from '../test-utils.js';
 import { entityId } from '@dungeon/contracts';
 import type { NpcState, ArmorTemplate } from '@dungeon/contracts';
+
+const FIRE_RING_SPELL_ID = 'heat_surge';
+const FIRE_RING_ENCHANTMENT_ID = 'fire_ring_ember';
+
+const fireRingTemplate: ArmorTemplate = {
+  itemId: 'fire_ring',
+  name: 'Fire Ring',
+  description: 'A ring bound to ember magic.',
+  itemClass: 'armor',
+  rarity: 'rare',
+  value: 100,
+  stackable: false,
+  maxStack: 1,
+  armor: {
+    defense: 0,
+    evasionPenalty: 0,
+    slot: 'ring',
+    enchantmentSlots: 1,
+    enchantments: [FIRE_RING_ENCHANTMENT_ID],
+  },
+};
+
+function makeStateWithFireRingEquipped(): ReturnType<typeof createTestGameState> {
+  const ringId = entityId('fire_ring_instance');
+  const base = createTestGameState({
+    player: {
+      gold: 500,
+      equipment: {
+        weapon: null,
+        secondaryWeapon: null,
+        chest: null,
+        head: null,
+        gloves: null,
+        boots: null,
+        ring1: ringId,
+        ring2: null,
+      },
+      ringMastery: {
+        fire: {
+          xp: 100,
+        },
+      },
+    },
+  });
+
+  return {
+    ...base,
+    itemRegistry: {
+      items: new Map([[ringId, fireRingTemplate]]),
+    },
+  };
+}
+
 const shopkeeper: NpcState = {
   id: entityId('npc_shopkeeper'),
   name: 'Torben',
@@ -207,6 +260,76 @@ describe('processTownAction shop_buy', () => {
     const { state: newState } = processTownAction(stateWithUncommonFound, 'shop_buy', undefined, 'stone_hammer');
     expect(newState.player.gold).toBeLessThan(initialGold);
     expect(newState.player.inventory.length).toBeGreaterThan(0);
+  });
+});
+
+describe('processTownAction study_spell', () => {
+  it('unlocks an Elder spell, deducts gold, emits events, and grants it from the equipped Fire Ring', () => {
+    const state = makeStateWithFireRingEquipped();
+    const initialGold = state.player.gold;
+
+    const { state: studied, events } = processTownAction(
+      state,
+      'study_spell',
+      undefined,
+      undefined,
+      undefined,
+      FIRE_RING_SPELL_ID,
+    );
+
+    expect(studied.player.gold).toBeLessThan(initialGold);
+    expect(studied.player.learnedRingSpellIds).toContain(FIRE_RING_SPELL_ID);
+    expect(studied.player.abilities.map(ability => ability.id)).toContain(FIRE_RING_SPELL_ID);
+    expect(events.some(event => event.type === 'GOLD_CHANGED')).toBe(true);
+    expect(events.some(event => event.type === 'SPELL_UNLOCKED' && event.spellId === FIRE_RING_SPELL_ID)).toBe(true);
+  });
+
+  it('rejects Elder study when the required Fire Ring is not equipped', () => {
+    const state = createTestGameState({
+      player: {
+        gold: 500,
+        ringMastery: {
+          fire: {
+            xp: 100,
+          },
+        },
+      },
+    });
+
+    const result = processTownAction(
+      state,
+      'study_spell',
+      undefined,
+      undefined,
+      undefined,
+      FIRE_RING_SPELL_ID,
+    );
+
+    expect(result.state).toBe(state);
+    expect(result.events).toHaveLength(0);
+  });
+
+  it('rejects Elder study when the spell is already unlocked', () => {
+    const baseState = makeStateWithFireRingEquipped();
+    const state = {
+      ...baseState,
+      player: {
+        ...baseState.player,
+        learnedRingSpellIds: [FIRE_RING_SPELL_ID],
+      },
+    };
+
+    const result = processTownAction(
+      state,
+      'study_spell',
+      undefined,
+      undefined,
+      undefined,
+      FIRE_RING_SPELL_ID,
+    );
+
+    expect(result.state).toBe(state);
+    expect(result.events).toHaveLength(0);
   });
 });
 

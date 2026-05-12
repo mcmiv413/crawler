@@ -7,6 +7,7 @@ import { chainShirt } from './chain-shirt.js';
 import { copperRing } from './copper-ring.js';
 import { emberCloak } from './ember-cloak.js';
 import { emberRing } from './ember-ring.js';
+import { fireRing } from './fire-ring.js';
 import { fireWardCloak } from './fire-ward-cloak.js';
 import { gripGauntlets } from './grip-gauntlets.js';
 import { ironBand } from './iron-band.js';
@@ -39,6 +40,7 @@ export const ARMOR: readonly ArmorTemplate[] = [
   copperRing,
   emberCloak,
   emberRing,
+  fireRing,
   fireWardCloak,
   gripGauntlets,
   ironBand,
@@ -65,7 +67,7 @@ export const ARMOR: readonly ArmorTemplate[] = [
 ];
 
 export {
-  blessedRing, boneGuardPlate, chainGauntlets, chainShirt, copperRing, emberCloak, emberRing, fireWardCloak, gripGauntlets, ironBand, ironCrown, ironHelm, leatherBoots, leatherCap, leatherGloves, leatherVest, leechWraps, mindVeil, phaseSteps, plagueMantle, plateArmor, regenVest, shadowRing, shadowVest, silverBand, spikedLeather, steelSabatons, swiftBoots, venomRing, wardenHelm,
+  blessedRing, boneGuardPlate, chainGauntlets, chainShirt, copperRing, emberCloak, emberRing, fireRing, fireWardCloak, gripGauntlets, ironBand, ironCrown, ironHelm, leatherBoots, leatherCap, leatherGloves, leatherVest, leechWraps, mindVeil, phaseSteps, plagueMantle, plateArmor, regenVest, shadowRing, shadowVest, silverBand, spikedLeather, steelSabatons, swiftBoots, venomRing, wardenHelm,
 };
 
 // Add custom utilities below this line ↓

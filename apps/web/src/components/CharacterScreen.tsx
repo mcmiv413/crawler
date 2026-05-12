@@ -1,6 +1,5 @@
 import React, { useState } from 'react';
-import type { PlayerHudView, QuestView, FactionView } from '@dungeon/presenter';
-import { ABILITY_DEFINITIONS, MASTERY_THRESHOLDS } from '@dungeon/content';
+import type { AbilityView, MasteryTierInfo, PlayerHudView, QuestView, FactionView } from '@dungeon/presenter';
 import { ClickableStatGrid } from './ClickableStatGrid.js';
 import { MasteryDetailModal } from './MasteryDetailModal.js';
 import { QuestDetailModal } from './QuestDetailModal.js';
@@ -78,30 +77,18 @@ function StatusSection({ player }: { player: PlayerHudView }) {
 }
 
 function AbilityDetailPanel({
-  abilityId,
-  ready,
-  cooldownRemaining,
-  player,
+  ability,
   onClose,
 }: {
-  abilityId: string;
-  ready: boolean;
-  cooldownRemaining: number;
-  player: PlayerHudView;
+  ability: AbilityView;
   onClose: () => void;
 }) {
-  const def = ABILITY_DEFINITIONS.get(abilityId);
-  if (!def) return null;
-
-  // Check weapon requirement status
-  const hasWeaponRequirement = def.requiresWeaponTypes && def.requiresWeaponTypes.length > 0;
-  // Note: Full weapon type validation requires registry lookups; for now, flag as unmet if required
-  const weaponRequirementMet = !hasWeaponRequirement;
+  const weaponRequirement = ability.weaponRequirement;
 
   return (
     <div style={{ marginBottom: 12, padding: 8, background: '#1a2a3a', border: '1px solid #2a4a6a' }}>
       <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 8 }}>
-        <div style={{ fontSize: 13, fontWeight: 'bold', color: '#6af' }}>{def.name}</div>
+        <div style={{ fontSize: 13, fontWeight: 'bold', color: '#6af' }}>{ability.name}</div>
         <button
           onClick={onClose}
           style={{
@@ -118,41 +105,41 @@ function AbilityDetailPanel({
       </div>
 
       <div style={{ fontSize: 11, color: '#aaa', marginBottom: 6, lineHeight: 1.4 }}>
-        {def.description}
+        {ability.description}
       </div>
 
       <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 4, fontSize: 11, marginBottom: 6 }}>
         <div>
           <div style={{ color: '#888', marginBottom: 2 }}>Cooldown</div>
-          <div style={{ color: '#ff8' }}>{def.cooldown} turns</div>
+          <div style={{ color: '#ff8' }}>{ability.cooldown ?? 0} turns</div>
         </div>
 
         <div>
           <div style={{ color: '#888', marginBottom: 2 }}>Target</div>
           <div style={{ color: '#4af' }}>
-            {def.requiresTarget ? 'Nearest enemy in range' : 'Self'}
+            {ability.requiresTarget ? 'Nearest enemy in range' : 'Self'}
           </div>
         </div>
 
-        {hasWeaponRequirement && (
+        {weaponRequirement && (
           <div>
             <div style={{ color: '#888', marginBottom: 2 }}>Weapon</div>
-            <div style={{ color: weaponRequirementMet ? '#4f4' : '#f88', textTransform: 'capitalize' }}>
-              {weaponRequirementMet ? '✓' : '✗'} {def.requiresWeaponTypes!.join(', ')}
+            <div style={{ color: weaponRequirement.met ? '#4f4' : '#f88', textTransform: 'capitalize' }}>
+              {weaponRequirement.met ? '✓' : '✗'} {weaponRequirement.label}
             </div>
           </div>
         )}
 
-        {def.unlockLevel > 0 && (
+        {(ability.unlockLevel ?? 0) > 0 && (
           <div>
             <div style={{ color: '#888', marginBottom: 2 }}>Unlock</div>
-            <div style={{ color: '#8af' }}>Level {def.unlockLevel}</div>
+            <div style={{ color: '#8af' }}>Level {ability.unlockLevel}</div>
           </div>
         )}
       </div>
 
-      <div style={{ fontSize: 11, color: ready ? '#4f4' : '#f88' }}>
-        {ready ? '✓ Ready' : `⏱ Cooldown: ${cooldownRemaining} turn${cooldownRemaining === 1 ? '' : 's'}`}
+      <div style={{ fontSize: 11, color: ability.ready ? '#4f4' : '#f88' }}>
+        {ability.ready ? '✓ Ready' : `⏱ Cooldown: ${ability.cooldownRemaining} turn${ability.cooldownRemaining === 1 ? '' : 's'}`}
       </div>
     </div>
   );
@@ -196,10 +183,7 @@ function AbilitiesSection({
 
       {selectedAbility && (
         <AbilityDetailPanel
-          abilityId={selectedAbility.id}
-          ready={selectedAbility.ready}
-          cooldownRemaining={selectedAbility.cooldownRemaining}
-          player={player}
+          ability={selectedAbility}
           onClose={() => onSelectAbility(null)}
         />
       )}
@@ -311,10 +295,11 @@ export function CharacterScreen({ player, activeQuests, sendCommand }: Character
   const hasQuests = quests.length > 0;
   const hasFactions = player.factionProgress.length > 0;
   const hasEnchantments = player.equippedItems.some(item => item.enchantments.length > 0);
-  const hasMasteries = player.weaponMastery && Object.keys(player.weaponMastery).length > 0;
-  const selectedMasteryProgress =
-    showMasteryModal && showMasteryModal !== 'list' && player.weaponMastery
-      ? player.weaponMastery[showMasteryModal as keyof typeof player.weaponMastery]
+  const masteryTiers = player.weaponMasteryTiers ?? [];
+  const hasMasteries = masteryTiers.length > 0;
+  const selectedMasteryInfo =
+    showMasteryModal && showMasteryModal !== 'list'
+      ? masteryTiers.find(info => info.weaponType === showMasteryModal)
       : undefined;
 
   return (
@@ -423,6 +408,30 @@ export function CharacterScreen({ player, activeQuests, sendCommand }: Character
             )}
           </div>
 
+          {/* Ring Magic */}
+          {player.ringSchoolMasteries && player.ringSchoolMasteries.length > 0 && (
+            <section style={{ marginBottom: 12 }}>
+              <div style={{ fontSize: 11, color: '#888', marginBottom: 4 }}>RING MAGIC</div>
+              {player.ringSchoolMasteries.map(m => (
+                <div key={m.school} style={{ fontSize: 12, color: '#cc8', marginBottom: 2 }}>
+                  {m.school} — Lv {m.level} ({m.xp} XP{m.nextLevelXp != null ? ` / ${m.nextLevelXp}` : ''})
+                </div>
+              ))}
+            </section>
+          )}
+          {player.learnedSpells && player.learnedSpells.length > 0 && (
+            <section style={{ marginBottom: 12 }}>
+              <div style={{ fontSize: 11, color: '#888', marginBottom: 4 }}>LEARNED SPELLS</div>
+              {player.learnedSpells.map(spell => (
+                <div key={spell.spellId} style={{ fontSize: 12, color: '#8cf', marginBottom: 2 }}>
+                  {spell.name}
+                  {spell.manaCost > 0 && <span style={{ color: '#66f', marginLeft: 4 }}>{spell.manaCost}MP</span>}
+                  {spell.cooldown > 0 && <span style={{ color: '#888', marginLeft: 4 }}>cd:{spell.cooldown}</span>}
+                </div>
+              ))}
+            </section>
+          )}
+
           {/* Resistances */}
           <ResistancesSection player={player} />
 
@@ -451,29 +460,21 @@ export function CharacterScreen({ player, activeQuests, sendCommand }: Character
       {showEnchantsModal && hasEnchantments && (
         <EnchantmentDetailModal player={player} onClose={() => setShowEnchantsModal(false)} />
       )}
-      {showMasteryModal === 'list' && player.weaponMastery && (
+      {showMasteryModal === 'list' && hasMasteries && (
         <MasteryListModal
           player={player}
           onSelectWeapon={(type) => setShowMasteryModal(type)}
           onClose={() => setShowMasteryModal(null)}
         />
       )}
-      {showMasteryModal && showMasteryModal !== 'list' && typeof selectedMasteryProgress === 'number' && (
+      {showMasteryModal && showMasteryModal !== 'list' && selectedMasteryInfo !== undefined && (
         <MasteryDetailModal
-          weaponType={showMasteryModal}
-          progress={selectedMasteryProgress}
-          tier={calculateMasteryTier(selectedMasteryProgress)}
+          mastery={selectedMasteryInfo}
           onClose={() => setShowMasteryModal(null)}
         />
       )}
     </div>
   );
-}
-
-function calculateMasteryTier(uses: number): number {
-  if (uses < MASTERY_THRESHOLDS[1]) return 0;
-  if (uses < MASTERY_THRESHOLDS[2]) return 1;
-  return 2;
 }
 
 function MasteryListModal({
@@ -485,7 +486,8 @@ function MasteryListModal({
   onSelectWeapon: (type: string) => void;
   onClose: () => void;
 }) {
-  if (!player.weaponMastery || Object.keys(player.weaponMastery).length === 0) return null;
+  const masteryTiers = player.weaponMasteryTiers ?? [];
+  if (masteryTiers.length === 0) return null;
 
   return (
     <div
@@ -517,16 +519,15 @@ function MasteryListModal({
       >
         <div style={{ fontSize: 16, fontWeight: 'bold', color: '#f0a', marginBottom: 12 }}>WEAPON MASTERIES</div>
         <div style={{ display: 'flex', flexDirection: 'column', gap: '8px', marginBottom: 16 }}>
-          {Object.entries(player.weaponMastery).map(([type, progress]) => {
-            const tier = calculateMasteryTier(progress);
+          {masteryTiers.map((mastery: MasteryTierInfo) => {
             return (
               <button
-                key={type}
-                onClick={() => onSelectWeapon(type)}
+                key={mastery.weaponType}
+                onClick={() => onSelectWeapon(mastery.weaponType)}
                 style={{
                   padding: '8px 12px',
                   background: '#1a3a2a',
-                  color: tier > 0 ? '#4f4' : '#888',
+                  color: mastery.tier > 0 ? '#4f4' : '#888',
                   border: '1px solid #2a6a3a',
                   fontSize: 11,
                   cursor: 'pointer',
@@ -534,9 +535,9 @@ function MasteryListModal({
                   textTransform: 'capitalize',
                 }}
               >
-                <div style={{ fontWeight: 'bold', marginBottom: 2 }}>{type}</div>
+                <div style={{ fontWeight: 'bold', marginBottom: 2 }}>{mastery.weaponType}</div>
                 <div style={{ fontSize: 10, color: '#aaa' }}>
-                  {progress}/{tier === 0 ? '10' : '25'} {tier > 0 ? `[T${tier}]` : ''}
+                  {mastery.listProgressLabel} {mastery.tier > 0 ? `[T${mastery.tier}]` : ''}
                 </div>
               </button>
             );

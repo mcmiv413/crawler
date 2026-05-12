@@ -16,6 +16,7 @@ export interface AbilityUiMetadata {
     | 'self'
     | 'single_enemy'
     | 'all_visible_enemies'
+    | 'line_from_player'
     | 'target_plus_adjacent_enemies'
     | 'trap_disarm'
     | 'trap_set';
@@ -40,6 +41,8 @@ function classifyTargetMode(
       return 'single_enemy';
     case 'all_visible_enemies':
       return 'all_visible_enemies';
+    case 'line_from_player':
+      return 'line_from_player';
     case 'target_plus_adjacent_enemies':
       return 'target_plus_adjacent_enemies';
     case 'nearest_enemy_melee':

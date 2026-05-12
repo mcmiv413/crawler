@@ -1,5 +1,7 @@
 import { readdirSync, readFileSync, writeFileSync, existsSync } from 'fs';
 import { join } from 'path';
+import { generateAnimationRefsIndex } from './generators/animation-refs.js';
+import { generateAnimationModuleRegistry } from './generators/animation-modules.js';
 
 interface ContentTypeConfig {
   /** Source directory relative to packages/content/src */
@@ -137,6 +139,25 @@ const configs: ContentTypeConfig[] = [
     indexPath: 'abilities/index.ts',
     exportName: 'ABILITY_DEFINITIONS',
     itemType: 'AbilityDefinition',
+    typeImport: 'local',
+    exportType: 'map',
+    keyField: 'id',
+  },
+  // Ring Magic System
+  {
+    sourceDir: 'ring-spells',
+    indexPath: 'ring-spells/index.ts',
+    exportName: 'RING_SPELL_BY_ID',
+    itemType: 'RingSpellDefinition',
+    typeImport: 'local',
+    exportType: 'map',
+    keyField: 'id',
+  },
+  {
+    sourceDir: 'ring-schools',
+    indexPath: 'ring-schools/index.ts',
+    exportName: 'RING_SCHOOL_BY_ID',
+    itemType: 'RingSchoolDefinition',
     typeImport: 'local',
     exportType: 'map',
     keyField: 'id',
@@ -308,6 +329,22 @@ function main() {
       const msg = err instanceof Error ? err.message : String(err);
       errors.push(`❌ Failed to generate ${config.indexPath}: ${msg}`);
     }
+  }
+
+  try {
+    generateAnimationRefsIndex();
+    generatedCount++;
+  } catch (err) {
+    const msg = err instanceof Error ? err.message : String(err);
+    errors.push(`❌ Failed to generate animation-refs/index.ts: ${msg}`);
+  }
+
+  try {
+    generateAnimationModuleRegistry();
+    generatedCount++;
+  } catch (err) {
+    const msg = err instanceof Error ? err.message : String(err);
+    errors.push(`❌ Failed to generate animations/generated/index.ts: ${msg}`);
   }
 
   console.log(`\n✨ Generated ${generatedCount} index files`);

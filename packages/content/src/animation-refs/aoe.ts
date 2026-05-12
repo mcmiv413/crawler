@@ -25,3 +25,10 @@ export const shatterBurst = {
   durationMs: 420,
   suppressActorBump: false,
 } as const satisfies AnimationRef;
+
+export const cinderWake = {
+  id: 'fx.aoe.cinder-wake',
+  category: 'aoe',
+  durationMs: 520,
+  suppressActorBump: true,
+} as const satisfies AnimationRef;

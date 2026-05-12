@@ -1,7 +1,7 @@
 import type { GameState, EntityId } from '@dungeon/contracts';
 import type { SeededRNG } from '../../utils/rng.js';
 import type { CommandResult } from './shared.js';
-import { updateRunMetrics } from './shared.js';
+import { applyActiveTurnManaRegen, updateRunMetrics } from './shared.js';
 import { useConsumable } from '../../systems/inventory.js';
 import { equipItem, unequipItem, swapWeaponSets } from '../../systems/equipment.js';
 import { processEnemyTurns } from '../turn-scheduler.js';
@@ -79,6 +79,9 @@ export function handleUseItem(
     let newState = result.state;
     let events = [...result.events];
     newState = updateRunMetrics(newState, { itemsUsed: 1, turnsElapsed: 1 });
+    const manaResult = applyActiveTurnManaRegen(newState, events);
+    newState = manaResult.state;
+    events = manaResult.events;
 
     // Enemy turns with player speed for speed-based action accumulation
     const enemyResult = processEnemyTurns(newState, rng, newState.player.stats.speed);

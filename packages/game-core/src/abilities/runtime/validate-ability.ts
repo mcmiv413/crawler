@@ -22,7 +22,19 @@ function validateSingleRequirement(
   context: AbilityContext,
   req: AbilityRequirement,
 ): { valid: boolean; reason?: string } {
-  switch (req.kind) {
+    switch (req.kind) {
+    case 'has_mana': {
+      if (context.player.mana < req.amount) {
+        return { valid: false, reason: 'Not enough mana' };
+      }
+      return { valid: true };
+    }
+    case 'has_direction': {
+      if (context.direction === undefined) {
+        return { valid: false, reason: 'Requires a direction' };
+      }
+      return { valid: true };
+    }
     case 'weapon_type': {
       const equipped = getEquippedWeaponType(context.state);
       if (equipped !== req.weaponType) {

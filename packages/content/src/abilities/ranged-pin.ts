@@ -1,4 +1,5 @@
 import type { AbilityDefinition } from './types.js';
+import { animationRefs } from '../animation-refs/index.js';
 
 export const rangedPin: AbilityDefinition = {
   id: 'ranged_pin',
@@ -8,5 +9,5 @@ export const rangedPin: AbilityDefinition = {
   requiresTarget: true,
   unlockLevel: 0,
   requiresWeaponTypes: ['ranged'],
-  animation: { id: 'fx.projectile.single-arrow' },
+  animation: { id: animationRefs.projectile.singleArrow.id },
 };

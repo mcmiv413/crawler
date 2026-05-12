@@ -279,6 +279,30 @@ describe('Stat cascades and interactions (Phase 3)', () => {
     // Should take damage from both burn and poison
     expect(tickedState.player.stats.health).toBeLessThan(healthBefore);
   });
+
+  it('panic reduces both accuracy and evasion while active', () => {
+    const player = applyStatusToPlayer(createTestPlayer(), 'panic', 2, 1, null);
+    const baseAccuracy = 80;
+    const baseEvasion = 20;
+
+    expect(getEffectiveStat(baseAccuracy, 'accuracy', player.statuses)).toBeLessThan(baseAccuracy);
+    expect(getEffectiveStat(baseEvasion, 'evasion', player.statuses)).toBeLessThan(baseEvasion);
+  });
+
+  it('arcane_charge stacks magnitude but caps repeated applications', () => {
+    const player = createTestPlayer();
+    const first = applyStatusToPlayer(player, 'arcane_charge', 2, 1, null);
+    const second = applyStatusToPlayer(first, 'arcane_charge', 2, 1, null);
+    const third = applyStatusToPlayer(second, 'arcane_charge', 2, 1, null);
+    const overCap = applyStatusToPlayer(third, 'arcane_charge', 2, 1, null);
+    const thirdMagnitude = third.statuses.find(status => status.id === 'arcane_charge')?.magnitude ?? 0;
+    const overCapMagnitude = overCap.statuses.find(status => status.id === 'arcane_charge')?.magnitude ?? 0;
+
+    expect(second.statuses.find(status => status.id === 'arcane_charge')?.magnitude ?? 0).toBeGreaterThan(
+      first.statuses.find(status => status.id === 'arcane_charge')?.magnitude ?? 0,
+    );
+    expect(overCapMagnitude).toBe(thirdMagnitude);
+  });
 });
 
 describe('Health clamping and edge cases (Phase 3)', () => {

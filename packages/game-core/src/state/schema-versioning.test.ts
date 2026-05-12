@@ -101,6 +101,23 @@ describe('Schema Versioning', () => {
 
       expect(() => deserializeState(modified)).toThrow(SchemaParseError);
     });
+
+    it('defaults magic ring player fields when same-version saves omit them', () => {
+      const serialized = serializeState(baseState);
+      const parsed = JSON.parse(serialized);
+      delete parsed.player.mana;
+      delete parsed.player.maxMana;
+      delete parsed.player.ringMastery;
+      delete parsed.player.learnedRingSpellIds;
+      const modified = JSON.stringify(parsed);
+
+      const deserialized = deserializeState(modified);
+
+      expect(deserialized.player.mana).toBeGreaterThan(0);
+      expect(deserialized.player.maxMana).toBeGreaterThan(0);
+      expect(deserialized.player.ringMastery).toEqual({});
+      expect(deserialized.player.learnedRingSpellIds).toEqual([]);
+    });
   });
 
   describe('validateSchemaVersion', () => {

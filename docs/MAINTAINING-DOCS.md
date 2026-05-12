@@ -6,13 +6,13 @@ This project uses a **3-tier progressive disclosure** system. Each tier loads di
 
 | Tier | File(s) | When loaded | What belongs here |
 |------|---------|-------------|------------------|
-| **1. CLAUDE.md** | `CLAUDE.md` | Every session | Commands, architecture skeleton, behavioral rules, pointers to guides |
+| **1. Agent entrypoints** | `AGENTS.md`, `CLAUDE.md` | Every session | Commands, architecture skeleton, behavioral rules, pointers to guides |
 | **2. Reference guides** | `docs/guides/*.md` | On-demand | How-to procedures, detailed explanations, code examples |
-| **3. Project memory** | `.claude/memory/*.md` | Session start (index) | Lightweight what/how/where pointers organized by domain and tooling |
+| **3. Project memory** | `.Codex/memory/*.md`, `.claude/memory/*.md` | Session start (index) | Lightweight what/how/where pointers organized by domain and tooling |
 
 ## When to Update What
 
-### Add to CLAUDE.md when:
+### Add to agent entrypoints when:
 - New validation commands or dev workflows
 - New behavioral guardrails (scope rules, anti-patterns that cost sessions)
 - Architecture changes (new packages, changed data flow)
@@ -32,9 +32,9 @@ This project uses a **3-tier progressive disclosure** system. Each tier loads di
 
 ## Rules
 
-1. **CLAUDE.md stays under 200 lines.** If it grows past that, move detail to a guide and replace with a pointer.
-2. **No code examples in CLAUDE.md.** Put them in guides. CLAUDE.md only has command tables and brief descriptions.
-3. **Guides are self-contained.** Each guide should be useful without reading CLAUDE.md first.
+1. **Agent entrypoints stay concise.** If they grow too large, move detail to a guide and replace with a pointer.
+2. **No code examples in agent entrypoints.** Put them in guides. Agent entrypoints only have command tables and brief descriptions.
+3. **Guides are self-contained.** Each guide should be useful without reading an agent entrypoint first.
 4. **Memories don't duplicate.** They point to docs, never repeat content from them.
 5. **Delete stale docs.** Session artifacts, one-off reports, and resolved bug docs don't belong in the repo.
 

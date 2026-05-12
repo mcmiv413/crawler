@@ -1,24 +1,12 @@
-import type { BiomeDefinition } from './stone-crypt.js';
 import type { FactionPowerBand, FactionState } from '@dungeon/contracts';
-import { stoneCrypt } from './stone-crypt.js';
-import { BIOME_DEFINITIONS } from './index.js';
-import { ENEMIES_BY_BIOME } from '../enemies/index.js';
-import { FACTION_CONFIG } from '../balance/tables.js';
+import {
+  BIOME_DEFINITIONS,
+  ENEMIES_BY_BIOME,
+  FACTION_CONFIG,
+  stoneCrypt,
+  type BiomeDefinition,
+} from '@dungeon/content';
 
-export function BIOME_BY_FLOOR(depth: number, rng?: { next(): number }): BiomeDefinition {
-  const candidates = Array.from(BIOME_DEFINITIONS.values()).filter(
-    b => depth >= b.floorRange.min && depth <= b.floorRange.max,
-  );
-  if (candidates.length === 0) return stoneCrypt;
-  const idx = rng !== undefined ? Math.floor(rng.next() * candidates.length) : 0;
-  return candidates[Math.min(idx, candidates.length - 1)]!;
-}
-
-/**
- * Select a biome for a floor, considering faction status for weighted selection.
- * Favors biomes where led/strong factions have eligible enemies, deprioritizes broken factions.
- * Falls back to stoneCrypt if no candidates at depth.
- */
 export function selectBiomeForFloor(
   depth: number,
   world: { readonly factions: readonly FactionState[] },

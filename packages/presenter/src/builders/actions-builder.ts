@@ -113,7 +113,8 @@ function buildAbilityAction(
   const definition = ABILITY_DEFINITIONS.get(ability.id);
   const requiresTarget = definition?.requiresTarget === true;
   const hasTargetInRange = !requiresTarget || hasVisibleEnemyTargetInRange(state, weaponRange.max, weaponRange.min);
-  const enabled = ability.cooldownRemaining === 0 && hasTargetInRange;
+  const hasEnoughMana = definition?.manaCost === undefined || state.player.mana >= definition.manaCost;
+  const enabled = ability.cooldownRemaining === 0 && hasTargetInRange && hasEnoughMana;
   const abilityName = definition?.name ?? ability.id;
 
   return {

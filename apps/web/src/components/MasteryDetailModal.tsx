@@ -1,15 +1,15 @@
 import React from 'react';
-import { MASTERY_THRESHOLDS } from '@dungeon/content';
+import type { MasteryTierInfo } from '@dungeon/presenter';
 import { colors, FONT_STACK } from '../styles.js';
 
 interface MasteryDetailModalProps {
-  weaponType: string;
-  progress: number;
-  tier: number;
+  mastery: MasteryTierInfo;
   onClose: () => void;
 }
 
-export function MasteryDetailModal({ weaponType, progress, tier, onClose }: MasteryDetailModalProps) {
+export function MasteryDetailModal({ mastery, onClose }: MasteryDetailModalProps) {
+  const nextTier = mastery.nextTier;
+
   return (
     <div
       style={{
@@ -31,9 +31,9 @@ export function MasteryDetailModal({ weaponType, progress, tier, onClose }: Mast
               textTransform: 'capitalize',
             }}
           >
-            {weaponType} Mastery
+            {mastery.weaponType} Mastery
           </div>
-          <div style={{ fontSize: 10, color: colors.muted }}>Tier {tier}</div>
+          <div style={{ fontSize: 10, color: colors.muted }}>Tier {mastery.tier}</div>
         </div>
         <button
           onClick={onClose}
@@ -58,40 +58,25 @@ export function MasteryDetailModal({ weaponType, progress, tier, onClose }: Mast
             Current Progress
           </div>
           <div>
-            {progress} uses at Tier {tier}
+            {mastery.uses} uses at Tier {mastery.tier}
           </div>
         </div>
 
-        {tier === 0 && (
+        {nextTier !== null && (
           <div>
             <div style={{ color: colors.gold, fontWeight: 600, marginBottom: 2, fontSize: 10 }}>
-              Next Tier (T1)
+              Next Tier (T{nextTier.tier})
             </div>
             <div>
-              Progress: {progress} / {MASTERY_THRESHOLDS[1]} uses
+              Progress: {nextTier.progress} / {nextTier.requiredUses} uses
             </div>
             <div style={{ marginTop: 2, color: colors.muted, fontSize: 10 }}>
-              Reach {MASTERY_THRESHOLDS[1]} uses to unlock Tier 1
+              Reach {nextTier.totalRequiredUses} total uses to unlock Tier {nextTier.tier}
             </div>
           </div>
         )}
 
-        {tier === 1 && (
-          <div>
-            <div style={{ color: colors.gold, fontWeight: 600, marginBottom: 2, fontSize: 10 }}>
-              Next Tier (T2)
-            </div>
-            <div>
-              Progress: {progress - MASTERY_THRESHOLDS[1]} /{' '}
-              {MASTERY_THRESHOLDS[2] - MASTERY_THRESHOLDS[1]} uses
-            </div>
-            <div style={{ marginTop: 2, color: colors.muted, fontSize: 10 }}>
-              Reach {MASTERY_THRESHOLDS[2]} total uses to unlock Tier 2
-            </div>
-          </div>
-        )}
-
-        {tier >= 2 && (
+        {nextTier === null && (
           <div style={{ color: colors.muted, fontStyle: 'italic' }}>
             Maximum mastery tier reached
           </div>
@@ -107,7 +92,7 @@ export function MasteryDetailModal({ weaponType, progress, tier, onClose }: Mast
         }}
       >
         <div style={{ fontWeight: 600, marginBottom: 2 }}>Unlocked Benefits:</div>
-        <div>• Increased damage with {weaponType}s</div>
+        <div>• Increased damage with {mastery.weaponType}s</div>
         <div>• Better ability effectiveness</div>
       </div>
     </div>

@@ -7,6 +7,7 @@ interface AbilityExecutionResult {
   targetId?: EntityId;
   targetName?: string;
   damageByTarget?: ReadonlyMap<EntityId, number>;
+  affectedTargetIds?: readonly EntityId[];
 }
 
 /**
@@ -32,6 +33,7 @@ export function buildAbilityUsedEvent(
     damage,
     healAmount: result.healAmount,
     damageByTarget: result.damageByTarget,
+    affectedTargetIds: result.affectedTargetIds,
     timestamp: context.state.turnNumber,
     turnNumber: context.state.turnNumber,
   };

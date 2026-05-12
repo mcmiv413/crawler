@@ -1,4 +1,5 @@
 import type { AbilityDefinition } from './types.js';
+import { animationRefs } from '../animation-refs/index.js';
 
 export const axeExecute: AbilityDefinition = {
   id: 'axe_execute',
@@ -8,5 +9,5 @@ export const axeExecute: AbilityDefinition = {
   requiresTarget: true,
   unlockLevel: 0,
   requiresWeaponTypes: ['axe'],
-  animation: { id: 'fx.impact.execution-strike' },
+  animation: { id: animationRefs.impact.executionStrike.id },
 };

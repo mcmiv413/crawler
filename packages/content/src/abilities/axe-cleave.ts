@@ -1,4 +1,5 @@
 import type { AbilityDefinition } from './types.js';
+import { animationRefs } from '../animation-refs/index.js';
 
 export const axeCleave: AbilityDefinition = {
   id: 'axe_cleave',
@@ -8,5 +9,5 @@ export const axeCleave: AbilityDefinition = {
   requiresTarget: true,
   unlockLevel: 0,
   requiresWeaponTypes: ['axe'],
-  animation: { id: 'fx.aoe.cleave-arc' },
+  animation: { id: animationRefs.aoe.cleaveArc.id },
 };

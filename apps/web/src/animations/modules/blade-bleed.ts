@@ -3,12 +3,13 @@
  * Red particles scatter outward as the blade cuts.
  */
 
+import { animationRefs } from '@dungeon/content';
 import type { AnimationModule, AnimationDrawContext } from '../types.js';
 
 export const bladeBleedModule: AnimationModule = {
-  id: 'fx.impact.bleeding-strike',
-  durationMs: 400,
-  category: 'impact',
+  id: animationRefs.impact.bleedingStrike.id,
+  durationMs: animationRefs.impact.bleedingStrike.durationMs,
+  category: animationRefs.impact.bleedingStrike.category,
 
   draw(ctx: CanvasRenderingContext2D, anim: AnimationDrawContext, helpers: any): void {
     const { x, y, progress, durationMs } = anim;

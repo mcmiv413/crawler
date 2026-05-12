@@ -3,12 +3,14 @@
  * Yellow/white explosion with particle burst effect.
  */
 
+import { animationRefs } from '@dungeon/content';
 import type { AnimationModule, AnimationDrawContext } from '../types.js';
 
 export const bludgeonShatterModule: AnimationModule = {
-  id: 'fx.aoe.shatter-burst',
-  durationMs: 350,
-  category: 'aoe',
+  id: animationRefs.aoe.shatterBurst.id,
+  durationMs: animationRefs.aoe.shatterBurst.durationMs,
+  category: animationRefs.aoe.shatterBurst.category,
+  suppressActorBump: animationRefs.aoe.shatterBurst.suppressActorBump,
 
   draw(ctx: CanvasRenderingContext2D, anim: AnimationDrawContext): void {
     const { x, y, progress } = anim;

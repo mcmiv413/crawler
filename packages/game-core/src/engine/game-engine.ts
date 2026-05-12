@@ -4,7 +4,7 @@ import type { IGameEngine, CommandResult } from '@dungeon/contracts';
 import type { DomainEvent } from '@dungeon/contracts';
 import { chebyshevDistance } from '../utils/grid.js';
 import { generateId } from '../utils/id.js';
-import { BASE_PLAYER_STATS, ECONOMY, ENEMY_TEMPLATES, MAX_EVENT_HISTORY, selectBiomeForFloor } from '@dungeon/content';
+import { BASE_PLAYER_STATS, ECONOMY, ENEMY_TEMPLATES, MAGIC, MAX_EVENT_HISTORY } from '@dungeon/content';
 import { EMPTY_RUN_METRICS, EMPTY_WEAPON_MASTERY } from '@dungeon/contracts';
 import { SeededRNG } from '../utils/rng.js';
 import { handleCommand } from './command-handler.js';
@@ -22,6 +22,7 @@ import { applyRunConsequences } from '../systems/world-consequences.js';
 import { simulatePersistedFloorTimeElapsed } from '../systems/enemy-respawn.js';
 import { completeFloorDepthQuests } from '../systems/quests.js';
 import { evaluateAllQuestProgress } from './quest-evaluator.js';
+import { selectBiomeForFloor } from '../systems/biome-selection.js';
 
 export class GameEngine implements IGameEngine {
   createNewGame(seed: number): GameState {
@@ -50,6 +51,10 @@ export class GameEngine implements IGameEngine {
         totalDeaths: 0,
         totalRuns: 0,
         deathStash: null,
+        mana: MAGIC.initialMana,
+        maxMana: MAGIC.initialMana,
+        ringMastery: {},
+        learnedRingSpellIds: [],
       },
       run: null,
       world: createInitialWorldState(rng),

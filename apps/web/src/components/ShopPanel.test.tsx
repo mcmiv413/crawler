@@ -60,6 +60,9 @@ function createView(items: readonly ShopItemView[]): GameView {
         totalFactions: 4,
         summaryText: 'No factions broken.',
       },
+      ringSchoolMasteries: [],
+      learnedSpells: [],
+      studyableSpells: [],
     },
     map: null,
     combatLog: [],
@@ -87,6 +90,7 @@ function createView(items: readonly ShopItemView[]): GameView {
       unlockedBlueprints: [],
       runSummaryStats: null,
       prepAdvice: [],
+      studyableSpells: [],
     },
     inventory: {
       items: [],

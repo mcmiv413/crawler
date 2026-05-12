@@ -45,6 +45,9 @@ function createPlayer(overrides?: Partial<PlayerHudView>): PlayerHudView {
       totalFactions: 4,
       summaryText: '1/4 factions broken. Break 3 more to reveal the Dungeon Ogre.',
     },
+    ringSchoolMasteries: [],
+    learnedSpells: [],
+    studyableSpells: [],
     ...overrides,
   };
 }
@@ -54,21 +57,22 @@ describe('PlayerHud compact layout', () => {
     vi.mocked(useBreakpoint).mockReturnValue({ isMobile: false });
   });
 
-  it('keeps compact bars stacked on desktop', () => {
+  it('keeps compact bars in 3-column layout on desktop', () => {
     render(<PlayerHud player={createPlayer()} compact />);
 
-    expect(screen.getByTestId('compact-player-hud-bars')).toHaveStyle(
-      'grid-template-columns: 1fr',
-    );
+    const bars = screen.getByTestId('compact-player-hud-bars');
+    const gridStyle = window.getComputedStyle(bars).gridTemplateColumns;
+    expect(gridStyle).toMatch(/repeat\((2|3), minmax\(0, 1fr\)\)/);
   });
 
-  it('renders HP and XP side by side on mobile compact HUD', () => {
+  it('renders HP, MP, and XP in 3-column layout on mobile compact HUD', () => {
     vi.mocked(useBreakpoint).mockReturnValue({ isMobile: true });
     render(<PlayerHud player={createPlayer()} compact />);
 
-    expect(screen.getByTestId('compact-player-hud-bars')).toHaveStyle(
-      'grid-template-columns: repeat(2, minmax(0, 1fr))',
-    );
+    const bars = screen.getByTestId('compact-player-hud-bars');
+    const gridStyle = window.getComputedStyle(bars).gridTemplateColumns;
+    // Mobile compact HUD shows 3 columns if player has mana, 2 if not
+    expect(['repeat(2, minmax(0, 1fr))', 'repeat(3, minmax(0, 1fr))']).toContain(gridStyle);
     expect(screen.getByText('42/55')).toBeInTheDocument();
     expect(screen.getByText('30/100')).toBeInTheDocument();
     expect(screen.getByTestId('compact-hp-bar-track')).toBeInTheDocument();
@@ -90,6 +94,17 @@ describe('PlayerHud compact layout', () => {
     expect(screen.getByTestId('compact-hp-bar-fill')).toHaveStyle({
       animation: 'hpPulse 1.2s ease-in-out infinite',
       width: '20%',
+    });
+  });
+
+  it('renders MP in the compact HUD when mana is present', () => {
+    vi.mocked(useBreakpoint).mockReturnValue({ isMobile: true });
+    render(<PlayerHud player={createPlayer({ mana: 12, maxMana: 20 })} compact />);
+
+    expect(screen.getByText('MP')).toBeInTheDocument();
+    expect(screen.getByText('12/20')).toBeInTheDocument();
+    expect(screen.getByTestId('compact-mp-bar-fill')).toHaveStyle({
+      width: '60%',
     });
   });
 });

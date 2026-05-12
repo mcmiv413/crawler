@@ -28,3 +28,9 @@ export const secondWindBuff = {
   category: 'self',
   durationMs: 800,
 } as const satisfies AnimationRef;
+
+export const heatSurgeAura = {
+  id: 'fx.self.heat-surge-aura',
+  category: 'self',
+  durationMs: 560,
+} as const satisfies AnimationRef;
