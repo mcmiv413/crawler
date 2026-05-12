@@ -1,5 +1,13 @@
 import { create } from 'zustand';
 import type { GameView, CombatLogEntry } from '@dungeon/presenter';
+import {
+  createGame as createGameRequest,
+  fetchGameView,
+  GameNotFoundError,
+  restoreGame,
+  sendCommand as sendCommandRequest,
+} from '../api/client.js';
+import type { CommandResponse } from '../api/client.js';
 import { saveSession, loadSession, clearSession } from './session-persistence.js';
 
 interface Position {
@@ -32,6 +40,9 @@ interface GameStore {
 
 let deathTransitionTimeout: ReturnType<typeof setTimeout> | null = null;
 
+type SetGameStore = (partial: Partial<GameStore>) => void;
+type GetGameStore = () => GameStore;
+
 const FATAL_RESTORE_CODES = new Set([
   'INCOMPATIBLE_SAVE_FILE',
   'INVALID_GAME_STATE',
@@ -52,7 +63,7 @@ function shouldClearSavedSession(error: unknown): boolean {
   }
 
   const apiError = error as Error & { readonly code?: string; readonly status?: number };
-  
+
   // 403 SESSION_FORBIDDEN is fatal — clear the saved session
   if (apiError.status === 403 && apiError.code === 'SESSION_FORBIDDEN') {
     return true;
@@ -66,23 +77,159 @@ function shouldClearSavedSession(error: unknown): boolean {
   return FATAL_RESTORE_CODES.has(apiError.code ?? '') || FATAL_RESTORE_MESSAGES.has(apiError.message);
 }
 
-export const useGameStore = create<GameStore>((set, get) => ({
-  gameId: null,
-  view: null,
-  combatLog: [],
-  loading: false,
-  error: null,
-  autoWalkPath: [],
-  autoWalkKnownEnemyIds: new Set(),
-  debugLogging: false,
-  deathTransitioning: false,
-  sessionToken: null,
+function initialStoreState(): Pick<
+  GameStore,
+  | 'gameId'
+  | 'view'
+  | 'combatLog'
+  | 'loading'
+  | 'error'
+  | 'autoWalkPath'
+  | 'autoWalkKnownEnemyIds'
+  | 'debugLogging'
+  | 'deathTransitioning'
+  | 'sessionToken'
+> {
+  return {
+    gameId: null,
+    view: null,
+    combatLog: [],
+    loading: false,
+    error: null,
+    autoWalkPath: [],
+    autoWalkKnownEnemyIds: new Set(),
+    debugLogging: false,
+    deathTransitioning: false,
+    sessionToken: null,
+  };
+}
 
-  createGame: async (seed, playerName) => {
+function appendCombatLog(current: readonly CombatLogEntry[], next: readonly CombatLogEntry[]): CombatLogEntry[] {
+  return [...current, ...next].slice(-50);
+}
+
+function isAttackCommand(command: unknown): boolean {
+  return typeof command === 'object' &&
+    command !== null &&
+    (command as Record<string, unknown>).type === 'ATTACK';
+}
+
+function logDebugAttack(debugLogging: boolean, command: unknown, view: GameView | null): void {
+  if (!debugLogging || !isAttackCommand(command)) {
+    return;
+  }
+
+  // eslint-disable-next-line no-console
+  console.log('[DEBUG] Attack Command:', {
+    playerAccuracy: view?.player.accuracy,
+    playerAttack: view?.player.attack,
+    command,
+    timestamp: new Date().toISOString(),
+  });
+}
+
+function logDebugCombatResult(debugLogging: boolean, view: GameView): void {
+  if (!debugLogging || view.combatLog.length === 0) {
+    return;
+  }
+
+  const lastEntry = view.combatLog[view.combatLog.length - 1];
+  // eslint-disable-next-line no-console
+  console.log('[DEBUG] Combat Result:', {
+    lastLogEntry: lastEntry?.text,
+    playerHealth: view.player.health,
+    timestamp: new Date().toISOString(),
+  });
+}
+
+async function sendCommandWithColdRestore(
+  gameId: string,
+  command: unknown,
+  sessionToken: string | null,
+  set: SetGameStore,
+): Promise<{ result: CommandResponse; sessionToken: string | undefined }> {
+  const currentSessionToken = sessionToken ?? undefined;
+
+  try {
+    const result = await sendCommandRequest(gameId, command, currentSessionToken);
+    return { result, sessionToken: currentSessionToken };
+  } catch (err) {
+    if (!(err instanceof GameNotFoundError)) {
+      throw err;
+    }
+  }
+
+  const saved = loadSession();
+  if (!saved) {
+    throw new Error('Game session expired. Please start a new game.');
+  }
+
+  const restored = await restoreGame(saved.serializedState, saved.sessionToken);
+  set({ sessionToken: restored.sessionToken });
+  const result = await sendCommandRequest(gameId, command, restored.sessionToken);
+  return { result, sessionToken: restored.sessionToken };
+}
+
+function isDeathTransition(currentView: GameView | null, nextView: GameView): boolean {
+  const dungeonToEndPhase =
+    currentView !== null &&
+    currentView.phase === 'dungeon' &&
+    (nextView.phase === 'town' || nextView.phase === 'game_over');
+
+  const hasDeathSignal =
+    Boolean(nextView.deathContext?.killerName) ||
+    nextView.runResult === 'permadeath';
+
+  return dungeonToEndPhase && hasDeathSignal;
+}
+
+function clearDeathTransitionTimeout(): void {
+  if (deathTransitionTimeout) {
+    clearTimeout(deathTransitionTimeout);
+  }
+  deathTransitionTimeout = null;
+}
+
+function applyCommandResult(
+  result: CommandResponse,
+  isDeath: boolean,
+  set: SetGameStore,
+  get: GetGameStore,
+): void {
+  const combatLog = appendCombatLog(get().combatLog, result.view.combatLog);
+
+  if (!isDeath) {
+    clearDeathTransitionTimeout();
+    set({
+      view: result.view,
+      combatLog,
+      loading: false,
+      deathTransitioning: false,
+    });
+    return;
+  }
+
+  clearDeathTransitionTimeout();
+  set({
+    combatLog,
+    deathTransitioning: true,
+    loading: false,
+  });
+
+  deathTransitionTimeout = setTimeout(() => {
+    set({
+      view: result.view,
+      deathTransitioning: false,
+    });
+    deathTransitionTimeout = null;
+  }, 2000);
+}
+
+function createCreateGameAction(set: SetGameStore): GameStore['createGame'] {
+  return async (seed, playerName) => {
     set({ loading: true, error: null });
     try {
-      const api = await import('../api/client.js');
-      const result = await api.createGame(seed, playerName);
+      const result = await createGameRequest(seed, playerName);
       saveSession(result.gameId, result.serializedState, result.sessionToken);
       set({
         gameId: result.gameId,
@@ -94,90 +241,23 @@ export const useGameStore = create<GameStore>((set, get) => ({
     } catch (err) {
       set({ error: (err as Error).message, loading: false });
     }
-  },
+  };
+}
 
-  sendCommand: async (command) => {
+function createSendCommandAction(set: SetGameStore, get: GetGameStore): GameStore['sendCommand'] {
+  return async (command) => {
     const { gameId, sessionToken, debugLogging } = get();
     if (!gameId) return;
 
     set({ loading: true, error: null });
     try {
-      const api = await import('../api/client.js');
-      if (debugLogging && (command as Record<string, unknown>).type === 'ATTACK') {
-        // eslint-disable-next-line no-console
-        console.log('[DEBUG] Attack Command:', {
-          playerAccuracy: get().view?.player?.accuracy,
-          playerAttack: get().view?.player?.attack,
-          command,
-          timestamp: new Date().toISOString(),
-        });
-      }
-      let result: Awaited<ReturnType<typeof api.sendCommand>>;
-      let currentSessionToken = sessionToken ?? undefined;
-      try {
-        result = await api.sendCommand(gameId, command, currentSessionToken);
-      } catch (err) {
-        if (err instanceof api.GameNotFoundError) {
-          // Server lost state (cold start) — restore and retry
-          const saved = loadSession();
-          if (saved) {
-            const restored = await api.restoreGame(saved.serializedState, saved.sessionToken);
-            currentSessionToken = restored.sessionToken;
-            set({ sessionToken: currentSessionToken });
-            result = await api.sendCommand(gameId, command, restored.sessionToken);
-          } else {
-            throw new Error('Game session expired. Please start a new game.');
-          }
-        } else {
-          throw err;
-        }
-      }
+      logDebugAttack(debugLogging, command, get().view);
+      const { result, sessionToken: currentSessionToken } =
+        await sendCommandWithColdRestore(gameId, command, sessionToken, set);
       saveSession(gameId, result.serializedState, currentSessionToken);
-      if (debugLogging && result.view.combatLog.length > 0) {
-        const lastEntry = result.view.combatLog[result.view.combatLog.length - 1];
-        // eslint-disable-next-line no-console
-        console.log('[DEBUG] Combat Result:', {
-          lastLogEntry: lastEntry?.text,
-          playerHealth: result.view.player.health,
-          timestamp: new Date().toISOString(),
-        });
-      }
+      logDebugCombatResult(debugLogging, result.view);
       const currentView = get().view;
-      const viewWithOptionalFields = result.view as Partial<typeof result.view>;
-      const dungeonToEndPhase =
-        currentView?.phase === 'dungeon' &&
-        (result.view.phase === 'town' || result.view.phase === 'game_over');
-      const hasDeathSignal =
-        !!viewWithOptionalFields.deathContext?.killerName ||
-        viewWithOptionalFields.runResult === 'permadeath';
-      const isDeath = dungeonToEndPhase && hasDeathSignal;
-
-      if (isDeath) {
-        if (deathTransitionTimeout) clearTimeout(deathTransitionTimeout);
-
-        set({
-          combatLog: [...get().combatLog, ...result.view.combatLog].slice(-50),
-          deathTransitioning: true,
-          loading: false,
-        });
-
-        deathTransitionTimeout = setTimeout(() => {
-          set({
-            view: result.view,
-            deathTransitioning: false,
-          });
-          deathTransitionTimeout = null;
-        }, 2000);
-      } else {
-        if (deathTransitionTimeout) clearTimeout(deathTransitionTimeout);
-        deathTransitionTimeout = null;
-        set({
-          view: result.view,
-          combatLog: [...get().combatLog, ...result.view.combatLog].slice(-50),
-          loading: false,
-          deathTransitioning: false,
-        });
-      }
+      applyCommandResult(result, isDeathTransition(currentView, result.view), set, get);
     } catch (err) {
       if (shouldClearSavedSession(err)) {
         clearSession();
@@ -185,15 +265,16 @@ export const useGameStore = create<GameStore>((set, get) => ({
       }
       set({ error: (err as Error).message, loading: false });
     }
-  },
+  };
+}
 
-  refreshView: async () => {
+function createRefreshViewAction(set: SetGameStore, get: GetGameStore): GameStore['refreshView'] {
+  return async () => {
     const { gameId, sessionToken } = get();
     if (!gameId) return;
 
     try {
-      const api = await import('../api/client.js');
-      const view = await api.fetchGameView(gameId, sessionToken ?? undefined);
+      const view = await fetchGameView(gameId, sessionToken ?? undefined);
       set({ view });
     } catch (err) {
       if (shouldClearSavedSession(err)) {
@@ -202,26 +283,25 @@ export const useGameStore = create<GameStore>((set, get) => ({
       }
       set({ error: (err as Error).message });
     }
-  },
+  };
+}
 
-  clearError: () => set({ error: null }),
-
-  restoreSession: async () => {
+function createRestoreSessionAction(set: SetGameStore): GameStore['restoreSession'] {
+  return async () => {
     const saved = loadSession();
     if (!saved) return false;
 
     set({ loading: true, error: null });
     try {
-      const api = await import('../api/client.js');
       // Try fetching view directly (server may still have it warm)
       try {
-        const view = await api.fetchGameView(saved.gameId, saved.sessionToken);
+        const view = await fetchGameView(saved.gameId, saved.sessionToken);
         set({ gameId: saved.gameId, view, combatLog: [], loading: false, sessionToken: saved.sessionToken ?? null });
         return true;
       } catch {
         // Server lost it (cold start) — restore from client state
       }
-      const result = await api.restoreGame(saved.serializedState, saved.sessionToken);
+      const result = await restoreGame(saved.serializedState, saved.sessionToken);
       saveSession(result.gameId, result.serializedState, result.sessionToken);
       set({ gameId: result.gameId, view: result.view, combatLog: [], loading: false, sessionToken: result.sessionToken });
       return true;
@@ -232,16 +312,19 @@ export const useGameStore = create<GameStore>((set, get) => ({
       set({ error: (err as Error).message, loading: false, sessionToken: null });
       return false;
     }
-  },
+  };
+}
 
-  resetGame: () => {
-    if (deathTransitionTimeout) clearTimeout(deathTransitionTimeout);
-    deathTransitionTimeout = null;
+function createResetGameAction(set: SetGameStore): GameStore['resetGame'] {
+  return () => {
+    clearDeathTransitionTimeout();
     clearSession();
     set({ gameId: null, view: null, combatLog: [], error: null, autoWalkPath: [], autoWalkKnownEnemyIds: new Set(), deathTransitioning: false, sessionToken: null });
-  },
+  };
+}
 
-  startAutoWalk: (path) => {
+function createStartAutoWalkAction(set: SetGameStore, get: GetGameStore): GameStore['startAutoWalk'] {
+  return (path) => {
     const view = get().view;
     const knownEnemyIds = new Set<string>();
     if (view?.map) {
@@ -250,11 +333,24 @@ export const useGameStore = create<GameStore>((set, get) => ({
       }
     }
     set({ autoWalkPath: path, autoWalkKnownEnemyIds: knownEnemyIds });
-  },
+  };
+}
 
-  cancelAutoWalk: () => set({ autoWalkPath: [], autoWalkKnownEnemyIds: new Set() }),
+function createGameStore(set: SetGameStore, get: GetGameStore): GameStore {
+  return {
+    ...initialStoreState(),
+    createGame: createCreateGameAction(set),
+    sendCommand: createSendCommandAction(set, get),
+    refreshView: createRefreshViewAction(set, get),
+    restoreSession: createRestoreSessionAction(set),
+    resetGame: createResetGameAction(set),
+    clearError: () => set({ error: null }),
+    startAutoWalk: createStartAutoWalkAction(set, get),
+    cancelAutoWalk: () => set({ autoWalkPath: [], autoWalkKnownEnemyIds: new Set() }),
+    toggleDebugLogging: async () => {
+      await get().sendCommand({ type: 'TOGGLE_DEBUG' });
+    },
+  };
+}
 
-  toggleDebugLogging: async () => {
-    await get().sendCommand({ type: 'TOGGLE_DEBUG' });
-  },
-}));
+export const useGameStore = create<GameStore>((set, get) => createGameStore(set, get));

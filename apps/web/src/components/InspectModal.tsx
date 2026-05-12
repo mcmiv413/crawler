@@ -204,8 +204,8 @@ export function InspectModal({
                     <div className={styles.statusesSection}>
                       <div className={styles.sectionLabel}>Status Effects</div>
                       <div className={styles.statusesList}>
-                        {selectedEntity.statuses.map((status, idx) => (
-                          <div key={`${status}-${idx}`} className={styles.statusItem}>
+                        {selectedEntity.statuses.map((status) => (
+                          <div key={status} className={styles.statusItem}>
                             {status}
                           </div>
                         ))}

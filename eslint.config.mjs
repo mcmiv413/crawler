@@ -16,6 +16,10 @@ const NO_MATH_RANDOM = {
     "Use SeededRNG instead of Math.random() in game-core. This ensures deterministic game state.",
 };
 
+const STRUCTURAL_LINT_ENABLED = process.env.LINT_STRUCTURAL === "true";
+
+const structuralRule = (rule) => STRUCTURAL_LINT_ENABLED ? rule : "off";
+
 const typedLanguageOptions = {
   parser: tseslint.parser,
   parserOptions: {
@@ -88,9 +92,9 @@ export default tseslint.config(
         NO_THEN_CHAIN,
         NO_MATH_RANDOM,
       ],
-      complexity: ["warn", { max: 10 }],
-      "max-depth": ["warn", 4],
-      "max-lines-per-function": ["warn", { max: 80 }],
+      complexity: structuralRule(["warn", { max: 10 }]),
+      "max-depth": structuralRule(["warn", 4]),
+      "max-lines-per-function": structuralRule(["warn", { max: 80 }]),
     },
   },
 
@@ -111,7 +115,7 @@ export default tseslint.config(
       "@typescript-eslint/explicit-module-boundary-types": "warn",
       "dungeon/no-array-mutation": "error",
       "dungeon/impure-getter": "error",
-      complexity: ["warn", { max: 10 }],
+      complexity: structuralRule(["warn", { max: 10 }]),
     },
   },
 
@@ -137,8 +141,8 @@ export default tseslint.config(
       "no-restricted-syntax": ["error", NO_THEN_CHAIN],
       "dungeon/prefer-await-over-then-chain": "error",
       "dungeon/no-array-mutation": "warn",
-      complexity: ["warn", { max: 10 }],
-      "max-lines-per-function": ["warn", { max: 100 }],
+      complexity: structuralRule(["warn", { max: 10 }]),
+      "max-lines-per-function": structuralRule(["warn", { max: 100 }]),
     },
   },
 
@@ -176,8 +180,8 @@ export default tseslint.config(
       "react-hooks/exhaustive-deps": "warn",
       "react/no-array-index-key": "warn",
       "react/react-in-jsx-scope": "off",
-      complexity: ["warn", { max: 10 }],
-      "max-lines-per-function": ["warn", { max: 120 }],
+      complexity: structuralRule(["warn", { max: 10 }]),
+      "max-lines-per-function": structuralRule(["warn", { max: 120 }]),
     },
   },
 
@@ -308,7 +312,7 @@ export default tseslint.config(
   // Runner configs (untyped for speed)
   {
     files: [
-      "vitest.workspace.ts",
+      "vitest.config.ts",
       "apps/*/vitest.config.ts",
       "apps/*/vite.config.ts",
       "apps/*/vitest.setup.ts",

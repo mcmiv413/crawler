@@ -222,7 +222,7 @@ export function PlayerHud({ player, compact = false }: PlayerHudProps) {
         </div>
 
         {/* Status effects */}
-        {player.statuses && player.statuses.length > 0 && (
+        {player.statuses.length > 0 && (
           <div style={{ display: 'flex', flexWrap: 'wrap', gap: 3, marginTop: useDenseCompactBars ? 5 : 4 }}>
             {player.statuses.map(s => (
               <span
@@ -307,19 +307,15 @@ export function PlayerHud({ player, compact = false }: PlayerHudProps) {
       <div style={{ fontSize: 11, color: colors.muted, marginTop: 5, display: 'flex', gap: 8, flexWrap: 'wrap' }}>
         <span>ATK <span style={{ color: colors.gold }}>{player.statBreakdowns.attack?.base ?? player.attack}</span></span>
         <span>DEF <span style={{ color: colors.steel }}>{player.statBreakdowns.defense?.base ?? player.defense}</span></span>
-        {player.accuracy !== undefined && (
-          <span>ACC <span style={{ color: colors.teal }}>{player.accuracy}%</span></span>
-        )}
-        {player.evasion !== undefined && (
-          <span>EVA <span style={{ color: colors.teal }}>{player.evasion}%</span></span>
-        )}
+        <span>ACC <span style={{ color: colors.teal }}>{player.accuracy}%</span></span>
+        <span>EVA <span style={{ color: colors.teal }}>{player.evasion}%</span></span>
         {player.biomeId && (
           <span style={{ color: player.biomeColor }}>{biomeName}</span>
         )}
       </div>
 
       {/* Statuses */}
-      {player.statuses && player.statuses.length > 0 && (
+      {player.statuses.length > 0 && (
         <div style={{ display: 'flex', flexWrap: 'wrap', gap: 3, marginTop: 5 }}>
           {player.statuses.map(s => (
             <span
@@ -339,7 +335,7 @@ export function PlayerHud({ player, compact = false }: PlayerHudProps) {
       )}
 
       {/* Abilities */}
-      {player.abilities && player.abilities.length > 0 && (
+      {player.abilities.length > 0 && (
         <div style={{ display: 'flex', flexWrap: 'wrap', gap: 3, marginTop: 5 }}>
           {player.abilities.map(a => (
             <span

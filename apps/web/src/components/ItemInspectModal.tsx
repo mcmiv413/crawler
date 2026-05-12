@@ -25,7 +25,14 @@ export function ItemInspectModal({
 }: ItemInspectModalProps) {
   const isInventoryItem = 'id' in item;
   const isEquipped = isInventoryItem && equippedInSlot?.id === item.id;
-  const showComparison = isInventoryItem && equippedInSlot && !isEquipped;
+  const comparisonItem = isInventoryItem ? item : null;
+  const comparisonEquippedItem =
+    comparisonItem !== null &&
+    equippedInSlot !== null &&
+    equippedInSlot !== undefined &&
+    equippedInSlot.id !== comparisonItem.id
+      ? equippedInSlot
+      : null;
 
   return (
     <ModalBackdrop onClose={onClose} zIndex={Z_INSPECT}>
@@ -92,7 +99,7 @@ export function ItemInspectModal({
                 <div>
                   Damage: {(() => {
                     const ws = (item as InventoryItemView).weaponStats!;
-                    const dmg = ws.damageMin != null ? `${ws.damageMin}–${ws.damageMax}` : `${ws.damage}`;
+                    const dmg = `${ws.damageMin}–${ws.damageMax}`;
                     return `${dmg} ${ws.damageType}`;
                   })()} 
                 </div>
@@ -123,8 +130,7 @@ export function ItemInspectModal({
                   <div>Evasion Penalty: {(item as InventoryItemView).armorStats!.evasionPenalty}</div>
                 )}
 	                <div>Enchantment Slots: {(item as InventoryItemView).armorStats!.enchantmentSlots}</div>
-	                {(item as InventoryItemView).armorStats!.enchantments &&
-	                  (item as InventoryItemView).armorStats!.enchantments.length > 0 && (
+		                {(item as InventoryItemView).armorStats!.enchantments.length > 0 && (
 	                    <div style={{ marginTop: 8 }}>
 	                      Enchantments:
 	                      {(item as InventoryItemView).armorStats!.enchantments.map((enchId, idx) => {
@@ -132,7 +138,12 @@ export function ItemInspectModal({
 	                        const enchName = enchantmentDetail?.enchantmentName ?? enchId ?? '[empty]';
 	                        const enchDesc = enchantmentDetail?.enchantmentDescription ?? null;
 	                        return (
-                          <div key={idx} style={{ marginLeft: 12, fontSize: 10, marginBottom: 4 }}>
+	                          <div
+	                            key={enchantmentDetail !== undefined
+	                              ? `${enchantmentDetail.index}-${enchantmentDetail.enchantmentId ?? 'empty'}`
+	                              : enchId ?? 'empty-slot'}
+	                            style={{ marginLeft: 12, fontSize: 10, marginBottom: 4 }}
+	                          >
                             <span style={{ color: enchId ? colors.teal : colors.muted }}>
                               Slot {idx + 1}: {enchName}
                             </span>
@@ -161,7 +172,7 @@ export function ItemInspectModal({
             </InfoCard>
           )}
 
-          {showComparison && equippedInSlot && isInventoryItem && (
+          {comparisonItem !== null && comparisonEquippedItem !== null && (
             <div style={{ marginBottom: 12 }}>
               <SectionLabel label="Comparison" color={colors.gold} />
               <div style={{ display: 'flex', gap: 12 }}>
@@ -171,32 +182,32 @@ export function ItemInspectModal({
                   </div>
                   {(item as InventoryItemView).weaponStats && (
                     <div style={{ fontSize: 10, color: colors.text, lineHeight: 1.4 }}>
-                      <div>DMG: {(item as InventoryItemView).weaponStats!.damage}</div>
-                      <div>ACC: {(item as InventoryItemView).weaponStats!.accuracy}</div>
-                      <div>SPD: {(item as InventoryItemView).weaponStats!.speed}</div>
+                      <div>DMG: {comparisonItem.weaponStats!.damage}</div>
+                      <div>ACC: {comparisonItem.weaponStats!.accuracy}</div>
+                      <div>SPD: {comparisonItem.weaponStats!.speed}</div>
                     </div>
                   )}
                   {(item as InventoryItemView).armorStats && (
                     <div style={{ fontSize: 10, color: colors.text, lineHeight: 1.4 }}>
-                      <div>DEF: {(item as InventoryItemView).armorStats!.defense}</div>
+                      <div>DEF: {comparisonItem.armorStats!.defense}</div>
                     </div>
                   )}
                 </InfoCard>
 
                 <InfoCard style={{ flex: 1 }}>
                   <div style={{ fontSize: 11, color: colors.lime, fontWeight: 600, marginBottom: 8 }}>
-                    {equippedInSlot.name} (equipped)
+                    {comparisonEquippedItem.name} (equipped)
                   </div>
-                  {equippedInSlot.weaponStats && (
+                  {comparisonEquippedItem.weaponStats && (
                     <div style={{ fontSize: 10, color: colors.lime, lineHeight: 1.4 }}>
-                      <div>DMG: {equippedInSlot.weaponStats.damage}</div>
-                      <div>ACC: {equippedInSlot.weaponStats.accuracy}</div>
-                      <div>SPD: {equippedInSlot.weaponStats.speed}</div>
+                      <div>DMG: {comparisonEquippedItem.weaponStats.damage}</div>
+                      <div>ACC: {comparisonEquippedItem.weaponStats.accuracy}</div>
+                      <div>SPD: {comparisonEquippedItem.weaponStats.speed}</div>
                     </div>
                   )}
-                  {equippedInSlot.armorStats && (
+                  {comparisonEquippedItem.armorStats && (
                     <div style={{ fontSize: 10, color: colors.lime, lineHeight: 1.4 }}>
-                      <div>DEF: {equippedInSlot.armorStats.defense}</div>
+                      <div>DEF: {comparisonEquippedItem.armorStats.defense}</div>
                     </div>
                   )}
                 </InfoCard>

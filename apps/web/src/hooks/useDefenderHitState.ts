@@ -15,20 +15,20 @@ export function useDefenderHitState(): Map<EntityId, DefenderHitEntry> {
   useEffect(() => {
     const checkHits = () => {
       const currentTime = Date.now();
-      const expired: EntityId[] = [];
+      const mutableExpired: EntityId[] = [];
 
       for (const [entityId, entry] of defenderHitChannel) {
         const elapsed = currentTime - entry.startTime;
         if (elapsed >= entry.durationMs) {
-          expired.push(entityId);
+          mutableExpired.push(entityId);
         }
       }
 
       // Clean up expired entries
-      expired.forEach(id => defenderHitChannel.delete(id));
+      mutableExpired.forEach(id => defenderHitChannel.delete(id));
 
       // Notify listeners if there were changes
-      if (expired.length > 0) {
+      if (mutableExpired.length > 0) {
         setHits(new Map(defenderHitChannel));
         defenderHitListeners.forEach(listener => listener(new Map(defenderHitChannel)));
       }

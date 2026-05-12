@@ -49,7 +49,7 @@ export function AttackDropdown({
       <div className={styles.emptyState}>
         <p>{message}</p>
         <div style={{ fontSize: '0.75rem', marginTop: '0.5rem', color: '#7a9ab0' }}>
-          Range: {minRange ?? 0}-{weaponRange} {weaponRange === 1 ? 'tile' : 'tiles'}.
+          Range: {minRange}-{weaponRange} {weaponRange === 1 ? 'tile' : 'tiles'}.
         </div>
       </div>
     );

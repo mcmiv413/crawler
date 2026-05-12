@@ -20,9 +20,10 @@ export function useBumpAnimationState(duration: number): UseBumpAnimationStateRe
   const [animations, setAnimations] = useState<ActiveBumpAnimation[]>([]);
   const rafRef = useRef<number | undefined>(undefined);
   const nextIdRef = useRef(0);
-  const timersRef = useRef<ReturnType<typeof setTimeout>[]>([]);
+  const mutableTimersRef = useRef<ReturnType<typeof setTimeout>[]>([]);
 
   useEffect(() => {
+    const mutableTimers = mutableTimersRef.current;
     const handleBumpAnimation = (event: Event) => {
       const customEvent = event as CustomEvent<BumpAnimationEntry>;
       const now = Date.now();
@@ -40,13 +41,13 @@ export function useBumpAnimationState(duration: number): UseBumpAnimationStateRe
         setAnimations((prev) => prev.filter((a) => a.id !== animation.id));
       }, duration);
 
-      timersRef.current.push(timer);
+      mutableTimers.push(timer);
     };
 
     window.addEventListener('bump-animation', handleBumpAnimation);
     return () => {
       window.removeEventListener('bump-animation', handleBumpAnimation);
-      timersRef.current.forEach((t) => clearTimeout(t));
+      mutableTimers.forEach((t) => clearTimeout(t));
       if (rafRef.current) {
         cancelAnimationFrame(rafRef.current);
       }

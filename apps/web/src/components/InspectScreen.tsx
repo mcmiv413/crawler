@@ -325,8 +325,8 @@ export function InspectScreen({
                   <>
                     <div style={statLabelStyle}>Statuses:</div>
                     <div style={{ marginTop: '6px' }}>
-                      {selectedEntity.statuses.map((status, idx) => (
-                        <span key={idx} style={statusBadgeStyle}>
+                      {selectedEntity.statuses.map((status) => (
+                        <span key={status} style={statusBadgeStyle}>
                           {status}
                         </span>
                       ))}

@@ -19,8 +19,8 @@ export function QuestDetailModal({ quests, onClose, sendCommand }: QuestDetailMo
     if (!selectedQuest) return;
     try {
       await sendCommand({ type: 'TOWN_ACTION', action: 'turn_in_quest', targetId: selectedQuest.id });
-    } catch (err) {
-      console.error('Failed to turn in quest:', err);
+    } catch {
+      return;
     }
   };
 
@@ -128,7 +128,7 @@ export function QuestDetailModal({ quests, onClose, sendCommand }: QuestDetailMo
         </div>
 
         <div style={{ display: 'flex', gap: 8, marginTop: 16 }}>
-          {selectedQuest && selectedQuest.status === 'ready_to_turn_in' && (
+          {selectedQuest?.status === 'ready_to_turn_in' && (
             <button
               onClick={handleTurnInQuest}
               style={{

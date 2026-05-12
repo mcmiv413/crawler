@@ -12,7 +12,7 @@ function getItemStats(item: InventoryItemView): string {
   let text = '';
   if (item.weaponStats) {
     const ws = item.weaponStats;
-    const dmg = ws.damageMin != null ? `${ws.damageMin}–${ws.damageMax}` : `${ws.damage}`;
+    const dmg = `${ws.damageMin}–${ws.damageMax}`;
     text += `${dmg} ${ws.damageType} dmg`;
     if (ws.weaponRange && ws.weaponRange > 1) {
       text += ` | range: ${ws.weaponRange}`;

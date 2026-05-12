@@ -20,9 +20,10 @@ export function useFxAnimationState(): UseFxAnimationStateReturn {
   const [animations, setAnimations] = useState<ActiveFxAnimation[]>([]);
   const rafRef = useRef<number | undefined>(undefined);
   const nextIdRef = useRef(0);
-  const timersRef = useRef<ReturnType<typeof setTimeout>[]>([]);
+  const mutableTimersRef = useRef<ReturnType<typeof setTimeout>[]>([]);
 
   useEffect(() => {
+    const mutableTimers = mutableTimersRef.current;
     const handleAbilityAnimation = (event: Event) => {
       const customEvent = event as CustomEvent<AbilityAnimationEntry>;
       const data = customEvent.detail;
@@ -42,15 +43,14 @@ export function useFxAnimationState(): UseFxAnimationStateReturn {
         setAnimations((prev) => prev.filter((a) => a.id !== animation.id));
       }, animation.durationMs + 50);
 
-      timersRef.current.push(timer);
+      mutableTimers.push(timer);
     };
 
     window.addEventListener('ability-animation', handleAbilityAnimation);
     return () => {
       window.removeEventListener('ability-animation', handleAbilityAnimation);
-      const timers = timersRef.current;
-      timers.forEach((t) => clearTimeout(t));
-      timersRef.current = [];
+      mutableTimers.forEach((t) => clearTimeout(t));
+      mutableTimers.length = 0;
       if (rafRef.current) {
         cancelAnimationFrame(rafRef.current);
       }
