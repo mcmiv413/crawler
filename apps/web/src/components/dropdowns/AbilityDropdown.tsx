@@ -92,7 +92,7 @@ export function AbilityDropdown({
 }: AbilityDropdownProps) {
   const [selectedAbilityId, setSelectedAbilityId] = useState<string | null>(null);
   const [selectedTrapItemId, setSelectedTrapItemId] = useState<string | null>(null);
-  const playerPosition = { x: playerX, y: playerY };
+  const playerPosition = useMemo(() => ({ x: playerX, y: playerY }), [playerX, playerY]);
 
   const trapItems = useMemo(
     () => inventory.filter((item) => item.itemClass === 'trap'),
@@ -101,7 +101,7 @@ export function AbilityDropdown({
 
   const disarmableTraps = useMemo(
     () => getValidDisarmableTraps(playerPosition, mapObjects),
-    [mapObjects, playerX, playerY],
+    [mapObjects, playerPosition],
   );
 
   const getTargetableEnemiesForAbility = (ability: AbilityWithTargeting): EntityView[] => {
@@ -123,7 +123,7 @@ export function AbilityDropdown({
     }
 
     return mutableDirections;
-  }, [enemies, mapCells, mapObjects, playerX, playerY]);
+  }, [enemies, mapCells, mapObjects, playerPosition, playerX, playerY]);
 
   const resetSelection = () => {
     setSelectedAbilityId(null);
@@ -277,7 +277,7 @@ export function AbilityDropdown({
             >
               <div className={styles.itemHeader}>
                 <span className={styles.itemName}>{item.name}</span>
-                <span className={styles.quantity}>×{item.quantity ?? 0}</span>
+                <span className={styles.quantity}>×{item.quantity}</span>
               </div>
               <div className={styles.itemDescription}>{item.description}</div>
             </button>

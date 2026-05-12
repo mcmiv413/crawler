@@ -178,11 +178,11 @@ export function InventoryScreen({
             }}
           >
             {sorted.map((item, idx) => {
-              const quantity = item.quantity ?? 1;
+              const quantity = item.quantity;
               const isEquippable = item.itemClass !== 'consumable';
               return (
                 <div
-                  key={`${item.id}-${idx}`}
+                  key={item.id}
                   style={{
                     fontSize: 11,
                     color: '#aaa',
@@ -228,7 +228,7 @@ export function InventoryScreen({
                     <button
                       onClick={(e) => {
                         e.stopPropagation();
-                        sendCommand({ type: 'EQUIP', itemId: item.stackEntityIds?.[0] ?? item.id });
+                        sendCommand({ type: 'EQUIP', itemId: item.stackEntityIds[0] ?? item.id });
                       }}
                       style={{
                         ...compactBtnStyle,

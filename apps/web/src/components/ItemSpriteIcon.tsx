@@ -28,7 +28,12 @@ export function ItemSpriteIcon({ spriteName, size = 16 }: ItemSpriteIconProps) {
     if (!canvasRef.current) return;
 
     // In test environment, getContext might fail; gracefully degrade
-    const ctx = canvasRef.current.getContext?.('2d');
+    let ctx: CanvasRenderingContext2D | null = null;
+    try {
+      ctx = canvasRef.current.getContext('2d');
+    } catch {
+      return;
+    }
     if (!ctx) return;
 
     ctx.clearRect(0, 0, size, size);

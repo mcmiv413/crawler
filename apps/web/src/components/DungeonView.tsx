@@ -79,7 +79,7 @@ export function DungeonView({ map, vpTilesWidth, vpTilesHeight }: Props) {
             backgroundColor: bgColor,
             fontFamily: FONT_STACK,
             fontSize: CELL_SIZE - 10,
-            cursor: cell?.walkable && cell?.visibility !== 'hidden' ? 'pointer' : 'default',
+            cursor: cell !== undefined && cell.walkable && cell.visibility !== 'hidden' ? 'pointer' : 'default',
             position: 'relative',
           }}
           title={entity ? `${entity.name}${entity.health != null ? ` (${entity.health}/${entity.maxHealth})` : ''}` : undefined}

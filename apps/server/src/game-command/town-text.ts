@@ -27,37 +27,37 @@ export function buildDeterministicTownRumors(
   state: GameState,
   rumorCount = DEFAULT_RUMOR_COUNT,
 ): readonly string[] {
-  const rumors: string[] = [];
+  const mutableRumors: string[] = [];
   const seedBase = buildSeedBase(state);
   const factions = getFactionPriority(state.world.factions);
   const townImpact = calculateFactionTownImpact(state.world.factions);
 
   for (const [index, faction] of factions.entries()) {
-    pushUnique(rumors, buildFactionRumor(faction, seedBase + index * 11));
+    pushUnique(mutableRumors, buildFactionRumor(faction, seedBase + index * 11));
   }
 
   if (state.world.dungeonOgre.status === 'emerged') {
     pushUnique(
-      rumors,
+      mutableRumors,
       'With every faction broken, whispers now turn to a Dungeon Ogre stalking the deeper halls.',
     );
   }
 
   if (townImpact.prosperityDelta > 0) {
-    pushUnique(rumors, pickDeterministic(PROSPERITY_RISING_MESSAGES, seedBase + 17));
+    pushUnique(mutableRumors, pickDeterministic(PROSPERITY_RISING_MESSAGES, seedBase + 17));
   }
 
   if (townImpact.corruptionDelta > 0) {
-    pushUnique(rumors, pickDeterministic(CORRUPTION_RISING_MESSAGES, seedBase + 23));
+    pushUnique(mutableRumors, pickDeterministic(CORRUPTION_RISING_MESSAGES, seedBase + 23));
   }
 
   let fallbackOffset = 0;
-  while (rumors.length < rumorCount) {
-    pushUnique(rumors, pickDeterministic(FALLBACK_RUMORS, seedBase + 29 + fallbackOffset));
+  while (mutableRumors.length < rumorCount) {
+    pushUnique(mutableRumors, pickDeterministic(FALLBACK_RUMORS, seedBase + 29 + fallbackOffset));
     fallbackOffset += 1;
   }
 
-  return rumors.slice(0, rumorCount);
+  return mutableRumors.slice(0, rumorCount);
 }
 
 export function buildDeterministicRunSummary(
@@ -65,17 +65,17 @@ export function buildDeterministicRunSummary(
   metrics: RunMetrics,
   events: readonly DomainEvent[],
 ): string {
-  const summaryParts = [buildRunOutcomeSentence(state, metrics)];
   const eventHeadline = buildEventHeadline(events);
+  const pressureSentence = eventHeadline ?? buildFactionPressureSentence(
+    state.world.factions,
+    state.world.dungeonOgre.status,
+  );
 
-  if (eventHeadline !== null) {
-    summaryParts.push(eventHeadline);
-  } else {
-    summaryParts.push(buildFactionPressureSentence(state.world.factions, state.world.dungeonOgre.status));
-  }
-
-  summaryParts.push(buildTownImpactSentence(state.world.factions));
-  return summaryParts.join(' ');
+  return [
+    buildRunOutcomeSentence(state, metrics),
+    pressureSentence,
+    buildTownImpactSentence(state.world.factions),
+  ].join(' ');
 }
 
 function buildSeedBase(state: GameState): number {
@@ -86,7 +86,8 @@ function buildSeedBase(state: GameState): number {
 }
 
 function getFactionPriority(factions: readonly FactionState[]): readonly FactionState[] {
-  return [...factions].sort((left, right) => {
+  const mutableFactions = [...factions];
+  return mutableFactions.sort((left, right) => {
     const leftBand = getFactionPowerBand(left);
     const rightBand = getFactionPowerBand(right);
     if (BAND_PRIORITY[rightBand] !== BAND_PRIORITY[leftBand]) {
@@ -224,8 +225,8 @@ function pickDeterministic<T>(items: readonly T[], seed: number): T {
   return items[Math.abs(seed) % items.length]!;
 }
 
-function pushUnique(target: string[], value: string | null): void {
-  if (value !== null && !target.includes(value)) {
-    target.push(value);
+function pushUnique(mutableTarget: string[], value: string | null): void {
+  if (value !== null && !mutableTarget.includes(value)) {
+    mutableTarget.push(value);
   }
 }

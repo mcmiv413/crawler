@@ -37,8 +37,8 @@ function EnchantmentDetailModal({ enchantment, itemsUsing, onClose }: Enchantmen
       {itemsUsing.length > 0 && (
         <div style={{ fontSize: 10, color: '#888', borderTop: '1px solid #2a6a2a', paddingTop: 4 }}>
           <div style={{ color: '#4f4', marginBottom: 2, fontWeight: 'bold' }}>Used on:</div>
-          {itemsUsing.map((item, idx) => (
-            <div key={idx} style={{ color: '#aaa' }}>
+          {itemsUsing.map((item) => (
+            <div key={item} style={{ color: '#aaa' }}>
               • {item}
             </div>
           ))}
@@ -104,9 +104,9 @@ export function EnchantmentLibrary({ player }: EnchantmentLibraryProps) {
         </div>
       </div>
 
-      {selectedEnchantment && selectedEnchantmentEntry && (
+      {selectedEnchantmentEntry !== undefined && (
           <EnchantmentDetailModal
-          enchantment={selectedEnchantment}
+          enchantment={selectedEnchantmentEntry[1].enchantment}
           itemsUsing={selectedEnchantmentEntry[1].itemsUsing}
           onClose={() => setSelectedEnchantmentId(null)}
         />

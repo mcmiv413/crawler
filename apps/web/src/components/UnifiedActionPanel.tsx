@@ -69,7 +69,7 @@ export function UnifiedActionPanel({
     .filter((item) => item.itemClass === 'consumable')
     .map((item) => ({
       ...item,
-      quantity: item.quantity ?? 0,
+      quantity: item.quantity,
     }));
 
   const handleActionClick = (actionType: ActionButtonType | 'STAIRS') => {

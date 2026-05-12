@@ -232,7 +232,7 @@ export function validateWorldState(world: WorldState): ValidationError[] {
   }
 
   // Validate dungeonOgre
-  // eslint-disable-next-line @typescript-eslint/no-unnecessary-condition, @typescript-eslint/strict-boolean-expressions
+  // eslint-disable-next-line @typescript-eslint/no-unnecessary-condition
   if (typeof world.dungeonOgre !== 'object' || world.dungeonOgre === null) {
     mutableErrors.push({ path: 'dungeonOgre', message: 'dungeonOgre is required and must be an object' });
   } else {

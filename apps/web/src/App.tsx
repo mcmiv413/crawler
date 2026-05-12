@@ -14,7 +14,7 @@ import { CharacterScreen } from './components/CharacterScreen.js';
 import { InventoryScreen } from './components/InventoryScreen.js';
 import { CombatLogView } from './components/CombatLogView.js';
 import { ProgressNoticeModal } from './components/ProgressNoticeModal.js';
-import * as api from './api/client.js';
+import { fetchNpcDialogue } from './api/client.js';
 
 type Screen = 'main' | 'inventory' | 'character' | 'log';
 
@@ -80,11 +80,13 @@ export function App() {
 
   // Death modal is gated by store-level transition flag.
   // During the 2s transition the player sees a themed overlay; the modal appears once it completes.
-  const showDeathNotification = !!(
-    view?.phase === 'town' &&
-    view?.deathContext &&
+  const deathContext =
+    view !== null &&
+    view.phase === 'town' &&
+    view.deathContext !== null &&
     !deathTransitioning
-  );
+      ? view.deathContext
+      : null;
 
   useEffect(() => {
     if (!gameId) {
@@ -130,7 +132,7 @@ export function App() {
       // Update game state (quest assignment, disposition bump)
       await sendCommand({ type: 'TOWN_ACTION', action: 'talk_npc', targetId: npcId });
       // Fetch AI dialogue text
-      const result = await api.fetchNpcDialogue(gameId, npcId);
+      const result = await fetchNpcDialogue(gameId, npcId);
       setNpcDialogue({ name: result.npcName, text: result.dialogue });
     } catch {
       setNpcDialogue({ name: npcName, text: '...' });
@@ -157,11 +159,11 @@ export function App() {
   }
 
   // Death notification modal — with 2s delay
-  if (showDeathNotification && view.phase === 'town' && view.deathContext) {
+  if (deathContext !== null) {
     if (!shownDeathIds.has('death-notification')) {
       return (
         <DeathNotificationModal
-          deathContext={view.deathContext}
+          deathContext={deathContext}
           onDismiss={() => {
             setShownDeathIds(new Set([...shownDeathIds, 'death-notification']));
           }}
@@ -178,7 +180,7 @@ export function App() {
         entry.text.startsWith('New quest:') &&
         view.activeQuests.some(
           q =>
-            (entry.text.includes(q.title) || q.id) &&
+            entry.text.includes(q.title) &&
             !shownQuestIds.has(q.id),
         ),
     );
@@ -211,7 +213,10 @@ export function App() {
   const progressNotice = view.notice && ['FACTION_LEADER_EMERGED', 'FACTION_LEADER_SLAIN', 'DUNGEON_OGRE_EMERGED'].includes(view.notice.kind)
     ? view.notice
     : undefined;
-  const showProgressNotice = progressNotice !== undefined && !shownNoticeIds.has(progressNotice.id);
+  const visibleProgressNotice =
+    progressNotice !== undefined && !shownNoticeIds.has(progressNotice.id)
+      ? progressNotice
+      : null;
   const visiblePanels: Screen[] = (['inventory', 'character', 'log'] as Screen[]).filter(p => openPanels.has(p));
   // On mobile, show either main content or panels (switching), not both
   const showMainContent = !isMobile || visiblePanels.length === 0;
@@ -282,11 +287,11 @@ export function App() {
           `}</style>
         </div>
       )}
-      {showProgressNotice && progressNotice ? (
+      {visibleProgressNotice !== null ? (
         <ProgressNoticeModal
-          notice={progressNotice}
+          notice={visibleProgressNotice}
           onDismiss={() => {
-            setShownNoticeIds(new Set([...shownNoticeIds, progressNotice.id]));
+            setShownNoticeIds(new Set([...shownNoticeIds, visibleProgressNotice.id]));
           }}
         />
       ) : null}

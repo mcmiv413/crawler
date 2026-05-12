@@ -78,9 +78,9 @@ export function StatDetailModal({ breakdown, onClose, player }: StatDetailModalP
         <div style={{ marginBottom: 8 }}>
           <SectionLabel label="Bonuses" />
           <div style={{ display: 'flex', flexDirection: 'column', gap: 2 }}>
-            {breakdown.bonuses.map((bonus, idx) => (
+            {breakdown.bonuses.map((bonus) => (
               <div
-                key={idx}
+                key={`${bonus.source}-${bonus.amount}`}
                 style={{
                   fontSize: 10,
                   color: colors.lime,

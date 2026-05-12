@@ -78,7 +78,7 @@ function MiniCombatLog({
     >
       {filtered.map((entry, index) => (
         <div
-          key={`${index}-${entry.type}-${entry.text}`}
+          key={`${entry.type}-${entry.text}`}
           style={{
             fontSize: COMBAT_LOG_MINI_FONT_SIZE,
             lineHeight: COMBAT_LOG_MINI_LINE_HEIGHT,
