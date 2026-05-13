@@ -45,6 +45,7 @@ export function executeRetreat(state: GameState, rng: SeededRNG): { state: GameS
   // This makes the dungeon feel alive when the player returns
   const simulatedEnemies = preSimulateAmbientBehavior(
     new Map(state.run!.enemies),
+    state.run!.floor,
     AMBIENT_PROFILES,
     5, // Simulate 5 turns while in town
     state.run!.floor.seed,

@@ -1,8 +1,12 @@
 import React from 'react';
 import { beforeEach, describe, expect, it, vi } from 'vitest';
-import { render } from '@testing-library/react';
+import { fireEvent, render } from '@testing-library/react';
 import type { MapView } from '@dungeon/presenter';
 import { CELL_SIZE } from '../config/ui-config.js';
+
+const { startAutoWalkSpy } = vi.hoisted(() => ({
+  startAutoWalkSpy: vi.fn(),
+}));
 
 vi.mock('../sprites/sprite-registry.js', () => ({
   spriteRegistry: {
@@ -37,14 +41,14 @@ vi.mock('../animations/generated/index.js', () => ({
 }));
 
 vi.mock('../utils/pathfinding.js', () => ({
-  findPath: () => [],
+  findPath: vi.fn(() => []),
 }));
 
 vi.mock('../store/game-store.js', () => ({
-  useGameStore: vi.fn((selector) => {
-    if (typeof selector === 'function') {
-      return selector({
-        startAutoWalk: vi.fn(),
+  useGameStore: Object.assign(
+    vi.fn((selector) => {
+      const state = {
+        startAutoWalk: startAutoWalkSpy,
         view: {
           animatedEvents: [],
           player: {
@@ -59,13 +63,22 @@ vi.mock('../store/game-store.js', () => ({
             ],
           },
         },
-      });
-    }
-    return { startAutoWalk: vi.fn() };
-  }),
+      };
+
+      if (typeof selector === 'function') {
+        return selector(state);
+      }
+
+      return state;
+    }),
+    {
+      getState: () => ({ startAutoWalk: startAutoWalkSpy }),
+    },
+  ),
 }));
 
 import { renderMap } from '../sprites/canvas-renderer.js';
+import { findPath } from '../utils/pathfinding.js';
 import { DungeonCanvas } from './DungeonCanvas.js';
 
 const map: MapView = {
@@ -91,6 +104,9 @@ const map: MapView = {
 
 describe('DungeonCanvas', () => {
   beforeEach(() => {
+    startAutoWalkSpy.mockReset();
+    vi.mocked(findPath).mockReturnValue([]);
+
     Object.defineProperty(window, 'devicePixelRatio', {
       configurable: true,
       value: 1,
@@ -124,5 +140,60 @@ describe('DungeonCanvas', () => {
     expect(vi.mocked(renderMap).mock.calls[0]?.[10]).toEqual({
       statusPresentations: [{ entityScale: 1.25 }],
     });
+  });
+
+  it('starts auto-walk when clicking a reachable walkable tile', () => {
+    const path = [
+      { x: 1, y: 1 },
+      { x: 2, y: 1 },
+    ];
+    vi.mocked(findPath).mockReturnValue(path);
+
+    const clickableMap: MapView = {
+      ...map,
+      cells: [
+        ...map.cells,
+        {
+          x: 2,
+          y: 1,
+          ascii: '.',
+          color: '#aaa',
+          bgColor: '#000',
+          visibility: 'visible',
+          walkable: true,
+          tileType: 'floor',
+        },
+      ],
+    };
+
+    const { container } = render(
+      <DungeonCanvas map={clickableMap} vpTilesWidth={5} vpTilesHeight={4} />,
+    );
+
+    const canvas = container.querySelector('canvas');
+    expect(canvas).not.toBeNull();
+
+    Object.defineProperty(canvas!, 'getBoundingClientRect', {
+      configurable: true,
+      value: () => ({
+        left: 0,
+        top: 0,
+        width: 5 * CELL_SIZE,
+        height: 4 * CELL_SIZE,
+        right: 5 * CELL_SIZE,
+        bottom: 4 * CELL_SIZE,
+        x: 0,
+        y: 0,
+        toJSON: () => '',
+      }),
+    });
+
+    fireEvent.click(canvas!, {
+      clientX: (2 * CELL_SIZE) + 1,
+      clientY: CELL_SIZE + 1,
+    });
+
+    expect(findPath).toHaveBeenCalledWith(clickableMap, clickableMap.playerPosition, { x: 2, y: 1 });
+    expect(startAutoWalkSpy).toHaveBeenCalledWith(path);
   });
 });

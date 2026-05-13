@@ -56,6 +56,15 @@ export interface StatusExpiredEvent extends BaseEvent {
   readonly statusId: StatusId;
 }
 
+export interface StatusDamageTickEvent extends BaseEvent {
+  readonly type: 'STATUS_DAMAGE_TICK';
+  readonly targetId: EntityId;
+  readonly targetName: string;
+  readonly statusId: StatusId;
+  readonly damage: number;
+  readonly damageType: DamageType;
+}
+
 export interface LootAcquiredEvent extends BaseEvent {
   readonly type: 'LOOT_ACQUIRED';
   readonly itemId: EntityId;
@@ -433,6 +442,7 @@ export type DomainEvent =
   | EntityDiedEvent
   | StatusAppliedEvent
   | StatusExpiredEvent
+  | StatusDamageTickEvent
   | LootAcquiredEvent
   | GoldChangedEvent
   | ManaChangedEvent

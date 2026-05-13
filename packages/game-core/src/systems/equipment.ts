@@ -4,7 +4,7 @@ import type {
   Equipment, PlayerStats, DamageType,
 } from '@dungeon/contracts';
 import type { DomainEvent } from '@dungeon/contracts';
-import { ENCHANTMENT_BY_ID, RING_GRANTED_ABILITY_IDS, getImpliedBlueprints, getSpellsForRing } from '@dungeon/content';
+import { ENCHANTMENT_BY_ID, RING_GRANTED_ABILITY_IDS, getImpliedBlueprints, getSchoolForRing, getSpellsForRing } from '@dungeon/content';
 
 const ARMOR_EQUIP_SLOTS: readonly (keyof Equipment)[] = ['chest', 'head', 'gloves', 'boots', 'ring1', 'ring2'];
 
@@ -46,13 +46,48 @@ function withRecalculatedStats(
   return syncEquipmentGrantedAbilities(player, state.itemRegistry.items);
 }
 
+function markEquippedRingSchoolsDiscovered(
+  player: Player,
+  registry: ReadonlyMap<EntityId, AnyItemTemplate>,
+): Player {
+  let discoveredRingMastery = player.ringMastery;
+  let changed = false;
+
+  for (const slot of ARMOR_EQUIP_SLOTS) {
+    const itemId = player.equipment[slot];
+    if (itemId === null) continue;
+
+    const template = registry.get(itemId);
+    if (template?.itemClass !== 'armor') continue;
+
+    const school = getSchoolForRing(template.itemId);
+    if (school === undefined || discoveredRingMastery[school] !== undefined) continue;
+
+    discoveredRingMastery = {
+      ...discoveredRingMastery,
+      [school]: { xp: 0 },
+    };
+    changed = true;
+  }
+
+  if (changed === false) {
+    return player;
+  }
+
+  return {
+    ...player,
+    ringMastery: discoveredRingMastery,
+  };
+}
+
 export function syncEquipmentGrantedAbilities(
   player: Player,
   registry: ReadonlyMap<EntityId, AnyItemTemplate>,
 ): Player {
-  const grantIds = collectEquipmentAbilityGrants(player, registry);
+  const discoveredPlayer = markEquippedRingSchoolsDiscovered(player, registry);
+  const grantIds = collectEquipmentAbilityGrants(discoveredPlayer, registry);
   const ringGrantableIds = new Set(RING_GRANTED_ABILITY_IDS);
-  const retainedAbilities = player.abilities.filter(ability =>
+  const retainedAbilities = discoveredPlayer.abilities.filter(ability =>
     ringGrantableIds.has(ability.id) === false || grantIds.has(ability.id) === true,
   );
   const retainedIds = new Set(retainedAbilities.map(ability => ability.id));
@@ -61,7 +96,7 @@ export function syncEquipmentGrantedAbilities(
     .map(abilityId => ({ id: abilityId, cooldownRemaining: 0 }));
 
   return {
-    ...player,
+    ...discoveredPlayer,
     abilities: [...retainedAbilities, ...grantedAbilities],
   };
 }

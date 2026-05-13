@@ -3,7 +3,7 @@ import { QUEST_TEMPLATES } from '@dungeon/content';
 import { ITEM_BY_ID } from '@dungeon/content';
 import { ENEMY_TEMPLATES } from '@dungeon/content';
 import { ABILITY_DEFINITIONS, ANIMATION_REF_BY_ID } from '@dungeon/content';
-import { ENCHANTMENT_BY_ID, RING_SPELL_BY_ID, STATUS_DEFINITIONS } from '@dungeon/content';
+import { ENCHANTMENT_BY_ID, RING_SCHOOL_BY_ID, RING_SPELL_BY_ID, STATUS_DEFINITIONS } from '@dungeon/content';
 import type { StatusId } from '@dungeon/contracts';
 
 /**
@@ -186,25 +186,21 @@ describe('Content Cross-References', () => {
   });
 
   describe('Magic Ring Content', () => {
-    it('Fire Ring exists and grants an ability that exists in the ability catalog', () => {
+    it('Fire Ring exists and is wired to the fire school without grant-ability enchantments', () => {
       const fireRing = ITEM_BY_ID.get('fire_ring');
       expect(fireRing, 'Fire Ring item is missing').toBeDefined();
       expect(fireRing?.itemClass).toBe('armor');
       if (fireRing?.itemClass !== 'armor') return;
+
+      const fireSchool = RING_SCHOOL_BY_ID.get('fire');
+      expect(fireSchool?.ringId).toBe('fire_ring');
 
       const grantEnchantments = fireRing.armor.enchantments
         .filter((enchantmentId): enchantmentId is string => enchantmentId !== null)
         .map(enchantmentId => ENCHANTMENT_BY_ID.get(enchantmentId))
         .filter(enchantment => enchantment?.effect.type === 'grant_ability');
 
-      expect(grantEnchantments.length, 'Fire Ring should grant at least one ability').toBeGreaterThan(0);
-      for (const enchantment of grantEnchantments) {
-        const abilityId = enchantment?.effect.type === 'grant_ability' ? enchantment.effect.abilityId : undefined;
-        expect(
-          ABILITY_DEFINITIONS.has(abilityId ?? ''),
-          `Fire Ring grant references missing ability "${abilityId}"`,
-        ).toBe(true);
-      }
+      expect(grantEnchantments).toHaveLength(0);
     });
 
     it('Ring spell IDs reference existing abilities across all magic schools', () => {

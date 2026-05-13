@@ -30,6 +30,22 @@ function meetsStudyRequirement(
   }
 }
 
+function getEquippedRingSchools(
+  equippedItemIds: readonly string[],
+): Set<RingSchool> {
+  return new Set(
+    equippedItemIds
+      .map(itemId => getSchoolForRing(itemId))
+      .filter((school): school is RingSchool => school !== undefined),
+  );
+}
+
+function meetsNonGoldStudyRequirements(
+  requirements: readonly StudyRequirementStatus[],
+): boolean {
+  return requirements.every(requirement => requirement.kind === 'goldCost' || requirement.met === true);
+}
+
 // Spells the player can study right now (meets all requirements including gold)
 export function getStudyableRingSpells(
   player: Player,
@@ -73,6 +89,7 @@ export interface SpellStudyEvaluation {
   readonly spell: RingSpellDefinition;
   readonly alreadyLearned: boolean;
   readonly requirements: readonly StudyRequirementStatus[];
+  readonly unlockedForStudy: boolean;
   readonly canStudy: boolean;
   readonly affordable: boolean;
   readonly currentSchoolXp: number;
@@ -85,11 +102,7 @@ export function evaluateRingSpellStudy(
   equippedItemIds: readonly string[],
   spell: RingSpellDefinition,
 ): SpellStudyEvaluation {
-  const equippedSchools = new Set(
-    equippedItemIds
-      .map(itemId => getSchoolForRing(itemId))
-      .filter((s): s is RingSchool => s !== undefined)
-  );
+  const equippedSchools = getEquippedRingSchools(equippedItemIds);
   const alreadyLearned = player.learnedRingSpellIds.includes(spell.id);
   
   let goldCost = 0;
@@ -104,9 +117,9 @@ export function evaluateRingSpellStudy(
     return { kind: req.kind, met };
   });
   
-  const allRequirementsMet = requirements.every(r => r.met === true);
-  const canStudy = allRequirementsMet && !alreadyLearned;
+  const unlockedForStudy = meetsNonGoldStudyRequirements(requirements) && !alreadyLearned;
   const affordable = goldCost === 0 || player.gold >= goldCost;
+  const canStudy = unlockedForStudy && affordable;
   
   const primarySchool = spell.schools[0];
   const currentSchoolXp = primarySchool !== undefined ? ((player.ringMastery as Record<string, { xp: number }>)[primarySchool]?.xp ?? 0) : 0;
@@ -115,6 +128,7 @@ export function evaluateRingSpellStudy(
     spell,
     alreadyLearned,
     requirements,
+    unlockedForStudy,
     canStudy,
     affordable,
     currentSchoolXp,
@@ -144,10 +158,6 @@ export function canUseLearnedRingSpell(
   const spell = RING_SPELL_BY_ID.get(spellId);
   if (spell === undefined) return false;
 
-  const equippedSchools = new Set(
-    equippedItemIds
-      .map(itemId => getSchoolForRing(itemId))
-      .filter(Boolean) as RingSchool[]
-  );
+  const equippedSchools = getEquippedRingSchools(equippedItemIds);
   return spell.schools.every((s: RingSchool) => equippedSchools.has(s));
 }

@@ -65,6 +65,15 @@ const EVENT_FORMATTERS = {
     };
   },
 
+  'STATUS_DAMAGE_TICK': (event) => {
+    const statusName = STATUS_DEFINITIONS.get(event.statusId)?.name ?? event.statusId;
+    return {
+      text: `${statusName} deals ${event.damage} ${event.damageType} damage to ${event.targetName}.`,
+      type: 'damage',
+      timestamp: event.timestamp,
+    };
+  },
+
   'LOOT_ACQUIRED': (event) => ({
     text: `Picked up ${event.itemName}!`,
     type: 'loot',
@@ -83,13 +92,7 @@ const EVENT_FORMATTERS = {
     return null;
   },
   'MANA_CHANGED': (event) => {
-    if (event.amount > 0) {
-      return {
-        text: `Restored ${event.amount} mana`,
-        type: 'info',
-        timestamp: event.timestamp,
-      };
-    } else if (event.amount < 0) {
+    if (event.amount < 0) {
       return {
         text: `Used ${Math.abs(event.amount)} mana`,
         type: 'info',

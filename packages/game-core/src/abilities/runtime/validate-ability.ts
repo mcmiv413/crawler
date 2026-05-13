@@ -99,6 +99,24 @@ function validateSingleRequirement(
       }
       return { valid: true };
     }
+    case 'target_in_ability_range': {
+      if (context.target === undefined) {
+        return { valid: false, reason: 'No target selected' };
+      }
+
+      const dist = Math.max(
+        Math.abs(context.player.position.x - context.target.instance.position.x),
+        Math.abs(context.player.position.y - context.target.instance.position.y),
+      );
+
+      if (dist > req.range) {
+        return { valid: false, reason: 'Target out of spell range' };
+      }
+      if (dist < (req.minRange ?? 0)) {
+        return { valid: false, reason: 'Target too close for spell' };
+      }
+      return { valid: true };
+    }
     case 'target_visible': {
       if (context.target === undefined) {
         return { valid: false, reason: 'No target selected' };

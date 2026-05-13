@@ -18,9 +18,13 @@ function chebyshevDistance(a: Position, b: Position): number {
  * For melee, returns 1. For ranged abilities, uses weapon range.
  */
 export function getEffectiveRange(
-  ability: { readonly isRanged?: boolean } | null,
+  ability: { readonly isRanged?: boolean; readonly targetRange?: { readonly max: number; readonly min: number } } | null,
   weapon: { readonly weaponStats?: { readonly weaponRange?: number; readonly minRange?: number } } | null,
 ): { max: number; min: number } {
+  if (ability?.targetRange !== undefined) {
+    return ability.targetRange;
+  }
+
   if (ability?.isRanged === true && weapon?.weaponStats !== undefined) {
     return {
       max: weapon.weaponStats.weaponRange ?? 1,

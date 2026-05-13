@@ -1,0 +1,83 @@
+{
+  "skill_name": "model-orchestrator",
+  "evals": [
+    {
+      "id": 0,
+      "prompt": "I already have an implementation plan for a medium-sized TypeScript bugfix. Should this go to Cody, Pluto, or a Task agent, and what model should I use?",
+      "expected_output": "Routes to an implementation-oriented worker, keeps Pluto out of the coding lane, prefers a Haiku-first implementation path, and gives an actionable apply-now route.",
+      "files": [],
+      "expectations": [
+        "Chooses Cody or an implementation-capable Task worker instead of Pluto",
+        "Uses haiku as the delegated model tier or explicitly frames sonnet as escalation only",
+        "Provides an exact apply-now tool call or shell command"
+      ]
+    },
+    {
+      "id": 1,
+      "prompt": "I want an independent architecture and rollout review for this system change. Should Maggy keep it, use Pluto, or use a Task agent? Pick the model too.",
+      "expected_output": "Routes to Pluto or an opus-grade review path and explains why an implementation worker is the wrong fit.",
+      "files": [],
+      "expectations": [
+        "Uses Pluto, code-review, or Maggy-local rather than Cody",
+        "Uses opus as the delegated or retained model tier",
+        "Explains that this is planning/review work rather than implementation"
+      ]
+    },
+    {
+      "id": 2,
+      "prompt": "I need a quick read-only scan of the repo to identify likely auth and routing touchpoints. Which worker and model should handle that?",
+      "expected_output": "Routes to read-only exploration on haiku and does not overspend on a premium model.",
+      "files": [],
+      "expectations": [
+        "Chooses the explore Task agent or an equivalent exploration path",
+        "Uses haiku as the delegated model tier",
+        "Frames the work as read-only exploration rather than implementation"
+      ]
+    },
+    {
+      "id": 3,
+      "prompt": "If I mention Cody or Pluto by name, explain what each one is for in my current local setup and say which one fits a code review request.",
+      "expected_output": "Explains the Cody/Pluto role map from local-profile artifacts, distinguishes shell profiles from Task-agent types, and routes code review away from Cody.",
+      "files": [],
+      "expectations": [
+        "States that Cody and Pluto are shell profiles rather than Task-agent types",
+        "Explains Cody as implementation-focused and Pluto as planning/review-focused",
+        "Routes code review to Pluto, code-review, or Maggy rather than Cody"
+      ]
+    },
+    {
+      "id": 4,
+      "prompt": "Can you use Cody as the general-purpose Task agent for a planning session, or is there a better route and model?",
+      "expected_output": "Rejects the shell-profile-vs-Agent conflation, keeps planning out of Cody, and proposes the correct worker/model pair.",
+      "files": [],
+      "expectations": [
+        "Explicitly says Cody is not a Task-agent type",
+        "Does not route planning work to Cody",
+        "Provides a corrected route with an explicit model tier"
+      ]
+    },
+    {
+      "id": 5,
+      "prompt": "This is a tiny one-file local fix with an explicit verification script. Should I use Goofy, Cody, or a Task agent?",
+      "expected_output": "Routes to Goofy as a local worker only because the task is tiny, explicit, and easy to verify.",
+      "files": [],
+      "expectations": [
+        "Chooses Goofy or explicitly identifies a local-worker route",
+        "Uses local as the model/worker tier rather than haiku/sonnet/opus",
+        "Explains that the task is safe because it is narrow and easy to verify",
+        "Explains that preferring Goofy here reduces cost relative to remote workers"
+      ]
+    },
+    {
+      "id": 6,
+      "prompt": "Should I send planning and routing work to Goofy since it runs locally and avoids Anthropic limits?",
+      "expected_output": "Rejects Goofy for planning/routing and routes to Maggy or Pluto instead.",
+      "files": [],
+      "expectations": [
+        "Does not route planning/routing work to Goofy",
+        "Explains that Goofy is for narrow explicit work rather than planning",
+        "Provides a corrected route to Maggy, Pluto, or an opus-grade review path"
+      ]
+    }
+  ]
+}

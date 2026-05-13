@@ -32,6 +32,26 @@ function getStatusDamageAmount(status: StatusEffect): number | null {
   return baseDamage + Math.max(0, status.magnitude - 1);
 }
 
+function createStatusDamageTickEvent(args: {
+  readonly damage: number;
+  readonly damageType: DamageType;
+  readonly statusId: StatusId;
+  readonly targetId: EntityId;
+  readonly targetName: string;
+  readonly turnNumber: number;
+}): DomainEvent {
+  return {
+    type: 'STATUS_DAMAGE_TICK',
+    targetId: args.targetId,
+    targetName: args.targetName,
+    statusId: args.statusId,
+    damage: args.damage,
+    damageType: args.damageType,
+    timestamp: args.turnNumber,
+    turnNumber: args.turnNumber,
+  };
+}
+
 function applyStatusEffect<T extends { readonly statuses: readonly StatusEffect[] }>(
   entity: T,
   statusId: StatusId,
@@ -116,6 +136,16 @@ export function tickPlayerStatuses(
         bypassResistance: false,
       });
       currentState = damageResult.state;
+      if (damageResult.finalDamage > 0) {
+        allEvents = [...allEvents, createStatusDamageTickEvent({
+          damage: damageResult.finalDamage,
+          damageType: damageType ?? 'physical',
+          statusId: status.id,
+          targetId: currentState.player.id,
+          targetName: currentState.player.name,
+          turnNumber,
+        })];
+      }
 
       // Add debug event if debug mode enabled
       if (currentState.debugMode === true) {
@@ -230,6 +260,16 @@ export function tickEnemyStatuses(
         bypassResistance: false,
       });
       currentState = damageResult.state;
+      if (damageResult.finalDamage > 0) {
+        allEvents = [...allEvents, createStatusDamageTickEvent({
+          damage: damageResult.finalDamage,
+          damageType: damageType ?? 'physical',
+          statusId: status.id,
+          targetId: enemy.id,
+          targetName: enemy.name,
+          turnNumber,
+        })];
+      }
 
       // Add debug event if debug mode enabled
       if (currentState.debugMode === true) {

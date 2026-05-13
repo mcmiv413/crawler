@@ -37,7 +37,6 @@ const testArmor: ArmorTemplate = {
 
 const EMBER_ABILITY_ID = 'ember';
 const HEAT_SURGE_ABILITY_ID = 'heat_surge';
-const FIRE_RING_ENCHANTMENT_ID = 'fire_ring_ember';
 
 const fireRingTemplate: ArmorTemplate = {
   itemId: 'fire_ring',
@@ -52,8 +51,8 @@ const fireRingTemplate: ArmorTemplate = {
     defense: 0,
     evasionPenalty: 0,
     slot: 'ring',
-    enchantmentSlots: 1,
-    enchantments: [FIRE_RING_ENCHANTMENT_ID],
+    enchantmentSlots: 0,
+    enchantments: [],
   },
 };
 
@@ -213,7 +212,7 @@ describe('equipItem stat recalculation', () => {
     expect(withBoth.player.stats.attack).toBeGreaterThan(s2.player.baseStats.attack);
   });
 
-  it('grants Fire Ring abilities while equipped and revokes them on unequip', () => {
+  it('discovers Fire Ring mastery on equip without granting unlearned spells', () => {
     const state = createTestGameState({
       player: {
         abilities: [{ id: 'power_strike', cooldownRemaining: 0 }],
@@ -223,10 +222,12 @@ describe('equipItem stat recalculation', () => {
     const ringId = withRingInInventory.player.inventory[0]!;
 
     const { state: equipped } = equipItem(withRingInInventory, ringId);
-    expect(abilityIds(equipped)).toContain(EMBER_ABILITY_ID);
+    expect(equipped.player.ringMastery.fire).toMatchObject({ xp: 0 });
+    expect(abilityIds(equipped)).not.toContain(EMBER_ABILITY_ID);
     expect(abilityIds(equipped)).toContain('power_strike');
 
     const { state: unequipped } = unequipItem(equipped, ringId);
+    expect(unequipped.player.ringMastery.fire).toMatchObject({ xp: 0 });
     expect(abilityIds(unequipped)).not.toContain(EMBER_ABILITY_ID);
     expect(abilityIds(unequipped)).toContain('power_strike');
   });
@@ -254,8 +255,17 @@ describe('equipItem stat recalculation', () => {
     expect(abilityIds(unequipped)).not.toContain(HEAT_SURGE_ABILITY_ID);
   });
 
-  it('keeps a ring-granted ability when another equipped ring still grants it', () => {
-    const state = createTestGameState();
+  it('keeps a learned ring spell when another equipped ring still grants the school', () => {
+    const state = createTestGameState({
+      player: {
+        ringMastery: {
+          fire: {
+            xp: 100,
+          },
+        },
+        learnedRingSpellIds: ['ember'],
+      },
+    });
     const { state: s1 } = addItemToInventory(state, fireRingTemplate);
     const { state: s2 } = addItemToInventory(s1, fireRingTemplate);
     const { state: s3 } = addItemToInventory(s2, plainRingTemplate);

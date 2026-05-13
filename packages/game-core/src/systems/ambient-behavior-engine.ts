@@ -1,4 +1,5 @@
 import type {
+  DungeonFloor,
   EnemyInstance,
   GameState,
   Position,
@@ -426,12 +427,18 @@ export function decideAmbientAction(
  */
 export function preSimulateAmbientBehavior(
   enemies: Map<string, EnemyInstance>,
+  floor: DungeonFloor,
   profiles: ReadonlyMap<string, AmbientBehaviorProfile>,
   rounds: number,
   seed: number,
 ): Map<string, EnemyInstance> {
   const rng = new SeededRNG(seed);
   let simEnemies = new Map(enemies);
+  const walkablePositions = new Set(
+    Array.from(floor.cells.entries())
+      .filter(([, cell]) => cell.tile.walkable === true)
+      .map(([key]) => key),
+  );
 
   for (let round = 0; round < rounds; round++) {
     const newEnemies = new Map<string, EnemyInstance>();
@@ -464,14 +471,15 @@ export function preSimulateAmbientBehavior(
       // For now, this ensures enemies have varied state ages and positioning
       if (rng.next() < 0.2) {
         // 20% chance to stay, 80% to potentially move
-        const neighbors = getNeighbors(updatedEnemy.position);
+        const neighbors = getNeighbors(updatedEnemy.position)
+          .filter(position => walkablePositions.has(posKey(position)));
         if (neighbors.length > 0) {
           const randomNeighbor = neighbors[Math.floor(rng.next() * neighbors.length)]!;
           updatedEnemy = { ...updatedEnemy, position: randomNeighbor };
         }
       }
 
-      const newPosition = pickUnoccupiedPreSimPosition(enemy.position, updatedEnemy.position, occupied);
+      const newPosition = pickUnoccupiedPreSimPosition(enemy.position, updatedEnemy.position, occupied, walkablePositions);
       const newKey = posKey(newPosition);
       updatedEnemy = newPosition === updatedEnemy.position
         ? updatedEnemy
@@ -490,10 +498,15 @@ function pickUnoccupiedPreSimPosition(
   currentPosition: Position,
   desiredPosition: Position,
   occupied: ReadonlySet<string>,
+  walkablePositions: ReadonlySet<string>,
 ): Position {
   const candidates = [desiredPosition, currentPosition, ...getNeighbors(currentPosition)];
   for (const candidate of candidates) {
-    if (occupied.has(posKey(candidate)) === false) {
+    const candidateKey = posKey(candidate);
+    if (walkablePositions.has(candidateKey) !== true) {
+      continue;
+    }
+    if (occupied.has(candidateKey) === false) {
       return candidate;
     }
   }
