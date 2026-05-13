@@ -302,6 +302,7 @@ describe('Ability Requirements', () => {
       'player_missing_hp',
       'target_in_melee_range',
       'target_in_weapon_range',
+      'target_in_ability_range',
       'target_visible',
       'target_below_hp_pct',
       'has_mana',

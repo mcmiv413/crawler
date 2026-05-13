@@ -13,12 +13,7 @@
 import fs from 'node:fs';
 import path from 'node:path';
 import { createRequire } from 'node:module';
-import { pathToFileURL } from 'node:url';
-
-const require = createRequire(import.meta.url);
-const root = path.resolve(path.dirname(new URL(import.meta.url).pathname), '..');
-
-// ── 1. Structural lint ────────────────────────────────────────────────────────
+import { fileURLToPath, pathToFileURL } from 'node:url';
 
 const workspacePackages = [
   'packages/game-contracts/package.json',
@@ -27,100 +22,131 @@ const workspacePackages = [
   'packages/presenter/package.json',
 ];
 
-let lintErrors = 0;
-
-for (const relPath of workspacePackages) {
-  const fullPath = path.resolve(root, relPath);
-  const json = JSON.parse(fs.readFileSync(fullPath, 'utf8'));
-  const exportsMap = json.exports ?? {};
-
-  for (const [key, value] of Object.entries(exportsMap)) {
-    if (typeof value !== 'object' || value === null || Array.isArray(value)) continue;
-
-    const keys = Object.keys(value);
-    const defaultIdx = keys.indexOf('default');
-    const typesIdx = keys.indexOf('types');
-
-    if (defaultIdx !== -1 && typesIdx !== -1 && typesIdx > defaultIdx) {
-      console.error(`FAIL  ${relPath}  "${key}": "types" (pos ${typesIdx}) comes after "default" (pos ${defaultIdx})`);
-      lintErrors++;
-    }
-  }
-}
-
-if (lintErrors > 0) {
-  console.error(`\n${lintErrors} export map ordering error(s). Fix: move "types" before "default" in each entry.\n`);
-  process.exit(1);
-}
-
-console.log('OK    export map ordering');
-
-// ── 2. Runtime resolution from consumer context ───────────────────────────────
-
-// Import from apps/server package context (a real monorepo consumer)
-const serverPackageJson = path.resolve(root, 'apps/server/package.json');
-const serverRequire = createRequire(serverPackageJson);
-
-// Map packages to their dist directories
 const packageDistMap = {
   contracts: 'packages/game-contracts/dist',
-  core:      'packages/game-core/dist',
-  content:   'packages/content/dist',
+  core: 'packages/game-core/dist',
+  content: 'packages/content/dist',
   presenter: 'packages/presenter/dist',
 };
 
 const checks = [
-  // Root imports
-  { pkg: 'contracts', specifier: '@dungeon/contracts',              desc: '@dungeon/contracts root' },
-  { pkg: 'core',      specifier: '@dungeon/core',                   desc: '@dungeon/core root' },
-  { pkg: 'content',   specifier: '@dungeon/content',                desc: '@dungeon/content root' },
-  { pkg: 'presenter', specifier: '@dungeon/presenter',              desc: '@dungeon/presenter root' },
-  // Subpath imports
-  { pkg: 'core',      specifier: '@dungeon/core/ai/ai-service.js',  desc: '@dungeon/core/ai/ai-service.js' },
-  { pkg: 'core',      specifier: '@dungeon/core/ai/prompt-builders.js', desc: '@dungeon/core/ai/prompt-builders.js' },
-  { pkg: 'core',      specifier: '@dungeon/core/utils/pathfinding.js',  desc: '@dungeon/core/utils/pathfinding.js' },
-  { pkg: 'core',      specifier: '@dungeon/core/testing.js',        desc: '@dungeon/core/testing.js' },
+  { pkg: 'contracts', specifier: '@dungeon/contracts', desc: '@dungeon/contracts root' },
+  { pkg: 'core', specifier: '@dungeon/core', desc: '@dungeon/core root' },
+  { pkg: 'content', specifier: '@dungeon/content', desc: '@dungeon/content root' },
+  { pkg: 'presenter', specifier: '@dungeon/presenter', desc: '@dungeon/presenter root' },
+  { pkg: 'core', specifier: '@dungeon/core/ai/ai-service.js', desc: '@dungeon/core/ai/ai-service.js' },
+  { pkg: 'core', specifier: '@dungeon/core/ai/prompt-builders.js', desc: '@dungeon/core/ai/prompt-builders.js' },
+  { pkg: 'core', specifier: '@dungeon/core/utils/pathfinding.js', desc: '@dungeon/core/utils/pathfinding.js' },
+  { pkg: 'core', specifier: '@dungeon/core/testing.js', desc: '@dungeon/core/testing.js' },
 ];
 
-let resolveErrors = 0;
-
-for (const { pkg, specifier, desc } of checks) {
-  const distDir = path.resolve(root, packageDistMap[pkg]);
-
-  // Check 1: Verify dist directory exists
-  if (!fs.existsSync(distDir)) {
-    console.error(`FAIL  ${desc}`);
-    console.error(`      [build output missing] dist/ directory not found: ${distDir}`);
-    resolveErrors++;
-    continue;
+export function resolveRepoRoot(argv = process.argv.slice(2)) {
+  const rootFlagIndex = argv.indexOf('--root');
+  if (rootFlagIndex === -1) {
+    return path.resolve(path.dirname(fileURLToPath(import.meta.url)), '..');
   }
 
-  // Check 2: Resolve from consumer package context
-  let resolvedPath;
-  try {
-    resolvedPath = serverRequire.resolve(specifier);
-  } catch (err) {
-    console.error(`FAIL  ${desc}`);
-    console.error(`      [workspace consumer cannot resolve] ${err.message}`);
-    resolveErrors++;
-    continue;
+  const providedRoot = argv[rootFlagIndex + 1];
+  if (!providedRoot) {
+    throw new Error('Missing value for --root.');
   }
 
-  // Check 3: Import from resolved path
-  try {
-    const fileUrl = pathToFileURL(resolvedPath).href;
-    await import(fileUrl);
-    console.log(`OK    ${desc}`);
-  } catch (err) {
-    console.error(`FAIL  ${desc}`);
-    console.error(`      [exported runtime module is invalid] ${err.message}`);
-    resolveErrors++;
+  return path.resolve(providedRoot);
+}
+
+function checkExportOrdering(repoRoot) {
+  let lintErrors = 0;
+
+  for (const relPath of workspacePackages) {
+    const fullPath = path.resolve(repoRoot, relPath);
+    const json = JSON.parse(fs.readFileSync(fullPath, 'utf8'));
+    const exportsMap = json.exports ?? {};
+
+    for (const [key, value] of Object.entries(exportsMap)) {
+      if (typeof value !== 'object' || value === null || Array.isArray(value)) continue;
+
+      const keys = Object.keys(value);
+      const defaultIdx = keys.indexOf('default');
+      const typesIdx = keys.indexOf('types');
+
+      if (defaultIdx !== -1 && typesIdx !== -1 && typesIdx > defaultIdx) {
+        console.error(
+          `FAIL  ${relPath}  "${key}": "types" (pos ${typesIdx}) comes after "default" (pos ${defaultIdx})`,
+        );
+        lintErrors++;
+      }
+    }
+  }
+
+  if (lintErrors > 0) {
+    throw new Error(
+      `\n${lintErrors} export map ordering error(s). Fix: move "types" before "default" in each entry.\n`,
+    );
+  }
+
+  console.log('OK    export map ordering');
+}
+
+async function checkRuntimeResolution(repoRoot) {
+  const serverPackageJson = path.resolve(repoRoot, 'apps/server/package.json');
+  const serverRequire = createRequire(serverPackageJson);
+  let resolveErrors = 0;
+
+  for (const { pkg, specifier, desc } of checks) {
+    const distDir = path.resolve(repoRoot, packageDistMap[pkg]);
+
+    if (!fs.existsSync(distDir)) {
+      console.error(`FAIL  ${desc}`);
+      console.error(`      [build output missing] dist/ directory not found: ${distDir}`);
+      resolveErrors++;
+      continue;
+    }
+
+    let resolvedPath;
+    try {
+      resolvedPath = serverRequire.resolve(specifier);
+    } catch (err) {
+      console.error(`FAIL  ${desc}`);
+      console.error(`      [workspace consumer cannot resolve] ${err.message}`);
+      resolveErrors++;
+      continue;
+    }
+
+    try {
+      await import(pathToFileURL(resolvedPath).href);
+      console.log(`OK    ${desc}`);
+    } catch (err) {
+      console.error(`FAIL  ${desc}`);
+      console.error(`      [exported runtime module is invalid] ${err.message}`);
+      resolveErrors++;
+    }
+  }
+
+  if (resolveErrors > 0) {
+    throw new Error(`\n${resolveErrors} package export validation error(s).\n`);
   }
 }
 
-if (resolveErrors > 0) {
-  console.error(`\n${resolveErrors} package export validation error(s).\n`);
-  process.exit(1);
+export async function checkPackageExports(repoRoot = resolveRepoRoot()) {
+  checkExportOrdering(repoRoot);
+  await checkRuntimeResolution(repoRoot);
+  console.log('\nAll package exports validated successfully from consumer context.');
 }
 
-console.log('\nAll package exports validated successfully from consumer context.');
+async function runCli() {
+  try {
+    await checkPackageExports(resolveRepoRoot(process.argv.slice(2)));
+  } catch (err) {
+    if (err instanceof Error) {
+      console.error(err.message);
+    } else {
+      console.error(String(err));
+    }
+    process.exit(1);
+  }
+}
+
+const currentFilePath = fileURLToPath(import.meta.url);
+if (process.argv[1] && path.resolve(process.argv[1]) === currentFilePath) {
+  await runCli();
+}

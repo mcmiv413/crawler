@@ -1,0 +1,46 @@
+[
+  {
+    "query": "Who should handle this medium-sized bugfix, Cody or Pluto? Pick the model too.",
+    "should_trigger": true
+  },
+  {
+    "query": "Should this repo-wide refactor go to Cody, a Task agent, or stay with Maggy? Also choose the model tier.",
+    "should_trigger": true
+  },
+  {
+    "query": "I need an architecture review. Should Pluto handle it, or is a code-review agent better, and what model should be used?",
+    "should_trigger": true
+  },
+  {
+    "query": "Explain what Cody is for in my local setup and whether it is the same thing as a Task subagent.",
+    "should_trigger": true
+  },
+  {
+    "query": "Should this tiny verified one-file fix go to Goofy or Cody?",
+    "should_trigger": true
+  },
+  {
+    "query": "Can Goofy handle planning and routing work because it runs locally?",
+    "should_trigger": true
+  },
+  {
+    "query": "Write a haiku about orchestration.",
+    "should_trigger": false
+  },
+  {
+    "query": "Summarize the README in one paragraph.",
+    "should_trigger": false
+  },
+  {
+    "query": "What time is it in UTC right now?",
+    "should_trigger": false
+  },
+  {
+    "query": "Fix the failing test in packages/game-core/src/foo.test.ts.",
+    "should_trigger": false
+  },
+  {
+    "query": "Count how many Markdown files are in this folder.",
+    "should_trigger": false
+  }
+]

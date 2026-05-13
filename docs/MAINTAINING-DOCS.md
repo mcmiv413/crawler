@@ -1,6 +1,6 @@
 # Maintaining Documentation
 
-This project uses a **3-tier progressive disclosure** system. Each tier loads different amounts of context.
+This project uses a **3-tier progressive disclosure** system plus canonical repo skill sources under `docs/skills/`.
 
 ## The 3 Tiers
 
@@ -24,6 +24,12 @@ This project uses a **3-tier progressive disclosure** system. Each tier loads di
 - New content types (a new "adding-X" guide)
 - Design system updates
 
+### Add to docs/skills/ when:
+- Changing shared repo skill behavior or descriptions
+- Adding or removing repo-native workflow skills
+- Moving shared skill references or templates into a tracked source of truth
+- Keeping `.github/skills/`, `.claude/skills/`, and `.agents/skills/` in sync via generation
+
 ### Add project memory when:
 - Recording domain knowledge (architecture, testing patterns, content guidelines)
 - Documenting tool workflows and gotchas
@@ -37,6 +43,7 @@ This project uses a **3-tier progressive disclosure** system. Each tier loads di
 3. **Guides are self-contained.** Each guide should be useful without reading an agent entrypoint first.
 4. **Memories don't duplicate.** They point to docs, never repeat content from them.
 5. **Delete stale docs.** Session artifacts, one-off reports, and resolved bug docs don't belong in the repo.
+6. **Shared skills are authored in `docs/skills/`.** Runtime mirrors are generated; do not hand-edit them.
 
 ## Guide Template
 

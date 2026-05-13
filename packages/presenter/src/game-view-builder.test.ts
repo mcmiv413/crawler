@@ -1,7 +1,7 @@
 import { describe, it, expect } from 'vitest';
 import { buildGameView } from './game-view-builder.js';
 import { entityId, posKey, EMPTY_RUN_METRICS } from '@dungeon/contracts';
-import type { GameState, RunState, NpcState, EnemyInstance } from '@dungeon/contracts';
+import type { GameState, RunState, NpcState, EnemyInstance, FactionState } from '@dungeon/contracts';
 import { createTestGameStateInCombat, createTestEnemy } from '@dungeon/core/testing';
 
 function makeFloor(depth: number, playerOnStairsUp = false) {
@@ -980,6 +980,57 @@ describe('buildInventoryView item stacking', () => {
     });
     const view = buildGameView(state);
     expect(view.town?.lastRetreatFloor).toBeUndefined();
+  });
+
+  it('TownView exposes faction pressure data for tavern and modal surfaces', () => {
+    const baseState = makeState({ phase: 'town' });
+    const faction: FactionState = {
+      id: 'goblin_warband',
+      name: 'Goblin Warband',
+      power: 40,
+      disposition: -30,
+      status: 'led',
+      activeLeaderId: entityId('leader-1'),
+      leader: {
+        id: entityId('leader-1'),
+        factionId: 'goblin_warband',
+        name: 'Brakka',
+        title: 'Knife-King',
+        templateId: 'goblin_warlord',
+        isActive: true,
+        isSlain: false,
+        emergedOnRun: 2,
+        emergedOnDepth: 3,
+      },
+      leaderSlain: false,
+      membersKilledByPlayer: 3,
+      leadersKilledByPlayer: 0,
+      playerDeathsCaused: 1,
+    };
+    const state = {
+      ...baseState,
+      world: {
+        ...baseState.world,
+        factions: [faction],
+      },
+    };
+
+    const view = buildGameView(state);
+
+    expect(view.town?.factionPressureSummary).toBe('1 led · 0 leaderless · 0 broken.');
+    expect(view.town?.factions).toEqual(
+      expect.arrayContaining([
+        expect.objectContaining({
+          id: 'goblin_warband',
+          name: 'Goblin Warband',
+          leader: expect.objectContaining({
+            state: 'emerged',
+            name: 'Brakka',
+            title: 'Knife-King',
+          }),
+        }),
+      ]),
+    );
   });
 
   // Phase B: Ability UX Tests

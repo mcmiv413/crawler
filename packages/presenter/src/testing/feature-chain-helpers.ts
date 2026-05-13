@@ -23,13 +23,13 @@ export interface FeatureChainAssertion {
   eventType?: string;
   /** Optional: verify specific event count (default 1+) */
   eventCount?: number;
-  /** Optional: verify player can trigger entry point */
+  /** Optional: verify the feature is triggerable from the before-state */
   entryCheck?: (before: GameState) => boolean;
   /** Optional: verify state changed correctly */
   stateChanges?: (before: GameState, after: GameState) => boolean;
   /** Optional: verify presenter output contains the change */
   viewChecks?: (before: GameView, after: GameView) => boolean;
-  /** Optional: verify UI can render the feature */
+  /** Optional: verify UI-facing GameView data is present for downstream render tests */
   uiCheck?: (view: GameView) => boolean;
   /** Optional: verify event can be formatted for display */
   formattingCheck?: (event: DomainEvent) => boolean;
@@ -50,10 +50,14 @@ export interface FeatureChainAssertion {
  *   });
  *
  * This validates:
+ *   - Link 1: Entry point is available when entryCheck is provided
  *   - Link 3: Event was emitted
  *   - Link 2: State changed as expected
  *   - Link 5: Event can be formatted (will show in UI)
- *   - Link 4: View metrics updated
+ *   - Link 4: GameView exposes the expected UI-facing data
+ *
+ * React render assertions still belong in component tests. uiCheck is for the
+ * presenter-owned view contract that those component tests consume.
  */
 export function assertFeatureChain(
   result: { state: GameState; events: readonly DomainEvent[] },
@@ -61,6 +65,17 @@ export function assertFeatureChain(
   assertions: FeatureChainAssertion,
 ): void {
   const { state: afterState, events } = result;
+  const needsViews = assertions.viewChecks !== undefined || assertions.uiCheck !== undefined;
+  const beforeView = needsViews ? buildGameView(beforeState) : null;
+  const afterView = needsViews ? buildGameView(afterState) : null;
+
+  // Link 1: entry point is available from the before-state
+  if (assertions.entryCheck) {
+    expect(
+      assertions.entryCheck(beforeState),
+      'Expected the feature entry point to be triggerable from the before-state',
+    ).toBe(true);
+  }
 
   // Link 3: Event emission
   if (assertions.eventType) {
@@ -81,10 +96,19 @@ export function assertFeatureChain(
   }
 
   // Link 4: View updated (optional detailed check)
-  if (assertions.viewChecks) {
-    const beforeView = buildGameView(beforeState);
-    const afterView = buildGameView(afterState);
-    expect(assertions.viewChecks(beforeView, afterView)).toBe(true);
+  if (assertions.viewChecks && beforeView && afterView) {
+    expect(
+      assertions.viewChecks(beforeView, afterView),
+      'Expected the presenter view to expose the feature change',
+    ).toBe(true);
+  }
+
+  // Link 5: UI-facing GameView data is present for component render tests
+  if (assertions.uiCheck && afterView) {
+    expect(
+      assertions.uiCheck(afterView),
+      'Expected the GameView to contain the UI-facing data for this feature',
+    ).toBe(true);
   }
 
   // Metrics updated (optional)

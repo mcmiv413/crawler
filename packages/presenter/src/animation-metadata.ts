@@ -9,7 +9,7 @@ export type ConsumableAnimationEffect = 'heal' | 'buff' | 'cure' | 'damage';
 export const ANIMATION_TIMING = {
   moveStaggerMs: 120,
   attackStaggerMs: 500,
-  damageIndicatorDelayMs: 150,
+  damageIndicatorDelayMs: 300,
 } as const;
 
 export const MOVE_ANIMATION_DURATIONS: Readonly<Record<MoveAnimStyle, number>> = {

@@ -418,17 +418,17 @@ describe('state validators', () => {
     it('detects multiple invalid enemies in run', () => {
       const enemy1 = createTestEnemy({ id: entityId('e1'), tier: -1 as any });
       const enemy2 = createTestEnemy({ id: entityId('e2'), tier: -5 as any });
+      const run = createTestRunState({
+        enemies: new Map([
+          ['0,0', enemy1],
+          ['1,1', enemy2],
+        ]),
+      });
 
       const state = createTestGameState({ phase: 'dungeon' });
       const invalid = {
         ...state,
-        run: {
-          ...state.run!,
-          enemies: new Map([
-            ['0,0', enemy1],
-            ['1,1', enemy2],
-          ]),
-        },
+        run,
       };
       const result = validateGameState(invalid);
       expect(result.errors.length).toBeGreaterThan(0);

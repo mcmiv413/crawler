@@ -43,7 +43,9 @@ The game is **fully playable without LM Studio**. To enable LM Studio locally, s
 | `pnpm test:verbose` | Run the full Vitest suite with standard output |
 | `pnpm test:watch` | Vitest watch mode — re-run tests on file changes |
 | `pnpm test:e2e` | Run Playwright E2E tests (automatically starts server+web) |
-| `pnpm validate` | Run the repository validation gate: audit guardrails -> lint -> test -> build |
+| `pnpm validate` | Run the repository validation gate: tracked-artifact checks -> audit guardrails -> lint -> test -> build |
+| `pnpm skills:generate` | Rebuild `.github/skills/`, `.claude/skills/`, and `.agents/skills/` from `docs/skills/` |
+| `pnpm skills:check` | Verify the generated skill mirrors still match `docs/skills/` |
 | `pnpm test:docker` | Build and test Docker images (builds, starts containers, verifies health) |
 | `pnpm vitest run <file>` | Run a single Vitest file, e.g., `pnpm vitest run packages/game-core/src/systems/combat.test.ts` |
 | `docker-compose up` | Production mode: server :3000, web :8080 (uses prebuilt Docker images) |
@@ -121,6 +123,9 @@ pnpm test:e2e
 # Single test file
 pnpm vitest run packages/game-core/src/systems/combat.test.ts
 
+# Root tests/ single file (uses the root Vitest config)
+pnpm vitest run --config tests/vitest.config.ts tests/integration/package-exports.integration.test.ts
+
 # Final validation gate before merge
 pnpm validate
 
@@ -142,6 +147,13 @@ This ensures the Docker build works and the containerized app is fully functiona
 ### Validation Gate
 
 Use `pnpm validate` as the merge gate. It runs audit guardrails, linting, the Vitest suites, and the production builds in the same order CI uses.
+
+The repo intentionally keeps its deterministic smoke checks split by responsibility instead of folding them into one opaque meta-validator:
+
+- `pnpm run check:tracked-artifacts` catches staged or already tracked cache files, Zone.Identifier files, and source-map noise that `.gitignore` alone cannot stop.
+- `pnpm run check:workspace-wiring` catches undeclared workspace dependencies, `src`-internal imports, and unexported subpaths.
+- `pnpm run check:ability-contracts` catches live ability metadata, payload, and animation drift with invariant checks.
+- `pnpm run check:exports` catches built-output and consumer-context package resolution failures that source-only tests can miss.
 
 ---
 
@@ -296,20 +308,29 @@ When adding new features or tests:
 3. Use Zod schemas for all API shapes (contracts)
 4. Use the repo gate that matches your stage: `pnpm run check:fast` while iterating, `pnpm validate:quick` before review, `pnpm validate` before merge
 5. Ensure E2E tests pass with `pnpm test:e2e` when browser flows change
+6. Edit shared repo skills in `docs/skills/`, not in the generated `.github/skills/`, `.claude/skills/`, or `.agents/skills/` mirrors
+
+### Repo Skills
+
+Shared repo skills now use a single canonical source in `docs/skills/`.
+
+- Rebuild runtime mirrors with `pnpm skills:generate`
+- Check for drift with `pnpm skills:check`
+- See [docs/guides/repo-skills.md](docs/guides/repo-skills.md) for the PSRE capability map and maintenance workflow
 
 ### Validation Gates
 
 Use the smallest repo gate that matches what you are doing:
 
 ```bash
-pnpm run check:fast   # pre-commit: audit + workspace wiring + cached ESLint + full typecheck
+pnpm run check:fast   # pre-commit: tracked artifacts + audit + workspace wiring + cached ESLint + full typecheck
 pnpm validate:quick   # local confidence: generation + check:fast + ability contracts + changed tests + build
-pnpm validate         # canonical merge gate: generation + guardrails + lint + full tests + build + exports
+pnpm validate         # canonical merge gate: generation + tracked artifacts + guardrails + lint + full tests + build + exports
 ```
 
 The installed pre-commit hook runs `pnpm run check:fast`.
 
-`pnpm validate` is the canonical repository gate and the same command CI enforces. It runs audit guardrails, workspace wiring, ability contract checks, lint, the default workspace Vitest suites, the build, and package export validation.
+`pnpm validate` is the canonical repository gate and the same command CI enforces. It runs tracked-artifact checks, audit guardrails, workspace wiring, ability contract checks, lint, the default workspace Vitest suites, the build, and package export validation.
 
 `check:exports` intentionally stays out of pre-commit because it depends on built artifacts and consumer-context package resolution.
 

@@ -35,5 +35,6 @@ Each guide below includes a "Quick Start" section that reminds you to run this c
 | [Adding an Enchantment](guides/adding-enchantment.md) | Enchantment definitions, hook system, stacking rules |
 | [Adding an Elemental Ring](guides/adding-ring.md) | Ring-granted spells, Elder study unlocks, mana/mastery, animations, and tests |
 | [UI Design](guides/ui-design.md) | Design system, colour tokens, sprite system, layout rules |
+| [Repo Skills Workflow](guides/repo-skills.md) | Canonical skill source, generated mirrors, PSRE capability map, and maintenance commands |
 | [Maintaining Docs](MAINTAINING-DOCS.md) | How to update this documentation system |
 | [Enhancements](enhancements/ENH-movement-discoverability.md) | Future UX or product improvements that are not current bugs |

@@ -83,6 +83,13 @@ function AbilityDetailPanel({
   onClose: () => void;
 }) {
   const weaponRequirement = ability.weaponRequirement;
+  const targetLabel = ability.requiresTarget
+    ? ability.targetRange !== undefined
+      ? ability.targetRange.min > 0
+        ? `Enemy ${ability.targetRange.min}-${ability.targetRange.max} tiles away`
+        : `Enemy within ${ability.targetRange.max} tiles`
+      : 'Nearest enemy in range'
+    : 'Self';
 
   return (
     <div style={{ marginBottom: 12, padding: 8, background: '#1a2a3a', border: '1px solid #2a4a6a' }}>
@@ -116,7 +123,7 @@ function AbilityDetailPanel({
         <div>
           <div style={{ color: '#888', marginBottom: 2 }}>Target</div>
           <div style={{ color: '#4af' }}>
-            {ability.requiresTarget ? 'Nearest enemy in range' : 'Self'}
+            {targetLabel}
           </div>
         </div>
 
@@ -139,6 +146,66 @@ function AbilityDetailPanel({
 
       <div style={{ fontSize: 11, color: ability.ready ? '#4f4' : '#f88' }}>
         {ability.ready ? '✓ Ready' : `⏱ Cooldown: ${ability.cooldownRemaining} turn${ability.cooldownRemaining === 1 ? '' : 's'}`}
+      </div>
+    </div>
+  );
+}
+
+function RingMagicDetailModal({
+  mastery,
+  learnedSpells,
+  onClose,
+}: {
+  mastery: PlayerHudView['ringSchoolMasteries'][number];
+  learnedSpells: PlayerHudView['learnedSpells'];
+  onClose: () => void;
+}) {
+  const schoolName = titleCase(mastery.school);
+  const nextTierLabel = mastery.level >= 2
+    ? 'Maximum mastery tier reached'
+    : `${mastery.xp} / ${mastery.nextLevelXp} XP toward the next tier`;
+  const schoolSpells = learnedSpells.filter(spell => spell.schools.includes(mastery.school));
+
+  return (
+    <div style={{ marginBottom: 12, padding: 8, background: '#1b1426', border: '1px solid #4a2f66' }}>
+      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 8 }}>
+        <div>
+          <div style={{ fontSize: 13, fontWeight: 'bold', color: '#b695ff' }}>{schoolName} Magic</div>
+          <div style={{ fontSize: 10, color: '#9a90b6' }}>Tier {mastery.level}</div>
+        </div>
+        <button
+          onClick={onClose}
+          style={{
+            padding: '2px 6px',
+            background: '#2a2138',
+            color: '#bbb',
+            border: '1px solid #4a2f66',
+            cursor: 'pointer',
+            fontSize: 11,
+          }}
+        >
+          ✕
+        </button>
+      </div>
+
+      <div style={{ fontSize: 11, color: '#ddd', lineHeight: 1.5, marginBottom: 8 }}>
+        <div>Current XP: {mastery.xp}</div>
+        <div>{nextTierLabel}</div>
+      </div>
+
+      <div style={{ borderTop: '1px solid #332547', paddingTop: 6 }}>
+        <div style={{ fontSize: 10, color: '#b695ff', fontWeight: 'bold', marginBottom: 4 }}>Learned Spells</div>
+        {schoolSpells.length > 0 ? (
+          schoolSpells.map(spell => (
+            <div key={spell.spellId} style={{ fontSize: 11, color: '#ddd', marginBottom: 3 }}>
+              {spell.name}
+              {spell.manaCost > 0 ? <span style={{ color: '#8a78c8', marginLeft: 4 }}>{spell.manaCost}MP</span> : null}
+              {spell.cooldown > 0 ? <span style={{ color: '#888', marginLeft: 4 }}>cd:{spell.cooldown}</span> : null}
+            </div>
+          ))
+        ) : (
+          <div style={{ fontSize: 10, color: '#888' }}>No spells learned in this school yet.</div>
+        )}
       </div>
     </div>
   );
@@ -289,6 +356,7 @@ export function CharacterScreen({ player, activeQuests, sendCommand }: Character
   const [showFactionsModal, setShowFactionsModal] = useState(false);
   const [showMasteryModal, setShowMasteryModal] = useState<string | null>(null);
   const [showEnchantsModal, setShowEnchantsModal] = useState(false);
+  const [selectedRingSchool, setSelectedRingSchool] = useState<string | null>(null);
 
   const quests = activeQuests ?? player.activeQuests;
   const hasQuests = quests.length > 0;
@@ -296,9 +364,15 @@ export function CharacterScreen({ player, activeQuests, sendCommand }: Character
   const hasEnchantments = player.equippedItems.some(item => item.enchantments.length > 0);
   const masteryTiers = player.weaponMasteryTiers ?? [];
   const hasMasteries = masteryTiers.length > 0;
+  const hasRingMagic = player.ringSchoolMasteries.length > 0 || player.learnedSpells.length > 0;
+  const totalRingMagicXp = player.ringSchoolMasteries.reduce((total, mastery) => total + mastery.xp, 0);
   const selectedMasteryInfo =
     showMasteryModal && showMasteryModal !== 'list'
       ? masteryTiers.find(info => info.weaponType === showMasteryModal)
+      : undefined;
+  const selectedRingMagicInfo =
+    selectedRingSchool !== null
+      ? player.ringSchoolMasteries.find(info => info.school === selectedRingSchool)
       : undefined;
 
   return (
@@ -408,13 +482,31 @@ export function CharacterScreen({ player, activeQuests, sendCommand }: Character
           </div>
 
           {/* Ring Magic */}
-          {player.ringSchoolMasteries.length > 0 && (
+          {hasRingMagic && (
             <section style={{ marginBottom: 12 }}>
-              <div style={{ fontSize: 11, color: '#888', marginBottom: 4 }}>RING MAGIC</div>
+              <div style={{ display: 'flex', justifyContent: 'space-between', gap: 8, marginBottom: 4 }}>
+                <div style={{ fontSize: 11, color: '#888' }}>RING MAGIC</div>
+                <div style={{ fontSize: 10, color: '#8a78c8' }}>TOTAL XP {totalRingMagicXp}</div>
+              </div>
               {player.ringSchoolMasteries.map(m => (
-                <div key={m.school} style={{ fontSize: 12, color: '#cc8', marginBottom: 2 }}>
-                  {m.school} — Lv {m.level} ({m.xp} XP / {m.nextLevelXp})
-                </div>
+                <button
+                  key={m.school}
+                  onClick={() => setSelectedRingSchool(m.school)}
+                  style={{
+                    width: '100%',
+                    marginBottom: 4,
+                    padding: '6px 8px',
+                    background: selectedRingSchool === m.school ? '#2f2142' : '#17111f',
+                    color: '#d6c6ff',
+                    border: `1px solid ${selectedRingSchool === m.school ? '#8a78c8' : '#4a2f66'}`,
+                    fontSize: 11,
+                    cursor: 'pointer',
+                    textAlign: 'left',
+                  }}
+                >
+                  <div style={{ fontWeight: 'bold', marginBottom: 2 }}>{titleCase(m.school)}</div>
+                  <div style={{ color: '#b0a3d1' }}>Lv {m.level} · {m.xp} XP / {m.nextLevelXp}</div>
+                </button>
               ))}
             </section>
           )}
@@ -470,6 +562,13 @@ export function CharacterScreen({ player, activeQuests, sendCommand }: Character
         <MasteryDetailModal
           mastery={selectedMasteryInfo}
           onClose={() => setShowMasteryModal(null)}
+        />
+      )}
+      {selectedRingMagicInfo !== undefined && (
+        <RingMagicDetailModal
+          mastery={selectedRingMagicInfo}
+          learnedSpells={player.learnedSpells}
+          onClose={() => setSelectedRingSchool(null)}
         />
       )}
     </div>

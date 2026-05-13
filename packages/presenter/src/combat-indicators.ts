@@ -50,6 +50,16 @@ function handleStatusApplied(
   addIndicator(indicators, statusName, 'status', pos.x, pos.y);
 }
 
+function handleStatusDamageTick(
+  event: Extract<DomainEvent, { type: 'STATUS_DAMAGE_TICK' }>,
+  state: GameState,
+  indicators: CombatIndicatorEntry[],
+): void {
+  const pos = getPos(event.targetId, state);
+  if (!pos) return;
+  addIndicator(indicators, `-${event.damage}`, 'damage', pos.x, pos.y);
+}
+
 function handleAbilityUsed(
   event: Extract<DomainEvent, { type: 'ABILITY_USED' }>,
   state: GameState,
@@ -134,6 +144,8 @@ function processEvent(
       return handleAttackPerformed(event, state, indicators);
     case 'STATUS_APPLIED':
       return handleStatusApplied(event, state, indicators);
+    case 'STATUS_DAMAGE_TICK':
+      return handleStatusDamageTick(event, state, indicators);
     case 'ABILITY_USED':
       return handleAbilityUsed(event, state, indicators);
     case 'GOLD_CHANGED':

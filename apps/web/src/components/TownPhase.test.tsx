@@ -371,6 +371,30 @@ describe('TownPhase Component', () => {
       expect(screen.getByText(/The Dungeon Ogre/i)).toBeInTheDocument();
       expect(screen.getByText(/Break 3 more to reveal the Dungeon Ogre/i)).toBeInTheDocument();
     });
+
+    it('opens faction detail modal from the tavern panel', () => {
+      const view = createMockGameView();
+      render(
+        <TownPhase
+          view={view}
+          combatLog={[]}
+          loading={false}
+          error={null}
+          sendCommand={vi.fn()}
+          talkToNpc={vi.fn()}
+          npcDialogue={null}
+          setNpcDialogue={vi.fn()}
+          talkingTo={null}
+        />
+      );
+
+      fireEvent.click(screen.getByRole('button', { name: /Tavern →/i }));
+      fireEvent.click(screen.getByRole('button', { name: /Inspect →/i }));
+
+      expect(screen.getByText(/FACTION PROGRESS/i)).toBeInTheDocument();
+      expect(screen.getByText(/Members Slain/i)).toBeInTheDocument();
+      expect(screen.getAllByRole('button', { name: /^Close$/i }).length).toBeGreaterThan(0);
+    });
   });
 
   describe('NPC Section', () => {
@@ -745,7 +769,7 @@ describe('TownPhase Component', () => {
       fireEvent.click(screen.getByRole('button', { name: /Study →/i }));
       expect(screen.getByRole('heading', { name: /Ring Study/i })).toBeVisible();
 
-      fireEvent.click(screen.getByRole('button', { name: /Ready/i }));
+      fireEvent.click(screen.getByRole('button', { name: /^Study$/i }));
 
       expect(sendCommand).toHaveBeenCalledWith({
         type: 'TOWN_ACTION',

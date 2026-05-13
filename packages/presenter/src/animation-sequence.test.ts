@@ -492,6 +492,45 @@ describe('buildAnimationSequence', () => {
       expect(damageAnim?.delayMs).toBeGreaterThan(abilityAnim?.delayMs ?? 0);
     });
 
+    it('emits hit-stop and defender-hit entries for impact abilities', () => {
+      const events: DomainEvent[] = [
+        {
+          type: 'ABILITY_USED',
+          playerId: 'player-1' as any,
+          abilityId: 'power_strike',
+          abilityName: 'Power Strike',
+          targetId: 'enemy-1' as any,
+          targetName: 'Slow Goblin',
+          damage: 25,
+          timestamp: 0,
+          turnNumber: 1,
+        },
+      ];
+
+      const animations = buildAnimationSequence(events, mockGameState);
+
+      const abilityAnim = animations.find(a => a.type === 'ability');
+      const damageAnim = animations.find(a => a.type === 'damage');
+      const hitStop = animations.find(a => a.type === 'hit-stop');
+      const defenderHit = animations.find(a => a.type === 'defender-hit');
+
+      expect(abilityAnim).toBeDefined();
+      expect(damageAnim).toBeDefined();
+      expect(hitStop).toBeDefined();
+      expect(defenderHit).toBeDefined();
+
+      expect(hitStop?.delayMs).toBe(damageAnim?.delayMs);
+      expect(defenderHit?.delayMs).toBe(damageAnim?.delayMs);
+      if (hitStop?.type === 'hit-stop' && defenderHit?.type === 'defender-hit') {
+        const hitStopData = hitStop.data as { durationMs: number };
+        const defenderHitData = defenderHit.data as { entityId: string; durationMs: number };
+
+        expect(hitStopData.durationMs).toBeGreaterThan(0);
+        expect(defenderHitData.entityId).toBe('enemy-1');
+        expect(defenderHitData.durationMs).toBe(hitStopData.durationMs);
+      }
+    });
+
     it('emits multiple damage indicators for AoE abilities like cleave', () => {
       const events: DomainEvent[] = [
         {

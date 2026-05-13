@@ -69,6 +69,11 @@ tests/integration/*
 !tests/integration/ability-contracts.integration.test.ts
 !tests/integration/eslint-plugin-dungeon.integration.test.ts
 !tests/integration/workspace-wiring.integration.test.ts
+!tests/integration/package-exports.integration.test.ts
+!tests/integration/tracked-artifacts.integration.test.ts
 
 # GitHub skills (experimental)
 .github/skills/
+.agents/skills/
+
+!tests/integration/repo-skills.integration.test.ts

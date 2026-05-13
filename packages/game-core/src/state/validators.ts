@@ -1,4 +1,5 @@
 import type { GameState, RunState, Player, EnemyInstance, WorldState } from '@dungeon/contracts';
+import { posKey } from '@dungeon/contracts';
 
 export interface ValidationError {
   readonly path: string;
@@ -133,6 +134,18 @@ export function validateRunState(run: RunState): ValidationError[] {
   if (run.enemies && typeof run.enemies[Symbol.iterator] === 'function') {
     for (const [key, enemy] of run.enemies) {
       mutableErrors.push(...validateEnemy(enemy).map(e => ({ ...e, path: `enemies.${key}.${e.path}` })));
+      const cell = run.floor.cells.get(posKey(enemy.position));
+      if (cell === undefined) {
+        mutableErrors.push({
+          path: `enemies.${key}.position`,
+          message: 'enemy position must reference an existing floor cell',
+        });
+      } else if (cell.tile.walkable !== true) {
+        mutableErrors.push({
+          path: `enemies.${key}.position`,
+          message: 'enemy position must be on a walkable tile',
+        });
+      }
     }
   } else {
     mutableErrors.push({ path: 'enemies', message: 'enemies must be a Map' });
