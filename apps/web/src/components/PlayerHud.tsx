@@ -201,7 +201,7 @@ export function PlayerHud({ player, compact = false }: PlayerHudProps) {
           {hasMana && (
             <StatBar
               label="MP"
-              fillColor="#4aa3ff"
+              fillColor={colors.purple}
               pct={mpPct}
               valueLabel={`${mana}/${maxMana}`}
               layout="compact-inline"
@@ -287,7 +287,7 @@ export function PlayerHud({ player, compact = false }: PlayerHudProps) {
       {hasMana && (
         <StatBar
           label="MP"
-          fillColor="#4aa3ff"
+          fillColor={colors.purple}
           pct={mpPct}
           valueLabel={`${mana} / ${maxMana}`}
           testId="mp-bar"

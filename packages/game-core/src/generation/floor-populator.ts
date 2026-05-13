@@ -84,7 +84,7 @@ export function populateFloor(
   }
 
   const coloredEnemies = new Map(assignInstanceColors(enemies));
-  const simulatedEnemies = preSimulateAmbientBehavior(coloredEnemies, AMBIENT_PROFILES, 10, floor.seed);
+  const simulatedEnemies = preSimulateAmbientBehavior(coloredEnemies, floor, AMBIENT_PROFILES, 10, floor.seed);
   const safeEnemies = enforceSpawnSafety(floor, coloredEnemies, simulatedEnemies);
 
   return { enemies: safeEnemies, objects };

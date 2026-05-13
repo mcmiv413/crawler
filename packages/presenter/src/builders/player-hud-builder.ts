@@ -2,6 +2,7 @@ import type { GameState, WeaponType } from '@dungeon/contracts';
 import { STATUS_DEFINITIONS, ABILITY_DEFINITIONS, ENCHANTMENT_BY_ID, XP_TABLE, getRarityColor, BIOMES, getDamageBand, getWeaponDamageProfile, RING_SPELL_BY_ID, RING_SCHOOLS } from '@dungeon/content';
 import { getObjectiveText } from '@dungeon/core/systems/quest-progress.js';
 import { getEffectiveStat } from '@dungeon/core/systems/status-effects.js';
+import { evaluateAllRingSpellStudy, getEquippedRingItemIds } from '@dungeon/core';
 import type { AbilityView, EnchantmentView, EquippedItemView, LearnedSpellView, PlayerHudView, RingSchoolMasteryView, RingSpellView, StatusView } from '../game-view.js';
 import { calculateStatBreakdown } from './stat-breakdown-builder.js';
 import { buildFactionView, buildOgreProgressView } from './faction-progress-builder.js';
@@ -111,7 +112,13 @@ export function buildPlayerHud(state: GameState): PlayerHudView {
         unlockLevel: def?.unlockLevel ?? 0,
         requiresTarget: def?.requiresTarget ?? false,
         requiresDirection: def?.requiresDirection === true,
-        isRanged: def?.requiresWeaponTypes?.includes('ranged') === true ? true : undefined,
+        isRanged: def?.range !== undefined || def?.requiresWeaponTypes?.includes('ranged') === true ? true : undefined,
+        targetRange: def?.range !== undefined
+          ? {
+              max: def.range,
+              min: def.minRange ?? 0,
+            }
+          : undefined,
         weaponRequirement: def?.requiresWeaponTypes && def.requiresWeaponTypes.length > 0
           ? {
               label: def.requiresWeaponTypes.join(', '),
@@ -149,23 +156,48 @@ export function buildPlayerHud(state: GameState): PlayerHudView {
     return buildFactionView(faction, mutableCurrentDungeonEnemies);
   });
 
+  const equippedItemIds = getEquippedRingItemIds(state.player.equipment, state.itemRegistry.items);
+  const learnedSpellIds = p.learnedRingSpellIds ?? [];
+  const discoveredSchools = new Set<string>();
+  for (const school of RING_SCHOOLS) {
+    if ((p.ringMastery as Record<string, { xp: number }>)[school.id] !== undefined) {
+      discoveredSchools.add(school.id);
+    }
+  }
+  for (const itemId of equippedItemIds) {
+    const school = RING_SCHOOLS.find(candidate => candidate.ringId === itemId);
+    if (school !== undefined) {
+      discoveredSchools.add(school.id);
+    }
+  }
+  for (const spellId of learnedSpellIds) {
+    const spell = RING_SPELL_BY_ID.get(spellId);
+    if (spell === undefined) continue;
+    for (const school of spell.schools) {
+      discoveredSchools.add(school);
+    }
+  }
+
   // Build ring school mastery info
-  const ringSchoolMasteries: RingSchoolMasteryView[] = RING_SCHOOLS.map(school => {
-    const xpData = (p.ringMastery as Record<string, { xp: number }>)[school.id];
-    const currentXp = xpData?.xp ?? 0;
-    const level = currentXp >= 60 ? 2 : (currentXp >= 20 ? 1 : 0);
-    const nextLevelXp = level >= 2 ? 60 : (level >= 1 ? 60 : 20);
-    return {
+  const ringSchoolMasteries: RingSchoolMasteryView[] = RING_SCHOOLS
+    .filter(school => discoveredSchools.has(school.id))
+    .map(school => {
+      const xpData = (p.ringMastery as Record<string, { xp: number }>)[school.id];
+      const currentXp = xpData?.xp ?? 0;
+      const level = currentXp >= 60 ? 2 : (currentXp >= 20 ? 1 : 0);
+      const nextLevelXp = level >= 2 ? 60 : (level >= 1 ? 60 : 20);
+      return {
       school: school.id,
       xp: currentXp,
-      level,
-      nextLevelXp,
-    };
-  });
+        level,
+        nextLevelXp,
+      };
+    });
+
+  const hasRingMagic = ringSchoolMasteries.length > 0 || learnedSpellIds.length > 0;
 
   // Build learned spells info
   const mutableLearnedSpells: LearnedSpellView[] = [];
-  const learnedSpellIds = p.learnedRingSpellIds ?? [];
   for (const spellId of learnedSpellIds) {
     const spell = RING_SPELL_BY_ID.get(spellId);
     if (spell !== undefined) {
@@ -184,41 +216,26 @@ export function buildPlayerHud(state: GameState): PlayerHudView {
   const learnedSpells = mutableLearnedSpells;
 
   // Build studyable spells info
-  // TODO: Consolidate with town-view-builder's evaluateAllRingSpellStudy; currently web uses town.studyableSpells
-  // This duplicate logic ignores equippedSchools and prerequisite requirements (use shared evaluator instead)
-  const studyableSpells = [...RING_SPELL_BY_ID.values()]
-    .filter(spell => !learnedSpellIds.includes(spell.id))
-    .map(spell => {
-      const schoolMastery = ringSchoolMasteries.find(m => m.school === spell.schools[0]);
-      const minXpReq = spell.studyRequirements.find(r => 'kind' in r && r.kind === 'minimumSchoolXp');
-      const goldCostReq = spell.studyRequirements.find(r => 'kind' in r && r.kind === 'goldCost');
-      const requiredSchoolXp = minXpReq && 'xp' in minXpReq ? minXpReq.xp : 0;
-      const goldCost = goldCostReq && 'gold' in goldCostReq ? goldCostReq.gold : 0;
-      const currentSchoolXp = schoolMastery?.xp ?? 0;
-
-      return {
-        spellId: spell.id,
-        name: spell.name,
-        description: spell.description,
-        schools: spell.schools,
-        cooldown: spell.cooldown,
-        manaCost: spell.manaCost ?? 0,
-        baseDamage: spell.baseDamage ?? 0,
-        range: spell.range ?? 0,
-        unlockLevel: spell.unlockLevel ?? 0,
-        learned: false,
-        unlocked: false,
-        affordable: p.gold >= goldCost,
-        canStudy: spell.studyRequirements.every(req => {
-          if ('kind' in req && req.kind === 'goldCost') return 'gold' in req ? p.gold >= req.gold : false;
-          if ('kind' in req && req.kind === 'minimumSchoolXp') return 'xp' in req ? currentSchoolXp >= req.xp : false;
-          return true;
-        }),
-        requiredSchoolXp,
-        goldCost,
-        currentSchoolXp,
-      } satisfies RingSpellView;
-    });
+  const studyableSpells: RingSpellView[] = evaluateAllRingSpellStudy(state.player, equippedItemIds)
+    .filter(evalResult => evalResult.unlockedForStudy)
+    .map(evalResult => ({
+      spellId: evalResult.spell.id,
+      name: evalResult.spell.name,
+      description: evalResult.spell.description,
+      schools: evalResult.spell.schools,
+      cooldown: evalResult.spell.cooldown,
+      manaCost: evalResult.spell.manaCost ?? 0,
+      baseDamage: evalResult.spell.baseDamage ?? 0,
+      range: evalResult.spell.range,
+      unlockLevel: evalResult.requiredSchoolXp,
+      learned: evalResult.alreadyLearned,
+      unlocked: evalResult.unlockedForStudy,
+      affordable: evalResult.affordable,
+      canStudy: evalResult.canStudy,
+      requiredSchoolXp: evalResult.requiredSchoolXp,
+      goldCost: evalResult.goldCost,
+      currentSchoolXp: evalResult.currentSchoolXp,
+    }));
 
   // Calculate total damage range (effective attack stat + weapon damage range)
   const effectiveAttack = getEffectiveStat(p.stats.attack, 'attack', p.statuses);
@@ -240,8 +257,7 @@ export function buildPlayerHud(state: GameState): PlayerHudView {
     level: p.level,
     health: p.stats.health,
     maxHealth: p.stats.maxHealth,
-    mana: p.mana,
-    maxMana: p.maxMana,
+    ...(hasRingMagic ? { mana: p.mana, maxMana: p.maxMana } : {}),
     attack: effectiveAttack,
     defense: p.stats.defense,
     accuracy: p.stats.accuracy,

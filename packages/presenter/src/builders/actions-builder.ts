@@ -48,6 +48,21 @@ function getEquippedWeaponRange(state: GameState): { max: number; min: number } 
   };
 }
 
+function getAbilityTargetRange(
+  abilityId: string,
+  weaponRange: { max: number; min: number },
+): { max: number; min: number } {
+  const definition = ABILITY_DEFINITIONS.get(abilityId);
+  if (definition?.range !== undefined) {
+    return {
+      max: definition.range,
+      min: definition.minRange ?? 0,
+    };
+  }
+
+  return weaponRange;
+}
+
 function isAbilityCompatibleWithEquippedWeapon(
   abilityId: string,
   equippedWeaponType: WeaponType | null,
@@ -112,7 +127,8 @@ function buildAbilityAction(
 
   const definition = ABILITY_DEFINITIONS.get(ability.id);
   const requiresTarget = definition?.requiresTarget === true;
-  const hasTargetInRange = !requiresTarget || hasVisibleEnemyTargetInRange(state, weaponRange.max, weaponRange.min);
+  const targetRange = getAbilityTargetRange(ability.id, weaponRange);
+  const hasTargetInRange = !requiresTarget || hasVisibleEnemyTargetInRange(state, targetRange.max, targetRange.min);
   const hasEnoughMana = definition?.manaCost === undefined || state.player.mana >= definition.manaCost;
   const enabled = ability.cooldownRemaining === 0 && hasTargetInRange && hasEnoughMana;
   const abilityName = definition?.name ?? ability.id;

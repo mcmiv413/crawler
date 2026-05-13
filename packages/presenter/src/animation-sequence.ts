@@ -138,6 +138,19 @@ function buildAnimationBatchId(
   return `batch-${state.gameId}-${state.turnNumber}-${hashString(signature)}`;
 }
 
+function getLastAttackImpactDelayMs(
+  maxAbilityDurationMs: number,
+  attackCount: number,
+): number {
+  if (attackCount === 0) {
+    return maxAbilityDurationMs;
+  }
+
+  return maxAbilityDurationMs
+    + ((attackCount - 1) * ANIMATION_TIMING.attackStaggerMs)
+    + ANIMATION_TIMING.damageIndicatorDelayMs;
+}
+
 export function buildAnimationSequence(
   events: readonly DomainEvent[],
   state: GameState,
@@ -310,6 +323,13 @@ export function buildAnimationSequence(
 
     // Determine damage positions and amounts based on ability type
     let mutableDamagePositions: Array<{ pos: { x: number; y: number }; damage: number }> = [];
+    const impactTargetIds = event.damageByTarget
+      ? Array.from(new Set(event.damageByTarget.keys()))
+      : event.affectedTargetIds !== undefined
+        ? Array.from(new Set(event.affectedTargetIds))
+        : event.targetId !== undefined
+          ? [event.targetId]
+          : [];
 
     if (event.abilityId === 'axe_cleave' && event.damageByTarget) {
       // Cleave: damage at each affected position
@@ -335,6 +355,11 @@ export function buildAnimationSequence(
       }
     }
 
+    const sequenceIndex = orderedMoves.length + abilityUsedEvents.length + i;
+    const impactDelayMs = animRef.durationMs;
+    const impactHitStopMs = 'hitStopMs' in animRef ? animRef.hitStopMs : undefined;
+    const impactFlash = 'impactFlash' in animRef ? animRef.impactFlash === true : false;
+
     // Create damage indicators for each position
     for (const { pos, damage } of mutableDamagePositions) {
       const damageEntry: CombatIndicatorEntry = {
@@ -344,14 +369,41 @@ export function buildAnimationSequence(
         y: pos.y,
       };
 
-      const sequenceIndex = orderedMoves.length + abilityUsedEvents.length + i;
       mutableAnimations.push({
         type: 'damage',
         sequenceIndex,
-        delayMs: animRef.durationMs * 0.3,  // Appear during animation, not after
+        delayMs: impactDelayMs,  // Appear during animation, not after
         batchId,
         data: damageEntry,
       });
+    }
+
+    if (impactHitStopMs !== undefined && impactTargetIds.length > 0) {
+      mutableAnimations.push({
+        type: 'hit-stop',
+        sequenceIndex,
+        delayMs: impactDelayMs,
+        batchId,
+        data: {
+          durationMs: impactHitStopMs,
+        } satisfies HitStopEntry,
+      });
+    }
+
+    if (impactFlash) {
+      const defenderHitDurationMs = impactHitStopMs ?? ANIMATION_TIMING.damageIndicatorDelayMs;
+      for (const targetId of impactTargetIds) {
+        mutableAnimations.push({
+          type: 'defender-hit',
+          sequenceIndex,
+          delayMs: impactDelayMs,
+          batchId,
+          data: {
+            entityId: targetId,
+            durationMs: defenderHitDurationMs,
+          } satisfies DefenderHitEntry,
+        });
+      }
     }
   }
 
@@ -413,6 +465,34 @@ export function buildAnimationSequence(
     });
   }
 
+  const lastAttackImpactDelayMs = getLastAttackImpactDelayMs(maxAbilityDurationMs, attacksWithSpeeds.length);
+
+  // ── 3b. Status damage indicators ───────────────────────────────────
+  const statusDamageTickEvents = events.filter(
+    (event): event is Extract<DomainEvent, { type: 'STATUS_DAMAGE_TICK' }> => event.type === 'STATUS_DAMAGE_TICK',
+  );
+
+  for (let i = 0; i < statusDamageTickEvents.length; i += 1) {
+    const event = statusDamageTickEvents[i];
+    if (!event) continue;
+
+    const targetPos = getEntityPosition(event.targetId, state);
+    if (!targetPos) continue;
+
+    mutableAnimations.push({
+      type: 'damage',
+      sequenceIndex: orderedMoves.length + abilityUsedEvents.length + attacksWithSpeeds.length + i,
+      delayMs: lastAttackImpactDelayMs + (i * ANIMATION_TIMING.damageIndicatorDelayMs),
+      batchId,
+      data: {
+        text: `-${event.damage}`,
+        type: 'damage',
+        x: targetPos.x,
+        y: targetPos.y,
+      } satisfies CombatIndicatorEntry,
+    });
+  }
+
   // ── 4. Consumable animations ────────────────────────────────────
   // One consumable per turn max. Fires at delay 0 — concurrent with movement.
 
@@ -439,12 +519,12 @@ export function buildAnimationSequence(
       ...(animationRef !== undefined ? { animationId: animationRef.id } : {}),
     };
 
-    const sequenceIndex = orderedMoves.length + abilityUsedEvents.length + attacksWithSpeeds.length + i;
+    const sequenceIndex = orderedMoves.length + abilityUsedEvents.length + attacksWithSpeeds.length + statusDamageTickEvents.length + i;
 
     mutableAnimations.push({
       type: 'consumable',
       sequenceIndex,
-      delayMs: maxAbilityDurationMs + (attacksWithSpeeds.length * ANIMATION_TIMING.attackStaggerMs),
+      delayMs: lastAttackImpactDelayMs + (statusDamageTickEvents.length * ANIMATION_TIMING.damageIndicatorDelayMs),
       batchId,
       data: entry,
     });

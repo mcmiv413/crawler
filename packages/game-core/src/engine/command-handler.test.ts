@@ -20,6 +20,7 @@ import {
   assertFeatureChain,
   expectFormattedEvent,
 } from '@dungeon/presenter/testing/feature-chain-helpers.js';
+import { buildGameView } from '@dungeon/presenter';
 
 // ---------------------------------------------------------------------------
 // Helpers
@@ -798,9 +799,16 @@ describe('handleMove', () => {
     // Note: PLAYER_MOVED is for internal state management, intentionally not formatted for combat log
     assertFeatureChain(result, state, {
       eventType: 'PLAYER_MOVED',
+      entryCheck: (before) =>
+        buildGameView(before).availableActions.some(
+          (action) => action.id === 'move_e' && action.type === 'move' && action.enabled,
+        ),
       stateChanges: (before, after) =>
         after.player.position.x !== before.player.position.x ||
         after.player.position.y !== before.player.position.y,
+      uiCheck: (view) =>
+        view.map?.playerPosition.x === result.state.player.position.x &&
+        view.map?.playerPosition.y === result.state.player.position.y,
     });
   });
 

@@ -23,6 +23,7 @@ export type AbilityRequirement =
   | { kind: 'player_missing_hp' }
   | { kind: 'target_in_melee_range' }
   | { kind: 'target_in_weapon_range' }
+  | { kind: 'target_in_ability_range'; range: number; minRange?: number }
   | { kind: 'target_visible' }
   | { kind: 'target_below_hp_pct'; percentage: number }
   | { kind: 'has_mana'; amount: number }

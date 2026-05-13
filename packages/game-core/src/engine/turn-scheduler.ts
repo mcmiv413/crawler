@@ -12,6 +12,7 @@ import { chebyshevDistance } from '../utils/grid.js';
 import type { SeededRNG } from '../utils/rng.js';
 import { applyThornsToAttacker, applyBlinkOnHit, getEnchantmentRegenBonus, getTotalThornsReflect } from '../systems/enchantment-hooks.js';
 import { updateRunMetrics } from './command-handler.js';
+import { processEnemyKill } from './handlers/combat.js';
 import { resolveEnemyAbility } from '../systems/enemy-abilities.js';
 import { COMBAT, AMBIENT_PROFILES, OBJECT_TEMPLATES } from '@dungeon/content';
 import { calculateHazardDamage, hazardTypeToDamageType } from '../systems/hazard-damage.js';
@@ -193,10 +194,22 @@ export function processEnemyTurns(
   // Tick enemy statuses at end of round
   if (currentState.run !== null) {
     let statusEvents: DomainEvent[] = [];
-    for (const enemy of currentState.run.enemies.values()) {
+    const enemiesToTick = Array.from(currentState.run.enemies.values());
+    for (const enemy of enemiesToTick) {
       const statusResult = tickEnemyStatuses(currentState, enemy, currentState.turnNumber);
       currentState = statusResult.state;
       statusEvents = [...statusEvents, ...statusResult.events];
+
+      if (currentState.run === null) {
+        break;
+      }
+
+      const currentEnemy = currentState.run.enemies.get(posKey(enemy.position));
+      if (currentEnemy !== undefined && currentEnemy.stats.health <= 0) {
+        const killResult = processEnemyKill(currentState, currentEnemy, posKey(currentEnemy.position), rng);
+        currentState = killResult.state;
+        statusEvents = [...statusEvents, ...killResult.events];
+      }
     }
     allEvents = [...allEvents, ...statusEvents];
   }

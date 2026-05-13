@@ -564,6 +564,42 @@ describe('DungeonPhase Component', () => {
       expect(screen.getByText('Oldest entry')).toBeInTheDocument();
       expect(screen.getByText('Newest entry')).toBeInTheDocument();
     });
+
+    it('hides debug-only log lines unless debug mode is enabled', () => {
+      const combatLog = [
+        { text: '[DEBUG] pathfinding trace', type: 'info' },
+        { text: '[Hero -> Goblin] 15 physical dmg', type: 'attack' },
+      ];
+
+      const { rerender } = render(
+        <DungeonPhase
+          view={createMockGameView({ debugMode: false })}
+          combatLog={combatLog}
+          loading={false}
+          error={null}
+          sendCommand={vi.fn()}
+          useSprites={false}
+          setUseSprites={vi.fn()}
+        />
+      );
+
+      expect(screen.queryByText(/\[DEBUG\] pathfinding trace/i)).not.toBeInTheDocument();
+      expect(screen.getByText(/\[Hero -> Goblin\] 15 physical dmg/i)).toBeInTheDocument();
+
+      rerender(
+        <DungeonPhase
+          view={createMockGameView({ debugMode: true })}
+          combatLog={combatLog}
+          loading={false}
+          error={null}
+          sendCommand={vi.fn()}
+          useSprites={false}
+          setUseSprites={vi.fn()}
+        />
+      );
+
+      expect(screen.getByText(/\[DEBUG\] pathfinding trace/i)).toBeInTheDocument();
+    });
   });
 
   describe('Error Display', () => {

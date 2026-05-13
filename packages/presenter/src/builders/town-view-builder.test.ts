@@ -407,7 +407,7 @@ describe('buildTownView', () => {
       expect(heatSurge?.learned).toBe(false);
     });
 
-    it('marks an Elder spell learned when it is already unlocked', () => {
+    it('hides an Elder spell from study when it is already learned', () => {
       const fireRingEntity = entityId('fire_ring_1');
       state = {
         ...state,
@@ -434,7 +434,7 @@ describe('buildTownView', () => {
       const view = buildTownView(state);
       const heatSurge = view.studyableSpells.find(spell => spell.spellId === 'heat_surge');
 
-      expect(heatSurge?.unlocked).toBe(true);
+      expect(heatSurge).toBeUndefined();
     });
   });
 });

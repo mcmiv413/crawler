@@ -10,5 +10,7 @@ export interface AbilityDefinition {
   readonly unlockLevel: number;
   readonly manaCost?: number;
   readonly requiresWeaponTypes?: readonly WeaponType[];
+  readonly range?: number;
+  readonly minRange?: number;
   readonly animation: { readonly id: string };
 }

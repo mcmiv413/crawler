@@ -234,6 +234,33 @@ describe('game-view-builder coverage: entity visibility', () => {
   });
 });
 
+describe('game-view-builder coverage: dungeon seam data', () => {
+  it('propagates the current player position into map view for downstream canvas clicks', () => {
+    const baseState = createTestGameStateInCombat();
+    const cells = new Map(baseState.run!.floor.cells);
+    cells.set('4,3', createVisibilityCell('visible'));
+
+    const modifiedState = {
+      ...baseState,
+      player: {
+        ...baseState.player,
+        position: { x: 4, y: 3 },
+      },
+      run: {
+        ...baseState.run!,
+        floor: {
+          ...baseState.run!.floor,
+          cells,
+        },
+      },
+    };
+
+    const view = buildGameView(modifiedState);
+
+    expect(view.map?.playerPosition).toEqual({ x: 4, y: 3 });
+  });
+});
+
 describe('game-view-builder coverage: sprite/template reference resolution', () => {
   describe('sprite data validity', () => {
     it('all visible entities have valid sprite attributes (ascii and color)', () => {

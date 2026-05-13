@@ -38,7 +38,7 @@ interface GameStore {
   toggleDebugLogging: () => Promise<void>;
 }
 
-let deathTransitionTimeout: ReturnType<typeof setTimeout> | null = null;
+let pendingViewTimeout: ReturnType<typeof setTimeout> | null = null;
 
 type SetGameStore = (partial: Partial<GameStore>) => void;
 type GetGameStore = () => GameStore;
@@ -183,11 +183,34 @@ function isDeathTransition(currentView: GameView | null, nextView: GameView): bo
   return dungeonToEndPhase && hasDeathSignal;
 }
 
-function clearDeathTransitionTimeout(): void {
-  if (deathTransitionTimeout) {
-    clearTimeout(deathTransitionTimeout);
+function clearPendingViewTimeout(): void {
+  if (pendingViewTimeout) {
+    clearTimeout(pendingViewTimeout);
   }
-  deathTransitionTimeout = null;
+  pendingViewTimeout = null;
+}
+
+function getAnimatedEventSettleMs(animatedEvents: readonly GameView['animatedEvents'][number][]): number {
+  let settleMs = 0;
+
+  for (const animatedEvent of animatedEvents) {
+    let eventSettleMs = animatedEvent.delayMs;
+
+    if (
+      animatedEvent.type === 'move'
+      || animatedEvent.type === 'ability'
+      || animatedEvent.type === 'consumable'
+    ) {
+      const timedData = animatedEvent.data as { readonly durationMs: number };
+      eventSettleMs += timedData.durationMs;
+    }
+
+    if (eventSettleMs > settleMs) {
+      settleMs = eventSettleMs;
+    }
+  }
+
+  return settleMs;
 }
 
 function applyCommandResult(
@@ -196,10 +219,16 @@ function applyCommandResult(
   set: SetGameStore,
   get: GetGameStore,
 ): void {
+  const currentView = get().view;
   const combatLog = appendCombatLog(get().combatLog, result.view.combatLog);
+  const animationSettleMs = getAnimatedEventSettleMs(result.view.animatedEvents);
+  const shouldStageView =
+    currentView !== null
+    && currentView.phase === 'dungeon'
+    && animationSettleMs > 0;
 
-  if (!isDeath) {
-    clearDeathTransitionTimeout();
+  if (!shouldStageView && !isDeath) {
+    clearPendingViewTimeout();
     set({
       view: result.view,
       combatLog,
@@ -209,19 +238,43 @@ function applyCommandResult(
     return;
   }
 
-  clearDeathTransitionTimeout();
+  clearPendingViewTimeout();
+
+  if (shouldStageView) {
+    set({
+      view: {
+        ...currentView,
+        animatedEvents: result.view.animatedEvents,
+      },
+      deathTransitioning: isDeath,
+      loading: isDeath ? false : true,
+    });
+
+    pendingViewTimeout = setTimeout(() => {
+      set({
+        view: result.view,
+        combatLog,
+        loading: false,
+        deathTransitioning: false,
+      });
+      pendingViewTimeout = null;
+    }, isDeath ? Math.max(animationSettleMs, 2000) : animationSettleMs);
+    return;
+  }
+
   set({
     combatLog,
     deathTransitioning: true,
     loading: false,
   });
 
-  deathTransitionTimeout = setTimeout(() => {
+  pendingViewTimeout = setTimeout(() => {
     set({
       view: result.view,
       deathTransitioning: false,
+      combatLog,
     });
-    deathTransitionTimeout = null;
+    pendingViewTimeout = null;
   }, 2000);
 }
 
@@ -317,7 +370,7 @@ function createRestoreSessionAction(set: SetGameStore): GameStore['restoreSessio
 
 function createResetGameAction(set: SetGameStore): GameStore['resetGame'] {
   return () => {
-    clearDeathTransitionTimeout();
+    clearPendingViewTimeout();
     clearSession();
     set({ gameId: null, view: null, combatLog: [], error: null, autoWalkPath: [], autoWalkKnownEnemyIds: new Set(), deathTransitioning: false, sessionToken: null });
   };

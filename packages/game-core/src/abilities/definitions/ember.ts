@@ -12,7 +12,7 @@ export const EMBER_DEFINITION: AbilityDefinition = {
     { kind: 'has_mana', amount: MAGIC.emberManaCost },
     { kind: 'has_target' },
     { kind: 'target_visible' },
-    { kind: 'target_in_weapon_range' },
+    { kind: 'target_in_ability_range', range: 4 },
   ],
   targeting: { selector: { kind: 'single_enemy' } },
   effects: [

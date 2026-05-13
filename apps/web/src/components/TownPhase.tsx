@@ -400,41 +400,50 @@ function ElderPanel({
       <h3 style={{ color: colors.purple, fontSize: 13, fontWeight: 600, margin: 0, marginBottom: 10 }}>
         Ring Study
       </h3>
-      {spells.map((spell: typeof spells[number]) => {
-        const disabled = loading || spell.learned === true || spell.affordable === false || spell.canStudy === false;
-        // Calculate mastery level from XP: level 0 (0-19), level 1 (20-59), level 2 (60+)
-        const currentLevel = spell.currentSchoolXp >= 60 ? 2 : spell.currentSchoolXp >= 20 ? 1 : 0;
-        // Calculate required level from XP threshold
-        const requiredLevel = spell.requiredSchoolXp >= 60 ? 2 : spell.requiredSchoolXp >= 20 ? 1 : 0;
-        const status = spell.learned
-          ? 'Learned'
-          : spell.canStudy === false
-            ? spell.affordable === false
-              ? `${spell.goldCost}g`
-              : `Requires Level ${requiredLevel}`
-            : 'Ready';
-        return (
-          <InfoCard key={spell.spellId} borderColor={disabled ? colors.border : colors.purple} marginBottom={8}>
-            <div style={{ display: 'flex', justifyContent: 'space-between', gap: 8, alignItems: 'flex-start' }}>
-              <div style={{ minWidth: 0 }}>
-                <div style={{ fontSize: 12, fontWeight: 600, color: colors.text }}>{spell.name}</div>
-                <div style={{ fontSize: 10, color: colors.label, marginTop: 3 }}>{spell.description}</div>
-                <div style={{ fontSize: 10, color: colors.muted, marginTop: 5 }}>
-                  Level {currentLevel} · {spell.goldCost}g
+      <div style={{ marginTop: 4, marginBottom: 10, color: colors.gold, fontSize: 11 }}>
+        Gold: {view.player.gold}g
+      </div>
+      {spells.length === 0 ? (
+        <div style={{ color: colors.muted, fontSize: 11 }}>No spells available to study yet.</div>
+      ) : (
+        spells.map((spell: typeof spells[number]) => {
+          const disabled = loading || spell.canStudy === false;
+          const currentLevel = spell.currentSchoolXp >= 60 ? 2 : spell.currentSchoolXp >= 20 ? 1 : 0;
+          const priceLabel = spell.canStudy ? 'Study' : `Need ${spell.goldCost}g`;
+
+          return (
+            <div
+              key={spell.spellId}
+              style={{
+                padding: '6px 8px',
+                marginBottom: 8,
+                border: `1px solid ${spell.affordable ? 'rgba(138,120,200,0.4)' : colors.border2}`,
+                background: spell.affordable ? 'rgba(138,120,200,0.08)' : colors.card,
+                boxShadow: spell.affordable ? 'inset 2px 0 0 rgba(138,120,200,0.3)' : 'none',
+                opacity: spell.affordable ? 1 : 0.65,
+              }}
+            >
+              <div style={{ display: 'flex', justifyContent: 'space-between', gap: 8, alignItems: 'flex-start' }}>
+                <div style={{ minWidth: 0 }}>
+                  <div style={{ fontSize: 12, fontWeight: 600, color: colors.text }}>{spell.name}</div>
+                  <div style={{ fontSize: 10, color: colors.label, marginTop: 3 }}>{spell.description}</div>
+                  <div style={{ fontSize: 10, color: colors.muted, marginTop: 6 }}>
+                    {titleCase(spell.schools[0] ?? 'magic')} Lv {currentLevel} · Range {spell.range} · {spell.goldCost}g
+                  </div>
                 </div>
+                <button
+                  style={{ ...btnStyle, margin: 0, minWidth: 84, fontSize: 10 }}
+                  disabled={disabled}
+                  onClick={() => sendCommand({ type: 'TOWN_ACTION', action: 'study_spell', spellId: spell.spellId })}
+                  title={priceLabel}
+                >
+                  {priceLabel}
+                </button>
               </div>
-              <button
-                style={{ ...btnStyle, margin: 0, minWidth: 72 }}
-                disabled={disabled}
-                onClick={() => sendCommand({ type: 'TOWN_ACTION', action: 'study_spell', spellId: spell.spellId })}
-                title={status}
-              >
-                {status}
-              </button>
             </div>
-          </InfoCard>
-        );
-      })}
+          );
+        })
+      )}
     </div>
   );
 }
@@ -466,9 +475,14 @@ export function TownPhase({
 
   if (townPanel === 'tavern') {
     return (
-      <SubPanel onBack={() => setTownPanel('main')} isMobile={isMobile}>
-        <TavernPanel view={view} onOpenFactionDetails={() => setShowFactionsModal(true)} />
-      </SubPanel>
+      <>
+        <SubPanel onBack={() => setTownPanel('main')} isMobile={isMobile}>
+          <TavernPanel view={view} onOpenFactionDetails={() => setShowFactionsModal(true)} />
+        </SubPanel>
+        {showFactionsModal && view.town?.factions && (
+          <FactionDetailModal factions={view.town.factions} onClose={() => setShowFactionsModal(false)} />
+        )}
+      </>
     );
   }
 

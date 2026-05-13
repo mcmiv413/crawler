@@ -119,6 +119,10 @@ export interface AbilityView {
   readonly requiresTarget: boolean;
   readonly requiresDirection?: boolean;
   readonly isRanged?: boolean;
+  readonly targetRange?: {
+    readonly max: number;
+    readonly min: number;
+  };
   readonly weaponRequirement?: {
     readonly label: string;
     readonly met: boolean;

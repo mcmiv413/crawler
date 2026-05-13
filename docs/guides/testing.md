@@ -32,10 +32,13 @@ AI assistants are allowed to generate test scaffolding, but every test must be r
 | Full Vitest output | `pnpm test:verbose` |
 | Changed-file Vitest scope | `pnpm test:changed` |
 | Single Vitest file | `pnpm vitest run path/to/file.test.ts` |
+| Root `tests/` single-file scope | `pnpm vitest run --config tests/vitest.config.ts tests/integration/foo.integration.test.ts` |
 | Fast pre-commit gate | `pnpm run check:fast` |
 | Local confidence gate | `pnpm validate:quick` |
+| Tracked artifact guardrail | `pnpm run check:tracked-artifacts` |
 | Workspace wiring guardrail | `pnpm run check:workspace-wiring` |
 | Ability contract guardrail | `pnpm run check:ability-contracts` |
+| Package export guardrail | `pnpm run check:exports` |
 | Playwright only | `pnpm test:e2e` |
 | Repo-wide test layer audit | `pnpm exec tsx scripts/audit-tests.ts` |
 | Merge gate | `pnpm validate` |
@@ -47,6 +50,32 @@ Use `pnpm exec tsx scripts/audit-tests.ts` when you need a repo-wide layer map b
 The default merge gate excludes balance suites under `tests/balance/` and `packages/game-core/src/**/*.balance.test.ts`. Run `pnpm test:balance` when you need those suites.
 
 `pnpm run check:ability-contracts` is intentionally invariant-based instead of snapshot-based: it validates live registry/schema alignment, command payload requirements, and animation coverage without forcing per-ability test updates every time new content is added.
+
+Root `tests/` single-file runs should use `tests/vitest.config.ts`. The default workspace single-file filter does not reliably discover those files by path and can fail with `No test files found`.
+
+## Deterministic Smoke Suite
+
+Use the existing smoke scripts by failure class instead of building ad hoc one-off checks:
+
+- `pnpm run check:tracked-artifacts` catches force-added or already tracked cache files, Zone.Identifier files, and source-map noise that `.gitignore` alone cannot prevent.
+- `pnpm run check:workspace-wiring` catches undeclared workspace dependencies, `src`-internal imports across packages, and unexported workspace subpaths before the failure diffuses into later build or runtime noise.
+- `pnpm run check:ability-contracts` catches live ability metadata, command payload, and animation coverage drift with invariant checks that do not require per-ability snapshots.
+- `pnpm run check:exports` catches built-output and consumer-context package resolution failures that source-level tests can miss when local `dist/` state masks the problem.
+
+This split is intentional: each script is cheap, deterministic, and points at a specific class of breakage, which makes it a better fit for this repo than a single umbrella validator with less actionable failures.
+
+## Presenter/Web Hotspot Seams
+
+When a regression sits between `game-core`, `presenter`, and `apps/web`, extend the existing hotspot proof homes before reaching for new browser flows:
+
+- `packages/presenter/src/game-view-builder.test.ts`
+- `packages/presenter/src/game-view-builder-coverage.test.ts`
+- `packages/presenter/src/animation-sequence.test.ts`
+- `apps/web/src/components/DungeonPhase.test.tsx`
+- `apps/web/src/components/DungeonCanvas.test.tsx`
+- `apps/web/src/components/TownPhase.test.tsx`
+
+These files cover the churn-heavy seam where `GameState` becomes `GameView`, animation metadata becomes renderer events, and town/dungeon components consume the presenter output. They are the cheapest place to catch presenter propagation gaps, impact-animation ordering drift, and render-guard regressions before the failure escapes into broader integration churn.
 
 ## Test Layer Decision
 
@@ -181,15 +210,19 @@ Use when behavior should be visible to the player.
 ```ts
 assertFeatureChain(result, beforeState, {
   eventType: 'ITEM_USED',
+  entryCheck: (before) => buildGameView(before).availableActions.some((action) => action.id === 'use_item'),
+  uiCheck: (view) => view.inventory.items.some((item) => item.itemId === itemId),
 });
 ```
 
 Expected chain:
 
+* entry point is triggerable when `entryCheck` is provided
 * state changed
 * event emitted
-* event formatted
-* view exposes the result
+* event formatted when `formattingCheck` is provided
+* `GameView` exposes the UI-facing result when `viewChecks` or `uiCheck` are provided
+* actual React rendering stays in component tests
 
 ### Balance Simulation
 

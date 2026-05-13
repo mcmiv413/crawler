@@ -49,6 +49,18 @@ export function validateSpawns(
     issues = [...issues, 'Enemy spawned on exit tile'];
   }
 
+  // Rule 6: Every enemy must occupy a walkable floor tile
+  for (const enemy of enemies.values()) {
+    const cell = floor.cells.get(posKey(enemy.position));
+    if (cell === undefined) {
+      issues = [...issues, `Enemy "${enemy.name}" occupies a missing tile`];
+      continue;
+    }
+    if (cell.tile.walkable !== true) {
+      issues = [...issues, `Enemy "${enemy.name}" occupies a non-walkable tile`];
+    }
+  }
+
   return {
     valid: issues.length === 0,
     issues,

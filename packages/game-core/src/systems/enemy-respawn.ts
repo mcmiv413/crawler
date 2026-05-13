@@ -221,6 +221,7 @@ export function simulatePersistedFloorTimeElapsed(
   // Run 10 turns of ambient behavior simulation so enemies aren't idle on re-entry
   const simulatedEnemies = preSimulateAmbientBehavior(
     new Map(respawnedEnemies),
+    storedFloor.floor,
     AMBIENT_PROFILES,
     10,
     storedFloor.floor.seed,
@@ -232,4 +233,3 @@ export function simulatePersistedFloorTimeElapsed(
     lastSimulatedTurn: turnsSinceVisit,
   };
 }
-
