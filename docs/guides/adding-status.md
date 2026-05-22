@@ -15,6 +15,8 @@ Status effects are temporary conditions like poison, burn, slow, and regeneratio
 
 **That's it!** No manual index registration needed.
 
+If the status uses an overlay animation, define or update the referenced animation ref in `packages/content/src/animation-refs/` with `durationMs`, `impactFrameMs`, and `recoveryMs`, then run `pnpm generate:indexes`.
+
 ---
 
 ## Step 1: Create the Definition
@@ -98,6 +100,7 @@ slow: {
 | Purpose | File |
 |---------|------|
 | Definitions | `packages/content/src/statuses/` (individual files) |
+| Animation refs | `packages/content/src/animation-refs/` |
 | Balance config | `packages/content/src/balance/tables.ts` |
 | Game logic | `packages/game-core/src/systems/status-system.ts` |
 | Turn handling | `packages/game-core/src/engine/turn-scheduler.ts` |

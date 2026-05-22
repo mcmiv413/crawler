@@ -1,37 +1,93 @@
-import type { DomainEvent, GameState, EntityId, EnemyInstance } from '@dungeon/contracts';
+import type { DomainEvent, EnemyInstance, EntityId, GameState } from '@dungeon/contracts';
+import { ABILITY_DEFINITIONS, ANIMATION_REF_BY_ID } from '@dungeon/content';
+import type { AnimationId } from '@dungeon/content';
 import type {
+  AbilityAnimationEntry,
   BumpAnimationEntry,
   CombatIndicatorEntry,
+  ConsumableAnimationEntry,
   MoveAnimationEntry,
   MoveAnimStyle,
-  ConsumableAnimationEntry,
-  AbilityAnimationEntry,
 } from './game-view.js';
 import {
-  ANIMATION_TIMING,
+  BUMP_ANIMATION_DURATION_MS,
+  BUMP_IMPACT_FRACTION,
+  getBeatSettleMs,
   getConsumableAnimationMetadata,
   getConsumableBlastPositions,
   getMoveAnimationStyle,
   getMoveDurationMs,
 } from './animation-metadata.js';
-import { ABILITY_DEFINITIONS, ANIMATION_REF_BY_ID } from '@dungeon/content';
-import type { AnimationId } from '@dungeon/content';
 
 export interface HitStopEntry {
-  durationMs: number;
+  readonly durationMs: number;
 }
 
 export interface DefenderHitEntry {
-  entityId: string;
-  durationMs: number;
+  readonly entityId: EntityId;
+  readonly durationMs: number;
 }
 
+export type AnimatedEventType =
+  | 'bump'
+  | 'damage'
+  | 'heal'
+  | 'status'
+  | 'move'
+  | 'consumable'
+  | 'ability'
+  | 'hit-stop'
+  | 'defender-hit';
+
+type AnimatedEventData =
+  | BumpAnimationEntry
+  | CombatIndicatorEntry
+  | MoveAnimationEntry
+  | ConsumableAnimationEntry
+  | AbilityAnimationEntry
+  | HitStopEntry
+  | DefenderHitEntry;
+
 export interface AnimatedEvent {
-  type: 'bump' | 'damage' | 'heal' | 'status' | 'move' | 'consumable' | 'ability' | 'hit-stop' | 'defender-hit';
-  sequenceIndex: number;
-  delayMs: number;
-  batchId: string;
-  data: BumpAnimationEntry | CombatIndicatorEntry | MoveAnimationEntry | ConsumableAnimationEntry | AbilityAnimationEntry | HitStopEntry | DefenderHitEntry;
+  readonly type: AnimatedEventType;
+  readonly sequenceIndex: number;
+  readonly delayMs: number;
+  readonly beatId: string;
+  readonly beatIndex: number;
+  readonly beatRelativeDelayMs: number;
+  readonly batchId: string;
+  readonly data: AnimatedEventData;
+}
+
+interface PendingAnimatedEvent {
+  readonly type: AnimatedEventType;
+  readonly beatRelativeDelayMs: number;
+  readonly data: AnimatedEventData;
+}
+
+interface BeatBuilder {
+  readonly key: string;
+  mutableEvents: PendingAnimatedEvent[];
+  cursorMs: number;
+}
+
+interface BeatActionSpec {
+  readonly settleMs: number;
+  readonly events: readonly PendingAnimatedEvent[];
+}
+
+type AnimationRefEntry = NonNullable<ReturnType<typeof ANIMATION_REF_BY_ID.get>>;
+
+function getSuppressActorBump(animationRef: AnimationRefEntry): boolean {
+  return 'suppressActorBump' in animationRef && animationRef.suppressActorBump === true;
+}
+
+function getAnimationRefHitStopMs(animationRef: AnimationRefEntry): number | undefined {
+  return 'hitStopMs' in animationRef ? animationRef.hitStopMs : undefined;
+}
+
+function hasImpactFlash(animationRef: AnimationRefEntry): boolean {
+  return 'impactFlash' in animationRef && animationRef.impactFlash === true;
 }
 
 function getEntitySpeed(id: EntityId, state: GameState): number {
@@ -77,11 +133,6 @@ function getConsumableAnimationId(
   return animation?.id as AnimationId | undefined;
 }
 
-/**
- * Derive the movement animation style for an entity.
- * Checks movementBehaviorId first (most specific), then falls back to archetype
- * substring matching, then defaults to 'slide'.
- */
 function getMoveStyle(entityId: EntityId, state: GameState): MoveAnimStyle {
   if (entityId === state.player.id) {
     return getMoveAnimationStyle({ isPlayer: true });
@@ -99,6 +150,15 @@ function getMoveStyle(entityId: EntityId, state: GameState): MoveAnimStyle {
   }
 
   return 'slide';
+}
+
+export function getBumpTiming(_entityId: EntityId, _state: GameState): {
+  readonly durationMs: number;
+  readonly impactFrameMs: number;
+} {
+  const durationMs = BUMP_ANIMATION_DURATION_MS;
+  const impactFrameMs = Math.floor(durationMs * BUMP_IMPACT_FRACTION);
+  return { durationMs, impactFrameMs };
 }
 
 function hashString(value: string): string {
@@ -138,17 +198,507 @@ function buildAnimationBatchId(
   return `batch-${state.gameId}-${state.turnNumber}-${hashString(signature)}`;
 }
 
-function getLastAttackImpactDelayMs(
-  maxAbilityDurationMs: number,
-  attackCount: number,
-): number {
-  if (attackCount === 0) {
-    return maxAbilityDurationMs;
+function createBeatBuilder(key: string): BeatBuilder {
+  return {
+    key,
+    mutableEvents: [],
+    cursorMs: 0,
+  };
+}
+
+function scheduleBeatAction(beat: BeatBuilder, spec: BeatActionSpec): void {
+  const actionStartMs = beat.cursorMs;
+  beat.mutableEvents = [
+    ...beat.mutableEvents,
+    ...spec.events.map((event) => ({
+      ...event,
+      beatRelativeDelayMs: actionStartMs + event.beatRelativeDelayMs,
+    })),
+  ];
+  beat.cursorMs = Math.max(beat.cursorMs, actionStartMs + spec.settleMs);
+}
+
+function collectPrimaryActorIds(
+  events: readonly DomainEvent[],
+  state: GameState,
+): readonly EntityId[] {
+  const actorIds = new Set<EntityId>();
+
+  for (const event of events) {
+    switch (event.type) {
+      case 'PLAYER_MOVED':
+        actorIds.add(state.player.id);
+        break;
+      case 'ENEMY_MOVED':
+        actorIds.add(event.enemyId);
+        break;
+      case 'ATTACK_PERFORMED':
+        actorIds.add(event.attackerId);
+        break;
+      case 'ABILITY_USED':
+        actorIds.add(event.playerId);
+        break;
+      case 'ITEM_USED':
+        actorIds.add(event.userId);
+        break;
+      default:
+        break;
+    }
   }
 
-  return maxAbilityDurationMs
-    + ((attackCount - 1) * ANIMATION_TIMING.attackStaggerMs)
-    + ANIMATION_TIMING.damageIndicatorDelayMs;
+  const mutableOrderedActorIds: EntityId[] = [];
+  if (actorIds.delete(state.player.id)) {
+    mutableOrderedActorIds.push(state.player.id);
+  }
+
+  const mutableEnemyActorIds = Array.from(actorIds);
+  mutableEnemyActorIds.sort((a: EntityId, b: EntityId) => getEntitySpeed(b, state) - getEntitySpeed(a, state));
+  mutableOrderedActorIds.push(...mutableEnemyActorIds);
+  return mutableOrderedActorIds;
+}
+
+function buildMoveAction(
+  entityId: EntityId,
+  from: { readonly x: number; readonly y: number },
+  to: { readonly x: number; readonly y: number },
+  state: GameState,
+): BeatActionSpec {
+  const style = getMoveStyle(entityId, state);
+  const durationMs = getMoveDurationMs(style);
+
+  return {
+    settleMs: getBeatSettleMs({
+      durationMs,
+      impactFrameMs: durationMs,
+      recoveryMs: 0,
+    }),
+    events: [{
+      type: 'move',
+      beatRelativeDelayMs: 0,
+      data: {
+        entityId,
+        fromPos: from,
+        toPos: to,
+        style,
+        durationMs,
+      } satisfies MoveAnimationEntry,
+    }],
+  };
+}
+
+function resolveAbilityBlastPositions(
+  event: Extract<DomainEvent, { type: 'ABILITY_USED' }>,
+  state: GameState,
+): readonly { readonly x: number; readonly y: number }[] {
+  if (event.abilityId === 'axe_cleave' && event.damageByTarget) {
+    return Array.from(event.damageByTarget.keys()).flatMap((targetId) => {
+      const position = getEntityPosition(targetId, state);
+      return position === null ? [] : [position];
+    });
+  }
+
+  if (event.abilityId === 'ranged_volley') {
+    return event.damageByTarget
+      ? Array.from(event.damageByTarget.keys()).flatMap((targetId) => {
+          const position = getEntityPosition(targetId, state);
+          return position === null ? [] : [position];
+        })
+      : Array.from(state.run?.enemies.values() ?? []).map((enemy) => enemy.position);
+  }
+
+  if (event.abilityId === 'cinder_wake' && event.affectedTargetIds !== undefined) {
+    return event.affectedTargetIds.flatMap((targetId) => {
+      const position = getEntityPosition(targetId, state);
+      return position === null ? [] : [position];
+    });
+  }
+
+  return [];
+}
+
+function resolveAbilityDamagePositions(
+  event: Extract<DomainEvent, { type: 'ABILITY_USED' }>,
+  state: GameState,
+): readonly { readonly pos: { readonly x: number; readonly y: number }; readonly damage: number }[] {
+  const mutableDamagePositions: Array<{ pos: { x: number; y: number }; damage: number }> = [];
+
+  if ((event.abilityId === 'axe_cleave' || event.abilityId === 'ranged_volley') && event.damageByTarget) {
+    for (const [targetId, damage] of event.damageByTarget.entries()) {
+      const position = getEntityPosition(targetId, state);
+      if (position !== null) {
+        mutableDamagePositions.push({ pos: position, damage });
+      }
+    }
+    return mutableDamagePositions;
+  }
+
+  if (event.targetId !== undefined && event.damage !== undefined && event.damage > 0) {
+    const targetPos = getEntityPosition(event.targetId, state);
+    if (targetPos !== null) {
+      mutableDamagePositions.push({ pos: targetPos, damage: event.damage });
+    }
+  }
+
+  return mutableDamagePositions;
+}
+
+function resolveAbilityImpactTargetIds(
+  event: Extract<DomainEvent, { type: 'ABILITY_USED' }>,
+): readonly EntityId[] {
+  if (event.damageByTarget !== undefined) {
+    return Array.from(new Set(event.damageByTarget.keys()));
+  }
+  if (event.affectedTargetIds !== undefined) {
+    return Array.from(new Set(event.affectedTargetIds));
+  }
+  return event.targetId === undefined ? [] : [event.targetId];
+}
+
+function buildAbilityAction(
+  event: Extract<DomainEvent, { type: 'ABILITY_USED' }>,
+  state: GameState,
+): BeatActionSpec | null {
+  const abilityDef = ABILITY_DEFINITIONS.get(event.abilityId);
+  if (!abilityDef?.animation?.id) return null;
+
+  const animRef = ANIMATION_REF_BY_ID.get(abilityDef.animation.id as AnimationId);
+  if (animRef === undefined) return null;
+
+  const playerPos = state.player.position;
+  const targetPos = event.targetId ? getEntityPosition(event.targetId, state) : undefined;
+  const blastPositions = resolveAbilityBlastPositions(event, state);
+  const damagePositions = resolveAbilityDamagePositions(event, state);
+  const impactTargetIds = resolveAbilityImpactTargetIds(event);
+
+  let targetHpFraction: number | undefined;
+  if (event.abilityId === 'axe_execute' && event.targetId) {
+    const targetEnemy = getEnemyById(event.targetId, state);
+    if (targetEnemy && targetEnemy.stats.maxHealth > 0) {
+      targetHpFraction = targetEnemy.stats.health / targetEnemy.stats.maxHealth;
+    }
+  }
+
+  const impactFrameMs = animRef.impactFrameMs;
+  const hitStopMs = getAnimationRefHitStopMs(animRef);
+  const mutableEvents: PendingAnimatedEvent[] = [{
+    type: 'ability',
+    beatRelativeDelayMs: 0,
+    data: {
+      abilityId: event.abilityId,
+      animationId: animRef.id,
+      playerPos,
+      targetPos: targetPos ?? undefined,
+      blastPositions,
+      targetHpFraction,
+      durationMs: animRef.durationMs,
+      impactFrameMs,
+      suppressActorBump: getSuppressActorBump(animRef),
+    } satisfies AbilityAnimationEntry,
+  }];
+
+  for (const { pos, damage } of damagePositions) {
+    mutableEvents.push({
+      type: 'damage',
+      beatRelativeDelayMs: impactFrameMs,
+      data: {
+        text: `-${damage}`,
+        type: 'damage',
+        x: pos.x,
+        y: pos.y,
+      } satisfies CombatIndicatorEntry,
+    });
+  }
+
+  if (hitStopMs !== undefined && impactTargetIds.length > 0) {
+    mutableEvents.push({
+      type: 'hit-stop',
+      beatRelativeDelayMs: impactFrameMs,
+      data: {
+        durationMs: hitStopMs,
+      } satisfies HitStopEntry,
+    });
+  }
+
+  if (hasImpactFlash(animRef)) {
+    const defenderHitDurationMs = hitStopMs ?? animRef.recoveryMs;
+    for (const targetId of impactTargetIds) {
+      mutableEvents.push({
+        type: 'defender-hit',
+        beatRelativeDelayMs: impactFrameMs,
+        data: {
+          entityId: targetId,
+          durationMs: defenderHitDurationMs,
+        } satisfies DefenderHitEntry,
+      });
+    }
+  }
+
+  return {
+    settleMs: getBeatSettleMs({
+      durationMs: animRef.durationMs,
+      impactFrameMs: animRef.impactFrameMs,
+      recoveryMs: animRef.recoveryMs,
+      hitStopMs,
+    }),
+    events: mutableEvents,
+  };
+}
+
+function buildAttackAction(
+  event: Extract<DomainEvent, { type: 'ATTACK_PERFORMED' }>,
+  state: GameState,
+): BeatActionSpec | null {
+  const attackerPos = getEntityPosition(event.attackerId, state);
+  const defenderPos = getEntityPosition(event.defenderId, state) ?? event.position;
+  if (attackerPos === null || defenderPos === null) return null;
+
+  const { durationMs, impactFrameMs } = getBumpTiming(event.attackerId, state);
+
+  return {
+    settleMs: getBeatSettleMs({
+      durationMs,
+      impactFrameMs,
+      recoveryMs: Math.max(durationMs - impactFrameMs, 0),
+    }),
+    events: [
+      {
+        type: 'bump',
+        beatRelativeDelayMs: 0,
+        data: {
+          attackerId: event.attackerId,
+          defenderId: event.defenderId,
+          attackerPos,
+          defenderPos,
+          durationMs,
+          impactFrameMs,
+        } satisfies BumpAnimationEntry,
+      },
+      {
+        type: 'damage',
+        beatRelativeDelayMs: impactFrameMs,
+        data: {
+          text: event.hit ? `-${event.damage}` : 'miss',
+          type: 'damage',
+          x: defenderPos.x,
+          y: defenderPos.y,
+        } satisfies CombatIndicatorEntry,
+      },
+    ],
+  };
+}
+
+function buildConsumableAction(
+  event: Extract<DomainEvent, { type: 'ITEM_USED' }>,
+  state: GameState,
+): BeatActionSpec {
+  const playerPos = state.player.position;
+  const { effect, presentation } = getConsumableAnimationMetadata(event.effect);
+  const animationId = getConsumableAnimationId(event, state);
+  const animationRef = animationId === undefined ? undefined : ANIMATION_REF_BY_ID.get(animationId);
+  const durationMs = animationRef?.durationMs ?? presentation.durationMs;
+
+  return {
+    settleMs: animationRef === undefined
+      ? getBeatSettleMs({ durationMs })
+      : getBeatSettleMs({
+          durationMs: animationRef.durationMs,
+          impactFrameMs: animationRef.impactFrameMs,
+          recoveryMs: animationRef.recoveryMs,
+          hitStopMs: getAnimationRefHitStopMs(animationRef),
+        }),
+    events: [{
+      type: 'consumable',
+      beatRelativeDelayMs: 0,
+      data: {
+        effect,
+        playerPos,
+        blastPositions: getConsumableBlastPositions(playerPos, presentation),
+        durationMs,
+        presentation,
+        ...(animationRef !== undefined ? { animationId: animationRef.id } : {}),
+      } satisfies ConsumableAnimationEntry,
+    }],
+  };
+}
+
+function buildStatusDamageEvent(
+  event: Extract<DomainEvent, { type: 'STATUS_DAMAGE_TICK' }>,
+  state: GameState,
+): PendingAnimatedEvent | null {
+  const targetPos = getEntityPosition(event.targetId, state);
+  if (targetPos === null) return null;
+
+  return {
+    type: 'damage',
+    beatRelativeDelayMs: 0,
+    data: {
+      text: `-${event.damage}`,
+      type: 'damage',
+      x: targetPos.x,
+      y: targetPos.y,
+    } satisfies CombatIndicatorEntry,
+  };
+}
+
+function isPositionVisible(
+  position: { readonly x: number; readonly y: number },
+  state: GameState,
+): boolean {
+  if (state.run === null) return false;
+  return state.run.floor.cells.get(`${position.x},${position.y}`)?.visibility === 'visible';
+}
+
+function isPendingAnimatedEventVisible(
+  event: PendingAnimatedEvent,
+  state: GameState,
+): boolean {
+  switch (event.type) {
+    case 'move': {
+      const move = event.data as MoveAnimationEntry;
+      return move.entityId === state.player.id
+        || isPositionVisible(move.fromPos, state)
+        || isPositionVisible(move.toPos, state);
+    }
+    case 'bump': {
+      const bump = event.data as BumpAnimationEntry;
+      return bump.attackerId === state.player.id
+        || bump.defenderId === state.player.id
+        || isPositionVisible(bump.attackerPos, state)
+        || isPositionVisible(bump.defenderPos, state);
+    }
+    case 'ability': {
+      const ability = event.data as AbilityAnimationEntry;
+      return isPositionVisible(ability.playerPos, state)
+        || (ability.targetPos !== undefined && isPositionVisible(ability.targetPos, state))
+        || ability.blastPositions.some((position) => isPositionVisible(position, state));
+    }
+    case 'consumable': {
+      const consumable = event.data as ConsumableAnimationEntry;
+      return isPositionVisible(consumable.playerPos, state)
+        || consumable.blastPositions.some((position) => isPositionVisible(position, state));
+    }
+    case 'damage':
+    case 'heal':
+    case 'status': {
+      const indicator = event.data as CombatIndicatorEntry;
+      return isPositionVisible({ x: indicator.x, y: indicator.y }, state);
+    }
+    case 'defender-hit': {
+      const defenderHit = event.data as DefenderHitEntry;
+      if (defenderHit.entityId === state.player.id) return true;
+      const targetPosition = getEntityPosition(defenderHit.entityId, state);
+      return targetPosition !== null && isPositionVisible(targetPosition, state);
+    }
+    case 'hit-stop':
+      return false;
+  }
+}
+
+function isBeatVisible(
+  events: readonly PendingAnimatedEvent[],
+  state: GameState,
+): boolean {
+  return events.some((event) => isPendingAnimatedEventVisible(event, state));
+}
+
+type BeatEventLike = Pick<AnimatedEvent, 'type' | 'beatRelativeDelayMs' | 'data'>;
+
+function getBeatEventSettleCandidateMs(event: BeatEventLike): number {
+  switch (event.type) {
+    case 'move': {
+      const move = event.data as MoveAnimationEntry;
+      return event.beatRelativeDelayMs + getBeatSettleMs({
+        durationMs: move.durationMs,
+        impactFrameMs: move.durationMs,
+        recoveryMs: 0,
+      });
+    }
+    case 'bump': {
+      const bump = event.data as BumpAnimationEntry;
+      return event.beatRelativeDelayMs + getBeatSettleMs({
+        durationMs: bump.durationMs,
+        impactFrameMs: bump.impactFrameMs,
+        recoveryMs: Math.max(bump.durationMs - bump.impactFrameMs, 0),
+      });
+    }
+    case 'ability': {
+      const ability = event.data as AbilityAnimationEntry;
+      const animationRef = ANIMATION_REF_BY_ID.get(ability.animationId as AnimationId);
+      return event.beatRelativeDelayMs + getBeatSettleMs({
+        durationMs: ability.durationMs,
+        impactFrameMs: animationRef?.impactFrameMs ?? ability.impactFrameMs,
+        recoveryMs: animationRef?.recoveryMs ?? Math.max(ability.durationMs - ability.impactFrameMs, 0),
+      });
+    }
+    case 'consumable': {
+      const consumable = event.data as ConsumableAnimationEntry;
+      const animationRef = consumable.animationId === undefined
+        ? undefined
+        : ANIMATION_REF_BY_ID.get(consumable.animationId as AnimationId);
+      return event.beatRelativeDelayMs + getBeatSettleMs({
+        durationMs: consumable.durationMs,
+        impactFrameMs: animationRef?.impactFrameMs,
+        recoveryMs: animationRef?.recoveryMs,
+      });
+    }
+    default:
+      return event.beatRelativeDelayMs;
+  }
+}
+
+function getBeatEventsSettleMs(events: readonly BeatEventLike[]): number {
+  let primarySettleMs = 0;
+  let hitStopMs = 0;
+
+  for (const event of events) {
+    if (event.type === 'hit-stop') {
+      hitStopMs = Math.max(hitStopMs, (event.data as HitStopEntry).durationMs);
+      continue;
+    }
+
+    primarySettleMs = Math.max(primarySettleMs, getBeatEventSettleCandidateMs(event));
+  }
+
+  return primarySettleMs + hitStopMs;
+}
+
+export function getAnimatedEventBatchSettleMs(events: readonly AnimatedEvent[]): number {
+  if (events.length === 0) return 0;
+
+  const beats = new Map<string, {
+    startMs: number;
+    mutableEvents: BeatEventLike[];
+  }>();
+
+  for (const event of events) {
+    const beat = beats.get(event.beatId);
+    if (beat === undefined) {
+      beats.set(event.beatId, {
+        startMs: event.delayMs - event.beatRelativeDelayMs,
+        mutableEvents: [{
+          type: event.type,
+          beatRelativeDelayMs: event.beatRelativeDelayMs,
+          data: event.data,
+        }],
+      });
+      continue;
+    }
+
+    beat.mutableEvents = [
+      ...beat.mutableEvents,
+      {
+        type: event.type,
+        beatRelativeDelayMs: event.beatRelativeDelayMs,
+        data: event.data,
+      },
+    ];
+  }
+
+  let settleMs = 0;
+  for (const beat of beats.values()) {
+    settleMs = Math.max(settleMs, beat.startMs + getBeatEventsSettleMs(beat.mutableEvents));
+  }
+  return settleMs;
 }
 
 export function buildAnimationSequence(
@@ -158,377 +708,98 @@ export function buildAnimationSequence(
   if (state.run == null) return [];
 
   const batchId = buildAnimationBatchId(events, state);
-  const mutableAnimations: AnimatedEvent[] = [];
+  const orderedActorIds = collectPrimaryActorIds(events, state);
+  const actorBeats = new Map(orderedActorIds.map((actorId) => [actorId, createBeatBuilder(String(actorId))]));
+  let statusBeat: BeatBuilder | null = null;
 
-  // ── 1. Movement animations ──────────────────────────────────────
-  // Collect player and enemy move events, then stagger them in speed order.
-
-  const playerMoveEvent = events.find(
-    (e): e is Extract<DomainEvent, { type: 'PLAYER_MOVED' }> => e.type === 'PLAYER_MOVED',
-  );
-
-  const enemyMoveEvents = events
-    .filter((e): e is Extract<DomainEvent, { type: 'ENEMY_MOVED' }> => e.type === 'ENEMY_MOVED')
-    .map((e) => ({ event: e, speed: getEntitySpeed(e.enemyId, state) }));
-
-  // Sort enemies by speed descending — fastest acts first visually
-  // eslint-disable-next-line dungeon/no-array-mutation
-  const sortedEnemyMoves = [...enemyMoveEvents].sort((a, b) => b.speed - a.speed);
-
-  // Build ordered list: player first, then enemies by speed
-  interface MoveEntry { entityId: EntityId; from: { x: number; y: number }; to: { x: number; y: number } }
-  const orderedMoves: MoveEntry[] = [];
-
-  if (playerMoveEvent) {
-    // eslint-disable-next-line dungeon/no-array-mutation
-    orderedMoves.push({
-      entityId: state.player.id,
-      from: playerMoveEvent.from,
-      to: playerMoveEvent.to,
-    });
-  }
-
-  for (const { event } of sortedEnemyMoves) {
-    // eslint-disable-next-line dungeon/no-array-mutation
-    orderedMoves.push({
-      entityId: event.enemyId,
-      from: event.from,
-      to: event.to,
-    });
-  }
-
-  for (let i = 0; i < orderedMoves.length; i += 1) {
-    const move = orderedMoves[i];
-    if (!move) continue;
-
-    const style = getMoveStyle(move.entityId, state);
-    const durationMs = getMoveDurationMs(style);
-
-    const entry: MoveAnimationEntry = {
-      entityId: move.entityId,
-      fromPos: move.from,
-      toPos: move.to,
-      style,
-      durationMs,
-    };
-//HUMANNOTE: I don't undertand why it is ok for this to be mutable.
-    mutableAnimations.push({
-      type: 'move',
-      sequenceIndex: i,
-      delayMs: i * ANIMATION_TIMING.moveStaggerMs,
-      batchId,
-      data: entry,
-    });
-  }
-
-  // ── 2. Ability animations ───────────────────────────────────────
-  // Resolved from ABILITY_USED events using the ability catalog.
-  // Fire FIRST (before attacks/damage) at the start of the turn.
-
-  const abilityUsedEvents = events.filter(
-    (e): e is Extract<DomainEvent, { type: 'ABILITY_USED' }> => e.type === 'ABILITY_USED',
-  );
-
-  for (let i = 0; i < abilityUsedEvents.length; i += 1) {
-    const event = abilityUsedEvents[i];
-    if (!event) continue;
-
-    const abilityDef = ABILITY_DEFINITIONS.get(event.abilityId);
-    if (!abilityDef || !abilityDef.animation?.id) continue;
-
-    const animRef = ANIMATION_REF_BY_ID.get(abilityDef.animation.id as AnimationId);
-    if (!animRef) continue;
-
-    const playerPos = state.player.position;
-    const targetPos = event.targetId ? getEntityPosition(event.targetId, state) : undefined;
-
-    let blastPositions: Array<{ x: number; y: number }> = [];
-    let targetHpFraction: number | undefined;
-
-    // Handle special ability shapes based on ability ID
-    if (event.abilityId === 'axe_cleave' && event.damageByTarget) {
-      // Cleave: animation at each affected enemy position
-      blastPositions = Array.from(event.damageByTarget.keys()).flatMap((targetId) => {
-        const position = getEntityPosition(targetId, state);
-        return position === null ? [] : [position];
-      });
-    } else if (event.abilityId === 'ranged_volley') {
-      // Volley: prefer actual hit positions, then fall back to visible enemies.
-      blastPositions = event.damageByTarget
-        ? Array.from(event.damageByTarget.keys()).flatMap((targetId) => {
-            const position = getEntityPosition(targetId, state);
-            return position === null ? [] : [position];
-          })
-        : Array.from(state.run.enemies.values()).map(enemy => enemy.position);
-    } else if (event.abilityId === 'axe_execute') {
-      // Execute: compute HP fraction from target's current health
-      if (event.targetId) {
-        const targetEnemy = getEnemyById(event.targetId, state);
-        if (targetEnemy && targetEnemy.stats.maxHealth > 0) {
-          targetHpFraction = targetEnemy.stats.health / targetEnemy.stats.maxHealth;
+  for (const event of events) {
+    switch (event.type) {
+      case 'PLAYER_MOVED': {
+        const beat = actorBeats.get(state.player.id);
+        if (beat !== undefined) {
+          scheduleBeatAction(beat, buildMoveAction(state.player.id, event.from, event.to, state));
         }
+        break;
       }
-    } else if (event.abilityId === 'cinder_wake' && event.affectedTargetIds !== undefined) {
-      blastPositions = event.affectedTargetIds.flatMap((targetId) => {
-        const position = getEntityPosition(targetId, state);
-        return position === null ? [] : [position];
-      });
-    }
-
-    const sequenceIndex = orderedMoves.length + i;
-
-    mutableAnimations.push({
-      type: 'ability',
-      sequenceIndex,
-      delayMs: 0,
-      batchId,
-      data: {
-        abilityId: event.abilityId,
-        animationId: animRef.id,
-        playerPos,
-        targetPos: targetPos ?? undefined,
-        blastPositions,
-        targetHpFraction,
-        durationMs: animRef.durationMs,
-        suppressActorBump: 'suppressActorBump' in animRef && animRef.suppressActorBump ? true : false,
-      } satisfies AbilityAnimationEntry,
-    });
-  }
-
-  // Calculate max ability animation duration to stagger attacks after them
-  let maxAbilityDurationMs = 0;
-  for (const event of abilityUsedEvents) {
-    const abilityDef = ABILITY_DEFINITIONS.get(event.abilityId);
-    if (abilityDef?.animation?.id) {
-      const animRef = ANIMATION_REF_BY_ID.get(abilityDef.animation.id as AnimationId);
-      if (animRef && animRef.durationMs > maxAbilityDurationMs) {
-        maxAbilityDurationMs = animRef.durationMs;
+      case 'ENEMY_MOVED': {
+        const beat = actorBeats.get(event.enemyId);
+        if (beat !== undefined) {
+          scheduleBeatAction(beat, buildMoveAction(event.enemyId, event.from, event.to, state));
+        }
+        break;
       }
+      case 'ABILITY_USED': {
+        const beat = actorBeats.get(event.playerId);
+        const action = beat === undefined ? null : buildAbilityAction(event, state);
+        if (beat !== undefined && action !== null) {
+          scheduleBeatAction(beat, action);
+        }
+        break;
+      }
+      case 'ATTACK_PERFORMED': {
+        const beat = actorBeats.get(event.attackerId);
+        const action = beat === undefined ? null : buildAttackAction(event, state);
+        if (beat !== undefined && action !== null) {
+          scheduleBeatAction(beat, action);
+        }
+        break;
+      }
+      case 'ITEM_USED': {
+        const beat = actorBeats.get(event.userId);
+        if (beat !== undefined) {
+          scheduleBeatAction(beat, buildConsumableAction(event, state));
+        }
+        break;
+      }
+      case 'STATUS_DAMAGE_TICK': {
+        statusBeat ??= createBeatBuilder('status');
+        const statusEvent = buildStatusDamageEvent(event, state);
+        if (statusEvent !== null) {
+          statusBeat.mutableEvents = [...statusBeat.mutableEvents, statusEvent];
+        }
+        break;
+      }
+      default:
+        break;
     }
   }
 
-  // ── 2b. Ability damage indicators ────────────────────────────────
-  // Create damage indicators for abilities that deal damage.
-  // These appear at the target position(s), delayed until after animation starts.
+  const orderedBeats = [
+    ...orderedActorIds
+      .map((actorId) => actorBeats.get(actorId))
+      .filter((beat): beat is BeatBuilder => beat !== undefined && beat.mutableEvents.length > 0),
+    ...(statusBeat !== null && statusBeat.mutableEvents.length > 0 ? [statusBeat] : []),
+  ];
 
-  for (let i = 0; i < abilityUsedEvents.length; i += 1) {
-    const event = abilityUsedEvents[i];
-    if (!event) continue;
+  const mutableAnimatedEvents: AnimatedEvent[] = [];
+  let sequenceIndex = 0;
+  let beatStartMs = 0;
+  let visibleBeatIndex = 0;
 
-    const abilityDef = ABILITY_DEFINITIONS.get(event.abilityId);
-    if (!abilityDef || !abilityDef.animation?.id) continue;
-
-    const animRef = ANIMATION_REF_BY_ID.get(abilityDef.animation.id as AnimationId);
-    if (!animRef) continue;
-
-    // Determine damage positions and amounts based on ability type
-    let mutableDamagePositions: Array<{ pos: { x: number; y: number }; damage: number }> = [];
-    const impactTargetIds = event.damageByTarget
-      ? Array.from(new Set(event.damageByTarget.keys()))
-      : event.affectedTargetIds !== undefined
-        ? Array.from(new Set(event.affectedTargetIds))
-        : event.targetId !== undefined
-          ? [event.targetId]
-          : [];
-
-    if (event.abilityId === 'axe_cleave' && event.damageByTarget) {
-      // Cleave: damage at each affected position
-      for (const [targetId, damage] of event.damageByTarget.entries()) {
-        const position = getEntityPosition(targetId, state);
-        if (position) {
-          mutableDamagePositions.push({ pos: position, damage });
-        }
-      }
-    } else if (event.abilityId === 'ranged_volley' && event.damageByTarget) {
-      // Volley: damage at each hit enemy position
-      for (const [targetId, damage] of event.damageByTarget.entries()) {
-        const position = getEntityPosition(targetId, state);
-        if (position) {
-          mutableDamagePositions.push({ pos: position, damage });
-        }
-      }
-    } else if (event.targetId && event.damage !== undefined && event.damage > 0) {
-      // Single-target ability with damage
-      const targetPos = getEntityPosition(event.targetId, state);
-      if (targetPos) {
-        mutableDamagePositions.push({ pos: targetPos, damage: event.damage });
-      }
+  for (const beat of orderedBeats) {
+    if (beat === undefined) continue;
+    if (isBeatVisible(beat.mutableEvents, state) === false) {
+      continue;
     }
 
-    const sequenceIndex = orderedMoves.length + abilityUsedEvents.length + i;
-    const impactDelayMs = animRef.durationMs;
-    const impactHitStopMs = 'hitStopMs' in animRef ? animRef.hitStopMs : undefined;
-    const impactFlash = 'impactFlash' in animRef ? animRef.impactFlash === true : false;
-
-    // Create damage indicators for each position
-    for (const { pos, damage } of mutableDamagePositions) {
-      const damageEntry: CombatIndicatorEntry = {
-        text: `-${damage}`,
-        type: 'damage',
-        x: pos.x,
-        y: pos.y,
-      };
-
-      mutableAnimations.push({
-        type: 'damage',
+    const beatId = `${batchId}:beat:${visibleBeatIndex}`;
+    for (const event of beat.mutableEvents) {
+      mutableAnimatedEvents.push({
+        type: event.type,
         sequenceIndex,
-        delayMs: impactDelayMs,  // Appear during animation, not after
+        delayMs: beatStartMs + event.beatRelativeDelayMs,
+        beatId,
+        beatIndex: visibleBeatIndex,
+        beatRelativeDelayMs: event.beatRelativeDelayMs,
         batchId,
-        data: damageEntry,
+        data: event.data,
       });
+      sequenceIndex += 1;
     }
 
-    if (impactHitStopMs !== undefined && impactTargetIds.length > 0) {
-      mutableAnimations.push({
-        type: 'hit-stop',
-        sequenceIndex,
-        delayMs: impactDelayMs,
-        batchId,
-        data: {
-          durationMs: impactHitStopMs,
-        } satisfies HitStopEntry,
-      });
-    }
-
-    if (impactFlash) {
-      const defenderHitDurationMs = impactHitStopMs ?? ANIMATION_TIMING.damageIndicatorDelayMs;
-      for (const targetId of impactTargetIds) {
-        mutableAnimations.push({
-          type: 'defender-hit',
-          sequenceIndex,
-          delayMs: impactDelayMs,
-          batchId,
-          data: {
-            entityId: targetId,
-            durationMs: defenderHitDurationMs,
-          } satisfies DefenderHitEntry,
-        });
-      }
-    }
+    beatStartMs += getBeatEventsSettleMs(beat.mutableEvents);
+    visibleBeatIndex += 1;
   }
 
-  // ── 3. Attack (bump + damage indicator) animations ──────────────
-  // Sorted by speed, staggered, and delayed until after abilities complete.
-
-  let attacksWithSpeeds = events
-    .filter((event): event is Extract<DomainEvent, { type: 'ATTACK_PERFORMED' }> => event.type === 'ATTACK_PERFORMED')
-    .map((attackEvent) => ({
-      attackerId: attackEvent.attackerId,
-      speed: getEntitySpeed(attackEvent.attackerId, state),
-      event: attackEvent,
-    }));
-
-  // eslint-disable-next-line dungeon/no-array-mutation
-  const mutableSorted = [...attacksWithSpeeds].sort((a, b) => b.speed - a.speed);
-  attacksWithSpeeds = mutableSorted;
-
-  for (let i = 0; i < attacksWithSpeeds.length; i += 1) {
-    const attack = attacksWithSpeeds[i];
-    if (!attack) continue;
-
-    const sequenceIndex = orderedMoves.length + abilityUsedEvents.length + i; // continue sequence after moves and abilities
-    const baseDelay = maxAbilityDurationMs + i * ANIMATION_TIMING.attackStaggerMs;
-
-    const attackerPos = getEntityPosition(attack.event.attackerId, state);
-    const defenderPos = getEntityPosition(attack.event.defenderId, state) || attack.event.position;
-    if (!attackerPos || !defenderPos) continue;
-
-    const bumpEntry: BumpAnimationEntry = {
-      attackerId: attack.event.attackerId,
-      defenderId: attack.event.defenderId,
-      attackerPos,
-      defenderPos,
-    };
-//HUMANNOTE: I don't undertand why it is ok for this to be mutable.
-    mutableAnimations.push({
-      type: 'bump',
-      sequenceIndex,
-      delayMs: baseDelay,
-      batchId,
-      data: bumpEntry,
-    });
-
-    const damageText = attack.event.hit ? `-${attack.event.damage}` : 'miss';
-    const damageEntry: CombatIndicatorEntry = {
-      text: damageText,
-      type: 'damage',
-      x: defenderPos.x,
-      y: defenderPos.y,
-    };
-//HUMANNOTE: I don't undertand why it is ok for this to be mutable.
-    mutableAnimations.push({
-      type: 'damage',
-      sequenceIndex,
-      delayMs: baseDelay + ANIMATION_TIMING.damageIndicatorDelayMs,
-      batchId,
-      data: damageEntry,
-    });
-  }
-
-  const lastAttackImpactDelayMs = getLastAttackImpactDelayMs(maxAbilityDurationMs, attacksWithSpeeds.length);
-
-  // ── 3b. Status damage indicators ───────────────────────────────────
-  const statusDamageTickEvents = events.filter(
-    (event): event is Extract<DomainEvent, { type: 'STATUS_DAMAGE_TICK' }> => event.type === 'STATUS_DAMAGE_TICK',
-  );
-
-  for (let i = 0; i < statusDamageTickEvents.length; i += 1) {
-    const event = statusDamageTickEvents[i];
-    if (!event) continue;
-
-    const targetPos = getEntityPosition(event.targetId, state);
-    if (!targetPos) continue;
-
-    mutableAnimations.push({
-      type: 'damage',
-      sequenceIndex: orderedMoves.length + abilityUsedEvents.length + attacksWithSpeeds.length + i,
-      delayMs: lastAttackImpactDelayMs + (i * ANIMATION_TIMING.damageIndicatorDelayMs),
-      batchId,
-      data: {
-        text: `-${event.damage}`,
-        type: 'damage',
-        x: targetPos.x,
-        y: targetPos.y,
-      } satisfies CombatIndicatorEntry,
-    });
-  }
-
-  // ── 4. Consumable animations ────────────────────────────────────
-  // One consumable per turn max. Fires at delay 0 — concurrent with movement.
-
-  const itemUsedEvents = events.filter(
-    (e): e is Extract<DomainEvent, { type: 'ITEM_USED' }> => e.type === 'ITEM_USED',
-  );
-
-  for (let i = 0; i < itemUsedEvents.length; i += 1) {
-    const event = itemUsedEvents[i];
-    if (!event) continue;
-
-    const playerPos = state.player.position;
-    const { effect, presentation } = getConsumableAnimationMetadata(event.effect);
-    const animationId = getConsumableAnimationId(event, state);
-    const animationRef = animationId === undefined ? undefined : ANIMATION_REF_BY_ID.get(animationId);
-    const blastPositions = getConsumableBlastPositions(playerPos, presentation);
-
-    const entry: ConsumableAnimationEntry = {
-      effect,
-      playerPos,
-      blastPositions,
-      durationMs: animationRef?.durationMs ?? presentation.durationMs,
-      presentation,
-      ...(animationRef !== undefined ? { animationId: animationRef.id } : {}),
-    };
-
-    const sequenceIndex = orderedMoves.length + abilityUsedEvents.length + attacksWithSpeeds.length + statusDamageTickEvents.length + i;
-
-    mutableAnimations.push({
-      type: 'consumable',
-      sequenceIndex,
-      delayMs: lastAttackImpactDelayMs + (statusDamageTickEvents.length * ANIMATION_TIMING.damageIndicatorDelayMs),
-      batchId,
-      data: entry,
-    });
-  }
-
-  return mutableAnimations;
+  return mutableAnimatedEvents;
 }

@@ -69,7 +69,25 @@ const DEFAULT_BYPASS_FLAGS: Record<DamageSource, { bypassDefense: boolean; bypas
 };
 
 /** Debug logging level (set via environment variable) */
-const DEBUG_DAMAGE = process.env.DEBUG_DAMAGE === 'true';
+const DEBUG_DAMAGE = getDebugDamageFlag();
+
+function getDebugDamageFlag(): boolean {
+  const maybeProcess = Reflect.get(globalThis, 'process');
+  if (isObjectLike(maybeProcess) === false) {
+    return false;
+  }
+
+  const maybeEnv = Reflect.get(maybeProcess, 'env');
+  if (isObjectLike(maybeEnv) === false) {
+    return false;
+  }
+
+  return Reflect.get(maybeEnv, 'DEBUG_DAMAGE') === 'true';
+}
+
+function isObjectLike(value: unknown): value is object {
+  return Object(value) === value;
+}
 
 function log(message: string, data?: Record<string, unknown>): void {
   if (DEBUG_DAMAGE !== true) return;

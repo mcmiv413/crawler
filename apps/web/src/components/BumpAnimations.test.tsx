@@ -18,6 +18,8 @@ describe('BumpAnimations', () => {
       defenderId: 'enemy-1' as any,
       attackerPos: { x: 10, y: 10 },
       defenderPos: { x: 11, y: 10 },
+      durationMs: 150,
+      impactFrameMs: 75,
     };
 
     emitBumpAnimation(animation);

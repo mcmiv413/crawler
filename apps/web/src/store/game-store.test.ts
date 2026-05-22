@@ -11,9 +11,10 @@
  */
 
 import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest';
-import { renderHook, act } from '@testing-library/react';
+import { renderHook, act, waitFor } from '@testing-library/react';
 import type { GameView, CombatLogEntry } from '@dungeon/presenter';
 import { buildGameView } from '@dungeon/presenter';
+import { emitQueueDrained, setQueueDraining } from '../hooks/animation-queue-bus.js';
 import { useGameStore } from './game-store.js';
 import * as sessionPersistence from './session-persistence.js';
 
@@ -120,6 +121,26 @@ function createMockLogEntry(text: string = 'Test log entry'): CombatLogEntry {
   };
 }
 
+function createMockAnimatedMoveEvent(overrides?: Partial<GameView['animatedEvents'][number]>): GameView['animatedEvents'][number] {
+  return {
+    type: 'move',
+    sequenceIndex: 0,
+    delayMs: 0,
+    beatId: 'beat-0',
+    beatIndex: 0,
+    beatRelativeDelayMs: 0,
+    batchId: 'batch-0',
+    data: {
+      entityId: 'player-1' as any,
+      fromPos: { x: 4, y: 5 },
+      toPos: { x: 5, y: 5 },
+      style: 'step',
+      durationMs: 120,
+    },
+    ...overrides,
+  } as GameView['animatedEvents'][number];
+}
+
 describe('useGameStore (Zustand)', () => {
   beforeEach(() => {
     // Clear all mocks before each test
@@ -134,6 +155,8 @@ describe('useGameStore (Zustand)', () => {
 
   afterEach(() => {
     vi.clearAllMocks();
+    setQueueDraining(false);
+    globalThis.__DUNGEON_BEAT_SCHEDULER_OVERRIDE__ = undefined;
   });
 
   // ============================================================================
@@ -256,6 +279,123 @@ describe('useGameStore (Zustand)', () => {
       // Verify state and loading cleared
       expect(result.current.loading).toBe(false);
       expect(result.current.error).toBeNull();
+    });
+
+    it('stages the resolved view immediately when the beat scheduler is enabled', async () => {
+      globalThis.__DUNGEON_BEAT_SCHEDULER_OVERRIDE__ = true;
+
+      const mockGameId = 'game-queue-123';
+      const initialView = createMockGameView({ gameId: mockGameId });
+      const queuedLogEntry = createMockLogEntry('Queued animation resolved.');
+      const stagedAnimatedEvents = [
+        createMockAnimatedMoveEvent({
+          batchId: 'batch-queue-1',
+          beatId: 'batch-queue-1:beat:0',
+        }),
+      ];
+      const updatedView = createMockGameView({
+        gameId: mockGameId,
+        animatedEvents: stagedAnimatedEvents,
+        combatLog: [queuedLogEntry],
+        player: { ...initialView.player, health: 45 },
+      });
+
+      const { sendCommand: mockSendCommand } = await import('../api/client.js');
+      vi.mocked(mockSendCommand).mockResolvedValueOnce({
+        view: updatedView,
+        events: [],
+        runEnded: false,
+        serializedState: 'state-queue-123',
+      });
+
+      const { result } = renderHook(() => useGameStore());
+      act(() => {
+        useGameStore.setState({ gameId: mockGameId, view: initialView });
+      });
+
+      await act(async () => {
+        await result.current.sendCommand({ type: 'WAIT' });
+      });
+
+      expect(result.current.view?.player.health).toBe(45);
+      expect(result.current.view?.animatedEvents).toEqual(stagedAnimatedEvents);
+      expect(result.current.combatLog[0]?.text).toBe('Queued animation resolved.');
+      expect(result.current.loading).toBe(false);
+
+      act(() => {
+        setQueueDraining(false);
+        emitQueueDrained();
+      });
+
+      await waitFor(() => {
+        expect(result.current.view?.player.health).toBe(45);
+      });
+      expect(result.current.combatLog[0]?.text).toBe('Queued animation resolved.');
+      expect(result.current.loading).toBe(false);
+    });
+
+    it('stages the updated dungeon map immediately for move animations', async () => {
+      globalThis.__DUNGEON_BEAT_SCHEDULER_OVERRIDE__ = true;
+
+      const mockGameId = 'game-move-123';
+      const initialView = createMockGameView({
+        gameId: mockGameId,
+        map: {
+          ...createMockGameView().map!,
+          playerPosition: { x: 5, y: 5 },
+        },
+      });
+      const stagedAnimatedEvents = [
+        createMockAnimatedMoveEvent({
+          batchId: 'batch-move-1',
+          beatId: 'batch-move-1:beat:0',
+          data: {
+            entityId: 'player-1' as any,
+            fromPos: { x: 5, y: 5 },
+            toPos: { x: 5, y: 4 },
+            style: 'step',
+            durationMs: 140,
+          },
+        }),
+      ];
+      const updatedView = createMockGameView({
+        gameId: mockGameId,
+        map: {
+          ...initialView.map!,
+          playerPosition: { x: 5, y: 4 },
+        },
+        animatedEvents: stagedAnimatedEvents,
+      });
+
+      const { sendCommand: mockSendCommand } = await import('../api/client.js');
+      vi.mocked(mockSendCommand).mockResolvedValueOnce({
+        view: updatedView,
+        events: [],
+        runEnded: false,
+        serializedState: 'state-move-123',
+      });
+
+      const { result } = renderHook(() => useGameStore());
+      act(() => {
+        useGameStore.setState({ gameId: mockGameId, view: initialView });
+      });
+
+      await act(async () => {
+        await result.current.sendCommand({ type: 'MOVE', direction: 'N' });
+      });
+
+      expect(result.current.view?.map?.playerPosition).toEqual({ x: 5, y: 4 });
+      expect(result.current.view?.animatedEvents).toEqual(stagedAnimatedEvents);
+      expect(result.current.loading).toBe(false);
+
+      act(() => {
+        setQueueDraining(false);
+        emitQueueDrained();
+      });
+
+      await waitFor(() => {
+        expect(result.current.view?.map?.playerPosition).toEqual({ x: 5, y: 4 });
+      });
     });
 
     it('GameNotFoundError recovery: 404 → loads session → retries → succeeds', async () => {

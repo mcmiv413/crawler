@@ -39,6 +39,7 @@ export function ActionButton({
       className={`${styles.button} ${isActive ? styles.active : ''} ${!enabled ? styles.disabled : ''}`}
       onClick={onClick}
       disabled={!enabled}
+      aria-disabled={!enabled}
       title={icon.tooltip}
       aria-label={`${label}: ${icon.tooltip}`}
     >

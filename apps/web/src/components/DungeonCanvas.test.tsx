@@ -4,8 +4,19 @@ import { fireEvent, render } from '@testing-library/react';
 import type { MapView } from '@dungeon/presenter';
 import { CELL_SIZE } from '../config/ui-config.js';
 
-const { startAutoWalkSpy } = vi.hoisted(() => ({
+const { startAutoWalkSpy, moveAnimationState } = vi.hoisted(() => ({
   startAutoWalkSpy: vi.fn(),
+  moveAnimationState: {
+    current: [] as Array<{
+      id: string;
+      entityId: string;
+      fromPos: { x: number; y: number };
+      toPos: { x: number; y: number };
+      style: 'step' | 'slide' | 'dart' | 'drift' | 'stomp' | 'lurch';
+      progress: number;
+      fromOffsetPx?: { x: number; y: number };
+    }>,
+  },
 }));
 
 vi.mock('../sprites/sprite-registry.js', () => ({
@@ -25,7 +36,7 @@ vi.mock('../hooks/useBumpAnimationState.js', () => ({
 }));
 
 vi.mock('../hooks/useMoveAnimationState.js', () => ({
-  useMoveAnimationState: () => ({ animations: [] }),
+  useMoveAnimationState: () => ({ animations: moveAnimationState.current }),
 }));
 
 vi.mock('../hooks/useConsumableAnimationState.js', () => ({
@@ -99,12 +110,25 @@ const map: MapView = {
       tileType: 'floor',
     },
   ],
-  entities: [],
+  entities: [
+    {
+      id: 'player-1',
+      type: 'player' as const,
+      x: 1,
+      y: 1,
+      color: '#fff',
+      ascii: '@',
+      name: 'Player',
+      templateId: 'player',
+    },
+  ],
 };
 
 describe('DungeonCanvas', () => {
   beforeEach(() => {
+    vi.clearAllMocks();
     startAutoWalkSpy.mockReset();
+    moveAnimationState.current = [];
     vi.mocked(findPath).mockReturnValue([]);
 
     Object.defineProperty(window, 'devicePixelRatio', {
@@ -194,6 +218,91 @@ describe('DungeonCanvas', () => {
     });
 
     expect(findPath).toHaveBeenCalledWith(clickableMap, clickableMap.playerPosition, { x: 2, y: 1 });
+    expect(startAutoWalkSpy).toHaveBeenCalledWith(path);
+  });
+
+  it('maps clicks through the active player camera pan', () => {
+    const path = [
+      { x: 4, y: 1 },
+      { x: 3, y: 1 },
+    ];
+    vi.mocked(findPath).mockReturnValue(path);
+    moveAnimationState.current = [{
+      id: 'move-0',
+      entityId: 'player-1',
+      fromPos: { x: 3, y: 1 },
+      toPos: { x: 4, y: 1 },
+      style: 'step',
+      progress: 0,
+    }];
+
+    const panningMap: MapView = {
+      ...map,
+      playerPosition: { x: 4, y: 1 },
+      cells: [
+        {
+          x: 3,
+          y: 1,
+          ascii: '.',
+          color: '#aaa',
+          bgColor: '#000',
+          visibility: 'visible',
+          walkable: true,
+          tileType: 'floor',
+        },
+        {
+          x: 4,
+          y: 1,
+          ascii: '.',
+          color: '#aaa',
+          bgColor: '#000',
+          visibility: 'visible',
+          walkable: true,
+          tileType: 'floor',
+        },
+      ],
+      entities: [
+        {
+          id: 'player-1',
+          type: 'player',
+          x: 4,
+          y: 1,
+          color: '#fff',
+          ascii: '@',
+          name: 'Player',
+          templateId: 'player',
+        },
+      ],
+    };
+
+    const { container } = render(
+      <DungeonCanvas map={panningMap} vpTilesWidth={5} vpTilesHeight={4} />,
+    );
+
+    const canvas = container.querySelector('canvas');
+    expect(canvas).not.toBeNull();
+
+    Object.defineProperty(canvas!, 'getBoundingClientRect', {
+      configurable: true,
+      value: () => ({
+        left: 0,
+        top: 0,
+        width: 5 * CELL_SIZE,
+        height: 4 * CELL_SIZE,
+        right: 5 * CELL_SIZE,
+        bottom: 4 * CELL_SIZE,
+        x: 0,
+        y: 0,
+        toJSON: () => '',
+      }),
+    });
+
+    fireEvent.click(canvas!, {
+      clientX: CELL_SIZE + 1,
+      clientY: 1,
+    });
+
+    expect(findPath).toHaveBeenCalledWith(panningMap, panningMap.playerPosition, { x: 3, y: 1 });
     expect(startAutoWalkSpy).toHaveBeenCalledWith(path);
   });
 });

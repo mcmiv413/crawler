@@ -24,6 +24,16 @@ export interface AnimationRef {
   readonly category: AnimationCategory;
   readonly durationMs: number;
   /**
+   * Milliseconds from animation start until the primary impact moment.
+   * Presenter and web timing use this to align damage numbers and hit-stop.
+   */
+  readonly impactFrameMs: number;
+  /**
+   * Milliseconds of recovery after the impact frame.
+   * Beat settle time uses impactFrameMs + recoveryMs to avoid overlapping actors.
+   */
+  readonly recoveryMs: number;
+  /**
    * For projectile and aoe animations: explicitly declare whether this animation
    * suppresses the actor's bump animation when emitted.
    * Default: false. Must be explicitly declared for projectile/aoe refs.

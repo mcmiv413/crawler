@@ -1,10 +1,13 @@
 import { useState, useEffect, useRef } from 'react';
 import type { MoveAnimationEntry } from '@dungeon/presenter';
+import { getMoveRenderedOffsetPx } from '../animations/move-style-profiles.js';
+import { CELL_SIZE } from '../config/ui-config.js';
 
 interface ActiveMoveAnimation extends MoveAnimationEntry {
   id: string;
   startTime: number;
   progress: number;
+  fromOffsetPx: { readonly x: number; readonly y: number };
 }
 
 interface UseMoveAnimationStateReturn {
@@ -31,24 +34,38 @@ export function useMoveAnimationState(): UseMoveAnimationStateReturn {
       const customEvent = event as CustomEvent<MoveAnimationEntry>;
       const entry = customEvent.detail;
       const now = Date.now();
-
-      const animation: ActiveMoveAnimation = {
-        id: `move-${nextIdRef.current++}`,
-        ...entry,
-        startTime: now,
-        progress: 0,
-      };
+      const id = `move-${nextIdRef.current++}`;
 
       setAnimations((prev) => {
-        // If this entity already has a move animation in flight, replace it so
-        // rapid auto-walk doesn't queue up stacked animations.
+        const prior = prev.find((a) => a.entityId === entry.entityId);
+        const priorProgress = prior === undefined
+          ? 1
+          : getAnimationProgress(prior, now);
+        const fromOffsetPx = prior !== undefined && priorProgress < 1
+          ? getMoveRenderedOffsetPx(
+              { ...prior, progress: priorProgress },
+              CELL_SIZE,
+              prior.entityId,
+            )
+          : { x: 0, y: 0 };
+
+        const animation: ActiveMoveAnimation = {
+          id,
+          ...entry,
+          fromOffsetPx,
+          startTime: now,
+          progress: 0,
+        };
+
+        // Keep only one active move per entity while preserving the rendered
+        // takeover position in fromOffsetPx.
         const filtered = prev.filter((a) => a.entityId !== entry.entityId);
         return [...filtered, animation];
       });
 
       // Schedule removal after the style-specific duration
       const timer = setTimeout(() => {
-        setAnimations((prev) => prev.filter((a) => a.id !== animation.id));
+        setAnimations((prev) => prev.filter((a) => a.id !== id));
       }, entry.durationMs);
 
       mutableTimers.push(timer);
@@ -82,4 +99,9 @@ export function useMoveAnimationState(): UseMoveAnimationStateReturn {
   }, []);
 
   return { animations };
+}
+
+function getAnimationProgress(animation: ActiveMoveAnimation, now: number): number {
+  if (animation.durationMs <= 0) return 1;
+  return Math.min(Math.max((now - animation.startTime) / animation.durationMs, 0), 1);
 }

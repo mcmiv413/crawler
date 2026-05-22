@@ -102,6 +102,34 @@ describe('processEnemyTurns', () => {
     }
   });
 
+  it('emits enemy attacks in strict speed-descending order', () => {
+    const slow = createTestEnemy({
+      id: entityId('slow'),
+      position: { x: 0, y: 1 },
+      archetype: 'aggressive_melee',
+      isAlerted: true,
+      stats: { maxHealth: 30, health: 30, attack: 8, defense: 3, accuracy: 100, evasion: 0, speed: 90 },
+    });
+    const fast = createTestEnemy({
+      id: entityId('fast'),
+      position: { x: 1, y: 0 },
+      archetype: 'aggressive_melee',
+      isAlerted: true,
+      stats: { maxHealth: 30, health: 30, attack: 8, defense: 3, accuracy: 100, evasion: 0, speed: 180 },
+    });
+
+    const state = makeTurnState({ x: 0, y: 0 }, [slow, fast]);
+    const rng = new SeededRNG(1);
+
+    const { events } = processEnemyTurns(state, rng);
+    const attackEvents = events.filter((event) => event.type === 'ATTACK_PERFORMED');
+
+    expect(attackEvents.map((event) => (event as any).attackerId)).toEqual([
+      entityId('fast'),
+      entityId('slow'),
+    ]);
+  });
+
   it('un-alerted enemy within range 5 becomes alerted', () => {
     const enemy = createTestEnemy({
       position: { x: 3, y: 0 }, isAlerted: false,

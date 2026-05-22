@@ -81,9 +81,6 @@ export const COMBAT_LOG_MINI_LINE_HEIGHT = 1.3;
 /** Duration (ms) a combat indicator floats and is visible before fading out. */
 export const COMBAT_INDICATOR_FADEOUT_MS = 1500;
 
-/** Duration (ms) of bump attack animation (attacker lunges toward target). */
-export const BUMP_ANIMATION_DURATION_MS = 300;
-
 // ── Buttons & Touch Targets ─────────────────────────────────────
 /** Minimum height (px) of standard buttons — meets WCAG touch target guidelines. */
 export const BTN_MIN_HEIGHT = 44;

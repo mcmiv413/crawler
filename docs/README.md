@@ -30,10 +30,12 @@ Each guide below includes a "Quick Start" section that reminds you to run this c
 | [Goofy Local Model](guides/goofy-local-model.md) | Syncing the live Goofy launcher, installing local Ollama aliases, and rerunning the backing-model benchmark |
 | [Adding a Game Mechanic](guides/adding-mechanic.md) | Implementing a new system end-to-end (the 6-hop chain) |
 | [Adding an Ability](guides/adding-ability.md) | Data-driven ability definitions and the execution pipeline |
+| [Adding an Animation](guides/adding-animation.md) | Defining animation refs, required timing fields, and generator workflow |
 | [Adding an Enemy](guides/adding-enemy.md) | Enemy templates, archetypes, spawning, AI behavior |
 | [Adding a Biome](guides/adding-biome.md) | Biome definitions, map generation, visual theming |
 | [Adding an Enchantment](guides/adding-enchantment.md) | Enchantment definitions, hook system, stacking rules |
 | [Adding an Elemental Ring](guides/adding-ring.md) | Ring-granted spells, Elder study unlocks, mana/mastery, animations, and tests |
+| [Turn Animation Beat Model](guides/turn-animation.md) | Beat ordering, visible-only queue pacing, settle timing, and web scheduler tuning |
 | [UI Design](guides/ui-design.md) | Design system, colour tokens, sprite system, layout rules |
 | [Repo Skills Workflow](guides/repo-skills.md) | Canonical skill source, generated mirrors, PSRE capability map, and maintenance commands |
 | [Maintaining Docs](MAINTAINING-DOCS.md) | How to update this documentation system |
