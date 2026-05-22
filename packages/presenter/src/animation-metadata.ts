@@ -8,8 +8,6 @@ export type ConsumableAnimationEffect = 'heal' | 'buff' | 'cure' | 'damage';
 
 export const ANIMATION_TIMING = {
   moveStaggerMs: 120,
-  attackStaggerMs: 500,
-  damageIndicatorDelayMs: 300,
 } as const;
 
 export const MOVE_ANIMATION_DURATIONS: Readonly<Record<MoveAnimStyle, number>> = {
@@ -20,6 +18,9 @@ export const MOVE_ANIMATION_DURATIONS: Readonly<Record<MoveAnimStyle, number>> =
   stomp: 200,
   lurch: 220,
 } as const;
+
+export const BUMP_ANIMATION_DURATION_MS = 300;
+export const BUMP_IMPACT_FRACTION = 0.5;
 
 const MOVEMENT_BEHAVIOR_STYLES: Readonly<Record<string, MoveAnimStyle>> = {
   wall_stalker: 'dart',
@@ -116,6 +117,17 @@ export const PLAYER_STATUS_PRESENTATION: Readonly<Record<string, StatusPresentat
     },
   },
 } as const;
+
+export function getBeatSettleMs(timing: {
+  readonly durationMs: number;
+  readonly impactFrameMs?: number;
+  readonly recoveryMs?: number;
+  readonly hitStopMs?: number;
+}): number {
+  const impactFrameMs = timing.impactFrameMs ?? Math.floor(timing.durationMs * 0.6);
+  const recoveryMs = timing.recoveryMs ?? Math.floor(timing.durationMs * 0.4);
+  return Math.max(timing.durationMs, impactFrameMs + recoveryMs) + (timing.hitStopMs ?? 0);
+}
 
 export function getMoveDurationMs(style: MoveAnimStyle): number {
   return MOVE_ANIMATION_DURATIONS[style];

@@ -57,6 +57,8 @@ export const myAbility: AbilityDefinition = {
 
 When referencing animation refs, statuses, or related content, import the definition and dot-walk to the ID where practical instead of repeating raw literals.
 
+If the ability declares an animation, the referenced `AnimationRef` now requires `durationMs`, `impactFrameMs`, and `recoveryMs`. Add or update the ref in `packages/content/src/animation-refs/` and rerun `pnpm generate:indexes` after editing animation refs.
+
 ---
 
 ## Step 2: Run the Generator

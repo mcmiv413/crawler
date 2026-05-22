@@ -9,4 +9,6 @@ export const goldRingPulse = {
   id: 'fx.status.gold-ring-pulse',
   category: 'status',
   durationMs: 180,
+  impactFrameMs: 90,
+  recoveryMs: 90,
 } as const satisfies AnimationRef;

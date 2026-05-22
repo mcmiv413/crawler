@@ -1,4 +1,4 @@
-import { useEffect } from 'react';
+import { useEffect, useRef } from 'react';
 import { useGameStore } from '../store/game-store.js';
 
 const KEY_MAP: Record<string, unknown> = {
@@ -30,18 +30,21 @@ const KEY_MAP: Record<string, unknown> = {
 };
 
 export function useKeyboard(onInspectToggle?: () => void): void {
-  const sendCommand = useGameStore(s => s.sendCommand);
-  const view = useGameStore(s => s.view);
-  const loading = useGameStore(s => s.loading);
+  const inspectToggleRef = useRef(onInspectToggle);
+
+  useEffect(() => {
+    inspectToggleRef.current = onInspectToggle;
+  }, [onInspectToggle]);
 
   useEffect(() => {
     function handleKey(e: KeyboardEvent) {
+      const { sendCommand, view, loading } = useGameStore.getState();
       if (loading) return;
 
       // 'x' — toggle inspect (roguelike convention for eXamine)
       if (e.key === 'x' && view?.phase === 'dungeon') {
         e.preventDefault();
-        onInspectToggle?.();
+        inspectToggleRef.current?.();
         return;
       }
 
@@ -122,5 +125,5 @@ export function useKeyboard(onInspectToggle?: () => void): void {
 
     window.addEventListener('keydown', handleKey);
     return () => window.removeEventListener('keydown', handleKey);
-  }, [sendCommand, view, loading, onInspectToggle]);
+  }, []);
 }

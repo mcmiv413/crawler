@@ -1,12 +1,35 @@
-import { describe, it, expect } from 'vitest';
+import { describe, expect, it } from 'vitest';
 import { entityId, type DomainEvent, type EntityId, type GameState } from '@dungeon/contracts';
 import { createTestEnemy, createTestGameStateInCombat } from '@dungeon/core/testing';
-import { buildAnimationSequence } from './animation-sequence.js';
-import { ANIMATION_TIMING, CONSUMABLE_ANIMATION_METADATA } from './animation-metadata.js';
+import { getBeatSettleMs } from './animation-metadata.js';
+import {
+  buildAnimationSequence,
+  getAnimatedEventBatchSettleMs,
+  getBumpTiming,
+  type AnimatedEvent,
+} from './animation-sequence.js';
 
-describe('buildAnimationSequence', () => {
+function createMockGameState(): GameState {
   const baseState = createTestGameStateInCombat();
-  const mockGameState: GameState = {
+  const visibleFloorCell = {
+    tile: { type: 'floor' as const, walkable: true, blocksVision: false, ascii: '.', color: '#aaa' },
+    visibility: 'visible' as const,
+  };
+  const visiblePositions = [
+    { x: 49, y: 50 },
+    { x: 50, y: 50 },
+    { x: 51, y: 49 },
+    { x: 51, y: 50 },
+    { x: 52, y: 49 },
+    { x: 52, y: 50 },
+    { x: 53, y: 50 },
+  ];
+  const cells = new Map<string, typeof visibleFloorCell>();
+  for (const position of visiblePositions) {
+    cells.set(`${position.x},${position.y}`, visibleFloorCell);
+  }
+
+  return {
     ...baseState,
     gameId: entityId('game-1'),
     player: {
@@ -41,7 +64,7 @@ describe('buildAnimationSequence', () => {
         ...baseState.run!.floor,
         width: 100,
         height: 100,
-        cells: new Map(),
+        cells,
         entrance: { x: 0, y: 0 },
         exit: { x: 99, y: 99 },
         seed: 42,
@@ -53,6 +76,7 @@ describe('buildAnimationSequence', () => {
             id: entityId('enemy-1'),
             name: 'Slow Goblin',
             templateId: 'goblin',
+            archetype: 'brute',
             position: { x: 51, y: 50 },
             stats: {
               maxHealth: 20,
@@ -71,6 +95,7 @@ describe('buildAnimationSequence', () => {
             id: entityId('enemy-2'),
             name: 'Fast Orc',
             templateId: 'orc',
+            archetype: 'rogue',
             position: { x: 52, y: 50 },
             stats: {
               maxHealth: 30,
@@ -80,6 +105,25 @@ describe('buildAnimationSequence', () => {
               accuracy: 75,
               evasion: 15,
               speed: 15,
+            },
+          }),
+        ],
+        [
+          'enemy-3',
+          createTestEnemy({
+            id: entityId('enemy-3'),
+            name: 'Guard',
+            templateId: 'orc',
+            archetype: 'guardian',
+            position: { x: 53, y: 50 },
+            stats: {
+              maxHealth: 32,
+              health: 32,
+              attack: 7,
+              defense: 4,
+              accuracy: 72,
+              evasion: 12,
+              speed: 10,
             },
           }),
         ],
@@ -102,465 +146,383 @@ describe('buildAnimationSequence', () => {
     version: 1,
     activeQuests: [],
   };
+}
 
-  describe('turn ordering by speed', () => {
-    it('sequences attacks by speed (highest speed first)', () => {
-      const events: DomainEvent[] = [
-        {
-          type: 'ATTACK_PERFORMED',
-          timestamp: 1000,
-          turnNumber: 1,
-          attackerId: 'enemy-2' as any,
-          defenderId: 'player-1' as any,
-          attackerName: 'Fast Orc',
-          defenderName: 'Hero',
-          damage: 10,
-          damageType: 'physical',
-          hit: true,
-          critical: false,
-        } as any,
-        {
-          type: 'ATTACK_PERFORMED',
-          timestamp: 1001,
-          turnNumber: 1,
-          attackerId: 'player-1' as any,
-          defenderId: 'enemy-2' as any,
-          attackerName: 'Hero',
-          defenderName: 'Fast Orc',
-          damage: 8,
-          damageType: 'physical',
-          hit: true,
-          critical: false,
-        } as any,
-        {
-          type: 'ATTACK_PERFORMED',
-          timestamp: 1002,
-          turnNumber: 1,
-          attackerId: 'enemy-1' as any,
-          defenderId: 'player-1' as any,
-          attackerName: 'Slow Goblin',
-          defenderName: 'Hero',
-          damage: 5,
-          damageType: 'physical',
-          hit: true,
-          critical: false,
-        } as any,
-      ];
+function floorCell(visibility: 'visible' | 'remembered' | 'hidden') {
+  return {
+    tile: { type: 'floor' as const, walkable: true, blocksVision: false, ascii: '.', color: '#aaa' },
+    visibility,
+  };
+}
 
-      const sequence = buildAnimationSequence(events, mockGameState);
+function withCellVisibilities(
+  state: GameState,
+  cells: readonly {
+    readonly x: number;
+    readonly y: number;
+    readonly visibility: 'visible' | 'remembered' | 'hidden';
+  }[],
+): GameState {
+  if (state.run === null) {
+    return state;
+  }
 
-      // Should be ordered: enemy-2 (speed 15), player-1 (speed 12), enemy-1 (speed 8)
-      const bumps = sequence.filter(a => a.type === 'bump');
-      const bump0 = bumps[0];
-      const bump1 = bumps[1];
-      const bump2 = bumps[2];
-      expect(bump0).toBeDefined();
-      expect(bump1).toBeDefined();
-      expect(bump2).toBeDefined();
-      if (bump0 && 'attackerId' in bump0.data) expect(bump0.data.attackerId).toBe('enemy-2');
-      if (bump1 && 'attackerId' in bump1.data) expect(bump1.data.attackerId).toBe('player-1');
-      if (bump2 && 'attackerId' in bump2.data) expect(bump2.data.attackerId).toBe('enemy-1');
+  const nextCells = new Map(state.run.floor.cells);
+  for (const cell of cells) {
+    nextCells.set(`${cell.x},${cell.y}`, floorCell(cell.visibility));
+  }
+
+  return {
+    ...state,
+    run: {
+      ...state.run,
+      floor: {
+        ...state.run.floor,
+        cells: nextCells,
+      },
+    },
+  };
+}
+
+function createAttackEvent(args: {
+  attackerId: EntityId;
+  defenderId: EntityId;
+  timestamp: number;
+  damage?: number;
+}): DomainEvent {
+  return {
+    type: 'ATTACK_PERFORMED',
+    timestamp: args.timestamp,
+    turnNumber: 1,
+    attackerId: args.attackerId,
+    defenderId: args.defenderId,
+    attackerName: String(args.attackerId),
+    defenderName: String(args.defenderId),
+    damage: args.damage ?? 8,
+    damageType: 'physical',
+    hit: true,
+    critical: false,
+    position: { x: 0, y: 0 },
+  } as DomainEvent;
+}
+
+function groupByBeat(sequence: ReturnType<typeof buildAnimationSequence>) {
+  const beats = new Map<string, AnimatedEvent[]>();
+  for (const event of sequence) {
+    const beat = beats.get(event.beatId);
+    if (beat === undefined) {
+      beats.set(event.beatId, [event]);
+      continue;
+    }
+    beat.push(event);
+  }
+
+  return Array.from(beats.values()).sort((a, b) => a[0]!.beatIndex - b[0]!.beatIndex);
+}
+
+describe('buildAnimationSequence', () => {
+  const mockGameState = createMockGameState();
+
+  it('groups actor events into ordered beats with shared beat ids', () => {
+    const events: DomainEvent[] = [
+      {
+        type: 'PLAYER_MOVED',
+        timestamp: 1000,
+        turnNumber: 1,
+        from: { x: 49, y: 50 },
+        to: { x: 50, y: 50 },
+      } as DomainEvent,
+      {
+        type: 'ENEMY_MOVED',
+        timestamp: 1001,
+        turnNumber: 1,
+        enemyId: entityId('enemy-2'),
+        from: { x: 52, y: 49 },
+        to: { x: 52, y: 50 },
+      } as DomainEvent,
+      {
+        type: 'ENEMY_MOVED',
+        timestamp: 1002,
+        turnNumber: 1,
+        enemyId: entityId('enemy-1'),
+        from: { x: 51, y: 49 },
+        to: { x: 51, y: 50 },
+      } as DomainEvent,
+    ];
+
+    const sequence = buildAnimationSequence(events, mockGameState);
+    const beats = groupByBeat(sequence);
+
+    expect(beats).toHaveLength(3);
+    expect(beats.map((beat) => beat[0]!.beatIndex)).toEqual([0, 1, 2]);
+    expect(new Set(sequence.map((event) => event.beatId)).size).toBe(3);
+    expect(beats.map((beat) => beat[0]!.beatRelativeDelayMs)).toEqual([0, 0, 0]);
+
+    const [playerMove, fastEnemyMove, slowEnemyMove] = sequence;
+    expect(playerMove?.type).toBe('move');
+    expect((playerMove?.data as { entityId: string }).entityId).toBe(entityId('player-1'));
+    expect(playerMove?.data).toMatchObject({
+      style: 'step',
+      durationMs: 140,
     });
+    expect((fastEnemyMove?.data as { entityId: string }).entityId).toBe(entityId('enemy-2'));
+    expect((slowEnemyMove?.data as { entityId: string }).entityId).toBe(entityId('enemy-1'));
+    expect(fastEnemyMove!.delayMs).toBeGreaterThanOrEqual(playerMove!.delayMs + (playerMove!.data as { durationMs: number }).durationMs);
+  });
 
-    it('assigns sequential indices based on speed order', () => {
-      const events: DomainEvent[] = [
-        {
-          type: 'ATTACK_PERFORMED',
-          timestamp: 1000,
-          turnNumber: 1,
-          attackerId: 'player-1' as any,
-          defenderId: 'enemy-1' as any,
-          attackerName: 'Hero',
-          defenderName: 'Slow Goblin',
-          damage: 8,
-          damageType: 'physical',
-          hit: true,
-          critical: false,
-        } as any,
-      ];
-
-      const sequence = buildAnimationSequence(events, mockGameState);
-
-      const bumps = sequence.filter(a => a.type === 'bump');
-      expect(bumps[0]).toBeDefined();
-      expect(bumps[0]!.sequenceIndex).toBe(0);
+  it('uses fixed bump timing for player and enemy attacks', () => {
+    expect(getBumpTiming(entityId('player-1'), mockGameState)).toEqual({
+      durationMs: 300,
+      impactFrameMs: 150,
+    });
+    expect(getBumpTiming(entityId('enemy-1'), mockGameState)).toEqual({
+      durationMs: 300,
+      impactFrameMs: 150,
     });
   });
 
-  describe('timing delays', () => {
-    it('calculates bump animation delay from attack timing metadata', () => {
-      const events: DomainEvent[] = [
-        {
-          type: 'ATTACK_PERFORMED',
-          timestamp: 1000,
-          turnNumber: 1,
-          attackerId: 'player-1' as any,
-          defenderId: 'enemy-1' as any,
-          attackerName: 'Hero',
-          defenderName: 'Slow Goblin',
-          damage: 8,
-          damageType: 'physical',
-          hit: true,
-          critical: false,
-        } as any,
-        {
-          type: 'ATTACK_PERFORMED',
-          timestamp: 1001,
-          turnNumber: 1,
-          attackerId: 'enemy-1' as any,
-          defenderId: 'player-1' as any,
-          attackerName: 'Slow Goblin',
-          defenderName: 'Hero',
-          damage: 5,
-          damageType: 'physical',
-          hit: true,
-          critical: false,
-        } as any,
-      ];
+  it('emits fixed-duration bump events for attacks', () => {
+    const sequence = buildAnimationSequence([
+      createAttackEvent({
+        attackerId: entityId('player-1'),
+        defenderId: entityId('enemy-1'),
+        timestamp: 1000,
+      }),
+    ], mockGameState);
 
-      const sequence = buildAnimationSequence(events, mockGameState);
+    const bump = sequence.find((event) => event.type === 'bump');
 
-      const bumps = sequence.filter(a => a.type === 'bump');
-      expect(bumps[0]).toBeDefined();
-      expect(bumps[1]).toBeDefined();
-      expect(bumps[0]!.delayMs).toBe(0);
-      expect(bumps[1]!.delayMs).toBe(ANIMATION_TIMING.attackStaggerMs);
-    });
-
-    it('calculates damage indicator delay from attack timing metadata', () => {
-      const events: DomainEvent[] = [
-        {
-          type: 'ATTACK_PERFORMED',
-          timestamp: 1000,
-          turnNumber: 1,
-          attackerId: 'player-1' as any,
-          defenderId: 'enemy-1' as any,
-          attackerName: 'Hero',
-          defenderName: 'Slow Goblin',
-          damage: 8,
-          damageType: 'physical',
-          hit: true,
-          critical: false,
-        } as any,
-      ];
-
-      const sequence = buildAnimationSequence(events, mockGameState);
-
-      const damages = sequence.filter(a => a.type === 'damage');
-      expect(damages[0]).toBeDefined();
-      expect(damages[0]!.delayMs).toBe(ANIMATION_TIMING.damageIndicatorDelayMs);
-    });
-
-    it('handles multiple attacks with proper spacing', () => {
-      const events: DomainEvent[] = [
-        {
-          type: 'ATTACK_PERFORMED',
-          timestamp: 1000,
-          turnNumber: 1,
-          attackerId: 'player-1' as any,
-          defenderId: 'enemy-1' as any,
-          attackerName: 'Hero',
-          defenderName: 'Slow Goblin',
-          damage: 8,
-          damageType: 'physical',
-          hit: true,
-          critical: false,
-        } as any,
-        {
-          type: 'ATTACK_PERFORMED',
-          timestamp: 1001,
-          turnNumber: 1,
-          attackerId: 'enemy-1' as any,
-          defenderId: 'player-1' as any,
-          attackerName: 'Slow Goblin',
-          defenderName: 'Hero',
-          damage: 5,
-          damageType: 'physical',
-          hit: true,
-          critical: false,
-        } as any,
-      ];
-
-      const sequence = buildAnimationSequence(events, mockGameState);
-
-      const ordered = [...sequence].sort((a, b) => a.delayMs - b.delayMs);
-      expect(ordered).toHaveLength(4);
-      expect(ordered[0]).toBeDefined();
-      expect(ordered[1]).toBeDefined();
-      expect(ordered[2]).toBeDefined();
-      expect(ordered[3]).toBeDefined();
-      expect(ordered[0]!.delayMs).toBe(0);
-      expect(ordered[0]!.type).toBe('bump');
-      expect(ordered[1]!.delayMs).toBe(ANIMATION_TIMING.damageIndicatorDelayMs);
-      expect(ordered[1]!.type).toBe('damage');
-      expect(ordered[2]!.delayMs).toBe(ANIMATION_TIMING.attackStaggerMs);
-      expect(ordered[2]!.type).toBe('bump');
-      expect(ordered[3]!.delayMs).toBe(
-        ANIMATION_TIMING.attackStaggerMs + ANIMATION_TIMING.damageIndicatorDelayMs,
-      );
-      expect(ordered[3]!.type).toBe('damage');
+    expect(bump?.data).toMatchObject({
+      durationMs: 300,
+      impactFrameMs: 150,
     });
   });
 
-  describe('consumable metadata', () => {
-    it('emits resolved damage animation metadata and blast positions', () => {
-      const events: DomainEvent[] = [
-        {
-          type: 'ITEM_USED',
-          timestamp: 1000,
-          turnNumber: 1,
-          itemId: 'bomb-1' as any,
-          itemName: 'Bomb',
-          userId: 'player-1' as any,
-          effect: 'damage',
-        } as any,
-      ];
+  it('anchors ability impacts at the ref impact frame within a beat', () => {
+    const events: DomainEvent[] = [{
+      type: 'ABILITY_USED',
+      timestamp: 1000,
+      turnNumber: 1,
+      playerId: entityId('player-1'),
+      abilityId: 'power_strike',
+      abilityName: 'Power Strike',
+      targetId: entityId('enemy-1'),
+      targetName: 'Slow Goblin',
+      damage: 12,
+    } as DomainEvent];
 
-      const sequence = buildAnimationSequence(events, mockGameState);
-      const consumable = sequence.find((animation) => animation.type === 'consumable');
+    const sequence = buildAnimationSequence(events, mockGameState);
+    const ability = sequence.find((event) => event.type === 'ability');
+    const damage = sequence.find((event) => event.type === 'damage');
 
-      expect(consumable).toBeDefined();
-      if (consumable?.type === 'consumable' && 'effect' in consumable.data) {
-        expect(consumable.data.effect).toBe('damage');
-        expect(consumable.data.durationMs).toBe(CONSUMABLE_ANIMATION_METADATA.damage.durationMs);
-        expect(consumable.data.presentation).toBe(CONSUMABLE_ANIMATION_METADATA.damage);
-        expect(consumable.data.blastPositions).toEqual(
-          CONSUMABLE_ANIMATION_METADATA.damage.blastOffsets?.map((offset) => ({
-            x: mockGameState.player.position.x + offset.x,
-            y: mockGameState.player.position.y + offset.y,
-          })),
-        );
-      }
-    });
+    expect(ability).toBeDefined();
+    expect(damage).toBeDefined();
+    expect(ability?.beatIndex).toBe(0);
+    expect(ability?.beatRelativeDelayMs).toBe(0);
+    const impactFrameMs = (ability?.data as { impactFrameMs: number }).impactFrameMs;
+    expect(impactFrameMs).toBeGreaterThan(0);
+    expect(damage?.beatId).toBe(ability?.beatId);
+    expect(damage?.beatRelativeDelayMs).toBe(impactFrameMs);
+    expect(damage?.delayMs).toBe(ability!.delayMs + impactFrameMs);
   });
 
-  describe('no run state', () => {
-    it('returns empty array when run is null', () => {
-      const stateNoRun = { ...mockGameState, run: null } as GameState;
-      const events: DomainEvent[] = [
-        {
-          type: 'ATTACK_PERFORMED',
-          timestamp: 1000,
-          turnNumber: 1,
-          attackerId: 'player-1' as any,
-          defenderId: 'enemy-1' as any,
-          attackerName: 'Hero',
-          defenderName: 'Goblin',
-          damage: 8,
-          damageType: 'physical',
-          hit: true,
-          critical: false,
-        } as any,
-      ];
+  it('does not reserve a player beat for wait turns with enemy-only actions', () => {
+    const events: DomainEvent[] = [
+      createAttackEvent({ attackerId: entityId('enemy-2'), defenderId: entityId('player-1'), timestamp: 1000 }),
+      createAttackEvent({ attackerId: entityId('enemy-1'), defenderId: entityId('player-1'), timestamp: 1001 }),
+    ];
 
-      const sequence = buildAnimationSequence(events, stateNoRun);
+    const sequence = buildAnimationSequence(events, mockGameState);
+    const bumps = sequence.filter((event) => event.type === 'bump');
 
-      expect(sequence).toHaveLength(0);
-    });
+    expect(new Set(sequence.map((event) => event.beatIndex))).toEqual(new Set([0, 1]));
+    expect((bumps[0]!.data as { attackerId: string }).attackerId).toBe(entityId('enemy-2'));
+    expect((bumps[1]!.data as { attackerId: string }).attackerId).toBe(entityId('enemy-1'));
   });
 
-  describe('batch deduplication', () => {
-    it('includes batchId in animated events', () => {
-      const events: DomainEvent[] = [
-        {
-          type: 'ATTACK_PERFORMED',
-          timestamp: 1000,
-          turnNumber: 1,
-          attackerId: 'player-1' as any,
-          defenderId: 'enemy-1' as any,
-          attackerName: 'Hero',
-          defenderName: 'Goblin',
-          damage: 8,
-          damageType: 'physical',
-          hit: true,
-          critical: false,
-        } as any,
-      ];
+  it('keeps multi-victim impacts on the same frame within a beat', () => {
+    const events: DomainEvent[] = [{
+      type: 'ABILITY_USED',
+      timestamp: 1000,
+      turnNumber: 1,
+      playerId: entityId('player-1'),
+      abilityId: 'axe_cleave',
+      abilityName: 'Axe Cleave',
+      damageByTarget: new Map([
+        [entityId('enemy-1'), 5],
+        [entityId('enemy-2'), 7],
+      ]),
+    } as DomainEvent];
 
-      const animations = buildAnimationSequence(events, mockGameState);
+    const sequence = buildAnimationSequence(events, mockGameState);
+    const ability = sequence.find((event) => event.type === 'ability');
+    const damages = sequence.filter((event) => event.type === 'damage');
 
-      expect(animations.length).toBeGreaterThan(0);
-      expect((animations[0] as any).batchId).toBeDefined();
-    });
-
-    it('generates same batchId for all events in same sequence', () => {
-      const events: DomainEvent[] = [
-        {
-          type: 'ATTACK_PERFORMED',
-          timestamp: 1000,
-          turnNumber: 1,
-          attackerId: 'player-1' as any,
-          defenderId: 'enemy-1' as any,
-          attackerName: 'Hero',
-          defenderName: 'Goblin',
-          damage: 8,
-          damageType: 'physical',
-          hit: true,
-          critical: false,
-        } as any,
-      ];
-
-      const animations = buildAnimationSequence(events, mockGameState);
-
-      // Should have bump and damage animations
-      expect(animations.length).toBeGreaterThanOrEqual(2);
-
-      // All should have same batchId
-      const batchId = (animations[0] as any).batchId;
-      for (const anim of animations) {
-        expect((anim as any).batchId).toBe(batchId);
-      }
-    });
-
-    it('generates different batchId for different animation sequences', () => {
-      const firstTurnEvents: DomainEvent[] = [
-        {
-          type: 'ATTACK_PERFORMED',
-          timestamp: 1000,
-          turnNumber: 1,
-          attackerId: 'player-1' as any,
-          defenderId: 'enemy-1' as any,
-          attackerName: 'Hero',
-          defenderName: 'Goblin',
-          damage: 8,
-          damageType: 'physical',
-          hit: true,
-          critical: false,
-        } as any,
-      ];
-      const secondTurnEvents: DomainEvent[] = [
-        {
-          type: 'ATTACK_PERFORMED',
-          timestamp: 1001,
-          turnNumber: 2,
-          attackerId: 'player-1' as any,
-          defenderId: 'enemy-1' as any,
-          attackerName: 'Hero',
-          defenderName: 'Goblin',
-          damage: 8,
-          damageType: 'physical',
-          hit: true,
-          critical: false,
-        } as any,
-      ];
-
-      const animations1 = buildAnimationSequence(firstTurnEvents, mockGameState);
-      const batchId1 = (animations1[0] as any).batchId;
-      const animations2 = buildAnimationSequence(secondTurnEvents, mockGameState);
-      const batchId2 = (animations2[0] as any).batchId;
-
-      expect(batchId1).not.toBe(batchId2);
-    });
+    expect(ability).toBeDefined();
+    expect(damages).toHaveLength(2);
+    expect(new Set(damages.map((event) => event.beatId))).toEqual(new Set([ability!.beatId]));
+    const impactFrameMs = (ability?.data as { impactFrameMs: number }).impactFrameMs;
+    expect(new Set(damages.map((event) => event.beatRelativeDelayMs))).toEqual(new Set([impactFrameMs]));
   });
 
-  describe('ability damage indicators', () => {
-    it('emits damage indicators for single-target abilities', () => {
-      const events: DomainEvent[] = [
-        {
-          type: 'ABILITY_USED',
-          playerId: 'player-1' as any,
-          abilityId: 'power_strike',
-          abilityName: 'Power Strike',
-          targetId: 'enemy-1' as any,
-          targetName: 'Slow Goblin',
-          damage: 25,
-          timestamp: 0,
-          turnNumber: 1,
-        },
-      ];
+  it('guarantees beats do not overlap', () => {
+    const events: DomainEvent[] = [
+      {
+        type: 'ABILITY_USED',
+        timestamp: 1000,
+        turnNumber: 1,
+        playerId: entityId('player-1'),
+        abilityId: 'power_strike',
+        abilityName: 'Power Strike',
+        targetId: entityId('enemy-1'),
+        targetName: 'Slow Goblin',
+        damage: 12,
+      } as DomainEvent,
+      createAttackEvent({ attackerId: entityId('enemy-2'), defenderId: entityId('player-1'), timestamp: 1001 }),
+      createAttackEvent({ attackerId: entityId('enemy-1'), defenderId: entityId('player-1'), timestamp: 1002 }),
+    ];
 
-      const animations = buildAnimationSequence(events, mockGameState);
+    const sequence = buildAnimationSequence(events, mockGameState);
+    const beats = groupByBeat(sequence);
 
-      // Should have one ability animation and one damage indicator
-      const abilityAnims = animations.filter(a => a.type === 'ability');
-      const damageAnims = animations.filter(a => a.type === 'damage');
+    expect(beats).toHaveLength(3);
+    for (let i = 0; i < beats.length - 1; i += 1) {
+      const currentBeat = beats[i]!;
+      const nextBeat = beats[i + 1]!;
+      const currentBeatEnd = getAnimatedEventBatchSettleMs(currentBeat);
+      const nextBeatStart = Math.min(...nextBeat.map((event) => event.delayMs));
+      expect(nextBeatStart).toBeGreaterThanOrEqual(currentBeatEnd);
+    }
+  });
 
-      expect(abilityAnims).toHaveLength(1);
-      expect(damageAnims).toHaveLength(1);
+  it('uses presenter-owned beat settle calculation for batch settling', () => {
+    const events: DomainEvent[] = [{
+      type: 'ABILITY_USED',
+      timestamp: 1000,
+      turnNumber: 1,
+      playerId: entityId('player-1'),
+      abilityId: 'power_strike',
+      abilityName: 'Power Strike',
+      targetId: entityId('enemy-1'),
+      targetName: 'Slow Goblin',
+      damage: 12,
+    } as DomainEvent];
 
-      // Damage indicator should be at enemy position
-      const damageAnim = damageAnims[0];
-      expect(damageAnim?.data).toMatchObject({
-        x: 51, // enemy-1 position
-        y: 50,
-        text: '-25',
-        type: 'damage',
-      });
+    const sequence = buildAnimationSequence(events, mockGameState);
+    const ability = sequence.find((event) => event.type === 'ability');
+    const hitStop = sequence.find((event) => event.type === 'hit-stop');
+    expect(ability).toBeDefined();
+    const { durationMs, impactFrameMs, recoveryMs, hitStopMs } = ability!.data as {
+      durationMs: number;
+      impactFrameMs: number;
+      recoveryMs: number;
+      hitStopMs?: number;
+    };
 
-      // Damage indicator should be delayed after ability animation completes
-      const abilityAnim = abilityAnims[0];
-      expect(damageAnim?.delayMs).toBeGreaterThan(abilityAnim?.delayMs ?? 0);
-    });
+    expect(getAnimatedEventBatchSettleMs(sequence)).toBe(getBeatSettleMs({
+      durationMs,
+      impactFrameMs,
+      recoveryMs,
+      hitStopMs: Math.max(hitStopMs ?? 0, (hitStop?.data as { durationMs: number } | undefined)?.durationMs ?? 0),
+    }));
+  });
 
-    it('emits hit-stop and defender-hit entries for impact abilities', () => {
-      const events: DomainEvent[] = [
-        {
-          type: 'ABILITY_USED',
-          playerId: 'player-1' as any,
-          abilityId: 'power_strike',
-          abilityName: 'Power Strike',
-          targetId: 'enemy-1' as any,
-          targetName: 'Slow Goblin',
-          damage: 25,
-          timestamp: 0,
-          turnNumber: 1,
-        },
-      ];
+  it('returns empty array when run is null', () => {
+    const stateNoRun = { ...mockGameState, run: null } as GameState;
+    const events: DomainEvent[] = [
+      createAttackEvent({ attackerId: entityId('player-1'), defenderId: entityId('enemy-1'), timestamp: 1000 }),
+    ];
 
-      const animations = buildAnimationSequence(events, mockGameState);
+    const sequence = buildAnimationSequence(events, stateNoRun);
 
-      const abilityAnim = animations.find(a => a.type === 'ability');
-      const damageAnim = animations.find(a => a.type === 'damage');
-      const hitStop = animations.find(a => a.type === 'hit-stop');
-      const defenderHit = animations.find(a => a.type === 'defender-hit');
+    expect(sequence).toHaveLength(0);
+  });
 
-      expect(abilityAnim).toBeDefined();
-      expect(damageAnim).toBeDefined();
-      expect(hitStop).toBeDefined();
-      expect(defenderHit).toBeDefined();
+  it('collapses fully hidden enemy beats without reordering later visible beats', () => {
+    const state = withCellVisibilities(mockGameState, [
+      { x: 49, y: 50, visibility: 'visible' },
+      { x: 50, y: 50, visibility: 'visible' },
+      { x: 51, y: 49, visibility: 'visible' },
+      { x: 51, y: 50, visibility: 'visible' },
+      { x: 52, y: 49, visibility: 'hidden' },
+      { x: 52, y: 50, visibility: 'hidden' },
+    ]);
+    const events: DomainEvent[] = [
+      {
+        type: 'PLAYER_MOVED',
+        timestamp: 1000,
+        turnNumber: 1,
+        from: { x: 49, y: 50 },
+        to: { x: 50, y: 50 },
+      } as DomainEvent,
+      {
+        type: 'ENEMY_MOVED',
+        timestamp: 1001,
+        turnNumber: 1,
+        enemyId: entityId('enemy-2'),
+        from: { x: 52, y: 49 },
+        to: { x: 52, y: 50 },
+      } as DomainEvent,
+      {
+        type: 'ENEMY_MOVED',
+        timestamp: 1002,
+        turnNumber: 1,
+        enemyId: entityId('enemy-1'),
+        from: { x: 51, y: 49 },
+        to: { x: 51, y: 50 },
+      } as DomainEvent,
+    ];
 
-      expect(hitStop?.delayMs).toBe(damageAnim?.delayMs);
-      expect(defenderHit?.delayMs).toBe(damageAnim?.delayMs);
-      if (hitStop?.type === 'hit-stop' && defenderHit?.type === 'defender-hit') {
-        const hitStopData = hitStop.data as { durationMs: number };
-        const defenderHitData = defenderHit.data as { entityId: string; durationMs: number };
+    const sequence = buildAnimationSequence(events, state);
+    const beats = groupByBeat(sequence);
 
-        expect(hitStopData.durationMs).toBeGreaterThan(0);
-        expect(defenderHitData.entityId).toBe('enemy-1');
-        expect(defenderHitData.durationMs).toBe(hitStopData.durationMs);
-      }
-    });
+    expect(beats).toHaveLength(2);
+    expect(sequence.map((event) => (event.data as { entityId?: string }).entityId).filter(Boolean)).toEqual([
+      entityId('player-1'),
+      entityId('enemy-1'),
+    ]);
+    expect(new Set(sequence.map((event) => event.beatIndex))).toEqual(new Set([0, 1]));
+  });
 
-    it('emits multiple damage indicators for AoE abilities like cleave', () => {
-      const events: DomainEvent[] = [
-        {
-          type: 'ABILITY_USED',
-          playerId: 'player-1' as any,
-          abilityId: 'axe_cleave',
-          abilityName: 'Cleave',
-          targetId: 'enemy-1' as any,
-          targetName: 'Slow Goblin',
-          damage: 15,
-          damageByTarget: new Map<EntityId, number>([
-            ['enemy-1' as EntityId, 15],
-            ['enemy-2' as EntityId, 15],
-          ]),
-          timestamp: 0,
-          turnNumber: 1,
-        },
-      ];
+  it('keeps visible-entering enemy movement beats', () => {
+    const state = withCellVisibilities(mockGameState, [
+      { x: 52, y: 49, visibility: 'hidden' },
+      { x: 52, y: 50, visibility: 'visible' },
+    ]);
+    const events: DomainEvent[] = [{
+      type: 'ENEMY_MOVED',
+      timestamp: 1000,
+      turnNumber: 1,
+      enemyId: entityId('enemy-2'),
+      from: { x: 52, y: 49 },
+      to: { x: 52, y: 50 },
+    } as DomainEvent];
 
-      const animations = buildAnimationSequence(events, mockGameState);
+    const sequence = buildAnimationSequence(events, state);
 
-      // For cleave hitting 2 enemies, should have damage indicators at both positions
-      const damageAnims = animations.filter(a => a.type === 'damage');
-      
-      expect(damageAnims.length).toBeGreaterThanOrEqual(2);
-      
-      // Should have damage indicators at the affected positions
-      const positions = damageAnims.map(a => ({ x: (a.data as any).x, y: (a.data as any).y }));
-      expect(positions).toContainEqual({ x: 51, y: 50 }); // enemy-1
-      expect(positions).toContainEqual({ x: 52, y: 50 }); // enemy-2
-    });
+    expect(sequence).toHaveLength(1);
+    expect(sequence[0]?.type).toBe('move');
+    expect((sequence[0]?.data as { entityId: string }).entityId).toBe(entityId('enemy-2'));
+  });
+
+  it('keeps visible-leaving enemy movement beats', () => {
+    const state = withCellVisibilities(mockGameState, [
+      { x: 52, y: 49, visibility: 'visible' },
+      { x: 52, y: 50, visibility: 'hidden' },
+    ]);
+    const events: DomainEvent[] = [{
+      type: 'ENEMY_MOVED',
+      timestamp: 1000,
+      turnNumber: 1,
+      enemyId: entityId('enemy-2'),
+      from: { x: 52, y: 49 },
+      to: { x: 52, y: 50 },
+    } as DomainEvent];
+
+    const sequence = buildAnimationSequence(events, state);
+
+    expect(sequence).toHaveLength(1);
+    expect(sequence[0]?.type).toBe('move');
+    expect((sequence[0]?.data as { entityId: string }).entityId).toBe(entityId('enemy-2'));
   });
 });

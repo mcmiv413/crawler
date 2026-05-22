@@ -187,8 +187,6 @@ export function DungeonPhase({
   useSprites,
   setUseSprites,
 }: DungeonPhaseProps) {
-  void loading;
-
   const { isMobile } = useBreakpoint();
   const [showInspectModal, setShowInspectModal] = useState(false);
   useAnimationOrchestrator(view.animatedEvents);
@@ -269,6 +267,7 @@ export function DungeonPhase({
       <div style={{ flexShrink: 0 }}>
         <UnifiedActionPanel
           view={view}
+          loading={loading}
           onSendCommand={sendCommand}
           onInspectOpen={() => setShowInspectModal(true)}
         />

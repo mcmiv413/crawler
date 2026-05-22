@@ -22,6 +22,7 @@ import styles from './UnifiedActionPanel.module.css';
 
 export interface UnifiedActionPanelProps {
   readonly view: GameView;
+  readonly loading?: boolean;
   readonly onSendCommand: (command: GameCommand) => void;
   readonly onInspectOpen?: () => void;
 }
@@ -52,6 +53,7 @@ function calculateDistance(x1: number, y1: number, x2: number, y2: number): numb
 
 export function UnifiedActionPanel({
   view,
+  loading = false,
   onSendCommand,
   onInspectOpen,
 }: UnifiedActionPanelProps) {
@@ -73,6 +75,10 @@ export function UnifiedActionPanel({
     }));
 
   const handleActionClick = (actionType: ActionButtonType | 'STAIRS') => {
+    if (loading) {
+      return;
+    }
+
     switch (actionType) {
       case 'WAIT':
         onSendCommand({ type: 'WAIT' });
@@ -121,6 +127,10 @@ export function UnifiedActionPanel({
   };
 
   const handleDropdownSelect = (actionType: ActionButtonType, selection: unknown) => {
+    if (loading) {
+      return;
+    }
+
     switch (actionType) {
       case 'ATTACK':
         onSendCommand({ type: 'ATTACK', targetId: selection as string });
@@ -244,7 +254,7 @@ export function UnifiedActionPanel({
             key={actionType}
             type={actionType}
             label={getActionLabel(actionType)}
-            enabled={isActionEnabled(actionType)}
+            enabled={isActionEnabled(actionType) && !loading}
             isActive={dropdown.active === actionType}
             onClick={() => handleActionClick(actionType)}
           />
@@ -255,7 +265,7 @@ export function UnifiedActionPanel({
             key="STAIRS"
             type="INTERACT"
             label="Stairs"
-            enabled={true}
+            enabled={!loading}
             isActive={dropdown.active === 'STAIRS'}
             onClick={() => handleActionClick('STAIRS')}
             iconElement={<ItemSpriteIcon spriteName={SPRITE_NAMES.STAIRS_UP} size={16} />}

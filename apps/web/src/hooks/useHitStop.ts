@@ -1,45 +1,33 @@
-import { useEffect, useRef, useState } from 'react';
+import { useEffect, useState } from 'react';
 
-interface HitStopEntry {
-  durationMs: number;
-  startTime: number;
+type HitStopStateListener = (isActive: boolean) => void;
+type HitStopTriggerListener = (durationMs: number) => void;
+
+const hitStopStateListeners = new Set<HitStopStateListener>();
+const hitStopTriggerListeners = new Set<HitStopTriggerListener>();
+let activeHitStops = 0;
+
+function notifyHitStopState(): void {
+  const isActive = activeHitStops > 0;
+  for (const listener of hitStopStateListeners) {
+    listener(isActive);
+  }
 }
 
-const hitStopChannel = new Map<string, HitStopEntry>();
-let hitStopListeners: Set<(isActive: boolean) => void> = new Set();
+export function onHitStopTriggered(listener: HitStopTriggerListener): () => void {
+  hitStopTriggerListeners.add(listener);
+  return () => {
+    hitStopTriggerListeners.delete(listener);
+  };
+}
 
 export function useHitStop(): { isPaused: boolean } {
-  const [isPaused, setIsPaused] = useState(false);
-  const nextIdRef = useRef(0);
+  const [isPaused, setIsPaused] = useState(activeHitStops > 0);
 
   useEffect(() => {
-    const id = String(nextIdRef.current++);
-
-    const checkHitStop = () => {
-      const currentTime = Date.now();
-      let hasActive = false;
-
-      for (const [entryId, entry] of hitStopChannel) {
-        const elapsed = currentTime - entry.startTime;
-        if (elapsed < entry.durationMs) {
-          hasActive = true;
-        } else {
-          hitStopChannel.delete(entryId);
-        }
-      }
-
-      setIsPaused(hasActive);
-    };
-
-    const listener = (isActive: boolean) => setIsPaused(isActive);
-    hitStopListeners.add(listener);
-
-    const interval = setInterval(checkHitStop, 16);
-
+    hitStopStateListeners.add(setIsPaused);
     return () => {
-      clearInterval(interval);
-      hitStopListeners.delete(listener);
-      hitStopChannel.delete(id);
+      hitStopStateListeners.delete(setIsPaused);
     };
   }, []);
 
@@ -47,18 +35,17 @@ export function useHitStop(): { isPaused: boolean } {
 }
 
 export function triggerHitStop(durationMs: number): void {
-  const id = String(Date.now());
-  const startTime = Date.now();
-  hitStopChannel.set(id, { durationMs, startTime });
+  if (durationMs <= 0) return;
 
-  // Notify all listeners
-  const isActive = hitStopChannel.size > 0;
-  hitStopListeners.forEach(listener => listener(isActive));
+  for (const listener of hitStopTriggerListeners) {
+    listener(durationMs);
+  }
 
-  // Auto-cleanup after duration
+  activeHitStops += 1;
+  notifyHitStopState();
+
   setTimeout(() => {
-    hitStopChannel.delete(id);
-    const stillActive = hitStopChannel.size > 0;
-    hitStopListeners.forEach(listener => listener(stillActive));
+    activeHitStops = Math.max(0, activeHitStops - 1);
+    notifyHitStopState();
   }, durationMs);
 }

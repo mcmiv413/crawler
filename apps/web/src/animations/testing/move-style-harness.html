@@ -1,0 +1,41 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Move Style Harness</title>
+    <style>
+      :root {
+        color-scheme: dark;
+        font-family: Inter, ui-sans-serif, system-ui, sans-serif;
+        background: #111713;
+        color: #e6eee7;
+      }
+
+      body {
+        margin: 0;
+        min-height: 100vh;
+        display: grid;
+        place-items: center;
+      }
+
+      main {
+        width: min(920px, calc(100vw - 32px));
+      }
+
+      canvas {
+        display: block;
+        width: 100%;
+        image-rendering: pixelated;
+        border: 1px solid #385143;
+        background: #172019;
+      }
+    </style>
+  </head>
+  <body>
+    <main>
+      <canvas id="move-style-harness" aria-label="Move style harness"></canvas>
+    </main>
+    <script type="module" src="./move-style-harness.ts"></script>
+  </body>
+</html>
