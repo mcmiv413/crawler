@@ -2,7 +2,9 @@
  * Shared Vitest base configuration for packages.
  * Re-exported by individual vitest.config.ts files to maintain consistency.
  */
+import { fileURLToPath } from 'node:url';
 import { defineConfig } from 'vitest/config';
+import tsconfigPaths from 'vite-tsconfig-paths';
 import { createJsToTsResolvePlugin } from './vite-helpers.js';
 
 interface BaseVitestConfigOptions {
@@ -14,12 +16,13 @@ interface BaseVitestConfigOptions {
 }
 
 export function createBaseVitestConfig(options?: BaseVitestConfigOptions): ReturnType<typeof defineConfig> {
+  const baseTsconfig = fileURLToPath(new URL('./tsconfig.base.json', import.meta.url));
   const config: any = {
     test: {
       globals: true,
       include: options?.include ?? ['src/**/*.test.ts'],
     },
-    plugins: [createJsToTsResolvePlugin()],
+    plugins: [tsconfigPaths({ projects: [baseTsconfig] }), createJsToTsResolvePlugin()],
   };
 
   if (options?.exclude) {

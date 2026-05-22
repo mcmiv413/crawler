@@ -9,10 +9,12 @@ import { useMoveAnimationState } from '../hooks/useMoveAnimationState.js';
 import { useConsumableAnimationState } from '../hooks/useConsumableAnimationState.js';
 import { useFxAnimationState } from '../hooks/useFxAnimationState.js';
 import { initializeAnimationModules } from '../animations/generated/index.js';
-import { BUMP_ANIMATION_DURATION_MS, CELL_SIZE } from '../config/ui-config.js';
+import { getMoveTravelOffsetPx } from '../animations/move-style-profiles.js';
+import { CELL_SIZE } from '../config/ui-config.js';
 import { VP_WIDTH, VP_HEIGHT } from '../config/ui-config.js';
 
 const EMPTY_STATUSES: readonly StatusView[] = [];
+const ZERO_CAMERA_OFFSET = { x: 0, y: 0 } as const;
 
 interface Props {
   map: MapView;
@@ -23,7 +25,7 @@ interface Props {
 export function DungeonCanvas({ map, vpTilesWidth, vpTilesHeight }: Props) {
   const canvasRef = useRef<HTMLCanvasElement>(null);
   const [spritesReady, setSpritesReady] = useState(spriteRegistry.isReady());
-  const { animations: bumpAnimations }       = useBumpAnimationState(BUMP_ANIMATION_DURATION_MS);
+  const { animations: bumpAnimations }       = useBumpAnimationState();
   const { animations: moveAnimations }       = useMoveAnimationState();
   const { animations: consumableAnimations } = useConsumableAnimationState();
   const { animations: fxAnimations } = useFxAnimationState();
@@ -46,6 +48,27 @@ export function DungeonCanvas({ map, vpTilesWidth, vpTilesHeight }: Props) {
 
   const vpRef = useRef({ left: vpLeft, top: vpTop });
   vpRef.current = { left: vpLeft, top: vpTop };
+
+  const cameraOffset = useMemo(() => {
+    const playerEntityId = map.entities.find((entity) => entity.type === 'player')?.id;
+    const activePlayerMove = playerEntityId === undefined
+      ? moveAnimations.find(
+          (animation) =>
+            animation.toPos.x === map.playerPosition.x
+            && animation.toPos.y === map.playerPosition.y,
+        )
+      : moveAnimations.find((animation) => animation.entityId === playerEntityId);
+
+    if (activePlayerMove === undefined) {
+      return ZERO_CAMERA_OFFSET;
+    }
+
+    const offset = getMoveTravelOffsetPx(activePlayerMove, CELL_SIZE);
+    return {
+      x: -offset.x,
+      y: -offset.y,
+    };
+  }, [map.entities, map.playerPosition.x, map.playerPosition.y, moveAnimations]);
 
   useEffect(() => {
     spriteRegistry.onReady(() => setSpritesReady(true));
@@ -88,8 +111,9 @@ export function DungeonCanvas({ map, vpTilesWidth, vpTilesHeight }: Props) {
       consumableAnimations,
       fxAnimations,
       { statusPresentations },
+      cameraOffset,
     );
-  }, [map, spritesReady, vp_width, vp_height, bumpAnimations, moveAnimations, consumableAnimations, fxAnimations, statusPresentations]);
+  }, [map, spritesReady, vp_width, vp_height, bumpAnimations, moveAnimations, consumableAnimations, fxAnimations, statusPresentations, cameraOffset]);
 
   const handleClick = useCallback((e: React.MouseEvent<HTMLCanvasElement>) => {
     const canvas = canvasRef.current;
@@ -99,8 +123,8 @@ export function DungeonCanvas({ map, vpTilesWidth, vpTilesHeight }: Props) {
     const renderedTileW = rect.width  / vp_width;
     const renderedTileH = rect.height / vp_height;
 
-    const tileX = Math.floor((e.clientX - rect.left) / renderedTileW);
-    const tileY = Math.floor((e.clientY - rect.top)  / renderedTileH);
+    const tileX = Math.floor(((e.clientX - rect.left) - cameraOffset.x) / renderedTileW);
+    const tileY = Math.floor(((e.clientY - rect.top) - cameraOffset.y) / renderedTileH);
 
     if (tileX < 0 || tileX >= vp_width || tileY < 0 || tileY >= vp_height) return;
 
@@ -117,7 +141,7 @@ export function DungeonCanvas({ map, vpTilesWidth, vpTilesHeight }: Props) {
 
     const { startAutoWalk } = useGameStore.getState();
     startAutoWalk(path);
-  }, [map, vp_width, vp_height]);
+  }, [map, vp_width, vp_height, cameraOffset]);
 
   return (
     <canvas

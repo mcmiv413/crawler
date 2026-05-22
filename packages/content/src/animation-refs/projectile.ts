@@ -9,6 +9,8 @@ export const singleArrow: AnimationRef = {
   id: 'fx.projectile.single-arrow',
   category: 'projectile',
   durationMs: 300,
+  impactFrameMs: 240,
+  recoveryMs: 60,
   suppressActorBump: false,
 };
 
@@ -16,6 +18,8 @@ export const arrowVolley: AnimationRef = {
   id: 'fx.projectile.arrow-volley',
   category: 'projectile',
   durationMs: 400,
+  impactFrameMs: 320,
+  recoveryMs: 80,
   suppressActorBump: true,
 };
 
@@ -23,5 +27,7 @@ export const emberBolt: AnimationRef = {
   id: 'fx.projectile.ember-bolt',
   category: 'projectile',
   durationMs: 360,
+  impactFrameMs: 288,
+  recoveryMs: 72,
   suppressActorBump: true,
 };

@@ -1,4 +1,5 @@
 import { create } from 'zustand';
+import { getAnimatedEventBatchSettleMs } from '@dungeon/presenter';
 import type { GameView, CombatLogEntry } from '@dungeon/presenter';
 import {
   createGame as createGameRequest,
@@ -8,6 +9,8 @@ import {
   sendCommand as sendCommandRequest,
 } from '../api/client.js';
 import type { CommandResponse } from '../api/client.js';
+import { isBeatSchedulerEnabledFlag } from '../config/feature-flags.js';
+import { isQueueDraining, onQueueDrained } from '../hooks/animation-queue-bus.js';
 import { saveSession, loadSession, clearSession } from './session-persistence.js';
 
 interface Position {
@@ -39,6 +42,11 @@ interface GameStore {
 }
 
 let pendingViewTimeout: ReturnType<typeof setTimeout> | null = null;
+let pendingQueueDrainUnsubscribe: (() => void) | null = null;
+let pendingQueueDrainCommit: {
+  readonly view: GameView;
+  readonly combatLog: CombatLogEntry[];
+} | null = null;
 
 type SetGameStore = (partial: Partial<GameStore>) => void;
 type GetGameStore = () => GameStore;
@@ -190,27 +198,40 @@ function clearPendingViewTimeout(): void {
   pendingViewTimeout = null;
 }
 
-function getAnimatedEventSettleMs(animatedEvents: readonly GameView['animatedEvents'][number][]): number {
-  let settleMs = 0;
+function clearPendingQueueDrainCommit(): void {
+  pendingQueueDrainUnsubscribe?.();
+  pendingQueueDrainUnsubscribe = null;
+  pendingQueueDrainCommit = null;
+}
 
-  for (const animatedEvent of animatedEvents) {
-    let eventSettleMs = animatedEvent.delayMs;
+function clearPendingAnimationCommits(): void {
+  clearPendingViewTimeout();
+  clearPendingQueueDrainCommit();
+}
 
-    if (
-      animatedEvent.type === 'move'
-      || animatedEvent.type === 'ability'
-      || animatedEvent.type === 'consumable'
-    ) {
-      const timedData = animatedEvent.data as { readonly durationMs: number };
-      eventSettleMs += timedData.durationMs;
-    }
+function isBeatSchedulerEnabled(): boolean {
+  return isBeatSchedulerEnabledFlag();
+}
 
-    if (eventSettleMs > settleMs) {
-      settleMs = eventSettleMs;
-    }
+function ensureQueueDrainSubscription(set: SetGameStore): void {
+  if (pendingQueueDrainUnsubscribe !== null) {
+    return;
   }
 
-  return settleMs;
+  pendingQueueDrainUnsubscribe = onQueueDrained(() => {
+    const pendingCommit = pendingQueueDrainCommit;
+    clearPendingQueueDrainCommit();
+    if (pendingCommit === null) {
+      return;
+    }
+
+    set({
+      view: pendingCommit.view,
+      combatLog: pendingCommit.combatLog,
+      loading: false,
+      deathTransitioning: false,
+    });
+  });
 }
 
 function applyCommandResult(
@@ -221,14 +242,14 @@ function applyCommandResult(
 ): void {
   const currentView = get().view;
   const combatLog = appendCombatLog(get().combatLog, result.view.combatLog);
-  const animationSettleMs = getAnimatedEventSettleMs(result.view.animatedEvents);
+  const animationSettleMs = getAnimatedEventBatchSettleMs(result.view.animatedEvents);
   const shouldStageView =
     currentView !== null
     && currentView.phase === 'dungeon'
     && animationSettleMs > 0;
 
   if (!shouldStageView && !isDeath) {
-    clearPendingViewTimeout();
+    clearPendingAnimationCommits();
     set({
       view: result.view,
       combatLog,
@@ -241,13 +262,27 @@ function applyCommandResult(
   clearPendingViewTimeout();
 
   if (shouldStageView) {
+    if (isBeatSchedulerEnabled()) {
+      pendingQueueDrainCommit = {
+        view: result.view,
+        combatLog,
+      };
+      ensureQueueDrainSubscription(set);
+      set({
+        view: result.view,
+        combatLog,
+        deathTransitioning: isDeath,
+        loading: false,
+      });
+      return;
+    }
+
+    clearPendingQueueDrainCommit();
     set({
-      view: {
-        ...currentView,
-        animatedEvents: result.view.animatedEvents,
-      },
+      view: result.view,
+      combatLog,
       deathTransitioning: isDeath,
-      loading: isDeath ? false : true,
+      loading: false,
     });
 
     pendingViewTimeout = setTimeout(() => {
@@ -262,7 +297,9 @@ function applyCommandResult(
     return;
   }
 
+  clearPendingQueueDrainCommit();
   set({
+    view: result.view,
     combatLog,
     deathTransitioning: true,
     loading: false,
@@ -280,6 +317,7 @@ function applyCommandResult(
 
 function createCreateGameAction(set: SetGameStore): GameStore['createGame'] {
   return async (seed, playerName) => {
+    clearPendingAnimationCommits();
     set({ loading: true, error: null });
     try {
       const result = await createGameRequest(seed, playerName);
@@ -344,6 +382,7 @@ function createRestoreSessionAction(set: SetGameStore): GameStore['restoreSessio
     const saved = loadSession();
     if (!saved) return false;
 
+    clearPendingAnimationCommits();
     set({ loading: true, error: null });
     try {
       // Try fetching view directly (server may still have it warm)
@@ -370,7 +409,7 @@ function createRestoreSessionAction(set: SetGameStore): GameStore['restoreSessio
 
 function createResetGameAction(set: SetGameStore): GameStore['resetGame'] {
   return () => {
-    clearPendingViewTimeout();
+    clearPendingAnimationCommits();
     clearSession();
     set({ gameId: null, view: null, combatLog: [], error: null, autoWalkPath: [], autoWalkKnownEnemyIds: new Set(), deathTransitioning: false, sessionToken: null });
   };

@@ -329,6 +329,8 @@ export interface BumpAnimationEntry {
   readonly defenderId: import('@dungeon/contracts').EntityId;
   readonly attackerPos: { readonly x: number; readonly y: number };
   readonly defenderPos: { readonly x: number; readonly y: number };
+  readonly durationMs: number;
+  readonly impactFrameMs: number;
 }
 
 export interface ConsumableAnimationEntry {
@@ -359,6 +361,7 @@ export interface AbilityAnimationEntry {
   readonly blastPositions: readonly { readonly x: number; readonly y: number }[];
   readonly targetHpFraction?: number;
   readonly durationMs: number;
+  readonly impactFrameMs: number;
   readonly suppressActorBump: boolean;
 }
 

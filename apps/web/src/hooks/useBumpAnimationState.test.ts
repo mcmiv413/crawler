@@ -1,7 +1,19 @@
-import { describe, it, expect, beforeEach, afterEach, vi } from 'vitest';
-import { renderHook, act } from '@testing-library/react';
+import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
+import { act, renderHook } from '@testing-library/react';
 import type { BumpAnimationEntry } from '@dungeon/presenter';
 import { useBumpAnimationState } from './useBumpAnimationState.js';
+
+function createBumpEntry(overrides: Partial<BumpAnimationEntry> = {}): BumpAnimationEntry {
+  return {
+    attackerId: 'player-1' as any,
+    defenderId: 'enemy-1' as any,
+    attackerPos: { x: 10, y: 10 },
+    defenderPos: { x: 11, y: 10 },
+    durationMs: 150,
+    impactFrameMs: 75,
+    ...overrides,
+  } satisfies BumpAnimationEntry;
+}
 
 describe('useBumpAnimationState', () => {
   beforeEach(() => {
@@ -21,17 +33,10 @@ describe('useBumpAnimationState', () => {
   it('tracks active bump animations', () => {
     const { result } = renderHook(() => useBumpAnimationState(150));
 
-    const event = new CustomEvent('bump-animation', {
-      detail: {
-        attackerId: 'player-1',
-        defenderId: 'enemy-1',
-        attackerPos: { x: 10, y: 10 },
-        defenderPos: { x: 11, y: 10 },
-      } as BumpAnimationEntry,
-    });
-
     act(() => {
-      window.dispatchEvent(event);
+      window.dispatchEvent(new CustomEvent('bump-animation', {
+        detail: createBumpEntry(),
+      }));
     });
 
     expect(result.current.animations).toHaveLength(1);
@@ -39,49 +44,68 @@ describe('useBumpAnimationState', () => {
     expect(result.current.animations[0]!.defenderId).toBe('enemy-1');
   });
 
-  it('removes animation after duration expires', () => {
-    const { result } = renderHook(() => useBumpAnimationState(150));
-
-    const event = new CustomEvent('bump-animation', {
-      detail: {
-        attackerId: 'player-1',
-        defenderId: 'enemy-1',
-        attackerPos: { x: 10, y: 10 },
-        defenderPos: { x: 11, y: 10 },
-      } as BumpAnimationEntry,
-    });
+  it('removes animation after the entry duration expires', () => {
+    const { result } = renderHook(() => useBumpAnimationState(300));
 
     act(() => {
-      window.dispatchEvent(event);
+      window.dispatchEvent(new CustomEvent('bump-animation', {
+        detail: createBumpEntry({ durationMs: 90, impactFrameMs: 45 }),
+      }));
     });
 
     expect(result.current.animations).toHaveLength(1);
 
     act(() => {
-      vi.advanceTimersByTime(151);
+      vi.advanceTimersByTime(91);
     });
 
     expect(result.current.animations).toHaveLength(0);
   });
 
-  it('provides progress value (0 to 1) for animation frame updates', () => {
-    const { result } = renderHook(() => useBumpAnimationState(150));
+  it('falls back to the provided duration when legacy events omit timing', () => {
+    const { result } = renderHook(() => useBumpAnimationState(120));
 
-    const event = new CustomEvent('bump-animation', {
-      detail: {
-        attackerId: 'player-1',
-        defenderId: 'enemy-1',
-        attackerPos: { x: 10, y: 10 },
-        defenderPos: { x: 11, y: 10 },
-      } as BumpAnimationEntry,
+    act(() => {
+      window.dispatchEvent(new CustomEvent('bump-animation', {
+        detail: {
+          attackerId: 'player-1',
+          defenderId: 'enemy-1',
+          attackerPos: { x: 10, y: 10 },
+          defenderPos: { x: 11, y: 10 },
+        } as BumpAnimationEntry,
+      }));
     });
 
     act(() => {
-      window.dispatchEvent(event);
+      vi.advanceTimersByTime(121);
+    });
+
+    expect(result.current.animations).toHaveLength(0);
+  });
+
+  it('keeps impact frame timing from the event entry', () => {
+    const { result } = renderHook(() => useBumpAnimationState(200));
+
+    act(() => {
+      window.dispatchEvent(new CustomEvent('bump-animation', {
+        detail: createBumpEntry({ durationMs: 180, impactFrameMs: 60 }),
+      }));
+    });
+
+    expect(result.current.animations[0]!.durationMs).toBe(180);
+    expect(result.current.animations[0]!.impactFrameMs).toBe(60);
+  });
+
+  it('provides progress values between 0 and 1', () => {
+    const { result } = renderHook(() => useBumpAnimationState(150));
+
+    act(() => {
+      window.dispatchEvent(new CustomEvent('bump-animation', {
+        detail: createBumpEntry({ durationMs: 200, impactFrameMs: 100 }),
+      }));
     });
 
     const animation = result.current.animations[0]!;
-    expect(animation.progress).toBeDefined();
     expect(animation.progress).toBeGreaterThanOrEqual(0);
     expect(animation.progress).toBeLessThanOrEqual(1);
   });
@@ -89,17 +113,10 @@ describe('useBumpAnimationState', () => {
   it('updates progress over time', () => {
     const { result } = renderHook(() => useBumpAnimationState(200));
 
-    const event = new CustomEvent('bump-animation', {
-      detail: {
-        attackerId: 'player-1',
-        defenderId: 'enemy-1',
-        attackerPos: { x: 10, y: 10 },
-        defenderPos: { x: 11, y: 10 },
-      } as BumpAnimationEntry,
-    });
-
     act(() => {
-      window.dispatchEvent(event);
+      window.dispatchEvent(new CustomEvent('bump-animation', {
+        detail: createBumpEntry({ durationMs: 200, impactFrameMs: 100 }),
+      }));
     });
 
     const initialProgress = result.current.animations[0]!.progress;
@@ -108,40 +125,30 @@ describe('useBumpAnimationState', () => {
       vi.advanceTimersByTime(100);
     });
 
-    const midProgress = result.current.animations[0]!.progress;
-    expect(midProgress).toBeGreaterThan(initialProgress);
+    expect(result.current.animations[0]!.progress).toBeGreaterThan(initialProgress);
   });
 
   it('handles multiple simultaneous animations', () => {
     const { result } = renderHook(() => useBumpAnimationState(150));
 
-    const event1 = new CustomEvent('bump-animation', {
-      detail: {
-        attackerId: 'player-1',
-        defenderId: 'enemy-1',
-        attackerPos: { x: 10, y: 10 },
-        defenderPos: { x: 11, y: 10 },
-      } as BumpAnimationEntry,
-    });
-
-    const event2 = new CustomEvent('bump-animation', {
-      detail: {
-        attackerId: 'enemy-2',
-        defenderId: 'player-1',
-        attackerPos: { x: 12, y: 12 },
-        defenderPos: { x: 11, y: 12 },
-      } as BumpAnimationEntry,
-    });
-
     act(() => {
-      window.dispatchEvent(event1);
-      window.dispatchEvent(event2);
+      window.dispatchEvent(new CustomEvent('bump-animation', {
+        detail: createBumpEntry(),
+      }));
+      window.dispatchEvent(new CustomEvent('bump-animation', {
+        detail: createBumpEntry({
+          attackerId: 'enemy-2' as any,
+          defenderId: 'player-1' as any,
+          attackerPos: { x: 12, y: 12 },
+          defenderPos: { x: 11, y: 12 },
+        }),
+      }));
     });
 
     expect(result.current.animations).toHaveLength(2);
   });
 
-  it('cleans up event listener on unmount', () => {
+  it('cleans up the event listener on unmount', () => {
     const removeSpy = vi.spyOn(window, 'removeEventListener');
     const { unmount } = renderHook(() => useBumpAnimationState(150));
 

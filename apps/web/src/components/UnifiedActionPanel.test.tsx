@@ -203,6 +203,22 @@ describe('UnifiedActionPanel', () => {
       expect(ariaLabels.some(l => l.startsWith('Use:'))).toBe(true);
       expect(ariaLabels.some(l => l.startsWith('Inspect:'))).toBe(true);
     });
+
+    it('disables action buttons while loading and sets aria-disabled', () => {
+      const view = createMockGameView();
+      render(
+        <UnifiedActionPanel
+          view={view}
+          loading={true}
+          onSendCommand={mockSendCommand}
+          onInspectOpen={mockInspectOpen}
+        />
+      );
+
+      const waitButton = findActionButton('Wait');
+      expect(waitButton).toBeDisabled();
+      expect(waitButton).toHaveAttribute('aria-disabled', 'true');
+    });
   });
 
   describe('Direct Actions', () => {

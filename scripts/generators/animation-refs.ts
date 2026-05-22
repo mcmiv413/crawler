@@ -9,21 +9,25 @@ import { existsSync, readdirSync, readFileSync, writeFileSync } from 'fs';
 import { join } from 'path';
 import { fileURLToPath } from 'url';
 
-const CONTENT_DIR = join(process.cwd(), 'packages/content/src');
-const ANIMATION_REFS_DIR = join(CONTENT_DIR, 'animation-refs');
 const CATEGORY_ORDER = ['impact', 'projectile', 'self', 'aoe', 'status', 'utility'] as const;
 
 interface AnimationRef {
   id: string;
   category: string;
   durationMs: number;
+  impactFrameMs: number;
+  recoveryMs: number;
   suppressActorBump?: boolean;
 }
 
-export function generateAnimationRefsIndex(): void {
-  const refs = scanRefs();
+function getAnimationRefsDir(rootDir: string): string {
+  return join(rootDir, 'packages/content/src/animation-refs');
+}
+
+export function generateAnimationRefsIndex(rootDir = process.cwd()): void {
+  const refs = scanRefs(rootDir);
   validateRefs(refs);
-  generateIndexFile(refs);
+  generateIndexFile(refs, rootDir);
   console.log(`✅ Generated animation-refs/index.ts (${refs.size} refs)`);
 }
 
@@ -34,6 +38,14 @@ function validateRef(ref: AnimationRef): void {
 
   if (ref.durationMs <= 0 || !Number.isInteger(ref.durationMs)) {
     throw new Error(`Invalid durationMs for ${ref.id}: ${ref.durationMs}. Must be positive integer`);
+  }
+
+  if (!Number.isInteger(ref.impactFrameMs)) {
+    throw new Error(`Invalid impactFrameMs for ${ref.id}: ${ref.impactFrameMs}. Must be integer`);
+  }
+
+  if (!Number.isInteger(ref.recoveryMs)) {
+    throw new Error(`Invalid recoveryMs for ${ref.id}: ${ref.recoveryMs}. Must be integer`);
   }
 
   if ((ref.category === 'projectile' || ref.category === 'aoe') && ref.suppressActorBump === undefined) {
@@ -56,15 +68,16 @@ function validateRefs(refs: Map<string, { ref: AnimationRef; category: string; e
   }
 }
 
-function scanRefs(): Map<string, { ref: AnimationRef; category: string; exportName: string }> {
+function scanRefs(rootDir: string): Map<string, { ref: AnimationRef; category: string; exportName: string }> {
   const refs = new Map<string, { ref: AnimationRef; category: string; exportName: string }>();
+  const animationRefsDir = getAnimationRefsDir(rootDir);
 
-  for (const entry of readdirSync(ANIMATION_REFS_DIR, { withFileTypes: true })) {
+  for (const entry of readdirSync(animationRefsDir, { withFileTypes: true })) {
     if (!entry.isFile() || !entry.name.endsWith('.ts')) continue;
     if (entry.name === 'index.ts' || entry.name === 'types.ts' || entry.name.endsWith('.test.ts')) continue;
 
     const category = entry.name.replace(/\.ts$/, '');
-    const source = readFileSync(join(ANIMATION_REFS_DIR, entry.name), 'utf8');
+    const source = readFileSync(join(animationRefsDir, entry.name), 'utf8');
     const exportRegex = /export const (\w+)(?:\s*:\s*AnimationRef)?\s*=\s*([\s\S]*?)(?:\} as const satisfies AnimationRef;|\};)/g;
 
     for (const match of source.matchAll(exportRegex)) {
@@ -73,9 +86,17 @@ function scanRefs(): Map<string, { ref: AnimationRef; category: string; exportNa
       const id = body.match(/id:\s*'([^']+)'/)?.[1];
       const declaredCategory = body.match(/category:\s*'([^']+)'/)?.[1];
       const durationMs = Number(body.match(/durationMs:\s*(\d+)/)?.[1]);
+      const impactFrameMs = Number(body.match(/impactFrameMs:\s*(\d+)/)?.[1]);
+      const recoveryMs = Number(body.match(/recoveryMs:\s*(\d+)/)?.[1]);
       const suppressActorBumpMatch = body.match(/suppressActorBump:\s*(true|false)/)?.[1];
 
-      if (id === undefined || declaredCategory === undefined || !Number.isInteger(durationMs)) {
+      if (
+        id === undefined
+        || declaredCategory === undefined
+        || !Number.isInteger(durationMs)
+        || !Number.isInteger(impactFrameMs)
+        || !Number.isInteger(recoveryMs)
+      ) {
         throw new Error(`Could not parse AnimationRef export ${exportName} in ${entry.name}`);
       }
 
@@ -83,6 +104,8 @@ function scanRefs(): Map<string, { ref: AnimationRef; category: string; exportNa
         id,
         category: declaredCategory,
         durationMs,
+        impactFrameMs,
+        recoveryMs,
         ...(suppressActorBumpMatch !== undefined
           ? { suppressActorBump: suppressActorBumpMatch === 'true' }
           : {}),
@@ -101,7 +124,10 @@ function scanRefs(): Map<string, { ref: AnimationRef; category: string; exportNa
   return refs;
 }
 
-function generateIndexFile(refs: Map<string, { ref: AnimationRef; category: string; exportName: string }>): void {
+function generateIndexFile(
+  refs: Map<string, { ref: AnimationRef; category: string; exportName: string }>,
+  rootDir: string,
+): void {
   const exportNameCounts = Array.from(refs.values()).reduce<Record<string, number>>((counts, info) => {
     counts[info.exportName] = (counts[info.exportName] ?? 0) + 1;
     return counts;
@@ -167,7 +193,7 @@ ${CATEGORY_ORDER.map(category => `    ...Object.values(animationRefs.${category}
 export type { AnimationRef, AnimationId, AnimationCategory } from './types.js';
 `;
 
-  writeFileSync(join(ANIMATION_REFS_DIR, 'index.ts'), output, 'utf8');
+  writeFileSync(join(getAnimationRefsDir(rootDir), 'index.ts'), output, 'utf8');
 }
 
 if (existsSync(fileURLToPath(import.meta.url)) && process.argv[1] === fileURLToPath(import.meta.url)) {

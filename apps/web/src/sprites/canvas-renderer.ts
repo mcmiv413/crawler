@@ -3,6 +3,7 @@ import type { MoveAnimStyle, StatusPresentationView, ConsumableAnimationPresenta
 import type { AnimationId } from '@dungeon/content';
 import { resolveModule } from '../animations/registry.js';
 import * as rendererHelpers from '../animations/helpers.js';
+import { getMoveRenderedOffsetPx, getSquashStretchScale } from '../animations/move-style-profiles.js';
 import { CELL_SIZE } from '../config/ui-config.js';
 import { spriteRegistry } from './sprite-registry.js';
 
@@ -15,6 +16,8 @@ interface BumpAnimationState {
   defenderId: string;
   attackerPos: { x: number; y: number };
   defenderPos: { x: number; y: number };
+  durationMs: number;
+  impactFrameMs: number;
   progress: number;
 }
 
@@ -25,6 +28,7 @@ interface MoveAnimationState {
   toPos:   { x: number; y: number };
   style: MoveAnimStyle;
   progress: number;
+  fromOffsetPx?: { x: number; y: number };
 }
 
 interface ConsumableAnimationState {
@@ -62,6 +66,11 @@ interface ResolvedPlayerEffects {
   readonly ring?: NonNullable<StatusPresentationView['ring']>;
 }
 
+interface CameraOffset {
+  readonly x: number;
+  readonly y: number;
+}
+
 function resolvePlayerEffects(playerEffects: PlayerEffects): ResolvedPlayerEffects {
   const presentations = playerEffects.statusPresentations ?? [];
   let entityScale = 1;
@@ -75,75 +84,6 @@ function resolvePlayerEffects(playerEffects: PlayerEffects): ResolvedPlayerEffec
   }
 
   return ring === undefined ? { entityScale } : { entityScale, ring };
-}
-
-// ── Easing functions (progress 0 → 1) ────────────────────────────
-
-function applyMoveEasing(style: MoveAnimStyle, p: number): number {
-  switch (style) {
-    case 'step':
-      // Snappy ease-out cubic — feels responsive
-      return 1 - Math.pow(1 - p, 3);
-
-    case 'slide':
-      // Ease-out quadratic — smooth neutral glide
-      return 1 - (1 - p) * (1 - p);
-
-    case 'dart':
-      // Ease-in cubic — explosive start, snaps to destination
-      return p * p * p;
-
-    case 'drift':
-      // Ease-in-out quintic — slow, deliberate repositioning
-      return p < 0.5
-        ? 16 * p * p * p * p * p
-        : 1 - Math.pow(-2 * p + 2, 5) / 2;
-
-    case 'stomp': {
-      // Back ease-out — overshoot then settle (feels heavy)
-      const c1 = 1.70158;
-      const c3 = c1 + 1;
-      return 1 + c3 * Math.pow(p - 1, 3) + c1 * Math.pow(p - 1, 2);
-    }
-
-    case 'lurch':
-      // Freeze for first 25%, then rush (delayed, sudden)
-      if (p < 0.25) return 0;
-      return Math.pow((p - 0.25) / 0.75, 2);
-
-    default:
-      return p;
-  }
-}
-
-/**
- * Returns a Y screen-space arc offset in pixels.
- * Negative = up (sprite hops slightly upward at mid-step).
- * Zero for styles that shouldn't hop (dart, lurch).
- * Stomp gets a downward dip at landing instead of an upward hop.
- */
-function applyArcOffset(style: MoveAnimStyle, p: number): number {
-  switch (style) {
-    case 'step':
-      return -Math.sin(p * Math.PI) * 4;  // gentle 4px hop
-
-    case 'slide':
-      return -Math.sin(p * Math.PI) * 3;  // subtle 3px hop
-
-    case 'drift':
-      return -Math.sin(p * Math.PI) * 2;  // barely perceptible float
-
-    case 'stomp':
-      // No hop — small downward press at landing (last 30% of anim)
-      return p > 0.7 ? Math.sin(((p - 0.7) / 0.3) * Math.PI) * 2 : 0;
-
-    case 'dart':
-    case 'lurch':
-      return 0;  // no arc — these are ground-level movement styles
-
-    default:
-      return 0;
-  }
 }
 
 // ── Tile & entity drawing ─────────────────────────────────────────
@@ -195,12 +135,15 @@ function drawEntity(
   screenY: number,
   offsetX: number = 0,
   offsetY: number = 0,
-  scale: number = 1.0,
+  scaleX: number = 1.0,
+  scaleY: number = scaleX,
 ): void {
-  const scaledSize  = CELL_SIZE * scale;
-  const scaleOffset = (CELL_SIZE - scaledSize) / 2;
-  const finalX = screenX + offsetX + scaleOffset;
-  const finalY = screenY + offsetY + scaleOffset;
+  const width = CELL_SIZE * scaleX;
+  const height = CELL_SIZE * scaleY;
+  const centerX = screenX + offsetX + (CELL_SIZE / 2);
+  const centerY = screenY + offsetY + (CELL_SIZE / 2);
+  const drawX = -(width / 2);
+  const drawY = -(height / 2);
 
   let sprite = null;
   if ('spriteName' in entity && entity.spriteName) {
@@ -209,16 +152,21 @@ function drawEntity(
     sprite = spriteRegistry.getSprite('player');
   }
 
+  ctx.save();
+  ctx.translate(centerX, centerY);
+
   if (sprite) {
     const { image, rect } = sprite;
-    ctx.drawImage(image, rect.x, rect.y, rect.w, rect.h, finalX, finalY, scaledSize, scaledSize);
+    ctx.drawImage(image, rect.x, rect.y, rect.w, rect.h, drawX, drawY, width, height);
   } else {
     ctx.fillStyle = entity.color;
-    ctx.font = `${scaledSize - 2}px monospace`;
+    ctx.font = `${Math.max(Math.min(width, height) - 2, 1)}px monospace`;
     ctx.textAlign = 'center';
     ctx.textBaseline = 'middle';
-    ctx.fillText(entity.ascii, finalX + scaledSize / 2, finalY + scaledSize / 2);
+    ctx.fillText(entity.ascii, 0, 0);
   }
+
+  ctx.restore();
 }
 
 // ── Consumable effect drawing ─────────────────────────────────────
@@ -564,6 +512,7 @@ export function renderMap(
   consumableAnimations: ConsumableAnimationState[] = [],
   fxAnimations: FxAnimationState[] = [],
   playerEffects: PlayerEffects = {},
+  cameraOffset: CameraOffset = { x: 0, y: 0 },
 ): void {
   ctx.clearRect(0, 0, vpWidth * CELL_SIZE, vpHeight * CELL_SIZE);
   ctx.fillStyle = '#000';
@@ -592,9 +541,17 @@ export function renderMap(
     moveLookup.set(anim.entityId, anim);
   }
 
+  const overscanLeft = cameraOffset.x > 0.01 ? 1 : 0;
+  const overscanRight = cameraOffset.x < -0.01 ? 1 : 0;
+  const overscanTop = cameraOffset.y > 0.01 ? 1 : 0;
+  const overscanBottom = cameraOffset.y < -0.01 ? 1 : 0;
+
   // ── Draw cells, then entities on top ──────────────────────────────
-  for (let gy = vpTop; gy < vpTop + vpHeight; gy++) {
-    for (let gx = vpLeft; gx < vpLeft + vpWidth; gx++) {
+  ctx.save();
+  ctx.translate(cameraOffset.x, cameraOffset.y);
+
+  for (let gy = vpTop - overscanTop; gy < vpTop + vpHeight + overscanBottom; gy++) {
+    for (let gx = vpLeft - overscanLeft; gx < vpLeft + vpWidth + overscanRight; gx++) {
       const screenX = (gx - vpLeft) * CELL_SIZE;
       const screenY = (gy - vpTop)  * CELL_SIZE;
       const key = `${gx},${gy}`;
@@ -610,18 +567,20 @@ export function renderMap(
 
       let offsetX = 0;
       let offsetY = 0;
+      let moveScaleX = 1;
+      let moveScaleY = 1;
 
       // ── Move offset ─────────────────────────────────────────────
       // Entity is already at toPos in game state. We render it offset
       // backward toward fromPos and decay that offset to zero.
       const move = moveLookup.get(entity.id);
       if (move) {
-        const t = applyMoveEasing(move.style, move.progress);
-        // t goes 0→1; at t=0 fully at fromPos, at t=1 fully at toPos
-        offsetX += (move.fromPos.x - move.toPos.x) * CELL_SIZE * (1 - t);
-        offsetY += (move.fromPos.y - move.toPos.y) * CELL_SIZE * (1 - t);
-        // Arc: screen-space vertical hop independent of tile direction
-        offsetY += applyArcOffset(move.style, move.progress);
+        const moveOffset = getMoveRenderedOffsetPx(move, CELL_SIZE, entity.id);
+        const squashStretch = getSquashStretchScale(move.style, move.progress);
+        offsetX += moveOffset.x;
+        offsetY += moveOffset.y;
+        moveScaleX *= squashStretch.scaleX;
+        moveScaleY *= squashStretch.scaleY;
       }
 
       // ── Bump offset ─────────────────────────────────────────────
@@ -629,17 +588,22 @@ export function renderMap(
       const bump = bumpLookup.get(entity.id);
       if (bump) {
         const distance = 0.5;
-        const easeProgress = bump.progress < 0.5
-          ? bump.progress * 2
-          : 2 - bump.progress * 2;
+        const impactProgress = bump.durationMs <= 0
+          ? 0.5
+          : Math.min(Math.max(bump.impactFrameMs / bump.durationMs, 0.05), 0.95);
+        const easeProgress = bump.progress <= impactProgress
+          ? bump.progress / impactProgress
+          : 1 - ((bump.progress - impactProgress) / (1 - impactProgress));
         offsetX += (bump.defenderPos.x - bump.attackerPos.x) * CELL_SIZE * distance * easeProgress;
         offsetY += (bump.defenderPos.y - bump.attackerPos.y) * CELL_SIZE * distance * easeProgress;
       }
 
       const isPlayer = entity.type === 'player';
       const entityScale = isPlayer ? resolvedPlayerEffects.entityScale : 1.0;
+      const scaleX = entityScale * moveScaleX;
+      const scaleY = entityScale * moveScaleY;
 
-      drawEntity(ctx, entity, screenX, screenY, offsetX, offsetY, entityScale);
+      drawEntity(ctx, entity, screenX, screenY, offsetX, offsetY, scaleX, scaleY);
 
       const ring = isPlayer ? resolvedPlayerEffects.ring : undefined;
       if (ring !== undefined) {
@@ -672,4 +636,5 @@ export function renderMap(
 
   // ── FX animations (drawn above consumable effects) ─────────────
   drawFxAnimations(ctx, fxAnimations, vpLeft, vpTop);
+  ctx.restore();
 }

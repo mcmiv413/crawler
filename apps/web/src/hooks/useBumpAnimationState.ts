@@ -16,20 +16,27 @@ interface UseBumpAnimationStateReturn {
  * Listens for 'bump-animation' events and maintains animation state.
  * Used by canvas renderer to offset entity positions during attacks.
  */
-export function useBumpAnimationState(duration: number): UseBumpAnimationStateReturn {
+const LEGACY_BUMP_DURATION_MS = 300;
+
+export function useBumpAnimationState(duration?: number): UseBumpAnimationStateReturn {
   const [animations, setAnimations] = useState<ActiveBumpAnimation[]>([]);
   const rafRef = useRef<number | undefined>(undefined);
   const nextIdRef = useRef(0);
   const mutableTimersRef = useRef<ReturnType<typeof setTimeout>[]>([]);
+  const fallbackDurationMs = duration ?? LEGACY_BUMP_DURATION_MS;
 
   useEffect(() => {
     const mutableTimers = mutableTimersRef.current;
     const handleBumpAnimation = (event: Event) => {
       const customEvent = event as CustomEvent<BumpAnimationEntry>;
       const now = Date.now();
+      const durationMs = customEvent.detail.durationMs ?? fallbackDurationMs;
+      const impactFrameMs = customEvent.detail.impactFrameMs ?? Math.floor(durationMs * 0.5);
       const animation: ActiveBumpAnimation = {
         id: `bump-${nextIdRef.current++}`,
         ...customEvent.detail,
+        durationMs,
+        impactFrameMs,
         startTime: now,
         progress: 0,
       };
@@ -39,7 +46,7 @@ export function useBumpAnimationState(duration: number): UseBumpAnimationStateRe
       // Schedule removal after duration
       const timer = setTimeout(() => {
         setAnimations((prev) => prev.filter((a) => a.id !== animation.id));
-      }, duration);
+      }, animation.durationMs);
 
       mutableTimers.push(timer);
     };
@@ -52,7 +59,7 @@ export function useBumpAnimationState(duration: number): UseBumpAnimationStateRe
         cancelAnimationFrame(rafRef.current);
       }
     };
-  }, [duration]);
+  }, [fallbackDurationMs]);
 
   // Update progress values on every frame
   useEffect(() => {
@@ -60,7 +67,7 @@ export function useBumpAnimationState(duration: number): UseBumpAnimationStateRe
       setAnimations((prev) =>
         prev.map((anim) => {
           const elapsed = Date.now() - anim.startTime;
-          const progress = Math.min(elapsed / duration, 1);
+          const progress = Math.min(elapsed / anim.durationMs, 1);
           return { ...anim, progress };
         })
       );
@@ -75,7 +82,7 @@ export function useBumpAnimationState(duration: number): UseBumpAnimationStateRe
         cancelAnimationFrame(rafRef.current);
       }
     };
-  }, [duration]);
+  }, []);
 
   return { animations };
 }
