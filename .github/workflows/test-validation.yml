@@ -31,6 +31,19 @@ jobs:
       - name: Run repository validation gate
         run: pnpm validate
 
+      - name: Generate coverage report
+        run: pnpm test -- --coverage
+
+      - name: Upload coverage to Codecov
+        uses: codecov/codecov-action@v4
+        with:
+          token: ${{ secrets.CODECOV_TOKEN }}
+          files: ./coverage/coverage-final.json
+          flags: unittests
+          name: codecov-umbrella
+          fail_ci_if_error: false
+          verbose: false
+
   docker-build:
     runs-on: ubuntu-latest
     timeout-minutes: 15

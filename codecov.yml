@@ -1,0 +1,54 @@
+codecov:
+  require_ci_to_pass: yes
+  precision: 2
+  round: down
+  layout: "reach,diff,flags,tree"
+  show_behavior: default
+
+coverage:
+  precision: 2
+  round: down
+  range: "70...100"
+
+comment:
+  layout: "reach,diff,flags,tree,bettercodec"
+  behavior: default
+  require_changes: no
+  require_base: no
+  show_carryforward_flags: false
+
+ignore:
+  - "node_modules"
+  - "dist"
+  - "coverage"
+  - ".turbo"
+  - "**/*.test.ts"
+  - "**/*.test.tsx"
+  - "**/tests/**"
+  - "tests/**"
+
+flags:
+  unit:
+    paths:
+      - "packages/*/src"
+      - "apps/*/src"
+    carryforward: true
+  integration:
+    paths:
+      - "tests/integration"
+    carryforward: true
+  e2e:
+    paths:
+      - "tests/e2e"
+    carryforward: true
+
+# Define coverage thresholds for PR checks
+thresholds:
+  - type: "absolute"
+    metric: "coverage"
+    value: 70
+    comparison: "not less than"
+  - type: "patch"
+    metric: "coverage"
+    value: 80
+    comparison: "not less than"
