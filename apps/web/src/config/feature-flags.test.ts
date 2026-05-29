@@ -66,9 +66,9 @@ describe('getAnimationRendererMode', () => {
   });
 
   describe('default behaviour (no env var, no override)', () => {
-    it('returns "canvas" when VITE_ANIMATION_RENDERER_MODE is not set', () => {
+    it('returns "three" when VITE_ANIMATION_RENDERER_MODE is not set (default after WS9 migration)', () => {
       vi.stubEnv('VITE_ANIMATION_RENDERER_MODE', '');
-      expect(getAnimationRendererMode()).toBe('canvas');
+      expect(getAnimationRendererMode()).toBe('three');
     });
   });
 
@@ -83,9 +83,9 @@ describe('getAnimationRendererMode', () => {
       expect(getAnimationRendererMode()).toBe('three');
     });
 
-    it('returns "canvas" when VITE_ANIMATION_RENDERER_MODE is an unrecognised value', () => {
+    it('returns "three" when VITE_ANIMATION_RENDERER_MODE is an unrecognised value (falls through to default)', () => {
       vi.stubEnv('VITE_ANIMATION_RENDERER_MODE', 'webgpu');
-      expect(getAnimationRendererMode()).toBe('canvas');
+      expect(getAnimationRendererMode()).toBe('three');
     });
   });
 
