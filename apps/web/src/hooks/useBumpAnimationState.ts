@@ -11,6 +11,9 @@ interface UseBumpAnimationStateReturn {
   animations: ActiveBumpAnimation[];
 }
 
+type LegacyBumpAnimationEntry = Omit<BumpAnimationEntry, 'durationMs' | 'impactFrameMs'> &
+  Partial<Pick<BumpAnimationEntry, 'durationMs' | 'impactFrameMs'>>;
+
 /**
  * Hook to track active bump animations with progress (0→1).
  * Listens for 'bump-animation' events and maintains animation state.
@@ -28,7 +31,7 @@ export function useBumpAnimationState(duration?: number): UseBumpAnimationStateR
   useEffect(() => {
     const mutableTimers = mutableTimersRef.current;
     const handleBumpAnimation = (event: Event) => {
-      const customEvent = event as CustomEvent<BumpAnimationEntry>;
+      const customEvent = event as CustomEvent<LegacyBumpAnimationEntry>;
       const now = Date.now();
       const durationMs = customEvent.detail.durationMs ?? fallbackDurationMs;
       const impactFrameMs = customEvent.detail.impactFrameMs ?? Math.floor(durationMs * 0.5);

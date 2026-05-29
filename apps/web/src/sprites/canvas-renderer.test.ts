@@ -288,7 +288,7 @@ describe('canvas-renderer skipHandledAnimationIds', () => {
 
     renderMap(
       mockCtx, map, 0, 0, 20, 20,
-      [], [], [anim], [], { skipHandledAnimationIds: [] },
+      [], [], [anim], [], {}, { x: 0, y: 0 }, [],
     );
 
     // save/restore bracket from drawConsumableEffects proves the animation was processed
@@ -317,7 +317,7 @@ describe('canvas-renderer skipHandledAnimationIds', () => {
 
     // Count save calls from the outer ctx.save()/restore() wrapping the cell+entity loop.
     // Record baseline with no consumable animations.
-    renderMap(mockCtx, map, 0, 0, 20, 20, [], [], [], [], {});
+    renderMap(mockCtx, map, 0, 0, 20, 20, [], [], [], [], {}, { x: 0, y: 0 }, []);
     const baselineSaveCalls = vi.mocked(mockCtx.save).mock.calls.length;
 
     vi.mocked(mockCtx.save).mockClear();
@@ -326,7 +326,8 @@ describe('canvas-renderer skipHandledAnimationIds', () => {
     renderMap(
       mockCtx, map, 0, 0, 20, 20,
       [], [], [anim], [],
-      { skipHandledAnimationIds: [FIXTURE_HEALING_PULSE_ID] },
+      {}, { x: 0, y: 0 },
+      [FIXTURE_HEALING_PULSE_ID],
     );
 
     // No additional save() beyond the outer translate bracket — consumable was skipped
@@ -340,7 +341,7 @@ describe('canvas-renderer skipHandledAnimationIds', () => {
     const drawnAnim   = makeBuffAnim(FIXTURE_CURE_SPARKLE_ID);
 
     // Baseline: two animations, nothing skipped
-    renderMap(mockCtx, map, 0, 0, 20, 20, [], [], [skippedAnim, drawnAnim], [], {});
+    renderMap(mockCtx, map, 0, 0, 20, 20, [], [], [skippedAnim, drawnAnim], [], {}, { x: 0, y: 0 }, []);
     const saveCallsWithBoth = vi.mocked(mockCtx.save).mock.calls.length;
 
     vi.mocked(mockCtx.save).mockClear();
@@ -350,7 +351,8 @@ describe('canvas-renderer skipHandledAnimationIds', () => {
     renderMap(
       mockCtx, map, 0, 0, 20, 20,
       [], [], [skippedAnim, drawnAnim], [],
-      { skipHandledAnimationIds: [FIXTURE_HEALING_PULSE_ID] },
+      {}, { x: 0, y: 0 },
+      [FIXTURE_HEALING_PULSE_ID],
     );
     const saveCallsWithOneSkipped = vi.mocked(mockCtx.save).mock.calls.length;
 
@@ -366,7 +368,7 @@ describe('canvas-renderer skipHandledAnimationIds', () => {
     const anim3 = makeHealAnim(FIXTURE_STAMINA_SURGE_ID);
 
     // Baseline: all three drawn
-    renderMap(mockCtx, map, 0, 0, 20, 20, [], [], [anim1, anim2, anim3], [], {});
+    renderMap(mockCtx, map, 0, 0, 20, 20, [], [], [anim1, anim2, anim3], [], {}, { x: 0, y: 0 }, []);
     const baselineSaves = vi.mocked(mockCtx.save).mock.calls.length;
 
     vi.mocked(mockCtx.save).mockClear();
@@ -376,7 +378,8 @@ describe('canvas-renderer skipHandledAnimationIds', () => {
     renderMap(
       mockCtx, map, 0, 0, 20, 20,
       [], [], [anim1, anim2, anim3], [],
-      { skipHandledAnimationIds: [FIXTURE_HEALING_PULSE_ID, FIXTURE_CURE_SPARKLE_ID] },
+      {}, { x: 0, y: 0 },
+      [FIXTURE_HEALING_PULSE_ID, FIXTURE_CURE_SPARKLE_ID],
     );
     const savesWithTwoSkipped = vi.mocked(mockCtx.save).mock.calls.length;
 
@@ -401,7 +404,7 @@ describe('canvas-renderer skipHandledAnimationIds', () => {
     renderMap(
       mockCtx, map, 0, 0, 20, 20,
       [], [], [anim], [],
-      { skipHandledAnimationIds: [similarButDifferentId] },
+      {}, { x: 0, y: 0 }, [similarButDifferentId],
     );
 
     expect(vi.mocked(mockCtx.save).mock.calls.length).toBe(baselineSaves);
@@ -422,7 +425,7 @@ describe('canvas-renderer skipHandledAnimationIds', () => {
     renderMap(
       mockCtx, map, 0, 0, 20, 20,
       [], [], [anim], [],
-      { skipHandledAnimationIds: [FIXTURE_HEALING_PULSE_ID, FIXTURE_CURE_SPARKLE_ID] },
+      {}, { x: 0, y: 0 }, [FIXTURE_HEALING_PULSE_ID, FIXTURE_CURE_SPARKLE_ID],
     );
 
     // Animation without animationId is unaffected by the skip list

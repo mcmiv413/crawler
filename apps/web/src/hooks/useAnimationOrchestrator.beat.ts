@@ -1,4 +1,4 @@
-import { useEffect, useRef } from 'react';
+import { useCallback, useEffect, useRef } from 'react';
 import type {
   AbilityAnimationEntry,
   AnimatedEvent,
@@ -79,14 +79,17 @@ function dispatchAnimatedEvent(animEvent: AnimatedEvent): void {
 }
 
 function createQueuedBatch(animatedEvents: readonly AnimatedEvent[]): QueuedBatch {
+  const mutableSortedEvents = [...animatedEvents];
+  mutableSortedEvents.sort((a, b) => {
+    if (a.delayMs !== b.delayMs) {
+      return a.delayMs - b.delayMs;
+    }
+    return a.sequenceIndex - b.sequenceIndex;
+  });
+
   return {
     batchId: animatedEvents[0]!.batchId,
-    events: [...animatedEvents].sort((a, b) => {
-      if (a.delayMs !== b.delayMs) {
-        return a.delayMs - b.delayMs;
-      }
-      return a.sequenceIndex - b.sequenceIndex;
-    }),
+    events: mutableSortedEvents,
     settleMs: getAnimatedEventBatchSettleMs(animatedEvents),
     nextEventIndex: 0,
     logicalElapsedMs: 0,
@@ -112,8 +115,10 @@ export function useBeatAnimationOrchestrator(
   const pauseRemainingMsRef = useRef(0);
   const lastAcceptedBatchIdRef = useRef<string | null>(null);
 
-  const completeCurrentBatch = () => {
-    const nextBatch = queuedBatchesRef.current.shift();
+  const completeCurrentBatch = useCallback(() => {
+    const [nextBatch, ...remainingBatches] = queuedBatchesRef.current;
+    queuedBatchesRef.current = remainingBatches;
+
     if (nextBatch !== undefined) {
       currentBatchRef.current = nextBatch;
       nextBatch.lastTimestamp = null;
@@ -123,9 +128,9 @@ export function useBeatAnimationOrchestrator(
     currentBatchRef.current = null;
     setQueueDraining(false);
     emitQueueDrained();
-  };
+  }, []);
 
-  const tick = (timestamp: number) => {
+  const tick = useCallback((timestamp: number) => {
     const currentBatch = currentBatchRef.current;
     if (currentBatch === null) {
       rafRef.current = undefined;
@@ -177,13 +182,11 @@ export function useBeatAnimationOrchestrator(
     } else {
       rafRef.current = undefined;
     }
-  };
+  }, [completeCurrentBatch]);
 
-  const ensureLoopRunning = () => {
-    if (rafRef.current === undefined) {
-      rafRef.current = requestAnimationFrame(tick);
-    }
-  };
+  const ensureLoopRunning = useCallback(() => {
+    rafRef.current ??= requestAnimationFrame(tick);
+  }, [tick]);
 
   useEffect(() => {
     if (!enabled) {
@@ -232,6 +235,6 @@ export function useBeatAnimationOrchestrator(
       return;
     }
 
-    queuedBatchesRef.current.push(batch);
-  }, [animatedEvents, enabled]);
+    queuedBatchesRef.current = [...queuedBatchesRef.current, batch];
+  }, [animatedEvents, enabled, ensureLoopRunning]);
 }

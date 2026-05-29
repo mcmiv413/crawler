@@ -59,7 +59,6 @@ interface FxAnimationState {
 /** Player-level effects driven by active status conditions (not time-limited animations). */
 interface PlayerEffects {
   readonly statusPresentations?: readonly StatusPresentationView[];
-  readonly skipHandledAnimationIds?: readonly string[];
 }
 
 interface ResolvedPlayerEffects {
@@ -401,9 +400,14 @@ function drawFxAnimations(
   animations: FxAnimationState[],
   vpLeft: number,
   vpTop: number,
+  skipHandledAnimationIds?: readonly AnimationId[],
 ): void {
   for (const anim of animations) {
-    const module = resolveModule(anim.animationId as AnimationId);
+    const animationId = anim.animationId as AnimationId | undefined;
+    if (animationId !== undefined && skipHandledAnimationIds?.includes(animationId)) continue;
+    if (animationId === undefined) continue;
+
+    const module = resolveModule(animationId);
     if (!module) continue;
 
     const worldAnchors = module.category === 'aoe' && anim.blastPositions.length > 0
@@ -459,12 +463,13 @@ function drawConsumableEffects(
   animations: ConsumableAnimationState[],
   vpLeft: number,
   vpTop: number,
-  skipHandledAnimationIds?: readonly string[],
+  skipHandledAnimationIds?: readonly AnimationId[],
 ): void {
   for (const anim of animations) {
-    if (anim.animationId !== undefined && skipHandledAnimationIds?.includes(anim.animationId)) continue;
-    if (anim.animationId !== undefined) {
-      const module = resolveModule(anim.animationId as AnimationId);
+    const animationId = anim.animationId as AnimationId | undefined;
+    if (animationId !== undefined && skipHandledAnimationIds?.includes(animationId)) continue;
+    if (animationId !== undefined) {
+      const module = resolveModule(animationId);
       if (module !== undefined) {
         const screenPlayerPos = {
           x: (anim.playerPos.x - vpLeft) * CELL_SIZE + CELL_SIZE / 2,
@@ -516,6 +521,7 @@ export function renderMap(
   fxAnimations: FxAnimationState[] = [],
   playerEffects: PlayerEffects = {},
   cameraOffset: CameraOffset = { x: 0, y: 0 },
+  skipHandledAnimationIds: readonly AnimationId[] = [],
 ): void {
   ctx.clearRect(0, 0, vpWidth * CELL_SIZE, vpHeight * CELL_SIZE);
   ctx.fillStyle = '#000';
@@ -635,9 +641,9 @@ export function renderMap(
   }
 
   // ── Consumable effects (drawn above the entity layer) ────────────
-  drawConsumableEffects(ctx, consumableAnimations, vpLeft, vpTop, playerEffects.skipHandledAnimationIds);
+  drawConsumableEffects(ctx, consumableAnimations, vpLeft, vpTop, skipHandledAnimationIds);
 
   // ── FX animations (drawn above consumable effects) ─────────────
-  drawFxAnimations(ctx, fxAnimations, vpLeft, vpTop);
+  drawFxAnimations(ctx, fxAnimations, vpLeft, vpTop, skipHandledAnimationIds);
   ctx.restore();
 }

@@ -11,7 +11,7 @@
  */
 
 import React from 'react';
-import { beforeEach, describe, expect, it, vi } from 'vitest';
+import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import { render } from '@testing-library/react';
 import type { MapView, ConsumableAnimationEntry, AbilityAnimationEntry, StatusPresentationView } from '@dungeon/presenter';
 
@@ -29,13 +29,22 @@ const CELL_SIZE = 24; // mirrors ui-config.CELL_SIZE
 // vi.hoisted so the mock is available before the import of the module itself.
 // ---------------------------------------------------------------------------
 
-const { mockCreateRenderer, mockRenderer } = vi.hoisted(() => {
+const {
+  mockCreateRenderer,
+  mockRenderer,
+  mockEffectModule,
+  mockGetEffectModule,
+  mockRegisterEffectModule,
+} = vi.hoisted(() => {
   const mockRenderer = {
     setSize: vi.fn(),
     render: vi.fn(),
     dispose: vi.fn(),
     domElement: null as HTMLCanvasElement | null,
-    scene: {} as any,
+    scene: {
+      add: vi.fn(),
+      remove: vi.fn(),
+    } as any,
     camera: {
       left: 0,
       right: 0,
@@ -51,12 +60,35 @@ const { mockCreateRenderer, mockRenderer } = vi.hoisted(() => {
     return mockRenderer;
   });
 
-  return { mockCreateRenderer, mockRenderer };
+  const mockEffectModule = {
+    create: vi.fn(() => ({ id: 'effect-0' })),
+    setPosition: vi.fn(),
+    update: vi.fn(),
+    dispose: vi.fn(),
+  };
+
+  const mockGetEffectModule = vi.fn((animationId: string) => (
+    animationId === 'fx.self.healing-pulse' ? mockEffectModule : undefined
+  ));
+  const mockRegisterEffectModule = vi.fn();
+
+  return {
+    mockCreateRenderer,
+    mockRenderer,
+    mockEffectModule,
+    mockGetEffectModule,
+    mockRegisterEffectModule,
+  };
 });
 
 // Mock the three-renderer-factory module (path matches what the component will import)
 vi.mock('./three-renderer-factory.js', () => ({
   createThreeRenderer: mockCreateRenderer,
+}));
+
+vi.mock('./three-effect-registry.js', () => ({
+  get: mockGetEffectModule,
+  register: mockRegisterEffectModule,
 }));
 
 // ---------------------------------------------------------------------------
@@ -314,7 +346,7 @@ describe('ThreeEffectsOverlay — WebGL setup failure', () => {
     vi.clearAllMocks();
   });
 
-  it('renders a canvas but with no active renderer when renderer creation throws', () => {
+  it('returns null when renderer creation throws', () => {
     mockCreateRenderer.mockImplementationOnce(() => {
       throw new Error('WebGL not supported');
     });
@@ -323,7 +355,7 @@ describe('ThreeEffectsOverlay — WebGL setup failure', () => {
       <ThreeEffectsOverlay {...makeDefaultProps()} />,
     );
 
-    expect(getCanvas(container)).not.toBeNull();
+    expect(getCanvas(container)).toBeNull();
   });
 
   it('does not propagate the error when renderer creation fails', () => {
@@ -336,43 +368,42 @@ describe('ThreeEffectsOverlay — WebGL setup failure', () => {
     }).not.toThrow();
   });
 
-  it('renders a canvas but with no renderer when renderer creation returns null', () => {
+  it('returns null when renderer creation returns null', () => {
     mockCreateRenderer.mockReturnValueOnce(null as any);
 
     const { container } = render(
       <ThreeEffectsOverlay {...makeDefaultProps()} />,
     );
 
-    expect(getCanvas(container)).not.toBeNull();
+    expect(getCanvas(container)).toBeNull();
   });
 
-  it('renders a canvas but with no renderer when renderer creation returns undefined', () => {
+  it('returns null when renderer creation returns undefined', () => {
     mockCreateRenderer.mockReturnValueOnce(undefined as any);
 
     const { container } = render(
       <ThreeEffectsOverlay {...makeDefaultProps()} />,
     );
 
-    expect(getCanvas(container)).not.toBeNull();
+    expect(getCanvas(container)).toBeNull();
   });
 
-  it('falls back gracefully after a failed render attempt on subsequent renders', () => {
+  it('does not throw when rendering after a prior WebGL failure', () => {
     mockCreateRenderer.mockImplementationOnce(() => {
       throw new Error('WebGL not supported');
     });
 
-    // First render — renderer creation fails, but canvas renders
-    const { container, rerender } = render(
-      <ThreeEffectsOverlay {...makeDefaultProps()} />,
-    );
-    expect(getCanvas(container)).not.toBeNull();
+    // First render — renderer creation fails
+    expect(() => {
+      render(<ThreeEffectsOverlay {...makeDefaultProps()} />);
+    }).not.toThrow();
 
-    // Reset mock so next attempt can succeed
+    // Reset mock
     vi.clearAllMocks();
 
-    // Second render — should not throw regardless of prior failure
+    // Second render — should not throw
     expect(() => {
-      rerender(<ThreeEffectsOverlay {...makeDefaultProps()} />);
+      render(<ThreeEffectsOverlay {...makeDefaultProps()} />);
     }).not.toThrow();
   });
 });
@@ -409,6 +440,21 @@ describe('ThreeEffectsOverlay — successful render', () => {
     const canvas = getCanvas(container);
     expect(canvas).not.toBeNull();
     expect(canvas!.style.position).toBe('absolute');
+  });
+
+  it('canvas is anchored at top-left (0,0) with proper z-index', () => {
+    const { container } = render(
+      <ThreeEffectsOverlay {...makeDefaultProps()} />,
+    );
+    const canvas = getCanvas(container);
+    expect(canvas).not.toBeNull();
+    // Check top/left are set (may be '0' or '0px' depending on React version)
+    const topVal = canvas!.style.top;
+    const leftVal = canvas!.style.left;
+    expect(topVal === '0' || topVal === '0px').toBe(true);
+    expect(leftVal === '0' || leftVal === '0px').toBe(true);
+    // z-index ensures overlay appears above dungeon canvas
+    expect(canvas!.style.zIndex).toBeTruthy();
   });
 
   it('canvas width matches vpTilesWidth * CELL_SIZE', () => {
@@ -483,6 +529,11 @@ describe('ThreeEffectsOverlay — successful render', () => {
   it('renderer is created when all conditions are met', () => {
     render(<ThreeEffectsOverlay {...makeDefaultProps()} />);
     expect(mockCreateRenderer).toHaveBeenCalled();
+  });
+
+  it('does not mutate the registry during render', () => {
+    render(<ThreeEffectsOverlay {...makeDefaultProps()} />);
+    expect(mockRegisterEffectModule).not.toHaveBeenCalled();
   });
 
   it('canvas remains when only consumable animations are active', () => {
@@ -661,7 +712,20 @@ describe('ThreeEffectsOverlay — props interface', () => {
   it('accepts a createRenderer factory override (test seam)', () => {
     const customFactory = vi.fn(() => {
       const canvas = document.createElement('canvas');
-      return { setSize: vi.fn(), render: vi.fn(), dispose: vi.fn(), domElement: canvas, scene: {} as any, camera: {} as any };
+      return {
+        setSize: vi.fn(),
+        render: vi.fn(),
+        dispose: vi.fn(),
+        domElement: canvas,
+        scene: { add: vi.fn(), remove: vi.fn() } as any,
+        camera: {
+          left: 0,
+          right: 0,
+          top: 0,
+          bottom: 0,
+          updateProjectionMatrix: vi.fn(),
+        } as any,
+      };
     });
 
     expect(() => {
@@ -754,6 +818,68 @@ describe('ThreeEffectsOverlay — renderer lifecycle', () => {
     );
 
     expect(getCanvas(container)).toBeNull();
+  });
+});
+
+describe('ThreeEffectsOverlay — effect lifecycle', () => {
+  let queuedFrames: FrameRequestCallback[] = [];
+
+  beforeEach(() => {
+    vi.clearAllMocks();
+    queuedFrames = [];
+    vi.stubGlobal('requestAnimationFrame', vi.fn((callback: FrameRequestCallback) => {
+      queuedFrames.push(callback);
+      return queuedFrames.length;
+    }));
+    vi.stubGlobal('cancelAnimationFrame', vi.fn());
+  });
+
+  afterEach(() => {
+    vi.unstubAllGlobals();
+  });
+
+  function runNextFrame(time = 0) {
+    const callback = queuedFrames.shift();
+    expect(callback).toBeTypeOf('function');
+    callback?.(time);
+  }
+
+  it('creates, positions, updates, and renders a handled effect from shared progress', () => {
+    render(<ThreeEffectsOverlay {...makeDefaultProps()} />);
+
+    runNextFrame();
+
+    const createdInstance = mockEffectModule.create.mock.results[0]?.value;
+    expect(mockEffectModule.create).toHaveBeenCalledWith(expect.objectContaining({
+      renderer: mockRenderer,
+      scene: mockRenderer.scene,
+      camera: mockRenderer.camera,
+      canvasWidth: 30 * CELL_SIZE,
+      canvasHeight: 22 * CELL_SIZE,
+      vpLeft: 0,
+      vpTop: 0,
+      tileSize: CELL_SIZE,
+    }));
+    expect(mockEffectModule.setPosition).toHaveBeenCalledWith(createdInstance, { x: 132, y: 132, z: 0 });
+    expect(mockEffectModule.update).toHaveBeenCalledWith(createdInstance, 0.3);
+    expect(mockRenderer.render).toHaveBeenCalledWith(mockRenderer.scene, mockRenderer.camera);
+  });
+
+  it('disposes handled effects when the overlay path tears down', () => {
+    const { rerender } = render(<ThreeEffectsOverlay {...makeDefaultProps()} />);
+
+    runNextFrame();
+    const createdInstance = mockEffectModule.create.mock.results[0]?.value;
+
+    rerender(
+      <ThreeEffectsOverlay
+        {...makeDefaultProps()}
+        consumableAnimations={[]}
+        fxAnimations={[]}
+      />,
+    );
+
+    expect(mockEffectModule.dispose).toHaveBeenCalledWith(createdInstance);
   });
 });
 

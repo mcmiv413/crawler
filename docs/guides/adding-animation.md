@@ -119,35 +119,63 @@ Create a file at `apps/web/src/rendering/three/effects/{effect-name}-effect.ts`:
 
 ```typescript
 import * as THREE from 'three';
-import type { ThreeEffectModule, ThreeEffectContext } from '../three-effect-types.js';
+import type {
+  ThreeEffectContext,
+  ThreeEffectModule,
+  ThreeEffectScreenPosition,
+} from '../three-effect-types.js';
 
-export const yourEffect: ThreeEffectModule = {
+interface YourEffectInstance {
+  readonly scene: ThreeEffectContext['scene'];
+  readonly canvasHeight: number;
+  readonly group: THREE.Group;
+  readonly mesh: THREE.Mesh;
+  readonly geometry: THREE.CircleGeometry;
+  readonly material: THREE.MeshBasicMaterial;
+}
+
+export const yourEffect: ThreeEffectModule<YourEffectInstance> = {
   create(context: ThreeEffectContext) {
-    // Set up Three.js objects (geometry, material, mesh, group)
+    // Build the effect in tile-relative units, then scale the group into pixels.
     const group = new THREE.Group();
-    // ... add meshes, initialize state ...
+    const geometry = new THREE.CircleGeometry(0.45, 24);
+    const material = new THREE.MeshBasicMaterial({ transparent: true, opacity: 1 });
+    const mesh = new THREE.Mesh(geometry, material);
+    mesh.scale.setScalar(0.2);
+    group.add(mesh);
+    group.scale.setScalar(context.tileSize);
     context.scene.add(group);
-    return { group, /* other state */ };
+
+    return {
+      scene: context.scene,
+      canvasHeight: context.canvasHeight,
+      group,
+      mesh,
+      geometry,
+      material,
+    };
   },
 
-  update(effect: unknown, progress: number): void {
+  setPosition(effect, position: ThreeEffectScreenPosition): void {
+    // Overlay pixels use a top-left origin, but the Three scene uses a flipped Y axis.
+    effect.group.position.set(position.x, effect.canvasHeight - position.y, position.z);
+  },
+
+  update(effect, progress: number): void {
     // progress: 0.0 (start) to 1.0 (end)
-    // Update position, scale, opacity, rotation, etc.
-    const inst = effect as any; // Cast to your instance type
-    inst.material.opacity = 1 - progress; // Example: fade out
+    effect.mesh.scale.setScalar(0.2 + progress * 0.8);
+    effect.material.opacity = 1 - progress;
   },
 
-  dispose(effect: unknown): void {
-    // Clean up: remove from scene, dispose geometries and materials
-    const inst = effect as any;
-    context.scene.remove(inst.group);
-    inst.geometry.dispose();
-    inst.material.dispose();
+  dispose(effect): void {
+    effect.scene.remove(effect.group);
+    effect.geometry.dispose();
+    effect.material.dispose();
   },
 };
 ```
 
-**Step 3: Register the module in the effect index**
+**Step 3: Register the module and add its handled animation ID metadata**
 
 Edit `apps/web/src/rendering/three/effects/index.ts`:
 
@@ -159,51 +187,95 @@ import { yourEffect } from './your-effect-effect.js';
 const YOUR_EFFECT_ID = animationRefs.self.healingPulse.id;
 
 register(YOUR_EFFECT_ID, yourEffect);
+```
 
-export const BUILT_IN_THREE_EFFECT_IDS: readonly string[] = [
+Then add the ID to `apps/web/src/rendering/three-effect-metadata.ts`:
+
+```typescript
+import { animationRefs, type AnimationId } from '@dungeon/content';
+
+const YOUR_EFFECT_ID = animationRefs.self.healingPulse.id;
+
+export const BUILT_IN_THREE_EFFECT_IDS = [
   YOUR_EFFECT_ID,
-];
+] as const satisfies readonly AnimationId[];
 ```
 
 **Step 4: Add contract test coverage** (MANDATORY)
 
-The contract test `tests/contracts/three-effects-animation-refs.contract.test.ts` automatically validates all IDs in `BUILT_IN_THREE_EFFECT_IDS` against live content. When you add a new ID, the test will fail until that ref exists in `@dungeon/content`.
+The contract test `apps/web/src/rendering/three/three-effects.contract.test.ts` automatically validates all IDs in `BUILT_IN_THREE_EFFECT_IDS` against live content and guards metadata/registration parity. When you add a new ID, the test will fail until that ref exists in `@dungeon/content` and the built-in Three registrations stay in sync.
 
-If you need custom validation (e.g., checking that an ability actually uses your effect), add it to the contract test file.
+If you need custom validation (e.g., checking that an ability actually uses your effect), add it to that contract test file.
 
 ### Testing Three.js Effects
 
 **Unit tests:** Use **local fixture IDs**, not live content imports.
 
+Three effect modules receive **pixel-space overlay positions** via `setPosition()`. Use `tileSize` to size meshes, not to place them. The stock healing pulse stores `canvasHeight` on the instance and flips `y` with `canvasHeight - position.y` because overlay pixel coordinates start at the top-left while the Three scene uses the orthographic camera's flipped Y axis.
+
 ```typescript
+import * as THREE from 'three';
 import { describe, it, expect } from 'vitest';
 import { yourEffect } from './your-effect-effect.js';
 
-// Use a fixture ID, not a real animation ID from @dungeon/content
-const FIXTURE_ID = 'fx.test.my-effect-test';
-
 describe('yourEffect', () => {
   it('creates a mesh on initialization', () => {
-    const context = { scene: new THREE.Scene() };
-    const effect = yourEffect.create(context);
+    const scene = new THREE.Scene();
+    const effect = yourEffect.create({
+      renderer: {} as never,
+      scene,
+      camera: {} as never,
+      canvasWidth: 720,
+      canvasHeight: 528,
+      vpLeft: 0,
+      vpTop: 0,
+      tileSize: 24,
+    });
     expect(effect.group).toBeDefined();
-    expect(context.scene.children).toContain(effect.group);
+    expect(scene.children).toContain(effect.group);
   });
 
   it('updates opacity during progress', () => {
-    const context = { scene: new THREE.Scene() };
-    const effect = yourEffect.create(context);
+    const effect = yourEffect.create({
+      renderer: {} as never,
+      scene: new THREE.Scene(),
+      camera: {} as never,
+      canvasWidth: 720,
+      canvasHeight: 528,
+      vpLeft: 0,
+      vpTop: 0,
+      tileSize: 24,
+    });
     yourEffect.update(effect, 0);
     expect(effect.material.opacity).toBe(1);
     yourEffect.update(effect, 1);
     expect(effect.material.opacity).toBe(0);
+  });
+
+  it('positions in overlay pixel space', () => {
+    const effect = yourEffect.create({
+      renderer: {} as never,
+      scene: new THREE.Scene(),
+      camera: {} as never,
+      canvasWidth: 720,
+      canvasHeight: 528,
+      vpLeft: 0,
+      vpTop: 0,
+      tileSize: 24,
+    });
+
+    yourEffect.setPosition(effect, { x: 120, y: 168, z: 0 });
+    expect(effect.group.position.x).toBe(120);
+    expect(effect.group.position.y).toBe(528 - 168);
   });
 });
 ```
 
 **Contract tests:** Validate against live content (this is the one place where importing `@dungeon/content` is correct).
 
-See `tests/contracts/three-effects-animation-refs.contract.test.ts` — it automatically validates all registered IDs.
+Three effect modules are still just renderer implementations. Content keeps declaring animation refs, presenter emits `animationId`s, and the web layer decides whether canvas or the lazy Three overlay renders a handled ID.
+
+See `apps/web/src/rendering/three/three-effects.contract.test.ts` — it automatically validates all registered IDs and built-in registration parity.
 
 ### Feature Flag: VITE_THREE_EFFECTS
 

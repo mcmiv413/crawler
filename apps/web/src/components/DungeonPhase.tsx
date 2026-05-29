@@ -1,4 +1,5 @@
-import React, { useEffect, useRef, useState } from 'react';
+import React, { useEffect, useMemo, useRef, useState } from 'react';
+import type { AnimationId } from '@dungeon/content';
 import type { GameView } from '@dungeon/presenter';
 import {
   CELL_SIZE,
@@ -23,6 +24,7 @@ import { BumpAnimations } from './BumpAnimations.js';
 import { useAnimationOrchestrator } from '../hooks/useAnimationOrchestrator.js';
 import { useDungeonRenderState } from '../hooks/useDungeonRenderState.js';
 import { isThreeEffectsEnabledFlag } from '../config/feature-flags.js';
+import { collectHandledThreeAnimationIds } from '../rendering/three-effect-metadata.js';
 import { filterCombatLogForDisplay } from './combat-log-filter.js';
 import { logEntryColor } from '../styles.js';
 
@@ -106,6 +108,7 @@ function MapDisplay({
 }) {
   const [vpTilesWidth, setVpTilesWidth] = useState(MIN_VIEWPORT_TILES_WIDTH);
   const [vpTilesHeight, setVpTilesHeight] = useState(MIN_VIEWPORT_TILES_HEIGHT);
+  const [handledAnimationIds, setHandledAnimationIds] = useState<readonly AnimationId[]>([]);
   const displayContainerRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
@@ -141,6 +144,19 @@ function MapDisplay({
   const safeMap = map ?? { cells: [], playerPosition: { x: 0, y: 0 }, entities: [], width: 0, height: 0, biomeId: '', dangerLevel: 'safe' as const };
   const renderState = useDungeonRenderState(safeMap, vpTilesWidth, vpTilesHeight);
   const threeEnabled = isThreeEffectsEnabledFlag();
+  const activeHandledAnimationIds = useMemo(
+    () => collectHandledThreeAnimationIds(renderState.consumableAnimations, renderState.fxAnimations),
+    [renderState.consumableAnimations, renderState.fxAnimations],
+  );
+  const shouldRenderThreeOverlay = useSprites && threeEnabled && activeHandledAnimationIds.length > 0;
+
+  useEffect(() => {
+    if (shouldRenderThreeOverlay) {
+      return;
+    }
+
+    setHandledAnimationIds((current) => (current.length === 0 ? current : []));
+  }, [shouldRenderThreeOverlay]);
 
   if (map === null) return null;
 
@@ -164,7 +180,10 @@ function MapDisplay({
         position: 'relative',
       }}
     >
-      <div style={{ width: canvasPxWidth, height: canvasPxHeight, position: 'relative' }}>
+      <div
+        data-testid="dungeon-map-container"
+        style={{ width: canvasPxWidth, height: canvasPxHeight, position: 'relative' }}
+      >
         {useSprites
           ? (
             <DungeonCanvas
@@ -179,10 +198,11 @@ function MapDisplay({
               vpLeft={renderState.vpLeft}
               vpTop={renderState.vpTop}
               cameraOffset={renderState.cameraOffset}
+              skipHandledAnimationIds={handledAnimationIds}
             />
           )
           : <DungeonView map={map} vpTilesWidth={vpTilesWidth} vpTilesHeight={vpTilesHeight} />}
-        {useSprites && threeEnabled && (
+        {shouldRenderThreeOverlay && (
           <ThreeEffectsOverlay
             map={map}
             isEnabled={threeEnabled}
@@ -197,6 +217,7 @@ function MapDisplay({
             vpTop={renderState.vpTop}
             cameraOffset={renderState.cameraOffset}
             style={{ pointerEvents: 'none' }}
+            onInitialized={setHandledAnimationIds}
           />
         )}
         <BumpAnimations />

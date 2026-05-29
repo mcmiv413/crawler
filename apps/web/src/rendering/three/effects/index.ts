@@ -5,15 +5,35 @@
  * animation IDs so contract tests can validate them against live content.
  */
 
+import { animationRefs, type AnimationId } from '@dungeon/content';
 import { register } from '../three-effect-registry.js';
+import type { ThreeEffectModule } from '../three-effect-types.js';
 import { healingPulseEffect } from './healing-pulse-effect.js';
-import { animationRefs } from '@dungeon/content';
+export { BUILT_IN_THREE_EFFECT_IDS } from '../../three-effect-metadata.js';
+
+interface BuiltInThreeEffectRegistration {
+  readonly animationId: AnimationId;
+  readonly module: ThreeEffectModule;
+}
 
 const HEALING_PULSE_ID = animationRefs.self.healingPulse.id;
 
-register(HEALING_PULSE_ID, healingPulseEffect);
-
-/** All animation IDs that have a registered Three.js effect module. */
-export const BUILT_IN_THREE_EFFECT_IDS: readonly string[] = [
-  HEALING_PULSE_ID,
+// Metadata must stay outside apps/web/src/rendering/three so the flag-off path
+// can remain lightweight. Keep this duplicate registration list guarded by
+// contract tests instead of relying on convention.
+export const BUILT_IN_THREE_EFFECT_REGISTRATIONS: readonly BuiltInThreeEffectRegistration[] = [
+  {
+    animationId: HEALING_PULSE_ID,
+    module: healingPulseEffect,
+  },
 ];
+
+export function registerBuiltInThreeEffects(): readonly AnimationId[] {
+  for (const { animationId, module } of BUILT_IN_THREE_EFFECT_REGISTRATIONS) {
+    register(animationId, module);
+  }
+
+  return BUILT_IN_THREE_EFFECT_REGISTRATIONS.map(({ animationId }) => animationId);
+}
+
+registerBuiltInThreeEffects();
