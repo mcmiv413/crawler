@@ -37,8 +37,12 @@ export interface CombatLabel {
  * The text is rasterized onto an offscreen canvas, uploaded as a texture,
  * and applied to a small plane mesh. Initial opacity is 1.
  */
-export function createCombatLabel(context: ThreeEffectContext, text: string): CombatLabel {
-  const texture = buildLabelTexture(text);
+export function createCombatLabel(
+  context: ThreeEffectContext,
+  text: string,
+  color = LABEL_COLOR,
+): CombatLabel {
+  const texture = buildLabelTexture(text, color);
 
   // Aspect ratio matches the canvas dimensions
   const aspectRatio = LABEL_CANVAS_WIDTH / LABEL_CANVAS_HEIGHT;
@@ -98,7 +102,7 @@ export function disposeCombatLabel(
 // Internal helpers
 // ---------------------------------------------------------------------------
 
-function buildLabelTexture(text: string): THREE.Texture {
+function buildLabelTexture(text: string, color: string): THREE.Texture {
   const canvas = document.createElement('canvas');
   canvas.width = LABEL_CANVAS_WIDTH;
   canvas.height = LABEL_CANVAS_HEIGHT;
@@ -109,7 +113,7 @@ function buildLabelTexture(text: string): THREE.Texture {
   if (ctx) {
     ctx.clearRect(0, 0, LABEL_CANVAS_WIDTH, LABEL_CANVAS_HEIGHT);
     ctx.font = LABEL_FONT;
-    ctx.fillStyle = LABEL_COLOR;
+    ctx.fillStyle = color;
     ctx.textAlign = 'center';
     ctx.textBaseline = 'middle';
     ctx.fillText(text, LABEL_CANVAS_WIDTH / 2, LABEL_CANVAS_HEIGHT / 2);

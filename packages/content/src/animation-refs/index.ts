@@ -11,7 +11,7 @@ import { radialImpactBurst, forwardSlash, cleaveArc as cleaveArcImpact, executio
 import { singleArrow, arrowVolley, emberBolt } from './projectile.js';
 import { healingPulse, staminaSurge, cureSparkle, secondWindBuff, heatSurgeAura } from './self.js';
 import { bombBlast, cleaveArc as cleaveArcAoe, shatterBurst as shatterBurstAoe, cinderWake } from './aoe.js';
-import { goldRingPulse } from './status.js';
+import { goldRingPulse, heatSurgeRing, arcaneChargeRing } from './status.js';
 import { trapSpark, trapPlacement } from './utility.js';
 
 export const animationRefs = {
@@ -46,6 +46,8 @@ export const animationRefs = {
   },
   status: {
     goldRingPulse,
+    heatSurgeRing,
+    arcaneChargeRing,
   },
   utility: {
     trapSpark,

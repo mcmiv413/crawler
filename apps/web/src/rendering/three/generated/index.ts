@@ -28,7 +28,9 @@ import { healingPulse } from '../modules/self/healing-pulse.js';
 import { heatSurgeAura } from '../modules/self/heat-surge-aura.js';
 import { secondWindBuff } from '../modules/self/second-wind-buff.js';
 import { staminaSurge } from '../modules/self/stamina-surge.js';
+import { arcaneChargeRing } from '../modules/status/arcane-charge-ring.js';
 import { goldRingPulse } from '../modules/status/gold-ring-pulse.js';
+import { heatSurgeRing } from '../modules/status/heat-surge-ring.js';
 import { trapPlacement } from '../modules/utility/trap-placement.js';
 import { trapSpark } from '../modules/utility/trap-spark.js';
 
@@ -55,7 +57,9 @@ export function initializeThreeAnimationModules(): void {
   registerAnimationModule(heatSurgeAura);
   registerAnimationModule(secondWindBuff);
   registerAnimationModule(staminaSurge);
+  registerAnimationModule(arcaneChargeRing);
   registerAnimationModule(goldRingPulse);
+  registerAnimationModule(heatSurgeRing);
   registerAnimationModule(trapPlacement);
   registerAnimationModule(trapSpark);
 }

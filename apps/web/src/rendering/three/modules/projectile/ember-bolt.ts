@@ -12,6 +12,9 @@ interface Instance {
   geometry: THREE.CircleGeometry;
   material: THREE.MeshBasicMaterial;
   scene: ThreeAnimationContext['scene'];
+  source: { x: number; y: number };
+  target: { x: number; y: number };
+  z: number;
 }
 
 export const emberBolt: ThreeAnimationModule<Instance> = {
@@ -29,17 +32,35 @@ export const emberBolt: ThreeAnimationModule<Instance> = {
     });
     const mesh = new THREE.Mesh(geometry, material);
     ctx.scene.add(mesh);
-    return { mesh, geometry, material, scene: ctx.scene };
+    return {
+      mesh,
+      geometry,
+      material,
+      scene: ctx.scene,
+      source: { x: 0, y: 0 },
+      target: { x: 0, y: 0 },
+      z: 0,
+    };
   },
 
   setPosition(instance: Instance, pos: ThreeAnimationPosition): void {
-    instance.mesh.position.set(pos.x, pos.y, pos.z);
+    instance.source = pos.source ?? { x: pos.x, y: pos.y };
+    instance.target = pos.target ?? { x: pos.x, y: pos.y };
+    instance.z = pos.z;
   },
 
   update(instance: Instance, progress: number): void {
-    // Impact burst at 0.8, then fade
-    if (progress >= 0.8) {
-      const t = (progress - 0.8) / 0.2;
+    const impactStart = 0.8;
+    const travelProgress = Math.min(progress / impactStart, 1);
+    const x = instance.source.x + (instance.target.x - instance.source.x) * travelProgress;
+    const y = instance.source.y + (instance.target.y - instance.source.y) * travelProgress;
+    instance.mesh.position.set(x, y, instance.z);
+    instance.mesh.scale.setScalar(1);
+    instance.material.opacity = 1;
+
+    if (progress >= impactStart) {
+      const t = (progress - impactStart) / (1 - impactStart);
+      instance.mesh.position.set(instance.target.x, instance.target.y, instance.z);
       instance.mesh.scale.setScalar(1 + t * 2);
       instance.material.opacity = Math.max(0, 1 - t);
     }

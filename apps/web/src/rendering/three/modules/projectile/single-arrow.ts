@@ -12,6 +12,9 @@ interface Instance {
   geometry: THREE.PlaneGeometry;
   material: THREE.MeshBasicMaterial;
   scene: ThreeAnimationContext['scene'];
+  source: { x: number; y: number };
+  target: { x: number; y: number };
+  z: number;
 }
 
 export const singleArrow: ThreeAnimationModule<Instance> = {
@@ -29,16 +32,36 @@ export const singleArrow: ThreeAnimationModule<Instance> = {
     });
     const mesh = new THREE.Mesh(geometry, material);
     ctx.scene.add(mesh);
-    return { mesh, geometry, material, scene: ctx.scene };
+    return {
+      mesh,
+      geometry,
+      material,
+      scene: ctx.scene,
+      source: { x: 0, y: 0 },
+      target: { x: 0, y: 0 },
+      z: 0,
+    };
   },
 
   setPosition(instance: Instance, pos: ThreeAnimationPosition): void {
-    instance.mesh.position.set(pos.x, pos.y, pos.z);
+    instance.source = pos.source ?? { x: pos.x, y: pos.y };
+    instance.target = pos.target ?? { x: pos.x, y: pos.y };
+    instance.z = pos.z;
   },
 
   update(instance: Instance, progress: number): void {
-    // Fade near end of travel
-    instance.material.opacity = progress > 0.8 ? Math.max(0, 1 - (progress - 0.8) / 0.2) : 1;
+    const travelProgress = Math.min(progress / 0.82, 1);
+    const x = instance.source.x + (instance.target.x - instance.source.x) * travelProgress;
+    const y = instance.source.y + (instance.target.y - instance.source.y) * travelProgress;
+    instance.mesh.position.set(x, y, instance.z);
+
+    const dx = instance.target.x - instance.source.x;
+    const dy = instance.target.y - instance.source.y;
+    if (dx !== 0 || dy !== 0) {
+      instance.mesh.rotation.z = Math.atan2(dy, dx) - Math.PI / 2;
+    }
+
+    instance.material.opacity = progress > 0.82 ? Math.max(0, 1 - (progress - 0.82) / 0.18) : 1;
   },
 
   dispose(instance: Instance): void {

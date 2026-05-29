@@ -3,14 +3,14 @@
  * and Three overlay wiring.
  *
  * These tests are written FIRST (TDD RED phase).  The hook
- * `useDungeonRenderState`, the component `ThreeEffectsOverlay`, and the flag
- * `isThreeEffectsEnabledFlag` do not yet exist; the tests will fail until the
+ * `useDungeonRenderState`, the component `ThreeAnimationOverlay`, and the renderer
+ * mode flag wiring do not yet exist; the tests will fail until the
  * implementation is added.
  *
  * Sections:
  *   1. Legacy DungeonPhase rendering (preserves existing coverage, keeps green)
  *   2. Flag-off – only DungeonCanvas rendered, no overlay
- *   3. Flag-on  – both DungeonCanvas and ThreeEffectsOverlay rendered as siblings
+ *   3. Flag-on  – both DungeonCanvas and ThreeAnimationOverlay rendered as siblings
  *   4. Overlay pointer-events constraint
  *   5. Props flow – hook inputs match MapDisplay args; no animation duplication
  */
@@ -28,9 +28,10 @@ const {
   moveAnimationState,
   consumableAnimationState,
   fxAnimationState,
+  defenderHitState,
   gameStoreSpy,
   dungeonRenderStateResult,
-  threeEffectsEnabledFlag,
+  animationRendererMode,
   overlayLifecycleState,
 } = vi.hoisted(() => ({
   bumpAnimationState: {
@@ -45,8 +46,28 @@ const {
   fxAnimationState: {
     current: [] as Array<{ id: string; abilityId: string; animationId?: string; playerPos: { x: number; y: number }; durationMs: number; impactFrameMs: number; startTime: number; progress: number }>,
   },
+  defenderHitState: {
+    current: new Map<string, { durationMs: number; startTime: number }>(),
+  },
   gameStoreSpy: {
-    statuses: [] as Array<{ id: string; name: string; turnsRemaining: number; beneficial: boolean; presentation?: { entityScale?: number } }>,
+    statuses: [] as Array<{
+      id: string;
+      name: string;
+      turnsRemaining: number;
+      beneficial: boolean;
+      presentation?: {
+        animationId?: string;
+        entityScale?: number;
+        ring?: {
+          colorRgb: string;
+          alphaBase: number;
+          alphaAmplitude: number;
+          pulsePeriodMs: number;
+          lineWidth: number;
+          paddingPx: number;
+        };
+      };
+    }>,
   },
   // Stores the last value returned by the mocked useDungeonRenderState so
   // individual tests can make assertions against it.
@@ -62,11 +83,23 @@ const {
       cameraOffset: { x: number; y: number };
     },
   },
-  threeEffectsEnabledFlag: { current: false },
+  animationRendererMode: { current: 'canvas' as 'canvas' | 'three' },
   overlayLifecycleState: {
     enabled: false,
     mountedIds: ['fx.self.healing-pulse'] as readonly string[],
     cleanupIds: [] as readonly string[],
+    mountedOwnership: {
+      animationIds: ['fx.self.healing-pulse'] as readonly string[],
+      entityIds: [] as readonly string[],
+      statusPresentation: false,
+      combatIndicators: false,
+    },
+    cleanupOwnership: {
+      animationIds: [] as readonly string[],
+      entityIds: [] as readonly string[],
+      statusPresentation: false,
+      combatIndicators: false,
+    },
   },
 }));
 
@@ -96,6 +129,10 @@ vi.mock('../hooks/useConsumableAnimationState.js', () => ({
 
 vi.mock('../hooks/useFxAnimationState.js', () => ({
   useFxAnimationState: () => ({ animations: fxAnimationState.current }),
+}));
+
+vi.mock('../hooks/useDefenderHitState.js', () => ({
+  useDefenderHitState: () => defenderHitState.current,
 }));
 
 vi.mock('../store/game-store.js', () => ({
@@ -144,10 +181,11 @@ vi.mock('../hooks/useDungeonRenderState.js', () => ({
   ),
 }));
 
-// Feature flag for the Three overlay.  Controlled via threeEffectsEnabledFlag.
+// Renderer mode wiring for the Three overlay.
 vi.mock('../config/feature-flags.js', () => ({
   isBeatSchedulerEnabledFlag: vi.fn(() => false),
-  isThreeEffectsEnabledFlag: vi.fn(() => threeEffectsEnabledFlag.current),
+  isThreeEffectsEnabledFlag: vi.fn(() => animationRendererMode.current === 'three'),
+  getAnimationRendererMode: vi.fn(() => animationRendererMode.current),
 }));
 
 // Canvas subsystem mocks (keep DungeonCanvas renderable in jsdom)
@@ -171,11 +209,11 @@ vi.mock('../utils/pathfinding.js', () => ({
   findPath: vi.fn(() => []),
 }));
 
-// ThreeEffectsOverlay – mock to avoid WebGL in jsdom.  The mock renders a
+// ThreeAnimationOverlay – mock to avoid WebGL in jsdom.  The mock renders a
 // sentinel div so tests can confirm presence/absence without a real WebGL
 // context.
-vi.mock('./ThreeEffectsOverlay.js', () => ({
-  ThreeEffectsOverlay: vi.fn(
+vi.mock('./ThreeAnimationOverlay.js', () => ({
+  ThreeAnimationOverlay: vi.fn(
     (props: {
       map: MapView;
       vpTilesWidth: number;
@@ -185,24 +223,36 @@ vi.mock('./ThreeEffectsOverlay.js', () => ({
       consumableAnimations: unknown[];
       fxAnimations: unknown[];
       statusPresentations: unknown[];
+      combatIndicators: unknown[];
+      defenderHits?: ReadonlyMap<string, { durationMs: number; startTime: number }>;
       vpLeft: number;
       vpTop: number;
       cameraOffset: { x: number; y: number };
       style?: React.CSSProperties;
       onInitialized?: (handledAnimationIds: readonly string[]) => void;
+      onOwnershipChange?: (ownership: {
+        animationIds: readonly string[];
+        entityIds: readonly string[];
+        statusPresentation: boolean;
+        combatIndicators: boolean;
+      }) => void;
     }) => {
       React.useEffect(() => {
-        if (!overlayLifecycleState.enabled || !props.onInitialized) {
+        if (!overlayLifecycleState.enabled) {
           return;
         }
 
-        props.onInitialized(overlayLifecycleState.mountedIds);
-        return () => props.onInitialized?.(overlayLifecycleState.cleanupIds);
-      }, [props.onInitialized]);
+        props.onInitialized?.(overlayLifecycleState.mountedIds);
+        props.onOwnershipChange?.(overlayLifecycleState.mountedOwnership);
+        return () => {
+          props.onInitialized?.(overlayLifecycleState.cleanupIds);
+          props.onOwnershipChange?.(overlayLifecycleState.cleanupOwnership);
+        };
+      }, [props.onInitialized, props.onOwnershipChange]);
 
       return (
         <div
-          data-testid="three-effects-overlay"
+          data-testid="three-animation-overlay"
           data-vp-tiles-width={props.vpTilesWidth}
           data-vp-tiles-height={props.vpTilesHeight}
           data-vp-left={props.vpLeft}
@@ -214,6 +264,8 @@ vi.mock('./ThreeEffectsOverlay.js', () => ({
           data-consumable-count={props.consumableAnimations.length}
           data-fx-count={props.fxAnimations.length}
           data-status-count={props.statusPresentations.length}
+          data-combat-indicator-count={props.combatIndicators.length}
+          data-defender-hit-count={props.defenderHits?.size ?? 0}
           style={props.style}
         />
       );
@@ -226,9 +278,9 @@ vi.mock('./ThreeEffectsOverlay.js', () => ({
 // ---------------------------------------------------------------------------
 import { useBreakpoint } from '../hooks/useBreakpoint.js';
 import { useDungeonRenderState } from '../hooks/useDungeonRenderState.js';
-import { isThreeEffectsEnabledFlag } from '../config/feature-flags.js';
+import { getAnimationRendererMode } from '../config/feature-flags.js';
 import { renderMap } from '../sprites/canvas-renderer.js';
-import { ThreeEffectsOverlay } from './ThreeEffectsOverlay.js';
+import { ThreeAnimationOverlay } from './ThreeAnimationOverlay.js';
 import { DungeonPhase } from './DungeonPhase.js';
 
 // ---------------------------------------------------------------------------
@@ -281,8 +333,21 @@ beforeEach(() => {
     value: vi.fn(() => makeCtxStub()),
   });
   overlayLifecycleState.enabled = false;
+  defenderHitState.current = new Map();
   overlayLifecycleState.mountedIds = ['fx.self.healing-pulse'];
   overlayLifecycleState.cleanupIds = [];
+  overlayLifecycleState.mountedOwnership = {
+    animationIds: ['fx.self.healing-pulse'],
+    entityIds: [],
+    statusPresentation: false,
+    combatIndicators: false,
+  };
+  overlayLifecycleState.cleanupOwnership = {
+    animationIds: [],
+    entityIds: [],
+    statusPresentation: false,
+    combatIndicators: false,
+  };
 });
 
 // ---------------------------------------------------------------------------
@@ -434,11 +499,12 @@ function renderDungeonPhase(viewOverrides?: Partial<GameView>, extraProps?: { us
 describe('DungeonPhase – legacy rendering (regression)', () => {
   beforeEach(() => {
     vi.mocked(useBreakpoint).mockReturnValue({ isMobile: false });
-    threeEffectsEnabledFlag.current = false;
+    animationRendererMode.current = 'canvas';
     bumpAnimationState.current = [];
     moveAnimationState.current = [];
     consumableAnimationState.current = [];
     fxAnimationState.current = [];
+    defenderHitState.current = new Map();
     gameStoreSpy.statuses = [];
     dungeonRenderStateResult.current = null;
   });
@@ -513,18 +579,19 @@ describe('DungeonPhase – legacy rendering (regression)', () => {
 });
 
 // ---------------------------------------------------------------------------
-// 2. Flag-off – only DungeonCanvas, no ThreeEffectsOverlay
+// 2. Flag-off – only DungeonCanvas, no ThreeAnimationOverlay
 // ---------------------------------------------------------------------------
 
 describe('DungeonPhase – Three flag OFF (canvas-only behavior unchanged)', () => {
   beforeEach(() => {
     vi.mocked(useBreakpoint).mockReturnValue({ isMobile: false });
-    vi.mocked(isThreeEffectsEnabledFlag).mockReturnValue(false);
-    threeEffectsEnabledFlag.current = false;
+    vi.mocked(getAnimationRendererMode).mockReturnValue('canvas');
+    animationRendererMode.current = 'canvas';
     bumpAnimationState.current = [];
     moveAnimationState.current = [];
     consumableAnimationState.current = [];
     fxAnimationState.current = [];
+    defenderHitState.current = new Map();
     gameStoreSpy.statuses = [];
     dungeonRenderStateResult.current = null;
   });
@@ -533,9 +600,9 @@ describe('DungeonPhase – Three flag OFF (canvas-only behavior unchanged)', () 
     vi.clearAllMocks();
   });
 
-  it('does not render ThreeEffectsOverlay', () => {
+  it('does not render ThreeAnimationOverlay', () => {
     renderDungeonPhase({}, { useSprites: true });
-    expect(screen.queryByTestId('three-effects-overlay')).not.toBeInTheDocument();
+    expect(screen.queryByTestId('three-animation-overlay')).not.toBeInTheDocument();
   });
 
   it('renders a canvas element for DungeonCanvas', () => {
@@ -548,30 +615,31 @@ describe('DungeonPhase – Three flag OFF (canvas-only behavior unchanged)', () 
     expect(screen.getByTestId('danger-indicator')).toBeInTheDocument();
   });
 
-  it('ThreeEffectsOverlay mock is not called when flag is off', () => {
+  it('ThreeAnimationOverlay mock is not called when flag is off', () => {
     renderDungeonPhase({}, { useSprites: true });
-    expect(vi.mocked(ThreeEffectsOverlay)).not.toHaveBeenCalled();
+    expect(vi.mocked(ThreeAnimationOverlay)).not.toHaveBeenCalled();
   });
 
   it('useSprites=false (DungeonView path) also has no overlay', () => {
     renderDungeonPhase({}, { useSprites: false });
-    expect(screen.queryByTestId('three-effects-overlay')).not.toBeInTheDocument();
+    expect(screen.queryByTestId('three-animation-overlay')).not.toBeInTheDocument();
   });
 });
 
 // ---------------------------------------------------------------------------
-// 3. Flag-on – both DungeonCanvas and ThreeEffectsOverlay rendered
+// 3. Flag-on – both DungeonCanvas and ThreeAnimationOverlay rendered
 // ---------------------------------------------------------------------------
 
 describe('DungeonPhase – Three flag ON', () => {
   beforeEach(() => {
     vi.mocked(useBreakpoint).mockReturnValue({ isMobile: false });
-    vi.mocked(isThreeEffectsEnabledFlag).mockReturnValue(true);
-    threeEffectsEnabledFlag.current = true;
+    vi.mocked(getAnimationRendererMode).mockReturnValue('three');
+    animationRendererMode.current = 'three';
     bumpAnimationState.current = [];
     moveAnimationState.current = [];
     consumableAnimationState.current = [makeHandledConsumableAnimation()];
     fxAnimationState.current = [];
+    defenderHitState.current = new Map();
     gameStoreSpy.statuses = [];
     dungeonRenderStateResult.current = null;
   });
@@ -580,31 +648,66 @@ describe('DungeonPhase – Three flag ON', () => {
     vi.clearAllMocks();
   });
 
-  it('renders ThreeEffectsOverlay when flag is enabled', () => {
+  it('renders ThreeAnimationOverlay when flag is enabled', () => {
     renderDungeonPhase({}, { useSprites: true });
-    expect(screen.getByTestId('three-effects-overlay')).toBeInTheDocument();
+    expect(screen.getByTestId('three-animation-overlay')).toBeInTheDocument();
   });
 
-  it('does not render ThreeEffectsOverlay when only unhandled animations are active', () => {
+  it('does not render ThreeAnimationOverlay when only unhandled animations are active', () => {
     consumableAnimationState.current = [
       makeHandledConsumableAnimation({ animationId: 'fx.other.unhandled' }),
     ];
 
     renderDungeonPhase({}, { useSprites: true });
 
-    expect(screen.queryByTestId('three-effects-overlay')).not.toBeInTheDocument();
-    expect(vi.mocked(ThreeEffectsOverlay)).not.toHaveBeenCalled();
+    expect(screen.queryByTestId('three-animation-overlay')).not.toBeInTheDocument();
+    expect(vi.mocked(ThreeAnimationOverlay)).not.toHaveBeenCalled();
+  });
+
+  it('renders ThreeAnimationOverlay for move ownership even without a handled module animation', () => {
+    consumableAnimationState.current = [];
+    moveAnimationState.current = [
+      {
+        id: 'move-0',
+        entityId: 'goblin-1',
+        fromPos: { x: 4, y: 5 },
+        toPos: { x: 5, y: 5 },
+        style: 'step',
+        progress: 0.4,
+        durationMs: 120,
+        startTime: 0,
+        fromOffsetPx: { x: 0, y: 0 },
+      },
+    ];
+
+    renderDungeonPhase({
+      map: {
+        ...BASE_MAP,
+        entities: [{
+          id: 'goblin-1',
+          x: 5,
+          y: 5,
+          ascii: 'g',
+          color: '#55ff55',
+          name: 'Goblin',
+          type: 'enemy',
+          templateId: 'goblin',
+        }],
+      },
+    }, { useSprites: true });
+
+    expect(screen.getByTestId('three-animation-overlay')).toBeInTheDocument();
   });
 
   it('also renders DungeonCanvas alongside the overlay', () => {
     const { container } = renderDungeonPhase({}, { useSprites: true });
     expect(container.querySelector('canvas')).not.toBeNull();
-    expect(screen.getByTestId('three-effects-overlay')).toBeInTheDocument();
+    expect(screen.getByTestId('three-animation-overlay')).toBeInTheDocument();
   });
 
   it('overlay and canvas are siblings inside the map container (same parent)', () => {
     const { container } = renderDungeonPhase({}, { useSprites: true });
-    const overlay = screen.getByTestId('three-effects-overlay');
+    const overlay = screen.getByTestId('three-animation-overlay');
     const canvas = container.querySelector('canvas');
     expect(canvas).not.toBeNull();
     // Both must share the same parent element.
@@ -613,7 +716,7 @@ describe('DungeonPhase – Three flag ON', () => {
 
   it('passes vpLeft and vpTop from hook output to the overlay', () => {
     renderDungeonPhase({}, { useSprites: true });
-    const overlay = screen.getByTestId('three-effects-overlay');
+    const overlay = screen.getByTestId('three-animation-overlay');
     // The mock renders data attributes from whatever it receives.
     expect(overlay).toHaveAttribute('data-vp-left');
     expect(overlay).toHaveAttribute('data-vp-top');
@@ -621,7 +724,7 @@ describe('DungeonPhase – Three flag ON', () => {
 
   it('passes cameraOffset from hook output to the overlay', () => {
     renderDungeonPhase({}, { useSprites: true });
-    const overlay = screen.getByTestId('three-effects-overlay');
+    const overlay = screen.getByTestId('three-animation-overlay');
     expect(overlay).toHaveAttribute('data-camera-offset-x', '0');
     expect(overlay).toHaveAttribute('data-camera-offset-y', '0');
   });
@@ -642,7 +745,7 @@ describe('DungeonPhase – Three flag ON', () => {
     ];
 
     renderDungeonPhase({}, { useSprites: true });
-    const overlay = screen.getByTestId('three-effects-overlay');
+    const overlay = screen.getByTestId('three-animation-overlay');
     expect(overlay).toHaveAttribute('data-bump-count', '1');
     expect(overlay).toHaveAttribute('data-move-count', '0');
     expect(overlay).toHaveAttribute('data-consumable-count', '1');
@@ -661,7 +764,7 @@ describe('DungeonPhase – Three flag ON', () => {
     ];
 
     renderDungeonPhase({}, { useSprites: true });
-    const overlay = screen.getByTestId('three-effects-overlay');
+    const overlay = screen.getByTestId('three-animation-overlay');
     expect(overlay).toHaveAttribute('data-status-count', '1');
   });
 
@@ -679,15 +782,16 @@ describe('DungeonPhase – Three flag ON', () => {
 // 4. Overlay pointer-events constraint
 // ---------------------------------------------------------------------------
 
-describe('ThreeEffectsOverlay – pointer-events: none', () => {
+describe('ThreeAnimationOverlay – pointer-events: none', () => {
   beforeEach(() => {
     vi.mocked(useBreakpoint).mockReturnValue({ isMobile: false });
-    vi.mocked(isThreeEffectsEnabledFlag).mockReturnValue(true);
-    threeEffectsEnabledFlag.current = true;
+    vi.mocked(getAnimationRendererMode).mockReturnValue('three');
+    animationRendererMode.current = 'three';
     bumpAnimationState.current = [];
     moveAnimationState.current = [];
     consumableAnimationState.current = [makeHandledConsumableAnimation()];
     fxAnimationState.current = [];
+    defenderHitState.current = new Map();
     gameStoreSpy.statuses = [];
   });
 
@@ -695,9 +799,9 @@ describe('ThreeEffectsOverlay – pointer-events: none', () => {
     vi.clearAllMocks();
   });
 
-  it('DungeonPhase passes pointer-events: none style to ThreeEffectsOverlay', () => {
+  it('DungeonPhase passes pointer-events: none style to ThreeAnimationOverlay', () => {
     renderDungeonPhase({}, { useSprites: true });
-    const overlay = screen.getByTestId('three-effects-overlay');
+    const overlay = screen.getByTestId('three-animation-overlay');
     // DungeonPhase must forward `style={{ pointerEvents: 'none' }}` to the
     // overlay so mouse clicks pass through to the canvas below.
     expect(overlay).toHaveStyle({ pointerEvents: 'none' });
@@ -710,9 +814,9 @@ describe('ThreeEffectsOverlay – pointer-events: none', () => {
     expect(canvas).toHaveStyle({ cursor: 'pointer' });
   });
 
-  it('ThreeEffectsOverlay receives the style prop from DungeonPhase', () => {
+  it('ThreeAnimationOverlay receives the style prop from DungeonPhase', () => {
     renderDungeonPhase({}, { useSprites: true });
-    const callArgs = vi.mocked(ThreeEffectsOverlay).mock.calls[0]?.[0];
+    const callArgs = vi.mocked(ThreeAnimationOverlay).mock.calls[0]?.[0];
     expect(callArgs?.style).toMatchObject({ pointerEvents: 'none' });
   });
 });
@@ -724,12 +828,13 @@ describe('ThreeEffectsOverlay – pointer-events: none', () => {
 describe('DungeonPhase – props flow and no duplication', () => {
   beforeEach(() => {
     vi.mocked(useBreakpoint).mockReturnValue({ isMobile: false });
-    vi.mocked(isThreeEffectsEnabledFlag).mockReturnValue(true);
-    threeEffectsEnabledFlag.current = true;
+    vi.mocked(getAnimationRendererMode).mockReturnValue('three');
+    animationRendererMode.current = 'three';
     bumpAnimationState.current = [];
     moveAnimationState.current = [];
     consumableAnimationState.current = [];
     fxAnimationState.current = [];
+    defenderHitState.current = new Map();
     gameStoreSpy.statuses = [];
     dungeonRenderStateResult.current = null;
   });
@@ -773,7 +878,7 @@ describe('DungeonPhase – props flow and no duplication', () => {
 
     renderDungeonPhase({}, { useSprites: true });
 
-    const overlay = screen.getByTestId('three-effects-overlay');
+    const overlay = screen.getByTestId('three-animation-overlay');
     // All four counts are 1 — they came from the same hook call, not four
     // separate subscriptions that could diverge.
     expect(overlay).toHaveAttribute('data-bump-count', '1');
@@ -814,12 +919,13 @@ describe('DungeonPhase – props flow and no duplication', () => {
 describe('DungeonPhase – overlay ownership and canvas fallback', () => {
   beforeEach(() => {
     vi.mocked(useBreakpoint).mockReturnValue({ isMobile: false });
-    vi.mocked(isThreeEffectsEnabledFlag).mockReturnValue(true);
-    threeEffectsEnabledFlag.current = true;
+    vi.mocked(getAnimationRendererMode).mockReturnValue('three');
+    animationRendererMode.current = 'three';
     bumpAnimationState.current = [];
     moveAnimationState.current = [];
     consumableAnimationState.current = [makeHandledConsumableAnimation()];
     fxAnimationState.current = [];
+    defenderHitState.current = new Map();
     gameStoreSpy.statuses = [];
     dungeonRenderStateResult.current = null;
     overlayLifecycleState.enabled = true;
@@ -857,8 +963,8 @@ describe('DungeonPhase – overlay ownership and canvas fallback', () => {
       expect(vi.mocked(renderMap).mock.calls.at(-1)?.[12]).toEqual(['fx.self.healing-pulse']);
     });
 
-    vi.mocked(isThreeEffectsEnabledFlag).mockReturnValue(false);
-    threeEffectsEnabledFlag.current = false;
+    vi.mocked(getAnimationRendererMode).mockReturnValue('canvas');
+    animationRendererMode.current = 'canvas';
 
     rerender(
       <DungeonPhase
@@ -874,6 +980,61 @@ describe('DungeonPhase – overlay ownership and canvas fallback', () => {
 
     await waitFor(() => {
       expect(vi.mocked(renderMap).mock.calls.at(-1)?.[12]).toEqual([]);
+    });
+  });
+
+  it('suppresses status ring and entityScale on the canvas after Three owns the player status presentation', async () => {
+    overlayLifecycleState.mountedIds = ['fx.status.gold-ring-pulse'];
+    overlayLifecycleState.mountedOwnership = {
+      animationIds: ['fx.status.gold-ring-pulse'],
+      entityIds: ['player-1'],
+      statusPresentation: true,
+      combatIndicators: false,
+    };
+    gameStoreSpy.statuses = [
+      {
+        id: 'strength_up',
+        name: 'Strength Up',
+        turnsRemaining: 3,
+        beneficial: true,
+        presentation: {
+          animationId: 'fx.status.gold-ring-pulse',
+          entityScale: 1.35,
+          ring: {
+            colorRgb: '255, 200, 0',
+            alphaBase: 0.35,
+            alphaAmplitude: 0.45,
+            pulsePeriodMs: 180,
+            lineWidth: 1.5,
+            paddingPx: 2,
+          },
+        },
+      },
+    ];
+
+    renderDungeonPhase({
+      map: {
+        ...BASE_MAP,
+        entities: [
+          {
+            id: 'player-1',
+            x: 5,
+            y: 5,
+            ascii: '@',
+            color: '#ffffff',
+            name: 'Hero',
+            type: 'player',
+            templateId: null,
+          },
+        ],
+      },
+    }, { useSprites: true });
+
+    await waitFor(() => {
+      expect(vi.mocked(renderMap).mock.calls.at(-1)?.[1]?.entities).toEqual([]);
+      expect(vi.mocked(renderMap).mock.calls.at(-1)?.[10]).toEqual({
+        statusPresentations: [],
+      });
     });
   });
 });

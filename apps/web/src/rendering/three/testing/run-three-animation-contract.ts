@@ -19,10 +19,107 @@
  *   });
  */
 
-import { it, expect, beforeEach } from 'vitest';
+import { it, expect, beforeEach, vi } from 'vitest';
 import type { ThreeAnimationModule } from '../three-animation-types.js';
 import { makeMockThreeRenderer, makeMockContext } from './mock-three-renderer.js';
 import type { MockRendererHandle } from './mock-three-renderer.js';
+
+function getGeometryVisibleSpan(instance: {
+  geometry?: {
+    parameters?: Record<string, unknown>;
+  };
+  geometries?: readonly {
+    parameters?: Record<string, unknown>;
+  }[];
+}): number {
+  const geometries = instance.geometry === undefined
+    ? (instance.geometries ?? [])
+    : [instance.geometry, ...(instance.geometries ?? [])];
+  const spans: number[] = [];
+
+  for (const geometry of geometries) {
+    const parameters = geometry.parameters;
+    if (parameters === undefined) {
+      continue;
+    }
+
+    spans.push(
+      ...[
+        parameters.width,
+        parameters.height,
+        typeof parameters.radius === 'number' ? parameters.radius * 2 : undefined,
+        typeof parameters.innerRadius === 'number' ? parameters.innerRadius * 2 : undefined,
+        typeof parameters.outerRadius === 'number' ? parameters.outerRadius * 2 : undefined,
+      ].filter((value): value is number => typeof value === 'number'),
+    );
+  }
+
+  return spans.length === 0 ? 0 : Math.max(...spans);
+}
+
+export function assertThreeAnimationVisibility(
+  instance: {
+    geometry?: { parameters?: Record<string, unknown> };
+    geometries?: readonly { parameters?: Record<string, unknown> }[];
+    material?: { opacity?: number; visible?: boolean };
+    materials?: readonly { opacity?: number; visible?: boolean }[];
+    mesh?: { visible?: boolean };
+    group?: { visible?: boolean };
+  },
+  tileSize: number,
+): void {
+  const visibleSpan = getGeometryVisibleSpan(instance);
+  const materials = instance.material === undefined
+    ? (instance.materials ?? [])
+    : [instance.material, ...(instance.materials ?? [])];
+  const visibleOpacity = materials.length === 0
+    ? 1
+    : Math.max(...materials.map((material) => material.opacity ?? 1));
+  expect(visibleSpan).toBeGreaterThanOrEqual(tileSize * 0.5);
+  expect(instance.mesh?.visible ?? instance.group?.visible ?? true).toBe(true);
+  for (const material of materials) {
+    expect(material.visible ?? true).toBe(true);
+  }
+  expect(visibleOpacity).toBeGreaterThan(0);
+}
+
+export function assertThreeAnimationDisposal(
+  instance: {
+    geometry?: { dispose?: () => void };
+    geometries?: readonly { dispose?: () => void }[];
+    material?: { dispose?: () => void; map?: { dispose?: () => void } | null };
+    materials?: readonly { dispose?: () => void; map?: { dispose?: () => void } | null }[];
+  },
+  dispose: () => void,
+): void {
+  const geometries = instance.geometry === undefined
+    ? (instance.geometries ?? [])
+    : [instance.geometry, ...(instance.geometries ?? [])];
+  const materials = instance.material === undefined
+    ? (instance.materials ?? [])
+    : [instance.material, ...(instance.materials ?? [])];
+  const geometryDisposes = geometries
+    .filter((geometry): geometry is { dispose: () => void } => geometry.dispose !== undefined)
+    .map((geometry) => vi.spyOn(geometry, 'dispose'));
+  const materialDisposes = materials
+    .filter((material): material is { dispose: () => void; map?: { dispose?: () => void } | null } => material.dispose !== undefined)
+    .map((material) => vi.spyOn(material, 'dispose'));
+  const textureDisposes = materials
+    .filter((material): material is { map: { dispose: () => void } } => material.map?.dispose !== undefined)
+    .map((material) => vi.spyOn(material.map, 'dispose'));
+
+  dispose();
+
+  for (const geometryDispose of geometryDisposes) {
+    expect(geometryDispose).toHaveBeenCalled();
+  }
+  for (const materialDispose of materialDisposes) {
+    expect(materialDispose).toHaveBeenCalled();
+  }
+  for (const textureDispose of textureDisposes) {
+    expect(textureDispose).toHaveBeenCalled();
+  }
+}
 
 /**
  * Run the standard lifecycle contract for a ThreeAnimationModule.
@@ -100,6 +197,30 @@ export function runThreeAnimationContract<TInstance>(
     const instance = module.create(ctx);
     module.dispose(instance);
     expect(handle.scene.remove).toHaveBeenCalledTimes(1);
+  });
+
+  it('creates a visible tile-scale instance at progress 0.5', () => {
+    const instance = module.create(ctx) as {
+      geometry?: { parameters?: Record<string, unknown> };
+      geometries?: readonly { parameters?: Record<string, unknown> }[];
+      material?: { opacity?: number; visible?: boolean };
+      materials?: readonly { opacity?: number; visible?: boolean }[];
+      mesh?: { visible?: boolean };
+      group?: { visible?: boolean };
+    };
+    module.setPosition(instance as TInstance, { x: 120, y: 96, z: 0 });
+    module.update(instance as TInstance, 0.5);
+    assertThreeAnimationVisibility(instance, tileSize);
+  });
+
+  it('dispose() releases geometry/material/texture resources', () => {
+    const instance = module.create(ctx) as {
+      geometry?: { dispose?: () => void };
+      geometries?: readonly { dispose?: () => void }[];
+      material?: { dispose?: () => void; map?: { dispose?: () => void } | null };
+      materials?: readonly { dispose?: () => void; map?: { dispose?: () => void } | null }[];
+    };
+    assertThreeAnimationDisposal(instance, () => module.dispose(instance as TInstance));
   });
 
   it('full lifecycle create → setPosition → update → dispose runs without error', () => {

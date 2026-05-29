@@ -74,6 +74,17 @@ describe('guardrail pattern checks', () => {
     expect(failures).toContain('untracked.test.ts');
   });
 
+  it('ignores generated and canonical skill directories', () => {
+    const rootDir = makeTempRoot('guardrail-topology-skills');
+    initRepo(rootDir);
+    writeFixture(rootDir, 'docs/skills/example/example.test.ts', 'skill fixture\n');
+    writeFixture(rootDir, '.github/skills/example/example.test.ts', 'skill fixture\n');
+    writeFixture(rootDir, '.claude/skills/example/example.test.ts', 'skill fixture\n');
+    writeFixture(rootDir, '.agents/skills/example/example.test.ts', 'skill fixture\n');
+
+    expect(checkTestTopology({ rootDir })).toEqual([]);
+  });
+
   it('fails when an always-loaded entry statically reaches an optional backend', () => {
     const rootDir = makeTempRoot('guardrail-optional-bad');
     const config = [{

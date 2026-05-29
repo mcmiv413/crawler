@@ -1,3 +1,4 @@
+import { animationRefs } from '../animation-refs/index.js';
 import type { StatusDefinition } from './types.js';
 
 export const arcaneCharge: StatusDefinition = {
@@ -10,4 +11,5 @@ export const arcaneCharge: StatusDefinition = {
   tickMagnitudeKey: 'arcane_charge.none',
   modifiesStat: null,
   statMultiplierKey: null,
+  overlay: { id: animationRefs.status.arcaneChargeRing.id },
 };

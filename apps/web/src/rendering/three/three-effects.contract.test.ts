@@ -1,21 +1,17 @@
 import { beforeEach, describe, expect, it } from 'vitest';
 import { ANIMATION_REF_BY_ID } from '@dungeon/content';
 import { BUILT_IN_THREE_EFFECT_IDS } from '../three-effect-metadata.js';
-import {
-  BUILT_IN_THREE_EFFECT_REGISTRATIONS,
-  registerBuiltInThreeEffects,
-} from './effects/index.js';
-import { clear, get } from './three-effect-registry.js';
+import { initializeThreeAnimationModules } from './generated/index.js';
+import { getAnimationModule, listAnimationIds, resetForTesting } from './three-animation-registry.js';
 
 describe('Three effect contracts', () => {
   beforeEach(() => {
-    clear();
+    resetForTesting();
   });
 
-  it('keeps metadata and built-in registrations in parity', () => {
-    const registrationIds = BUILT_IN_THREE_EFFECT_REGISTRATIONS.map(({ animationId }) => animationId);
-
-    expect(registrationIds).toEqual(BUILT_IN_THREE_EFFECT_IDS);
+  it('derives metadata ids from the generated Three registry', () => {
+    initializeThreeAnimationModules();
+    expect(listAnimationIds()).toEqual(BUILT_IN_THREE_EFFECT_IDS);
   });
 
   it.each(BUILT_IN_THREE_EFFECT_IDS)(
@@ -29,11 +25,11 @@ describe('Three effect contracts', () => {
     },
   );
 
-  it('registers every built-in metadata ID into the Three effect registry', () => {
-    registerBuiltInThreeEffects();
+  it('registers every built-in metadata id into the Three animation registry', () => {
+    initializeThreeAnimationModules();
 
     for (const animationId of BUILT_IN_THREE_EFFECT_IDS) {
-      expect(get(animationId)).toBeDefined();
+      expect(getAnimationModule(animationId)).toBeDefined();
     }
   });
 

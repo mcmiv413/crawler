@@ -1,5 +1,6 @@
 import { describe, expect, it } from 'vitest';
 import { ANIMATION_REF_BY_ID, animationRefs } from './index.js';
+import { STATUS_DEFINITIONS } from '../statuses/index.js';
 
 describe('animation ref catalog', () => {
   it('every exported ref has integer impact and recovery timing', () => {
@@ -12,6 +13,18 @@ describe('animation ref catalog', () => {
   it('projectile and aoe refs explicitly declare suppressActorBump', () => {
     for (const ref of [...Object.values(animationRefs.projectile), ...Object.values(animationRefs.aoe)]) {
       expect('suppressActorBump' in ref, `${ref.id} suppressActorBump`).toBe(true);
+    }
+  });
+
+  it('every status overlay id resolves to a registered status animation ref', () => {
+    for (const status of STATUS_DEFINITIONS.values()) {
+      if (status.overlay === undefined) {
+        continue;
+      }
+
+      const ref = ANIMATION_REF_BY_ID.get(status.overlay.id);
+      expect(ref, `${status.id} overlay animation ref`).toBeDefined();
+      expect(ref?.category, `${status.id} overlay animation category`).toBe('status');
     }
   });
 });
