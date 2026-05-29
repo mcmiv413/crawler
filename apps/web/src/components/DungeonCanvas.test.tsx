@@ -259,6 +259,21 @@ describe('DungeonCanvas', () => {
       expect(vi.mocked(renderMap).mock.calls[0]?.[11]).toEqual(cameraOffset);
     });
 
+    it('accepts skipHandledAnimationIds as a prop and passes it to renderMap', () => {
+      const skipHandledAnimationIds = ['fx.self.healing-pulse'] as const;
+
+      render(
+        <DungeonCanvas
+          {...defaultProps}
+          skipHandledAnimationIds={skipHandledAnimationIds}
+        />,
+      );
+
+      expect(vi.mocked(renderMap)).toHaveBeenCalled();
+      // skipHandledAnimationIds is arg index 12
+      expect(vi.mocked(renderMap).mock.calls[0]?.[12]).toEqual(skipHandledAnimationIds);
+    });
+
     it('does not import or call animation hooks — rendering is driven purely by props', () => {
       // If the component still calls the animation hooks it would pull values
       // from the hook mocks, not the props.  Verify the exact prop values
@@ -414,6 +429,52 @@ describe('DungeonCanvas', () => {
         clientY: 2 * CELL_SIZE + 1,
       });
 
+      expect(findPath).not.toHaveBeenCalled();
+      expect(startAutoWalkSpy).not.toHaveBeenCalled();
+    });
+
+    it('does not path or dispatch a walk when the clicked tile is hidden', () => {
+      const hiddenCellMap: MapView = {
+        ...baseMap,
+        cells: [
+          {
+            x: 3, y: 2,
+            ascii: '.', color: '#888', bgColor: '#000',
+            visibility: 'hidden', walkable: true, tileType: 'floor' as const,
+          },
+        ],
+      };
+
+      const { container } = render(
+        <DungeonCanvas {...defaultProps} map={hiddenCellMap} vpLeft={0} vpTop={0} />,
+      );
+
+      const canvas = container.querySelector('canvas')!;
+      fakeBoundingRect(canvas, 5, 4);
+
+      fireEvent.click(canvas, {
+        clientX: 3 * CELL_SIZE + 1,
+        clientY: 2 * CELL_SIZE + 1,
+      });
+
+      expect(findPath).not.toHaveBeenCalled();
+      expect(startAutoWalkSpy).not.toHaveBeenCalled();
+    });
+
+    it('does not path or dispatch a walk when the clicked tile is missing from the map data', () => {
+      const { container } = render(
+        <DungeonCanvas {...defaultProps} vpLeft={0} vpTop={0} />,
+      );
+
+      const canvas = container.querySelector('canvas')!;
+      fakeBoundingRect(canvas, 5, 4);
+
+      fireEvent.click(canvas, {
+        clientX: 4 * CELL_SIZE + 1,
+        clientY: 3 * CELL_SIZE + 1,
+      });
+
+      expect(findPath).not.toHaveBeenCalled();
       expect(startAutoWalkSpy).not.toHaveBeenCalled();
     });
 
@@ -636,10 +697,22 @@ describe('DungeonCanvas', () => {
       // so a raw pixel at (1*CELL_SIZE+1) corresponds to tile column 2, not 1
       const path = [{ x: 2, y: 2 }];
       vi.mocked(findPath).mockReturnValue(path);
+      const cameraShiftedMap: MapView = {
+        ...baseMap,
+        cells: [
+          ...baseMap.cells,
+          {
+            x: 2, y: 1,
+            ascii: '.', color: '#aaa', bgColor: '#000',
+            visibility: 'visible', walkable: true, tileType: 'floor' as const,
+          },
+        ],
+      };
 
       const { container } = render(
         <DungeonCanvas
           {...defaultProps}
+          map={cameraShiftedMap}
           vpLeft={0}
           vpTop={0}
           vpTilesWidth={5}
@@ -662,8 +735,8 @@ describe('DungeonCanvas', () => {
       });
 
       expect(findPath).toHaveBeenCalledWith(
-        baseMap,
-        baseMap.playerPosition,
+        cameraShiftedMap,
+        cameraShiftedMap.playerPosition,
         { x: 2, y: 1 },
       );
     });

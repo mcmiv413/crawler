@@ -135,7 +135,7 @@ tile size, viewport, panel widths, breakpoints, touch targets.
 The dungeon renderer has two layers:
 
 1. **DungeonCanvas** (primary) — 2D HTML5 canvas with tileset and game state visualization
-2. **ThreeOverlay** (optional) — Transparent WebGL layer above the canvas for advanced visual effects
+2. **ThreeEffectsOverlay** (optional) — Transparent WebGL layer above the canvas for advanced visual effects
 
 ### Layer Composition
 
@@ -156,9 +156,9 @@ The dungeon renderer has two layers:
 
 **The Three.js overlay must never block user interaction:**
 
-```css
-/* apps/web/src/rendering/three/ThreeOverlay.tsx */
-<canvas style={{ pointerEvents: 'none' }} />
+```tsx
+/* apps/web/src/components/ThreeEffectsOverlay.tsx */
+<ThreeEffectsOverlay style={{ pointerEvents: 'none' }} />
 ```
 
 **Why `pointer-events: none`:**
@@ -193,21 +193,23 @@ If your UI feature **needs WebGL to work**, it's not a feature — it's a bug. U
 The overlay is controlled by an environment variable:
 
 ```bash
-# Build with overlay enabled (default in dev)
+# Build with overlay enabled (disabled by default)
 VITE_THREE_EFFECTS=true pnpm dev:web
 
-# Build with overlay disabled
+# Build with overlay disabled (the default if unset)
 VITE_THREE_EFFECTS=false pnpm dev:web
 ```
 
 **What happens when disabled:**
-- Three.js overlay code is tree-shaken from the bundle
+- The lazy Three overlay chunk is never requested
 - All game features still work (canvas rendering is complete)
 - Animation refs still exist; registered Three effects are simply never instantiated
 - No performance penalty — the overlay doesn't initialize
 
+When enabled, the lazy chunk is still only loaded once a handled animation is actually active.
+
 **What happens if WebGL setup fails at runtime:**
-- Effect registration is skipped
+- Effect modules stay registered, but renderer creation fails and the parent keeps canvas fallback active
 - Canvas continues rendering normally
 - Game is fully playable
 - Check browser console for WebGL context errors (usually GPU driver issues)
