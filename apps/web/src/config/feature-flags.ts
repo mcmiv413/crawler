@@ -27,11 +27,12 @@ export function getAnimationRendererMode(): AnimationRendererMode {
   const env = import.meta.env as ViteFeatureEnv;
   const mode = env['VITE_ANIMATION_RENDERER_MODE'];
 
-  if (mode === 'three') {
-    return 'three';
+  if (mode === 'canvas') {
+    return 'canvas';
   }
 
-  return 'canvas';
+  // Default is 'three' after full Three.js migration validation (WS9).
+  return 'three';
 }
 
 export function isThreeEffectsEnabledFlag(): boolean {
