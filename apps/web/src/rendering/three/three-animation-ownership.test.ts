@@ -91,7 +91,7 @@ describe('AnimationOwnershipState', () => {
       let state = createAnimationOwnershipState();
       state = reportThreeOwnership(state, {
         animationIds: ['fx.self.healing-pulse'],
-        entityIds: [],
+        entityIds: [] as EntityId[],
         statusPresentation: false,
         combatIndicators: false,
       });
