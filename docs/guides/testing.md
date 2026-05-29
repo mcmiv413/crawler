@@ -58,11 +58,19 @@ Root `tests/` single-file runs should use `tests/vitest.config.ts`. The default 
 Use the existing smoke scripts by failure class instead of building ad hoc one-off checks:
 
 - `pnpm run check:tracked-artifacts` catches force-added or already tracked cache files, Zone.Identifier files, and source-map noise that `.gitignore` alone cannot prevent.
+- `pnpm run check:audit-guardrails` catches deterministic review failures: ignored or untracked tests, tests that execute mocked subjects, optional backend static imports, copied generated/catalog refs, stale docs paths, and configured source-of-truth literal drift.
 - `pnpm run check:workspace-wiring` catches undeclared workspace dependencies, `src`-internal imports across packages, and unexported workspace subpaths before the failure diffuses into later build or runtime noise.
 - `pnpm run check:ability-contracts` catches live ability metadata, command payload, and animation coverage drift with invariant checks that do not require per-ability snapshots.
 - `pnpm run check:exports` catches built-output and consumer-context package resolution failures that source-level tests can miss when local `dist/` state masks the problem.
 
-This split is intentional: each script is cheap, deterministic, and points at a specific class of breakage, which makes it a better fit for this repo than a single umbrella validator with less actionable failures.
+This split is intentional: each script is cheap, deterministic, and points at a specific class of breakage. When `check:audit-guardrails` fails, fix the named pattern instead of adding broad allowlists:
+
+- add ignored tests to a narrow `.gitignore` allowlist and git-track them
+- test real subjects while mocking only their dependencies
+- put optional backends behind dynamic imports
+- dot-walk generated/catalog refs through source-of-truth exports
+- update docs paths to real files or explicitly declared new files
+- import configured constants from their owner module
 
 ## Presenter/Web Hotspot Seams
 

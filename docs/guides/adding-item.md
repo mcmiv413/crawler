@@ -9,10 +9,10 @@ Items are equipment (weapons, armor) and consumables the player collects. Items 
 ## Quick Start
 
 1. Add to the appropriate category file:
-   - Weapons: `packages/content/src/items/weapons.ts`
-   - Armor: `packages/content/src/items/armor.ts`
-   - Consumables: `packages/content/src/items/consumables.ts`
-   - Traps: `packages/content/src/items/traps.ts`
+   - Weapons: `packages/content/src/items/weapons/<item>.ts`
+   - Armor: `packages/content/src/items/armor/<item>.ts`
+   - Consumables: `packages/content/src/items/consumables/<item>.ts`
+   - Traps: `packages/content/src/items/traps/<item>.ts`
 2. Run `pnpm generate:indexes` — the index is auto-generated
 3. Verify the item is in the generated index
 4. Test and commit
@@ -39,7 +39,7 @@ This automatically:
 
 ## Step 1: Add to Your Category File
 
-### Weapons (`packages/content/src/items/weapons.ts`)
+### Weapons (`packages/content/src/items/weapons/<item>.ts`)
 
 ```typescript
 export const frostAxe: WeaponItem = {
@@ -59,7 +59,7 @@ export const frostAxe: WeaponItem = {
 };
 ```
 
-### Armor (`packages/content/src/items/armor.ts`)
+### Armor (`packages/content/src/items/armor/<item>.ts`)
 
 ```typescript
 export const leatherArmor: ArmorItem = {
@@ -79,7 +79,7 @@ export const leatherArmor: ArmorItem = {
 };
 ```
 
-### Consumables (`packages/content/src/items/consumables.ts`)
+### Consumables (`packages/content/src/items/consumables/<item>.ts`)
 
 ```typescript
 export const manaPotion: ConsumableItem = {
@@ -98,7 +98,7 @@ export const manaPotion: ConsumableItem = {
 };
 ```
 
-### Traps (`packages/content/src/items/traps.ts`)
+### Traps (`packages/content/src/items/traps/<item>.ts`)
 
 ```typescript
 export const bearTrap: TrapItem = {
@@ -171,10 +171,10 @@ To make your item droppable, reference it in a loot table.
 
 | Purpose | File |
 |---------|------|
-| Weapons | `packages/content/src/items/weapons.ts` |
-| Armor | `packages/content/src/items/armor.ts` |
-| Consumables | `packages/content/src/items/consumables.ts` |
-| Traps | `packages/content/src/items/traps.ts` |
+| Weapons | `packages/content/src/items/weapons/` |
+| Armor | `packages/content/src/items/armor/` |
+| Consumables | `packages/content/src/items/consumables/` |
+| Traps | `packages/content/src/items/traps/` |
 | Loot system | `packages/game-core/src/systems/loot.ts` |
 | Equipment logic | `packages/game-core/src/systems/equipment.ts` |
 | Types | `packages/game-contracts/src/types/items.ts` |

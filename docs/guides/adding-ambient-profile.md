@@ -101,6 +101,6 @@ export const shadowLurker: EnemyTemplate = {
 | Purpose | File |
 |---------|------|
 | Definitions | `packages/content/src/ambient-profiles/` (individual files) |
-| Movement logic | `packages/game-core/src/systems/ambient-movement.ts` |
-| Animation system | `packages/presenter/src/builders/enemy-view-builder.ts` |
+| Movement logic | `packages/game-core/src/systems/ambient-behavior-engine.ts` |
+| View projection | `packages/presenter/src/builders/map-view-builder.ts` |
 | Enemy assignment | `packages/content/src/enemies/*.ts` |

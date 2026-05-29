@@ -321,7 +321,10 @@ export function handleAttack(
   }
 
   // DEBUG: Log combat parameters for diagnosis
-  const expectedHitChance = Math.max(15, Math.min(95, COMBAT.baseHitChance + effectiveAccuracy - targetEnemy.stats.evasion));
+  const expectedHitChance = Math.max(
+    COMBAT.minHitChance,
+    Math.min(COMBAT.maxHitChance, COMBAT.baseHitChance + effectiveAccuracy - targetEnemy.stats.evasion),
+  );
 
   const result = resolveAttack({
     attackerId: state.player.id,

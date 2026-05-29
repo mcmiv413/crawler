@@ -83,7 +83,7 @@ export const goblinArcher: EnemyTemplate = {
 
 For complex decision logic:
 
-1. Add decision evaluator in `packages/game-core/src/systems/ai-decision.ts`
+1. Add decision evaluator behavior in `packages/game-core/src/systems/enemy-ai-engine.ts`
 2. Add ability selection logic in `packages/game-core/src/systems/enemy-abilities.ts`
 3. Add tactical modifiers (preferred targets, group behavior, etc.)
 
@@ -105,7 +105,7 @@ For complex decision logic:
 | Purpose | File |
 |---------|------|
 | Definitions | `packages/content/src/archetypes/` (individual files) |
-| AI decision logic | `packages/game-core/src/systems/ai-decision.ts` |
+| AI decision logic | `packages/game-core/src/systems/enemy-ai-engine.ts` |
 | Ability selection | `packages/game-core/src/systems/enemy-abilities.ts` |
 | Enemy assignment | `packages/content/src/enemies/*.ts` |
-| Tests | `packages/game-core/src/systems/ai-decision.test.ts` |
+| Tests | `packages/game-core/src/systems/enemy-ai-engine.test.ts` |

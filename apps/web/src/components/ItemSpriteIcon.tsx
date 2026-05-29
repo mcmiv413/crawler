@@ -48,6 +48,19 @@ export function ItemSpriteIcon({ spriteName, size = 16 }: ItemSpriteIconProps) {
     }
   }, [spriteName, spritesReady, size]);
 
+  if (!spriteName) {
+    return (
+      <span
+        style={{
+          display: 'inline-block',
+          width: size,
+          height: size,
+          verticalAlign: 'middle',
+        }}
+      />
+    );
+  }
+
   return (
     <canvas
       ref={canvasRef}

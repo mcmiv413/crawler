@@ -1,0 +1,31 @@
+export default {
+  roots: [
+    'docs/guides',
+    'docs/skills',
+    'docs/README.md',
+    'README.md',
+  ],
+  allowedInlinePrefixes: [
+    '@',
+    'http://',
+    'https://',
+    'app://',
+    'file://',
+    'pnpm ',
+    'npm ',
+    'node ',
+    'git ',
+    'docker',
+    'VITE_',
+  ],
+  allowedInlinePatterns: [
+    /^\$?[A-Z0-9_]+$/,
+    /^[a-z][a-z0-9-]*:[a-z0-9:-]+$/i,
+    /^[a-z0-9-]+\/[a-z0-9-]+$/i,
+    /(?:^|\/)my-[^/]+/,
+    /^tests\/balance\/?$/,
+    /^\.claude\/commands\/?$/,
+    /^docs\/bugs\/?$/,
+    /[*{}<>]/,
+  ],
+};

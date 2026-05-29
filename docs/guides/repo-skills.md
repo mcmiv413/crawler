@@ -63,13 +63,15 @@ Do not hand-edit the mirror trees. If the mirrors drift, regenerate them from `d
    pnpm skills:check
    ```
 
-4. Run the targeted tooling test:
+4. Confirm planning or workflow changes still name deterministic guardrails with an enforcement home, known-bad case, and proof command when the plan needs them.
+
+5. Run the targeted tooling test:
 
    ```bash
    pnpm vitest run tests/integration/repo-skills.integration.test.ts
    ```
 
-5. Finish on the normal repo gates:
+6. Finish on the normal repo gates:
 
    ```bash
    pnpm run check:fast
