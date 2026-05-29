@@ -32,6 +32,8 @@ interface ModuleInfo {
   readonly importPath: string;
   /** Exported const name, e.g. radialImpactBurst */
   readonly exportName: string;
+  /** Local alias used in the generated file (may differ from exportName to avoid collisions) */
+  readonly localAlias: string;
   /** Animation category derived from the directory name */
   readonly category: string;
 }
@@ -76,11 +78,26 @@ function discoverModules(): ModuleInfo[] {
       // Import path relative to generated/index.ts (one level up, then modules/<category>/<name>)
       const importPath = `../modules/${category}/${baseName}.js`;
 
-      infos.push({ path: fullPath, importPath, exportName, category });
+      // localAlias is assigned after all modules are collected (collision detection below)
+      infos.push({ path: fullPath, importPath, exportName, localAlias: '', category });
     }
   }
 
-  return infos.sort((a, b) => a.importPath.localeCompare(b.importPath));
+  // Resolve collisions: if two modules share exportName, prefix with PascalCase category
+  const nameCounts = new Map<string, number>();
+  for (const m of infos) {
+    nameCounts.set(m.exportName, (nameCounts.get(m.exportName) ?? 0) + 1);
+  }
+
+  const resolved = infos.map((m) => {
+    const isColliding = (nameCounts.get(m.exportName) ?? 0) > 1;
+    const localAlias = isColliding
+      ? `${m.category}${m.exportName.charAt(0).toUpperCase()}${m.exportName.slice(1)}`
+      : m.exportName;
+    return { ...m, localAlias };
+  });
+
+  return resolved.sort((a, b) => a.importPath.localeCompare(b.importPath));
 }
 
 function writeGeneratedIndex(modules: ModuleInfo[]): void {
@@ -89,11 +106,15 @@ function writeGeneratedIndex(modules: ModuleInfo[]): void {
   }
 
   const imports = modules
-    .map((m) => `import { ${m.exportName} } from '${m.importPath}';`)
+    .map((m) =>
+      m.localAlias === m.exportName
+        ? `import { ${m.exportName} } from '${m.importPath}';`
+        : `import { ${m.exportName} as ${m.localAlias} } from '${m.importPath}';`,
+    )
     .join('\n');
 
   const registrations = modules
-    .map((m) => `  registerAnimationModule(${m.exportName});`)
+    .map((m) => `  registerAnimationModule(${m.localAlias});`)
     .join('\n');
 
   const noModulesComment = modules.length === 0
