@@ -90,6 +90,12 @@ Shared behavior should route through central pipelines instead of one-off featur
 
 If a new feature bypasses a central pipeline, the plan or review must explain why.
 
+## Deterministic Guardrails
+
+Repo-wide pattern checks live behind `pnpm run check:audit-guardrails`. Use that home for cheap deterministic checks that protect repeated architecture failures, and keep each check pattern-level with a known-bad fixture. Current guardrails cover tracked test topology, mocked-subject tests, optional backend import boundaries, generated/catalog reference literals, docs path validity, and configured centralized literal drift.
+
+Exceptions must be narrow and documented in the guardrail config or fixture root. Do not add broad directory skips to get a branch green.
+
 ## Presenter Views
 
 The presenter is the frontend-facing read model. `GameView` should expose display-ready data so web components do not need to reconstruct game rules, query live content, or format domain events.

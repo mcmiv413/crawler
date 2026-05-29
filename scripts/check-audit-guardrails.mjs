@@ -1,6 +1,11 @@
 import { existsSync, readdirSync, readFileSync } from 'node:fs';
 import { dirname, join, relative, resolve, sep } from 'node:path';
 import { spawnSync } from 'node:child_process';
+import { checkCentralizedLiterals } from './guardrails/check-centralized-literals.mjs';
+import { checkDocPaths } from './guardrails/check-doc-paths.mjs';
+import { checkOptionalImportBoundaries } from './guardrails/check-optional-import-boundaries.mjs';
+import { checkReferenceLiterals } from './guardrails/check-reference-literals.mjs';
+import { checkTestTopology } from './guardrails/check-test-topology.mjs';
 
 const repoRoot = process.cwd();
 const failures = [];
@@ -71,6 +76,23 @@ function findExternalSrcImports(relativePath) {
 const packageJson = readJson('package.json');
 if (!packageJson.scripts?.validate?.includes('pnpm run check:exports')) {
   failures.push('package.json: validate must include check:exports so the merge gate matches CI and docs');
+}
+
+const guardrailChecks = [
+  ['test-topology', () => checkTestTopology({ rootDir: repoRoot })],
+  ['optional-import-boundaries', () => checkOptionalImportBoundaries({ rootDir: repoRoot })],
+  ['reference-literals', () => checkReferenceLiterals({ rootDir: repoRoot })],
+  ['doc-paths', () => checkDocPaths({ rootDir: repoRoot })],
+  ['centralized-literals', () => checkCentralizedLiterals({ rootDir: repoRoot })],
+];
+
+for (const [name, runCheck] of guardrailChecks) {
+  try {
+    const guardrailFailures = runCheck();
+    failures.push(...guardrailFailures.map((failure) => `${name}: ${failure}`));
+  } catch (error) {
+    failures.push(`${name}: ${error instanceof Error ? error.message : String(error)}`);
+  }
 }
 
 expectContains(

@@ -9,6 +9,7 @@ import type {
   FunctionDeclaration,
   FunctionExpression,
   Identifier,
+  ImportDeclaration,
   MemberExpression,
   MethodDefinition,
   Node,
@@ -242,6 +243,111 @@ const collectReferencedTypeNames = (
     default:
       return names;
   }
+};
+
+type ImportSpecifierLike = {
+  readonly type: string;
+  readonly local?: Identifier;
+};
+
+type LiteralLike = {
+  readonly type: string;
+  readonly value?: unknown;
+};
+
+type ProgramLike = {
+  readonly body: readonly Node[];
+};
+
+type ExpressionStatementLike = Node & {
+  readonly expression?: Node;
+};
+
+const BEHAVIOR_EXECUTION_HELPERS = new Set(["renderHook", "act"]);
+
+const getStaticStringArgument = (node: CallExpression): string | null => {
+  const firstArg = node.arguments[0] as LiteralLike | undefined;
+  if (firstArg?.type !== "Literal" || typeof firstArg.value !== "string") {
+    return null;
+  }
+  return firstArg.value;
+};
+
+const isViMemberCall = (
+  node: CallExpression,
+  memberName: string,
+): boolean => {
+  if (node.callee.type !== "MemberExpression") return false;
+  const member = node.callee as MemberExpression;
+  return (
+    member.object.type === "Identifier" &&
+    (member.object as Identifier).name === "vi" &&
+    getPropertyName(member) === memberName
+  );
+};
+
+const getCalledIdentifierName = (node: CallExpression): string | null => {
+  if (node.callee.type === "Identifier") {
+    return (node.callee as Identifier).name;
+  }
+
+  if (node.callee.type === "MemberExpression") {
+    const member = node.callee as MemberExpression;
+    if (member.object.type === "Identifier") {
+      return (member.object as Identifier).name;
+    }
+  }
+
+  return null;
+};
+
+const isIdentifierFromMockedModule = (
+  node: Node | null | undefined,
+  mockedImportSources: Map<string, string>,
+): node is Identifier => {
+  return node?.type === "Identifier" &&
+    mockedImportSources.has((node as Identifier).name);
+};
+
+const collectMockedSubjectImports = (
+  program: ProgramLike,
+): Map<string, string> => {
+  const importedSources = new Map<string, string>();
+  const mockedModules = new Set<string>();
+
+  for (const statement of program.body) {
+    if (statement.type === "ImportDeclaration") {
+      const importDeclaration = statement as ImportDeclaration;
+      const source = importDeclaration.source.value;
+      if (typeof source !== "string") continue;
+
+      for (const specifier of importDeclaration.specifiers as readonly ImportSpecifierLike[]) {
+        if (specifier.local) {
+          importedSources.set(specifier.local.name, source);
+        }
+      }
+      continue;
+    }
+
+    const expression = (statement as ExpressionStatementLike).expression;
+    if (expression?.type !== "CallExpression") continue;
+    const callExpr = expression as CallExpression;
+    if (isViMemberCall(callExpr, "mock")) {
+      const mockedModule = getStaticStringArgument(callExpr);
+      if (mockedModule) {
+        mockedModules.add(mockedModule);
+      }
+    }
+  }
+
+  const mockedImportSources = new Map<string, string>();
+  for (const [importName, source] of importedSources) {
+    if (mockedModules.has(source)) {
+      mockedImportSources.set(importName, source);
+    }
+  }
+
+  return mockedImportSources;
 };
 
 // Rule Definitions
@@ -722,6 +828,87 @@ const rules: Record<string, Rule.RuleModule> = {
               typeName: matchedType,
             },
           });
+        },
+      };
+    },
+  },
+
+  "no-mocked-subject-call": {
+    meta: {
+      type: "problem",
+      docs: {
+        description:
+          "Disallow tests from executing imports from modules they mocked. " +
+          "Mocked imports may be asserted as dependencies, but they are not the real behavior under test.",
+        category: "Testing",
+        recommended: true,
+      },
+      messages: {
+        noMockedSubjectCall:
+          "Do not execute mocked import {{importName}} from {{moduleName}} as the behavior under test. Import the real subject from an unmocked module or move the dependency mock behind the subject.",
+      },
+      schema: [],
+    },
+    create(context: any): Rule.RuleListener {
+      const fileName = context.getFilename();
+      const isTestFile =
+        /\.test\.[tj]sx?$/.test(fileName) ||
+        /\.property\.test\.ts$/.test(fileName) ||
+        /\.integration\.test\.ts$/.test(fileName) ||
+        /\.contract\.test\.ts$/.test(fileName);
+
+      if (!isTestFile) {
+        return {};
+      }
+
+      let mockedImportSources = new Map<string, string>();
+
+      return {
+        Program(node: Node): void {
+          mockedImportSources = collectMockedSubjectImports(node as unknown as ProgramLike);
+        },
+        CallExpression(node: Node): void {
+          const callExpr = node as CallExpression;
+
+          if (isViMemberCall(callExpr, "mocked")) {
+            return;
+          }
+
+          const calledName = getCalledIdentifierName(callExpr);
+          if (calledName && mockedImportSources.has(calledName)) {
+            context.report({
+              node,
+              messageId: "noMockedSubjectCall",
+              data: {
+                importName: calledName,
+                moduleName: mockedImportSources.get(calledName),
+              },
+            });
+            return;
+          }
+
+          if (callExpr.callee.type !== "Identifier") {
+            return;
+          }
+
+          const helperName = (callExpr.callee as Identifier).name;
+          if (BEHAVIOR_EXECUTION_HELPERS.has(helperName) === false) {
+            return;
+          }
+
+          for (const argument of callExpr.arguments) {
+            if (isIdentifierFromMockedModule(argument as Node, mockedImportSources)) {
+              const importName = (argument as Identifier).name;
+              context.report({
+                node: argument as Node,
+                messageId: "noMockedSubjectCall",
+                data: {
+                  importName,
+                  moduleName: mockedImportSources.get(importName),
+                },
+              });
+            }
+          }
         },
       };
     },

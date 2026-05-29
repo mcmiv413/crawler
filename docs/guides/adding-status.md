@@ -73,7 +73,7 @@ export const myStatus: StatusDefinition = {
 For existing tick effects (damage/heal), the system handles application automatically.
 
 For custom effects:
-1. Add handler in `packages/game-core/src/systems/status-system.ts`
+1. Add handler in `packages/game-core/src/systems/status-effects.ts`
 2. Wire into turn scheduler in `packages/game-core/src/engine/turn-scheduler.ts`
 3. Add event type in `packages/game-contracts/src/events/index.ts`
 4. Add event formatter in `packages/presenter/src/event-formatter.ts`
@@ -102,6 +102,6 @@ slow: {
 | Definitions | `packages/content/src/statuses/` (individual files) |
 | Animation refs | `packages/content/src/animation-refs/` |
 | Balance config | `packages/content/src/balance/tables.ts` |
-| Game logic | `packages/game-core/src/systems/status-system.ts` |
+| Game logic | `packages/game-core/src/systems/status-effects.ts` |
 | Turn handling | `packages/game-core/src/engine/turn-scheduler.ts` |
-| Tests | `packages/game-core/src/systems/status-system.test.ts` |
+| Tests | `packages/game-core/src/systems/status-effects.test.ts` |

@@ -206,3 +206,226 @@ describe('canvas-renderer with bump animations', () => {
     expect(mockCtx.font).toBe(`${Math.max((CELL_SIZE * Math.min(scale.scaleX, scale.scaleY)) - 2, 1)}px monospace`);
   });
 });
+
+// ── Fixture IDs — local constants, no live @dungeon/content import ────────────
+// These mirror the string literals from packages/content/src/animation-refs/self.ts
+// but are intentionally inlined here to keep unit tests isolated.
+const FIXTURE_HEALING_PULSE_ID = 'fx.self.healing-pulse';
+const FIXTURE_CURE_SPARKLE_ID  = 'fx.self.cure-sparkle';
+const FIXTURE_STAMINA_SURGE_ID = 'fx.self.stamina-surge';
+
+/** Minimal ConsumableAnimationState fixture with a heal_hearts presentation. */
+function makeHealAnim(animationId?: string) {
+  return {
+    id: `consumable-${animationId ?? 'none'}`,
+    effect: 'heal' as const,
+    playerPos: { x: 10, y: 10 },
+    blastPositions: [] as { x: number; y: number }[],
+    startTime: 0,
+    progress: 0.5,
+    durationMs: 1200,
+    presentation: { kind: 'heal_hearts' as const, durationMs: 1200 },
+    animationId,
+  };
+}
+
+/** Minimal ConsumableAnimationState fixture with a buff_rings presentation. */
+function makeBuffAnim(animationId?: string) {
+  return {
+    id: `consumable-buff-${animationId ?? 'none'}`,
+    effect: 'buff' as const,
+    playerPos: { x: 10, y: 10 },
+    blastPositions: [] as { x: number; y: number }[],
+    startTime: 0,
+    progress: 0.5,
+    durationMs: 900,
+    presentation: { kind: 'buff_rings' as const, durationMs: 900 },
+    animationId,
+  };
+}
+
+describe('canvas-renderer skipHandledAnimationIds', () => {
+  function createMockCanvasContext(): CanvasRenderingContext2D {
+    return {
+      clearRect: vi.fn(),
+      fillStyle: '',
+      fillRect: vi.fn(),
+      drawImage: vi.fn(),
+      globalAlpha: 1,
+      strokeStyle: '',
+      lineWidth: 0,
+      strokeRect: vi.fn(),
+      fillText: vi.fn(),
+      font: '',
+      textAlign: 'center' as const,
+      textBaseline: 'middle' as const,
+      save: vi.fn(),
+      restore: vi.fn(),
+      translate: vi.fn(),
+      beginPath: vi.fn(),
+      arc: vi.fn(),
+      fill: vi.fn(),
+      stroke: vi.fn(),
+    } as unknown as CanvasRenderingContext2D;
+  }
+
+  function createMinimalMap(): MapView {
+    return {
+      width: 20,
+      height: 20,
+      playerPosition: { x: 10, y: 10 },
+      biomeId: 'dungeon',
+      dangerLevel: 'safe' as const,
+      cells: [],
+      entities: [],
+    };
+  }
+
+  it('draws a consumable animation when skipHandledAnimationIds is empty', () => {
+    const map = createMinimalMap();
+    const mockCtx = createMockCanvasContext();
+    const anim = makeHealAnim(FIXTURE_HEALING_PULSE_ID);
+
+    renderMap(
+      mockCtx, map, 0, 0, 20, 20,
+      [], [], [anim], [], { skipHandledAnimationIds: [] },
+    );
+
+    // save/restore bracket from drawConsumableEffects proves the animation was processed
+    expect(mockCtx.save).toHaveBeenCalled();
+    expect(mockCtx.restore).toHaveBeenCalled();
+  });
+
+  it('draws a consumable animation when skipHandledAnimationIds is undefined', () => {
+    const map = createMinimalMap();
+    const mockCtx = createMockCanvasContext();
+    const anim = makeHealAnim(FIXTURE_HEALING_PULSE_ID);
+
+    renderMap(
+      mockCtx, map, 0, 0, 20, 20,
+      [], [], [anim], [], {},
+    );
+
+    expect(mockCtx.save).toHaveBeenCalled();
+    expect(mockCtx.restore).toHaveBeenCalled();
+  });
+
+  it('skips a consumable animation whose animationId is in skipHandledAnimationIds', () => {
+    const map = createMinimalMap();
+    const mockCtx = createMockCanvasContext();
+    const anim = makeHealAnim(FIXTURE_HEALING_PULSE_ID);
+
+    // Count save calls from the outer ctx.save()/restore() wrapping the cell+entity loop.
+    // Record baseline with no consumable animations.
+    renderMap(mockCtx, map, 0, 0, 20, 20, [], [], [], [], {});
+    const baselineSaveCalls = vi.mocked(mockCtx.save).mock.calls.length;
+
+    vi.mocked(mockCtx.save).mockClear();
+    vi.mocked(mockCtx.restore).mockClear();
+
+    renderMap(
+      mockCtx, map, 0, 0, 20, 20,
+      [], [], [anim], [],
+      { skipHandledAnimationIds: [FIXTURE_HEALING_PULSE_ID] },
+    );
+
+    // No additional save() beyond the outer translate bracket — consumable was skipped
+    expect(vi.mocked(mockCtx.save).mock.calls.length).toBe(baselineSaveCalls);
+  });
+
+  it('skips only the handled ID and draws unhandled consumable animations normally', () => {
+    const map = createMinimalMap();
+    const mockCtx = createMockCanvasContext();
+    const skippedAnim = makeHealAnim(FIXTURE_HEALING_PULSE_ID);
+    const drawnAnim   = makeBuffAnim(FIXTURE_CURE_SPARKLE_ID);
+
+    // Baseline: two animations, nothing skipped
+    renderMap(mockCtx, map, 0, 0, 20, 20, [], [], [skippedAnim, drawnAnim], [], {});
+    const saveCallsWithBoth = vi.mocked(mockCtx.save).mock.calls.length;
+
+    vi.mocked(mockCtx.save).mockClear();
+    vi.mocked(mockCtx.restore).mockClear();
+
+    // Now skip only the healing-pulse — cure-sparkle should still draw
+    renderMap(
+      mockCtx, map, 0, 0, 20, 20,
+      [], [], [skippedAnim, drawnAnim], [],
+      { skipHandledAnimationIds: [FIXTURE_HEALING_PULSE_ID] },
+    );
+    const saveCallsWithOneSkipped = vi.mocked(mockCtx.save).mock.calls.length;
+
+    // Skipping one animation reduces save() calls by exactly one
+    expect(saveCallsWithOneSkipped).toBe(saveCallsWithBoth - 1);
+  });
+
+  it('skips multiple handled IDs in the same render call', () => {
+    const map = createMinimalMap();
+    const mockCtx = createMockCanvasContext();
+    const anim1 = makeHealAnim(FIXTURE_HEALING_PULSE_ID);
+    const anim2 = makeBuffAnim(FIXTURE_CURE_SPARKLE_ID);
+    const anim3 = makeHealAnim(FIXTURE_STAMINA_SURGE_ID);
+
+    // Baseline: all three drawn
+    renderMap(mockCtx, map, 0, 0, 20, 20, [], [], [anim1, anim2, anim3], [], {});
+    const baselineSaves = vi.mocked(mockCtx.save).mock.calls.length;
+
+    vi.mocked(mockCtx.save).mockClear();
+    vi.mocked(mockCtx.restore).mockClear();
+
+    // Skip two of the three
+    renderMap(
+      mockCtx, map, 0, 0, 20, 20,
+      [], [], [anim1, anim2, anim3], [],
+      { skipHandledAnimationIds: [FIXTURE_HEALING_PULSE_ID, FIXTURE_CURE_SPARKLE_ID] },
+    );
+    const savesWithTwoSkipped = vi.mocked(mockCtx.save).mock.calls.length;
+
+    expect(savesWithTwoSkipped).toBe(baselineSaves - 2);
+  });
+
+  it('uses exact ID matching — a similar but different ID is not skipped', () => {
+    const map = createMinimalMap();
+    const mockCtx = createMockCanvasContext();
+    // 'fx.self.healing' is a prefix of 'fx.self.healing-pulse' but is NOT the same ID
+    const similarButDifferentId = 'fx.self.healing';
+    const anim = makeHealAnim(FIXTURE_HEALING_PULSE_ID);
+
+    // Baseline with no skip
+    renderMap(mockCtx, map, 0, 0, 20, 20, [], [], [anim], [], {});
+    const baselineSaves = vi.mocked(mockCtx.save).mock.calls.length;
+
+    vi.mocked(mockCtx.save).mockClear();
+    vi.mocked(mockCtx.restore).mockClear();
+
+    // Skipping the prefix-like ID should NOT skip the full healing-pulse animation
+    renderMap(
+      mockCtx, map, 0, 0, 20, 20,
+      [], [], [anim], [],
+      { skipHandledAnimationIds: [similarButDifferentId] },
+    );
+
+    expect(vi.mocked(mockCtx.save).mock.calls.length).toBe(baselineSaves);
+  });
+
+  it('does not skip an animation with no animationId even if skip list is populated', () => {
+    const map = createMinimalMap();
+    const mockCtx = createMockCanvasContext();
+    // No animationId — legacy heal_hearts path
+    const anim = makeHealAnim(undefined);
+
+    renderMap(mockCtx, map, 0, 0, 20, 20, [], [], [anim], [], {});
+    const baselineSaves = vi.mocked(mockCtx.save).mock.calls.length;
+
+    vi.mocked(mockCtx.save).mockClear();
+    vi.mocked(mockCtx.restore).mockClear();
+
+    renderMap(
+      mockCtx, map, 0, 0, 20, 20,
+      [], [], [anim], [],
+      { skipHandledAnimationIds: [FIXTURE_HEALING_PULSE_ID, FIXTURE_CURE_SPARKLE_ID] },
+    );
+
+    // Animation without animationId is unaffected by the skip list
+    expect(vi.mocked(mockCtx.save).mock.calls.length).toBe(baselineSaves);
+  });
+});
