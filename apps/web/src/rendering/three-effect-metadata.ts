@@ -1,17 +1,17 @@
-import { animationRefs, type AnimationId } from '@dungeon/content';
+import type { AnimationId } from '@dungeon/content';
+import { initializeThreeAnimationModules } from './three/generated/index.js';
+import { getAnimationModule, listAnimationIds } from './three/three-animation-registry.js';
 
 interface AnimationIdCarrier {
   readonly animationId?: string;
 }
 
-export const BUILT_IN_THREE_EFFECT_IDS = [
-  animationRefs.self.healingPulse.id,
-] as const satisfies readonly AnimationId[];
+initializeThreeAnimationModules();
 
-const BUILT_IN_THREE_EFFECT_ID_SET = new Set<AnimationId>(BUILT_IN_THREE_EFFECT_IDS);
+export const BUILT_IN_THREE_EFFECT_IDS = listAnimationIds();
 
 export function isBuiltInThreeEffectId(animationId: string | undefined): animationId is AnimationId {
-  return animationId !== undefined && BUILT_IN_THREE_EFFECT_ID_SET.has(animationId as AnimationId);
+  return animationId !== undefined && getAnimationModule(animationId as AnimationId) !== undefined;
 }
 
 export function collectHandledThreeAnimationIds(

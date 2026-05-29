@@ -1,5 +1,5 @@
 import React, { useEffect, useMemo, useRef, useState } from 'react';
-import type { AnimationId } from '@dungeon/content';
+import { ANIMATION_REF_BY_ID, type AnimationId } from '@dungeon/content';
 import type { GameView } from '@dungeon/presenter';
 import {
   CELL_SIZE,
@@ -13,7 +13,7 @@ import {
 import { PlayerHud } from './PlayerHud.js';
 import { DungeonView } from './DungeonView.js';
 import { DungeonCanvas } from './DungeonCanvas.js';
-import { ThreeEffectsOverlay } from './ThreeEffectsOverlay.js';
+import { ThreeAnimationOverlay } from './ThreeAnimationOverlay.js';
 import { DebugPanel } from './DebugPanel.js';
 import { UnifiedActionPanel } from './UnifiedActionPanel.js';
 import { InspectModal } from './InspectModal.js';
@@ -23,10 +23,13 @@ import { CombatIndicators } from './CombatIndicators.js';
 import { BumpAnimations } from './BumpAnimations.js';
 import { useAnimationOrchestrator } from '../hooks/useAnimationOrchestrator.js';
 import { useDungeonRenderState } from '../hooks/useDungeonRenderState.js';
-import { isThreeEffectsEnabledFlag } from '../config/feature-flags.js';
-import { collectHandledThreeAnimationIds } from '../rendering/three-effect-metadata.js';
+import { useCombatIndicatorState } from '../hooks/useCombatIndicatorState.js';
+import { useDefenderHitState } from '../hooks/useDefenderHitState.js';
+import { useThreeAnimationOwnership } from '../hooks/useThreeAnimationOwnership.js';
+import { getAnimationRendererMode } from '../config/feature-flags.js';
 import { filterCombatLogForDisplay } from './combat-log-filter.js';
 import { logEntryColor } from '../styles.js';
+import { reportDungeonE2EReady } from '../testing/e2e-bridge.js';
 
 interface DungeonPhaseProps {
   view: GameView;
@@ -37,6 +40,13 @@ interface DungeonPhaseProps {
   useSprites: boolean;
   setUseSprites: React.Dispatch<React.SetStateAction<boolean>>;
 }
+
+const EMPTY_THREE_OWNERSHIP = {
+  animationIds: [],
+  entityIds: [],
+  statusPresentation: false,
+  combatIndicators: false,
+} as const;
 
 function dangerColor(level: string): string {
   switch (level) {
@@ -108,7 +118,6 @@ function MapDisplay({
 }) {
   const [vpTilesWidth, setVpTilesWidth] = useState(MIN_VIEWPORT_TILES_WIDTH);
   const [vpTilesHeight, setVpTilesHeight] = useState(MIN_VIEWPORT_TILES_HEIGHT);
-  const [handledAnimationIds, setHandledAnimationIds] = useState<readonly AnimationId[]>([]);
   const displayContainerRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
@@ -143,26 +152,84 @@ function MapDisplay({
   // We call the hook with a stable fallback so hooks are always called in the same order.
   const safeMap = map ?? { cells: [], playerPosition: { x: 0, y: 0 }, entities: [], width: 0, height: 0, biomeId: '', dangerLevel: 'safe' as const };
   const renderState = useDungeonRenderState(safeMap, vpTilesWidth, vpTilesHeight);
-  const threeEnabled = isThreeEffectsEnabledFlag();
-  const activeHandledAnimationIds = useMemo(
-    () => collectHandledThreeAnimationIds(renderState.consumableAnimations, renderState.fxAnimations),
-    [renderState.consumableAnimations, renderState.fxAnimations],
+  const rendererMode = getAnimationRendererMode();
+  const combatIndicatorLabels = useCombatIndicatorState(COMBAT_INDICATOR_FADEOUT_MS);
+  const defenderHits = useDefenderHitState();
+  const {
+    ownedAnimationIds,
+    ownedEntityIds,
+    statusPresentationOwnedByThree,
+    combatIndicatorsOwnedByThree,
+    reportOwnership,
+  } = useThreeAnimationOwnership();
+  const hasResolvableThreeAnimation = useMemo(
+    () => {
+      const hasKnownAnimationId = (animationId: string | undefined): animationId is AnimationId =>
+        animationId !== undefined && ANIMATION_REF_BY_ID.has(animationId as AnimationId);
+
+      return (
+        renderState.consumableAnimations.some((animation) => hasKnownAnimationId(animation.animationId))
+        || renderState.fxAnimations.some((animation) => hasKnownAnimationId(animation.animationId))
+        || renderState.statusPresentations.some((presentation) => hasKnownAnimationId(presentation.animationId))
+      );
+    },
+    [renderState.consumableAnimations, renderState.fxAnimations, renderState.statusPresentations],
   );
-  const shouldRenderThreeOverlay = useSprites && threeEnabled && activeHandledAnimationIds.length > 0;
+  const shouldRenderThreeOverlay = useSprites
+    && rendererMode === 'three'
+    && map !== null
+    && (
+      hasResolvableThreeAnimation
+      || renderState.moveAnimations.length > 0
+      || renderState.bumpAnimations.length > 0
+      || defenderHits.size > 0
+        || combatIndicatorLabels.length > 0
+    );
+
+  useEffect(() => {
+    const frameOne = window.requestAnimationFrame(() => {
+      frameTwo = window.requestAnimationFrame(() => {
+        reportDungeonE2EReady(true);
+      });
+    });
+    let frameTwo = -1;
+
+    return () => {
+      window.cancelAnimationFrame(frameOne);
+      if (frameTwo >= 0) {
+        window.cancelAnimationFrame(frameTwo);
+      }
+      reportDungeonE2EReady(false);
+    };
+  }, []);
 
   useEffect(() => {
     if (shouldRenderThreeOverlay) {
       return;
     }
 
-    setHandledAnimationIds((current) => (current.length === 0 ? current : []));
-  }, [shouldRenderThreeOverlay]);
+    reportOwnership(EMPTY_THREE_OWNERSHIP);
+  }, [reportOwnership, shouldRenderThreeOverlay]);
 
   if (map === null) return null;
 
   const canvasPxWidth = vpTilesWidth * CELL_SIZE;
   const canvasPxHeight = vpTilesHeight * CELL_SIZE;
   const cellSize = CELL_SIZE;
+  const ownedAnimationIdSet = new Set<string>(ownedAnimationIds);
+  const ownedEntityIdSet = new Set<string>(ownedEntityIds);
+  const canvasMap = ownedEntityIdSet.size === 0
+    ? map
+    : {
+        ...map,
+        entities: map.entities.filter((entity) => !ownedEntityIdSet.has(entity.id)),
+      };
+  const canvasStatusPresentations = statusPresentationOwnedByThree
+    ? renderState.statusPresentations.filter((presentation) =>
+        presentation.animationId === undefined
+        || !ownedAnimationIdSet.has(presentation.animationId as AnimationId),
+      )
+    : renderState.statusPresentations;
 
   return (
     <div
@@ -187,25 +254,25 @@ function MapDisplay({
         {useSprites
           ? (
             <DungeonCanvas
-              map={map}
+              map={canvasMap}
               vpTilesWidth={vpTilesWidth}
               vpTilesHeight={vpTilesHeight}
               bumpAnimations={renderState.bumpAnimations}
               moveAnimations={renderState.moveAnimations}
               consumableAnimations={renderState.consumableAnimations}
               fxAnimations={renderState.fxAnimations}
-              statusPresentations={renderState.statusPresentations}
+              statusPresentations={canvasStatusPresentations}
               vpLeft={renderState.vpLeft}
               vpTop={renderState.vpTop}
               cameraOffset={renderState.cameraOffset}
-              skipHandledAnimationIds={handledAnimationIds}
+              skipHandledAnimationIds={ownedAnimationIds}
             />
           )
           : <DungeonView map={map} vpTilesWidth={vpTilesWidth} vpTilesHeight={vpTilesHeight} />}
         {shouldRenderThreeOverlay && (
-          <ThreeEffectsOverlay
+          <ThreeAnimationOverlay
             map={map}
-            isEnabled={threeEnabled}
+            isEnabled={true}
             vpTilesWidth={vpTilesWidth}
             vpTilesHeight={vpTilesHeight}
             bumpAnimations={renderState.bumpAnimations}
@@ -213,20 +280,25 @@ function MapDisplay({
             consumableAnimations={renderState.consumableAnimations}
             fxAnimations={renderState.fxAnimations}
             statusPresentations={renderState.statusPresentations}
+            combatIndicators={combatIndicatorLabels}
+            defenderHits={defenderHits}
             vpLeft={renderState.vpLeft}
             vpTop={renderState.vpTop}
             cameraOffset={renderState.cameraOffset}
             style={{ pointerEvents: 'none' }}
-            onInitialized={setHandledAnimationIds}
+            onOwnershipChange={reportOwnership}
           />
         )}
         <BumpAnimations />
-        <CombatIndicators
-          vpLeft={renderState.vpLeft}
-          vpTop={renderState.vpTop}
-          cellSize={cellSize}
-          fadeOutDuration={COMBAT_INDICATOR_FADEOUT_MS}
-        />
+        {!combatIndicatorsOwnedByThree && (
+          <CombatIndicators
+            vpLeft={renderState.vpLeft}
+            vpTop={renderState.vpTop}
+            cellSize={cellSize}
+            fadeOutDuration={COMBAT_INDICATOR_FADEOUT_MS}
+            labels={combatIndicatorLabels}
+          />
+        )}
       </div>
     </div>
   );

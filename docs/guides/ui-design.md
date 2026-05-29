@@ -134,8 +134,8 @@ tile size, viewport, panel widths, breakpoints, touch targets.
 
 The dungeon renderer has two layers:
 
-1. **DungeonCanvas** (primary) — 2D HTML5 canvas with tileset and game state visualization
-2. **ThreeEffectsOverlay** (optional) — Transparent WebGL layer above the canvas for advanced visual effects
+1. **DungeonCanvas** (primary) — 2D HTML5 canvas with tileset, full fallback rendering, and pointer input
+2. **ThreeAnimationOverlay** (renderer-mode dependent) — Transparent WebGL layer above the canvas for handled animation modules, entity takeover, status ownership, and combat text when `getAnimationRendererMode()` resolves to `three`
 
 ### Layer Composition
 
@@ -145,10 +145,10 @@ The dungeon renderer has two layers:
 │ Stats, Inventory, Log, etc. │
 ├─────────────────────────────┤
 │ Three.js WebGL Overlay      │  ← Transparent, pointer-events: none
-│ (particle effects, auras)   │
+│ (modules, takeover, labels) │
 ├─────────────────────────────┤
 │ DungeonCanvas (2D)          │  ← Primary map renderer
-│ (tiles, actors, items)      │
+│ (tiles, actors, fallback)   │
 └─────────────────────────────┘
 ```
 
@@ -157,14 +157,21 @@ The dungeon renderer has two layers:
 **The Three.js overlay must never block user interaction:**
 
 ```tsx
-/* apps/web/src/components/ThreeEffectsOverlay.tsx */
-<ThreeEffectsOverlay style={{ pointerEvents: 'none' }} />
+/* apps/web/src/components/ThreeAnimationOverlay.tsx */
+<ThreeAnimationOverlay style={{ pointerEvents: 'none' }} />
 ```
 
 **Why `pointer-events: none`:**
 - Canvas interactions (clicking tiles, moving, targeting) happen on the underlying `DungeonCanvas`
 - The overlay is pure presentation — it should never capture clicks or hover states
 - If it did, players would miss tiles and abilities would misfire
+
+### Ownership Rules
+
+- Canvas is the complete fallback path.
+- Three only suppresses canvas drawing after the overlay reports ownership for that exact visual surface.
+- Current WebGL-owned surfaces include handled animation modules, moving/bumping entity sprites, status ring/scale presentation, combat labels, and defender-hit flashes.
+- If WebGL setup fails, ownership stays with canvas and the game remains playable.
 
 ### Tile Sizing (Centralized)
 
@@ -186,45 +193,47 @@ DawnLike sprites (16×16) are scaled by the renderer to fit `CELL_SIZE`. When yo
 - **Character stats** — DOM only, color tokens and text
 - **Ability UI** — DOM only, sprite icons and labels
 
-If your UI feature **needs WebGL to work**, it's not a feature — it's a bug. UI panels must be fully functional on canvas-only setups (when `VITE_THREE_EFFECTS=false` or WebGL init fails).
+If your UI feature **needs WebGL to work**, it's not a feature — it's a bug. UI panels must be fully functional when `VITE_ANIMATION_RENDERER_MODE=canvas` or when runtime WebGL creation fails.
 
-### Feature Flag: VITE_THREE_EFFECTS
+### Renderer Mode: VITE_ANIMATION_RENDERER_MODE
 
-The overlay is controlled by an environment variable:
+The overlay backend is controlled by renderer mode:
 
 ```bash
-# Build with overlay enabled (disabled by default)
-VITE_THREE_EFFECTS=true pnpm dev:web
+# WebGL backend
+VITE_ANIMATION_RENDERER_MODE=three pnpm dev:web
 
-# Build with overlay disabled (the default if unset)
-VITE_THREE_EFFECTS=false pnpm dev:web
+# Canvas backend (default)
+VITE_ANIMATION_RENDERER_MODE=canvas pnpm dev:web
 ```
 
-**What happens when disabled:**
-- The lazy Three overlay chunk is never requested
-- All game features still work (canvas rendering is complete)
-- Animation refs still exist; registered Three effects are simply never instantiated
-- No performance penalty — the overlay doesn't initialize
+`isThreeEffectsEnabledFlag()` still exists, but only as a compatibility alias over renderer mode. New code should use `getAnimationRendererMode()`.
 
-When enabled, the lazy chunk is still only loaded once a handled animation is actually active.
+**What happens in canvas mode:**
+- the lazy Three chunk is never requested
+- the dungeon remains fully playable because `DungeonCanvas` is the source-of-truth fallback
+- Three module registration can still exist in the build; nothing mounts until the mode switches to `three`
+
+**What happens in three mode:**
+- the lazy wrapper loads `apps/web/src/rendering/three/ThreeAnimationOverlay.tsx`
+- the generated registry from `apps/web/src/rendering/three/generated/index.ts` initializes on demand
+- the overlay only mounts once there is active handled work (animation modules, move/bump takeover, statuses, labels, flashes)
 
 **What happens if WebGL setup fails at runtime:**
-- Effect modules stay registered, but renderer creation fails and the parent keeps canvas fallback active
-- Canvas continues rendering normally
-- Game is fully playable
-- Check browser console for WebGL context errors (usually GPU driver issues)
+- ownership stays with canvas
+- the overlay renders nothing
+- the player keeps the same gameplay affordances and fallback visuals
+- `tests/e2e/three-animation-backend.spec.ts` explicitly proves this path
 
-### Why Three.js is Optional
+### Why WebGL Is Optional
 
-Three.js effects are **visual enhancement**, not **game mechanic**:
-
-- **Canvas animations** handle all required visual feedback (damage numbers, hit flashes, status effects)
-- **Three.js effects** add polish (particle trails, glow effects, advanced shaders)
-- **The game never depends on them** — if Three.js breaks, the game still works
+- **Canvas** handles the guaranteed floor of player-visible behavior.
+- **Three** adds richer presentation and can take ownership where the runtime has a matching module.
+- **The game never depends on WebGL** — if Three fails, the player still gets canvas behavior.
 
 This design choice enables:
-- **Shipping to low-end devices** — customers can disable the overlay
-- **Faster CI builds** — testing doesn't require WebGL context
+- **Shipping to low-end devices** — contributors or builds can stay on canvas mode
+- **Deterministic CI** — most tests run without needing live WebGL, while targeted browser proofs cover the overlay
 - **Cleaner architecture** — rendering concerns don't leak into game logic
 
 ### Adding Overlay Content
@@ -232,16 +241,20 @@ This design choice enables:
 If you're adding a visual effect:
 
 1. **Decide the renderer:**
-   - **Canvas:** Simple, foundational, always visible (damage numbers, hit flash, actor bumps)
-   - **Three.js:** Advanced, polished, optional (particle systems, complex shaders, 3D geometry)
+   - **Canvas:** Required fallback and baseline presentation
+   - **Three:** Module-driven overlay ownership and richer visuals
 
 2. **Declare the animation ref** in `packages/content/src/animation-refs/`
 
-3. **Implement the renderer module** in your chosen directory:
+3. **Implement the renderer module** in the right directory:
    - Canvas: `apps/web/src/animations/modules/`
-   - Three.js: `apps/web/src/rendering/three/effects/`
+   - Three: `apps/web/src/rendering/three/modules/<category>/`
 
-4. **Register with the same AnimationId** — both implementations use the presenter's emitted `animationId`
+4. **Run `pnpm generate:indexes`** so the Three generated registry picks up the new module
+
+5. **Keep ownership safe** — canvas remains active until Three reports ownership for the same surface
+
+6. **Do not add new work to `ThreeEffectsOverlay`** — it is a compatibility alias, not the architecture source of truth
 
 See [docs/guides/adding-animation.md](adding-animation.md) for complete workflow and examples.
 

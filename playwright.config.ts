@@ -9,7 +9,7 @@ export default defineConfig({
   reporter: 'html',
   timeout: 60_000,
   use: {
-    baseURL: 'http://localhost:8080',
+    baseURL: 'http://localhost:8180',
     trace: 'on-first-retry',
   },
   projects: [
@@ -26,9 +26,9 @@ export default defineConfig({
       timeout: 60_000,
     },
     {
-      command: 'pnpm --filter @dungeon/web dev',
-      port: 8080,
-      reuseExistingServer: !process.env.CI,
+      command: 'pnpm --filter @dungeon/web dev --port 8180',
+      port: 8180,
+      reuseExistingServer: false,
       timeout: 60_000,
     },
   ],

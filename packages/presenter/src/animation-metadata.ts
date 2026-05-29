@@ -1,3 +1,4 @@
+import { animationRefs, STATUS_DEFINITIONS } from '@dungeon/content';
 import type {
   ConsumableAnimationPresentationView,
   MoveAnimStyle,
@@ -84,6 +85,7 @@ export const CONSUMABLE_ANIMATION_METADATA: Readonly<Record<ConsumableAnimationE
 
 export const PLAYER_STATUS_PRESENTATION: Readonly<Record<string, StatusPresentationView>> = {
   strength: {
+    animationId: animationRefs.status.goldRingPulse.id,
     entityScale: 1.35,
     ring: {
       colorRgb: '255, 200, 0',
@@ -95,6 +97,7 @@ export const PLAYER_STATUS_PRESENTATION: Readonly<Record<string, StatusPresentat
     },
   },
   heat_surge: {
+    animationId: animationRefs.status.heatSurgeRing.id,
     entityScale: 1.25,
     ring: {
       colorRgb: '255, 96, 32',
@@ -106,6 +109,7 @@ export const PLAYER_STATUS_PRESENTATION: Readonly<Record<string, StatusPresentat
     },
   },
   arcane_charge: {
+    animationId: animationRefs.status.arcaneChargeRing.id,
     entityScale: 1.18,
     ring: {
       colorRgb: '74, 163, 255',
@@ -181,5 +185,22 @@ export function getConsumableBlastPositions(
 }
 
 export function getStatusPresentation(statusId: string): StatusPresentationView | undefined {
-  return PLAYER_STATUS_PRESENTATION[statusId];
+  const presentation = PLAYER_STATUS_PRESENTATION[statusId];
+  if (presentation === undefined) {
+    return undefined;
+  }
+
+  const overlayId = STATUS_DEFINITIONS.get(statusId)?.overlay?.id;
+  if (overlayId === undefined) {
+    return presentation;
+  }
+
+  if (presentation.animationId === overlayId) {
+    return presentation;
+  }
+
+  return {
+    ...presentation,
+    animationId: overlayId,
+  };
 }

@@ -17,6 +17,13 @@ const DEFAULT_SCRATCH_ALLOWLIST = [
   'tmp',
 ];
 
+const DEFAULT_TOPOLOGY_EXCLUDED_PREFIXES = [
+  'docs/skills',
+  '.github/skills',
+  '.claude/skills',
+  '.agents/skills',
+];
+
 function runGit(rootDir, args, input) {
   const result = spawnSync('git', ['-C', rootDir, ...args], {
     input,
@@ -83,10 +90,12 @@ function isIncludedByExpectedRootRunner(relativePath, layer) {
 export function checkTestTopology(options = {}) {
   const rootDir = resolveRoot(options.rootDir);
   const scratchAllowlist = options.scratchAllowlist ?? DEFAULT_SCRATCH_ALLOWLIST;
+  const excludedPrefixes = options.excludedPrefixes ?? DEFAULT_TOPOLOGY_EXCLUDED_PREFIXES;
   const failures = [];
   const files = walkFiles(rootDir)
     .filter(isTopologyCandidate)
-    .filter((relativePath) => matchesAnyPrefix(relativePath, scratchAllowlist) === false);
+    .filter((relativePath) => matchesAnyPrefix(relativePath, scratchAllowlist) === false)
+    .filter((relativePath) => matchesAnyPrefix(relativePath, excludedPrefixes) === false);
 
   if (!hasGitRepo(rootDir)) {
     failures.push('test-topology: root is not a git worktree, so ignored/untracked test files cannot be proven');

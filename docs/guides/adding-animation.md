@@ -28,15 +28,15 @@ export interface AnimationRef {
 
 ## Workflow
 
-1. Add or update a ref in `packages/content/src/animation-refs/{impact,projectile,self,aoe,status,utility}.ts`
-2. Fill in `durationMs`, `impactFrameMs`, and `recoveryMs`
+1. Add or update a ref in `packages/content/src/animation-refs/{impact,projectile,self,aoe,status,utility}.ts`.
+2. Fill in `durationMs`, `impactFrameMs`, and `recoveryMs`.
 3. Run:
 
 ```bash
 pnpm generate:indexes
 ```
 
-This regenerates `packages/content/src/animation-refs/index.ts`. Do not hand-edit the generated file.
+This regenerates both `packages/content/src/animation-refs/index.ts` and `apps/web/src/rendering/three/generated/index.ts`. Do not hand-edit either generated file.
 
 ## Beat Timing
 
@@ -46,260 +46,161 @@ The presenter beat model uses `impactFrameMs` to place damage numbers, hit-stop,
 
 - `packages/content/src/animation-refs/index.test.ts` checks timing fields and `suppressActorBump`
 - `tests/integration/animation-refs-generator.integration.test.ts` guards generator enforcement
+- `pnpm run check:three-animations` guards Three registry coverage against live content refs
 - Finish with `pnpm validate`
 
 ---
 
-## Three.js Rendering Layer (Optional WebGL Effects)
+## Three Renderer Workflow
 
-Animation IDs power two independent rendering backends in the web client: **Canvas** (always available) and **Three.js** (optional WebGL overlay).
+Animation IDs feed two renderers in the web client:
 
-### Architecture Overview
+1. **DungeonCanvas** - complete canvas fallback and baseline presentation
+2. **ThreeAnimationOverlay** - WebGL backend for handled animation modules, moving/bumping entity takeover, status pulses, combat labels, and defender-hit flashes
 
-```
-Animation Ref (Content)
-    ↓
-    ├─ Canvas Animation Module (apps/web/src/animations/modules/*)
-    │  └─ Draws on 2D canvas context
-    │
-└─ Three.js Effect Module (apps/web/src/rendering/three/effects/*)
-   └─ Transparent WebGL overlay above canvas
-```
+`apps/web/src/components/ThreeAnimationOverlay.tsx` is the production lazy wrapper. `apps/web/src/components/ThreeEffectsOverlay.tsx` and `apps/web/src/rendering/three/ThreeEffectsOverlay.tsx` are compatibility aliases only; do not add new behavior there.
 
-**Key principle:** The same `AnimationId` can have implementations in both renderers. The **presenter** emits `animationId` strings via `ConsumableAnimationEntry` and `FxAnimationEntry` in the game view. Each renderer implementation decides whether to process that ID.
+### One-owner rule
 
-### The Rendering Boundary
+- Canvas stays complete enough to render the feature when the renderer mode is `canvas` or WebGL creation fails.
+- Three only suppresses canvas output after the overlay reports ownership for that specific surface.
+- Status ring pulses and status scale, move/bump entity takeover, and combat labels follow the same rule: no dual rendering, no partial ownership.
 
-- **Canvas is mandatory** — `DungeonCanvas` is the primary map renderer and uses `animationId` to look up frame data or trigger 2D animations.
-- **Three.js is optional** — WebGL overlays are presentation-only, keyed by the same `AnimationId` values.
-- **Graceful degradation** — If Three.js setup fails or the feature flag is disabled, the game remains fully playable with canvas-only rendering.
+### Where Three modules live
 
-### When to Add a Canvas Animation Module
+Three modules live under:
 
-Add a canvas animation module (`apps/web/src/animations/modules/`) when:
-- The effect is **visual and foundational** to gameplay (hit effects, movement trails, status indicators)
-- You need **performance at scale** (many simultaneous animations)
-- The effect works in **web-native 2D canvas** (sprite frames, geometric shapes, text overlays)
-
-Example: a simple red flash on hit impact, a melee slash effect, floating damage numbers.
-
-### When to Add a Three.js Effect Module
-
-Add a Three.js effect module (`apps/web/src/rendering/three/effects/`) when:
-- The effect is **primarily visual enhancement** — it's nice to have, not required
-- You need **advanced rendering** (particle systems, 3D geometry, complex shaders, lighting effects)
-- The effect is **GPU-accelerated** (better performance than 2D for complex visuals)
-- You want to **preserve canvas performance** (offload heavy graphics to WebGL)
-
-Example: animated 3D particles for a spell, a glowing aura with shader effects, a lens flare overlay.
-
-### How to Add a Three.js Effect Module
-
-**Step 1: Define the animation ref** in `packages/content/src/animation-refs/`
-
-```typescript
-// packages/content/src/animation-refs/self.ts
-export const healingPulseRef = {
-  id: 'fx.self.healing-pulse' as const,
-  category: 'self',
-  durationMs: 600,
-  impactFrameMs: 300,
-  recoveryMs: 200,
-} satisfies AnimationRef;
+```text
+apps/web/src/rendering/three/modules/<category>/<name>.ts
 ```
 
-Then regenerate indexes:
-```bash
-pnpm generate:indexes
-```
+Supported categories mirror the content refs:
 
-**Step 2: Implement the Three.js effect module**
+- `impact`
+- `projectile`
+- `self`
+- `aoe`
+- `status`
+- `utility`
 
-Create a file at `apps/web/src/rendering/three/effects/{effect-name}-effect.ts`:
+The generated registry is sourced from `scripts/generators/three-animation-modules.ts`. Export a module constant typed as `ThreeAnimationModule`, then rerun `pnpm generate:indexes`. Do **not** hand-maintain legacy manual registry lists or manual metadata arrays.
+
+### When to add a Three module
+
+Add a Three module when the feature needs one of these:
+
+- persistent WebGL-owned presentation instead of canvas fallback-only rendering
+- source-to-target projectile travel or richer impact/aoe treatment
+- entity takeover during move/bump/status ownership
+- combat text or flash visuals that belong on the overlay layer
+
+If the player-visible behavior must survive renderer fallback, keep the canvas path correct too.
+
+### Module authoring contract
+
+Use `ThreeAnimationModule` from `apps/web/src/rendering/three/three-animation-types.ts`.
 
 ```typescript
 import * as THREE from 'three';
+import { animationRefs } from '@dungeon/content';
 import type {
-  ThreeEffectContext,
-  ThreeEffectModule,
-  ThreeEffectScreenPosition,
-} from '../three-effect-types.js';
+  ThreeAnimationContext,
+  ThreeAnimationModule,
+  ThreeAnimationPosition,
+} from '../three-animation-types.js';
 
-interface YourEffectInstance {
-  readonly scene: ThreeEffectContext['scene'];
-  readonly canvasHeight: number;
-  readonly group: THREE.Group;
+interface ExampleInstance {
+  readonly scene: ThreeAnimationContext['scene'];
   readonly mesh: THREE.Mesh;
-  readonly geometry: THREE.CircleGeometry;
+  readonly geometry: THREE.RingGeometry;
   readonly material: THREE.MeshBasicMaterial;
 }
 
-export const yourEffect: ThreeEffectModule<YourEffectInstance> = {
-  create(context: ThreeEffectContext) {
-    // Build the effect in tile-relative units, then scale the group into pixels.
-    const group = new THREE.Group();
-    const geometry = new THREE.CircleGeometry(0.45, 24);
-    const material = new THREE.MeshBasicMaterial({ transparent: true, opacity: 1 });
+export const exampleHealingPulse: ThreeAnimationModule<ExampleInstance> = {
+  id: animationRefs.self.healingPulse.id,
+  category: animationRefs.self.healingPulse.category,
+
+  create(context: ThreeAnimationContext): ExampleInstance {
+    const geometry = new THREE.RingGeometry(
+      context.tileSize * 0.25,
+      context.tileSize * 0.45,
+      24,
+    );
+    const material = new THREE.MeshBasicMaterial({
+      color: 0x44ff88,
+      transparent: true,
+      opacity: 0.9,
+      depthWrite: false,
+    });
     const mesh = new THREE.Mesh(geometry, material);
-    mesh.scale.setScalar(0.2);
-    group.add(mesh);
-    group.scale.setScalar(context.tileSize);
-    context.scene.add(group);
-
-    return {
-      scene: context.scene,
-      canvasHeight: context.canvasHeight,
-      group,
-      mesh,
-      geometry,
-      material,
-    };
+    context.scene.add(mesh);
+    return { scene: context.scene, mesh, geometry, material };
   },
 
-  setPosition(effect, position: ThreeEffectScreenPosition): void {
-    // Overlay pixels use a top-left origin, but the Three scene uses a flipped Y axis.
-    effect.group.position.set(position.x, effect.canvasHeight - position.y, position.z);
+  setPosition(instance: ExampleInstance, position: ThreeAnimationPosition): void {
+    instance.mesh.position.set(position.x, position.y, position.z);
   },
 
-  update(effect, progress: number): void {
-    // progress: 0.0 (start) to 1.0 (end)
-    effect.mesh.scale.setScalar(0.2 + progress * 0.8);
-    effect.material.opacity = 1 - progress;
+  update(instance: ExampleInstance, progress: number): void {
+    instance.mesh.scale.setScalar(0.6 + progress * 0.6);
+    instance.material.opacity = 1 - progress * 0.85;
   },
 
-  dispose(effect): void {
-    effect.scene.remove(effect.group);
-    effect.geometry.dispose();
-    effect.material.dispose();
+  dispose(instance: ExampleInstance): void {
+    instance.scene.remove(instance.mesh);
+    instance.geometry.dispose();
+    instance.material.dispose();
   },
 };
 ```
 
-**Step 3: Register the module and add its handled animation ID metadata**
+### Position contract
 
-Edit `apps/web/src/rendering/three/effects/index.ts`:
+- `setPosition()` receives overlay pixel coordinates that are already transformed by `ThreeAnimationOverlay`.
+- **Do not flip Y inside the module.** The overlay owns the single Y-axis conversion point.
+- Projectile-capable modules can read `position.source` and `position.target` to interpolate travel from actor to defender.
+- Size geometry with `context.tileSize`; do not hardcode pixel literals in modules.
 
-```typescript
-import { register } from '../three-effect-registry.js';
-import { animationRefs } from '@dungeon/content';
-import { yourEffect } from './your-effect-effect.js';
+### Registry and metadata
 
-const YOUR_EFFECT_ID = animationRefs.self.healingPulse.id;
+After you add a module:
 
-register(YOUR_EFFECT_ID, yourEffect);
-```
+1. rerun `pnpm generate:indexes`
+2. confirm `apps/web/src/rendering/three/generated/index.ts` registers the module
+3. do **not** edit `apps/web/src/rendering/three-effect-metadata.ts` by hand - built-in handled IDs are derived from the generated registry
 
-Then add the ID to `apps/web/src/rendering/three-effect-metadata.ts`:
+### Required proofs
 
-```typescript
-import { animationRefs, type AnimationId } from '@dungeon/content';
+1. **Unit/module contract** - call `runThreeAnimationContract()` from `apps/web/src/rendering/three/testing/run-three-animation-contract.ts`
+2. **Registry parity** - keep `apps/web/src/rendering/three/three-effects.contract.test.ts` green
+3. **Coverage guardrail** - keep `pnpm run check:three-animations` green so every content `AnimationId` has a matching Three module
+4. **Component ownership** - add or update `apps/web/src/rendering/three/ThreeAnimationOverlay.test.tsx` or `apps/web/src/components/DungeonPhase.test.tsx`
+5. **Browser proof** - extend `tests/e2e/three-animation-backend.spec.ts` so Playwright samples `data-testid="three-animation-overlay"` with `gl.readPixels()`
 
-const YOUR_EFFECT_ID = animationRefs.self.healingPulse.id;
+The browser proof is where we verify category ownership end to end: movement, bump/attack, projectile, impact, aoe, self/consumable, status pulse, combat label, defender-hit flash, pointer safety, forced WebGL failure fallback, and the negative proof that the 2D dungeon canvas cannot satisfy the WebGL assertion.
 
-export const BUILT_IN_THREE_EFFECT_IDS = [
-  YOUR_EFFECT_ID,
-] as const satisfies readonly AnimationId[];
-```
+### Docs example compile fixture
 
-**Step 4: Add contract test coverage** (MANDATORY)
+`apps/web/src/rendering/three/testing/three-animation-docs.fixture.ts` mirrors the public module example in this guide. Keep it type-correct when updating the docs so `pnpm run check:fast` catches drift.
 
-The contract test `apps/web/src/rendering/three/three-effects.contract.test.ts` automatically validates all IDs in `BUILT_IN_THREE_EFFECT_IDS` against live content and guards metadata/registration parity. When you add a new ID, the test will fail until that ref exists in `@dungeon/content` and the built-in Three registrations stay in sync.
+### Renderer mode
 
-If you need custom validation (e.g., checking that an ability actually uses your effect), add it to that contract test file.
-
-### Testing Three.js Effects
-
-**Unit tests:** Use **local fixture IDs**, not live content imports.
-
-Three effect modules receive **pixel-space overlay positions** via `setPosition()`. Use `tileSize` to size meshes, not to place them. The stock healing pulse stores `canvasHeight` on the instance and flips `y` with `canvasHeight - position.y` because overlay pixel coordinates start at the top-left while the Three scene uses the orthographic camera's flipped Y axis.
-
-```typescript
-import * as THREE from 'three';
-import { describe, it, expect } from 'vitest';
-import { yourEffect } from './your-effect-effect.js';
-
-describe('yourEffect', () => {
-  it('creates a mesh on initialization', () => {
-    const scene = new THREE.Scene();
-    const effect = yourEffect.create({
-      renderer: {} as never,
-      scene,
-      camera: {} as never,
-      canvasWidth: 720,
-      canvasHeight: 528,
-      vpLeft: 0,
-      vpTop: 0,
-      tileSize: 24,
-    });
-    expect(effect.group).toBeDefined();
-    expect(scene.children).toContain(effect.group);
-  });
-
-  it('updates opacity during progress', () => {
-    const effect = yourEffect.create({
-      renderer: {} as never,
-      scene: new THREE.Scene(),
-      camera: {} as never,
-      canvasWidth: 720,
-      canvasHeight: 528,
-      vpLeft: 0,
-      vpTop: 0,
-      tileSize: 24,
-    });
-    yourEffect.update(effect, 0);
-    expect(effect.material.opacity).toBe(1);
-    yourEffect.update(effect, 1);
-    expect(effect.material.opacity).toBe(0);
-  });
-
-  it('positions in overlay pixel space', () => {
-    const effect = yourEffect.create({
-      renderer: {} as never,
-      scene: new THREE.Scene(),
-      camera: {} as never,
-      canvasWidth: 720,
-      canvasHeight: 528,
-      vpLeft: 0,
-      vpTop: 0,
-      tileSize: 24,
-    });
-
-    yourEffect.setPosition(effect, { x: 120, y: 168, z: 0 });
-    expect(effect.group.position.x).toBe(120);
-    expect(effect.group.position.y).toBe(528 - 168);
-  });
-});
-```
-
-**Contract tests:** Validate against live content (this is the one place where importing `@dungeon/content` is correct).
-
-Three effect modules are still just renderer implementations. Content keeps declaring animation refs, presenter emits `animationId`s, and the web layer decides whether canvas or the lazy Three overlay renders a handled ID.
-
-See `apps/web/src/rendering/three/three-effects.contract.test.ts` — it automatically validates all registered IDs and built-in registration parity.
-
-### Feature Flag: VITE_THREE_EFFECTS
-
-The Three.js overlay is controlled by the `VITE_THREE_EFFECTS` environment variable:
+The source of truth is `getAnimationRendererMode()` in `apps/web/src/config/feature-flags.ts`:
 
 ```bash
-# Enable Three.js effects
-VITE_THREE_EFFECTS=true pnpm dev:web
-
-# Disable Three.js effects (canvas only)
-VITE_THREE_EFFECTS=false pnpm dev:web
+VITE_ANIMATION_RENDERER_MODE=three pnpm dev:web
+VITE_ANIMATION_RENDERER_MODE=canvas pnpm dev:web
 ```
 
-**Why this matters:**
-- In CI/test environments, Three.js may not initialize (headless, no WebGL context).
-- Contributors on low-end machines can disable it for better performance.
-- The game is **always fully playable** — Three.js is a visual enhancement, not a requirement.
+- `canvas` is the default until the WebGL backend is explicitly enabled
+- `isThreeEffectsEnabledFlag()` is only a compatibility alias over renderer mode
+- if WebGL renderer creation fails at runtime, the overlay reports no ownership and canvas fallback stays active
 
-If WebGL setup fails at runtime, the app gracefully skips effect registration and continues with canvas-only rendering.
+### Why the split exists
 
-### Why Separate Animations and Renderers?
+This separation keeps responsibilities clean:
 
-This separation achieves three goals:
-
-1. **Presenter ignorance** — The game engine and presenter never know about Three.js. They only emit `animationId` strings.
-2. **Rendering flexibility** — Canvas animation modules can be lightweight sprites; Three.js modules can be heavy 3D effects. Each renderer picks what it can handle.
-3. **Progressive enhancement** — Add Three.js effects without breaking canvas-only setups or affecting game logic.
+1. **Content** declares IDs and timing
+2. **Presenter** emits display-ready animation entries
+3. **Web canvas** remains the safe fallback path
+4. **WebGL overlay** adds richer visuals without changing game logic

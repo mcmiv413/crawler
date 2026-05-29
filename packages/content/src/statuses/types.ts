@@ -1,4 +1,5 @@
 import type { StatusId } from '@dungeon/contracts';
+import type { AnimationId } from '../animation-refs/types.js';
 
 export interface StatusDefinition {
   readonly id: StatusId;
@@ -10,5 +11,5 @@ export interface StatusDefinition {
   readonly tickMagnitudeKey: string;
   readonly modifiesStat: string | null;
   readonly statMultiplierKey: string | null;
-  readonly overlay?: { readonly id: string };
+  readonly overlay?: { readonly id: AnimationId };
 }

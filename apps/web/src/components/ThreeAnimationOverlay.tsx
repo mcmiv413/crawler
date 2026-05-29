@@ -5,7 +5,7 @@
  * The inner ThreeAnimationOverlay is only loaded when:
  *   - isEnabled is true
  *   - a map is present
- *   - at least one active animation exists (consumable or fx)
+ *   - at least one active Three-owned visual exists
  *
  * Import-boundary guardrail: this file must never directly import from
  * apps/web/src/rendering/three/ThreeAnimationOverlay.tsx.
@@ -16,13 +16,23 @@ import React from 'react';
 import type { ThreeAnimationOverlayProps } from '../rendering/three/ThreeAnimationOverlay.js';
 
 const LazyThreeAnimationOverlay = React.lazy(async () => {
-  const module = await import('../rendering/three/ThreeAnimationOverlay.js');
+  const [{ initializeThreeAnimationModules }, module] = await Promise.all([
+    import('../rendering/three/generated/index.js'),
+    import('../rendering/three/ThreeAnimationOverlay.js'),
+  ]);
+  initializeThreeAnimationModules();
   return { default: module.ThreeAnimationOverlay };
 });
 
 export function ThreeAnimationOverlay(props: ThreeAnimationOverlayProps): React.ReactElement | null {
   const hasAnimations =
-    props.consumableAnimations.length > 0 || props.fxAnimations.length > 0;
+    (props.moveAnimations?.length ?? 0) > 0
+    || (props.bumpAnimations?.length ?? 0) > 0
+    || props.consumableAnimations.length > 0
+    || props.fxAnimations.length > 0
+    || props.statusPresentations.some((presentation) => presentation.animationId !== undefined)
+    || (props.defenderHits?.size ?? 0) > 0
+    || props.combatIndicators.length > 0;
 
   const shouldLoad = props.isEnabled && props.map != null && hasAnimations;
 

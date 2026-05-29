@@ -13,6 +13,7 @@
 import { describe, it, expect, vi, beforeEach } from 'vitest';
 import {
   createEntitySprite,
+  drawEntityInstanceColorMarker,
   setEntitySpritePosition,
   setEntitySpriteMovementOffset,
   disposeEntitySprite,
@@ -210,5 +211,30 @@ describe('visibility contract', () => {
     // Illustrates why modules must multiply by tileSize, not use raw 0.4
     const subPixelSize = 0.4;
     expect(subPixelSize).toBeLessThan(1); // would be invisible without tileSize multiply
+  });
+});
+
+describe('drawEntityInstanceColorMarker', () => {
+  it('draws the same backdrop and color swatch used by the canvas renderer', () => {
+    const ctx = {
+      fillStyle: '',
+      fillRect: vi.fn(),
+    };
+
+    drawEntityInstanceColorMarker(ctx, 24, '#ff00ff');
+
+    expect(ctx.fillRect).toHaveBeenNthCalledWith(1, 19, 0, 5, 6);
+    expect(ctx.fillRect).toHaveBeenNthCalledWith(2, 20, 1, 3, 4);
+  });
+
+  it('does nothing when instanceColor is absent', () => {
+    const ctx = {
+      fillStyle: '',
+      fillRect: vi.fn(),
+    };
+
+    drawEntityInstanceColorMarker(ctx, 24);
+
+    expect(ctx.fillRect).not.toHaveBeenCalled();
   });
 });

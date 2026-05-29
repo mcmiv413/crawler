@@ -29,7 +29,7 @@ export const cinderWake: ThreeAnimationModule<Instance> = {
     ];
 
     for (const [x, y] of offsets) {
-      const geometry = new THREE.CircleGeometry(tileSize * 0.15, 8);
+      const geometry = new THREE.CircleGeometry(tileSize * 0.25, 8);
       const material = new THREE.MeshBasicMaterial({
         color: 0xff6600,
         transparent: true,

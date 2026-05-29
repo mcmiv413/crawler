@@ -235,6 +235,8 @@ export interface StatusView {
 
 export interface StatusPresentationView {
   readonly entityScale?: number;
+  /** Catalog-driven status animation module ID, when the status definition declares one. */
+  readonly animationId?: string;
   readonly ring?: {
     readonly colorRgb: string;
     readonly alphaBase: number;

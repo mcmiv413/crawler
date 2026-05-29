@@ -35,6 +35,16 @@ export interface ThreeEffectScreenPosition {
   readonly y: number;
   /** Screen-space z position for layering within the Three scene */
   readonly z: number;
+  /** Optional projectile/source origin in overlay pixels. */
+  readonly source?: {
+    readonly x: number;
+    readonly y: number;
+  };
+  /** Optional projectile/destination target in overlay pixels. */
+  readonly target?: {
+    readonly x: number;
+    readonly y: number;
+  };
 }
 
 export interface ThreeEffectModule<TInstance = unknown> {

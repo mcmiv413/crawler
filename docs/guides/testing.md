@@ -72,6 +72,18 @@ This split is intentional: each script is cheap, deterministic, and points at a 
 - update docs paths to real files or explicitly declared new files
 - import configured constants from their owner module
 
+## Three Animation Proof Stack
+
+Use the matching proof layer for Three renderer work instead of relying on one broad smoke test:
+
+1. **Docs compile fixture** - `apps/web/src/rendering/three/testing/three-animation-docs.fixture.ts` keeps the public module example type-checked.
+2. **Module contract** - `apps/web/src/rendering/three/testing/run-three-animation-contract.ts` enforces visible geometry and disposal for individual `ThreeAnimationModule`s.
+3. **Registry coverage** - `pnpm run check:three-animations` proves every live content `AnimationId` has a matching Three module registration and no unknown IDs are registered.
+4. **Component ownership** - `apps/web/src/rendering/three/ThreeAnimationOverlay.test.tsx` and `apps/web/src/components/DungeonPhase.test.tsx` verify lazy loading, ownership reporting, and fallback suppression.
+5. **Browser proof** - `tests/e2e/three-animation-backend.spec.ts` samples `data-testid="three-animation-overlay"` with `gl.readPixels()` and proves movement, bump/attack, projectile, impact, aoe, self/consumable, status pulse, combat label, defender-hit flash, pointer safety, forced WebGL failure fallback, and the negative canvas-only assertion.
+
+Do not treat a canvas-only screenshot or DOM-presence check as sufficient evidence for the WebGL backend. The browser proof must exercise the overlay canvas itself.
+
 ## Presenter/Web Hotspot Seams
 
 When a regression sits between `game-core`, `presenter`, and `apps/web`, extend the existing hotspot proof homes before reaching for new browser flows:
