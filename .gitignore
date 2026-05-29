@@ -63,17 +63,11 @@ scripts/sync-*.mjs
 # Experimental test files
 !tests/contracts/
 tests/contracts/*
-!tests/contracts/ability-contracts.contract.test.ts
+!tests/contracts/*.contract.test.ts
 !tests/integration/
 tests/integration/*
-!tests/integration/ability-contracts.integration.test.ts
-!tests/integration/eslint-plugin-dungeon.integration.test.ts
-!tests/integration/workspace-wiring.integration.test.ts
-!tests/integration/package-exports.integration.test.ts
-!tests/integration/tracked-artifacts.integration.test.ts
+!tests/integration/*.integration.test.ts
 
 # GitHub skills (experimental)
 .github/skills/
 .agents/skills/
-
-!tests/integration/repo-skills.integration.test.ts

@@ -37,6 +37,7 @@ Do NOT summarize. Do NOT praise. Only surface issues that matter.
 - **Use the audit helper as topology triage, not final proof.** `pnpm exec tsx scripts/audit-tests.ts` should surface `unit`, `property`, `contract`, `integration`, `balance`, and `e2e`; if a documented layer is missing or collapsed, that mismatch is itself a finding.
 - **Humannotes are structured leads.** Search for `HUMANNOTE`, `TODO`, `FIXME`, and `XXX`; classify each as `confirmed`, `stale/resolved`, or `INSUFFICIENT EVIDENCE`. For confirmed notes, search nearby code and sibling packages for the same pattern.
 - **Runner truth beats audit metadata.** If an audit script says a test is included, verify that the configured runner actually lists or executes it. A mismatch between classification and runner behavior is a finding.
+- **Guardrails need negative controls.** `pnpm run check:audit-guardrails` is the merge-blocking home for deterministic topology, mocked-subject, optional import, reference-literal, docs-path, and centralized-literal checks. When adding a guardrail, include a known-bad fixture and the command that proves it fails.
 
 ## CLI PATHS
 

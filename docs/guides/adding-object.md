@@ -61,7 +61,7 @@ export const myObject: ObjectTemplate = {
 
 If you're using a custom effect type:
 
-1. Add handler in `packages/game-core/src/systems/object-interactions.ts`
+1. Add or extend interaction handling in `packages/game-core/src/engine/handlers/movement.ts`
 2. Add event type in `packages/game-contracts/src/events/index.ts`
 3. Add event formatter in `packages/presenter/src/event-formatter.ts`
 
@@ -72,6 +72,6 @@ If you're using a custom effect type:
 | Purpose | File |
 |---------|------|
 | Definitions | `packages/content/src/objects/` (individual files) |
-| Interaction logic | `packages/game-core/src/systems/object-interactions.ts` |
-| Spawning | `packages/game-core/src/systems/dungeon-generation.ts` |
-| Tests | `packages/game-core/src/systems/object-interactions.test.ts` |
+| Interaction logic | `packages/game-core/src/engine/handlers/movement.ts` |
+| Spawning | `packages/game-core/src/generation/floor-populator.ts` |
+| Tests | `packages/game-core/src/engine/handlers/movement.test.ts` |

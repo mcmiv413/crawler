@@ -10,6 +10,12 @@ export const VP_WIDTH = 30;
 /** Dungeon viewport height in tiles. Increase for a taller visible area. */
 export const VP_HEIGHT = 22;
 
+/** Minimum responsive dungeon viewport width in tiles. */
+export const MIN_VIEWPORT_TILES_WIDTH = 15;
+
+/** Minimum responsive dungeon viewport height in tiles. */
+export const MIN_VIEWPORT_TILES_HEIGHT = 12;
+
 /** Computed pixel width of the dungeon canvas. */
 export const VIEWPORT_PX_WIDTH = VP_WIDTH * CELL_SIZE;  // 780
 

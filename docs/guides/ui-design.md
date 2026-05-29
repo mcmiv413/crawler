@@ -130,12 +130,126 @@ tile size, viewport, panel widths, breakpoints, touch targets.
 
 ---
 
-## What Not To Do
+## Dungeon Overlay Rules (WebGL Layer)
 
-- ❌ Emoji as icons (use sprites)
-- ❌ New hex values outside token set
-- ❌ `border-radius` > 2px
-- ❌ Drop shadows/gradients/glow on UI panels
-- ❌ Two primary buttons in one panel
-- ❌ Fixed heights on scrollable lists
-- ❌ `fontFamily: 'monospace'` directly
+The dungeon renderer has two layers:
+
+1. **DungeonCanvas** (primary) — 2D HTML5 canvas with tileset and game state visualization
+2. **ThreeOverlay** (optional) — Transparent WebGL layer above the canvas for advanced visual effects
+
+### Layer Composition
+
+```
+┌─────────────────────────────┐
+│ UI Panels (DOM)             │  ← Always interactive
+│ Stats, Inventory, Log, etc. │
+├─────────────────────────────┤
+│ Three.js WebGL Overlay      │  ← Transparent, pointer-events: none
+│ (particle effects, auras)   │
+├─────────────────────────────┤
+│ DungeonCanvas (2D)          │  ← Primary map renderer
+│ (tiles, actors, items)      │
+└─────────────────────────────┘
+```
+
+### Overlay Styling Rules
+
+**The Three.js overlay must never block user interaction:**
+
+```css
+/* apps/web/src/rendering/three/ThreeOverlay.tsx */
+<canvas style={{ pointerEvents: 'none' }} />
+```
+
+**Why `pointer-events: none`:**
+- Canvas interactions (clicking tiles, moving, targeting) happen on the underlying `DungeonCanvas`
+- The overlay is pure presentation — it should never capture clicks or hover states
+- If it did, players would miss tiles and abilities would misfire
+
+### Tile Sizing (Centralized)
+
+Both renderers share the same tile size:
+
+```typescript
+import { CELL_SIZE } from '../config/ui-config.ts';
+
+// CELL_SIZE = 24px (default)
+// Use this constant everywhere — never hardcode 24, 32, 48, etc.
+```
+
+DawnLike sprites (16×16) are scaled by the renderer to fit `CELL_SIZE`. When you adjust `CELL_SIZE` in the config, both canvas and WebGL automatically rescale.
+
+### UI Panels Must Never Depend on WebGL
+
+- **Inventory panel** — DOM only, uses sprite system, zero WebGL dependency
+- **Combat log** — DOM only, text-based, CSS colors
+- **Character stats** — DOM only, color tokens and text
+- **Ability UI** — DOM only, sprite icons and labels
+
+If your UI feature **needs WebGL to work**, it's not a feature — it's a bug. UI panels must be fully functional on canvas-only setups (when `VITE_THREE_EFFECTS=false` or WebGL init fails).
+
+### Feature Flag: VITE_THREE_EFFECTS
+
+The overlay is controlled by an environment variable:
+
+```bash
+# Build with overlay enabled (default in dev)
+VITE_THREE_EFFECTS=true pnpm dev:web
+
+# Build with overlay disabled
+VITE_THREE_EFFECTS=false pnpm dev:web
+```
+
+**What happens when disabled:**
+- Three.js overlay code is tree-shaken from the bundle
+- All game features still work (canvas rendering is complete)
+- Animation refs still exist; registered Three effects are simply never instantiated
+- No performance penalty — the overlay doesn't initialize
+
+**What happens if WebGL setup fails at runtime:**
+- Effect registration is skipped
+- Canvas continues rendering normally
+- Game is fully playable
+- Check browser console for WebGL context errors (usually GPU driver issues)
+
+### Why Three.js is Optional
+
+Three.js effects are **visual enhancement**, not **game mechanic**:
+
+- **Canvas animations** handle all required visual feedback (damage numbers, hit flashes, status effects)
+- **Three.js effects** add polish (particle trails, glow effects, advanced shaders)
+- **The game never depends on them** — if Three.js breaks, the game still works
+
+This design choice enables:
+- **Shipping to low-end devices** — customers can disable the overlay
+- **Faster CI builds** — testing doesn't require WebGL context
+- **Cleaner architecture** — rendering concerns don't leak into game logic
+
+### Adding Overlay Content
+
+If you're adding a visual effect:
+
+1. **Decide the renderer:**
+   - **Canvas:** Simple, foundational, always visible (damage numbers, hit flash, actor bumps)
+   - **Three.js:** Advanced, polished, optional (particle systems, complex shaders, 3D geometry)
+
+2. **Declare the animation ref** in `packages/content/src/animation-refs/`
+
+3. **Implement the renderer module** in your chosen directory:
+   - Canvas: `apps/web/src/animations/modules/`
+   - Three.js: `apps/web/src/rendering/three/effects/`
+
+4. **Register with the same AnimationId** — both implementations use the presenter's emitted `animationId`
+
+See [docs/guides/adding-animation.md](adding-animation.md) for complete workflow and examples.
+
+### Layout Impact
+
+The overlay does **not** affect layout:
+
+- Panels are positioned relative to the viewport, not the canvas
+- The overlay is absolutely positioned above the canvas
+- Resizing the canvas doesn't move panels or tabs
+- Touch targets and clickable areas remain unchanged
+
+In CSS terms: the overlay is `position: absolute` with `pointer-events: none`. It's a visual layer with zero layout involvement.

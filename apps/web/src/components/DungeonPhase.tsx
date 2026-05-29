@@ -1,15 +1,18 @@
-import React, { useEffect, useMemo, useRef, useState } from 'react';
+import React, { useEffect, useRef, useState } from 'react';
 import type { GameView } from '@dungeon/presenter';
-import { VP_WIDTH, VP_HEIGHT, CELL_SIZE } from '../config/ui-config.js';
 import {
+  CELL_SIZE,
   COMBAT_INDICATOR_FADEOUT_MS,
   COMBAT_LOG_MINI_FONT_SIZE,
   COMBAT_LOG_MINI_LINE_HEIGHT,
   COMBAT_LOG_MINI_ENTRIES,
+  MIN_VIEWPORT_TILES_HEIGHT,
+  MIN_VIEWPORT_TILES_WIDTH,
 } from '../config/ui-config.js';
 import { PlayerHud } from './PlayerHud.js';
 import { DungeonView } from './DungeonView.js';
 import { DungeonCanvas } from './DungeonCanvas.js';
+import { ThreeEffectsOverlay } from './ThreeEffectsOverlay.js';
 import { DebugPanel } from './DebugPanel.js';
 import { UnifiedActionPanel } from './UnifiedActionPanel.js';
 import { InspectModal } from './InspectModal.js';
@@ -18,6 +21,8 @@ import { useBreakpoint } from '../hooks/useBreakpoint.js';
 import { CombatIndicators } from './CombatIndicators.js';
 import { BumpAnimations } from './BumpAnimations.js';
 import { useAnimationOrchestrator } from '../hooks/useAnimationOrchestrator.js';
+import { useDungeonRenderState } from '../hooks/useDungeonRenderState.js';
+import { isThreeEffectsEnabledFlag } from '../config/feature-flags.js';
 import { filterCombatLogForDisplay } from './combat-log-filter.js';
 import { logEntryColor } from '../styles.js';
 
@@ -99,9 +104,9 @@ function MapDisplay({
   map: GameView['map'];
   useSprites: boolean;
 }) {
-  const [vpTilesWidth, setVpTilesWidth] = useState(VP_WIDTH);
-  const [vpTilesHeight, setVpTilesHeight] = useState(VP_HEIGHT);
-  const displayContainerRef = React.useRef<HTMLDivElement>(null);
+  const [vpTilesWidth, setVpTilesWidth] = useState(MIN_VIEWPORT_TILES_WIDTH);
+  const [vpTilesHeight, setVpTilesHeight] = useState(MIN_VIEWPORT_TILES_HEIGHT);
+  const displayContainerRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
     const calculateViewport = () => {
@@ -112,8 +117,10 @@ function MapDisplay({
       const availableWidth = container.offsetWidth;
       const availableHeight = container.offsetHeight;
 
-      setVpTilesWidth(Math.max(15, Math.floor(availableWidth / cellSize)));
-      setVpTilesHeight(Math.max(12, Math.floor(availableHeight / cellSize)));
+      const newW = Math.max(MIN_VIEWPORT_TILES_WIDTH, Math.floor(availableWidth / cellSize));
+      const newH = Math.max(MIN_VIEWPORT_TILES_HEIGHT, Math.floor(availableHeight / cellSize));
+      setVpTilesWidth((prev) => (prev === newW ? prev : newW));
+      setVpTilesHeight((prev) => (prev === newH ? prev : newH));
     };
 
     calculateViewport();
@@ -129,16 +136,11 @@ function MapDisplay({
     };
   }, []);
 
-  const { vpLeft, vpTop } = useMemo(() => {
-    if (map === null) return { vpLeft: 0, vpTop: 0 };
-
-    const minX = Math.min(...map.cells.map((cell) => cell.x));
-    const minY = Math.min(...map.cells.map((cell) => cell.y));
-    return {
-      vpLeft: Math.max(minX, map.playerPosition.x - Math.floor(vpTilesWidth / 2)),
-      vpTop: Math.max(minY, map.playerPosition.y - Math.floor(vpTilesHeight / 2)),
-    };
-  }, [map, vpTilesHeight, vpTilesWidth]);
+  // map can be null at the top level; guard before calling hook (hooks must not be conditional)
+  // We call the hook with a stable fallback so hooks are always called in the same order.
+  const safeMap = map ?? { cells: [], playerPosition: { x: 0, y: 0 }, entities: [], width: 0, height: 0, biomeId: '', dangerLevel: 'safe' as const };
+  const renderState = useDungeonRenderState(safeMap, vpTilesWidth, vpTilesHeight);
+  const threeEnabled = isThreeEffectsEnabledFlag();
 
   if (map === null) return null;
 
@@ -164,12 +166,43 @@ function MapDisplay({
     >
       <div style={{ width: canvasPxWidth, height: canvasPxHeight, position: 'relative' }}>
         {useSprites
-          ? <DungeonCanvas map={map} vpTilesWidth={vpTilesWidth} vpTilesHeight={vpTilesHeight} />
+          ? (
+            <DungeonCanvas
+              map={map}
+              vpTilesWidth={vpTilesWidth}
+              vpTilesHeight={vpTilesHeight}
+              bumpAnimations={renderState.bumpAnimations}
+              moveAnimations={renderState.moveAnimations}
+              consumableAnimations={renderState.consumableAnimations}
+              fxAnimations={renderState.fxAnimations}
+              statusPresentations={renderState.statusPresentations}
+              vpLeft={renderState.vpLeft}
+              vpTop={renderState.vpTop}
+              cameraOffset={renderState.cameraOffset}
+            />
+          )
           : <DungeonView map={map} vpTilesWidth={vpTilesWidth} vpTilesHeight={vpTilesHeight} />}
+        {useSprites && threeEnabled && (
+          <ThreeEffectsOverlay
+            map={map}
+            isEnabled={threeEnabled}
+            vpTilesWidth={vpTilesWidth}
+            vpTilesHeight={vpTilesHeight}
+            bumpAnimations={renderState.bumpAnimations}
+            moveAnimations={renderState.moveAnimations}
+            consumableAnimations={renderState.consumableAnimations}
+            fxAnimations={renderState.fxAnimations}
+            statusPresentations={renderState.statusPresentations}
+            vpLeft={renderState.vpLeft}
+            vpTop={renderState.vpTop}
+            cameraOffset={renderState.cameraOffset}
+            style={{ pointerEvents: 'none' }}
+          />
+        )}
         <BumpAnimations />
         <CombatIndicators
-          vpLeft={vpLeft}
-          vpTop={vpTop}
+          vpLeft={renderState.vpLeft}
+          vpTop={renderState.vpTop}
           cellSize={cellSize}
           fadeOutDuration={COMBAT_INDICATOR_FADEOUT_MS}
         />

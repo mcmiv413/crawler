@@ -283,6 +283,7 @@ export default tseslint.config(
       "@typescript-eslint/no-misused-promises": "error",
       "@typescript-eslint/require-await": "error",
       "@typescript-eslint/no-unnecessary-type-assertion": "error",
+      "dungeon/no-mocked-subject-call": "error",
       "dungeon/no-unsafe-test-contract-cast": "error",
       "vitest/no-focused-tests": "error",
       "vitest/no-disabled-tests": "error",

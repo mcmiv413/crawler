@@ -59,6 +59,7 @@ interface FxAnimationState {
 /** Player-level effects driven by active status conditions (not time-limited animations). */
 interface PlayerEffects {
   readonly statusPresentations?: readonly StatusPresentationView[];
+  readonly skipHandledAnimationIds?: readonly string[];
 }
 
 interface ResolvedPlayerEffects {
@@ -458,8 +459,10 @@ function drawConsumableEffects(
   animations: ConsumableAnimationState[],
   vpLeft: number,
   vpTop: number,
+  skipHandledAnimationIds?: readonly string[],
 ): void {
   for (const anim of animations) {
+    if (anim.animationId !== undefined && skipHandledAnimationIds?.includes(anim.animationId)) continue;
     if (anim.animationId !== undefined) {
       const module = resolveModule(anim.animationId as AnimationId);
       if (module !== undefined) {
@@ -632,7 +635,7 @@ export function renderMap(
   }
 
   // ── Consumable effects (drawn above the entity layer) ────────────
-  drawConsumableEffects(ctx, consumableAnimations, vpLeft, vpTop);
+  drawConsumableEffects(ctx, consumableAnimations, vpLeft, vpTop, playerEffects.skipHandledAnimationIds);
 
   // ── FX animations (drawn above consumable effects) ─────────────
   drawFxAnimations(ctx, fxAnimations, vpLeft, vpTop);

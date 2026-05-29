@@ -13,7 +13,12 @@ function writeFixture(rootDir: string, relativePath: string, source: string): st
   return absolutePath;
 }
 
-async function lintFixture(source: string) {
+async function lintFixture(
+  source: string,
+  rules: Record<string, string> = {
+    'dungeon/no-unsafe-test-contract-cast': 'error',
+  },
+) {
   const rootDir = mkdtempSync(join(tmpdir(), 'eslint-plugin-dungeon-'));
   tempDirs.push(rootDir);
   const filePath = writeFixture(rootDir, 'fixture.test.ts', source);
@@ -34,9 +39,7 @@ async function lintFixture(source: string) {
             sourceType: 'module',
           },
         },
-        rules: {
-          'dungeon/no-unsafe-test-contract-cast': 'error',
-        },
+        rules,
       },
     ],
   });
@@ -87,6 +90,58 @@ describe('eslint-plugin-dungeon', () => {
         'const error = {} as LocalShape;',
         'void error;',
       ].join('\n'),
+    );
+
+    expect(messages).toEqual([]);
+  });
+
+  it('flags direct calls to imports from a mocked module', async () => {
+    const messages = await lintFixture(
+      [
+        "import { describe, it, vi } from 'vitest';",
+        "import { runSubject } from './subject.js';",
+        "vi.mock('./subject.js', () => ({ runSubject: vi.fn() }));",
+        "describe('subject', () => {",
+        "  it('runs behavior', () => {",
+        "    runSubject();",
+        "  });",
+        "});",
+      ].join('\n'),
+      { 'dungeon/no-mocked-subject-call': 'error' },
+    );
+
+    expect(messages).toHaveLength(1);
+    expect(messages[0]?.ruleId).toBe('dungeon/no-mocked-subject-call');
+    expect(messages[0]?.message).toContain('runSubject');
+  });
+
+  it('flags mocked imports passed to behavior execution helpers', async () => {
+    const messages = await lintFixture(
+      [
+        "import { renderHook } from '@testing-library/react';",
+        "import { vi } from 'vitest';",
+        "import { useSubject } from './subject.js';",
+        "vi.mock('./subject.js', () => ({ useSubject: vi.fn() }));",
+        'renderHook(useSubject);',
+      ].join('\n'),
+      { 'dungeon/no-mocked-subject-call': 'error' },
+    );
+
+    expect(messages).toHaveLength(1);
+    expect(messages[0]?.ruleId).toBe('dungeon/no-mocked-subject-call');
+  });
+
+  it('allows executing a real subject while mocked dependencies are asserted', async () => {
+    const messages = await lintFixture(
+      [
+        "import { expect, vi } from 'vitest';",
+        "import { dependency } from './dependency.js';",
+        "import { runSubject } from './subject.js';",
+        "vi.mock('./dependency.js', () => ({ dependency: vi.fn() }));",
+        'runSubject();',
+        'expect(vi.mocked(dependency)).toHaveBeenCalled();',
+      ].join('\n'),
+      { 'dungeon/no-mocked-subject-call': 'error' },
     );
 
     expect(messages).toEqual([]);
