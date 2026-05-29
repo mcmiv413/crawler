@@ -34,6 +34,7 @@ export function createThreeRenderer(canvas: HTMLCanvasElement): ThreeRendererHan
       canvas,
       alpha: true,
       antialias: false,
+      preserveDrawingBuffer: true,
     });
     renderer.setClearColor(0x000000, 0);
 

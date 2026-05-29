@@ -17,7 +17,7 @@
 
 import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest';
 import React from 'react';
-import { render, screen } from '@testing-library/react';
+import { render, screen, waitFor } from '@testing-library/react';
 import type { GameView, AvailableAction, MapView } from '@dungeon/presenter';
 
 // ---------------------------------------------------------------------------
@@ -31,6 +31,7 @@ const {
   gameStoreSpy,
   dungeonRenderStateResult,
   threeEffectsEnabledFlag,
+  overlayLifecycleState,
 } = vi.hoisted(() => ({
   bumpAnimationState: {
     current: [] as Array<{ id: string; attackerId: string; defenderId: string; attackerPos: { x: number; y: number }; defenderPos: { x: number; y: number }; durationMs: number; impactFrameMs: number; startTime: number; progress: number }>,
@@ -39,10 +40,10 @@ const {
     current: [] as Array<{ id: string; entityId: string; fromPos: { x: number; y: number }; toPos: { x: number; y: number }; style: 'step'; progress: number; durationMs: number; startTime: number; fromOffsetPx: { x: number; y: number } }>,
   },
   consumableAnimationState: {
-    current: [] as Array<{ id: string; effect: string; playerPos: { x: number; y: number }; durationMs: number; startTime: number; progress: number }>,
+    current: [] as Array<{ id: string; effect: string; animationId?: string; playerPos: { x: number; y: number }; durationMs: number; startTime: number; progress: number }>,
   },
   fxAnimationState: {
-    current: [] as Array<{ id: string; abilityId: string; playerPos: { x: number; y: number }; durationMs: number; impactFrameMs: number; startTime: number; progress: number }>,
+    current: [] as Array<{ id: string; abilityId: string; animationId?: string; playerPos: { x: number; y: number }; durationMs: number; impactFrameMs: number; startTime: number; progress: number }>,
   },
   gameStoreSpy: {
     statuses: [] as Array<{ id: string; name: string; turnsRemaining: number; beneficial: boolean; presentation?: { entityScale?: number } }>,
@@ -62,6 +63,11 @@ const {
     },
   },
   threeEffectsEnabledFlag: { current: false },
+  overlayLifecycleState: {
+    enabled: false,
+    mountedIds: ['fx.self.healing-pulse'] as readonly string[],
+    cleanupIds: [] as readonly string[],
+  },
 }));
 
 // ---------------------------------------------------------------------------
@@ -183,23 +189,35 @@ vi.mock('./ThreeEffectsOverlay.js', () => ({
       vpTop: number;
       cameraOffset: { x: number; y: number };
       style?: React.CSSProperties;
-    }) => (
-      <div
-        data-testid="three-effects-overlay"
-        data-vp-tiles-width={props.vpTilesWidth}
-        data-vp-tiles-height={props.vpTilesHeight}
-        data-vp-left={props.vpLeft}
-        data-vp-top={props.vpTop}
-        data-camera-offset-x={props.cameraOffset.x}
-        data-camera-offset-y={props.cameraOffset.y}
-        data-bump-count={props.bumpAnimations.length}
-        data-move-count={props.moveAnimations.length}
-        data-consumable-count={props.consumableAnimations.length}
-        data-fx-count={props.fxAnimations.length}
-        data-status-count={props.statusPresentations.length}
-        style={props.style}
-      />
-    ),
+      onInitialized?: (handledAnimationIds: readonly string[]) => void;
+    }) => {
+      React.useEffect(() => {
+        if (!overlayLifecycleState.enabled || !props.onInitialized) {
+          return;
+        }
+
+        props.onInitialized(overlayLifecycleState.mountedIds);
+        return () => props.onInitialized?.(overlayLifecycleState.cleanupIds);
+      }, [props.onInitialized]);
+
+      return (
+        <div
+          data-testid="three-effects-overlay"
+          data-vp-tiles-width={props.vpTilesWidth}
+          data-vp-tiles-height={props.vpTilesHeight}
+          data-vp-left={props.vpLeft}
+          data-vp-top={props.vpTop}
+          data-camera-offset-x={props.cameraOffset.x}
+          data-camera-offset-y={props.cameraOffset.y}
+          data-bump-count={props.bumpAnimations.length}
+          data-move-count={props.moveAnimations.length}
+          data-consumable-count={props.consumableAnimations.length}
+          data-fx-count={props.fxAnimations.length}
+          data-status-count={props.statusPresentations.length}
+          style={props.style}
+        />
+      );
+    },
   ),
 }));
 
@@ -209,6 +227,7 @@ vi.mock('./ThreeEffectsOverlay.js', () => ({
 import { useBreakpoint } from '../hooks/useBreakpoint.js';
 import { useDungeonRenderState } from '../hooks/useDungeonRenderState.js';
 import { isThreeEffectsEnabledFlag } from '../config/feature-flags.js';
+import { renderMap } from '../sprites/canvas-renderer.js';
 import { ThreeEffectsOverlay } from './ThreeEffectsOverlay.js';
 import { DungeonPhase } from './DungeonPhase.js';
 
@@ -261,6 +280,9 @@ beforeEach(() => {
     writable: true,
     value: vi.fn(() => makeCtxStub()),
   });
+  overlayLifecycleState.enabled = false;
+  overlayLifecycleState.mountedIds = ['fx.self.healing-pulse'];
+  overlayLifecycleState.cleanupIds = [];
 });
 
 // ---------------------------------------------------------------------------
@@ -285,6 +307,37 @@ const BASE_MAP: MapView = {
   })),
   entities: [],
 };
+
+function makeHandledConsumableAnimation(
+  overrides?: Partial<(typeof consumableAnimationState.current)[number]>,
+) {
+  return {
+    id: 'consumable-0',
+    effect: 'heal',
+    animationId: 'fx.self.healing-pulse',
+    playerPos: { x: 5, y: 5 },
+    durationMs: 500,
+    startTime: 0,
+    progress: 0.1,
+    ...overrides,
+  };
+}
+
+function makeHandledFxAnimation(
+  overrides?: Partial<(typeof fxAnimationState.current)[number]>,
+) {
+  return {
+    id: 'fx-0',
+    abilityId: 'fireball',
+    animationId: 'fx.self.healing-pulse',
+    playerPos: { x: 5, y: 5 },
+    durationMs: 400,
+    impactFrameMs: 200,
+    startTime: 0,
+    progress: 0.2,
+    ...overrides,
+  };
+}
 
 function createMockGameView(overrides?: Partial<GameView>): GameView {
   return {
@@ -517,7 +570,7 @@ describe('DungeonPhase – Three flag ON', () => {
     threeEffectsEnabledFlag.current = true;
     bumpAnimationState.current = [];
     moveAnimationState.current = [];
-    consumableAnimationState.current = [];
+    consumableAnimationState.current = [makeHandledConsumableAnimation()];
     fxAnimationState.current = [];
     gameStoreSpy.statuses = [];
     dungeonRenderStateResult.current = null;
@@ -530,6 +583,17 @@ describe('DungeonPhase – Three flag ON', () => {
   it('renders ThreeEffectsOverlay when flag is enabled', () => {
     renderDungeonPhase({}, { useSprites: true });
     expect(screen.getByTestId('three-effects-overlay')).toBeInTheDocument();
+  });
+
+  it('does not render ThreeEffectsOverlay when only unhandled animations are active', () => {
+    consumableAnimationState.current = [
+      makeHandledConsumableAnimation({ animationId: 'fx.other.unhandled' }),
+    ];
+
+    renderDungeonPhase({}, { useSprites: true });
+
+    expect(screen.queryByTestId('three-effects-overlay')).not.toBeInTheDocument();
+    expect(vi.mocked(ThreeEffectsOverlay)).not.toHaveBeenCalled();
   });
 
   it('also renders DungeonCanvas alongside the overlay', () => {
@@ -581,7 +645,7 @@ describe('DungeonPhase – Three flag ON', () => {
     const overlay = screen.getByTestId('three-effects-overlay');
     expect(overlay).toHaveAttribute('data-bump-count', '1');
     expect(overlay).toHaveAttribute('data-move-count', '0');
-    expect(overlay).toHaveAttribute('data-consumable-count', '0');
+    expect(overlay).toHaveAttribute('data-consumable-count', '1');
     expect(overlay).toHaveAttribute('data-fx-count', '0');
   });
 
@@ -622,7 +686,7 @@ describe('ThreeEffectsOverlay – pointer-events: none', () => {
     threeEffectsEnabledFlag.current = true;
     bumpAnimationState.current = [];
     moveAnimationState.current = [];
-    consumableAnimationState.current = [];
+    consumableAnimationState.current = [makeHandledConsumableAnimation()];
     fxAnimationState.current = [];
     gameStoreSpy.statuses = [];
   });
@@ -701,10 +765,10 @@ describe('DungeonPhase – props flow and no duplication', () => {
       { id: 'move-0', entityId: 'p', fromPos: { x: 0, y: 0 }, toPos: { x: 1, y: 0 }, style: 'step', progress: 0.3, durationMs: 120, startTime: 0, fromOffsetPx: { x: 0, y: 0 } },
     ];
     consumableAnimationState.current = [
-      { id: 'consumable-0', effect: 'heal', playerPos: { x: 5, y: 5 }, durationMs: 500, startTime: 0, progress: 0.1 },
+      makeHandledConsumableAnimation(),
     ];
     fxAnimationState.current = [
-      { id: 'fx-0', abilityId: 'fireball', playerPos: { x: 5, y: 5 }, durationMs: 400, impactFrameMs: 200, startTime: 0, progress: 0.2 },
+      makeHandledFxAnimation(),
     ];
 
     renderDungeonPhase({}, { useSprites: true });
@@ -744,5 +808,72 @@ describe('DungeonPhase – props flow and no duplication', () => {
     expect(Number.isInteger(vpH)).toBe(true);
     expect(vpW).toBeGreaterThan(0);
     expect(vpH).toBeGreaterThan(0);
+  });
+});
+
+describe('DungeonPhase – overlay ownership and canvas fallback', () => {
+  beforeEach(() => {
+    vi.mocked(useBreakpoint).mockReturnValue({ isMobile: false });
+    vi.mocked(isThreeEffectsEnabledFlag).mockReturnValue(true);
+    threeEffectsEnabledFlag.current = true;
+    bumpAnimationState.current = [];
+    moveAnimationState.current = [];
+    consumableAnimationState.current = [makeHandledConsumableAnimation()];
+    fxAnimationState.current = [];
+    gameStoreSpy.statuses = [];
+    dungeonRenderStateResult.current = null;
+    overlayLifecycleState.enabled = true;
+    overlayLifecycleState.mountedIds = ['fx.self.healing-pulse'];
+    overlayLifecycleState.cleanupIds = [];
+  });
+
+  afterEach(() => {
+    vi.clearAllMocks();
+  });
+
+  it('forwards overlay-owned animation IDs to DungeonCanvas skipHandledAnimationIds', async () => {
+    renderDungeonPhase({}, { useSprites: true });
+
+    await waitFor(() => {
+      expect(vi.mocked(renderMap).mock.calls.at(-1)?.[12]).toEqual(['fx.self.healing-pulse']);
+    });
+  });
+
+  it('clears DungeonCanvas skipHandledAnimationIds when the overlay path tears down', async () => {
+    const view = createMockGameView();
+    const { rerender } = render(
+      <DungeonPhase
+        view={view}
+        combatLog={[]}
+        loading={false}
+        error={null}
+        sendCommand={vi.fn()}
+        useSprites={true}
+        setUseSprites={vi.fn()}
+      />,
+    );
+
+    await waitFor(() => {
+      expect(vi.mocked(renderMap).mock.calls.at(-1)?.[12]).toEqual(['fx.self.healing-pulse']);
+    });
+
+    vi.mocked(isThreeEffectsEnabledFlag).mockReturnValue(false);
+    threeEffectsEnabledFlag.current = false;
+
+    rerender(
+      <DungeonPhase
+        view={view}
+        combatLog={[]}
+        loading={false}
+        error={null}
+        sendCommand={vi.fn()}
+        useSprites={true}
+        setUseSprites={vi.fn()}
+      />,
+    );
+
+    await waitFor(() => {
+      expect(vi.mocked(renderMap).mock.calls.at(-1)?.[12]).toEqual([]);
+    });
   });
 });

@@ -1,40 +1,53 @@
 /**
  * Type contracts for the Three.js effect overlay system.
  *
- * These are intentionally loose (any) placeholders so that the coordinate
- * utilities and effect registry can be implemented and tested without pulling
- * in the full Three.js type tree.  Concrete implementations swap in the real
- * Three types at the call-site.
+ * These stay renderer-light so unit tests and registry code do not need to
+ * import the full Three.js type tree, while still preserving one shared
+ * contract for create/update/dispose and the overlay context shape.
  */
 
 export interface ThreeEffectContext {
-  /** WebGLRenderer instance (typed as any to avoid a hard Three.js import) */
-  renderer: any;
-  /** Three.Scene that effects are added to */
-  scene: any;
-  /** Three.OrthographicCamera used for the overlay */
-  camera: any;
+  /** WebGL renderer handle used by the overlay. */
+  readonly renderer: unknown;
+  /** Scene-like surface that effect instances attach to and detach from. */
+  readonly scene: {
+    add(object: unknown): void;
+    remove(object: unknown): void;
+  };
+  /** Overlay camera surface. */
+  readonly camera: unknown;
   /** Pixel width of the canvas/viewport */
-  canvasWidth: number;
+  readonly canvasWidth: number;
   /** Pixel height of the canvas/viewport */
-  canvasHeight: number;
+  readonly canvasHeight: number;
   /** Left edge of the visible viewport in tile coordinates */
-  vpLeft: number;
+  readonly vpLeft: number;
   /** Top edge of the visible viewport in tile coordinates */
-  vpTop: number;
+  readonly vpTop: number;
   /** Size of one tile in pixels (for coordinate conversions) */
-  tileSize: number;
+  readonly tileSize: number;
 }
 
-export interface ThreeEffectModule {
+export interface ThreeEffectScreenPosition {
+  /** Screen-space x position in overlay pixels */
+  readonly x: number;
+  /** Screen-space y position in overlay pixels */
+  readonly y: number;
+  /** Screen-space z position for layering within the Three scene */
+  readonly z: number;
+}
+
+export interface ThreeEffectModule<TInstance = unknown> {
   /** Create and return a new effect instance, attaching it to the scene */
-  create(context: ThreeEffectContext): any;
+  create(context: ThreeEffectContext): TInstance;
+  /** Move the effect instance to the requested overlay pixel position */
+  setPosition(effect: TInstance, position: ThreeEffectScreenPosition): void;
   /**
    * Advance the effect.
    * @param effect   The instance returned by create()
    * @param progress Normalised progress in [0, 1]
    */
-  update(effect: any, progress: number): void;
+  update(effect: TInstance, progress: number): void;
   /** Tear down the effect and release GPU resources */
-  dispose(effect: any): void;
+  dispose(effect: TInstance): void;
 }

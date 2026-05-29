@@ -1,30 +1,70 @@
-import React, { useEffect, useRef, useState } from 'react';
-import type { MapView, ConsumableAnimationEntry, AbilityAnimationEntry, StatusPresentationView } from '@dungeon/presenter';
+import React, { useEffect, useMemo, useRef, useState } from 'react';
+import type { AnimationId } from '@dungeon/content';
+import type { MapView } from '@dungeon/presenter';
 import { CELL_SIZE } from '../../config/ui-config.js';
+import type { DungeonRenderState } from '../../hooks/useDungeonRenderState.js';
 import { createThreeRenderer } from './three-renderer-factory.js';
 import { get as getEffectModule } from './three-effect-registry.js';
 import { tileCenterWorld, worldToScreen } from './three-coordinate-utils.js';
-// Import built-in effects to register them
+import { isBuiltInThreeEffectId } from '../three-effect-metadata.js';
+import type { ThreeEffectModule } from './three-effect-types.js';
 import './effects/index.js';
 
 type CreateRendererFn = typeof createThreeRenderer;
+type OverlayAnimation =
+  | DungeonRenderState['consumableAnimations'][number]
+  | DungeonRenderState['fxAnimations'][number];
+
+interface EffectEntry {
+  readonly animationId: AnimationId;
+  readonly instance: unknown;
+  readonly module: ThreeEffectModule;
+}
+
+interface ResolvedOverlayAnimation {
+  readonly key: string;
+  readonly animationId: AnimationId;
+  readonly module: ThreeEffectModule;
+  readonly playerPos: OverlayAnimation['playerPos'];
+  readonly progress: number;
+}
+
+interface FrameState {
+  readonly animations: readonly ResolvedOverlayAnimation[];
+  readonly vpLeft: number;
+  readonly vpTop: number;
+  readonly cameraOffset: { readonly x: number; readonly y: number };
+  readonly canvasWidth: number;
+  readonly canvasHeight: number;
+}
+
+const EMPTY_FRAME_STATE: FrameState = {
+  animations: [],
+  vpLeft: 0,
+  vpTop: 0,
+  cameraOffset: { x: 0, y: 0 },
+  canvasWidth: 0,
+  canvasHeight: 0,
+};
 
 export interface ThreeEffectsOverlayProps {
   map: MapView | null;
   isEnabled: boolean;
   vpTilesWidth: number;
   vpTilesHeight: number;
-  bumpAnimations?: readonly unknown[];
-  moveAnimations?: readonly unknown[];
-  consumableAnimations: readonly ConsumableAnimationEntry[];
-  fxAnimations: readonly AbilityAnimationEntry[];
-  statusPresentations: readonly StatusPresentationView[];
+  bumpAnimations?: DungeonRenderState['bumpAnimations'];
+  moveAnimations?: DungeonRenderState['moveAnimations'];
+  consumableAnimations: DungeonRenderState['consumableAnimations'];
+  fxAnimations: DungeonRenderState['fxAnimations'];
+  statusPresentations: DungeonRenderState['statusPresentations'];
   vpLeft: number;
   vpTop: number;
   cameraOffset: { readonly x: number; readonly y: number };
   style?: React.CSSProperties;
   /** Test seam: override the renderer factory to avoid real WebGL. */
   createRenderer?: CreateRendererFn;
+  /** Callback to report which animation IDs are handled by the overlay when init succeeds, or empty array on failure */
+  onInitialized?: (handledAnimationIds: readonly AnimationId[]) => void;
 }
 
 /**
@@ -50,37 +90,50 @@ export function ThreeEffectsOverlay(props: ThreeEffectsOverlayProps): React.Reac
     cameraOffset,
     style,
     createRenderer: createRendererProp,
+    onInitialized,
   } = props;
 
-  // Check if any animation has a registered Three.js handler
-  const hasHandledAnimation = [
-    ...consumableAnimations,
-    ...fxAnimations,
-  ].some((anim) => {
-    const animationId = (anim as any).animationId;
-    return animationId && getEffectModule(animationId) !== undefined;
-  });
-
-  const shouldRender = isEnabled && map != null && hasHandledAnimation;
-
+  const resolvedAnimations = useMemo(
+    () => resolveHandledOverlayAnimations(consumableAnimations, fxAnimations),
+    [consumableAnimations, fxAnimations],
+  );
+  const handledAnimationIds = useMemo(
+    () => getHandledAnimationIds(resolvedAnimations),
+    [resolvedAnimations],
+  );
+  const handledAnimationKey = handledAnimationIds.join('\0');
+  const shouldRender = isEnabled && map != null && handledAnimationIds.length > 0;
   const rendererRef = useRef<ReturnType<CreateRendererFn>>(null);
   const canvasRef = useRef<HTMLCanvasElement>(null);
   const [rendererReady, setRendererReady] = useState(false);
-  const effectInstancesRef = useRef<Map<string, { startTime: number; instance: any; animationId: string; playerPos: { x: number; y: number } }>>(new Map());
+  const [rendererFailed, setRendererFailed] = useState(false);
+  const effectInstancesRef = useRef<Map<string, EffectEntry>>(new Map());
   const animationFrameIdRef = useRef<number | null>(null);
-  const activeKeysRef = useRef<Set<string>>(new Set());
+  const latestFrameStateRef = useRef<FrameState>(EMPTY_FRAME_STATE);
+  const handledAnimationIdsRef = useRef<readonly AnimationId[]>(handledAnimationIds);
 
   const factory = createRendererProp ?? createThreeRenderer;
-
   const canvasWidth = vpTilesWidth * CELL_SIZE;
   const canvasHeight = vpTilesHeight * CELL_SIZE;
 
-  // Initialize renderer when canvas is mounted
+  latestFrameStateRef.current = {
+    animations: resolvedAnimations,
+    vpLeft,
+    vpTop,
+    cameraOffset,
+    canvasWidth,
+    canvasHeight,
+  };
+  handledAnimationIdsRef.current = handledAnimationIds;
+
   useEffect(() => {
     if (!shouldRender || !canvasRef.current) {
       setRendererReady(false);
+      setRendererFailed(false);
       return;
     }
+
+    setRendererFailed(false);
 
     let handle: ReturnType<CreateRendererFn> | null = null;
     try {
@@ -91,156 +144,135 @@ export function ThreeEffectsOverlay(props: ThreeEffectsOverlayProps): React.Reac
 
     if (!handle) {
       setRendererReady(false);
+      setRendererFailed(true);
       return;
     }
 
     rendererRef.current = handle;
-    handle.setSize(canvasWidth, canvasHeight);
-
-    // Configure camera to match viewport
-    // Orthographic camera: left, right, top, bottom, near, far
-    // Map screen pixels (0,0) at top-left to (canvasWidth, canvasHeight) at bottom-right
-    const camera = handle.camera as any;
-    if (camera) {
-      camera.left = 0;
-      camera.right = canvasWidth;
-      camera.top = 0;
-      camera.bottom = canvasHeight;
-      if (typeof camera.updateProjectionMatrix === 'function') {
-        camera.updateProjectionMatrix();
-      }
-    }
-
     setRendererReady(true);
 
     const effectInstances = effectInstancesRef.current;
-    const activeKeys = activeKeysRef.current;
 
     return () => {
       if (animationFrameIdRef.current !== null) {
         cancelAnimationFrame(animationFrameIdRef.current);
         animationFrameIdRef.current = null;
       }
-      // Clean up all effect instances
-      effectInstances.forEach(({ instance, animationId }) => {
-        const module = getEffectModule(animationId);
-        if (module) {
-          module.dispose(instance);
-        }
+
+      effectInstances.forEach((entry) => {
+        entry.module.dispose(entry.instance);
       });
       effectInstances.clear();
-      activeKeys.clear();
 
       handle.dispose();
       rendererRef.current = null;
       setRendererReady(false);
     };
-  }, [shouldRender, canvasWidth, canvasHeight, factory]);
+  }, [factory, shouldRender]);
 
-  // Animation frame loop
   useEffect(() => {
-    if (!rendererRef.current) {
+    if (!rendererReady || !rendererRef.current) {
       return;
     }
 
-    const allAnimations = [
-      ...consumableAnimations.map((a, idx) => ({ ...a, type: 'consumable' as const, index: idx })),
-      ...fxAnimations.map((a, idx) => ({ ...a, type: 'ability' as const, index: idx })),
-    ];
+    const handle = rendererRef.current;
+    handle.setSize(canvasWidth, canvasHeight);
+
+    handle.camera.left = 0;
+    handle.camera.right = canvasWidth;
+    handle.camera.top = canvasHeight;
+    handle.camera.bottom = 0;
+    handle.camera.updateProjectionMatrix();
+  }, [canvasHeight, canvasWidth, rendererReady]);
+
+  useEffect(() => {
+    if (!onInitialized) {
+      return;
+    }
+
+    if (!shouldRender || rendererFailed || !rendererReady) {
+      onInitialized([]);
+      return;
+    }
+
+    onInitialized(handledAnimationIdsRef.current);
+  }, [handledAnimationKey, onInitialized, rendererFailed, rendererReady, shouldRender]);
+
+  useEffect(() => {
+    if (!rendererReady || rendererFailed) {
+      return;
+    }
 
     const renderFrame = () => {
       const handle = rendererRef.current;
-      if (!handle) return;
+      if (!handle) {
+        return;
+      }
 
-      const now = performance.now();
-      const newActiveKeys = new Set<string>();
-      const effectsToRemove: string[] = [];
+      const {
+        animations,
+        vpLeft,
+        vpTop,
+        cameraOffset,
+        canvasWidth,
+        canvasHeight,
+      } = latestFrameStateRef.current;
+      const activeKeys = new Set<string>();
 
-      allAnimations.forEach((anim) => {
-        const animationId = anim.animationId;
-        if (!animationId) return;
+      for (const animation of animations) {
+        if (animation.progress >= 1) {
+          const existingEntry = effectInstancesRef.current.get(animation.key);
+          if (existingEntry) {
+            existingEntry.module.dispose(existingEntry.instance);
+            effectInstancesRef.current.delete(animation.key);
+          }
+          continue;
+        }
 
-        const module = getEffectModule(animationId);
-        if (!module) return; // No Three.js handler for this animation
+        activeKeys.add(animation.key);
 
-        const key = `${anim.type}:${anim.index}`;
-        newActiveKeys.add(key);
-
-        let effectEntry = effectInstancesRef.current.get(key);
+        let effectEntry = effectInstancesRef.current.get(animation.key);
         if (!effectEntry) {
-          // First frame: create the effect
-          const context = {
-            renderer: handle,
-            scene: handle.scene,
-            camera: handle.camera,
-            canvasWidth,
-            canvasHeight,
-            vpLeft,
-            vpTop,
-            tileSize: CELL_SIZE,
+          effectEntry = {
+            animationId: animation.animationId,
+            instance: animation.module.create({
+              renderer: handle,
+              scene: handle.scene,
+              camera: handle.camera,
+              canvasWidth,
+              canvasHeight,
+              vpLeft,
+              vpTop,
+              tileSize: CELL_SIZE,
+            }),
+            module: animation.module,
           };
-          const instance = module.create(context);
-          const playerPos = anim.playerPos;
-          effectInstancesRef.current.set(key, { startTime: now, instance, animationId, playerPos });
-          effectEntry = { startTime: now, instance, animationId, playerPos };
-
-          // Position effect at player's location
-          // Convert player's tile position to world center, then to screen space
-          const worldPos = tileCenterWorld(playerPos.x, playerPos.y, CELL_SIZE);
-          const screenPos = worldToScreen(
-            worldPos.x,
-            worldPos.y,
-            vpLeft,
-            vpTop,
-            CELL_SIZE,
-            cameraOffset,
-          );
-
-          // Update group position (Three.js y+ = up, but we're using screen coords with y+ = down)
-          // Since we're in screen-space coords, just set position directly
-          const group = (instance as any).group;
-          if (group) {
-            group.position.x = screenPos.x;
-            group.position.y = screenPos.y;
-            group.position.z = 0;
-          }
+          effectInstancesRef.current.set(animation.key, effectEntry);
         }
 
-        // Calculate progress (0 to 1)
-        const elapsed = now - effectEntry.startTime;
-        const progress = Math.min(elapsed / anim.durationMs, 1);
+        const worldPos = tileCenterWorld(animation.playerPos.x, animation.playerPos.y, CELL_SIZE);
+        const screenPos = worldToScreen(
+          worldPos.x,
+          worldPos.y,
+          vpLeft,
+          vpTop,
+          CELL_SIZE,
+          cameraOffset,
+        );
+        effectEntry.module.setPosition(effectEntry.instance, { x: screenPos.x, y: screenPos.y, z: 0 });
+        effectEntry.module.update(effectEntry.instance, animation.progress);
+      }
 
-        if (progress >= 1) {
-          // Animation complete
-          module.dispose(effectEntry.instance);
-          effectsToRemove.push(key);
-        } else {
-          // Update the effect
-          module.update(effectEntry.instance, progress);
+      for (const [key, entry] of effectInstancesRef.current.entries()) {
+        if (activeKeys.has(key)) {
+          continue;
         }
-      });
 
-      // Remove effects that are no longer active
-      activeKeysRef.current.forEach(key => {
-        if (!newActiveKeys.has(key)) {
-          const effectEntry = effectInstancesRef.current.get(key);
-          if (effectEntry) {
-            const module = getEffectModule(effectEntry.animationId);
-            if (module) {
-              module.dispose(effectEntry.instance);
-            }
-            effectsToRemove.push(key);
-          }
-        }
-      });
+        entry.module.dispose(entry.instance);
+        effectInstancesRef.current.delete(key);
+      }
 
-      // Remove completed/disposed effects
-      effectsToRemove.forEach(key => effectInstancesRef.current.delete(key));
-      activeKeysRef.current = newActiveKeys;
-
-      // Render the scene
       handle.render(handle.scene, handle.camera);
-
       animationFrameIdRef.current = requestAnimationFrame(renderFrame);
     };
 
@@ -252,19 +284,27 @@ export function ThreeEffectsOverlay(props: ThreeEffectsOverlayProps): React.Reac
         animationFrameIdRef.current = null;
       }
     };
-  }, [rendererRef, consumableAnimations, fxAnimations, vpLeft, vpTop, cameraOffset, canvasWidth, canvasHeight]);
+  }, [rendererFailed, rendererReady]);
 
   if (!shouldRender) {
     return null;
   }
 
+  if (rendererFailed) {
+    return null;
+  }
+
   return (
     <canvas
+      data-testid="three-effects-overlay"
       ref={canvasRef}
       width={canvasWidth}
       height={canvasHeight}
       style={{
         position: 'absolute',
+        top: 0,
+        left: 0,
+        zIndex: 1,
         pointerEvents: 'none',
         width: `${canvasWidth}px`,
         height: `${canvasHeight}px`,
@@ -272,4 +312,42 @@ export function ThreeEffectsOverlay(props: ThreeEffectsOverlayProps): React.Reac
       }}
     />
   );
+}
+
+function resolveHandledOverlayAnimations(
+  consumableAnimations: DungeonRenderState['consumableAnimations'],
+  fxAnimations: DungeonRenderState['fxAnimations'],
+): ResolvedOverlayAnimation[] {
+  const resolvedAnimations: ResolvedOverlayAnimation[] = [];
+
+  for (const animation of [...consumableAnimations, ...fxAnimations]) {
+    if (!isBuiltInThreeEffectId(animation.animationId)) {
+      continue;
+    }
+
+    const module = getEffectModule(animation.animationId);
+    if (!module) {
+      continue;
+    }
+
+    resolvedAnimations.push({
+      key: animation.id,
+      animationId: animation.animationId,
+      module,
+      playerPos: animation.playerPos,
+      progress: animation.progress,
+    });
+  }
+
+  return resolvedAnimations;
+}
+
+function getHandledAnimationIds(animations: readonly ResolvedOverlayAnimation[]): AnimationId[] {
+  const handledIds = new Set<AnimationId>();
+
+  for (const animation of animations) {
+    handledIds.add(animation.animationId);
+  }
+
+  return [...handledIds];
 }

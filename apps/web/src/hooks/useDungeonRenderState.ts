@@ -4,6 +4,8 @@ import { useBumpAnimationState } from './useBumpAnimationState.js';
 import { useMoveAnimationState } from './useMoveAnimationState.js';
 import { useConsumableAnimationState } from './useConsumableAnimationState.js';
 import { useFxAnimationState } from './useFxAnimationState.js';
+import { getMoveTravelOffsetPx } from '../animations/move-style-profiles.js';
+import { CELL_SIZE } from '../config/ui-config.js';
 import { useGameStore } from '../store/game-store.js';
 
 const EMPTY_STATUSES: readonly StatusView[] = [];
@@ -42,28 +44,38 @@ export function useDungeonRenderState(
   const { vpLeft, vpTop, cameraOffset } = useMemo(() => {
     const minX = map.cells.length > 0 ? Math.min(...map.cells.map((c) => c.x)) : 0;
     const minY = map.cells.length > 0 ? Math.min(...map.cells.map((c) => c.y)) : 0;
-    
-    const halfWidth = vpTilesWidth / 2;
-    const halfHeight = vpTilesHeight / 2;
-    
-    const idealVpLeft = map.playerPosition.x - halfWidth;
-    const idealVpTop = map.playerPosition.y - halfHeight;
-    
-    const vpLeft = Math.max(minX, Math.floor(idealVpLeft));
-    const vpTop = Math.max(minY, Math.floor(idealVpTop));
-    
-    // Camera offset represents the fractional tile offset needed to center the player
-    // when the viewport dimensions are odd. This occurs when ideal viewport position
-    // has a fractional component due to odd-width viewports.
-    const offsetX = idealVpLeft - vpLeft;
-    const offsetY = idealVpTop - vpTop;
-    
+
+    const idealVpLeft = map.playerPosition.x - Math.floor(vpTilesWidth / 2);
+    const idealVpTop = map.playerPosition.y - Math.floor(vpTilesHeight / 2);
+
+    const vpLeft = Math.max(minX, idealVpLeft);
+    const vpTop = Math.max(minY, idealVpTop);
+
+    const playerEntityId = map.entities.find((entity) => entity.type === 'player')?.id;
+    const activePlayerMove = playerEntityId === undefined
+      ? moveAnimations.find(
+          (animation) =>
+            animation.toPos.x === map.playerPosition.x
+            && animation.toPos.y === map.playerPosition.y,
+        )
+      : moveAnimations.find((animation) => animation.entityId === playerEntityId);
+
+    const cameraOffset = activePlayerMove === undefined
+      ? ZERO_CAMERA_OFFSET
+      : (() => {
+          const offset = getMoveTravelOffsetPx(activePlayerMove, CELL_SIZE);
+          return {
+            x: -offset.x,
+            y: -offset.y,
+          };
+        })();
+
     return {
       vpLeft,
       vpTop,
-      cameraOffset: { x: offsetX, y: offsetY },
+      cameraOffset,
     };
-  }, [map, vpTilesWidth, vpTilesHeight]);
+  }, [map, moveAnimations, vpTilesWidth, vpTilesHeight]);
 
   return {
     bumpAnimations,

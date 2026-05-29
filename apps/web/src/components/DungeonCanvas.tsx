@@ -1,4 +1,5 @@
 import React, { useRef, useEffect, useState, useCallback } from 'react';
+import type { AnimationId } from '@dungeon/content';
 import type { MapView, StatusPresentationView } from '@dungeon/presenter';
 import { spriteRegistry } from '../sprites/sprite-registry.js';
 import { renderMap } from '../sprites/canvas-renderer.js';
@@ -20,6 +21,8 @@ interface Props {
   vpLeft: number;
   vpTop: number;
   cameraOffset: { readonly x: number; readonly y: number };
+  /** Animation IDs to skip rendering (handled by Three overlay) */
+  skipHandledAnimationIds?: readonly AnimationId[];
 }
 
 export function DungeonCanvas({
@@ -34,6 +37,7 @@ export function DungeonCanvas({
   vpLeft,
   vpTop,
   cameraOffset,
+  skipHandledAnimationIds = [],
 }: Props) {
   const canvasRef = useRef<HTMLCanvasElement>(null);
   const [spritesReady, setSpritesReady] = useState(spriteRegistry.isReady());
@@ -83,8 +87,9 @@ export function DungeonCanvas({
       fxAnimations,
       { statusPresentations },
       cameraOffset,
+      skipHandledAnimationIds,
     );
-  }, [map, spritesReady, vpTilesWidth, vpTilesHeight, vpLeft, vpTop, bumpAnimations, moveAnimations, consumableAnimations, fxAnimations, statusPresentations, cameraOffset]);
+  }, [map, spritesReady, vpTilesWidth, vpTilesHeight, vpLeft, vpTop, bumpAnimations, moveAnimations, consumableAnimations, fxAnimations, statusPresentations, cameraOffset, skipHandledAnimationIds]);
 
   const handleClick = useCallback((e: React.MouseEvent<HTMLCanvasElement>) => {
     const canvas = canvasRef.current;
@@ -105,7 +110,7 @@ export function DungeonCanvas({
     };
 
     const cell = map.cells.find(c => c.x === grid.x && c.y === grid.y);
-    if (cell !== undefined && !cell.walkable) return;
+    if (cell === undefined || cell.visibility === 'hidden' || !cell.walkable) return;
 
     const path = findPath(map, map.playerPosition, grid);
     if (path.length === 0) return;
@@ -116,6 +121,7 @@ export function DungeonCanvas({
 
   return (
     <canvas
+      data-testid="dungeon-canvas"
       ref={canvasRef}
       onClick={handleClick}
       style={{ display: 'block', imageRendering: 'pixelated', cursor: 'pointer' }}

@@ -16,19 +16,15 @@ import {
   get,
   clear,
 } from './three-effect-registry.js';
+import type {
+  ThreeEffectContext,
+  ThreeEffectModule,
+  ThreeEffectScreenPosition,
+} from './three-effect-types.js';
 
 // ---------------------------------------------------------------------------
-// Local type definitions (mirrors the contracts the registry will export)
+// Local test instance type
 // ---------------------------------------------------------------------------
-
-/**
- * Minimal scene-graph context passed to ThreeEffectModule.create.
- * The real implementation will carry THREE.Scene, camera, etc.
- * Using a plain object here keeps tests free of the three import.
- */
-interface ThreeEffectContext {
-  readonly sceneId: string;
-}
 
 /**
  * A handle returned by ThreeEffectModule.create.
@@ -39,21 +35,25 @@ interface ThreeEffectInstance {
   isDisposed: boolean;
 }
 
-/**
- * The module interface every Three.js effect must satisfy.
- */
-interface ThreeEffectModule {
-  create(context: ThreeEffectContext): ThreeEffectInstance;
-  update(effect: ThreeEffectInstance, progress: number): void;
-  dispose(effect: ThreeEffectInstance): void;
-}
-
 // ---------------------------------------------------------------------------
 // Local fixture factories — no imports from @dungeon/content
 // ---------------------------------------------------------------------------
 
-function makeContext(sceneId = 'test-scene'): ThreeEffectContext {
-  return { sceneId };
+function makeContext(overrides: Partial<ThreeEffectContext> = {}): ThreeEffectContext {
+  return {
+    renderer: {},
+    scene: {
+      add: vi.fn(),
+      remove: vi.fn(),
+    },
+    camera: {},
+    canvasWidth: 720,
+    canvasHeight: 528,
+    vpLeft: 0,
+    vpTop: 0,
+    tileSize: 24,
+    ...overrides,
+  };
 }
 
 function makeEffect(id = 'effect-1'): ThreeEffectInstance {
@@ -63,23 +63,25 @@ function makeEffect(id = 'effect-1'): ThreeEffectInstance {
 /**
  * Build a ThreeEffectModule with vi.fn() methods so call counts are trackable.
  */
-function makeModule(label = 'default'): ThreeEffectModule & {
+function makeModule(label = 'default'): ThreeEffectModule<ThreeEffectInstance> & {
   create: ReturnType<typeof vi.fn>;
+  setPosition: ReturnType<typeof vi.fn>;
   update: ReturnType<typeof vi.fn>;
   dispose: ReturnType<typeof vi.fn>;
 } {
   const instance = makeEffect(label);
   return {
     create: vi.fn((_ctx: ThreeEffectContext) => instance),
+    setPosition: vi.fn((_effect: ThreeEffectInstance, _position: ThreeEffectScreenPosition) => {}),
     update: vi.fn((_effect: ThreeEffectInstance, _progress: number) => {}),
     dispose: vi.fn((_effect: ThreeEffectInstance) => {}),
   };
 }
 
 // Stable literal IDs — never imported from content packages
-const ID_HEALING_PULSE = 'test.healing.pulse';
-const ID_FIRE_BLAST = 'test.fire.blast';
-const ID_SHADOW_STEP = 'test.shadow.step';
+const ID_HEALING_PULSE = 'fx.self.test-healing-pulse' as const;
+const ID_FIRE_BLAST = 'fx.impact.test-fire-blast' as const;
+const ID_SHADOW_STEP = 'fx.utility.test-shadow-step' as const;
 
 // ---------------------------------------------------------------------------
 // Suite: registration
@@ -159,14 +161,14 @@ describe('get', () => {
   });
 
   it('returns undefined for an empty string id', () => {
-    expect(get('')).toBeUndefined();
+    expect(get('' as any)).toBeUndefined();
   });
 
   it('returns undefined for an id with a similar but non-matching prefix', () => {
     register(ID_HEALING_PULSE, makeModule());
-    expect(get('test.healing')).toBeUndefined();
-    expect(get('test.healing.puls')).toBeUndefined();
-    expect(get('TEST.HEALING.PULSE')).toBeUndefined();
+    expect(get('test.healing' as any)).toBeUndefined();
+    expect(get('test.healing.puls' as any)).toBeUndefined();
+    expect(get('TEST.HEALING.PULSE' as any)).toBeUndefined();
   });
 
   it('returns the exact same module reference that was registered', () => {
@@ -178,7 +180,7 @@ describe('get', () => {
 
   it('is case-sensitive: upper-case id does not resolve lower-case registration', () => {
     register(ID_HEALING_PULSE, makeModule());
-    expect(get(ID_HEALING_PULSE.toUpperCase())).toBeUndefined();
+    expect(get(ID_HEALING_PULSE.toUpperCase() as any)).toBeUndefined();
   });
 
   it('does not return a module registered under a different id', () => {
@@ -216,7 +218,7 @@ describe('ThreeEffectModule.create', () => {
   it('create receives the exact context that was passed', () => {
     const mod = makeModule();
     register(ID_HEALING_PULSE, mod);
-    const ctx = makeContext('scene-xyz');
+    const ctx = makeContext();
 
     get(ID_HEALING_PULSE)!.create(ctx);
 
@@ -225,8 +227,9 @@ describe('ThreeEffectModule.create', () => {
 
   it('create can be called multiple times producing independent instances', () => {
     let counter = 0;
-    const multiModule: ThreeEffectModule = {
+    const multiModule: ThreeEffectModule<ThreeEffectInstance> = {
       create: vi.fn((_ctx: ThreeEffectContext) => makeEffect(`effect-${++counter}`)),
+      setPosition: vi.fn(),
       update: vi.fn(),
       dispose: vi.fn(),
     };
@@ -248,8 +251,30 @@ describe('ThreeEffectModule.create', () => {
     register(ID_HEALING_PULSE, mod);
 
     expect(() => {
-      get(ID_HEALING_PULSE)!.create({ sceneId: '' });
+      get(ID_HEALING_PULSE)!.create(makeContext());
     }).not.toThrow();
+  });
+});
+
+// ---------------------------------------------------------------------------
+// Suite: module lifecycle — setPosition
+// ---------------------------------------------------------------------------
+
+describe('ThreeEffectModule.setPosition', () => {
+  beforeEach(() => {
+    clear();
+  });
+
+  it('setPosition is callable with an effect and screen position', () => {
+    const mod = makeModule();
+    register(ID_HEALING_PULSE, mod);
+    const effect = makeEffect();
+    const position = { x: 120, y: 144, z: 0 } as const;
+
+    expect(() => {
+      get(ID_HEALING_PULSE)!.setPosition(effect, position);
+    }).not.toThrow();
+    expect(mod.setPosition).toHaveBeenCalledWith(effect, position);
   });
 });
 
@@ -318,8 +343,9 @@ describe('ThreeEffectModule.update', () => {
 
   it('update does not mutate progress: module receives the value passed', () => {
     const capturedProgressValues: number[] = [];
-    const mod: ThreeEffectModule = {
+    const mod: ThreeEffectModule<ThreeEffectInstance> = {
       create: vi.fn(() => makeEffect()),
+      setPosition: vi.fn(),
       update: vi.fn((_effect, progress) => { capturedProgressValues.push(progress); }),
       dispose: vi.fn(),
     };
@@ -416,12 +442,13 @@ describe('full effect lifecycle (create → update → dispose)', () => {
 
   it('instance produced by create is the same object passed to update and dispose', () => {
     const capturedInstances: ThreeEffectInstance[] = [];
-    const mod: ThreeEffectModule = {
+    const mod: ThreeEffectModule<ThreeEffectInstance> = {
       create: vi.fn((_ctx) => {
         const inst = makeEffect('tracked');
         capturedInstances.push(inst);
         return inst;
       }),
+      setPosition: vi.fn(),
       update: vi.fn((effect) => { capturedInstances.push(effect); }),
       dispose: vi.fn((effect) => { capturedInstances.push(effect); }),
     };
@@ -475,11 +502,11 @@ describe('edge cases', () => {
   });
 
   it('get with a unicode id returns undefined when not registered', () => {
-    expect(get('test.♥.pulse')).toBeUndefined();
+    expect(get('test.♥.pulse' as any)).toBeUndefined();
   });
 
   it('register and get round-trip a unicode id', () => {
-    const unicodeId = 'test.♥.pulse';
+    const unicodeId = 'test.♥.pulse' as any;
     const mod = makeModule();
     register(unicodeId, mod);
     expect(get(unicodeId)).toBe(mod);
@@ -487,21 +514,21 @@ describe('edge cases', () => {
 
   it('registry holds many modules without collision', () => {
     const count = 100;
-    const mods: Array<[string, ThreeEffectModule]> = [];
+    const mods: Array<[string, ThreeEffectModule<ThreeEffectInstance>]> = [];
     for (let i = 0; i < count; i++) {
-      const id = `test.bulk.effect-${i}`;
+      const id = `test.bulk.effect-${i}` as any;
       const mod = makeModule(`bulk-${i}`);
       register(id, mod);
       mods.push([id, mod]);
     }
 
     for (const [id, mod] of mods) {
-      expect(get(id)).toBe(mod);
+      expect(get(id as any)).toBe(mod);
     }
   });
 
   it('registering with a special-character id does not throw', () => {
-    const specialId = 'test.effect/slash+plus=equals';
+    const specialId = 'test.effect/slash+plus=equals' as any;
     const mod = makeModule();
     expect(() => register(specialId, mod)).not.toThrow();
     expect(get(specialId)).toBe(mod);
@@ -549,8 +576,9 @@ describe('edge cases', () => {
 
   it('update with negative progress is forwarded as-is (range clamping is caller responsibility)', () => {
     const received: number[] = [];
-    const mod: ThreeEffectModule = {
+    const mod: ThreeEffectModule<ThreeEffectInstance> = {
       create: vi.fn(() => makeEffect()),
+      setPosition: vi.fn(),
       update: vi.fn((_e, p) => { received.push(p); }),
       dispose: vi.fn(),
     };
@@ -563,8 +591,9 @@ describe('edge cases', () => {
 
   it('update with progress > 1 is forwarded as-is (range clamping is caller responsibility)', () => {
     const received: number[] = [];
-    const mod: ThreeEffectModule = {
+    const mod: ThreeEffectModule<ThreeEffectInstance> = {
       create: vi.fn(() => makeEffect()),
+      setPosition: vi.fn(),
       update: vi.fn((_e, p) => { received.push(p); }),
       dispose: vi.fn(),
     };

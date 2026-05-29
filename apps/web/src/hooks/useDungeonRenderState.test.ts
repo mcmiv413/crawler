@@ -1,6 +1,7 @@
 import { beforeEach, describe, expect, it, vi } from 'vitest';
 import { renderHook } from '@testing-library/react';
 import type { MapView } from '@dungeon/presenter';
+import { getMoveTravelOffsetPx } from '../animations/move-style-profiles.js';
 
 const {
   bumpAnimationState,
@@ -82,6 +83,8 @@ const BASE_MAP: MapView = {
   entities: [],
 };
 
+const CELL_SIZE = 24;
+
 describe('useDungeonRenderState', () => {
   beforeEach(() => {
     bumpAnimationState.current = [];
@@ -121,7 +124,17 @@ describe('useDungeonRenderState', () => {
 
   it('reflects active animation state from dependency hooks', () => {
     const bump = { id: 'bump-0' };
-    const move = { id: 'move-0' };
+    const move = {
+      id: 'move-0',
+      entityId: 'player-1',
+      fromPos: { x: 4, y: 5 },
+      toPos: { x: 5, y: 5 },
+      style: 'step' as const,
+      progress: 0.5,
+      durationMs: 120,
+      startTime: 0,
+      fromOffsetPx: { x: 0, y: 0 },
+    };
     const consumable = { id: 'consumable-0' };
     const fx = { id: 'fx-0' };
     bumpAnimationState.current = [bump];
@@ -166,5 +179,121 @@ describe('useDungeonRenderState', () => {
     expect(result.current.moveAnimations).toHaveLength(0);
     expect(result.current.consumableAnimations).toHaveLength(0);
     expect(result.current.fxAnimations).toHaveLength(0);
+  });
+
+  it('clamps viewport origin to the minimum visible cell coordinates', () => {
+    const edgeMap: MapView = {
+      ...BASE_MAP,
+      playerPosition: { x: 10, y: 20 },
+      cells: [
+        { ...BASE_MAP.cells[0]!, x: 10, y: 20 },
+        { ...BASE_MAP.cells[0]!, x: 11, y: 20 },
+      ],
+    };
+
+    const { result } = renderHook(() => useDungeonRenderState(edgeMap, 20, 15));
+
+    expect(result.current.vpLeft).toBe(10);
+    expect(result.current.vpTop).toBe(20);
+  });
+
+  it('centers odd-width viewports with the pre-extraction canvas math', () => {
+    const oddWidthMap: MapView = {
+      ...BASE_MAP,
+      playerPosition: { x: 20, y: 20 },
+      cells: [
+        BASE_MAP.cells[0]!,
+        { ...BASE_MAP.cells[0]!, x: 40, y: 40 },
+      ],
+    };
+
+    const { result } = renderHook(() => useDungeonRenderState(oddWidthMap, 15, 10));
+
+    expect(result.current.vpLeft).toBe(13);
+  });
+
+  it('centers odd-height viewports with the pre-extraction canvas math', () => {
+    const oddHeightMap: MapView = {
+      ...BASE_MAP,
+      playerPosition: { x: 20, y: 20 },
+      cells: [
+        BASE_MAP.cells[0]!,
+        { ...BASE_MAP.cells[0]!, x: 40, y: 40 },
+      ],
+    };
+
+    const { result } = renderHook(() => useDungeonRenderState(oddHeightMap, 10, 15));
+
+    expect(result.current.vpTop).toBe(13);
+  });
+
+  it('keeps the player on the same screen tile as the legacy DungeonCanvas viewport math', () => {
+    const parityMap: MapView = {
+      ...BASE_MAP,
+      playerPosition: { x: 20, y: 30 },
+      cells: [
+        BASE_MAP.cells[0]!,
+        { ...BASE_MAP.cells[0]!, x: 40, y: 40 },
+      ],
+    };
+    const vpTilesWidth = 15;
+    const vpTilesHeight = 17;
+    const legacyVpLeft = parityMap.playerPosition.x - Math.floor(vpTilesWidth / 2);
+    const legacyVpTop = parityMap.playerPosition.y - Math.floor(vpTilesHeight / 2);
+
+    const { result } = renderHook(() => useDungeonRenderState(parityMap, vpTilesWidth, vpTilesHeight));
+
+    expect(parityMap.playerPosition.x - result.current.vpLeft).toBe(
+      parityMap.playerPosition.x - legacyVpLeft,
+    );
+    expect(parityMap.playerPosition.y - result.current.vpTop).toBe(
+      parityMap.playerPosition.y - legacyVpTop,
+    );
+  });
+
+  it('returns zero camera offset when there is no active player move animation', () => {
+    const { result } = renderHook(() => useDungeonRenderState(BASE_MAP, 20, 15));
+
+    expect(result.current.cameraOffset).toEqual({ x: 0, y: 0 });
+  });
+
+  it('returns the inverse player move travel offset during an active player move', () => {
+    const playerMove = {
+      id: 'move-0',
+      entityId: 'player-1',
+      fromPos: { x: 4, y: 5 },
+      toPos: { x: 5, y: 5 },
+      style: 'step' as const,
+      progress: 0.25,
+      durationMs: 120,
+      startTime: 0,
+      fromOffsetPx: { x: 0, y: 0 },
+    };
+
+    moveAnimationState.current = [playerMove];
+
+    const movingMap: MapView = {
+      ...BASE_MAP,
+      entities: [
+        {
+          id: 'player-1',
+          type: 'player',
+          x: 5,
+          y: 5,
+          ascii: '@',
+          color: '#fff',
+          name: 'Hero',
+          templateId: 'player',
+        },
+      ],
+    };
+
+    const expectedOffset = getMoveTravelOffsetPx(playerMove, CELL_SIZE);
+    const { result } = renderHook(() => useDungeonRenderState(movingMap, 20, 15));
+
+    expect(result.current.cameraOffset).toEqual({
+      x: -expectedOffset.x,
+      y: -expectedOffset.y,
+    });
   });
 });
