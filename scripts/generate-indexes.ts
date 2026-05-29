@@ -2,6 +2,7 @@ import { readdirSync, readFileSync, writeFileSync, existsSync } from 'fs';
 import { join } from 'path';
 import { generateAnimationRefsIndex } from './generators/animation-refs.js';
 import { generateAnimationModuleRegistry } from './generators/animation-modules.js';
+import { generateThreeAnimationModules } from './generators/three-animation-modules.js';
 
 interface ContentTypeConfig {
   /** Source directory relative to packages/content/src */
@@ -345,6 +346,14 @@ function main() {
   } catch (err) {
     const msg = err instanceof Error ? err.message : String(err);
     errors.push(`❌ Failed to generate animations/generated/index.ts: ${msg}`);
+  }
+
+  try {
+    generateThreeAnimationModules();
+    generatedCount++;
+  } catch (err) {
+    const msg = err instanceof Error ? err.message : String(err);
+    errors.push(`❌ Failed to generate rendering/three/generated/index.ts: ${msg}`);
   }
 
   console.log(`\n✨ Generated ${generatedCount} index files`);
