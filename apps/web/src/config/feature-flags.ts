@@ -27,19 +27,18 @@ export function getAnimationRendererMode(): AnimationRendererMode {
   const env = import.meta.env as ViteFeatureEnv;
   const mode = env['VITE_ANIMATION_RENDERER_MODE'];
 
+  if (mode === 'three') {
+    return 'three';
+  }
+
   if (mode === 'canvas') {
     return 'canvas';
   }
 
-  // Default is 'three' after full Three.js migration validation (WS9).
-  return 'three';
+  // Default to the proven canvas path until the full Three renderer is ready.
+  return 'canvas';
 }
 
 export function isThreeEffectsEnabledFlag(): boolean {
-  if (globalThis.__DUNGEON_THREE_EFFECTS_OVERRIDE__ !== undefined) {
-    return globalThis.__DUNGEON_THREE_EFFECTS_OVERRIDE__;
-  }
-
-  const env = import.meta.env as ViteFeatureEnv;
-  return env['VITE_THREE_EFFECTS'] === 'true';
+  return getAnimationRendererMode() === 'three';
 }

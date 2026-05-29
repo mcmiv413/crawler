@@ -14,12 +14,72 @@
  */
 
 import * as THREE from 'three';
+import type { EntityView } from '@dungeon/presenter';
 import type { ThreeEffectContext } from '../three-effect-types.js';
+import { spriteRegistry } from '../../../sprites/sprite-registry.js';
 
 export interface EntitySprite {
   readonly mesh: THREE.Mesh;
   readonly geometry: THREE.PlaneGeometry;
   readonly material: THREE.MeshBasicMaterial;
+}
+
+function createEntityTexture(
+  entity: Pick<EntityView, 'ascii' | 'color' | 'instanceColor' | 'spriteName' | 'type'>,
+  tileSize: number,
+): THREE.CanvasTexture | null {
+  const canvas = document.createElement('canvas');
+  if (typeof canvas.getContext !== 'function') {
+    return null;
+  }
+  canvas.width = tileSize;
+  canvas.height = tileSize;
+  const ctx = canvas.getContext('2d');
+  if (ctx === null) {
+    return null;
+  }
+
+  let sprite = null;
+  if (entity.spriteName !== undefined) {
+    sprite = spriteRegistry.getSpriteByAtlasName(entity.spriteName);
+  } else if (entity.type === 'player') {
+    sprite = spriteRegistry.getSprite('player');
+  }
+
+  if (sprite !== null) {
+    const { image, rect } = sprite;
+    ctx.drawImage(image, rect.x, rect.y, rect.w, rect.h, 0, 0, tileSize, tileSize);
+  } else {
+    ctx.fillStyle = entity.color;
+    ctx.font = `${Math.max(tileSize - 2, 1)}px monospace`;
+    ctx.textAlign = 'center';
+    ctx.textBaseline = 'middle';
+    ctx.fillText(entity.ascii, tileSize / 2, tileSize / 2);
+  }
+
+  drawEntityInstanceColorMarker(ctx, tileSize, entity.instanceColor);
+
+  const texture = new THREE.CanvasTexture(canvas);
+  texture.minFilter = THREE.NearestFilter;
+  texture.magFilter = THREE.NearestFilter;
+  texture.generateMipmaps = false;
+  texture.needsUpdate = true;
+  return texture;
+}
+
+export function drawEntityInstanceColorMarker(
+  ctx: Pick<CanvasRenderingContext2D, 'fillStyle' | 'fillRect'>,
+  tileSize: number,
+  instanceColor?: string,
+): void {
+  if (instanceColor === undefined) {
+    return;
+  }
+
+  ctx.fillStyle = 'rgba(0, 0, 0, 0.70)';
+  ctx.fillRect(tileSize - 5, 0, 5, 6);
+  ctx.fillStyle = instanceColor;
+  ctx.fillRect(tileSize - 4, 1, 3, 4);
 }
 
 /**
@@ -44,6 +104,17 @@ export function createEntitySprite(context: ThreeEffectContext): EntitySprite {
   return { mesh, geometry, material };
 }
 
+export function applyEntitySpriteAppearance(
+  sprite: EntitySprite,
+  entity: Pick<EntityView, 'ascii' | 'color' | 'instanceColor' | 'spriteName' | 'type'>,
+  tileSize: number,
+): void {
+  sprite.material.map?.dispose();
+  sprite.material.map = createEntityTexture(entity, tileSize);
+  sprite.material.color.set(sprite.material.map === null ? entity.color : '#ffffff');
+  sprite.material.needsUpdate = true;
+}
+
 /**
  * Place the sprite at a screen-space pixel position.
  *
@@ -56,6 +127,13 @@ export function setEntitySpritePosition(
   canvasHeight: number,
 ): void {
   sprite.mesh.position.set(position.x, canvasHeight - position.y, position.z);
+}
+
+export function setEntitySpriteScale(
+  sprite: EntitySprite,
+  scale: { readonly x: number; readonly y: number },
+): void {
+  sprite.mesh.scale.set(scale.x, scale.y, 1);
 }
 
 /**
@@ -86,5 +164,6 @@ export function disposeEntitySprite(
 ): void {
   scene.remove(sprite.mesh);
   sprite.geometry.dispose();
+  sprite.material.map?.dispose();
   sprite.material.dispose();
 }

@@ -18,8 +18,9 @@
 
 import React from 'react';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
-import { render } from '@testing-library/react';
-import type { MapView, ConsumableAnimationEntry } from '@dungeon/presenter';
+import { render, waitFor } from '@testing-library/react';
+import { entityId, type EntityId } from '@dungeon/contracts';
+import type { EntityView, MapView, ConsumableAnimationEntry } from '@dungeon/presenter';
 
 // Mirror the ActiveConsumableAnimation shape from useConsumableAnimationState.
 // Tests must not import from the hook directly to stay within test-file tsconfig scope.
@@ -71,7 +72,12 @@ const {
   };
 
   const mockGetAnimationModule = vi.fn((animationId: string) =>
-    animationId === 'fx.self.healing-pulse' ? mockAnimationModule : undefined,
+    animationId === 'fx.self.healing-pulse'
+      || animationId === 'fx.status.gold-ring-pulse'
+      || animationId === 'fx.status.heat-surge-ring'
+      || animationId === 'fx.status.arcane-charge-ring'
+      ? mockAnimationModule
+      : undefined,
   );
 
   return { mockCreateRenderer, mockRenderer, mockAnimationModule, mockGetAnimationModule };
@@ -92,7 +98,12 @@ vi.mock('./three-animation-registry.js', () => ({
 // Deferred import after mocks are wired
 // ---------------------------------------------------------------------------
 
-import { ThreeAnimationOverlay } from './ThreeAnimationOverlay.js';
+import {
+  ThreeAnimationOverlay,
+  getStatusPresentationEntityScale,
+  resolveHandledModuleAnimations,
+  resolveThreeOwnedEntityIds,
+} from './ThreeAnimationOverlay.js';
 import type { ThreeAnimationOverlayProps } from './ThreeAnimationOverlay.js';
 
 // ---------------------------------------------------------------------------
@@ -110,6 +121,20 @@ function makeMap(overrides?: Partial<MapView>): MapView {
     entities: [],
     ...overrides,
   } as unknown as MapView;
+}
+
+function makeEntity(id = 'enemy-1', overrides?: Partial<EntityView>): EntityView {
+  return {
+    id,
+    x: 5,
+    y: 5,
+    ascii: 'g',
+    color: '#55ff55',
+    name: 'Goblin',
+    type: 'enemy',
+    templateId: 'goblin',
+    ...overrides,
+  };
 }
 
 function makeConsumableAnimation(
@@ -144,15 +169,49 @@ function makeFxAnimation(overrides?: Record<string, unknown>) {
   } as any;
 }
 
+function makeMoveAnimation(overrides?: Record<string, unknown>) {
+  return {
+    id: 'move-0',
+    entityId: 'enemy-1',
+    fromPos: { x: 4, y: 5 },
+    toPos: { x: 5, y: 5 },
+    style: 'step',
+    durationMs: 120,
+    startTime: Date.now(),
+    progress: 0.4,
+    fromOffsetPx: { x: 0, y: 0 },
+    ...overrides,
+  } as any;
+}
+
+function makeBumpAnimation(overrides?: Record<string, unknown>) {
+  return {
+    id: 'bump-0',
+    attackerId: 'enemy-1',
+    defenderId: 'player-1',
+    attackerPos: { x: 5, y: 5 },
+    defenderPos: { x: 6, y: 5 },
+    durationMs: 300,
+    impactFrameMs: 150,
+    startTime: Date.now(),
+    progress: 0.5,
+    ...overrides,
+  } as any;
+}
+
 function makeDefaultProps(overrides?: Partial<ThreeAnimationOverlayProps>): ThreeAnimationOverlayProps {
   return {
     map: makeMap(),
     isEnabled: true,
     vpTilesWidth: 20,
     vpTilesHeight: 15,
+    bumpAnimations: [],
+    moveAnimations: [],
     consumableAnimations: [],
     fxAnimations: [],
     statusPresentations: [],
+    combatIndicators: [],
+    defenderHits: new Map(),
     vpLeft: 0,
     vpTop: 0,
     cameraOffset: { x: 0, y: 0 },
@@ -184,7 +243,12 @@ function resetMocks() {
     return mockRenderer;
   });
   mockGetAnimationModule.mockImplementation((id: string) =>
-    id === 'fx.self.healing-pulse' ? mockAnimationModule : undefined,
+    id === 'fx.self.healing-pulse'
+      || id === 'fx.status.gold-ring-pulse'
+      || id === 'fx.status.heat-surge-ring'
+      || id === 'fx.status.arcane-charge-ring'
+      ? mockAnimationModule
+      : undefined,
   );
 }
 
@@ -308,6 +372,34 @@ describe('ThreeAnimationOverlay – render gating', () => {
     );
     expect(getByTestId('three-animation-overlay')).toBeTruthy();
   });
+
+  it('renders canvas when moveAnimations owns a visible entity', () => {
+    const { getByTestId } = render(
+      <ThreeAnimationOverlay
+        {...makeDefaultProps({
+          map: makeMap({ entities: [makeEntity()] }),
+          moveAnimations: [makeMoveAnimation()],
+        })}
+      />,
+    );
+    expect(getByTestId('three-animation-overlay')).toBeTruthy();
+  });
+
+  it('renders canvas when defenderHits has an active visible entity', () => {
+    const defenderHits = new Map<EntityId, { startTime: number; durationMs: number }>([[
+      entityId('enemy-1'),
+      { startTime: Date.now(), durationMs: 250 },
+    ]]);
+    const { getByTestId } = render(
+      <ThreeAnimationOverlay
+        {...makeDefaultProps({
+          map: makeMap({ entities: [makeEntity()] }),
+          defenderHits,
+        })}
+      />,
+    );
+    expect(getByTestId('three-animation-overlay')).toBeTruthy();
+  });
 });
 
 // ---------------------------------------------------------------------------
@@ -407,6 +499,189 @@ describe('ThreeAnimationOverlay – renderer lifecycle', () => {
       vpTilesWidth * CELL_SIZE,
       vpTilesHeight * CELL_SIZE,
     );
+  });
+});
+
+describe('ThreeAnimationOverlay – ownership helpers', () => {
+  beforeEach(resetMocks);
+
+  it('fans out blast positions for module-backed fx animations', () => {
+    const resolved = resolveHandledModuleAnimations(
+      makeMap(),
+      [],
+      [makeFxAnimation({
+        blastPositions: [
+          { x: 4, y: 4 },
+          { x: 5, y: 4 },
+          { x: 6, y: 4 },
+        ],
+      })],
+      [],
+      mockGetAnimationModule,
+    );
+
+    expect(resolved.map((entry) => entry.position)).toEqual([
+      { x: 4, y: 4 },
+      { x: 5, y: 4 },
+      { x: 6, y: 4 },
+    ]);
+  });
+
+  it('uses targetPos when no blast positions are present', () => {
+    const resolved = resolveHandledModuleAnimations(
+      makeMap(),
+      [],
+      [makeFxAnimation({
+        targetPos: { x: 8, y: 3 },
+        blastPositions: [],
+      })],
+      [],
+      mockGetAnimationModule,
+    );
+
+    expect(resolved[0]?.position).toEqual({ x: 8, y: 3 });
+  });
+
+  it('passes projectile source and target positions through the overlay bridge', () => {
+    const resolved = resolveHandledModuleAnimations(
+      makeMap(),
+      [],
+      [makeFxAnimation({
+        animationId: 'fx.projectile.ember-bolt' as any,
+        playerPos: { x: 2, y: 3 },
+        targetPos: { x: 8, y: 3 },
+        blastPositions: [],
+      })],
+      [],
+      () => mockAnimationModule,
+    );
+
+    expect(resolved[0]?.sourcePosition).toEqual({ x: 2, y: 3 });
+    expect(resolved[0]?.targetPosition).toEqual({ x: 8, y: 3 });
+  });
+
+  it('uses each blast position as the projectile target when multiple targets are resolved', () => {
+    const resolved = resolveHandledModuleAnimations(
+      makeMap(),
+      [],
+      [makeFxAnimation({
+        animationId: 'fx.projectile.arrow-volley' as any,
+        playerPos: { x: 2, y: 3 },
+        targetPos: { x: 8, y: 3 },
+        blastPositions: [{ x: 6, y: 2 }, { x: 7, y: 4 }],
+      })],
+      [],
+      () => mockAnimationModule,
+    );
+
+    expect(resolved.map((entry) => entry.sourcePosition)).toEqual([
+      { x: 2, y: 3 },
+      { x: 2, y: 3 },
+    ]);
+    expect(resolved.map((entry) => entry.targetPosition)).toEqual([
+      { x: 6, y: 2 },
+      { x: 7, y: 4 },
+    ]);
+  });
+
+  it('reports visible moving and bumping entities as Three-owned', () => {
+    const owned = resolveThreeOwnedEntityIds(
+      makeMap({ entities: [makeEntity()] }),
+      [makeMoveAnimation()],
+      [makeBumpAnimation()],
+    );
+
+    expect(owned).toEqual(['enemy-1']);
+  });
+
+  it('reports the visible player entity as Three-owned when status presentations move to Three', () => {
+    const owned = resolveThreeOwnedEntityIds(
+      makeMap({
+        entities: [makeEntity('player-1', {
+          type: 'player',
+          templateId: null,
+          ascii: '@',
+          color: '#ffffff',
+          name: 'Hero',
+        })],
+      }),
+      [],
+      [],
+      true,
+    );
+
+    expect(owned).toEqual(['player-1']);
+  });
+
+  it('uses the largest active status entity scale for player presentation ownership', () => {
+    expect(getStatusPresentationEntityScale([
+      { animationId: 'fx.status.arcane-charge-ring', entityScale: 1.18 },
+      { animationId: 'fx.status.gold-ring-pulse', entityScale: 1.35 },
+    ])).toBe(1.35);
+  });
+});
+
+describe('ThreeAnimationOverlay – ownership callback', () => {
+  beforeEach(resetMocks);
+
+  it('reports entityIds when moveAnimations are active', async () => {
+    const onOwnershipChange = vi.fn();
+    render(
+      <ThreeAnimationOverlay
+        {...makeDefaultProps({
+          map: makeMap({ entities: [makeEntity()] }),
+          moveAnimations: [makeMoveAnimation()],
+          onOwnershipChange,
+        })}
+      />,
+    );
+
+    await waitFor(() => {
+      expect(onOwnershipChange).toHaveBeenCalledWith(expect.objectContaining({
+        entityIds: ['enemy-1'],
+      }));
+    });
+  });
+
+  it('reports status ownership and the player entity when status presentations are active', async () => {
+    const onOwnershipChange = vi.fn();
+    render(
+      <ThreeAnimationOverlay
+        {...makeDefaultProps({
+          map: makeMap({
+            entities: [makeEntity('player-1', {
+              type: 'player',
+              templateId: null,
+              ascii: '@',
+              color: '#ffffff',
+              name: 'Hero',
+            })],
+          }),
+          statusPresentations: [
+            {
+              animationId: 'fx.status.gold-ring-pulse',
+              entityScale: 1.35,
+              ring: {
+                colorRgb: '255, 200, 0',
+                alphaBase: 0.35,
+                alphaAmplitude: 0.45,
+                pulsePeriodMs: 180,
+                lineWidth: 1.5,
+                paddingPx: 2,
+              },
+            },
+          ],
+          onOwnershipChange,
+        })}
+      />,
+    );
+
+    await waitFor(() => {
+      expect(onOwnershipChange).toHaveBeenCalledWith(expect.objectContaining({
+        entityIds: ['player-1'],
+        statusPresentation: true,
+      }));
+    });
   });
 });
 

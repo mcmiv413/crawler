@@ -11,9 +11,12 @@
  * Overlay coordinate contract
  * ---------------------------
  * Module methods receive screen-space pixel positions already converted from
- * tile-world coordinates by ThreeAnimationOverlay. The overlay owns the single
- * y-axis flip point (game y+ = down → Three y+ = up).
- * Modules must NOT perform an additional y-flip.
+ * tile-world coordinates by ThreeAnimationOverlay. For projectile-like modules,
+ * the position can also include optional `source` and `target` screen-space
+ * points so modules can interpolate travel from actor to defender instead of
+ * only anchoring at the impact tile. The overlay owns the single y-axis flip
+ * point (game y+ = down → Three y+ = up); modules must NOT perform an
+ * additional y-flip.
  */
 
 import type { AnimationId, AnimationCategory } from '@dungeon/content';

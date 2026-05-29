@@ -1,3 +1,4 @@
+import { animationRefs } from '../animation-refs/index.js';
 import type { StatusDefinition } from './types.js';
 
 export const heatSurgeStatus: StatusDefinition = {
@@ -10,4 +11,5 @@ export const heatSurgeStatus: StatusDefinition = {
   tickMagnitudeKey: 'heat_surge.none',
   modifiesStat: null,
   statMultiplierKey: null,
+  overlay: { id: animationRefs.status.heatSurgeRing.id },
 };

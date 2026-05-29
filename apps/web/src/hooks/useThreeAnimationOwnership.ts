@@ -7,16 +7,10 @@ import {
   isStatusPresentationOwnedByThree,
   areCombatIndicatorsOwnedByThree,
   type AnimationOwnershipState,
-} from '../rendering/three/three-animation-ownership.js';
+  type ThreeOwnershipReport,
+} from '../rendering/three-animation-ownership.js';
 import type { AnimationId } from '@dungeon/content';
 import type { EntityId } from '@dungeon/contracts';
-
-interface ThreeOwnershipReport {
-  readonly animationIds: readonly AnimationId[];
-  readonly entityIds: readonly EntityId[];
-  readonly statusPresentation: boolean;
-  readonly combatIndicators: boolean;
-}
 
 interface UseThreeAnimationOwnershipReturn {
   readonly ownershipState: AnimationOwnershipState;

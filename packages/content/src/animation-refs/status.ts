@@ -12,3 +12,19 @@ export const goldRingPulse = {
   impactFrameMs: 90,
   recoveryMs: 90,
 } as const satisfies AnimationRef;
+
+export const heatSurgeRing = {
+  id: 'fx.status.heat-surge-ring',
+  category: 'status',
+  durationMs: 160,
+  impactFrameMs: 80,
+  recoveryMs: 80,
+} as const satisfies AnimationRef;
+
+export const arcaneChargeRing = {
+  id: 'fx.status.arcane-charge-ring',
+  category: 'status',
+  durationMs: 220,
+  impactFrameMs: 110,
+  recoveryMs: 110,
+} as const satisfies AnimationRef;

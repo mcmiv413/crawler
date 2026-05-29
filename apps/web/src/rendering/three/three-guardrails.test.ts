@@ -2,7 +2,7 @@
  * Workstream 9: Guardrail tests.
  *
  * Tests that verify:
- *  1. The default animation renderer mode is 'three' after full migration
+ *  1. The default animation renderer mode is 'canvas' until Three becomes the proven default
  *  2. The Three module registry correctly handles coverage checking
  *  3. No AnimationId can be registered with an invalid format
  *
@@ -63,10 +63,10 @@ describe('getAnimationRendererMode default', () => {
     vi.unstubAllGlobals();
   });
 
-  it('returns "three" as the default mode when no env var is set', () => {
+  it('returns "canvas" as the default mode when no env var is set', () => {
     vi.stubEnv('VITE_ANIMATION_RENDERER_MODE', '');
     vi.stubGlobal('__DUNGEON_ANIMATION_RENDERER_MODE_OVERRIDE__', undefined);
-    expect(getAnimationRendererMode()).toBe('three');
+    expect(getAnimationRendererMode()).toBe('canvas');
   });
 
   it('still supports "canvas" mode via env override', () => {
@@ -114,7 +114,9 @@ describe('Three animation module registry coverage detection', () => {
       registerAnimationModule(makeStubModule(id, category));
     }
 
-    expect(getAnimationModule(ALL_TEST_IDS[0])).toBeUndefined();
+    const [firstId] = ALL_TEST_IDS;
+    expect(firstId).toBeDefined();
+    expect(getAnimationModule(firstId!)).toBeUndefined();
   });
 
   it('listAnimationIds returns all registered IDs', () => {

@@ -1,20 +1,15 @@
-import { useState, useEffect } from 'react';
 import { COMBAT_INDICATOR_FADEOUT_MS } from '../config/ui-config.js';
-
-interface FloatingLabel {
-  id: string;
-  x: number;
-  y: number;
-  text: string;
-  type: 'damage' | 'heal' | 'status' | 'gold';
-  startTime: number;
-}
+import {
+  useCombatIndicatorState,
+  type FloatingCombatIndicator,
+} from '../hooks/useCombatIndicatorState.js';
 
 interface CombatIndicatorsProps {
   vpLeft: number;
   vpTop: number;
   cellSize: number;
   fadeOutDuration?: number; // milliseconds
+  labels?: readonly FloatingCombatIndicator[];
 }
 
 export function CombatIndicators({
@@ -22,35 +17,14 @@ export function CombatIndicators({
   vpTop,
   cellSize,
   fadeOutDuration = COMBAT_INDICATOR_FADEOUT_MS,
+  labels,
 }: CombatIndicatorsProps) {
-  const [labels, setLabels] = useState<FloatingLabel[]>([]);
-  const [nextId, setNextId] = useState(0);
-
-  useEffect(() => {
-    const handleAddLabel = (event: CustomEvent<Omit<FloatingLabel, 'id' | 'startTime'>>) => {
-      const label = {
-        ...event.detail,
-        id: `label-${nextId}-${Date.now()}-${Math.random()}`,
-        startTime: Date.now(),
-      };
-
-      setLabels(prev => [...prev, label]);
-      setNextId(prev => prev + 1);
-
-      setTimeout(() => {
-        setLabels(prev => prev.filter(l => l.id !== label.id));
-      }, fadeOutDuration);
-    };
-
-    window.addEventListener('combat-indicator', handleAddLabel as EventListener);
-    return () => {
-      window.removeEventListener('combat-indicator', handleAddLabel as EventListener);
-    };
-  }, [nextId, fadeOutDuration]);
+  const liveLabels = useCombatIndicatorState(fadeOutDuration, labels === undefined);
+  const renderedLabels = labels ?? liveLabels;
 
   return (
     <>
-      {labels.map((label, index) => {
+      {renderedLabels.map((label, index) => {
         // Top-right corner positioning
         const screenX = (label.x - vpLeft) * cellSize + cellSize;
         const screenY = (label.y - vpTop) * cellSize;
@@ -60,20 +34,18 @@ export function CombatIndicators({
         const upDrift = progress * 15; // Drift up slightly over duration
 
         // Count how many labels at same position with same or earlier start time
-        const stackIndex = labels.slice(0, index).filter(
-          l => l.x === label.x && l.y === label.y
-        ).length;
-
-        // Each stacked label gets pushed down 14px (stack downward from top-right)
+        const stackIndex = renderedLabels
+          .slice(0, index)
+          .filter((candidate) => candidate.x === label.x && candidate.y === label.y)
+          .length;
         const stackOffset = stackIndex * 14;
-
         const typeColors = {
           damage: '#f44',
           heal: '#4f4',
           status: '#fa4',
           gold: '#fd4',
         };
-
+ 
         return (
           <div
             key={label.id}
@@ -101,6 +73,8 @@ export function CombatIndicators({
     </>
   );
 }
+
+export type { FloatingCombatIndicator };
 
 // Helper to emit combat indicator events
 export function emitCombatIndicator(
