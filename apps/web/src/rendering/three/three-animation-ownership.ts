@@ -1,7 +1,7 @@
 import type { AnimationId } from '@dungeon/content';
 import type { EntityId } from '@dungeon/contracts';
 
-interface AnimationOwnershipState {
+export interface AnimationOwnershipState {
   readonly animationIds: readonly AnimationId[];
   readonly entityIds: readonly EntityId[];
   readonly statusPresentation: boolean;
