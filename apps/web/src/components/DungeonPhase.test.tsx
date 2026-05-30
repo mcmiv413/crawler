@@ -28,6 +28,7 @@ const {
   moveAnimationState,
   consumableAnimationState,
   fxAnimationState,
+  combatIndicatorState,
   defenderHitState,
   gameStoreSpy,
   dungeonRenderStateResult,
@@ -45,6 +46,16 @@ const {
   },
   fxAnimationState: {
     current: [] as Array<{ id: string; abilityId: string; animationId?: string; playerPos: { x: number; y: number }; durationMs: number; impactFrameMs: number; startTime: number; progress: number }>,
+  },
+  combatIndicatorState: {
+    current: [] as Array<{
+      id: string;
+      x: number;
+      y: number;
+      text: string;
+      type: 'damage' | 'heal' | 'status' | 'gold';
+      startTime: number;
+    }>,
   },
   defenderHitState: {
     current: new Map<string, { durationMs: number; startTime: number }>(),
@@ -133,6 +144,10 @@ vi.mock('../hooks/useFxAnimationState.js', () => ({
 
 vi.mock('../hooks/useDefenderHitState.js', () => ({
   useDefenderHitState: () => defenderHitState.current,
+}));
+
+vi.mock('../hooks/useCombatIndicatorState.js', () => ({
+  useCombatIndicatorState: () => combatIndicatorState.current,
 }));
 
 vi.mock('../store/game-store.js', () => ({
@@ -334,6 +349,7 @@ beforeEach(() => {
   });
   overlayLifecycleState.enabled = false;
   defenderHitState.current = new Map();
+  combatIndicatorState.current = [];
   overlayLifecycleState.mountedIds = ['fx.self.healing-pulse'];
   overlayLifecycleState.cleanupIds = [];
   overlayLifecycleState.mountedOwnership = {
@@ -504,6 +520,7 @@ describe('DungeonPhase – legacy rendering (regression)', () => {
     moveAnimationState.current = [];
     consumableAnimationState.current = [];
     fxAnimationState.current = [];
+    combatIndicatorState.current = [];
     defenderHitState.current = new Map();
     gameStoreSpy.statuses = [];
     dungeonRenderStateResult.current = null;
@@ -591,6 +608,7 @@ describe('DungeonPhase – Three flag OFF (canvas-only behavior unchanged)', () 
     moveAnimationState.current = [];
     consumableAnimationState.current = [];
     fxAnimationState.current = [];
+    combatIndicatorState.current = [];
     defenderHitState.current = new Map();
     gameStoreSpy.statuses = [];
     dungeonRenderStateResult.current = null;
@@ -768,6 +786,27 @@ describe('DungeonPhase – Three flag ON', () => {
     expect(overlay).toHaveAttribute('data-status-count', '1');
   });
 
+  it('passes runtime combat indicator labels into the overlay and DOM fallback', () => {
+    combatIndicatorState.current = [
+      {
+        id: 'indicator-1',
+        x: 5,
+        y: 5,
+        text: '-12',
+        type: 'damage',
+        startTime: Date.now(),
+      },
+    ];
+
+    renderDungeonPhase({}, { useSprites: true });
+
+    expect(screen.getByTestId('three-animation-overlay')).toHaveAttribute(
+      'data-combat-indicator-count',
+      '1',
+    );
+    expect(screen.getByText('-12')).toBeInTheDocument();
+  });
+
   it('useDungeonRenderState is called with map, vpTilesWidth, vpTilesHeight', () => {
     renderDungeonPhase({}, { useSprites: true });
     expect(vi.mocked(useDungeonRenderState)).toHaveBeenCalledWith(
@@ -834,6 +873,7 @@ describe('DungeonPhase – props flow and no duplication', () => {
     moveAnimationState.current = [];
     consumableAnimationState.current = [];
     fxAnimationState.current = [];
+    combatIndicatorState.current = [];
     defenderHitState.current = new Map();
     gameStoreSpy.statuses = [];
     dungeonRenderStateResult.current = null;
@@ -1035,6 +1075,35 @@ describe('DungeonPhase – overlay ownership and canvas fallback', () => {
       expect(vi.mocked(renderMap).mock.calls.at(-1)?.[10]).toEqual({
         statusPresentations: [],
       });
+    });
+  });
+
+  it('suppresses DOM combat indicators after Three claims combat-indicator ownership', async () => {
+    combatIndicatorState.current = [
+      {
+        id: 'indicator-1',
+        x: 5,
+        y: 5,
+        text: '-12',
+        type: 'damage',
+        startTime: Date.now(),
+      },
+    ];
+    overlayLifecycleState.mountedOwnership = {
+      animationIds: ['fx.self.healing-pulse'],
+      entityIds: [],
+      statusPresentation: false,
+      combatIndicators: true,
+    };
+
+    renderDungeonPhase({}, { useSprites: true });
+
+    await waitFor(() => {
+      expect(screen.getByTestId('three-animation-overlay')).toHaveAttribute(
+        'data-combat-indicator-count',
+        '1',
+      );
+      expect(screen.queryByText('-12')).not.toBeInTheDocument();
     });
   });
 });
