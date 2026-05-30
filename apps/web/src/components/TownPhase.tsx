@@ -397,10 +397,10 @@ function ElderPanel({
   const spells = view.town?.studyableSpells ?? [];
   return (
     <div style={{ fontFamily: FONT_STACK, color: colors.text }}>
-      <h3 style={{ color: colors.purple, fontSize: 13, fontWeight: 600, margin: 0, marginBottom: 10 }}>
+      <h3 style={{ color: colors.purple, fontSize: 13, fontWeight: 600, letterSpacing: '0.08em', margin: 0, marginBottom: 10 }}>
         Ring Study
       </h3>
-      <div style={{ marginTop: 4, marginBottom: 10, color: colors.gold, fontSize: 11 }}>
+      <div style={{ marginTop: 4, marginBottom: 10, color: colors.gold, fontSize: 11, fontFamily: FONT_STACK }}>
         Gold: {view.player.gold}g
       </div>
       {spells.length === 0 ? (
@@ -409,9 +409,7 @@ function ElderPanel({
         spells.map((spell: typeof spells[number]) => {
           const disabled = loading || spell.canStudy === false;
           const priceLabel = spell.canStudy ? 'Study' : `Need ${spell.goldCost}g`;
-          const schoolProgressLabel = spell.nextSchoolLevelXp === null
-            ? 'Max tier'
-            : `${spell.currentSchoolXp} / ${spell.nextSchoolLevelXp} XP`;
+          const schoolProgressLabel = `${spell.currentSchoolXp} / ${spell.nextSchoolLevelXp} XP`;
 
           return (
             <div

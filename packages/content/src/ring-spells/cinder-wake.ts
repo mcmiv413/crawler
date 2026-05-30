@@ -10,7 +10,8 @@ export const cinderWake: RingSpellDefinition = {
   requiresTarget: false,
   requiresDirection: true,
   unlockLevel: 2,
-  manaCost: 12,
+  manaCost: 15,
+  xpGainOnCast: 3,
   animation: { id: animationRefs.aoe.cinderWake.id },
   schools: ['fire'],
   studyRequirements: [

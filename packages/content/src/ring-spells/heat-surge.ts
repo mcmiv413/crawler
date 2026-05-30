@@ -9,7 +9,8 @@ export const heatSurge: RingSpellDefinition = {
   cooldown: 2,
   requiresTarget: false,
   unlockLevel: 1,
-  manaCost: 8,
+  manaCost: 11,
+  xpGainOnCast: 2,
   animation: { id: animationRefs.self.heatSurgeAura.id },
   schools: ['fire'],
   studyRequirements: [

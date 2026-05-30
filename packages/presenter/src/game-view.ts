@@ -200,6 +200,7 @@ export interface PlayerHudView {
   readonly magicExperience?: number;
   readonly magicLevel?: number;
   readonly magicExperienceForNextLevel?: number | null;
+  readonly spellPower?: number;
   readonly attack: number;
   readonly defense: number;
   readonly accuracy: number;
@@ -426,6 +427,7 @@ export interface LearnedSpellView {
   readonly schools: readonly string[];
   readonly cooldown: number;
   readonly manaCost: number;
+  readonly xpGainOnCast: number;
   readonly learned: true;
   readonly unlocked: boolean;
 }
@@ -433,8 +435,8 @@ export interface LearnedSpellView {
 export interface RingSchoolMasteryView {
   readonly school: string;
   readonly xp: number;
-  readonly level: number;
-  readonly nextLevelXp: number | null;
+  readonly displayLevel: number;
+  readonly nextDisplayLevelXp: number;
 }
 
 export interface RingSpellView {
@@ -444,6 +446,7 @@ export interface RingSpellView {
   readonly schools: readonly string[];
   readonly cooldown: number;
   readonly manaCost: number;
+  readonly xpGainOnCast: number;
   readonly baseDamage: number;
   readonly range: number;
   readonly unlockLevel: number;
@@ -458,7 +461,7 @@ export interface RingSpellView {
 
 export interface TownStudyableSpellView extends RingSpellView {
   readonly currentSchoolLevel: number;
-  readonly nextSchoolLevelXp: number | null;
+  readonly nextSchoolLevelXp: number;
 }
 
 export interface NpcView {

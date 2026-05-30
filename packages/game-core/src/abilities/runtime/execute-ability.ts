@@ -12,7 +12,7 @@ import { spendMana } from '../../systems/mana.js';
 import { gainSchoolXp } from '../../systems/magic-xp.js';
 
 import { canUseLearnedRingSpell } from '../../systems/ring-spell-availability.js';
-import { MAGIC, RING_SPELL_BY_ID } from '@dungeon/content';
+import { RING_SPELL_BY_ID } from '@dungeon/content';
 const ABILITY_REGISTRY = buildRegistry(ALL_ABILITY_DEFINITIONS);
 
 /**
@@ -123,7 +123,7 @@ export function executeAbility(
 
   if (ringSpell !== undefined) {
     const updatedPlayer = ringSpell.schools.reduce(
-      (player, school) => gainSchoolXp(player, school, MAGIC.schoolXpPerSpellCast),
+      (player, school) => gainSchoolXp(player, school, ringSpell.xpGainOnCast),
       newContext.state.player,
     );
 

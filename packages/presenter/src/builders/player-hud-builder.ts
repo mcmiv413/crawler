@@ -7,8 +7,8 @@ import {
   getEquippedRingItemIds,
   getMagicLevel,
   getNextMagicLevelXp,
-  getNextSchoolMasteryXp,
-  getSchoolMasteryLevelFromXp,
+  getNextSchoolDisplayLevelXp,
+  getSchoolDisplayLevelFromXp,
   getTotalMagicXp,
 } from '@dungeon/core';
 import type { AbilityView, EnchantmentView, EquippedItemView, LearnedSpellView, PlayerHudView, RingSchoolMasteryView, RingSpellView, StatusView } from '../game-view.js';
@@ -196,13 +196,13 @@ export function buildPlayerHud(state: GameState): PlayerHudView {
     .map(school => {
       const xpData = (p.ringMastery as Record<string, { xp: number }>)[school.id];
       const currentXp = xpData?.xp ?? 0;
-      const level = getSchoolMasteryLevelFromXp(currentXp);
-      const nextLevelXp = getNextSchoolMasteryXp(currentXp);
+      const displayLevel = getSchoolDisplayLevelFromXp(currentXp);
+      const nextDisplayLevelXp = getNextSchoolDisplayLevelXp(currentXp);
       return {
         school: school.id,
         xp: currentXp,
-        level,
-        nextLevelXp,
+        displayLevel,
+        nextDisplayLevelXp,
       };
     });
 
@@ -220,6 +220,7 @@ export function buildPlayerHud(state: GameState): PlayerHudView {
         schools: spell.schools,
         cooldown: spell.cooldown,
         manaCost: spell.manaCost ?? 0,
+        xpGainOnCast: spell.xpGainOnCast,
         learned: true,
         unlocked: true,
       });
@@ -237,6 +238,7 @@ export function buildPlayerHud(state: GameState): PlayerHudView {
       schools: evalResult.spell.schools,
       cooldown: evalResult.spell.cooldown,
       manaCost: evalResult.spell.manaCost ?? 0,
+      xpGainOnCast: evalResult.spell.xpGainOnCast,
       baseDamage: evalResult.spell.baseDamage ?? 0,
       range: evalResult.spell.range,
       unlockLevel: evalResult.requiredSchoolXp,
@@ -276,6 +278,7 @@ export function buildPlayerHud(state: GameState): PlayerHudView {
           magicExperience: totalMagicXp,
           magicLevel,
           magicExperienceForNextLevel: nextMagicLevelXp,
+          spellPower: 1,
         }
       : {}),
     attack: effectiveAttack,

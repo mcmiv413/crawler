@@ -10,6 +10,10 @@ import {
   getFireMasteryLevel,
   getMagicLevel,
   getNextMagicLevelXp,
+  getNextSchoolDisplayLevelXp,
+  getNextSchoolMasteryXp,
+  getSchoolDisplayLevelFromXp,
+  getSchoolMasteryLevelFromXp,
   getTotalMagicXp,
   learnRingSpell,
 } from './magic-xp.js';
@@ -18,6 +22,8 @@ const LEVEL_TWO_MAGIC_XP = 60;
 const LEVEL_THREE_MAGIC_XP = 150;
 const LEVEL_TWO_MAX_MANA = 25;
 const LEVEL_TWO = 2;
+const LEVEL_THREE = LEVEL_TWO + 1;
+const POST_CAP_DISPLAY_LEVEL_XP = 140;
 
 describe('magic-xp', () => {
   it('tracks Fire XP without discarding learned spells', () => {
@@ -61,6 +67,25 @@ describe('magic-xp', () => {
     expect(getFireBurnDuration(mastered, baseDuration)).toBeGreaterThan(getFireBurnDuration(player, baseDuration));
     expect(getFireBurnMagnitude(mastered)).toBeGreaterThan(getFireBurnMagnitude(player));
     expect(getFireBurnSpreadRadius(mastered)).toBeGreaterThan(getFireBurnSpreadRadius(player));
+  });
+
+  it('keeps mastery benefits capped while display level continues growing after the authored cap', () => {
+    const player = createTestPlayer();
+    const capped = gainSchoolXp(player, 'fire', LEVEL_TWO_MAGIC_XP);
+    const postCap = gainSchoolXp(player, 'fire', LEVEL_TWO_MAGIC_XP + 40);
+
+    expect(getSchoolMasteryLevelFromXp(capped.ringMastery.fire?.xp ?? 0)).toBe(LEVEL_TWO);
+    expect(getSchoolMasteryLevelFromXp(postCap.ringMastery.fire?.xp ?? 0)).toBe(LEVEL_TWO);
+    expect(getNextSchoolMasteryXp(postCap.ringMastery.fire?.xp ?? 0)).toBeNull();
+
+    expect(getSchoolDisplayLevelFromXp(capped.ringMastery.fire?.xp ?? 0)).toBe(LEVEL_TWO);
+    expect(getSchoolDisplayLevelFromXp(postCap.ringMastery.fire?.xp ?? 0)).toBe(LEVEL_THREE);
+    expect(getNextSchoolDisplayLevelXp(postCap.ringMastery.fire?.xp ?? 0)).toBe(POST_CAP_DISPLAY_LEVEL_XP);
+
+    expect(getFireMasteryLevel(postCap)).toBe(getFireMasteryLevel(capped));
+    expect(getFireBurnDuration(postCap, 2)).toBe(getFireBurnDuration(capped, 2));
+    expect(getFireBurnMagnitude(postCap)).toBe(getFireBurnMagnitude(capped));
+    expect(getFireBurnSpreadRadius(postCap)).toBe(getFireBurnSpreadRadius(capped));
   });
 
   it('unlocks high-mastery burn spread panic and burn-kill mana restoration gates', () => {

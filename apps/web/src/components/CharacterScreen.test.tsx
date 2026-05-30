@@ -115,20 +115,42 @@ describe('CharacterScreen faction progress', () => {
     );
   });
 
-  it('shows the global ring-magic progression summary when magic is unlocked', () => {
+  it('shows magic progression, MP and spell power tiles, and a dedicated magic modal without duplicate spell abilities', () => {
     render(
       <CharacterScreen
         player={createPlayer({
+          abilities: [
+            {
+              id: 'heat_surge',
+              name: 'Heat Surge',
+              description: 'A fiery self-buff.',
+              ready: true,
+              cooldownRemaining: 0,
+              cooldown: 4,
+              requiresTarget: false,
+            },
+            {
+              id: 'power_strike',
+              name: 'Power Strike',
+              description: 'A heavy melee attack.',
+              ready: true,
+              cooldownRemaining: 0,
+              cooldown: 2,
+              requiresTarget: true,
+              targetRange: { min: 1, max: 1 },
+            },
+          ],
           mana: 12,
           maxMana: 25,
           magicExperience: 60,
           magicLevel: 2,
           magicExperienceForNextLevel: 150,
+          spellPower: 1,
           ringSchoolMasteries: [{
             school: 'fire',
             xp: 60,
-            level: 2,
-            nextLevelXp: null,
+            displayLevel: 2,
+            nextDisplayLevelXp: 100,
           }],
           learnedSpells: [{
             spellId: 'heat_surge',
@@ -136,7 +158,8 @@ describe('CharacterScreen faction progress', () => {
             description: 'A fiery self-buff.',
             schools: ['fire'],
             cooldown: 4,
-            manaCost: 8,
+            manaCost: 11,
+            xpGainOnCast: 2,
             learned: true,
             unlocked: true,
           }],
@@ -145,11 +168,22 @@ describe('CharacterScreen faction progress', () => {
       />,
     );
 
-    expect(screen.getByText(/Magic Lv 2/i)).toBeInTheDocument();
-    expect(screen.getByText(/Total XP 60/i)).toBeInTheDocument();
+    expect(screen.getByText(/MAGIC EXPERIENCE/i)).toBeInTheDocument();
     expect(screen.getByText(/60 \/ 150 XP toward Magic Lv 3/i)).toBeInTheDocument();
-    expect(screen.getByText(/Mana 12\/25/i)).toBeInTheDocument();
-    expect(screen.getByText(/Lv 2 · Max tier/i)).toBeInTheDocument();
+    expect(screen.getByText('MP')).toBeInTheDocument();
+    expect(screen.getByText('SPL')).toBeInTheDocument();
+    expect(screen.queryByText(/RING MAGIC/i)).not.toBeInTheDocument();
+    expect(screen.queryByText(/LEARNED SPELLS/i)).not.toBeInTheDocument();
+
+    expect(screen.getByRole('button', { name: 'Power Strike' })).toBeInTheDocument();
+    expect(screen.queryByRole('button', { name: 'Heat Surge' })).not.toBeInTheDocument();
+
+    fireEvent.click(screen.getByRole('button', { name: 'Magic' }));
+
+    expect(screen.getByText(/Fire Magic/i)).toBeInTheDocument();
+    expect(screen.getByText(/Spell Power: 1/i)).toBeInTheDocument();
+    expect(screen.getByText(/\+2 XP\/cast/i)).toBeInTheDocument();
+    expect(screen.getAllByText(/Heat Surge/i)).toHaveLength(1);
   });
 
   it('does not render stale mastery detail state for a missing weapon key', () => {

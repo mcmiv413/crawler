@@ -25,7 +25,12 @@ import { buildGameView } from '@dungeon/presenter';
 const EMBER_BURN_DURATION = 3;
 const HEAT_SURGE_DURATION = 3;
 const CINDER_WAKE_PANIC_DURATION = 2;
-const SPELL_CAST_XP_GAIN = 5;
+const EMBER_MANA_COST = 7;
+const HEAT_SURGE_MANA_COST = 11;
+const CINDER_WAKE_MANA_COST = 15;
+const EMBER_CAST_XP_GAIN = 1;
+const HEAT_SURGE_CAST_XP_GAIN = 2;
+const CINDER_WAKE_CAST_XP_GAIN = 3;
 const MAGIC_LEVEL_TWO_XP = 60;
 const MAGIC_LEVEL_TWO_MAX_MANA = 25;
 
@@ -72,10 +77,13 @@ describe('handleUseAbility', () => {
       const burnEvent = result.events.find(
         (event) => event.type === 'STATUS_APPLIED' && event.statusId === 'burn',
       );
+      const manaSpendEvent = result.events.find(
+        (event) => event.type === 'MANA_CHANGED' && event.amount < 0,
+      );
 
       expect(result.state.player.mana).toBeLessThan(initialMana);
-      expect(result.state.player.ringMastery.fire?.xp).toBe(initialFireXp + SPELL_CAST_XP_GAIN);
-      expect(result.events.some(event => event.type === 'MANA_CHANGED' && event.amount < 0)).toBe(true);
+      expect(result.state.player.ringMastery.fire?.xp).toBe(initialFireXp + EMBER_CAST_XP_GAIN);
+      expect(manaSpendEvent).toEqual(expect.objectContaining({ type: 'MANA_CHANGED', amount: -EMBER_MANA_COST }));
       expect(result.events.some(event => event.type === 'ABILITY_USED' && event.abilityId === 'ember')).toBe(true);
       expect(targetAfterCast?.stats.health).toBeLessThan(initialTargetHealth ?? 0);
       expect(burnEvent).toBeDefined();
@@ -114,9 +122,13 @@ describe('handleUseAbility', () => {
       const heatSurgeEvent = result.events.find(
         (event) => event.type === 'STATUS_APPLIED' && event.statusId === 'heat_surge',
       );
+      const manaSpendEvent = result.events.find(
+        (event) => event.type === 'MANA_CHANGED' && event.amount < 0,
+      );
 
       expect(result.state.player.mana).toBeLessThan(initialMana);
-      expect(result.state.player.ringMastery.fire?.xp).toBe(initialFireXp + SPELL_CAST_XP_GAIN);
+      expect(result.state.player.ringMastery.fire?.xp).toBe(initialFireXp + HEAT_SURGE_CAST_XP_GAIN);
+      expect(manaSpendEvent).toEqual(expect.objectContaining({ type: 'MANA_CHANGED', amount: -HEAT_SURGE_MANA_COST }));
       expect(heatSurgeEvent).toBeDefined();
       if (heatSurgeEvent?.type === 'STATUS_APPLIED') {
         expect(heatSurgeEvent.duration).toBe(HEAT_SURGE_DURATION);
@@ -133,7 +145,7 @@ describe('handleUseAbility', () => {
           maxMana: 20,
           ringMastery: {
             fire: {
-              xp: MAGIC_LEVEL_TWO_XP - SPELL_CAST_XP_GAIN,
+              xp: MAGIC_LEVEL_TWO_XP - EMBER_CAST_XP_GAIN,
             },
           },
         },
@@ -157,6 +169,8 @@ describe('handleUseAbility', () => {
           { id: 'off_line_enemy', position: { x: 0, y: 1 }, health: 100 },
         ],
       });
+      const initialMana = state.player.mana;
+      const initialFireXp = state.player.ringMastery.fire?.xp ?? 0;
       const primaryEnemyId = firstEnemyId(state);
       const lineEnemyId = entityId('line_enemy');
       const offLineEnemyId = entityId('off_line_enemy');
@@ -223,6 +237,9 @@ describe('handleUseAbility', () => {
       const panicEvent = result.events.find(
         (event) => event.type === 'STATUS_APPLIED' && event.statusId === 'panic',
       );
+      const manaSpendEvent = result.events.find(
+        (event) => event.type === 'MANA_CHANGED' && event.amount < 0,
+      );
 
       expect(primaryEnemy?.stats.health).toBeLessThan(healthByIdBeforeCast.get(primaryEnemyId) ?? 0);
       expect(lineEnemy?.stats.health).toBeLessThan(healthByIdBeforeCast.get(lineEnemyId) ?? 0);
@@ -236,6 +253,9 @@ describe('handleUseAbility', () => {
       if (panicEvent?.type === 'STATUS_APPLIED') {
         expect(panicEvent.duration).toBe(CINDER_WAKE_PANIC_DURATION);
       }
+      expect(result.state.player.mana).toBeLessThan(initialMana);
+      expect(result.state.player.ringMastery.fire?.xp).toBe(initialFireXp + CINDER_WAKE_CAST_XP_GAIN);
+      expect(manaSpendEvent).toEqual(expect.objectContaining({ type: 'MANA_CHANGED', amount: -CINDER_WAKE_MANA_COST }));
     });
 
     it('rejects a directional spell without direction before spending mana', () => {
