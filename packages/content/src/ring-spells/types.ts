@@ -31,6 +31,9 @@ export interface RingSpellDefinition extends AbilityDefinition {
   // Multi-school membership — ['fire'] for single-school, ['fire', 'ice'] for combo
   readonly schools: readonly RingSchool[];
 
+  // School XP awarded to each listed school when the spell is successfully cast
+  readonly xpGainOnCast: number;
+
   // Composable study requirements — all must be met to unlock
   readonly studyRequirements: readonly SpellStudyRequirement[];
 

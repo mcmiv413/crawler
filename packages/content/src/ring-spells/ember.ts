@@ -9,7 +9,8 @@ export const ember: RingSpellDefinition = {
   cooldown: 1,
   requiresTarget: true,
   unlockLevel: 0,
-  manaCost: 5,
+  manaCost: 7,
+  xpGainOnCast: 1,
   animation: { id: animationRefs.projectile.emberBolt.id },
   schools: ['fire'],
   studyRequirements: [

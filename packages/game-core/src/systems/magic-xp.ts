@@ -43,6 +43,29 @@ export function getNextSchoolMasteryXp(xp: number): number | null {
     : null;
 }
 
+export function getSchoolDisplayLevelFromXp(xp: number): number {
+  const masteryLevel = getSchoolMasteryLevelFromXp(xp);
+  const maxConfiguredXp = MAGIC.schoolMasteryTierThresholds[MAGIC.schoolMasteryTierThresholds.length - 1] ?? 0;
+
+  if (xp < maxConfiguredXp) {
+    return masteryLevel;
+  }
+
+  return masteryLevel + Math.floor((xp - maxConfiguredXp) / MAGIC.schoolDisplayLevelXpAfterCap);
+}
+
+export function getNextSchoolDisplayLevelXp(xp: number): number {
+  const nextConfiguredXp = getNextSchoolMasteryXp(xp);
+  if (nextConfiguredXp !== null) {
+    return nextConfiguredXp;
+  }
+
+  const maxConfiguredXp = MAGIC.schoolMasteryTierThresholds[MAGIC.schoolMasteryTierThresholds.length - 1] ?? 0;
+  const completedPostCapLevels = Math.floor((xp - maxConfiguredXp) / MAGIC.schoolDisplayLevelXpAfterCap);
+
+  return maxConfiguredXp + ((completedPostCapLevels + 1) * MAGIC.schoolDisplayLevelXpAfterCap);
+}
+
 export function getMaxManaForMagicLevel(magicLevel: number): number {
   return MAGIC.initialMana + Math.max(0, magicLevel - 1) * MAGIC.manaPerMagicLevel;
 }

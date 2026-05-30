@@ -43,6 +43,8 @@ export {
   getNextMagicLevelXp,
   getSchoolMasteryLevelFromXp,
   getNextSchoolMasteryXp,
+  getSchoolDisplayLevelFromXp,
+  getNextSchoolDisplayLevelXp,
   getMaxManaForMagicLevel,
   recalculateMagicMana,
   gainSchoolXp,

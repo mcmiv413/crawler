@@ -291,7 +291,7 @@ describe('buildPlayerHud', () => {
           maxMana: 25,
           ringMastery: {
             fire: {
-              xp: 65,
+              xp: 100,
             },
           },
           learnedRingSpellIds: ['heat_surge'],
@@ -300,16 +300,24 @@ describe('buildPlayerHud', () => {
 
       const hud = buildPlayerHud(state);
 
-      expect(hud.magicExperience).toBe(65);
+      expect(hud.magicExperience).toBe(100);
       expect(hud.magicLevel).toBe(2);
       expect(hud.magicExperienceForNextLevel).toBe(150);
+      expect(hud.spellPower).toBe(1);
       expect(hud.ringSchoolMasteries).toEqual([
         {
           school: 'fire',
-          xp: 65,
-          level: 2,
-          nextLevelXp: null,
+          xp: 100,
+          displayLevel: 3,
+          nextDisplayLevelXp: 140,
         },
+      ]);
+      expect(hud.learnedSpells).toEqual([
+        expect.objectContaining({
+          spellId: 'heat_surge',
+          manaCost: 11,
+          xpGainOnCast: 2,
+        }),
       ]);
     });
   });

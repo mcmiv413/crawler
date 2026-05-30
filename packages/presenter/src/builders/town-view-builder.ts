@@ -5,8 +5,8 @@ import { buildFactionPressureSummary, buildFactionView, buildOgreProgressView } 
 import {
   evaluateAllRingSpellStudy,
   getEquippedRingItemIds,
-  getNextSchoolMasteryXp,
-  getSchoolMasteryLevelFromXp,
+  getNextSchoolDisplayLevelXp,
+  getSchoolDisplayLevelFromXp,
 } from '@dungeon/core';
 
 function shopkeeperDiscountPct(state: GameState): number {
@@ -87,8 +87,8 @@ function buildStudyableSpells(state: GameState): readonly TownStudyableSpellView
   return evaluateAllRingSpellStudy(state.player, equippedItemIds)
     .filter(evalResult => evalResult.unlockedForStudy)
     .map(evalResult => {
-      const currentSchoolLevel = getSchoolMasteryLevelFromXp(evalResult.currentSchoolXp);
-      const nextSchoolLevelXp = getNextSchoolMasteryXp(evalResult.currentSchoolXp);
+      const currentSchoolLevel = getSchoolDisplayLevelFromXp(evalResult.currentSchoolXp);
+      const nextSchoolLevelXp = getNextSchoolDisplayLevelXp(evalResult.currentSchoolXp);
 
       return {
         spellId: evalResult.spell.id,
@@ -97,6 +97,7 @@ function buildStudyableSpells(state: GameState): readonly TownStudyableSpellView
         schools: evalResult.spell.schools,
         cooldown: evalResult.spell.cooldown,
         manaCost: evalResult.spell.manaCost ?? 0,
+        xpGainOnCast: evalResult.spell.xpGainOnCast,
         baseDamage: evalResult.spell.baseDamage ?? 0,
         range: evalResult.spell.range,
         unlockLevel: evalResult.requiredSchoolXp,

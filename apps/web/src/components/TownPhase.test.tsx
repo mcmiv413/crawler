@@ -736,7 +736,8 @@ describe('TownPhase Component', () => {
               description: 'Ignite enemies with attacks for a short time.',
               schools: ['fire'],
               cooldown: 2,
-              manaCost: 20,
+              manaCost: 11,
+              xpGainOnCast: 2,
               baseDamage: 0,
               range: 1,
               unlockLevel: 1,
@@ -770,7 +771,9 @@ describe('TownPhase Component', () => {
 
       fireEvent.click(screen.getByRole('button', { name: /Study →/i }));
       expect(screen.getByRole('heading', { name: /Ring Study/i })).toBeVisible();
+      expect(screen.getByText('Gold: 200g')).toBeVisible();
       expect(screen.getByText('Fire Lv 7 · 0 / 999 XP · Range 1 · 80g')).toBeVisible();
+      expect(screen.queryByText(/Max tier/i)).not.toBeInTheDocument();
 
       fireEvent.click(screen.getByRole('button', { name: /^Study$/i }));
 

@@ -1,7 +1,7 @@
 import { describe, it, expect, beforeEach } from 'vitest';
 import { buildTownView } from './town-view-builder.js';
 import { createTestGameState } from '@dungeon/core/testing';
-import { getNextSchoolMasteryXp, getSchoolMasteryLevelFromXp } from '@dungeon/core';
+import { getNextSchoolDisplayLevelXp, getSchoolDisplayLevelFromXp } from '@dungeon/core';
 import { entityId } from '@dungeon/contracts';
 import type { GameState, ArmorTemplate } from '@dungeon/contracts';
 
@@ -407,8 +407,9 @@ describe('buildTownView', () => {
       expect(heatSurge?.canStudy).toBe(true);
       expect(heatSurge?.learned).toBe(false);
       expect(heatSurge).toEqual(expect.objectContaining({
-        currentSchoolLevel: getSchoolMasteryLevelFromXp(100),
-        nextSchoolLevelXp: getNextSchoolMasteryXp(100),
+        currentSchoolLevel: getSchoolDisplayLevelFromXp(100),
+        nextSchoolLevelXp: getNextSchoolDisplayLevelXp(100),
+        xpGainOnCast: 2,
       }));
     });
 

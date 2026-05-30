@@ -5,6 +5,7 @@ import { MasteryDetailModal } from './MasteryDetailModal.js';
 import { QuestDetailModal } from './QuestDetailModal.js';
 import { FactionDetailModal } from './FactionDetailModal.js';
 import { EnchantmentDetailModal } from './EnchantmentDetailModal.js';
+import { MagicDetailModal } from './MagicDetailModal.js';
 import { useBreakpoint } from '../hooks/useBreakpoint.js';
 import { TAB_BAR_HEIGHT } from '../config/ui-config.js';
 
@@ -151,84 +152,24 @@ function AbilityDetailPanel({
   );
 }
 
-function RingMagicDetailModal({
-  mastery,
-  learnedSpells,
-  onClose,
-}: {
-  mastery: PlayerHudView['ringSchoolMasteries'][number];
-  learnedSpells: PlayerHudView['learnedSpells'];
-  onClose: () => void;
-}) {
-  const schoolName = titleCase(mastery.school);
-  const nextTierLabel = mastery.nextLevelXp === null
-    ? 'Maximum mastery tier reached'
-    : `${mastery.xp} / ${mastery.nextLevelXp} XP toward the next tier`;
-  const schoolSpells = learnedSpells.filter(spell => spell.schools.includes(mastery.school));
-
-  return (
-    <div style={{ marginBottom: 12, padding: 8, background: '#1b1426', border: '1px solid #4a2f66' }}>
-      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 8 }}>
-        <div>
-          <div style={{ fontSize: 13, fontWeight: 'bold', color: '#b695ff' }}>{schoolName} Magic</div>
-          <div style={{ fontSize: 10, color: '#9a90b6' }}>Level {mastery.level}</div>
-        </div>
-        <button
-          onClick={onClose}
-          style={{
-            padding: '2px 6px',
-            background: '#2a2138',
-            color: '#bbb',
-            border: '1px solid #4a2f66',
-            cursor: 'pointer',
-            fontSize: 11,
-          }}
-        >
-          ✕
-        </button>
-      </div>
-
-      <div style={{ fontSize: 11, color: '#ddd', lineHeight: 1.5, marginBottom: 8 }}>
-        <div>Current XP: {mastery.xp}</div>
-        <div>{nextTierLabel}</div>
-      </div>
-
-      <div style={{ borderTop: '1px solid #332547', paddingTop: 6 }}>
-        <div style={{ fontSize: 10, color: '#b695ff', fontWeight: 'bold', marginBottom: 4 }}>Learned Spells</div>
-        {schoolSpells.length > 0 ? (
-          schoolSpells.map(spell => (
-            <div key={spell.spellId} style={{ fontSize: 11, color: '#ddd', marginBottom: 3 }}>
-              {spell.name}
-              {spell.manaCost > 0 ? <span style={{ color: '#8a78c8', marginLeft: 4 }}>{spell.manaCost}MP</span> : null}
-              {spell.cooldown > 0 ? <span style={{ color: '#888', marginLeft: 4 }}>cd:{spell.cooldown}</span> : null}
-            </div>
-          ))
-        ) : (
-          <div style={{ fontSize: 10, color: '#888' }}>No spells learned in this school yet.</div>
-        )}
-      </div>
-    </div>
-  );
-}
-
 function AbilitiesSection({
-  player,
+  abilities,
   selectedAbilityId,
   onSelectAbility,
 }: {
-  player: PlayerHudView;
+  abilities: readonly AbilityView[];
   selectedAbilityId: string | null;
   onSelectAbility: (id: string | null) => void;
 }) {
-  if (player.abilities.length === 0) return null;
+  if (abilities.length === 0) return null;
 
-  const selectedAbility = player.abilities.find((a) => a.id === selectedAbilityId);
+  const selectedAbility = abilities.find((a) => a.id === selectedAbilityId);
 
   return (
     <div style={{ marginBottom: 12 }}>
       <div style={{ color: '#888', fontSize: 11, marginBottom: 4, fontWeight: 'bold' }}>ABILITIES</div>
       <div style={{ display: 'flex', flexWrap: 'wrap', gap: '4px', marginBottom: 4 }}>
-        {player.abilities.map((a) => (
+        {abilities.map((a) => (
           <button
             key={a.id}
             onClick={() => onSelectAbility(selectedAbilityId === a.id ? null : a.id)}
@@ -257,37 +198,82 @@ function AbilitiesSection({
   );
 }
 
-function XpProgressSection({ player }: { player: PlayerHudView }) {
-  const xpPercent = Math.round((player.experience / player.experienceForNextLevel) * 100);
+function ProgressBarRow({
+  label,
+  current,
+  max,
+  fillColor,
+  caption,
+}: {
+  label: string;
+  current: number;
+  max: number | null;
+  fillColor: string;
+  caption: string;
+}) {
+  const percent = max === null || max <= 0
+    ? 100
+    : Math.min(100, Math.round((current / max) * 100));
+
   return (
-    <div style={{ marginBottom: 12 }}>
-      <div style={{ color: '#888', fontSize: 11, marginBottom: 4, fontWeight: 'bold' }}>EXPERIENCE</div>
-      <div style={{ background: '#1a1a1a', padding: '6px', border: '1px solid #333', marginBottom: 4 }}>
-        <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: 12, marginBottom: 4 }}>
-          <div>{player.experience.toLocaleString()}</div>
-          <div style={{ color: '#888' }}>/ {player.experienceForNextLevel.toLocaleString()}</div>
+    <div style={{ background: '#1a1a1a', padding: '6px', border: '1px solid #333' }}>
+      <div style={{ color: '#888', fontSize: 11, marginBottom: 4, fontWeight: 'bold' }}>{label}</div>
+      <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: 12, marginBottom: 4 }}>
+        <div>{current.toLocaleString()}</div>
+        <div style={{ color: '#888' }}>
+          {max === null ? 'MAX' : `/ ${max.toLocaleString()}`}
         </div>
+      </div>
+      <div
+        style={{
+          width: '100%',
+          height: '8px',
+          background: '#0a0a0a',
+          border: '1px solid #333',
+          position: 'relative',
+          overflow: 'hidden',
+        }}
+      >
         <div
           style={{
-            width: '100%',
-            height: '8px',
-            background: '#0a0a0a',
-            border: '1px solid #333',
-            position: 'relative',
-            overflow: 'hidden',
+            width: `${percent}%`,
+            height: '100%',
+            background: fillColor,
+            transition: 'width 0.3s ease',
           }}
-        >
-          <div
-            style={{
-              width: `${xpPercent}%`,
-              height: '100%',
-              background: '#4a6',
-              transition: 'width 0.3s ease',
-            }}
-          />
-        </div>
-        <div style={{ fontSize: 10, color: '#888', marginTop: 2 }}>{xpPercent}% to Level {player.level + 1}</div>
+        />
       </div>
+      <div style={{ fontSize: 10, color: '#888', marginTop: 2 }}>{caption}</div>
+    </div>
+  );
+}
+
+function XpProgressSection({ player }: { player: PlayerHudView }) {
+  const hasMagicProgress = player.magicExperience !== undefined && player.magicLevel !== undefined
+    && player.magicExperienceForNextLevel !== undefined;
+
+  const magicCaption = player.magicExperienceForNextLevel === null
+    ? `Magic Lv ${player.magicLevel ?? 1} maxed`
+    : `${player.magicExperience ?? 0} / ${player.magicExperienceForNextLevel} XP toward Magic Lv ${(player.magicLevel ?? 1) + 1}`;
+
+  return (
+    <div style={{ marginBottom: 12, display: 'flex', flexDirection: 'column', gap: 6 }}>
+      <ProgressBarRow
+        label="EXPERIENCE"
+        current={player.experience}
+        max={player.experienceForNextLevel}
+        fillColor="#4a6"
+        caption={`${Math.round((player.experience / player.experienceForNextLevel) * 100)}% to Level ${player.level + 1}`}
+      />
+      {hasMagicProgress && (
+        <ProgressBarRow
+          label="MAGIC EXPERIENCE"
+          current={player.magicExperience ?? 0}
+          max={player.magicExperienceForNextLevel ?? null}
+          fillColor="#8a78c8"
+          caption={magicCaption}
+        />
+      )}
     </div>
   );
 }
@@ -356,7 +342,7 @@ export function CharacterScreen({ player, activeQuests, sendCommand }: Character
   const [showFactionsModal, setShowFactionsModal] = useState(false);
   const [showMasteryModal, setShowMasteryModal] = useState<string | null>(null);
   const [showEnchantsModal, setShowEnchantsModal] = useState(false);
-  const [selectedRingSchool, setSelectedRingSchool] = useState<string | null>(null);
+  const [showMagicModal, setShowMagicModal] = useState(false);
 
   const quests = activeQuests ?? player.activeQuests;
   const hasQuests = quests.length > 0;
@@ -365,20 +351,13 @@ export function CharacterScreen({ player, activeQuests, sendCommand }: Character
   const masteryTiers = player.weaponMasteryTiers ?? [];
   const hasMasteries = masteryTiers.length > 0;
   const hasRingMagic = player.ringSchoolMasteries.length > 0 || player.learnedSpells.length > 0;
-  const totalRingMagicXp = player.magicExperience
-    ?? player.ringSchoolMasteries.reduce((total, mastery) => total + mastery.xp, 0);
-  const magicLevel = player.magicLevel ?? 1;
-  const nextMagicLevelXp = player.magicExperienceForNextLevel ?? null;
-  const nextMagicLevelLabel = nextMagicLevelXp === null
-    ? 'Maximum magic level reached'
-    : `${totalRingMagicXp} / ${nextMagicLevelXp} XP toward Magic Lv ${magicLevel + 1}`;
+  const learnedRingSpellIds = new Set(player.learnedSpells.map(spell => spell.spellId));
+  const visibleAbilities = hasRingMagic
+    ? player.abilities.filter(ability => !learnedRingSpellIds.has(ability.id))
+    : player.abilities;
   const selectedMasteryInfo =
     showMasteryModal && showMasteryModal !== 'list'
       ? masteryTiers.find(info => info.weaponType === showMasteryModal)
-      : undefined;
-  const selectedRingMagicInfo =
-    selectedRingSchool !== null
-      ? player.ringSchoolMasteries.find(info => info.school === selectedRingSchool)
       : undefined;
 
   return (
@@ -485,58 +464,22 @@ export function CharacterScreen({ player, activeQuests, sendCommand }: Character
                 Enchantments
               </button>
             )}
+            {hasRingMagic && (
+            <button
+              onClick={() => setShowMagicModal(true)}
+              style={{
+                padding: '4px 8px',
+                background: '#221633',
+                color: '#d6c6ff',
+                border: '1px solid #6a4da0',
+                fontSize: 11,
+                cursor: 'pointer',
+              }}
+            >
+              Magic
+            </button>
+            )}
           </div>
-
-          {/* Ring Magic */}
-          {hasRingMagic && (
-            <section style={{ marginBottom: 12 }}>
-              <div style={{ display: 'flex', justifyContent: 'space-between', gap: 8, marginBottom: 4 }}>
-                <div style={{ fontSize: 11, color: '#888' }}>RING MAGIC</div>
-                <div style={{ fontSize: 10, color: '#8a78c8' }}>MAGIC LV {magicLevel}</div>
-              </div>
-              <div style={{ marginBottom: 6, padding: '6px 8px', background: '#17111f', border: '1px solid #4a2f66' }}>
-                <div style={{ display: 'flex', justifyContent: 'space-between', gap: 8, fontSize: 11, marginBottom: 2 }}>
-                  <div style={{ color: '#d6c6ff', fontWeight: 'bold' }}>Total XP {totalRingMagicXp}</div>
-                  <div style={{ color: '#8a78c8' }}>Mana {player.mana ?? 0}/{player.maxMana ?? 0}</div>
-                </div>
-                <div style={{ color: '#b0a3d1', fontSize: 10 }}>{nextMagicLevelLabel}</div>
-              </div>
-              {player.ringSchoolMasteries.map(m => (
-                <button
-                  key={m.school}
-                  onClick={() => setSelectedRingSchool(m.school)}
-                  style={{
-                    width: '100%',
-                    marginBottom: 4,
-                    padding: '6px 8px',
-                    background: selectedRingSchool === m.school ? '#2f2142' : '#17111f',
-                    color: '#d6c6ff',
-                    border: `1px solid ${selectedRingSchool === m.school ? '#8a78c8' : '#4a2f66'}`,
-                    fontSize: 11,
-                    cursor: 'pointer',
-                    textAlign: 'left',
-                  }}
-                >
-                  <div style={{ fontWeight: 'bold', marginBottom: 2 }}>{titleCase(m.school)}</div>
-                  <div style={{ color: '#b0a3d1' }}>
-                    {m.nextLevelXp === null ? `Lv ${m.level} · Max tier` : `Lv ${m.level} · ${m.xp} XP / ${m.nextLevelXp}`}
-                  </div>
-                </button>
-              ))}
-            </section>
-          )}
-          {player.learnedSpells.length > 0 && (
-            <section style={{ marginBottom: 12 }}>
-              <div style={{ fontSize: 11, color: '#888', marginBottom: 4 }}>LEARNED SPELLS</div>
-              {player.learnedSpells.map(spell => (
-                <div key={spell.spellId} style={{ fontSize: 12, color: '#8cf', marginBottom: 2 }}>
-                  {spell.name}
-                  {spell.manaCost > 0 && <span style={{ color: '#66f', marginLeft: 4 }}>{spell.manaCost}MP</span>}
-                  {spell.cooldown > 0 && <span style={{ color: '#888', marginLeft: 4 }}>cd:{spell.cooldown}</span>}
-                </div>
-              ))}
-            </section>
-          )}
 
           {/* Resistances */}
           <ResistancesSection player={player} />
@@ -550,7 +493,7 @@ export function CharacterScreen({ player, activeQuests, sendCommand }: Character
 
           {/* Abilities */}
           <AbilitiesSection
-            player={player}
+            abilities={visibleAbilities}
             selectedAbilityId={selectedAbilityId}
             onSelectAbility={setSelectedAbilityId}
           />
@@ -579,11 +522,10 @@ export function CharacterScreen({ player, activeQuests, sendCommand }: Character
           onClose={() => setShowMasteryModal(null)}
         />
       )}
-      {selectedRingMagicInfo !== undefined && (
-        <RingMagicDetailModal
-          mastery={selectedRingMagicInfo}
-          learnedSpells={player.learnedSpells}
-          onClose={() => setSelectedRingSchool(null)}
+      {showMagicModal && hasRingMagic && (
+        <MagicDetailModal
+          player={player}
+          onClose={() => setShowMagicModal(false)}
         />
       )}
     </div>

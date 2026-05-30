@@ -34,6 +34,15 @@ describe('Ring Magic System Contracts', () => {
       }
     });
 
+    it('every spell has positive cast XP metadata', () => {
+      for (const [id, spell] of RING_SPELL_BY_ID) {
+        expect(
+          spell.xpGainOnCast,
+          `Spell "${id}" must define positive xpGainOnCast metadata`,
+        ).toBeGreaterThan(0);
+      }
+    });
+
     it('every spell has a valid effectKind', () => {
       const validKinds = ['single_target_damage', 'self_buff', 'line_damage', 'custom'];
       for (const [id, spell] of RING_SPELL_BY_ID) {

@@ -38,19 +38,19 @@ Follow [Architecture Patterns](architecture-patterns.md): add source entity file
 - The ring item has `armor.slot: 'ring'` and stable `itemId`.
 - The ring school is defined in its own source file and appears in generated `RING_SCHOOL_BY_ID` with correct `ringId` mapping.
 - The grant enchantment uses `effect: { type: 'grant_ability', abilityId }`.
-- Ring spells are defined in source files with `schools`, `studyRequirements` (including `goldCost` and `minimumSchoolXp`), and status effects.
+- Ring spells are defined in source files with `schools`, `studyRequirements` (including `goldCost` and `minimumSchoolXp`), authored `manaCost`, `xpGainOnCast`, and any status effects.
 - Cross-references use imported definitions or dot-walked refs where practical instead of repeated raw IDs.
 - Generated indexes are updated by `pnpm generate:indexes`, not hand edits.
 - Learned spells are stored in `player.learnedRingSpellIds` (source of truth).
 - School mastery is tracked in `player.ringMastery[schoolId] = { xp }` (no spell unlock field).
 - Studying is the paid unlock step only; `study_spell` learns the spell and charges gold but does not grant magic XP.
-- Successful spell casts grant school XP through `MAGIC.schoolXpPerSpellCast` for each listed school on the spell.
+- Successful spell casts grant school XP through each spell's authored `xpGainOnCast` for every listed school on the spell.
 - Global magic XP is derived from the total of all school XP, and mana growth comes from global magic level via `MAGIC.levelXpTable` and `MAGIC.manaPerMagicLevel`.
-- Study thresholds come from `MAGIC.schoolMasteryTierThresholds`; presenter/UI code should consume presenter-owned progression data instead of hardcoding tier breakpoints.
+- Study thresholds come from `MAGIC.schoolMasteryTierThresholds`; presenter/UI code should consume presenter-owned progression data instead of hardcoding tier breakpoints, and school display levels keep growing after the last authored benefit tier.
 - Equipping grants base and learned spells via `collectEquipmentAbilityGrants`; unequipping revokes only abilities no equipped source still grants.
 - `USE_ABILITY` validates mana and spell eligibility before spending resources.
 - Elder study uses `TOWN_ACTION` with `action: 'study_spell'` and `spellId`.
-- Presenter exposes mana, spell costs, readiness, and `TownView.studyableSpells` (filtered by equipped schools).
-- UI renders mana and the Ring Study panel (updated from Elder Study).
+- Presenter exposes mana, spell costs, XP-per-cast, uncapped school display levels, readiness, and `TownView.studyableSpells` (filtered by equipped schools).
+- UI renders mana, spell power, magic XP progress, the Character Screen Magic modal, and the Ring Study panel without `Max tier` copy.
 - Contract tests validate item IDs, ring schools, spell IDs, cross-references, and animation refs.
 - Unit/integration tests cover equip, cast, mana spend, low-mana rejection, study unlock without XP gain, cast-based school XP, global-magic mana scaling, centralized-threshold presenter/UI output, and combo spell requirements.
