@@ -161,7 +161,7 @@ function RingMagicDetailModal({
   onClose: () => void;
 }) {
   const schoolName = titleCase(mastery.school);
-  const nextTierLabel = mastery.level >= 2
+  const nextTierLabel = mastery.nextLevelXp === null
     ? 'Maximum mastery tier reached'
     : `${mastery.xp} / ${mastery.nextLevelXp} XP toward the next tier`;
   const schoolSpells = learnedSpells.filter(spell => spell.schools.includes(mastery.school));
@@ -171,7 +171,7 @@ function RingMagicDetailModal({
       <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 8 }}>
         <div>
           <div style={{ fontSize: 13, fontWeight: 'bold', color: '#b695ff' }}>{schoolName} Magic</div>
-          <div style={{ fontSize: 10, color: '#9a90b6' }}>Tier {mastery.level}</div>
+          <div style={{ fontSize: 10, color: '#9a90b6' }}>Level {mastery.level}</div>
         </div>
         <button
           onClick={onClose}
@@ -365,7 +365,13 @@ export function CharacterScreen({ player, activeQuests, sendCommand }: Character
   const masteryTiers = player.weaponMasteryTiers ?? [];
   const hasMasteries = masteryTiers.length > 0;
   const hasRingMagic = player.ringSchoolMasteries.length > 0 || player.learnedSpells.length > 0;
-  const totalRingMagicXp = player.ringSchoolMasteries.reduce((total, mastery) => total + mastery.xp, 0);
+  const totalRingMagicXp = player.magicExperience
+    ?? player.ringSchoolMasteries.reduce((total, mastery) => total + mastery.xp, 0);
+  const magicLevel = player.magicLevel ?? 1;
+  const nextMagicLevelXp = player.magicExperienceForNextLevel ?? null;
+  const nextMagicLevelLabel = nextMagicLevelXp === null
+    ? 'Maximum magic level reached'
+    : `${totalRingMagicXp} / ${nextMagicLevelXp} XP toward Magic Lv ${magicLevel + 1}`;
   const selectedMasteryInfo =
     showMasteryModal && showMasteryModal !== 'list'
       ? masteryTiers.find(info => info.weaponType === showMasteryModal)
@@ -486,7 +492,14 @@ export function CharacterScreen({ player, activeQuests, sendCommand }: Character
             <section style={{ marginBottom: 12 }}>
               <div style={{ display: 'flex', justifyContent: 'space-between', gap: 8, marginBottom: 4 }}>
                 <div style={{ fontSize: 11, color: '#888' }}>RING MAGIC</div>
-                <div style={{ fontSize: 10, color: '#8a78c8' }}>TOTAL XP {totalRingMagicXp}</div>
+                <div style={{ fontSize: 10, color: '#8a78c8' }}>MAGIC LV {magicLevel}</div>
+              </div>
+              <div style={{ marginBottom: 6, padding: '6px 8px', background: '#17111f', border: '1px solid #4a2f66' }}>
+                <div style={{ display: 'flex', justifyContent: 'space-between', gap: 8, fontSize: 11, marginBottom: 2 }}>
+                  <div style={{ color: '#d6c6ff', fontWeight: 'bold' }}>Total XP {totalRingMagicXp}</div>
+                  <div style={{ color: '#8a78c8' }}>Mana {player.mana ?? 0}/{player.maxMana ?? 0}</div>
+                </div>
+                <div style={{ color: '#b0a3d1', fontSize: 10 }}>{nextMagicLevelLabel}</div>
               </div>
               {player.ringSchoolMasteries.map(m => (
                 <button
@@ -505,7 +518,9 @@ export function CharacterScreen({ player, activeQuests, sendCommand }: Character
                   }}
                 >
                   <div style={{ fontWeight: 'bold', marginBottom: 2 }}>{titleCase(m.school)}</div>
-                  <div style={{ color: '#b0a3d1' }}>Lv {m.level} · {m.xp} XP / {m.nextLevelXp}</div>
+                  <div style={{ color: '#b0a3d1' }}>
+                    {m.nextLevelXp === null ? `Lv ${m.level} · Max tier` : `Lv ${m.level} · ${m.xp} XP / ${m.nextLevelXp}`}
+                  </div>
                 </button>
               ))}
             </section>

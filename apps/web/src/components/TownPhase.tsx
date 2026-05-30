@@ -408,8 +408,10 @@ function ElderPanel({
       ) : (
         spells.map((spell: typeof spells[number]) => {
           const disabled = loading || spell.canStudy === false;
-          const currentLevel = spell.currentSchoolXp >= 60 ? 2 : spell.currentSchoolXp >= 20 ? 1 : 0;
           const priceLabel = spell.canStudy ? 'Study' : `Need ${spell.goldCost}g`;
+          const schoolProgressLabel = spell.nextSchoolLevelXp === null
+            ? 'Max tier'
+            : `${spell.currentSchoolXp} / ${spell.nextSchoolLevelXp} XP`;
 
           return (
             <div
@@ -428,7 +430,7 @@ function ElderPanel({
                   <div style={{ fontSize: 12, fontWeight: 600, color: colors.text }}>{spell.name}</div>
                   <div style={{ fontSize: 10, color: colors.label, marginTop: 3 }}>{spell.description}</div>
                   <div style={{ fontSize: 10, color: colors.muted, marginTop: 6 }}>
-                    {titleCase(spell.schools[0] ?? 'magic')} Lv {currentLevel} · Range {spell.range} · {spell.goldCost}g
+                    {titleCase(spell.schools[0] ?? 'magic')} Lv {spell.currentSchoolLevel} · {schoolProgressLabel} · Range {spell.range} · {spell.goldCost}g
                   </div>
                 </div>
                 <button

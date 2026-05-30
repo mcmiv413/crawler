@@ -1,8 +1,13 @@
 import type { GameState, TownState } from '@dungeon/contracts';
 import { ENCHANTMENT_BY_ID, ITEM_BY_ID, TOWN_DESCRIPTIONS, getEnchantmentCost, isRarityBuyable, getRarityColor, getDamageBand, getWeaponDamageProfile } from '@dungeon/content';
-import type { EnchantmentBlueprintView, ShopItemView, RunSummaryStats, TownView, RingSpellView } from '../game-view.js';
+import type { EnchantmentBlueprintView, ShopItemView, RunSummaryStats, TownView, TownStudyableSpellView } from '../game-view.js';
 import { buildFactionPressureSummary, buildFactionView, buildOgreProgressView } from './faction-progress-builder.js';
-import { evaluateAllRingSpellStudy, getEquippedRingItemIds } from '@dungeon/core';
+import {
+  evaluateAllRingSpellStudy,
+  getEquippedRingItemIds,
+  getNextSchoolMasteryXp,
+  getSchoolMasteryLevelFromXp,
+} from '@dungeon/core';
 
 function shopkeeperDiscountPct(state: GameState): number {
   const shopkeeper = state.world.npcs.find(n => n.role === 'shopkeeper');
@@ -76,29 +81,36 @@ function buildPrepAdvice(state: GameState): string[] {
   return advice;
 }
 
-function buildStudyableSpells(state: GameState): readonly RingSpellView[] {
+function buildStudyableSpells(state: GameState): readonly TownStudyableSpellView[] {
   const equippedItemIds = getEquippedRingItemIds(state.player.equipment, state.itemRegistry.items);
 
   return evaluateAllRingSpellStudy(state.player, equippedItemIds)
     .filter(evalResult => evalResult.unlockedForStudy)
-    .map(evalResult => ({
-      spellId: evalResult.spell.id,
-      name: evalResult.spell.name,
-      description: evalResult.spell.description,
-      schools: evalResult.spell.schools,
-      cooldown: evalResult.spell.cooldown,
-      manaCost: evalResult.spell.manaCost ?? 0,
-      baseDamage: evalResult.spell.baseDamage ?? 0,
-      range: evalResult.spell.range,
-      unlockLevel: evalResult.requiredSchoolXp,
-      learned: evalResult.alreadyLearned,
-      unlocked: evalResult.unlockedForStudy,
-      affordable: evalResult.affordable,
-      canStudy: evalResult.canStudy,
-      requiredSchoolXp: evalResult.requiredSchoolXp,
-      goldCost: evalResult.goldCost,
-      currentSchoolXp: evalResult.currentSchoolXp,
-    }));
+    .map(evalResult => {
+      const currentSchoolLevel = getSchoolMasteryLevelFromXp(evalResult.currentSchoolXp);
+      const nextSchoolLevelXp = getNextSchoolMasteryXp(evalResult.currentSchoolXp);
+
+      return {
+        spellId: evalResult.spell.id,
+        name: evalResult.spell.name,
+        description: evalResult.spell.description,
+        schools: evalResult.spell.schools,
+        cooldown: evalResult.spell.cooldown,
+        manaCost: evalResult.spell.manaCost ?? 0,
+        baseDamage: evalResult.spell.baseDamage ?? 0,
+        range: evalResult.spell.range,
+        unlockLevel: evalResult.requiredSchoolXp,
+        learned: evalResult.alreadyLearned,
+        unlocked: evalResult.unlockedForStudy,
+        affordable: evalResult.affordable,
+        canStudy: evalResult.canStudy,
+        requiredSchoolXp: evalResult.requiredSchoolXp,
+        goldCost: evalResult.goldCost,
+        currentSchoolXp: evalResult.currentSchoolXp,
+        currentSchoolLevel,
+        nextSchoolLevelXp,
+      } satisfies TownStudyableSpellView;
+    });
 }
 
 function buildUnlockedEnchantmentBlueprints(state: GameState): readonly EnchantmentBlueprintView[] {

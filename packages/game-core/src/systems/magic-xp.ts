@@ -1,22 +1,80 @@
 import type { Player } from '@dungeon/contracts';
 import { MAGIC } from '@dungeon/content';
 
-export function gainSchoolXp(player: Player, school: string, amount: number): Player {
-  const current = player.ringMastery[school] ?? { xp: 0 };
-  const newXp = current.xp + amount;
-  const newMasteryLevel = newXp >= 60 ? 2 : newXp >= 20 ? 1 : 0;
-  const newMaxMana = MAGIC.initialMana + newMasteryLevel * MAGIC.manaPerMasteryTier;
+function getConfiguredLevel(
+  xp: number,
+  thresholds: readonly number[],
+  baseLevel: number,
+): number {
+  let level = baseLevel;
+
+  while (level + 1 < thresholds.length && xp >= thresholds[level + 1]!) {
+    level += 1;
+  }
+
+  return level;
+}
+
+export function getTotalMagicXp(player: Player): number {
+  return Object.values(player.ringMastery).reduce((total, mastery) => total + mastery.xp, 0);
+}
+
+export function getMagicLevelFromXp(totalMagicXp: number): number {
+  return getConfiguredLevel(totalMagicXp, MAGIC.levelXpTable, 1);
+}
+
+export function getMagicLevel(player: Player): number {
+  return getMagicLevelFromXp(getTotalMagicXp(player));
+}
+
+export function getNextMagicLevelXp(totalMagicXp: number): number | null {
+  const magicLevel = getMagicLevelFromXp(totalMagicXp);
+  return magicLevel + 1 < MAGIC.levelXpTable.length ? MAGIC.levelXpTable[magicLevel + 1]! : null;
+}
+
+export function getSchoolMasteryLevelFromXp(xp: number): number {
+  return getConfiguredLevel(xp, MAGIC.schoolMasteryTierThresholds, 0);
+}
+
+export function getNextSchoolMasteryXp(xp: number): number | null {
+  const masteryLevel = getSchoolMasteryLevelFromXp(xp);
+  return masteryLevel + 1 < MAGIC.schoolMasteryTierThresholds.length
+    ? MAGIC.schoolMasteryTierThresholds[masteryLevel + 1]!
+    : null;
+}
+
+export function getMaxManaForMagicLevel(magicLevel: number): number {
+  return MAGIC.initialMana + Math.max(0, magicLevel - 1) * MAGIC.manaPerMagicLevel;
+}
+
+export function recalculateMagicMana(player: Player): Player {
+  const maxMana = getMaxManaForMagicLevel(getMagicLevel(player));
+  const mana = Math.min(player.mana, maxMana);
+
+  if (maxMana === player.maxMana && mana === player.mana) {
+    return player;
+  }
 
   return {
     ...player,
-    maxMana: Math.max(player.maxMana, newMaxMana),
-    ringMastery: { ...player.ringMastery, [school]: { xp: newXp } },
+    mana,
+    maxMana,
   };
+}
+
+export function gainSchoolXp(player: Player, school: string, amount: number): Player {
+  const current = player.ringMastery[school] ?? { xp: 0 };
+  const updatedPlayer = {
+    ...player,
+    ringMastery: { ...player.ringMastery, [school]: { xp: current.xp + amount } },
+  };
+
+  return recalculateMagicMana(updatedPlayer);
 }
 
 export function getFireMasteryLevel(player: Player): number {
   const xp = player.ringMastery['fire']?.xp ?? 0;
-  return xp >= 60 ? 2 : xp >= 20 ? 1 : 0;
+  return getSchoolMasteryLevelFromXp(xp);
 }
 
 export function learnRingSpell(player: Player, spellId: string): Player {

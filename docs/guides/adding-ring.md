@@ -26,7 +26,7 @@ Follow [Architecture Patterns](architecture-patterns.md): add source entity file
 | Ring spell | `packages/content/src/ring-spells/<spell>.ts` (includes study requirements) |
 | Content spell metadata | `packages/content/src/abilities/<spell>.ts` |
 | Core spell runtime | `packages/game-core/src/abilities/definitions/<spell>.ts` |
-| Mana/mastery tuning | `packages/content/src/balance/tables.ts` |
+| Magic progression tuning | `packages/content/src/balance/tables.ts` |
 | Equipment grant/revoke | `packages/game-core/src/systems/equipment.ts` |
 | Elder study | `packages/game-core/src/systems/town.ts` |
 | Presenter | `packages/presenter/src/builders/player-hud-builder.ts`, `packages/presenter/src/builders/town-view-builder.ts` |
@@ -43,10 +43,14 @@ Follow [Architecture Patterns](architecture-patterns.md): add source entity file
 - Generated indexes are updated by `pnpm generate:indexes`, not hand edits.
 - Learned spells are stored in `player.learnedRingSpellIds` (source of truth).
 - School mastery is tracked in `player.ringMastery[schoolId] = { xp }` (no spell unlock field).
+- Studying is the paid unlock step only; `study_spell` learns the spell and charges gold but does not grant magic XP.
+- Successful spell casts grant school XP through `MAGIC.schoolXpPerSpellCast` for each listed school on the spell.
+- Global magic XP is derived from the total of all school XP, and mana growth comes from global magic level via `MAGIC.levelXpTable` and `MAGIC.manaPerMagicLevel`.
+- Study thresholds come from `MAGIC.schoolMasteryTierThresholds`; presenter/UI code should consume presenter-owned progression data instead of hardcoding tier breakpoints.
 - Equipping grants base and learned spells via `collectEquipmentAbilityGrants`; unequipping revokes only abilities no equipped source still grants.
 - `USE_ABILITY` validates mana and spell eligibility before spending resources.
 - Elder study uses `TOWN_ACTION` with `action: 'study_spell'` and `spellId`.
 - Presenter exposes mana, spell costs, readiness, and `TownView.studyableSpells` (filtered by equipped schools).
 - UI renders mana and the Ring Study panel (updated from Elder Study).
 - Contract tests validate item IDs, ring schools, spell IDs, cross-references, and animation refs.
-- Unit/integration tests cover equip, cast, mana spend, low-mana rejection, study unlock, mastery level progression, and combo spell requirements.
+- Unit/integration tests cover equip, cast, mana spend, low-mana rejection, study unlock without XP gain, cast-based school XP, global-magic mana scaling, centralized-threshold presenter/UI output, and combo spell requirements.

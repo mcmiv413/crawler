@@ -115,6 +115,43 @@ describe('CharacterScreen faction progress', () => {
     );
   });
 
+  it('shows the global ring-magic progression summary when magic is unlocked', () => {
+    render(
+      <CharacterScreen
+        player={createPlayer({
+          mana: 12,
+          maxMana: 25,
+          magicExperience: 60,
+          magicLevel: 2,
+          magicExperienceForNextLevel: 150,
+          ringSchoolMasteries: [{
+            school: 'fire',
+            xp: 60,
+            level: 2,
+            nextLevelXp: null,
+          }],
+          learnedSpells: [{
+            spellId: 'heat_surge',
+            name: 'Heat Surge',
+            description: 'A fiery self-buff.',
+            schools: ['fire'],
+            cooldown: 4,
+            manaCost: 8,
+            learned: true,
+            unlocked: true,
+          }],
+        })}
+        sendCommand={vi.fn()}
+      />,
+    );
+
+    expect(screen.getByText(/Magic Lv 2/i)).toBeInTheDocument();
+    expect(screen.getByText(/Total XP 60/i)).toBeInTheDocument();
+    expect(screen.getByText(/60 \/ 150 XP toward Magic Lv 3/i)).toBeInTheDocument();
+    expect(screen.getByText(/Mana 12\/25/i)).toBeInTheDocument();
+    expect(screen.getByText(/Lv 2 · Max tier/i)).toBeInTheDocument();
+  });
+
   it('does not render stale mastery detail state for a missing weapon key', () => {
     const { rerender } = render(
       <CharacterScreen

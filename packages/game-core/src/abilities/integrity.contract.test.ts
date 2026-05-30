@@ -124,7 +124,7 @@ describe('Effect Type Validation', () => {
     }
   });
 
-  it('attack effects have positive damage multiplier', () => {
+  it('attack effects have a positive damage contribution', () => {
     for (const ability of ALL_ABILITY_DEFINITIONS) {
       const walkEffects = (effects: readonly unknown[]) => {
         for (const effect of effects) {
@@ -132,10 +132,12 @@ describe('Effect Type Validation', () => {
           const e = effect as Record<string, unknown>;
 
           if (e.kind === 'attack') {
+            const damageMultiplier = typeof e.damageMultiplier === 'number' ? e.damageMultiplier : 0;
+            const flatBonus = typeof e.flatBonus === 'number' ? e.flatBonus : 0;
             expect(
-              e.damageMultiplier,
-              `${ability.id} attack effect has invalid damageMultiplier`,
-            ).toBeGreaterThan(0);
+              damageMultiplier > 0 || flatBonus > 0,
+              `${ability.id} attack effect has no positive damage contribution`,
+            ).toBe(true);
           }
 
           if (e.kind === 'conditional' && Array.isArray(e.then)) {

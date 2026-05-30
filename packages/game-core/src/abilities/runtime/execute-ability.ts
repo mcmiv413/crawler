@@ -9,9 +9,10 @@ import { applyEffect } from '../effects/apply-effect.js';
 import { ALL_ABILITY_DEFINITIONS } from '../definitions/index.js';
 import { buildRegistry } from '../registry.js';
 import { spendMana } from '../../systems/mana.js';
+import { gainSchoolXp } from '../../systems/magic-xp.js';
 
 import { canUseLearnedRingSpell } from '../../systems/ring-spell-availability.js';
-import { RING_SPELL_BY_ID } from '@dungeon/content';
+import { MAGIC, RING_SPELL_BY_ID } from '@dungeon/content';
 const ABILITY_REGISTRY = buildRegistry(ALL_ABILITY_DEFINITIONS);
 
 /**
@@ -118,6 +119,24 @@ export function executeAbility(
   // Build damageByTarget map if we have per-victim damage
   if (damageByTarget.size > 0) {
     resultData.damageByTarget = new Map(damageByTarget);
+  }
+
+  if (ringSpell !== undefined) {
+    const updatedPlayer = ringSpell.schools.reduce(
+      (player, school) => gainSchoolXp(player, school, MAGIC.schoolXpPerSpellCast),
+      newContext.state.player,
+    );
+
+    if (updatedPlayer !== newContext.state.player) {
+      newContext = {
+        ...newContext,
+        state: {
+          ...newContext.state,
+          player: updatedPlayer,
+        },
+        player: updatedPlayer,
+      };
+    }
   }
 
   // Emit ability used event
