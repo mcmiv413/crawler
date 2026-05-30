@@ -7,7 +7,6 @@ import type {
   QuestAssignedNotice,
 } from '@dungeon/presenter';
 
-const DEATH_NOTICE_ID = 'death-notification';
 const PROGRESS_NOTICE_KINDS = new Set([
   'FACTION_LEADER_EMERGED',
   'FACTION_LEADER_SLAIN',
@@ -45,6 +44,24 @@ function addShownId(shownIds: ReadonlySet<string>, noticeId: string): Set<string
   return next;
 }
 
+function buildDeathNoticeId(deathContext: DeathContext): string {
+  const equipmentKey = deathContext.equipmentLost
+    .map(({ slot, itemName }) => `${slot}:${itemName}`)
+    .join('|');
+
+  return [
+    'death-notification',
+    deathContext.totalDeaths,
+    deathContext.floor,
+    deathContext.killerName ?? '',
+    deathContext.killerSpriteName ?? '',
+    deathContext.goldLost,
+    deathContext.overkillDamage,
+    deathContext.permadeathThreshold,
+    equipmentKey,
+  ].join(':');
+}
+
 function findLatestUnshownNotice<TNotice extends GameNotice>(
   notices: readonly GameNotice[],
   shownNoticeIds: ReadonlySet<string>,
@@ -71,15 +88,21 @@ export function useDismissedNotices(
     setShownNoticeIds(new Set());
   }, [args.gameId]);
 
+  const activeDeathNoticeId = useMemo(
+    () => (args.deathContext === null ? null : buildDeathNoticeId(args.deathContext)),
+    [args.deathContext],
+  );
+
   const visibleDeathContext = useMemo(
     () =>
       args.phase === 'town'
       && args.deathContext !== null
+      && activeDeathNoticeId !== null
       && !args.deathTransitioning
-      && !shownDeathIds.has(DEATH_NOTICE_ID)
+      && !shownDeathIds.has(activeDeathNoticeId)
         ? args.deathContext
         : null,
-    [args.deathContext, args.deathTransitioning, args.phase, shownDeathIds],
+    [activeDeathNoticeId, args.deathContext, args.deathTransitioning, args.phase, shownDeathIds],
   );
 
   const visibleQuestNotice = useMemo(
@@ -96,8 +119,10 @@ export function useDismissedNotices(
   );
 
   const dismissDeathNotice = useCallback(() => {
-    setShownDeathIds(previous => addShownId(previous, DEATH_NOTICE_ID));
-  }, []);
+    if (activeDeathNoticeId !== null) {
+      setShownDeathIds(previous => addShownId(previous, activeDeathNoticeId));
+    }
+  }, [activeDeathNoticeId]);
 
   const dismissNotice = useCallback((noticeId: string) => {
     setShownNoticeIds(previous => addShownId(previous, noticeId));

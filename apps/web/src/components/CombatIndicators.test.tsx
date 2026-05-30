@@ -1,244 +1,108 @@
-import { render, screen, waitFor } from '@testing-library/react';
+import { render, screen } from '@testing-library/react';
 import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest';
-import { act } from '@testing-library/react';
 import React from 'react';
-import { emitCombatIndicator } from '../animation-runtime/emitters.js';
+import type { FloatingCombatIndicator } from '../hooks/useCombatIndicatorState.js';
 import { CombatIndicators } from './CombatIndicators.js';
 
+const FIXED_NOW = 10_000;
+
+function createLabel(
+  overrides: Partial<FloatingCombatIndicator> = {},
+): FloatingCombatIndicator {
+  return {
+    id: 'label-0',
+    x: 5,
+    y: 5,
+    text: '-15',
+    type: 'damage',
+    startTime: FIXED_NOW,
+    ...overrides,
+  };
+}
+
+function renderIndicators(
+  labels: readonly FloatingCombatIndicator[],
+  overrides: Partial<{
+    vpLeft: number;
+    vpTop: number;
+    cellSize: number;
+    fadeOutDuration: number;
+  }> = {},
+) {
+  return render(
+    <CombatIndicators
+      vpLeft={overrides.vpLeft ?? 0}
+      vpTop={overrides.vpTop ?? 0}
+      cellSize={overrides.cellSize ?? 24}
+      fadeOutDuration={overrides.fadeOutDuration ?? 500}
+      labels={labels}
+    />,
+  );
+}
+
 describe('CombatIndicators', () => {
+  beforeEach(() => {
+    vi.spyOn(Date, 'now').mockReturnValue(FIXED_NOW);
+  });
+
   afterEach(() => {
     vi.restoreAllMocks();
   });
 
-  it('should render without crashing', () => {
-    const { container } = render(
-      <CombatIndicators
-        vpLeft={0}
-        vpTop={0}
-        cellSize={24}
-        fadeOutDuration={500}
-      />,
-    );
-    expect(container).toBeInTheDocument();
+  it('renders nothing when the runtime supplies no labels', () => {
+    const { container } = renderIndicators([]);
+
+    expect(container.firstChild).toBeNull();
   });
 
-  it('should render floating labels when indicators are emitted', async () => {
-    render(
-      <CombatIndicators
-        vpLeft={0}
-        vpTop={0}
-        cellSize={24}
-        fadeOutDuration={500}
-      />,
-    );
-
-    // Emit a damage indicator
-    emitCombatIndicator(5, 5, '-15', 'damage');
-
-    // Check that the label appears
-    await waitFor(
-      () => {
-        expect(screen.getByText('-15')).toBeInTheDocument();
-      },
-      { timeout: 2000 },
-    );
-  });
-
-  it('should apply correct styling for damage indicators', async () => {
-    render(
-      <CombatIndicators
-        vpLeft={0}
-        vpTop={0}
-        cellSize={24}
-        fadeOutDuration={500}
-      />,
-    );
-
-    emitCombatIndicator(5, 5, '-20', 'damage');
-
-    await waitFor(
-      () => {
-        const label = screen.getByText('-20');
-        expect(label).toHaveStyle({ color: '#f44' });
-      },
-      { timeout: 2000 },
-    );
-  });
-
-  it('should apply correct styling for heal indicators', async () => {
-    render(
-      <CombatIndicators
-        vpLeft={0}
-        vpTop={0}
-        cellSize={24}
-        fadeOutDuration={500}
-      />,
-    );
-
-    emitCombatIndicator(5, 5, '+10', 'heal');
-
-    await waitFor(
-      () => {
-        const label = screen.getByText('+10');
-        expect(label).toHaveStyle({ color: '#4f4' });
-      },
-      { timeout: 2000 },
-    );
-  });
-
-  it('should apply correct styling for status indicators', async () => {
-    render(
-      <CombatIndicators
-        vpLeft={0}
-        vpTop={0}
-        cellSize={24}
-        fadeOutDuration={500}
-      />,
-    );
-
-    emitCombatIndicator(5, 5, 'Poisoned!', 'status');
-
-    await waitFor(
-      () => {
-        const label = screen.getByText('Poisoned!');
-        expect(label).toHaveStyle({ color: '#fa4' });
-      },
-      { timeout: 2000 },
-    );
-  });
-
-  it('should position labels correctly based on viewport', async () => {
-    render(
-      <CombatIndicators
-        vpLeft={2}
-        vpTop={2}
-        cellSize={24}
-        fadeOutDuration={500}
-      />,
-    );
-
-    act(() => {
-      emitCombatIndicator(5, 5, '-15', 'damage');
-    });
-
-    await waitFor(
-      () => {
-        const label = screen.getByText('-15');
-        // Label should be positioned at (5-2)*24 + 24 = 96px from left, same for top
-        const style = label.getAttribute('style');
-        expect(style).toContain('left');
-        expect(style).toContain('96px');
-      },
-      { timeout: 2000 },
-    );
-  });
-
-  it('should handle multiple concurrent indicators', async () => {
-    render(
-      <CombatIndicators
-        vpLeft={0}
-        vpTop={0}
-        cellSize={24}
-        fadeOutDuration={500}
-      />,
-    );
-
-    emitCombatIndicator(5, 5, '-15', 'damage');
-    emitCombatIndicator(6, 6, '+10', 'heal');
-    emitCombatIndicator(4, 4, 'Stunned!', 'status');
-
-    await waitFor(
-      () => {
-        expect(screen.getByText('-15')).toBeInTheDocument();
-        expect(screen.getByText('+10')).toBeInTheDocument();
-        expect(screen.getByText('Stunned!')).toBeInTheDocument();
-      },
-      { timeout: 2000 },
-    );
-  });
-
-  it('should have correct text shadow styling', async () => {
-    render(
-      <CombatIndicators
-        vpLeft={0}
-        vpTop={0}
-        cellSize={24}
-        fadeOutDuration={500}
-      />,
-    );
-
-    act(() => {
-      emitCombatIndicator(5, 5, '-15', 'damage');
-    });
-
-    await waitFor(
-      () => {
-        const label = screen.getByText('-15');
-        expect(label).toHaveStyle({ textShadow: '0 0 3px #000, 0 0 6px #000, 0 0 2px rgba(0,0,0,0.8)' });
-      },
-      { timeout: 2000 },
-    );
-  });
-
-  it('should not allow pointer events on labels', async () => {
-    render(
-      <CombatIndicators
-        vpLeft={0}
-        vpTop={0}
-        cellSize={24}
-        fadeOutDuration={500}
-      />,
-    );
-
-    emitCombatIndicator(5, 5, '-15', 'damage');
-
-    await waitFor(
-      () => {
-        const label = screen.getByText('-15');
-        expect(label).toHaveStyle({ pointerEvents: 'none' });
-      },
-      { timeout: 2000 },
-    );
-  });
-
-  it('should emit custom event with correct data', () => {
-    const eventListener = vi.fn();
-    window.addEventListener('combat-indicator', eventListener);
-
-    emitCombatIndicator(5, 5, '-15', 'damage');
-
-    expect(eventListener).toHaveBeenCalledWith(
-      expect.objectContaining({
-        detail: expect.objectContaining({
-          x: 5,
-          y: 5,
-          text: '-15',
-          type: 'damage',
-        }),
+  it.each([
+    ['damage', '-20', '#f44'],
+    ['heal', '+10', '#4f4'],
+    ['status', 'Poisoned!', '#fa4'],
+    ['gold', '+35g', '#fd4'],
+  ] as const)('renders %s labels with the expected color', (type, text, color) => {
+    renderIndicators([
+      createLabel({
+        id: `label-${type}`,
+        text,
+        type,
       }),
-    );
+    ]);
 
-    window.removeEventListener('combat-indicator', eventListener);
+    expect(screen.getByText(text)).toHaveStyle({ color });
   });
 
-  it('should use monospace font for labels', async () => {
-    render(
-      <CombatIndicators
-        vpLeft={0}
-        vpTop={0}
-        cellSize={24}
-        fadeOutDuration={500}
-      />,
+  it('positions labels relative to the viewport and fade progress', () => {
+    renderIndicators(
+      [createLabel({ startTime: FIXED_NOW - 100 })],
+      { vpLeft: 2, vpTop: 2 },
     );
 
-    emitCombatIndicator(5, 5, '-15', 'damage');
+    const label = screen.getByText('-15');
 
-    await waitFor(
-      () => {
-        const label = screen.getByText('-15');
-        expect(label).toHaveStyle({ fontFamily: 'monospace' });
-      },
-      { timeout: 2000 },
-    );
+    expect(label.style.left).toBe('96px');
+    expect(label.style.top).toBe('69px');
+    expect(label.style.opacity).toBe('0.8');
+  });
+
+  it('stacks overlapping labels in arrival order', () => {
+    renderIndicators([
+      createLabel({ id: 'label-1', text: '-15' }),
+      createLabel({ id: 'label-2', text: '+10', type: 'heal' }),
+    ]);
+
+    expect(screen.getByText('-15').style.top).toBe('120px');
+    expect(screen.getByText('+10').style.top).toBe('134px');
+  });
+
+  it('applies the shared label styling to rendered indicators', () => {
+    renderIndicators([createLabel()]);
+
+    expect(screen.getByText('-15')).toHaveStyle({
+      textShadow: '0 0 3px #000, 0 0 6px #000, 0 0 2px rgba(0,0,0,0.8)',
+      pointerEvents: 'none',
+      fontFamily: 'monospace',
+      fontWeight: 'bold',
+    });
   });
 });

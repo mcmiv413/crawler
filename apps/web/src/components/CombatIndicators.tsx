@@ -1,15 +1,12 @@
 import { COMBAT_INDICATOR_FADEOUT_MS } from '../config/ui-config.js';
-import {
-  useCombatIndicatorState,
-  type FloatingCombatIndicator,
-} from '../hooks/useCombatIndicatorState.js';
+import type { FloatingCombatIndicator } from '../hooks/useCombatIndicatorState.js';
 
 interface CombatIndicatorsProps {
   vpLeft: number;
   vpTop: number;
   cellSize: number;
   fadeOutDuration?: number; // milliseconds
-  labels?: readonly FloatingCombatIndicator[];
+  labels: readonly FloatingCombatIndicator[];
 }
 
 export function CombatIndicators({
@@ -19,12 +16,9 @@ export function CombatIndicators({
   fadeOutDuration = COMBAT_INDICATOR_FADEOUT_MS,
   labels,
 }: CombatIndicatorsProps) {
-  const liveLabels = useCombatIndicatorState(fadeOutDuration, labels === undefined);
-  const renderedLabels = labels ?? liveLabels;
-
   return (
     <>
-      {renderedLabels.map((label, index) => {
+      {labels.map((label, index) => {
         // Top-right corner positioning
         const screenX = (label.x - vpLeft) * cellSize + cellSize;
         const screenY = (label.y - vpTop) * cellSize;
@@ -34,7 +28,7 @@ export function CombatIndicators({
         const upDrift = progress * 15; // Drift up slightly over duration
 
         // Count how many labels at same position with same or earlier start time
-        const stackIndex = renderedLabels
+        const stackIndex = labels
           .slice(0, index)
           .filter((candidate) => candidate.x === label.x && candidate.y === label.y)
           .length;

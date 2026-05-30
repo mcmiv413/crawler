@@ -39,7 +39,20 @@ vi.mock('./components/GameOverPhase.js', () => ({
 }));
 
 vi.mock('./components/DeathNotificationModal.js', () => ({
-  DeathNotificationModal: () => <div>death notice</div>,
+  DeathNotificationModal: ({
+    deathContext,
+    onDismiss,
+  }: {
+    deathContext: NonNullable<GameView['deathContext']>;
+    onDismiss: () => void;
+  }) => (
+    <div>
+      <div>death notice:{deathContext.totalDeaths}:{deathContext.killerName ?? 'unknown'}</div>
+      <button type="button" onClick={onDismiss}>
+        dismiss death notice
+      </button>
+    </div>
+  ),
 }));
 
 vi.mock('./components/QuestAssignedScreen.js', () => ({
@@ -153,6 +166,22 @@ function createStoreState(notice?: DismissibleNotice, viewOverrides?: Partial<Ga
   };
 }
 
+function createDeathContext(
+  overrides: Partial<NonNullable<GameView['deathContext']>> = {},
+): NonNullable<GameView['deathContext']> {
+  return {
+    killerName: 'Goblin',
+    killerSpriteName: 'goblin',
+    floor: 3,
+    equipmentLost: [],
+    goldLost: 12,
+    overkillDamage: 5,
+    permadeathThreshold: 20,
+    totalDeaths: 1,
+    ...overrides,
+  };
+}
+
 describe('App progress notices', () => {
   beforeEach(() => {
     vi.mocked(useGameStore).mockReturnValue(createStoreState() as never);
@@ -238,6 +267,52 @@ describe('App progress notices', () => {
 
     expect(screen.queryByText(/Faction Leader Emerged/i)).not.toBeInTheDocument();
     expect(screen.queryByRole('button', { name: /continue/i })).not.toBeInTheDocument();
+  });
+
+  it('shows a later death notice after dismissing the previous death in the same game', () => {
+    const firstDeath = createDeathContext({
+      killerName: 'Goblin',
+      floor: 2,
+      totalDeaths: 1,
+    });
+    const secondDeath = createDeathContext({
+      killerName: 'Ogre',
+      killerSpriteName: 'ogre',
+      floor: 5,
+      goldLost: 24,
+      overkillDamage: 9,
+      totalDeaths: 2,
+    });
+    let storeState = createStoreState(undefined, {
+      phase: 'town',
+      deathContext: firstDeath,
+    });
+
+    vi.mocked(useGameStore).mockImplementation(() => storeState as never);
+
+    const { rerender } = render(<App />);
+
+    expect(screen.getByText('death notice:1:Goblin')).toBeInTheDocument();
+
+    fireEvent.click(screen.getByRole('button', { name: /dismiss death notice/i }));
+
+    expect(screen.queryByText('death notice:1:Goblin')).not.toBeInTheDocument();
+
+    storeState = createStoreState(undefined, {
+      phase: 'town',
+      deathContext: firstDeath,
+    });
+    rerender(<App />);
+
+    expect(screen.queryByText('death notice:1:Goblin')).not.toBeInTheDocument();
+
+    storeState = createStoreState(undefined, {
+      phase: 'town',
+      deathContext: secondDeath,
+    });
+    rerender(<App />);
+
+    expect(screen.getByText('death notice:2:Ogre')).toBeInTheDocument();
   });
 
   it('shows quest assignment from typed notices instead of combat log parsing', () => {
