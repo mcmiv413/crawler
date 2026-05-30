@@ -232,15 +232,18 @@ export const STATUS_DEFAULTS = {
   regeneration: { healPerTurn: 5, defaultDuration: 3 },
   strength: { defaultDuration: 10 },
   panic: { defaultDuration: 3 },
-  heat_surge: { defaultDuration: 5 },
+  heat_surge: { defaultDuration: 3 },
   arcane_charge: { defaultDuration: 5 },
 } as const;
 
 export const MAGIC = {
   initialMana: 20,
   manaRegenPerActiveTurn: 1,
-  manaPerMasteryTier: 5,
+  levelXpTable: XP_TABLE,
+  manaPerMagicLevel: 5,
+  schoolMasteryTierThresholds: [0, 20, 60],
   schoolXpPerBurningKill: 10,
+  schoolXpPerSpellCast: 5,
   burnSpreadRadius: 4,
   burnSpreadChancePct: 70,
   burnDamagePerMasteryLevel: 1,

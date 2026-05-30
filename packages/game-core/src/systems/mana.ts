@@ -15,10 +15,6 @@ export function restoreMana(current: number, max: number, amount: number): numbe
   return Math.min(max, current + amount);
 }
 
-export function expandMaxMana(current: number): number {
-  return current + MAGIC.manaPerMasteryTier;
-}
-
 export function regenerateMana(current: number, max: number): number {
   return Math.min(max, current + MAGIC.manaRegenPerActiveTurn);
 }

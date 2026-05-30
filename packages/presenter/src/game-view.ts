@@ -197,6 +197,9 @@ export interface PlayerHudView {
   readonly maxHealth: number;
   readonly mana?: number;
   readonly maxMana?: number;
+  readonly magicExperience?: number;
+  readonly magicLevel?: number;
+  readonly magicExperienceForNextLevel?: number | null;
   readonly attack: number;
   readonly defense: number;
   readonly accuracy: number;
@@ -410,7 +413,7 @@ export interface TownView {
   readonly unlockedEnchantmentBlueprints?: readonly EnchantmentBlueprintView[];
   readonly runSummaryStats: RunSummaryStats | null;
   readonly prepAdvice: readonly string[];
-  readonly studyableSpells: readonly RingSpellView[];
+  readonly studyableSpells: readonly TownStudyableSpellView[];
   readonly lastRetreatFloor?: number;  // Floor player last retreated from (for continue button)
 }
 
@@ -431,7 +434,7 @@ export interface RingSchoolMasteryView {
   readonly school: string;
   readonly xp: number;
   readonly level: number;
-  readonly nextLevelXp: number;
+  readonly nextLevelXp: number | null;
 }
 
 export interface RingSpellView {
@@ -451,6 +454,11 @@ export interface RingSpellView {
   readonly requiredSchoolXp: number;
   readonly goldCost: number;
   readonly currentSchoolXp: number;
+}
+
+export interface TownStudyableSpellView extends RingSpellView {
+  readonly currentSchoolLevel: number;
+  readonly nextSchoolLevelXp: number | null;
 }
 
 export interface NpcView {

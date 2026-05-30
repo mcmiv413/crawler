@@ -1,6 +1,7 @@
 import { describe, it, expect, beforeEach } from 'vitest';
 import { buildTownView } from './town-view-builder.js';
 import { createTestGameState } from '@dungeon/core/testing';
+import { getNextSchoolMasteryXp, getSchoolMasteryLevelFromXp } from '@dungeon/core';
 import { entityId } from '@dungeon/contracts';
 import type { GameState, ArmorTemplate } from '@dungeon/contracts';
 
@@ -405,6 +406,10 @@ describe('buildTownView', () => {
       expect(heatSurge?.affordable).toBe(true);
       expect(heatSurge?.canStudy).toBe(true);
       expect(heatSurge?.learned).toBe(false);
+      expect(heatSurge).toEqual(expect.objectContaining({
+        currentSchoolLevel: getSchoolMasteryLevelFromXp(100),
+        nextSchoolLevelXp: getNextSchoolMasteryXp(100),
+      }));
     });
 
     it('hides an Elder spell from study when it is already learned', () => {

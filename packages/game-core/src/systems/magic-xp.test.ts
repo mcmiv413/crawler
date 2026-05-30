@@ -8,8 +8,16 @@ import {
   getFireBurnMagnitude,
   getFireBurnSpreadRadius,
   getFireMasteryLevel,
+  getMagicLevel,
+  getNextMagicLevelXp,
+  getTotalMagicXp,
   learnRingSpell,
 } from './magic-xp.js';
+
+const LEVEL_TWO_MAGIC_XP = 60;
+const LEVEL_THREE_MAGIC_XP = 150;
+const LEVEL_TWO_MAX_MANA = 25;
+const LEVEL_TWO = 2;
 
 describe('magic-xp', () => {
   it('tracks Fire XP without discarding learned spells', () => {
@@ -29,14 +37,20 @@ describe('magic-xp', () => {
     expect(updated.learnedRingSpellIds).toContain(spellId);
   });
 
-  it('increases max mana when Fire XP crosses a mastery threshold', () => {
-    const player = createTestPlayer();
-    const largeFireXpGain = player.maxMana * player.maxMana * player.maxMana;
+  it('increases max mana when total magic XP crosses a global magic-level threshold', () => {
+    const player = createTestPlayer({
+      ringMastery: {
+        fire: { xp: LEVEL_TWO_MAGIC_XP - 5 },
+        ice: { xp: 4 },
+      },
+    });
 
-    const updated = gainSchoolXp(player, 'fire', largeFireXpGain);
+    const updated = gainSchoolXp(player, 'ice', 1);
 
-    expect(getFireMasteryLevel(updated)).toBeGreaterThan(getFireMasteryLevel(player));
-    expect(updated.maxMana).toBeGreaterThan(player.maxMana);
+    expect(getTotalMagicXp(updated)).toBe(LEVEL_TWO_MAGIC_XP);
+    expect(getMagicLevel(updated)).toBe(LEVEL_TWO);
+    expect(getNextMagicLevelXp(getTotalMagicXp(updated))).toBe(LEVEL_THREE_MAGIC_XP);
+    expect(updated.maxMana).toBe(LEVEL_TWO_MAX_MANA);
   });
 
   it('scales burn duration, burn magnitude, and spread radius with Fire mastery', () => {
@@ -51,7 +65,7 @@ describe('magic-xp', () => {
 
   it('unlocks high-mastery burn spread panic and burn-kill mana restoration gates', () => {
     const player = createTestPlayer();
-    const mastered = gainSchoolXp(player, 'fire', player.maxMana * player.maxMana * player.maxMana);
+    const mastered = gainSchoolXp(player, 'fire', LEVEL_TWO_MAGIC_XP);
 
     expect(canFireMasteryPanicOnSpread(mastered)).toBe(true);
     expect(canFireMasteryRestoreManaOnBurnKill(mastered)).toBe(true);

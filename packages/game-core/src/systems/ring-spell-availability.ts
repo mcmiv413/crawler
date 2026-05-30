@@ -2,14 +2,12 @@ import { RING_SPELL_BY_ID } from '@dungeon/content';
 import { getSchoolForRing } from '@dungeon/content';
 import type { Player, Equipment, EntityId, AnyItemTemplate } from '@dungeon/contracts';
 import type { RingSchool, SpellStudyRequirement, RingSpellDefinition } from '@dungeon/content';
+import { getSchoolMasteryLevelFromXp } from './magic-xp.js';
 
 // Derive school mastery level from XP (not stored)
 export function getSchoolMasteryLevel(player: Player, school: RingSchool): number {
   const xp = (player.ringMastery as Record<string, { xp: number }>)[school]?.xp ?? 0;
-  // Level thresholds: level 0 at 0 XP, level 1 at 20 XP, level 2 at 60 XP
-  if (xp >= 60) return 2;
-  if (xp >= 20) return 1;
-  return 0;
+  return getSchoolMasteryLevelFromXp(xp);
 }
 
 // Evaluate all study requirements against runtime player state

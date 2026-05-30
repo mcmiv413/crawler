@@ -4,7 +4,13 @@ import '@testing-library/jest-dom';
 import { AbilityDropdown } from './AbilityDropdown';
 import type { AbilityView, EntityView, InventoryItemView } from '@dungeon/presenter';
 
-const createEnemy = (id: string, x: number, y: number, name: string = 'Goblin'): EntityView => ({
+const createEnemy = (
+  id: string,
+  x: number,
+  y: number,
+  name: string = 'Goblin',
+  instanceColor?: string,
+): EntityView => ({
   id,
   x,
   y,
@@ -15,6 +21,7 @@ const createEnemy = (id: string, x: number, y: number, name: string = 'Goblin'):
   health: 10,
   maxHealth: 10,
   templateId: 'goblin',
+  ...(instanceColor ? { instanceColor } : {}),
 });
 
 const createTrap = (id: string, x: number, y: number, name: string = 'Spike Trap'): EntityView => ({
@@ -175,6 +182,44 @@ describe('AbilityDropdown', () => {
       // Clicking an enemy should call onSelect
       fireEvent.click(screen.getByText('Goblin 1'));
       expect(onSelect).toHaveBeenCalledWith({ abilityId: 'power_strike', targetId: 'enemy1' });
+    });
+
+    it('shows instance-color markers for duplicate enemy names in the target chooser', () => {
+      const onSelect = vi.fn();
+
+      const abilities: AbilityView[] = [
+        {
+          id: 'power_strike',
+          name: 'Power Strike',
+          description: 'Attack with force',
+          ready: true,
+          cooldownRemaining: 0,
+          requiresTarget: true,
+          requiresDirection: false,
+        },
+      ];
+
+      const enemies = [
+        createEnemy('enemy1', 1, 0, 'Goblin', '#ff5555'),
+        createEnemy('enemy2', 0, 1, 'Goblin', '#55ddff'),
+      ];
+
+      render(
+        <AbilityDropdown
+          abilities={abilities}
+          enemies={enemies}
+          inventory={[]}
+          playerX={0}
+          playerY={0}
+          onSelect={onSelect}
+        />
+      );
+
+      fireEvent.click(screen.getByText('Power Strike'));
+
+      expect(screen.getAllByText('Goblin')).toHaveLength(2);
+      expect(screen.getByTestId('enemy-instance-marker-enemy1')).toBeInTheDocument();
+      expect(screen.getByTestId('enemy-instance-marker-enemy2')).toBeInTheDocument();
     });
 
     it('disables when no enemies in range', () => {

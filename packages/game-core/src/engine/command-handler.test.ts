@@ -2,7 +2,7 @@ import { describe, it, expect } from 'vitest';
 import { handleCommand, type CommandResult } from './command-handler.js';
 import { SeededRNG } from '../utils/rng.js';
 import { entityId } from '@dungeon/contracts';
-import type { GameState } from '@dungeon/contracts';
+import type { EntityId, GameState } from '@dungeon/contracts';
 import {
   createTestGameStateInCombat,
   createTestGameStateWithAbility,
@@ -22,6 +22,13 @@ import {
 } from '@dungeon/presenter/testing/feature-chain-helpers.js';
 import { buildGameView } from '@dungeon/presenter';
 
+const EMBER_BURN_DURATION = 3;
+const HEAT_SURGE_DURATION = 3;
+const CINDER_WAKE_PANIC_DURATION = 2;
+const SPELL_CAST_XP_GAIN = 5;
+const MAGIC_LEVEL_TWO_XP = 60;
+const MAGIC_LEVEL_TWO_MAX_MANA = 25;
+
 // ---------------------------------------------------------------------------
 // Helpers
 // ---------------------------------------------------------------------------
@@ -37,7 +44,7 @@ function useAbility(
 }
 
 /** Get the first enemy id from a combat state */
-function firstEnemyId(state: GameState): string {
+function firstEnemyId(state: GameState): EntityId {
   for (const enemy of state.run!.enemies.values()) return enemy.id;
   throw new Error('No enemies in state');
 }
@@ -48,18 +55,33 @@ function firstEnemyId(state: GameState): string {
 
 describe('handleUseAbility', () => {
   describe('ember', () => {
-    it('deducts mana and applies burn on a valid cast', () => {
+    it('deducts mana, deals damage, and applies the content-authored burn duration on a valid cast', () => {
       const state = createTestGameStateWithAbility('ember', { enemyHealth: 100 });
       const targetId = firstEnemyId(state);
       const initialMana = state.player.mana;
+      const initialFireXp = state.player.ringMastery.fire?.xp ?? 0;
+      const initialTargetHealth = Array.from(state.run!.enemies.values()).find(
+        (enemy) => enemy.id === targetId,
+      )?.stats.health;
       const rng = new SeededRNG(1);
 
       const result = useAbility(state, 'ember', rng, targetId);
+      const targetAfterCast = Array.from(result.state.run!.enemies.values()).find(
+        (enemy) => enemy.id === targetId,
+      );
+      const burnEvent = result.events.find(
+        (event) => event.type === 'STATUS_APPLIED' && event.statusId === 'burn',
+      );
 
       expect(result.state.player.mana).toBeLessThan(initialMana);
+      expect(result.state.player.ringMastery.fire?.xp).toBe(initialFireXp + SPELL_CAST_XP_GAIN);
       expect(result.events.some(event => event.type === 'MANA_CHANGED' && event.amount < 0)).toBe(true);
       expect(result.events.some(event => event.type === 'ABILITY_USED' && event.abilityId === 'ember')).toBe(true);
-      expect(result.events.some(event => event.type === 'STATUS_APPLIED' && event.statusId === 'burn')).toBe(true);
+      expect(targetAfterCast?.stats.health).toBeLessThan(initialTargetHealth ?? 0);
+      expect(burnEvent).toBeDefined();
+      if (burnEvent?.type === 'STATUS_APPLIED') {
+        expect(burnEvent.duration).toBe(EMBER_BURN_DURATION);
+      }
     });
 
     it('rejects a cast without enough mana without consuming the turn', () => {
@@ -81,8 +103,52 @@ describe('handleUseAbility', () => {
     });
   });
 
+  describe('heat_surge', () => {
+    it('applies the content-authored self-buff duration', () => {
+      const state = createTestGameStateWithAbility('heat_surge');
+      const initialMana = state.player.mana;
+      const initialFireXp = state.player.ringMastery.fire?.xp ?? 0;
+      const rng = new SeededRNG(1);
+
+      const result = useAbility(state, 'heat_surge', rng);
+      const heatSurgeEvent = result.events.find(
+        (event) => event.type === 'STATUS_APPLIED' && event.statusId === 'heat_surge',
+      );
+
+      expect(result.state.player.mana).toBeLessThan(initialMana);
+      expect(result.state.player.ringMastery.fire?.xp).toBe(initialFireXp + SPELL_CAST_XP_GAIN);
+      expect(heatSurgeEvent).toBeDefined();
+      if (heatSurgeEvent?.type === 'STATUS_APPLIED') {
+        expect(heatSurgeEvent.duration).toBe(HEAT_SURGE_DURATION);
+      }
+    });
+
+    it('raises max mana when spell use pushes total magic XP over a global threshold', () => {
+      const state = createTestGameStateWithAbility('ember', { enemyHealth: 100 });
+      const targetId = firstEnemyId(state);
+      const thresholdState = {
+        ...state,
+        player: {
+          ...state.player,
+          maxMana: 20,
+          ringMastery: {
+            fire: {
+              xp: MAGIC_LEVEL_TWO_XP - SPELL_CAST_XP_GAIN,
+            },
+          },
+        },
+      };
+      const rng = new SeededRNG(1);
+
+      const result = useAbility(thresholdState, 'ember', rng, targetId);
+
+      expect(result.state.player.ringMastery.fire?.xp).toBe(MAGIC_LEVEL_TWO_XP);
+      expect(result.state.player.maxMana).toBe(MAGIC_LEVEL_TWO_MAX_MANA);
+    });
+  });
+
   describe('cinder_wake', () => {
-    it('uses command direction to affect enemies in a line', () => {
+    it('uses command direction to damage enemies in a line and only panic already-burning targets', () => {
       const state = createTestGameStateWithAbility('cinder_wake', {
         enemyPosition: { x: 1, y: 0 },
         enemyHealth: 100,
@@ -91,6 +157,25 @@ describe('handleUseAbility', () => {
           { id: 'off_line_enemy', position: { x: 0, y: 1 }, health: 100 },
         ],
       });
+      const primaryEnemyId = firstEnemyId(state);
+      const lineEnemyId = entityId('line_enemy');
+      const offLineEnemyId = entityId('off_line_enemy');
+      const enemies = new Map(state.run!.enemies);
+      const lineEnemyEntry = Array.from(enemies.entries()).find(
+        ([, enemy]) => enemy.id === lineEnemyId,
+      );
+      if (lineEnemyEntry !== undefined) {
+        const [key, enemy] = lineEnemyEntry;
+        enemies.set(key, {
+          ...enemy,
+          statuses: [{
+            id: 'burn',
+            turnsRemaining: 1,
+            magnitude: 1,
+            sourceId: state.player.id,
+          }],
+        });
+      }
       const cells = new Map(state.run!.floor.cells);
       const visibleFloor = {
         tile: { type: 'floor' as const, walkable: true, blocksVision: false, ascii: '.', color: '#aaa' },
@@ -101,9 +186,16 @@ describe('handleUseAbility', () => {
         ...state,
         run: {
           ...state.run!,
+          enemies,
           floor: { ...state.run!.floor, cells },
         },
       };
+      const healthByIdBeforeCast = new Map(
+        Array.from(stateWithVisibleLine.run.enemies.values()).map((enemy) => [
+          enemy.id,
+          enemy.stats.health,
+        ]),
+      );
       const rng = new SeededRNG(1);
 
       const result = handleCommand(
@@ -119,9 +211,31 @@ describe('handleUseAbility', () => {
       if (abilityEvent?.type === 'ABILITY_USED') {
         expect(abilityEvent.affectedTargetIds?.length ?? 0).toBeGreaterThanOrEqual(2);
       }
-      expect(result.events.some(event => event.type === 'STATUS_APPLIED' && event.statusId === 'burn')).toBe(true);
-      const offLineEnemy = Array.from(result.state.run!.enemies.values()).find(enemy => enemy.id === entityId('off_line_enemy'));
-      expect(offLineEnemy?.statuses.some(status => status.id === 'burn')).toBe(false);
+      const primaryEnemy = Array.from(result.state.run!.enemies.values()).find(
+        (enemy) => enemy.id === primaryEnemyId,
+      );
+      const lineEnemy = Array.from(result.state.run!.enemies.values()).find(
+        (enemy) => enemy.id === lineEnemyId,
+      );
+      const offLineEnemy = Array.from(result.state.run!.enemies.values()).find(
+        (enemy) => enemy.id === offLineEnemyId,
+      );
+      const panicEvent = result.events.find(
+        (event) => event.type === 'STATUS_APPLIED' && event.statusId === 'panic',
+      );
+
+      expect(primaryEnemy?.stats.health).toBeLessThan(healthByIdBeforeCast.get(primaryEnemyId) ?? 0);
+      expect(lineEnemy?.stats.health).toBeLessThan(healthByIdBeforeCast.get(lineEnemyId) ?? 0);
+      expect(primaryEnemy?.statuses.some((status) => status.id === 'burn')).toBe(true);
+      expect(primaryEnemy?.statuses.some((status) => status.id === 'panic')).toBe(false);
+      expect(lineEnemy?.statuses.some((status) => status.id === 'burn')).toBe(true);
+      expect(lineEnemy?.statuses.some((status) => status.id === 'panic')).toBe(true);
+      expect(offLineEnemy?.stats.health).toBe(healthByIdBeforeCast.get(offLineEnemyId));
+      expect(offLineEnemy?.statuses.some((status) => status.id === 'burn' || status.id === 'panic')).toBe(false);
+      expect(panicEvent).toBeDefined();
+      if (panicEvent?.type === 'STATUS_APPLIED') {
+        expect(panicEvent.duration).toBe(CINDER_WAKE_PANIC_DURATION);
+      }
     });
 
     it('rejects a directional spell without direction before spending mana', () => {

@@ -742,7 +742,9 @@ describe('TownPhase Component', () => {
               unlockLevel: 1,
               requiredSchoolXp: 1,
               goldCost: 80,
-              currentSchoolXp: 200,
+              currentSchoolXp: 0,
+              currentSchoolLevel: 7,
+              nextSchoolLevelXp: 999,
               learned: false,
               unlocked: false,
               affordable: true,
@@ -768,6 +770,7 @@ describe('TownPhase Component', () => {
 
       fireEvent.click(screen.getByRole('button', { name: /Study →/i }));
       expect(screen.getByRole('heading', { name: /Ring Study/i })).toBeVisible();
+      expect(screen.getByText('Fire Lv 7 · 0 / 999 XP · Range 1 · 80g')).toBeVisible();
 
       fireEvent.click(screen.getByRole('button', { name: /^Study$/i }));
 

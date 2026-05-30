@@ -2,7 +2,15 @@ import type { GameState, WeaponType } from '@dungeon/contracts';
 import { STATUS_DEFINITIONS, ABILITY_DEFINITIONS, ENCHANTMENT_BY_ID, XP_TABLE, getRarityColor, BIOMES, getDamageBand, getWeaponDamageProfile, RING_SPELL_BY_ID, RING_SCHOOLS } from '@dungeon/content';
 import { getObjectiveText } from '@dungeon/core/systems/quest-progress.js';
 import { getEffectiveStat } from '@dungeon/core/systems/status-effects.js';
-import { evaluateAllRingSpellStudy, getEquippedRingItemIds } from '@dungeon/core';
+import {
+  evaluateAllRingSpellStudy,
+  getEquippedRingItemIds,
+  getMagicLevel,
+  getNextMagicLevelXp,
+  getNextSchoolMasteryXp,
+  getSchoolMasteryLevelFromXp,
+  getTotalMagicXp,
+} from '@dungeon/core';
 import type { AbilityView, EnchantmentView, EquippedItemView, LearnedSpellView, PlayerHudView, RingSchoolMasteryView, RingSpellView, StatusView } from '../game-view.js';
 import { calculateStatBreakdown } from './stat-breakdown-builder.js';
 import { buildFactionView, buildOgreProgressView } from './faction-progress-builder.js';
@@ -158,6 +166,9 @@ export function buildPlayerHud(state: GameState): PlayerHudView {
 
   const equippedItemIds = getEquippedRingItemIds(state.player.equipment, state.itemRegistry.items);
   const learnedSpellIds = p.learnedRingSpellIds ?? [];
+  const totalMagicXp = getTotalMagicXp(p);
+  const magicLevel = getMagicLevel(p);
+  const nextMagicLevelXp = getNextMagicLevelXp(totalMagicXp);
   const discoveredSchools = new Set<string>();
   for (const school of RING_SCHOOLS) {
     if ((p.ringMastery as Record<string, { xp: number }>)[school.id] !== undefined) {
@@ -184,11 +195,11 @@ export function buildPlayerHud(state: GameState): PlayerHudView {
     .map(school => {
       const xpData = (p.ringMastery as Record<string, { xp: number }>)[school.id];
       const currentXp = xpData?.xp ?? 0;
-      const level = currentXp >= 60 ? 2 : (currentXp >= 20 ? 1 : 0);
-      const nextLevelXp = level >= 2 ? 60 : (level >= 1 ? 60 : 20);
+      const level = getSchoolMasteryLevelFromXp(currentXp);
+      const nextLevelXp = getNextSchoolMasteryXp(currentXp);
       return {
-      school: school.id,
-      xp: currentXp,
+        school: school.id,
+        xp: currentXp,
         level,
         nextLevelXp,
       };
@@ -257,7 +268,15 @@ export function buildPlayerHud(state: GameState): PlayerHudView {
     level: p.level,
     health: p.stats.health,
     maxHealth: p.stats.maxHealth,
-    ...(hasRingMagic ? { mana: p.mana, maxMana: p.maxMana } : {}),
+    ...(hasRingMagic
+      ? {
+          mana: p.mana,
+          maxMana: p.maxMana,
+          magicExperience: totalMagicXp,
+          magicLevel,
+          magicExperienceForNextLevel: nextMagicLevelXp,
+        }
+      : {}),
     attack: effectiveAttack,
     defense: p.stats.defense,
     accuracy: p.stats.accuracy,

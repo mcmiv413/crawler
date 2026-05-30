@@ -3,7 +3,6 @@ import {
   canAffordMana,
   deductMana,
   restoreMana,
-  expandMaxMana,
   regenerateMana,
 } from './mana.js';
 
@@ -59,16 +58,6 @@ describe('Mana System', () => {
 
       expect(restoreMana(maxMana - 2, maxMana, 5)).toBe(maxMana);
       expect(restoreMana(maxMana, maxMana, 10)).toBe(maxMana);
-    });
-  });
-
-  describe('expandMaxMana', () => {
-    it('increases max mana by 5', () => {
-      const baseMaxMana = 20;
-      const increase = expandMaxMana(baseMaxMana) - baseMaxMana;
-
-      expect(expandMaxMana(baseMaxMana)).toBeGreaterThan(baseMaxMana);
-      expect(expandMaxMana(baseMaxMana + increase)).toBe(baseMaxMana + increase * 2);
     });
   });
 
