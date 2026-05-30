@@ -224,7 +224,7 @@ async function findOverlayCanvasIndex(
   dungeonCanvasIndex: number,
   dungeonCanvasSize: { readonly width: number; readonly height: number },
 ): Promise<number> {
-  const taggedIndex = await findCanvasIndexByTestId(page, 'three-effects-overlay');
+  const taggedIndex = await findCanvasIndexByTestId(page, 'three-animation-overlay');
   if (taggedIndex >= 0) {
     return taggedIndex;
   }
@@ -253,7 +253,7 @@ test('Three healing pulse overlay stays aligned and click-through over the dunge
   await page.addInitScript((storedSession: StoredSession) => {
     window.sessionStorage.clear();
     window.localStorage.clear();
-    (window as Window & { __DUNGEON_THREE_EFFECTS_OVERRIDE__?: boolean }).__DUNGEON_THREE_EFFECTS_OVERRIDE__ = true;
+    (window as Window & { __DUNGEON_ANIMATION_RENDERER_MODE_OVERRIDE__?: string }).__DUNGEON_ANIMATION_RENDERER_MODE_OVERRIDE__ = 'three';
     window.sessionStorage.setItem('dungeon-session', JSON.stringify(storedSession));
   }, session);
 
