@@ -1,3 +1,4 @@
+import { lichCommander } from '../enemies/index.js';
 import type { FactionDefinition } from './types.js';
 
 export const undeadLegion: FactionDefinition = {
@@ -8,7 +9,7 @@ export const undeadLegion: FactionDefinition = {
   initialPower: 30,
   initialDisposition: -50,
   leader: {
-    templateId: 'lich_commander',
+    templateId: lichCommander.templateId,
     names: ['Aser', 'Vharos', 'Nereth'],
     titles: ['Crypt-Marshal', 'Ashen Regent', 'Bone Standard'],
   },

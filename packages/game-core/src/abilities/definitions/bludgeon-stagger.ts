@@ -1,11 +1,9 @@
+import { bludgeonStagger, stun } from '@dungeon/content';
 import type { AbilityDefinition } from '../types.js';
+import { buildContentBackedDefinition } from './content-backed-definition.js';
 
-export const BLUDGEON_STAGGER_DEFINITION: AbilityDefinition = {
-  id: 'bludgeon_stagger',
-  name: 'Bludgeon Stagger',
-  description: 'A heavy blow with 80% chance to stun (enemy skips next turn).',
+export const BLUDGEON_STAGGER_DEFINITION: AbilityDefinition = buildContentBackedDefinition(bludgeonStagger, {
   tags: ['melee', 'attack'],
-  cooldown: 2,
   unlocks: [{ kind: 'mastery', weaponType: 'bludgeon', masteryIndex: 1 }],
   requirements: [
     { kind: 'weapon_type', weaponType: 'bludgeon' },
@@ -21,11 +19,11 @@ export const BLUDGEON_STAGGER_DEFINITION: AbilityDefinition = {
     },
     {
       kind: 'status',
-      statusId: 'stun',
-      statusName: 'Stun',
+      statusId: stun.id,
+      statusName: stun.name,
       trigger: 'on_hit',
       chance: 0.8,
       duration: 1,
     },
   ],
-};
+});

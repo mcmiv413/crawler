@@ -1,11 +1,9 @@
+import { axeExecute } from '@dungeon/content';
 import type { AbilityDefinition } from '../types.js';
+import { buildContentBackedDefinition } from './content-backed-definition.js';
 
-export const AXE_EXECUTE_DEFINITION: AbilityDefinition = {
-  id: 'axe_execute',
-  name: 'Axe Execute',
-  description: 'Deal 3× damage to enemies below 30% HP.',
+export const AXE_EXECUTE_DEFINITION: AbilityDefinition = buildContentBackedDefinition(axeExecute, {
   tags: ['melee', 'attack'],
-  cooldown: 3,
   unlocks: [{ kind: 'mastery', weaponType: 'axe', masteryIndex: 2 }],
   requirements: [
     { kind: 'weapon_type', weaponType: 'axe' },
@@ -33,4 +31,4 @@ export const AXE_EXECUTE_DEFINITION: AbilityDefinition = {
       ],
     },
   ],
-};
+});

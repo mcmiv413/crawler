@@ -9,9 +9,35 @@ import {
   parseArgs,
   readText,
   resolveRoot,
+  stripComments,
   walkFiles,
 } from './common.mjs';
 import defaultConfig from './reference-literals.config.mjs';
+
+function collectPatternMatches(source, pattern) {
+  const stripped = stripComments(source);
+  const flags = pattern.flags.includes('g') ? pattern.flags : `${pattern.flags}g`;
+  const matcher = new RegExp(pattern.source, flags);
+  const matches = [];
+  let match;
+
+  while ((match = matcher.exec(stripped)) !== null) {
+    const value = match.groups?.value ?? match[1];
+    if (typeof value === 'string' && value.length > 0) {
+      matches.push({
+        value,
+        index: match.index,
+        source: stripped,
+      });
+    }
+
+    if (match[0].length === 0) {
+      matcher.lastIndex += 1;
+    }
+  }
+
+  return matches;
+}
 
 function collectDeclaredLiterals(rootDir, configEntry) {
   const declared = new Set();
@@ -21,6 +47,13 @@ function collectDeclaredLiterals(rootDir, configEntry) {
 
   for (const relativePath of sourceFiles) {
     const source = readText(rootDir, relativePath);
+    if (configEntry.sourcePattern instanceof RegExp) {
+      for (const match of collectPatternMatches(source, configEntry.sourcePattern)) {
+        declared.add(match.value);
+      }
+      continue;
+    }
+
     for (const literal of extractStringLiterals(source)) {
       configEntry.literalPattern.lastIndex = 0;
       if (configEntry.literalPattern.test(literal.value)) {
@@ -54,6 +87,16 @@ export function checkReferenceLiterals(options = {}) {
 
     for (const relativePath of files) {
       const source = readText(rootDir, relativePath);
+      if (configEntry.implementationPattern instanceof RegExp) {
+        for (const match of collectPatternMatches(source, configEntry.implementationPattern)) {
+          if (declaredLiterals.has(match.value) === false) continue;
+          failures.push(
+            `${relativePath}:${lineNumberAt(match.source, match.index)} copies ${configEntry.name} literal "${match.value}"; import ${configEntry.sourceExport} and dot-walk the source-of-truth ref`,
+          );
+        }
+        continue;
+      }
+
       for (const literal of extractStringLiterals(source)) {
         if (declaredLiterals.has(literal.value) === false) continue;
         failures.push(

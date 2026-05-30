@@ -1,5 +1,5 @@
 import type { GameState, WeaponType } from '@dungeon/contracts';
-import { STATUS_DEFINITIONS, ABILITY_DEFINITIONS, ENCHANTMENT_BY_ID, XP_TABLE, getRarityColor, BIOMES, getDamageBand, getWeaponDamageProfile, RING_SPELL_BY_ID, RING_SCHOOLS } from '@dungeon/content';
+import { STATUS_DEFINITIONS, ABILITY_DEFINITIONS, ENCHANTMENT_BY_ID, XP_TABLE, getRarityColor, BIOMES, getDamageBand, getWeaponDamageProfile, RING_SPELL_BY_ID, getRingSchools } from '@dungeon/content';
 import { getObjectiveText } from '@dungeon/core/systems/quest-progress.js';
 import { getEffectiveStat } from '@dungeon/core/systems/status-effects.js';
 import {
@@ -169,14 +169,15 @@ export function buildPlayerHud(state: GameState): PlayerHudView {
   const totalMagicXp = getTotalMagicXp(p);
   const magicLevel = getMagicLevel(p);
   const nextMagicLevelXp = getNextMagicLevelXp(totalMagicXp);
+  const ringSchools = getRingSchools();
   const discoveredSchools = new Set<string>();
-  for (const school of RING_SCHOOLS) {
+  for (const school of ringSchools) {
     if ((p.ringMastery as Record<string, { xp: number }>)[school.id] !== undefined) {
       discoveredSchools.add(school.id);
     }
   }
   for (const itemId of equippedItemIds) {
-    const school = RING_SCHOOLS.find(candidate => candidate.ringId === itemId);
+    const school = ringSchools.find(candidate => candidate.ringId === itemId);
     if (school !== undefined) {
       discoveredSchools.add(school.id);
     }
@@ -190,7 +191,7 @@ export function buildPlayerHud(state: GameState): PlayerHudView {
   }
 
   // Build ring school mastery info
-  const ringSchoolMasteries: RingSchoolMasteryView[] = RING_SCHOOLS
+  const ringSchoolMasteries: RingSchoolMasteryView[] = ringSchools
     .filter(school => discoveredSchools.has(school.id))
     .map(school => {
       const xpData = (p.ringMastery as Record<string, { xp: number }>)[school.id];

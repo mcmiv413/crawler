@@ -1,5 +1,5 @@
 import type { DomainEvent, EnemyInstance, GameState } from '@dungeon/contracts';
-import { MAGIC, STATUS_DEFAULTS } from '@dungeon/content';
+import { MAGIC, STATUS_DEFAULTS, burn, panic } from '@dungeon/content';
 import { chebyshevDistance } from '../utils/grid.js';
 import type { SeededRNG } from '../utils/rng.js';
 import {
@@ -17,7 +17,7 @@ export function spreadBurnFromDeadEnemy(
   if (state.run === null) return { enemies: new Map(), events: [] };
 
   // Check if dead enemy had burn status
-  const hadBurn = deadEnemy.statuses.some(s => s.id === 'burn');
+  const hadBurn = deadEnemy.statuses.some(s => s.id === burn.id);
   if (hadBurn === false) return { enemies: state.run.enemies, events: [] };
 
   let updatedEnemies = new Map(state.run.enemies);
@@ -35,19 +35,19 @@ export function spreadBurnFromDeadEnemy(
 
     // Apply burn to nearby enemy
     const mutableStatuses = [...enemy.statuses];
-    const existingBurn = mutableStatuses.find(s => s.id === 'burn');
+    const existingBurn = mutableStatuses.find(s => s.id === burn.id);
     if (existingBurn === undefined) {
-      const burn = {
-        id: 'burn' as const,
+      const burnStatus = {
+        id: burn.id,
         turnsRemaining: burnDuration,
         magnitude: burnMagnitude,
         sourceId: state.player.id,
       };
-      mutableStatuses.push(burn);
+      mutableStatuses.push(burnStatus);
       events = [...events, {
         type: 'STATUS_APPLIED',
         targetId: enemy.id,
-        statusId: 'burn',
+        statusId: burn.id,
         duration: burnDuration,
         sourceId: state.player.id,
         timestamp: state.turnNumber,
@@ -56,10 +56,10 @@ export function spreadBurnFromDeadEnemy(
     }
 
     if (canFireMasteryPanicOnSpread(state.player) === true && rng.chance(MAGIC.panicOnBurnSpreadChancePct) === true) {
-      const existingPanic = mutableStatuses.find(s => s.id === 'panic');
+      const existingPanic = mutableStatuses.find(s => s.id === panic.id);
       if (existingPanic === undefined) {
         mutableStatuses.push({
-          id: 'panic',
+          id: panic.id,
           turnsRemaining: STATUS_DEFAULTS.panic.defaultDuration,
           magnitude: 1,
           sourceId: state.player.id,
@@ -67,7 +67,7 @@ export function spreadBurnFromDeadEnemy(
         events = [...events, {
           type: 'STATUS_APPLIED',
           targetId: enemy.id,
-          statusId: 'panic',
+          statusId: panic.id,
           duration: STATUS_DEFAULTS.panic.defaultDuration,
           sourceId: state.player.id,
           timestamp: state.turnNumber,

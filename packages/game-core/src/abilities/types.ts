@@ -1,4 +1,4 @@
-import type { WeaponType, EntityId, GameState, EnemyInstance, DamageType, Direction } from '@dungeon/contracts';
+import type { WeaponType, EntityId, GameState, EnemyInstance, DamageType, Direction, StatusId } from '@dungeon/contracts';
 import type { SeededRNG } from '../utils/rng.js';
 
 /**
@@ -35,7 +35,7 @@ export type AbilityRequirement =
 export type AbilityCondition =
   | { kind: 'attack_hit' }
   | { kind: 'target_below_hp_pct'; percentage: number }
-  | { kind: 'target_has_status'; statusId: string };
+  | { kind: 'target_has_status'; statusId: StatusId };
 
 /**
  * Target selection strategies.
@@ -96,7 +96,7 @@ export interface HealEffect {
  */
 export interface StatusEffect {
   kind: 'status';
-  statusId: string;
+  statusId: StatusId;
   statusName: string;
   target?: 'enemy' | 'player';
   trigger: 'always' | 'on_hit';

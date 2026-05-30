@@ -24,7 +24,7 @@ describe('Faction Definitions Contract', () => {
     for (const [factionId, definition] of FACTION_DEFINITIONS) {
       const template = ENEMY_TEMPLATES.get(definition.leader.templateId);
       expect(template).toBeDefined();
-      expect(template?.id).toBe(definition.leader.templateId);
+      expect(template?.templateId).toBe(definition.leader.templateId);
     }
   });
 

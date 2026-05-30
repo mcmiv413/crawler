@@ -5,31 +5,31 @@ import { resolveAttack } from '../../systems/combat.js';
 import { checkWeaponMasteryUnlocks } from '../../systems/weapon-mastery.js';
 import { processEnemyKill, getEquippedWeaponType, getEquippedWeaponDamageType } from '../../engine/handlers/combat.js';
 import { updateRunMetrics } from '../../engine/handlers/shared.js';
-import { STATUS_DEFAULTS, MAGIC } from '@dungeon/content';
+import { MAGIC, STATUS_DEFAULTS, arcaneCharge, burn, heatSurgeStatus } from '@dungeon/content';
 import { getFireBurnDuration, getFireBurnMagnitude } from '../../systems/magic-xp.js';
 
 function arcaneChargeBonus(statuses: AbilityContext['player']['statuses']): number {
-  const arcaneCharge = statuses.find(status => status.id === 'arcane_charge');
-  return arcaneCharge?.magnitude ?? 0;
+  const charge = statuses.find(status => status.id === arcaneCharge.id);
+  return charge?.magnitude ?? 0;
 }
 
 function applyHeatSurgeBurn(
   enemy: EnemyInstance,
   context: AbilityContext,
 ): { enemy: EnemyInstance; events: DomainEvent[] } {
-  const hasHeatSurge = context.state.player.statuses.some(status => status.id === 'heat_surge');
+  const hasHeatSurge = context.state.player.statuses.some(status => status.id === heatSurgeStatus.id);
   if (hasHeatSurge === false) return { enemy, events: [] };
 
   const defaults = STATUS_DEFAULTS.burn;
   const duration = getFireBurnDuration(context.player, defaults.defaultDuration);
   const magnitude = getFireBurnMagnitude(context.player);
-  const updatedEnemy = applyStatusToEnemy(enemy, 'burn', duration, magnitude, context.player.id);
+  const updatedEnemy = applyStatusToEnemy(enemy, burn.id, duration, magnitude, context.player.id);
   return {
     enemy: updatedEnemy,
     events: [{
       type: 'STATUS_APPLIED',
       targetId: enemy.id,
-      statusId: 'burn',
+      statusId: burn.id,
       duration,
       sourceId: context.player.id,
       timestamp: context.state.turnNumber,

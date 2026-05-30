@@ -1,11 +1,9 @@
+import { bludgeonShatter } from '@dungeon/content';
 import type { AbilityDefinition } from '../types.js';
+import { buildContentBackedDefinition } from './content-backed-definition.js';
 
-export const BLUDGEON_SHATTER_DEFINITION: AbilityDefinition = {
-  id: 'bludgeon_shatter',
-  name: 'Bludgeon Shatter',
-  description: 'Smash through armor, permanently reducing target defense by 5.',
+export const BLUDGEON_SHATTER_DEFINITION: AbilityDefinition = buildContentBackedDefinition(bludgeonShatter, {
   tags: ['melee', 'attack'],
-  cooldown: 4,
   unlocks: [{ kind: 'mastery', weaponType: 'bludgeon', masteryIndex: 2 }],
   requirements: [
     { kind: 'weapon_type', weaponType: 'bludgeon' },
@@ -29,4 +27,4 @@ export const BLUDGEON_SHATTER_DEFINITION: AbilityDefinition = {
       minimum: 0,
     },
   ],
-};
+});

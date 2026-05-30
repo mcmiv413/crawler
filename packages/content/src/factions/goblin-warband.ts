@@ -1,3 +1,4 @@
+import { goblinWarlord } from '../enemies/index.js';
 import type { FactionDefinition } from './types.js';
 
 export const goblinWarband: FactionDefinition = {
@@ -8,7 +9,7 @@ export const goblinWarband: FactionDefinition = {
   initialPower: 40,
   initialDisposition: -30,
   leader: {
-    templateId: 'goblin_warlord',
+    templateId: goblinWarlord.templateId,
     names: ['Brakka', 'Skritch', 'Mogren'],
     titles: ['Knife-King', 'Warren Tyrant', 'Banner-Eater'],
   },

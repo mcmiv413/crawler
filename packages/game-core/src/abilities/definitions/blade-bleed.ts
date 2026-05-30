@@ -1,11 +1,9 @@
+import { bladeBleed, bleed } from '@dungeon/content';
 import type { AbilityDefinition } from '../types.js';
+import { buildContentBackedDefinition } from './content-backed-definition.js';
 
-export const BLADE_BLEED_DEFINITION: AbilityDefinition = {
-  id: 'blade_bleed',
-  name: 'Blade Bleed',
-  description: 'A precise strike that guarantees bleeding (2 dmg/turn, 4 turns).',
+export const BLADE_BLEED_DEFINITION: AbilityDefinition = buildContentBackedDefinition(bladeBleed, {
   tags: ['melee', 'attack'],
-  cooldown: 2,
   unlocks: [{ kind: 'mastery', weaponType: 'blade', masteryIndex: 1 }],
   requirements: [
     { kind: 'weapon_type', weaponType: 'blade' },
@@ -21,10 +19,10 @@ export const BLADE_BLEED_DEFINITION: AbilityDefinition = {
     },
     {
       kind: 'status',
-      statusId: 'bleed',
-      statusName: 'Bleed',
+      statusId: bleed.id,
+      statusName: bleed.name,
       trigger: 'on_hit',
       duration: 4,
     },
   ],
-};
+});

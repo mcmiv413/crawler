@@ -1,5 +1,9 @@
+import type { EnemyTemplate } from '@dungeon/contracts';
+
+export type EnemyTemplateId = EnemyTemplate['templateId'];
+
 export interface FactionLeaderDefinition {
-  readonly templateId: string;
+  readonly templateId: EnemyTemplateId;
   readonly names: readonly string[];
   readonly titles: readonly string[];
 }

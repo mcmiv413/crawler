@@ -1,11 +1,9 @@
+import { bladeRiposte } from '@dungeon/content';
 import type { AbilityDefinition } from '../types.js';
+import { buildContentBackedDefinition } from './content-backed-definition.js';
 
-export const BLADE_RIPOSTE_DEFINITION: AbilityDefinition = {
-  id: 'blade_riposte',
-  name: 'Blade Riposte',
-  description: 'A guaranteed critical strike with 1.5× damage and +50 accuracy bonus.',
+export const BLADE_RIPOSTE_DEFINITION: AbilityDefinition = buildContentBackedDefinition(bladeRiposte, {
   tags: ['melee', 'attack'],
-  cooldown: 3,
   unlocks: [],
   requirements: [
     { kind: 'weapon_type', weaponType: 'blade' },
@@ -22,4 +20,4 @@ export const BLADE_RIPOSTE_DEFINITION: AbilityDefinition = {
       trackMastery: true,
     },
   ],
-};
+});

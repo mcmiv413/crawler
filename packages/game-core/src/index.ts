@@ -6,3 +6,4 @@ export * from './state/index.js';
 export { SeededRNG } from './utils/index.js';
 export { getAbilityUiMetadata, buildAbilityUiMetadataMap, type AbilityUiMetadata } from './abilities/ability-ui-metadata.js';
 export { ALL_ABILITY_DEFINITIONS } from './abilities/definitions/index.js';
+export { LEGACY_CONTENT_ABILITY_HANDLER_IDS } from './engine/handlers/combat.js';

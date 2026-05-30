@@ -1,4 +1,5 @@
-import type { DomainEvent, StatusId } from '@dungeon/contracts';
+import type { DomainEvent } from '@dungeon/contracts';
+import { burn } from '@dungeon/content';
 import type { AbilityContext, StatusEffect } from '../types.js';
 import { applyStatusToEnemy, applyStatusToPlayer } from '../../systems/status-effects.js';
 import { getFireBurnDuration, getFireBurnMagnitude } from '../../systems/magic-xp.js';
@@ -26,10 +27,10 @@ export function applyStatus(
     return { state: newState, events };
   }
 
-  const statusId = effect.statusId as StatusId;
+  const statusId = effect.statusId;
   const baseDuration = effect.duration ?? 3;
-  const duration = statusId === 'burn' ? getFireBurnDuration(context.player, baseDuration) : baseDuration;
-  const magnitude = statusId === 'burn' ? getFireBurnMagnitude(context.player) : (effect.magnitude ?? 1);
+  const duration = statusId === burn.id ? getFireBurnDuration(context.player, baseDuration) : baseDuration;
+  const magnitude = statusId === burn.id ? getFireBurnMagnitude(context.player) : (effect.magnitude ?? 1);
 
   if (effect.target === 'player') {
     const updatedPlayer = applyStatusToPlayer(newState.player, statusId, duration, magnitude, context.player.id);

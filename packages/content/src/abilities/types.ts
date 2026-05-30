@@ -1,4 +1,5 @@
 import type { WeaponType } from '@dungeon/contracts';
+import type { AnimationId } from '../animation-refs/types.js';
 
 export interface AbilityDefinition {
   readonly id: string;
@@ -12,5 +13,5 @@ export interface AbilityDefinition {
   readonly requiresWeaponTypes?: readonly WeaponType[];
   readonly range?: number;
   readonly minRange?: number;
-  readonly animation: { readonly id: string };
+  readonly animation: { readonly id: AnimationId };
 }
