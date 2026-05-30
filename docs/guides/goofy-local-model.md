@@ -4,10 +4,10 @@ Use this guide when you want to change the local model behind `~/.claude/bin/goo
 
 ## Source of truth
 
-- Launcher source: `scripts/local-ai/goofy-launcher.sh`
-- Model catalog: `scripts/local-ai/goofy-model-catalog.json`
-- Eval suite: `scripts/local-ai/goofy-evals.json`
-- Eval fixtures: `scripts/local-ai/fixtures/`
+- Goofy baseline and routing notes: `docs/skills/model-orchestrator/references/goofy-baseline.md`
+- Local profile and launcher snapshot: `docs/skills/model-orchestrator/references/local-profiles.md`
+- Install / sync workflow: `docs/skills/model-orchestrator/references/installation.md`
+- Eval suites: `docs/skills/model-orchestrator/evals/evals.json` and `docs/skills/model-orchestrator/evals/trigger-evals.json`
 
 The live launcher is synced to `~/.claude/bin/goofy` so future backing-model changes can be reviewed in the repo first.
 
