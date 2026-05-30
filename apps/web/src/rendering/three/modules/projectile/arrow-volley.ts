@@ -1,17 +1,23 @@
 /**
  * Three.js module for `fx.projectile.arrow-volley`.
- * Visual: multiple overlapping arrow planes that fade together.
+ * Visual: three arrows traveling in formation with trails and impact burst.
  */
 
 import * as THREE from 'three';
 import { animationRefs } from '@dungeon/content';
 import type { ThreeAnimationModule, ThreeAnimationContext, ThreeAnimationPosition } from '../../three-animation-types.js';
+import { createProjectileTrail, type ProjectileTrail } from '../../lib/projectile-trail.js';
+import { createParticleBurst, type ParticleBurst } from '../../lib/particle-burst.js';
 
 interface Instance {
-  group: THREE.Group;
-  materials: THREE.MeshBasicMaterial[];
-  scene: ThreeAnimationContext['scene'];
-  geometries: THREE.PlaneGeometry[];
+  readonly group: THREE.Group;
+  readonly scene: ThreeAnimationContext['scene'];
+  readonly geometries: Array<{ dispose(): void }>;
+  readonly materials: Array<{ dispose(): void; map?: { dispose(): void } | null }>;
+  readonly arrowMeshes: THREE.Mesh[];
+  readonly arrowMaterials: THREE.MeshBasicMaterial[];
+  readonly trails: ProjectileTrail[];
+  readonly burst: ParticleBurst;
   source: { x: number; y: number };
   target: { x: number; y: number };
   z: number;
@@ -24,31 +30,44 @@ export const arrowVolley: ThreeAnimationModule<Instance> = {
   create(ctx: ThreeAnimationContext): Instance {
     const { tileSize } = ctx;
     const group = new THREE.Group();
-    const materials: THREE.MeshBasicMaterial[] = [];
-    const geometries: THREE.PlaneGeometry[] = [];
+
+    const arrowMeshes: THREE.Mesh[] = [];
+    const arrowMaterials: THREE.MeshBasicMaterial[] = [];
+    const trails: ProjectileTrail[] = [];
+    const arrowGeos: THREE.PlaneGeometry[] = [];
     const offsets = [-tileSize * 0.4, 0, tileSize * 0.4];
 
     for (const xOff of offsets) {
-      const geometry = new THREE.PlaneGeometry(tileSize * 0.2, tileSize);
-      const material = new THREE.MeshBasicMaterial({
-        color: 0xcc9933,
-        transparent: true,
-        opacity: 1,
-        depthWrite: false,
-      });
-      const mesh = new THREE.Mesh(geometry, material);
+      const geo = new THREE.PlaneGeometry(tileSize * 0.2, tileSize);
+      const mat = new THREE.MeshBasicMaterial({ color: 0xcc9933, transparent: true, opacity: 1, depthWrite: false });
+      const mesh = new THREE.Mesh(geo, mat);
       mesh.position.x = xOff;
       group.add(mesh);
-      materials.push(material);
-      geometries.push(geometry);
+      arrowMeshes.push(mesh);
+      arrowMaterials.push(mat);
+      arrowGeos.push(geo);
+
+      const trail = createProjectileTrail({ lengthPx: tileSize * 0.85, widthPx: tileSize * 0.16, color: 0xcc9933, opacity: 0.35, fadeStart: 0.75 });
+      trail.object.position.x = xOff;
+      group.add(trail.object);
+      trails.push(trail);
     }
 
+    const burst = createParticleBurst({ count: 18, spreadPx: tileSize * 0.8, startColor: 0xffdd88, endColor: 0xaa7722, gravityPx: tileSize * 0.15, sizePx: tileSize * 0.075, seed: 302, tileSize });
+    burst.object.visible = false;
+    group.add(burst.object);
+
     ctx.scene.add(group);
+
     return {
       group,
-      materials,
       scene: ctx.scene,
-      geometries,
+      geometries: [...arrowGeos, ...trails.map((t) => t.geometry), burst.geometry],
+      materials: [...arrowMaterials, ...trails.map((t) => t.material), burst.material],
+      arrowMeshes,
+      arrowMaterials,
+      trails,
+      burst,
       source: { x: 0, y: 0 },
       target: { x: 0, y: 0 },
       z: 0,
@@ -73,15 +92,25 @@ export const arrowVolley: ThreeAnimationModule<Instance> = {
       instance.group.rotation.z = Math.atan2(dy, dx) - Math.PI / 2;
     }
 
-    const opacity = progress > 0.75 ? Math.max(0, 1 - (progress - 0.75) / 0.25) : 1;
-    for (const mat of instance.materials) {
-      mat.opacity = opacity;
+    const arrowOpacity = progress > 0.75 ? Math.max(0, 1 - (progress - 0.75) / 0.25) : 1;
+    for (const mat of instance.arrowMaterials) {
+      mat.opacity = arrowOpacity;
     }
+
+    for (const trail of instance.trails) {
+      trail.update(progress);
+    }
+
+    const burstProgress = progress < 0.78 ? 0 : (progress - 0.78) / 0.22;
+    instance.burst.object.visible = progress >= 0.78;
+    instance.burst.update(burstProgress);
   },
 
   dispose(instance: Instance): void {
     instance.scene.remove(instance.group);
-    for (const geo of instance.geometries) geo.dispose();
-    for (const mat of instance.materials) mat.dispose();
+    for (const geo of instance.geometries.slice(0, 3)) geo.dispose();
+    for (const mat of instance.arrowMaterials) mat.dispose();
+    for (const trail of instance.trails) trail.dispose();
+    instance.burst.dispose();
   },
 };

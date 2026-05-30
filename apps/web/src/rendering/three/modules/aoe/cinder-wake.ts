@@ -1,17 +1,23 @@
 /**
  * Three.js module for `fx.aoe.cinder-wake`.
- * Visual: trailing ember particles across an area.
+ * Visual: trailing cinder ring with glow and particle burst.
  */
 
 import * as THREE from 'three';
 import { animationRefs } from '@dungeon/content';
 import type { ThreeAnimationModule, ThreeAnimationContext, ThreeAnimationPosition } from '../../three-animation-types.js';
+import { createShockwaveRing, type ShockwaveRing } from '../../lib/shockwave-ring.js';
+import { createSoftGlow, type SoftGlow } from '../../lib/soft-glow.js';
+import { createParticleBurst, type ParticleBurst } from '../../lib/particle-burst.js';
 
 interface Instance {
-  group: THREE.Group;
-  materials: THREE.MeshBasicMaterial[];
-  geometries: THREE.CircleGeometry[];
-  scene: ThreeAnimationContext['scene'];
+  readonly group: THREE.Group;
+  readonly scene: ThreeAnimationContext['scene'];
+  readonly geometries: Array<{ dispose(): void }>;
+  readonly materials: Array<{ dispose(): void; map?: { dispose(): void } | null }>;
+  readonly ring: ShockwaveRing;
+  readonly glow: SoftGlow;
+  readonly burst: ParticleBurst;
 }
 
 export const cinderWake: ThreeAnimationModule<Instance> = {
@@ -21,30 +27,26 @@ export const cinderWake: ThreeAnimationModule<Instance> = {
   create(ctx: ThreeAnimationContext): Instance {
     const { tileSize } = ctx;
     const group = new THREE.Group();
-    const materials: THREE.MeshBasicMaterial[] = [];
-    const geometries: THREE.CircleGeometry[] = [];
-    const offsets: Array<[number, number]> = [
-      [0, 0], [-tileSize * 0.5, tileSize * 0.3],
-      [tileSize * 0.5, -tileSize * 0.3], [tileSize * 0.3, tileSize * 0.5],
-    ];
 
-    for (const [x, y] of offsets) {
-      const geometry = new THREE.CircleGeometry(tileSize * 0.25, 8);
-      const material = new THREE.MeshBasicMaterial({
-        color: 0xff6600,
-        transparent: true,
-        opacity: 1,
-        depthWrite: false,
-      });
-      const mesh = new THREE.Mesh(geometry, material);
-      mesh.position.set(x, y, 0);
-      group.add(mesh);
-      materials.push(material);
-      geometries.push(geometry);
-    }
+    const ring = createShockwaveRing({ innerRadiusPx: tileSize * 0.25, outerRadiusPx: tileSize * 0.45, color: 0xff6600, startScale: 0.4, endScale: 1.7, opacity: 0.55, fadeStart: 0.1 });
+    const glow = createSoftGlow({ color: 0xff7733, radiusPx: tileSize * 1.1, opacity: 0.35 });
+    const burst = createParticleBurst({ count: 22, spreadPx: tileSize * 1.4, startColor: 0xff8844, endColor: 0x552200, gravityPx: tileSize * 0.55, sizePx: tileSize * 0.11, lifetimeJitter: 0.35, seed: 102, tileSize });
+
+    group.add(ring.object);
+    group.add(glow.object);
+    group.add(burst.object);
 
     ctx.scene.add(group);
-    return { group, materials, geometries, scene: ctx.scene };
+
+    return {
+      group,
+      scene: ctx.scene,
+      geometries: [ring.geometry, burst.geometry],
+      materials: [ring.material, glow.material, burst.material],
+      ring,
+      glow,
+      burst,
+    };
   },
 
   setPosition(instance: Instance, pos: ThreeAnimationPosition): void {
@@ -52,15 +54,14 @@ export const cinderWake: ThreeAnimationModule<Instance> = {
   },
 
   update(instance: Instance, progress: number): void {
-    const opacity = Math.max(0, 1 - progress);
-    for (const mat of instance.materials) {
-      mat.opacity = opacity;
-    }
+    instance.ring.update(progress);
+    instance.burst.update(progress);
   },
 
   dispose(instance: Instance): void {
     instance.scene.remove(instance.group);
-    for (const geo of instance.geometries) geo.dispose();
-    for (const mat of instance.materials) mat.dispose();
+    instance.ring.dispose();
+    instance.glow.dispose();
+    instance.burst.dispose();
   },
 };

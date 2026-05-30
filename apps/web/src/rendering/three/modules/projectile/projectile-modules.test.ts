@@ -22,7 +22,7 @@ describe('projectile travel fidelity', () => {
     handle.scene.remove.mockClear();
   });
 
-  it('singleArrow interpolates from source to target and rotates along the travel path', () => {
+  it('singleArrow interpolates from source to target via group.position and rotates along the travel path', () => {
     const instance = singleArrow.create(ctx) as any;
     singleArrow.setPosition(instance, {
       x: 240,
@@ -33,20 +33,20 @@ describe('projectile travel fidelity', () => {
     });
 
     singleArrow.update(instance, 0);
-    expect(instance.mesh.position.x).toBeCloseTo(120);
-    expect(instance.mesh.position.y).toBeCloseTo(180);
+    expect(instance.group.position.x).toBeCloseTo(120);
+    expect(instance.group.position.y).toBeCloseTo(180);
 
     singleArrow.update(instance, 0.41);
-    expect(instance.mesh.position.x).toBeGreaterThan(120);
-    expect(instance.mesh.position.x).toBeLessThan(240);
-    expect(instance.mesh.rotation.z).not.toBe(0);
+    expect(instance.group.position.x).toBeGreaterThan(120);
+    expect(instance.group.position.x).toBeLessThan(240);
+    expect(instance.group.rotation.z).not.toBe(0);
 
     singleArrow.update(instance, 1);
-    expect(instance.mesh.position.x).toBeCloseTo(240);
-    expect(instance.mesh.position.y).toBeCloseTo(240);
+    expect(instance.group.position.x).toBeCloseTo(240);
+    expect(instance.group.position.y).toBeCloseTo(240);
   });
 
-  it('emberBolt travels to the target before the impact burst', () => {
+  it('emberBolt travels to the target via group.position before the impact burst', () => {
     const instance = emberBolt.create(ctx) as any;
     emberBolt.setPosition(instance, {
       x: 240,
@@ -57,19 +57,19 @@ describe('projectile travel fidelity', () => {
     });
 
     emberBolt.update(instance, 0);
-    expect(instance.mesh.position.x).toBeCloseTo(96);
+    expect(instance.group.position.x).toBeCloseTo(96);
 
     emberBolt.update(instance, 0.4);
-    expect(instance.mesh.position.x).toBeGreaterThan(96);
-    expect(instance.mesh.position.x).toBeLessThan(240);
+    expect(instance.group.position.x).toBeGreaterThan(96);
+    expect(instance.group.position.x).toBeLessThan(240);
 
     emberBolt.update(instance, 0.8);
-    expect(instance.mesh.position.x).toBeCloseTo(240);
-    expect(instance.mesh.scale.x).toBeCloseTo(1);
+    expect(instance.group.position.x).toBeCloseTo(240);
+    expect(instance.coreMesh.scale.x).toBeCloseTo(1);
 
     emberBolt.update(instance, 1);
-    expect(instance.mesh.position.x).toBeCloseTo(240);
-    expect(instance.mesh.scale.x).toBeGreaterThan(1);
+    expect(instance.group.position.x).toBeCloseTo(240);
+    expect(instance.coreMesh.scale.x).toBeGreaterThan(1);
   });
 
   it('arrowVolley moves its group from source to target over progress', () => {
