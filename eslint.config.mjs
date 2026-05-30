@@ -311,6 +311,52 @@ export default tseslint.config(
     },
   },
 
+  {
+    files: ["packages/presenter/src/**/*.ts"],
+    ignores: ["**/*.test.ts"],
+    rules: {
+      "no-restricted-imports": [
+        "error",
+        {
+          paths: [
+            {
+              name: "@dungeon/core/utils/dice",
+              message:
+                "Presenter preview logic should use the stable combat preview helpers from @dungeon/core instead of low-level dice helpers.",
+            },
+            {
+              name: "@dungeon/core/utils/dice.js",
+              message:
+                "Presenter preview logic should use the stable combat preview helpers from @dungeon/core instead of low-level dice helpers.",
+            },
+          ],
+        },
+      ],
+    },
+  },
+
+  {
+    files: ["apps/web/src/hooks/**/*.ts", "apps/web/src/testing/**/*.ts"],
+    ignores: ["**/*.test.ts"],
+    rules: {
+      "no-restricted-imports": [
+        "error",
+        {
+          patterns: [
+            {
+              group: [
+                "**/components/BumpAnimations.js",
+                "**/components/CombatIndicators.js",
+              ],
+              message:
+                "Hooks and testing runtime code should import animation emitters from apps/web/src/animation-runtime/emitters.js, not render components.",
+            },
+          ],
+        },
+      ],
+    },
+  },
+
   // Runner configs (untyped for speed)
   {
     files: [

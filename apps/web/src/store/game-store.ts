@@ -9,8 +9,8 @@ import {
   sendCommand as sendCommandRequest,
 } from '../api/client.js';
 import type { CommandResponse } from '../api/client.js';
+import { isQueueDraining, onQueueDrained } from '../animation-runtime/animation-queue-bus.js';
 import { isBeatSchedulerEnabledFlag } from '../config/feature-flags.js';
-import { isQueueDraining, onQueueDrained } from '../hooks/animation-queue-bus.js';
 import { saveSession, loadSession, clearSession } from './session-persistence.js';
 
 interface Position {

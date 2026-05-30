@@ -22,6 +22,7 @@
     "lint:prepare": "pnpm --filter eslint-plugin-dungeon build",
     "lint:eslint": "pnpm run lint:eslint:typed && pnpm run lint:eslint:typed:tests && pnpm run lint:eslint:untyped",
     "lint:structural": "LINT_STRUCTURAL=true pnpm run lint:eslint",
+    "lint:structural:hotspots": "LINT_STRUCTURAL=true pnpm exec eslint \"packages/game-core/src/engine/**/*.ts\" \"packages/presenter/src/builders/**/*.ts\" \"apps/server/src/app.ts\" \"apps/server/src/routes/**/*.ts\" \"apps/server/src/services/**/*.ts\" \"apps/web/src/App.tsx\" \"apps/web/src/hooks/**/*.ts\" \"apps/web/src/animation-runtime/**/*.ts\" \"apps/web/src/testing/e2e-bridge.ts\"",
     "lint:eslint:cached": "pnpm run lint:eslint:typed:cached && pnpm run lint:eslint:typed:tests:cached && pnpm run lint:eslint:untyped:cached",
     "lint:eslint:fix": "pnpm exec eslint \"apps/*/src/**/*.{ts,tsx}\" \"packages/*/src/**/*.ts\" --fix && pnpm exec eslint \"scripts/**/*.ts\" \"tests/**/*.ts\" \"**/*.test.ts\" \"**/*.property.test.ts\" \"playwright.config.ts\" \"vitest.config.ts\" \"apps/*/vite.config.ts\" \"apps/*/vitest.config.ts\" \"apps/*/vitest.setup.ts\" \"packages/*/vitest.config.ts\" \"packages/eslint-plugin-dungeon/src/**/*.ts\" --fix",
     "lint:eslint:typed": "pnpm exec eslint \"apps/*/src/**/*.{ts,tsx}\" \"packages/*/src/**/*.ts\"",

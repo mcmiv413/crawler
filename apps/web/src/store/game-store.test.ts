@@ -14,7 +14,7 @@ import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest';
 import { renderHook, act, waitFor } from '@testing-library/react';
 import type { GameView, CombatLogEntry } from '@dungeon/presenter';
 import { buildGameView } from '@dungeon/presenter';
-import { emitQueueDrained, setQueueDraining } from '../hooks/animation-queue-bus.js';
+import { emitQueueDrained, setQueueDraining } from '../animation-runtime/animation-queue-bus.js';
 import { useGameStore } from './game-store.js';
 import * as sessionPersistence from './session-persistence.js';
 

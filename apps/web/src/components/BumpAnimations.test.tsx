@@ -1,7 +1,8 @@
 import { describe, it, expect, vi } from 'vitest';
 import { render } from '@testing-library/react';
 import type { BumpAnimationEntry } from '@dungeon/presenter';
-import { BumpAnimations, emitBumpAnimation } from './BumpAnimations.js';
+import { emitBumpAnimation } from '../animation-runtime/emitters.js';
+import { BumpAnimations } from './BumpAnimations.js';
 
 describe('BumpAnimations', () => {
   it('renders null (animation happens on canvas)', () => {
@@ -9,7 +10,7 @@ describe('BumpAnimations', () => {
     expect(container.firstChild).toBeNull();
   });
 
-  it('provides emitBumpAnimation helper', () => {
+  it('dispatches bump events through the runtime emitter boundary', () => {
     const mockListener = vi.fn();
     window.addEventListener('bump-animation', mockListener);
 

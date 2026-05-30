@@ -75,16 +75,3 @@ export function CombatIndicators({
 }
 
 export type { FloatingCombatIndicator };
-
-// Helper to emit combat indicator events
-export function emitCombatIndicator(
-  x: number,
-  y: number,
-  text: string,
-  type: 'damage' | 'heal' | 'status' | 'gold' = 'damage',
-) {
-  const event = new CustomEvent('combat-indicator', {
-    detail: { x, y, text, type },
-  });
-  window.dispatchEvent(event);
-}

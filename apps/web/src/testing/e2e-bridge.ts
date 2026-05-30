@@ -6,8 +6,13 @@ import type {
   MoveAnimationEntry,
   StatusView,
 } from '@dungeon/presenter';
-import { emitAbilityAnimation, emitBumpAnimation, emitConsumableAnimation, emitMoveAnimation } from '../components/BumpAnimations.js';
-import { emitCombatIndicator } from '../components/CombatIndicators.js';
+import {
+  emitAbilityAnimation,
+  emitBumpAnimation,
+  emitCombatIndicator,
+  emitConsumableAnimation,
+  emitMoveAnimation,
+} from '../animation-runtime/emitters.js';
 import { triggerDefenderHit } from '../hooks/useDefenderHitState.js';
 import { useGameStore } from '../store/game-store.js';
 

@@ -1,7 +1,14 @@
 import { describe, it, expect } from 'vitest';
 import { buildGameView } from './game-view-builder.js';
 import { entityId, posKey, EMPTY_RUN_METRICS } from '@dungeon/contracts';
-import type { GameState, RunState, NpcState, EnemyInstance, FactionState } from '@dungeon/contracts';
+import type {
+  DomainEvent,
+  GameState,
+  RunState,
+  NpcState,
+  EnemyInstance,
+  FactionState,
+} from '@dungeon/contracts';
 import { createTestGameStateInCombat, createTestEnemy } from '@dungeon/core/testing';
 
 function makeFloor(depth: number, playerOnStairsUp = false) {
@@ -99,6 +106,10 @@ function makeState(overrides: Partial<GameState> = {}): GameState {
     weaponMastery: { blade: 0, bludgeon: 0, axe: 0, ranged: 0, dagger: 0 },
     ...overrides,
   };
+}
+
+function getNoticeId(state: GameState, kind: string): string | undefined {
+  return buildGameView(state).notices?.find(notice => notice.kind === kind)?.id;
 }
 
 describe('buildGameView runResult', () => {
@@ -1808,6 +1819,10 @@ describe('Quest view and death context', () => {
     expect(view.notice?.title).toBe('Faction Leader Emerged');
     expect(view.notice?.message).toContain('Brakka, Knife-King');
     expect(view.notice?.spriteName).toBe('goblin king');
+    expect(view.notices).toContainEqual(expect.objectContaining({
+      kind: 'FACTION_LEADER_EMERGED',
+      id: 'leader_emerged_goblin_warband_goblin_warband_leader_10_1',
+    }));
   });
 
   it('builds dungeon ogre emerged notices with selected depth details', () => {
@@ -1830,8 +1845,139 @@ describe('Quest view and death context', () => {
     const view = buildGameView(state);
     expect(view.notice?.kind).toBe('DUNGEON_OGRE_EMERGED');
     expect(view.notice?.message).toContain('floor 8');
-    expect(view.notice?.detail).toContain('7, 8, 9');
+    expect(view.notice?.detail).toContain('hunt it down');
     expect(view.notice?.spriteName).toBe('ogre');
+    expect(view.notices).toContainEqual(expect.objectContaining({
+      kind: 'DUNGEON_OGRE_EMERGED',
+      id: 'dungeon_ogre_emerged_dungeon_ogre_8_10_1',
+    }));
+  });
+
+  it('builds typed quest assigned notices from event history', () => {
+    const state = makeState({
+      activeQuests: [{
+        id: 'quest-rats',
+        title: 'Rat Problem',
+        description: 'Clear the cellar rats.',
+        status: 'active',
+        objective: {
+          type: 'defeat_enemy',
+          targetId: 'rat',
+          targetCount: 3,
+          progress: 0,
+        },
+        reward: { type: 'gold', amount: 25 },
+        giverNpcId: entityId('innkeeper'),
+      }],
+      world: {
+        ...makeState().world,
+        eventHistory: [{
+          type: 'QUEST_ASSIGNED',
+          questId: 'quest-rats',
+          questTitle: 'Rat Problem',
+          questDescription: 'Clear the cellar rats.',
+          rewardGold: 25,
+          giverNpcId: entityId('innkeeper'),
+          timestamp: 1,
+          turnNumber: 10,
+        }],
+      },
+    });
+
+    const view = buildGameView(state);
+    const questNotice = view.notices?.find(notice => notice.kind === 'QUEST_ASSIGNED');
+
+    expect(questNotice).toEqual(expect.objectContaining({
+      id: 'quest_assigned_quest-rats',
+      questId: 'quest-rats',
+      questTitle: 'Rat Problem',
+      rewardGold: 25,
+      giverNpcId: entityId('innkeeper'),
+    }));
+    expect(view.notice).toBeUndefined();
+  });
+
+  it('keeps dismissible notice ids stable when event history shifts', () => {
+    const olderEvent: DomainEvent = {
+      type: 'PLAYER_MOVED',
+      from: { x: 0, y: 0 },
+      to: { x: 1, y: 0 },
+      timestamp: 1,
+      turnNumber: 1,
+    };
+    const noticeEvents = [
+      {
+        kind: 'FACTION_LEADER_EMERGED',
+        event: {
+          type: 'FACTION_LEADER_EMERGED',
+          factionId: 'goblin_warband',
+          factionName: 'Goblin Warband',
+          leaderId: entityId('goblin_warband_leader'),
+          leaderName: 'Brakka',
+          leaderTitle: 'Knife-King',
+          leaderTemplateId: 'goblin_warlord',
+          emergedOnRun: 2,
+          emergedOnDepth: 3,
+          timestamp: 4,
+          turnNumber: 12,
+        } satisfies DomainEvent,
+      },
+      {
+        kind: 'FACTION_LEADER_SLAIN',
+        event: {
+          type: 'FACTION_LEADER_SLAIN',
+          factionId: 'goblin_warband',
+          factionName: 'Goblin Warband',
+          leaderId: entityId('goblin_warband_leader'),
+          leaderName: 'Brakka',
+          leaderTitle: 'Knife-King',
+          slainAtDepth: 5,
+          timestamp: 5,
+          turnNumber: 13,
+        } satisfies DomainEvent,
+      },
+      {
+        kind: 'DUNGEON_OGRE_EMERGED',
+        event: {
+          type: 'DUNGEON_OGRE_EMERGED',
+          ogreId: 'dungeon_ogre',
+          emergedAfterRun: 4,
+          emergedAtDepth: 6,
+          eligibleSpawnDepths: [7, 8, 9],
+          selectedSpawnDepth: 8,
+          timestamp: 6,
+          turnNumber: 14,
+        } satisfies DomainEvent,
+      },
+      {
+        kind: 'EQUIP_BLOCKED',
+        event: {
+          type: 'EQUIP_BLOCKED',
+          reason: 'That ring conflicts with your oath.',
+          timestamp: 7,
+          turnNumber: 15,
+        } satisfies DomainEvent,
+      },
+    ] as const;
+
+    for (const { kind, event } of noticeEvents) {
+      const withPrependedHistory = makeState({
+        world: {
+          ...makeState().world,
+          eventHistory: [olderEvent, event],
+        },
+      });
+      const afterTrim = makeState({
+        world: {
+          ...makeState().world,
+          eventHistory: [event],
+        },
+      });
+
+      expect(getNoticeId(withPrependedHistory, kind)).toBe(
+        getNoticeId(afterTrim, kind),
+      );
+    }
   });
 
   it('sorts visible enemies by nearest distance first', () => {

@@ -1,6 +1,6 @@
 import { useEffect, useRef } from 'react';
 import type { CombatIndicatorEntry } from '@dungeon/presenter';
-import { emitCombatIndicator } from '../components/CombatIndicators.js';
+import { emitCombatIndicator } from '../animation-runtime/emitters.js';
 
 /**
  * Hook that watches combat indicators from the game view and emits them

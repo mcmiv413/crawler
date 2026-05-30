@@ -28,6 +28,9 @@ jobs:
       - name: Install dependencies
         run: pnpm install --frozen-lockfile
 
+      - name: Report structural hotspots
+        run: pnpm run lint:structural:hotspots
+
       - name: Run repository validation gate
         run: pnpm validate
 

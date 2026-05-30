@@ -1,7 +1,7 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import { act, renderHook } from '@testing-library/react';
 import { useGameStore } from '../store/game-store.js';
-import { emitQueueDrained, setQueueDraining } from './animation-queue-bus.js';
+import { emitQueueDrained, setQueueDraining } from '../animation-runtime/animation-queue-bus.js';
 import { useAutoWalk } from './useAutoWalk.js';
 
 function createDungeonView(

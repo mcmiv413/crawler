@@ -1,12 +1,11 @@
-import type { GameState, EnemyInstance, PlayerDiedEvent, EquipmentDroppedEvent, DomainEvent, EntityId } from '@dungeon/contracts';
+import type { GameState, EnemyInstance, PlayerDiedEvent, EquipmentDroppedEvent, EntityId } from '@dungeon/contracts';
 import type { GameView, QuestView, InspectableEntityView, DeathContext } from './game-view.js';
-import { ENEMY_TEMPLATES, STATUS_DEFINITIONS, OBJECT_TEMPLATES, DEATH_CONSEQUENCES, COMBAT } from '@dungeon/content';
-import { calculateHitChance, applyRangeAccuracyPenalty } from '@dungeon/core/utils/dice.js';
-import { chebyshevDistance } from '@dungeon/core/utils/grid.js';
-import { getEffectiveStat } from '@dungeon/core/systems/status-effects.js';
+import { ENEMY_TEMPLATES, STATUS_DEFINITIONS, OBJECT_TEMPLATES, DEATH_CONSEQUENCES } from '@dungeon/content';
+import { getEnemyCombatPreview } from '@dungeon/core';
 import { getObjectiveText } from '@dungeon/core/systems/quest-progress.js';
 import { buildPlayerHud } from './builders/player-hud-builder.js';
 import { buildMapView } from './builders/map-view-builder.js';
+import { buildGameNotices, findLatestDismissibleNotice } from './builders/game-notice-builder.js';
 
 function getEnemyColor(enemy: EnemyInstance): string {
   const damageType = enemy.equipment?.weapon?.damageType ?? 'physical';
@@ -23,51 +22,6 @@ import { buildAvailableActions } from './builders/actions-builder.js';
 import { buildTownView } from './builders/town-view-builder.js';
 import { buildInventoryView } from './builders/inventory-view-builder.js';
 import { buildDeathSummary } from './builders/death-summary-builder.js';
-
-function computeThreatRating(enemy: EnemyInstance, state: GameState): 'Low' | 'Moderate' | 'High' | 'Deadly' {
-  const playerStats = state.player.stats;
-  const enemyStats = enemy.stats;
-
-  // Estimate mid-band damage
-  const enemyMidBand = Math.round(enemyStats.attack * 1);
-  const playerMidBand = Math.round(playerStats.attack * 1);
-
-  // Calculate hits to kill
-  const hitsToKillPlayer = Math.ceil(playerStats.health / Math.max(1, enemyMidBand));
-  const hitsToKillEnemy = Math.ceil(enemyStats.health / Math.max(1, playerMidBand));
-
-  // Get range info
-  const enemyRange = enemy.equipment?.weapon?.weaponRange ?? 1;
-  const playerRange = (() => {
-    if (state.player.equipment.weapon === null) return 1;
-    const wt = state.itemRegistry.items.get(state.player.equipment.weapon);
-    if (wt && wt.itemClass === 'weapon') {
-      const weapon = (wt as { weapon: { weaponRange: number } }).weapon;
-      return weapon.weaponRange ?? 1;
-    }
-    return 1;
-  })();
-
-  // Speed comparison
-  const enemyFaster = enemyStats.speed > playerStats.speed;
-
-  // Deadly conditions
-  if (hitsToKillPlayer <= 2) return 'Deadly';
-  if (enemyFaster && enemyRange > playerRange) return 'Deadly';
-
-  // High conditions
-  if (hitsToKillPlayer === 3) return 'High';
-  if (enemyFaster && enemyRange > 1) return 'High';
-  if (hitsToKillEnemy >= 5) return 'High';
-
-  // Moderate conditions
-  if (hitsToKillPlayer >= 4 && hitsToKillPlayer <= 5) return 'Moderate';
-  if (enemyRange > playerRange) return 'Moderate';
-  if (enemyFaster) return 'Moderate';
-
-  // Low condition
-  return 'Low';
-}
 
 function buildInspectableEntities(state: GameState): readonly InspectableEntityView[] {
   if (!state.run) return [];
@@ -106,51 +60,7 @@ function buildInspectableEntities(state: GameState): readonly InspectableEntityV
     // Only show instanceColor if there are 2+ of this templateId visible
     const showInstanceColor = templateIdCounts.get(enemy.templateId) ?? 0 >= 2;
 
-    // Calculate distance and hit chances
-    const dist = chebyshevDistance(state.player.position, enemy.position);
-    
-    // Player hit chance (with range penalty)
-    let playerAccuracy = getEffectiveStat(state.player.stats.accuracy, 'accuracy', state.player.statuses);
-    let playerWeaponRange = 1;
-    let playerMinRange = 0;
-    if (state.player.equipment.weapon !== null) {
-      const wt = state.itemRegistry.items.get(state.player.equipment.weapon);
-      if (wt?.itemClass === 'weapon') {
-        const weapon = (wt as { weapon: { weaponRange: number; minRange?: number } }).weapon;
-        playerWeaponRange = weapon.weaponRange;
-        playerMinRange = weapon.minRange ?? 0;
-      }
-    }
-    if (playerWeaponRange > 1 || playerMinRange > 0) {
-      playerAccuracy = applyRangeAccuracyPenalty(playerAccuracy, dist, playerMinRange, COMBAT.rangedAccuracyDropPerTile);
-    }
-    const playerHitChance = calculateHitChance(
-      COMBAT.baseHitChance,
-      playerAccuracy,
-      enemy.stats.evasion,
-      COMBAT.minHitChance,
-      COMBAT.maxHitChance,
-    );
-
-    // Enemy hit chance (with range penalty)
-    let enemyAccuracy = getEffectiveStat(enemy.stats.accuracy, 'accuracy', enemy.statuses);
-    let enemyWeaponRange = 1;
-    let enemyMinRange = 0;
-     
-    if (enemy.equipment?.weapon) {
-      enemyWeaponRange = enemy.equipment.weapon.weaponRange;
-      enemyMinRange = enemy.equipment.weapon.minRange ?? 0;
-    }
-    if (enemyWeaponRange > 1 || enemyMinRange > 0) {
-      enemyAccuracy = applyRangeAccuracyPenalty(enemyAccuracy, dist, enemyMinRange, COMBAT.rangedAccuracyDropPerTile);
-    }
-    const enemyHitChance = calculateHitChance(
-      COMBAT.baseHitChance,
-      enemyAccuracy,
-      state.player.stats.evasion,
-      COMBAT.minHitChance,
-      COMBAT.maxHitChance,
-    );
+    const preview = getEnemyCombatPreview(state, enemy);
 
     mutableEntities.push({
       id: enemy.id,
@@ -167,13 +77,13 @@ function buildInspectableEntities(state: GameState): readonly InspectableEntityV
       speed: enemy.stats.speed,
       tier: template.tier,
       archetype: template.archetype,
-      isFasterThanPlayer: enemy.stats.speed > state.player.stats.speed,
+      isFasterThanPlayer: preview.isFasterThanPlayer,
       affinities: template.affinities && Object.keys(template.affinities).length > 0 ? template.affinities : undefined,
       statuses: enemy.statuses.map(s => STATUS_DEFINITIONS.get(s.id)?.name ?? s.id),
-      threatRating: computeThreatRating(enemy, state),
+      threatRating: preview.threatRating,
       instanceColor: showInstanceColor ? enemy.instanceColor : undefined,
-      playerHitChance,
-      enemyHitChance,
+      playerHitChance: preview.playerHitChance,
+      enemyHitChance: preview.enemyHitChance,
     });
   }
 
@@ -266,60 +176,10 @@ function buildDeathContext(state: GameState): DeathContext | null {
   };
 }
 
-function buildNotice(event: DomainEvent, index: number): GameView['notice'] | undefined {
-  switch (event.type) {
-    case 'FACTION_LEADER_EMERGED': {
-      const spriteName = ENEMY_TEMPLATES.get(event.leaderTemplateId)?.spriteName;
-      return {
-        id: `faction_leader_emerged_${index}`,
-        kind: event.type,
-        title: 'Faction Leader Emerged',
-        message: `${event.leaderName}, ${event.leaderTitle}, now leads the ${event.factionName}.`,
-        detail: `A new leader rose on floor ${event.emergedOnDepth}. Break the faction to stop its pressure.`,
-        spriteName,
-      };
-    }
-    case 'FACTION_LEADER_SLAIN':
-      return {
-        id: `faction_leader_slain_${index}`,
-        kind: event.type,
-        title: 'Faction Leader Slain',
-        message: `${event.leaderName}, ${event.leaderTitle}, has been slain.`,
-        detail: `${event.factionName} is broken.`,
-      };
-    case 'DUNGEON_OGRE_EMERGED': {
-      const eligibleDepths = event.eligibleSpawnDepths.join(', ');
-      return {
-        id: `dungeon_ogre_emerged_${index}`,
-        kind: event.type,
-        title: 'Dungeon Ogre Emerged',
-        message: `The Dungeon Ogre has claimed floor ${event.selectedSpawnDepth}.`,
-        detail: `Eligible depths were ${eligibleDepths}. Its lair will stay fixed until you slay it.`,
-        spriteName: ENEMY_TEMPLATES.get('dungeon_ogre')?.spriteName,
-      };
-    }
-    case 'EQUIP_BLOCKED':
-      return {
-        id: `equip_blocked_${index}`,
-        kind: event.type,
-        title: 'Equipment Blocked',
-        message: event.reason,
-      };
-    default:
-      return undefined;
-  }
-}
-
 /** Build a GameView from authoritative GameState */
 export function buildGameView(state: GameState): GameView {
-  let notice: GameView['notice'];
-  for (let i = state.world.eventHistory.length - 1; i >= 0; i -= 1) {
-    const evt = state.world.eventHistory[i]!;
-    notice = buildNotice(evt, i);
-    if (notice !== undefined) {
-      break;
-    }
-  }
+  const notices = buildGameNotices(state);
+  const notice = findLatestDismissibleNotice(notices);
 
   return {
     gameId: state.gameId,
@@ -356,5 +216,6 @@ export function buildGameView(state: GameState): GameView {
     inspectableEntities: buildInspectableEntities(state),
     debugMode: state.debugMode ?? false,
     notice,
+    notices,
   };
 }

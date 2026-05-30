@@ -111,7 +111,7 @@ vi.mock('../hooks/useBreakpoint.js', () => ({
   useBreakpoint: vi.fn(() => ({ isMobile: false })),
 }));
 
-vi.mock('../hooks/useAnimationOrchestrator.js', () => ({
+vi.mock('../animation-runtime/useAnimationOrchestrator.js', () => ({
   useAnimationOrchestrator: vi.fn(),
 }));
 

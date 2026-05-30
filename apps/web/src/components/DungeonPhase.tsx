@@ -21,7 +21,7 @@ import { ItemSpriteIcon } from './ItemSpriteIcon.js';
 import { useBreakpoint } from '../hooks/useBreakpoint.js';
 import { CombatIndicators } from './CombatIndicators.js';
 import { BumpAnimations } from './BumpAnimations.js';
-import { useAnimationOrchestrator } from '../hooks/useAnimationOrchestrator.js';
+import { useAnimationOrchestrator } from '../animation-runtime/useAnimationOrchestrator.js';
 import { useDungeonRenderState } from '../hooks/useDungeonRenderState.js';
 import { useCombatIndicatorState } from '../hooks/useCombatIndicatorState.js';
 import { useDefenderHitState } from '../hooks/useDefenderHitState.js';

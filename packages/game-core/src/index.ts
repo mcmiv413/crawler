@@ -1,4 +1,5 @@
 export { GameEngine } from './engine/index.js';
+export * from './combat-preview.js';
 export { handleCommand, updateRunMetrics } from './engine/command-handler.js';
 export * from './systems/index.js';
 export * from './generation/index.js';

@@ -2,7 +2,8 @@ import { render, screen, waitFor } from '@testing-library/react';
 import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest';
 import { act } from '@testing-library/react';
 import React from 'react';
-import { CombatIndicators, emitCombatIndicator } from './CombatIndicators.js';
+import { emitCombatIndicator } from '../animation-runtime/emitters.js';
+import { CombatIndicators } from './CombatIndicators.js';
 
 describe('CombatIndicators', () => {
   afterEach(() => {

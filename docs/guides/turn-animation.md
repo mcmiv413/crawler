@@ -42,5 +42,5 @@ When the queue drains, the staged combat log and view are committed as the settl
 - beat decomposition and settle semantics: `packages/presenter/src/animation-sequence.ts`
 - animation timing metadata: `packages/presenter/src/animation-metadata.ts`
 - move rendering profiles: `apps/web/src/animations/move-style-profiles.ts`
-- beat scheduler + queue bus: `apps/web/src/hooks/useAnimationOrchestrator.beat.ts`
+- beat scheduler + queue bus: `apps/web/src/animation-runtime/useAnimationOrchestrator.beat.ts`
 - staged command-result commits: `apps/web/src/store/game-store.ts`
