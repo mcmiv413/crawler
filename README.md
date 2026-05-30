@@ -355,7 +355,7 @@ This catches fresh-checkout export/runtime issues that `pnpm validate` can miss 
 
 **Why?** Local machines accumulate state (old `dist/` files, cached symlinks) that CI doesn't have on a fresh checkout. Running `ci:verify` before push catches "works on my machine" failures early.
 
-See [CONTRIBUTING.md](./CONTRIBUTING.md) for more details on the monorepo structure and export validation.
+See [docs/guides/architecture.md](docs/guides/architecture.md) for monorepo structure and [docs/guides/testing.md](docs/guides/testing.md) for export-validation guardrails.
 
 ---
 

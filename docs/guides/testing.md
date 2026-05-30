@@ -4,7 +4,7 @@
 
 Tests define required behavior, not current implementation.
 
-> For agents, the mandatory execution workflow lives in `AGENTS.md` and `CLAUDE.md`. This guide provides the layer rules, helpers, and examples that support that workflow.
+> For the tracked repo workflow, use `README.md` and `docs/guides/repo-skills.md`. This guide provides the layer rules, helpers, and examples that support that workflow.
 
 For cross-project ownership rules, generated-index ownership, and presenter/UI boundaries, also read [Architecture Patterns](architecture-patterns.md).
 

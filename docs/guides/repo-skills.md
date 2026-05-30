@@ -13,7 +13,7 @@ The rollout keeps the strongest PSRE workflow ideas - structured intake, evidenc
 | 1 | `docs/skills/**/*` | Edit the canonical skill source, references, and templates |
 | 2 | `scripts/generate-repo-skills.mjs` / `scripts/check-repo-skills.mjs` | Maintain mirror generation and drift detection |
 | 3 | `.github/skills/**/*`, `.claude/skills/**/*`, `.agents/skills/**/*` | Generated output only; regenerate instead of hand-editing |
-| 4 | `AGENTS.md`, `CLAUDE.md`, `CONTRIBUTING.md`, `README.md` | Keep contributor-facing workflow docs current |
+| 4 | `README.md`, `docs/README.md`, `docs/guides/testing.md`, `docs/guides/architecture-patterns.md` | Keep contributor-facing workflow docs current |
 
 ## Canonical Source and Mirrors
 
