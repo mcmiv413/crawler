@@ -1,8 +1,8 @@
 /// <reference types="@testing-library/jest-dom" />
 import React from 'react';
 import { describe, it, expect, vi, beforeEach } from 'vitest';
-import { render, screen } from '@testing-library/react';
-import type { DismissibleNotice, GameView } from '@dungeon/presenter';
+import { fireEvent, render, screen } from '@testing-library/react';
+import type { DismissibleNotice, GameNotice, GameView, QuestAssignedNotice } from '@dungeon/presenter';
 import { App } from './App.js';
 import { useGameStore } from './store/game-store.js';
 
@@ -43,7 +43,7 @@ vi.mock('./components/DeathNotificationModal.js', () => ({
 }));
 
 vi.mock('./components/QuestAssignedScreen.js', () => ({
-  QuestAssignedScreen: () => <div>quest notice</div>,
+  QuestAssignedScreen: ({ questTitle }: { questTitle: string }) => <div>quest notice:{questTitle}</div>,
 }));
 
 vi.mock('./components/MobileNav.js', () => ({
@@ -62,7 +62,10 @@ vi.mock('./components/CombatLogView.js', () => ({
   CombatLogView: () => <div>log</div>,
 }));
 
-function createView(notice?: DismissibleNotice): GameView {
+function createView(
+  notice?: DismissibleNotice,
+  notices: readonly GameNotice[] = notice ? [notice] : [],
+): GameView {
   return {
     gameId: 'test-game',
     phase: 'dungeon',
@@ -130,6 +133,7 @@ function createView(notice?: DismissibleNotice): GameView {
     debugMode: false,
     animatedEvents: [],
     notice,
+    notices,
   };
 }
 
@@ -199,6 +203,62 @@ describe('App progress notices', () => {
 
     expect(screen.getByText(/Dungeon Ogre Emerged/i)).toBeInTheDocument();
     expect(screen.getByText(/claimed floor 9/i)).toBeInTheDocument();
+  });
+
+  it('keeps a dismissed progress notice hidden when later views reuse the same stable id', () => {
+    const progressNotice: DismissibleNotice = {
+      id: 'leader_emerged_goblin_warband_goblin_warband_leader_12_4',
+      kind: 'FACTION_LEADER_EMERGED',
+      title: 'Faction Leader Emerged',
+      message: 'Brakka, Knife-King, now leads the Goblin Warband.',
+      detail: 'A new leader rose on floor 3.',
+      spriteName: 'goblin king',
+    };
+    const olderQuestNotice: QuestAssignedNotice = {
+      id: 'quest_assigned_rat-problem',
+      kind: 'QUEST_ASSIGNED',
+      questId: 'rat-problem',
+      questTitle: 'Rat Problem',
+      questDescription: 'Clear the cellar rats.',
+      rewardGold: 25,
+      giverNpcId: 'innkeeper',
+    };
+    let storeState = createStoreState(progressNotice);
+
+    vi.mocked(useGameStore).mockImplementation(() => storeState as never);
+
+    const { rerender } = render(<App />);
+
+    fireEvent.click(screen.getByRole('button', { name: /continue/i }));
+
+    storeState = createStoreState(progressNotice, {
+      notices: [olderQuestNotice, progressNotice],
+    });
+    rerender(<App />);
+
+    expect(screen.queryByText(/Faction Leader Emerged/i)).not.toBeInTheDocument();
+    expect(screen.queryByRole('button', { name: /continue/i })).not.toBeInTheDocument();
+  });
+
+  it('shows quest assignment from typed notices instead of combat log parsing', () => {
+    const questNotice: QuestAssignedNotice = {
+      id: 'quest_assigned_rat-problem',
+      kind: 'QUEST_ASSIGNED',
+      questId: 'rat-problem',
+      questTitle: 'Rat Problem',
+      questDescription: 'Clear the cellar rats.',
+      rewardGold: 25,
+      giverNpcId: 'innkeeper',
+    };
+
+    vi.mocked(useGameStore).mockReturnValue(createStoreState(undefined, {
+      phase: 'town',
+      notices: [questNotice],
+    }) as never);
+
+    render(<App />);
+
+    expect(screen.getByText('quest notice:Rat Problem')).toBeInTheDocument();
   });
 
   it('shows the game over surface for dungeon ogre victory', () => {

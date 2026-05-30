@@ -4,7 +4,7 @@ import type {
 } from '@dungeon/presenter';
 import { getAnimatedEventBatchSettleMs } from '@dungeon/presenter';
 import { emitQueueDrained, setQueueDraining } from './animation-queue-bus.js';
-import { onHitStopTriggered } from './useHitStop.js';
+import { onHitStopTriggered } from '../hooks/useHitStop.js';
 import { dispatchAnimatedEvent } from './dispatchAnimatedEvent.js';
 
 interface QueuedBatch {

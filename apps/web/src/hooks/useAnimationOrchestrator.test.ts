@@ -1,20 +1,16 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import { act, renderHook } from '@testing-library/react';
 import { type AnimatedEvent, type MoveAnimationEntry } from '@dungeon/presenter';
-import * as bumpAnimations from '../components/BumpAnimations.js';
-import * as combatIndicators from '../components/CombatIndicators.js';
-import { setQueueDraining } from './animation-queue-bus.js';
-import { useAnimationOrchestrator } from './useAnimationOrchestrator.js';
+import * as runtimeEmitters from '../animation-runtime/emitters.js';
+import { setQueueDraining } from '../animation-runtime/animation-queue-bus.js';
+import { useAnimationOrchestrator } from '../animation-runtime/useAnimationOrchestrator.js';
 
-vi.mock('../components/BumpAnimations.js', () => ({
+vi.mock('../animation-runtime/emitters.js', () => ({
   emitAbilityAnimation: vi.fn(),
   emitBumpAnimation: vi.fn(),
+  emitCombatIndicator: vi.fn(),
   emitConsumableAnimation: vi.fn(),
   emitMoveAnimation: vi.fn(),
-}));
-
-vi.mock('../components/CombatIndicators.js', () => ({
-  emitCombatIndicator: vi.fn(),
 }));
 
 function setBeatSchedulerFlag(value: string): void {
@@ -132,13 +128,13 @@ describe('useAnimationOrchestrator', () => {
     await act(async () => {
       await vi.advanceTimersByTimeAsync(39);
     });
-    expect(combatIndicators.emitCombatIndicator).not.toHaveBeenCalled();
+    expect(runtimeEmitters.emitCombatIndicator).not.toHaveBeenCalled();
 
     await act(async () => {
       await vi.advanceTimersByTimeAsync(1);
     });
 
-    expect(combatIndicators.emitCombatIndicator).toHaveBeenCalledWith(5, 5, 'legacy', 'damage');
+    expect(runtimeEmitters.emitCombatIndicator).toHaveBeenCalledWith(5, 5, 'legacy', 'damage');
   });
 
   it('uses the beat scheduler when the flag is on', () => {
@@ -156,7 +152,7 @@ describe('useAnimationOrchestrator', () => {
       vi.advanceTimersByTime(32);
     });
 
-    expect(combatIndicators.emitCombatIndicator).toHaveBeenCalledWith(5, 5, 'beat', 'damage');
+    expect(runtimeEmitters.emitCombatIndicator).toHaveBeenCalledWith(5, 5, 'beat', 'damage');
   });
 
   it('continues beat scheduling after hit-stop events', async () => {
@@ -175,13 +171,13 @@ describe('useAnimationOrchestrator', () => {
       await vi.advanceTimersByTimeAsync(32);
     });
 
-    expect(combatIndicators.emitCombatIndicator).not.toHaveBeenCalled();
+    expect(runtimeEmitters.emitCombatIndicator).not.toHaveBeenCalled();
 
     await act(async () => {
       await vi.runAllTimersAsync();
     });
 
-    expect(combatIndicators.emitCombatIndicator).toHaveBeenCalledWith(5, 5, 'after-pause', 'damage');
+    expect(runtimeEmitters.emitCombatIndicator).toHaveBeenCalledWith(5, 5, 'after-pause', 'damage');
   });
 
   it('queues new batches mid-drain without preempting the active batch', async () => {
@@ -223,7 +219,7 @@ describe('useAnimationOrchestrator', () => {
       await vi.runAllTimersAsync();
     });
 
-    const emittedTexts = vi.mocked(combatIndicators.emitCombatIndicator).mock.calls.map((call) => call[2]);
+    const emittedTexts = vi.mocked(runtimeEmitters.emitCombatIndicator).mock.calls.map((call) => call[2]);
     expect(emittedTexts).toEqual(['first', 'second']);
   });
 
@@ -261,7 +257,7 @@ describe('useAnimationOrchestrator', () => {
     });
 
     const moveEntityIds = vi
-      .mocked(bumpAnimations.emitMoveAnimation)
+      .mocked(runtimeEmitters.emitMoveAnimation)
       .mock.calls
       .map(([entry]) => entry.entityId);
 

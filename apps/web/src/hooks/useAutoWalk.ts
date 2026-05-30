@@ -3,7 +3,7 @@ import { isBeatSchedulerEnabledFlag } from '../config/feature-flags.js';
 import { useGameStore } from '../store/game-store.js';
 import { positionToDirection } from '../utils/direction.js';
 import { detectNewThreats } from '../utils/threat-detection.js';
-import { isQueueDraining, onQueueDrained } from './animation-queue-bus.js';
+import { isQueueDraining, onQueueDrained } from '../animation-runtime/animation-queue-bus.js';
 
 const STEP_DELAY_MS = 120;
 

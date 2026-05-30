@@ -87,6 +87,18 @@ export interface DismissibleNotice {
   readonly spriteName?: string;
 }
 
+export interface QuestAssignedNotice {
+  readonly id: string;
+  readonly kind: 'QUEST_ASSIGNED';
+  readonly questId: string;
+  readonly questTitle: string;
+  readonly questDescription: string;
+  readonly rewardGold: number;
+  readonly giverNpcId: string;
+}
+
+export type GameNotice = DismissibleNotice | QuestAssignedNotice;
+
 export interface GameView {
   readonly gameId: string;
   readonly phase: 'town' | 'dungeon' | 'combat' | 'game_over';
@@ -105,6 +117,7 @@ export interface GameView {
   readonly inspectableEntities: readonly InspectableEntityView[];
   readonly debugMode: boolean;
   readonly notice?: DismissibleNotice;
+  readonly notices?: readonly GameNotice[];
 }
 
 export interface AbilityView {

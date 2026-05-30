@@ -10,12 +10,12 @@ import type { EntityId } from '@dungeon/contracts';
 import {
   emitAbilityAnimation,
   emitBumpAnimation,
+  emitCombatIndicator,
   emitConsumableAnimation,
   emitMoveAnimation,
-} from '../components/BumpAnimations.js';
-import { emitCombatIndicator } from '../components/CombatIndicators.js';
-import { triggerDefenderHit } from './useDefenderHitState.js';
-import { triggerHitStop } from './useHitStop.js';
+} from './emitters.js';
+import { triggerDefenderHit } from '../hooks/useDefenderHitState.js';
+import { triggerHitStop } from '../hooks/useHitStop.js';
 
 function isCombatIndicatorType(
   type: AnimatedEvent['type'],

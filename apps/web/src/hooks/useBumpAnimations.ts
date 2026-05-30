@@ -1,6 +1,6 @@
 import { useEffect, useRef } from 'react';
 import type { BumpAnimationEntry } from '@dungeon/presenter';
-import { emitBumpAnimation } from '../components/BumpAnimations.js';
+import { emitBumpAnimation } from '../animation-runtime/emitters.js';
 
 /**
  * Hook that watches bump animations from the game view and emits them
