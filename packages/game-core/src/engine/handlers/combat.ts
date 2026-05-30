@@ -4,7 +4,7 @@ import type {
 import { entityId } from '@dungeon/contracts';
 import type { CommandResult } from './shared.js';
 import type { SeededRNG } from '../../utils/rng.js';
-import { ABILITY_DEFINITIONS, COMBAT, MAGIC, STATUS_DEFAULTS, daggerDisarm, daggerSetTrap, getPrimaryFactionId, getWeaponDamageProfile } from '@dungeon/content';
+import { ABILITY_DEFINITIONS, COMBAT, MAGIC, STATUS_DEFAULTS, burn, daggerDisarm, daggerSetTrap, getPrimaryFactionId, getWeaponDamageProfile, heatSurgeStatus } from '@dungeon/content';
 import { applyActiveTurnManaRegen, updateRunMetrics } from './shared.js';
 import { executeAbility } from '../../abilities/runtime/execute-ability.js';
 import { resolveAttack } from '../../systems/combat.js';
@@ -30,6 +30,8 @@ import {
   getFireBurnMagnitude,
 } from '../../systems/magic-xp.js';
 import { restorePlayerMana } from '../../systems/mana.js';
+
+export const LEGACY_CONTENT_ABILITY_HANDLER_IDS = [daggerDisarm.id, daggerSetTrap.id] as const;
 
 /** Returns the WeaponType of the currently equipped weapon, or null if none/unknown */
 export function getEquippedWeaponType(state: GameState): WeaponType | null {
@@ -71,7 +73,7 @@ export function processEnemyKill(
   // 1. Remove enemy from map
   const newEnemies = new Map(newState.run!.enemies);
   newEnemies.delete(enemyPosKey);
-  const hadBurn = enemy.statuses.some(status => status.id === 'burn');
+  const hadBurn = enemy.statuses.some(status => status.id === burn.id);
 
   // 2. Emit ENTITY_DIED
   events = [...events, {
@@ -462,16 +464,16 @@ export function handleAttack(
     }
     events = [...events, ...statusEvents];
 
-    const heatSurgeActive = newState.player.statuses.some(status => status.id === 'heat_surge');
+    const heatSurgeActive = newState.player.statuses.some(status => status.id === heatSurgeStatus.id);
     if (heatSurgeActive === true && killed === false) {
       const burnDefaults = STATUS_DEFAULTS.burn;
       const burnDuration = getFireBurnDuration(newState.player, burnDefaults.defaultDuration);
       const burnMagnitude = getFireBurnMagnitude(newState.player);
-      updatedEnemy = applyStatusToEnemy(updatedEnemy, 'burn', burnDuration, burnMagnitude, state.player.id);
+      updatedEnemy = applyStatusToEnemy(updatedEnemy, burn.id, burnDuration, burnMagnitude, state.player.id);
       events = [...events, {
         type: 'STATUS_APPLIED',
         targetId: targetEnemy.id,
-        statusId: 'burn',
+        statusId: burn.id,
         duration: burnDuration,
         sourceId: state.player.id,
         timestamp: newState.turnNumber,

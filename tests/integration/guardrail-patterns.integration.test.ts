@@ -153,6 +153,126 @@ describe('guardrail pattern checks', () => {
     expect(checkReferenceLiterals({ rootDir, config })).toEqual([]);
   });
 
+  it('fails when implementation code copies a status reference literal', () => {
+    const rootDir = makeTempRoot('guardrail-status-reference-bad');
+    const config = [{
+      name: 'status-refs',
+      sourceExport: 'the named status definition',
+      sourceRoots: ['content/statuses'],
+      implementationRoots: ['src'],
+      allowedDeclarationRoots: ['content/statuses'],
+      allowedContractRoots: ['tests/contracts'],
+      allowedFixtureRoots: ['tests/integration'],
+      allowedFilePatterns: [/\.test\.[tj]sx?$/],
+      sourcePattern: /\bid:\s*['"](?<value>[a-z_]+)['"]/g,
+      implementationPattern: /\bstatusId\s*(?::|===)\s*['"](?<value>[a-z_]+)['"]/g,
+    }];
+    writeFixture(rootDir, 'content/statuses/burn.ts', "export const burn = { id: 'burn' };\n");
+    writeFixture(rootDir, 'src/effect.ts', "export const effect = { statusId: 'burn' };\n");
+
+    expect(checkReferenceLiterals({ rootDir, config }).join('\n')).toContain('copies status-refs literal "burn"');
+  });
+
+  it('allows implementation code to dot-walk imported status refs', () => {
+    const rootDir = makeTempRoot('guardrail-status-reference-valid');
+    const config = [{
+      name: 'status-refs',
+      sourceExport: 'the named status definition',
+      sourceRoots: ['content/statuses'],
+      implementationRoots: ['src'],
+      allowedDeclarationRoots: ['content/statuses'],
+      allowedContractRoots: ['tests/contracts'],
+      allowedFixtureRoots: ['tests/integration'],
+      allowedFilePatterns: [/\.test\.[tj]sx?$/],
+      sourcePattern: /\bid:\s*['"](?<value>[a-z_]+)['"]/g,
+      implementationPattern: /\bstatusId\s*(?::|===)\s*['"](?<value>[a-z_]+)['"]/g,
+    }];
+    writeFixture(rootDir, 'content/statuses/burn.ts', "export const burn = { id: 'burn' };\n");
+    writeFixture(rootDir, 'src/effect.ts', "import { burn } from '../content/statuses/index.js';\nexport const effect = { statusId: burn.id };\n");
+
+    expect(checkReferenceLiterals({ rootDir, config })).toEqual([]);
+  });
+
+  it('fails when content relationship code copies an enemy template literal', () => {
+    const rootDir = makeTempRoot('guardrail-enemy-template-bad');
+    const config = [{
+      name: 'enemy-template-refs',
+      sourceExport: 'the named enemy template',
+      sourceRoots: ['content/enemies'],
+      implementationRoots: ['content/factions'],
+      allowedDeclarationRoots: ['content/enemies'],
+      allowedContractRoots: ['tests/contracts'],
+      allowedFixtureRoots: ['tests/integration'],
+      allowedFilePatterns: [/\.test\.[tj]sx?$/],
+      sourcePattern: /\btemplateId:\s*['"](?<value>[a-z_]+)['"]/g,
+      implementationPattern: /\btemplateId:\s*['"](?<value>[a-z_]+)['"]/g,
+    }];
+    writeFixture(rootDir, 'content/enemies/goblin-warlord.ts', "export const goblinWarlord = { templateId: 'goblin_warlord' };\n");
+    writeFixture(rootDir, 'content/factions/goblin-warband.ts', "export const goblinWarband = { leader: { templateId: 'goblin_warlord' } };\n");
+
+    expect(checkReferenceLiterals({ rootDir, config }).join('\n')).toContain('copies enemy-template-refs literal "goblin_warlord"');
+  });
+
+  it('allows content relationship code to dot-walk imported enemy template refs', () => {
+    const rootDir = makeTempRoot('guardrail-enemy-template-valid');
+    const config = [{
+      name: 'enemy-template-refs',
+      sourceExport: 'the named enemy template',
+      sourceRoots: ['content/enemies'],
+      implementationRoots: ['content/factions'],
+      allowedDeclarationRoots: ['content/enemies'],
+      allowedContractRoots: ['tests/contracts'],
+      allowedFixtureRoots: ['tests/integration'],
+      allowedFilePatterns: [/\.test\.[tj]sx?$/],
+      sourcePattern: /\btemplateId:\s*['"](?<value>[a-z_]+)['"]/g,
+      implementationPattern: /\btemplateId:\s*['"](?<value>[a-z_]+)['"]/g,
+    }];
+    writeFixture(rootDir, 'content/enemies/goblin-warlord.ts', "export const goblinWarlord = { templateId: 'goblin_warlord' };\n");
+    writeFixture(rootDir, 'content/factions/goblin-warband.ts', "import { goblinWarlord } from '../enemies/index.js';\nexport const goblinWarband = { leader: { templateId: goblinWarlord.templateId } };\n");
+
+    expect(checkReferenceLiterals({ rootDir, config })).toEqual([]);
+  });
+
+  it('fails when content relationship code copies a ring item literal', () => {
+    const rootDir = makeTempRoot('guardrail-ring-item-bad');
+    const config = [{
+      name: 'ring-item-refs',
+      sourceExport: 'the named ring item definition',
+      sourceRoots: ['content/items'],
+      implementationRoots: ['content/ring-schools'],
+      allowedDeclarationRoots: ['content/items'],
+      allowedContractRoots: ['tests/contracts'],
+      allowedFixtureRoots: ['tests/integration'],
+      allowedFilePatterns: [/\.test\.[tj]sx?$/],
+      sourcePattern: /\bitemId:\s*['"](?<value>[a-z_]+)['"]/g,
+      implementationPattern: /\bringId:\s*['"](?<value>[a-z_]+)['"]/g,
+    }];
+    writeFixture(rootDir, 'content/items/fire-ring.ts', "export const fireRing = { itemId: 'fire_ring' };\n");
+    writeFixture(rootDir, 'content/ring-schools/fire.ts', "export const fire = { ringId: 'fire_ring' };\n");
+
+    expect(checkReferenceLiterals({ rootDir, config }).join('\n')).toContain('copies ring-item-refs literal "fire_ring"');
+  });
+
+  it('allows content relationship code to dot-walk imported ring item refs', () => {
+    const rootDir = makeTempRoot('guardrail-ring-item-valid');
+    const config = [{
+      name: 'ring-item-refs',
+      sourceExport: 'the named ring item definition',
+      sourceRoots: ['content/items'],
+      implementationRoots: ['content/ring-schools'],
+      allowedDeclarationRoots: ['content/items'],
+      allowedContractRoots: ['tests/contracts'],
+      allowedFixtureRoots: ['tests/integration'],
+      allowedFilePatterns: [/\.test\.[tj]sx?$/],
+      sourcePattern: /\bitemId:\s*['"](?<value>[a-z_]+)['"]/g,
+      implementationPattern: /\bringId:\s*['"](?<value>[a-z_]+)['"]/g,
+    }];
+    writeFixture(rootDir, 'content/items/fire-ring.ts', "export const fireRing = { itemId: 'fire_ring' };\n");
+    writeFixture(rootDir, 'content/ring-schools/fire.ts', "import { fireRing } from '../items/index.js';\nexport const fire = { ringId: fireRing.itemId };\n");
+
+    expect(checkReferenceLiterals({ rootDir, config })).toEqual([]);
+  });
+
   it('fails when docs point to missing repo paths', () => {
     const rootDir = makeTempRoot('guardrail-docs-bad');
     const config = { roots: ['docs'], allowedInlinePrefixes: [], allowedInlinePatterns: [] };

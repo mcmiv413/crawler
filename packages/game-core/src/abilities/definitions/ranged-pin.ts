@@ -1,11 +1,9 @@
+import { rangedPin, slow } from '@dungeon/content';
 import type { AbilityDefinition } from '../types.js';
+import { buildContentBackedDefinition } from './content-backed-definition.js';
 
-export const RANGED_PIN_DEFINITION: AbilityDefinition = {
-  id: 'ranged_pin',
-  name: 'Ranged Pin',
-  description: 'Attack that roots the target in place (slow, 3 turns).',
+export const RANGED_PIN_DEFINITION: AbilityDefinition = buildContentBackedDefinition(rangedPin, {
   tags: ['ranged', 'attack'],
-  cooldown: 2,
   unlocks: [{ kind: 'mastery', weaponType: 'ranged', masteryIndex: 1 }],
   requirements: [
     { kind: 'weapon_type', weaponType: 'ranged' },
@@ -21,10 +19,10 @@ export const RANGED_PIN_DEFINITION: AbilityDefinition = {
     },
     {
       kind: 'status',
-      statusId: 'slow',
-      statusName: 'Slow',
+      statusId: slow.id,
+      statusName: slow.name,
       trigger: 'on_hit',
       duration: 3,
     },
   ],
-};
+});

@@ -1,3 +1,4 @@
+import { shadowHierophant } from '../enemies/index.js';
 import type { FactionDefinition } from './types.js';
 
 export const shadowCult: FactionDefinition = {
@@ -8,7 +9,7 @@ export const shadowCult: FactionDefinition = {
   initialPower: 25,
   initialDisposition: -60,
   leader: {
-    templateId: 'shadow_hierophant',
+    templateId: shadowHierophant.templateId,
     names: ['Velis', 'Ormira', 'Sethra'],
     titles: ['Night Voice', 'Veil-Mother', 'Ash Cantor'],
   },

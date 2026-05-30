@@ -1,11 +1,9 @@
+import { rangedVolley } from '@dungeon/content';
 import type { AbilityDefinition } from '../types.js';
+import { buildContentBackedDefinition } from './content-backed-definition.js';
 
-export const RANGED_VOLLEY_DEFINITION: AbilityDefinition = {
-  id: 'ranged_volley',
-  name: 'Ranged Volley',
-  description: 'Rain down arrows on all visible enemies for 70% damage each.',
+export const RANGED_VOLLEY_DEFINITION: AbilityDefinition = buildContentBackedDefinition(rangedVolley, {
   tags: ['ranged', 'attack'],
-  cooldown: 4,
   unlocks: [{ kind: 'mastery', weaponType: 'ranged', masteryIndex: 2 }],
   requirements: [
     { kind: 'weapon_type', weaponType: 'ranged' },
@@ -18,4 +16,4 @@ export const RANGED_VOLLEY_DEFINITION: AbilityDefinition = {
       trackMastery: true,
     },
   ],
-};
+});

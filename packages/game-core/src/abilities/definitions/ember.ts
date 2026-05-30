@@ -1,23 +1,20 @@
-import { RING_SPELL_BY_ID } from '@dungeon/content';
+import { RING_SPELL_BY_ID, ember } from '@dungeon/content';
 import type { AbilityDefinition } from '../types.js';
 import {
   buildRingSpellAttackEffect,
   buildRingSpellManaRequirements,
   buildRingSpellStatusEffect,
 } from './ring-spell-utils.js';
+import { buildContentBackedDefinition } from './content-backed-definition.js';
 
-const emberSpell = RING_SPELL_BY_ID.get('ember');
+const emberSpell = RING_SPELL_BY_ID.get(ember.id);
 
 if (emberSpell === undefined) {
-  throw new Error('Missing ring spell definition: ember');
+  throw new Error(`Missing ring spell definition: ${ember.id}`);
 }
 
-export const EMBER_DEFINITION: AbilityDefinition = {
-  id: emberSpell.id,
-  name: emberSpell.name,
-  description: emberSpell.description,
+export const EMBER_DEFINITION: AbilityDefinition = buildContentBackedDefinition(ember, {
   tags: ['ranged', 'attack'],
-  cooldown: emberSpell.cooldown,
   unlocks: [],
   requirements: [
     ...buildRingSpellManaRequirements(emberSpell),
@@ -34,4 +31,4 @@ export const EMBER_DEFINITION: AbilityDefinition = {
         buildRingSpellStatusEffect(effect, { trigger: 'on_hit' }),
       ),
   ],
-};
+});

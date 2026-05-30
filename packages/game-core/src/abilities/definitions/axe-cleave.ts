@@ -1,11 +1,9 @@
+import { axeCleave } from '@dungeon/content';
 import type { AbilityDefinition } from '../types.js';
+import { buildContentBackedDefinition } from './content-backed-definition.js';
 
-export const AXE_CLEAVE_DEFINITION: AbilityDefinition = {
-  id: 'axe_cleave',
-  name: 'Axe Cleave',
-  description: 'Strike primary target and all adjacent enemies at 50% damage.',
+export const AXE_CLEAVE_DEFINITION: AbilityDefinition = buildContentBackedDefinition(axeCleave, {
   tags: ['melee', 'attack'],
-  cooldown: 2,
   unlocks: [{ kind: 'mastery', weaponType: 'axe', masteryIndex: 1 }],
   requirements: [
     { kind: 'weapon_type', weaponType: 'axe' },
@@ -20,4 +18,4 @@ export const AXE_CLEAVE_DEFINITION: AbilityDefinition = {
       trackMastery: true,
     },
   ],
-};
+});

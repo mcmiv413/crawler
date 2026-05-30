@@ -4,7 +4,7 @@ import type {
   Equipment, PlayerStats, DamageType,
 } from '@dungeon/contracts';
 import type { DomainEvent } from '@dungeon/contracts';
-import { ENCHANTMENT_BY_ID, RING_GRANTED_ABILITY_IDS, getImpliedBlueprints, getSchoolForRing, getSpellsForRing } from '@dungeon/content';
+import { ENCHANTMENT_BY_ID, RING_SPELL_BY_ID, getImpliedBlueprints, getSchoolForRing, getSchoolSpells } from '@dungeon/content';
 
 const ARMOR_EQUIP_SLOTS: readonly (keyof Equipment)[] = ['chest', 'head', 'gloves', 'boots', 'ring1', 'ring2'];
 
@@ -86,7 +86,7 @@ export function syncEquipmentGrantedAbilities(
 ): Player {
   const discoveredPlayer = markEquippedRingSchoolsDiscovered(player, registry);
   const grantIds = collectEquipmentAbilityGrants(discoveredPlayer, registry);
-  const ringGrantableIds = new Set(RING_GRANTED_ABILITY_IDS);
+  const ringGrantableIds = new Set(RING_SPELL_BY_ID.keys());
   const retainedAbilities = discoveredPlayer.abilities.filter(ability =>
     ringGrantableIds.has(ability.id) === false || grantIds.has(ability.id) === true,
   );
@@ -123,8 +123,11 @@ function collectEquipmentAbilityGrants(
       if (abilityId !== undefined) grants.add(abilityId);
     }
 
-    for (const spellId of getSpellsForRing(template.itemId)) {
-      if (player.learnedRingSpellIds.includes(spellId)) grants.add(spellId);
+    const school = getSchoolForRing(template.itemId);
+    if (school === undefined) continue;
+
+    for (const spell of getSchoolSpells(school)) {
+      if (player.learnedRingSpellIds.includes(spell.id)) grants.add(spell.id);
     }
   }
 

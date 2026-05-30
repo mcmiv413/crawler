@@ -1,5 +1,6 @@
 import type { GameState, EnemyInstance, DomainEvent, DamageType, StatusId, CombatContext } from '@dungeon/contracts';
 import { posKey } from '@dungeon/contracts';
+import { burn, slow, strength } from '@dungeon/content';
 import { type SeededRNG } from '../utils/rng.js';
 import { resolveAttack } from './combat.js';
 import { applyStatusToPlayer, getEffectiveStat } from './status-effects.js';
@@ -55,7 +56,7 @@ export const ENEMY_ABILITY_DEFINITIONS = new Map<string, EnemyAbilityDef>([
       damageType: 'fire' as DamageType,
       range: 1,
       cooldown: 2,
-      statusId: 'burn',
+      statusId: burn.id,
       statusDuration: 2,
       statusMagnitude: 1,
       description: 'A melee attack that leaves a burning trail.',
@@ -70,7 +71,7 @@ export const ENEMY_ABILITY_DEFINITIONS = new Map<string, EnemyAbilityDef>([
       damageType: 'shock' as DamageType,
       range: 3,
       cooldown: 2,
-      statusId: 'slow',
+      statusId: slow.id,
       statusDuration: 2,
       statusMagnitude: 1,
       description: 'A chilling ranged attack that slows the target.',
@@ -84,7 +85,7 @@ export const ENEMY_ABILITY_DEFINITIONS = new Map<string, EnemyAbilityDef>([
       damageMultiplier: 0,
       range: 1,
       cooldown: 5,
-      statusId: 'strength',
+      statusId: strength.id,
       statusDuration: 3,
       statusMagnitude: 1,
       targetSelf: true,
@@ -99,7 +100,7 @@ export const ENEMY_ABILITY_DEFINITIONS = new Map<string, EnemyAbilityDef>([
       damageMultiplier: 0,
       range: 3,
       cooldown: 4,
-      statusId: 'slow',
+      statusId: slow.id,
       statusDuration: 3,
       statusMagnitude: 1,
       description: 'An aura that chills nearby enemies, slowing their movements.',

@@ -1,6 +1,6 @@
 import { describe, it, expect } from 'vitest';
 import type { RingSpellDefinition, RingSchoolDefinition } from '@dungeon/content';
-import { RING_SPELL_BY_ID, RING_SCHOOL_BY_ID, RING_SCHOOLS } from '@dungeon/content';
+import { RING_SPELL_BY_ID, RING_SCHOOL_BY_ID } from '@dungeon/content';
 import { ABILITY_DEFINITIONS } from '@dungeon/content';
 import { STATUS_DEFINITIONS } from '@dungeon/content';
 import { ITEM_BY_ID } from '@dungeon/content';

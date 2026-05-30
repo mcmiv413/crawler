@@ -1,11 +1,9 @@
+import { powerStrike } from '@dungeon/content';
 import type { AbilityDefinition } from '../types.js';
+import { buildContentBackedDefinition } from './content-backed-definition.js';
 
-export const POWER_STRIKE_DEFINITION: AbilityDefinition = {
-  id: 'power_strike',
-  name: 'Power Strike',
-  description: 'Unleash a devastating blow dealing 2× your attack damage.',
+export const POWER_STRIKE_DEFINITION: AbilityDefinition = buildContentBackedDefinition(powerStrike, {
   tags: ['melee', 'attack'],
-  cooldown: 2,
   unlocks: [{ kind: 'level', minLevel: 2 }],
   requirements: [
     { kind: 'has_target' },
@@ -19,4 +17,4 @@ export const POWER_STRIKE_DEFINITION: AbilityDefinition = {
       trackMastery: false,
     },
   ],
-};
+});

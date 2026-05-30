@@ -1,3 +1,4 @@
+import { broodMatriarch } from '../enemies/index.js';
 import type { FactionDefinition } from './types.js';
 
 export const beastSwarm: FactionDefinition = {
@@ -8,7 +9,7 @@ export const beastSwarm: FactionDefinition = {
   initialPower: 50,
   initialDisposition: -20,
   leader: {
-    templateId: 'brood_matriarch',
+    templateId: broodMatriarch.templateId,
     names: ['Skarra', 'Thornmaw', 'Goruun'],
     titles: ['Brood-Mother', 'Root Alpha', 'Ember Maw'],
   },
