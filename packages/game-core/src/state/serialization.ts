@@ -1,6 +1,7 @@
 import type { GameState, StoredFloor, RunState, EntityId, AnyItemTemplate, MapCell, EnemyInstance, DungeonFloor, ObjectInstance } from '@dungeon/contracts';
 import { CURRENT_SCHEMA_VERSION, validateSchemaVersion, EMPTY_WEAPON_MASTERY } from '@dungeon/contracts';
 import { BASE_PLAYER_STATS, MAGIC } from '@dungeon/content';
+import { recalculateMagicMana } from '../systems/magic-xp.js';
 
 /** Plain-object (JSON) form of a StoredFloor (Maps become Record). */
 interface StoredFloorJson {
@@ -127,14 +128,14 @@ export function deserializeState(json: string): GameState {
     ...((playerObj.stats ?? {}) as Record<string, unknown>),
   };
 
-  const player = {
+  const player = recalculateMagicMana({
     ...playerObj,
     mana: playerObj.mana ?? MAGIC.initialMana,
     maxMana: playerObj.maxMana ?? MAGIC.initialMana,
     ringMastery: playerObj.ringMastery ?? {},
     learnedRingSpellIds: playerObj.learnedRingSpellIds ?? [],
     stats: playerStats,
-  };
+  } as GameState['player']);
 
   // Apply defensive defaults for weaponMastery in case old saves don't have it
   const weaponMastery = {

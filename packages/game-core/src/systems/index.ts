@@ -37,6 +37,24 @@ export type { WorldModifiers } from './world-modifiers.js';
 export { evaluateQuestProgress, getObjectiveText, redeemQuest } from './quest-progress.js';
 export { completeFloorDepthQuests } from './quests.js';
 export {
+  getTotalMagicXp,
+  getMagicLevelFromXp,
+  getMagicLevel,
+  getNextMagicLevelXp,
+  getSchoolMasteryLevelFromXp,
+  getNextSchoolMasteryXp,
+  getMaxManaForMagicLevel,
+  recalculateMagicMana,
+  gainSchoolXp,
+  learnRingSpell,
+  getFireMasteryLevel,
+  getFireBurnDuration,
+  getFireBurnMagnitude,
+  getFireBurnSpreadRadius,
+  canFireMasteryPanicOnSpread,
+  canFireMasteryRestoreManaOnBurnKill,
+} from './magic-xp.js';
+export {
   getSchoolMasteryLevel,
   getStudyableRingSpells,
   getEquippedRingItemIds,

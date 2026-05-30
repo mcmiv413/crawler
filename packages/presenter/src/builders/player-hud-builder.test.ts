@@ -281,6 +281,39 @@ describe('buildPlayerHud', () => {
     });
   });
 
+  describe('ring magic progression', () => {
+    it('exposes global magic progression and school tiers from presenter data', () => {
+      state = {
+        ...state,
+        player: {
+          ...state.player,
+          mana: 17,
+          maxMana: 25,
+          ringMastery: {
+            fire: {
+              xp: 65,
+            },
+          },
+          learnedRingSpellIds: ['heat_surge'],
+        },
+      };
+
+      const hud = buildPlayerHud(state);
+
+      expect(hud.magicExperience).toBe(65);
+      expect(hud.magicLevel).toBe(2);
+      expect(hud.magicExperienceForNextLevel).toBe(150);
+      expect(hud.ringSchoolMasteries).toEqual([
+        {
+          school: 'fire',
+          xp: 65,
+          level: 2,
+          nextLevelXp: null,
+        },
+      ]);
+    });
+  });
+
   describe('quests', () => {
     it('displays active quests', () => {
       state = {

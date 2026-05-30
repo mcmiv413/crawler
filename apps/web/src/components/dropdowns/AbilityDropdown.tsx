@@ -306,7 +306,24 @@ export function AbilityDropdown({
             }}
           >
             <div className={styles.itemHeader}>
-              <span className={styles.itemName}>{enemy.name}</span>
+              <span className={styles.itemName}>
+                {enemy.instanceColor ? (
+                  <span
+                    aria-hidden="true"
+                    data-testid={`enemy-instance-marker-${enemy.id}`}
+                    style={{
+                      width: '0.5rem',
+                      height: '0.5rem',
+                      borderRadius: '999px',
+                      backgroundColor: enemy.instanceColor,
+                      display: 'inline-block',
+                      marginRight: '0.5rem',
+                      flexShrink: 0,
+                    }}
+                  />
+                ) : null}
+                {enemy.name}
+              </span>
             </div>
             <div className={styles.itemDescription}>
               {calculateDistance(playerX, playerY, enemy.x, enemy.y)} away

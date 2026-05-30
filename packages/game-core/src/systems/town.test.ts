@@ -267,6 +267,7 @@ describe('processTownAction study_spell', () => {
   it('unlocks an Elder spell, deducts gold, emits events, and grants it from the equipped Fire Ring', () => {
     const state = makeStateWithFireRingEquipped();
     const initialGold = state.player.gold;
+    const initialFireXp = state.player.ringMastery.fire?.xp ?? 0;
 
     const { state: studied, events } = processTownAction(
       state,
@@ -280,6 +281,7 @@ describe('processTownAction study_spell', () => {
     expect(studied.player.gold).toBeLessThan(initialGold);
     expect(studied.player.learnedRingSpellIds).toContain(FIRE_RING_SPELL_ID);
     expect(studied.player.abilities.map(ability => ability.id)).toContain(FIRE_RING_SPELL_ID);
+    expect(studied.player.ringMastery.fire?.xp).toBe(initialFireXp);
     expect(events.some(event => event.type === 'GOLD_CHANGED')).toBe(true);
     expect(events.some(event => event.type === 'SPELL_UNLOCKED' && event.spellId === FIRE_RING_SPELL_ID)).toBe(true);
   });
