@@ -15,7 +15,6 @@ data/
 balance-results/
 scripts/node_modules/
 .claude/
-.serena/
 .plan/
 .fossil/
 playwright-report/
@@ -49,6 +48,7 @@ mcp-config.json
 !readme.MD
 !docs/**/*.md
 !.github/copilot-instructions.md
+!.serena/memories/*.md
 .vercel
 
 # Windows zone identifier files
