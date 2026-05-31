@@ -5,11 +5,11 @@ import type { RingSpellDefinition } from './types.js';
 export const cinderWake: RingSpellDefinition = {
   id: 'cinder_wake',
   name: 'Cinder Wake',
-  description: 'Send cinders in a line, burning enemies and panicking burning targets.',
+  description: 'Spend 15 mana to send cinders in a line, burning enemies and panicking burning targets.',
   cooldown: 3,
   requiresTarget: false,
   requiresDirection: true,
-  unlockLevel: 2,
+  unlockLevel: 3,
   manaCost: 15,
   xpGainOnCast: 3,
   animation: { id: animationRefs.aoe.cinderWake.id },

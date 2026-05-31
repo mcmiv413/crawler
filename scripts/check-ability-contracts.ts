@@ -1,4 +1,4 @@
-import { ABILITY_DEFINITIONS, ANIMATION_REF_BY_ID } from '@dungeon/content';
+import { ABILITY_DEFINITIONS, ANIMATION_REF_BY_ID, RING_SPELL_BY_ID } from '@dungeon/content';
 import path from 'node:path';
 import { fileURLToPath } from 'node:url';
 import {
@@ -20,6 +20,7 @@ interface AbilityContractOverride {
 
 export interface AbilityContractSnapshot {
   readonly abilities: readonly AbilityDefinition[];
+  readonly ringSpells: ReadonlyMap<string, AbilityDefinition>;
   readonly animationIds: ReadonlySet<string>;
   readonly useAbilityFields: ReadonlySet<string>;
   readonly setTrapFields: ReadonlySet<string>;
@@ -61,6 +62,7 @@ function getSchemaFields(
 export function createLiveAbilityContractSnapshot(): AbilityContractSnapshot {
   return {
     abilities: [...ABILITY_DEFINITIONS.values()],
+    ringSpells: new Map(RING_SPELL_BY_ID.entries()),
     animationIds: new Set(ANIMATION_REF_BY_ID.keys()),
     useAbilityFields: getSchemaFields(
       UseAbilityCommandSchema as unknown as { readonly shape: Record<string, unknown> },
@@ -120,6 +122,7 @@ export function collectAbilityContractFailures(
   snapshot: AbilityContractSnapshot,
 ): string[] {
   const failures: string[] = [];
+  const abilityById = new Map(snapshot.abilities.map(ability => [ability.id, ability] as const));
 
   for (const ability of snapshot.abilities) {
     const contract = resolveAbilityContract(ability);
@@ -193,6 +196,19 @@ export function collectAbilityContractFailures(
     if (parseResult.success === false) {
       failures.push(
         `${ability.id}: representative ${contract.commandType} payload failed schema validation`,
+      );
+    }
+  }
+
+  for (const [ringSpellId, ringSpell] of snapshot.ringSpells) {
+    const ability = abilityById.get(ringSpellId);
+    if (ability === undefined) {
+      failures.push(`${ringSpellId}: ring spell is missing from ABILITY_DEFINITIONS`);
+      continue;
+    }
+    if (ability !== ringSpell) {
+      failures.push(
+        `${ringSpellId}: ABILITY_DEFINITIONS must reuse the ring spell definition instead of duplicating it`,
       );
     }
   }
