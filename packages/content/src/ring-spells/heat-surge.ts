@@ -5,7 +5,7 @@ import type { RingSpellDefinition } from './types.js';
 export const heatSurge: RingSpellDefinition = {
   id: 'heat_surge',
   name: 'Heat Surge',
-  description: 'Your attacks and spells apply Burn for 3 turns.',
+  description: 'Spend 11 mana to make your attacks and offensive spells apply Burn.',
   cooldown: 2,
   requiresTarget: false,
   unlockLevel: 1,

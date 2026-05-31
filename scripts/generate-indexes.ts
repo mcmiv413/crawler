@@ -1,5 +1,5 @@
 import { readdirSync, readFileSync, writeFileSync, existsSync } from 'fs';
-import { join } from 'path';
+import { dirname, join, relative } from 'path';
 import { generateAnimationRefsIndex } from './generators/animation-refs.js';
 import { generateAnimationModuleRegistry } from './generators/animation-modules.js';
 import { generateThreeAnimationModules } from './generators/three-animation-modules.js';
@@ -19,6 +19,8 @@ interface ContentTypeConfig {
   exportType: 'array' | 'map';
   /** If map, the key field name (e.g., 'templateId', 'id') */
   keyField?: string;
+  /** Additional source directories whose entities should also be emitted into this index */
+  supplementarySourceDirs?: readonly string[];
   /** Derived indexes to generate (e.g., { name: 'ENEMIES_BY_BIOME', generator: 'buildByBiomeMap' }) */
   derivedIndexes?: Array<{
     name: string;
@@ -143,6 +145,7 @@ const configs: ContentTypeConfig[] = [
     typeImport: 'local',
     exportType: 'map',
     keyField: 'id',
+    supplementarySourceDirs: ['ring-spells'],
   },
   // Ring Magic System
   {
@@ -197,19 +200,58 @@ function scanDirectory(dirPath: string): string[] {
   }
 }
 
+interface SourceEntry {
+  readonly sourceDir: string;
+  readonly file: string;
+}
+
+function scanSourceEntries(config: ContentTypeConfig): SourceEntry[] {
+  const sourceDirs = [config.sourceDir, ...(config.supplementarySourceDirs ?? [])];
+  return sourceDirs
+    .flatMap(sourceDir =>
+      scanDirectory(join(process.cwd(), 'packages/content/src', sourceDir)).map(file => ({
+        sourceDir,
+        file,
+      })),
+    )
+    .sort(
+      (left, right) =>
+        left.file.localeCompare(right.file) || left.sourceDir.localeCompare(right.sourceDir),
+    );
+}
+
+function getImportPath(indexPath: string, entry: SourceEntry): string {
+  const indexDir = dirname(indexPath);
+  const importPath = relative(indexDir, `${entry.sourceDir}/${entry.file}.js`).replace(/\\/g, '/');
+  return importPath.startsWith('.') ? importPath : `./${importPath}`;
+}
+
 function generateIndex(config: ContentTypeConfig): string {
   const contentPath = join(process.cwd(), 'packages/content/src', config.sourceDir);
-  const files = scanDirectory(contentPath);
+  const entries = scanSourceEntries(config);
 
-  if (files.length === 0) {
+  if (entries.length === 0) {
     console.warn(`⚠️  No definition files found in ${config.sourceDir}`);
     return '';
   }
 
-  const importLines = files
-    .map(file => {
-      const exportName = getExportName(file);
-      return `import { ${exportName} } from './${file}.js';`;
+  const exportSources = new Map<string, string>();
+  for (const entry of entries) {
+    const exportName = getExportName(entry.file);
+    const sourcePath = `${entry.sourceDir}/${entry.file}.ts`;
+    const existingSource = exportSources.get(exportName);
+    if (existingSource) {
+      throw new Error(
+        `Duplicate export "${exportName}" while generating ${config.indexPath}: ${existingSource} and ${sourcePath}. Remove the duplicate source of truth.`,
+      );
+    }
+    exportSources.set(exportName, sourcePath);
+  }
+
+  const importLines = entries
+    .map(entry => {
+      const exportName = getExportName(entry.file);
+      return `import { ${exportName} } from '${getImportPath(config.indexPath, entry)}';`;
     })
     .join('\n');
 
@@ -220,8 +262,8 @@ function generateIndex(config: ContentTypeConfig): string {
   if (config.exportType === 'map') {
     contentDefinition = `
 const ${itemsArrayName}: [string, ${config.itemType}][] = [
-${files.map(file => {
-  const exportName = getExportName(file);
+${entries.map(entry => {
+  const exportName = getExportName(entry.file);
   const keyField = config.keyField || 'id';
   return `  [${exportName}.${keyField}, ${exportName}],`;
 }).join('\n')}
@@ -231,7 +273,7 @@ export const ${config.exportName}: ReadonlyMap<string, ${config.itemType}> = new
   } else {
     contentDefinition = `
 export const ${config.exportName}: readonly ${config.itemType}[] = [
-${files.map(file => `  ${getExportName(file)},`).join('\n')}
+${entries.map(entry => `  ${getExportName(entry.file)},`).join('\n')}
 ];`;
   }
 
@@ -243,7 +285,7 @@ export const ${di.name} = ${di.generator}(${config.exportName});`;
     });
   }
 
-  const reExports = files.map(file => getExportName(file)).join(', ');
+  const reExports = entries.map(entry => getExportName(entry.file)).join(', ');
 
   const typeImport = config.typeImport || 'contracts';
   let typeImportLine = '';

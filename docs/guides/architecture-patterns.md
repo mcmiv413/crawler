@@ -23,12 +23,12 @@ Examples:
 
 | Entity | Source file pattern | Generated or catalog artifact |
 |---|---|---|
-| Ability metadata | `packages/content/src/abilities/<ability>.ts` | `packages/content/src/abilities/index.ts` |
+| Ability metadata | `packages/content/src/abilities/<ability>.ts` (non-ring abilities) | `packages/content/src/abilities/index.ts` |
 | Enemy template | `packages/content/src/enemies/<enemy>.ts` | `packages/content/src/enemies/index.ts` |
 | Biome | `packages/content/src/biomes/<biome>.ts` | `packages/content/src/biomes/index.ts` |
 | Status | `packages/content/src/statuses/<status>.ts` | `packages/content/src/statuses/index.ts` |
 | Ring school | `packages/content/src/ring-schools/<school>.ts` | `packages/content/src/ring-schools/index.ts` |
-| Ring spell metadata | `packages/content/src/ring-spells/<spell>.ts` | `packages/content/src/ring-spells/index.ts` |
+| Ring spell metadata | `packages/content/src/ring-spells/<spell>.ts` | `packages/content/src/ring-spells/index.ts`, plus generated inclusion in `packages/content/src/abilities/index.ts` |
 | Item | `packages/content/src/items/<category>/<item>.ts` | `packages/content/src/items/<category>/index.ts` |
 | Animation ref | `packages/content/src/animation-refs/<category>.ts` | `packages/content/src/animation-refs/index.ts` catalog |
 | Web animation module | `apps/web/src/animations/modules/<module>.ts` | `apps/web/src/animations/generated/index.ts` when generator support is enabled |
@@ -42,6 +42,8 @@ pnpm generate:indexes
 Generated `index.ts` files that start with `// Auto-generated` are artifacts. Do not hand-edit them. If a generated export is missing, fix the source entity file or the generator, then rerun `pnpm generate:indexes`.
 
 Some catalogs have helper files such as `types.ts`, `utilities.ts`, `mastery.ts`, or `utils.ts`; those are hand-authored support files, not entity definitions. Keep new entity data out of aggregate files when a per-entity file pattern exists.
+
+Ring spells are authored only under `packages/content/src/ring-spells/`. Do **not** create duplicate `packages/content/src/abilities/<spell>.ts` files for them; `pnpm generate:indexes` emits ring spells into `ABILITY_DEFINITIONS` automatically for compatibility.
 
 ## References Over Literals
 

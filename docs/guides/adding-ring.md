@@ -10,7 +10,7 @@ Follow [Architecture Patterns](architecture-patterns.md): add source entity file
 
 1. Add ring item content in `packages/content/src/items/armor/`.
 2. Add any grant enchantment in `packages/content/src/enchantments/`.
-3. Add spell metadata in `packages/content/src/abilities/` and runtime definitions in `packages/game-core/src/abilities/definitions/`.
+3. Add spell metadata in `packages/content/src/ring-spells/` and runtime definitions in `packages/game-core/src/abilities/definitions/`.
 4. Add status definitions in `packages/content/src/statuses/` when spells apply new statuses.
 5. Add animation refs in `packages/content/src/animation-refs/` and modules in `apps/web/src/animations/modules/`.
 6. Run `pnpm generate:indexes`.
@@ -23,8 +23,7 @@ Follow [Architecture Patterns](architecture-patterns.md): add source entity file
 | Item | `packages/content/src/items/armor/<ring>.ts` |
 | Ring school | `packages/content/src/ring-schools/<school>.ts`, plus `types.ts` if adding a new `RingSchool` union member |
 | Enchantment grant | `packages/content/src/enchantments/<grant>.ts` |
-| Ring spell | `packages/content/src/ring-spells/<spell>.ts` (includes study requirements) |
-| Content spell metadata | `packages/content/src/abilities/<spell>.ts` |
+| Ring spell | `packages/content/src/ring-spells/<spell>.ts` (includes study requirements and feeds generated `ABILITY_DEFINITIONS`) |
 | Core spell runtime | `packages/game-core/src/abilities/definitions/<spell>.ts` |
 | Magic progression tuning | `packages/content/src/balance/tables.ts` |
 | Equipment grant/revoke | `packages/game-core/src/systems/equipment.ts` |
@@ -39,6 +38,7 @@ Follow [Architecture Patterns](architecture-patterns.md): add source entity file
 - The ring school is defined in its own source file and appears in generated `RING_SCHOOL_BY_ID` with correct `ringId` mapping.
 - The grant enchantment uses `effect: { type: 'grant_ability', abilityId }`.
 - Ring spells are defined in source files with `schools`, `studyRequirements` (including `goldCost` and `minimumSchoolXp`), authored `manaCost`, `xpGainOnCast`, and any status effects.
+- Ring spells are not duplicated under `packages/content/src/abilities/`; `pnpm generate:indexes` emits them into `ABILITY_DEFINITIONS` automatically.
 - Cross-references use imported definitions or dot-walked refs where practical instead of repeated raw IDs.
 - Generated indexes are updated by `pnpm generate:indexes`, not hand edits.
 - Learned spells are stored in `player.learnedRingSpellIds` (source of truth).
