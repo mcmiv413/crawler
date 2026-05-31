@@ -18,6 +18,14 @@ Follow [Architecture Patterns](architecture-patterns.md): add source entity file
 6. Run `pnpm generate:indexes`.
 7. Prove the 6-hop chain with tests, then run `pnpm validate`.
 
+If you are introducing a **brand-new school**, lock the rollout shape up front:
+
+- starter spell only
+- full school ladder (starter + later study tiers)
+- full ladder plus combo spells with already-supported schools
+
+Do not leave that implicit. The current fire package has three authored spells (`ember`, `heat_surge`, `cinder_wake`), and the system already supports combo-school study requirements.
+
 ## Required Surfaces
 
 | Surface | Files |
@@ -38,6 +46,7 @@ Follow [Architecture Patterns](architecture-patterns.md): add source entity file
 
 - The ring item has `armor.slot: 'ring'` and stable `itemId`.
 - The ring school is defined in its own source file and appears in generated `RING_SCHOOL_BY_ID` with correct `ringId` mapping.
+- For a new school, the scope explicitly states whether the package includes only a starter spell, a full ladder, and any combo spells with already-supported schools.
 - The grant enchantment uses `effect: { type: 'grant_ability', abilityId }`.
 - Ring spells are defined in source files with `schools`, `studyRequirements` (including `goldCost` and `minimumSchoolXp`), authored `manaCost`, `xpGainOnCast`, and any status effects.
 - Ring spells are not duplicated under `packages/content/src/abilities/`; `pnpm generate:indexes` emits them into `ABILITY_DEFINITIONS` automatically.

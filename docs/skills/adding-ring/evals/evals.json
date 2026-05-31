@@ -20,6 +20,7 @@
       "expectations": [
         "Names packages/content/src/ring-schools surfaces",
         "Calls out types or allowlist implications for new schools",
+        "Forces an explicit decision about starter-only versus full ladder and combo-spell scope",
         "Does not pretend the work is only item plus spell content"
       ]
     },
