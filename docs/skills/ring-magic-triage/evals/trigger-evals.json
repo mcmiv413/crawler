@@ -12,8 +12,16 @@
     "should_trigger": true
   },
   {
-    "query": "Add a new frost ring package and tell me what else it touches.",
+    "query": "If I add a new frost ring package, what else does it touch?",
     "should_trigger": true
+  },
+  {
+    "query": "If I add a lightning ring with a spell of bolt, is that starter-only work or does it need a full ladder and combo-scope decision?",
+    "should_trigger": true
+  },
+  {
+    "query": "Add a lightning ring with a spell of bolt.",
+    "should_trigger": false
   },
   {
     "query": "Add a new projectile animation for this effect.",

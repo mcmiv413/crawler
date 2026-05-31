@@ -44,6 +44,18 @@
         "Names packages/content/src/ring-schools surfaces",
         "Calls out runtime or contract implications beyond content"
       ]
+    },
+    {
+      "id": 4,
+      "prompt": "Add a lightning ring with a spell of bolt.",
+      "expected_output": "Classifies the ask as new-school platform work and forces an explicit rollout decision about whether the lightning school ships only Bolt, a full ladder, or a full ladder plus combo spells with the already-supported fire school.",
+      "files": [],
+      "expectations": [
+        "Classifies the ask as new-school expansion",
+        "Forces an explicit decision about starter-only versus full ladder versus full ladder plus combo spells",
+        "Mentions the already-supported fire school when describing combo scope",
+        "Calls out school files or downstream platform implications beyond content"
+      ]
     }
   ]
 }

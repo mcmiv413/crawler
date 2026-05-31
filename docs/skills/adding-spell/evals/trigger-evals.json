@@ -16,6 +16,10 @@
     "should_trigger": true
   },
   {
+    "query": "Add a lightning ring with a spell of bolt.",
+    "should_trigger": false
+  },
+  {
     "query": "Add a generic sword ability with no ring ties.",
     "should_trigger": false
   },

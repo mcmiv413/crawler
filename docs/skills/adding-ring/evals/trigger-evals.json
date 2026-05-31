@@ -16,6 +16,10 @@
     "should_trigger": true
   },
   {
+    "query": "Add a lightning ring with a spell of bolt.",
+    "should_trigger": true
+  },
+  {
     "query": "Add a new ring spell inside the existing fire package.",
     "should_trigger": false
   },
