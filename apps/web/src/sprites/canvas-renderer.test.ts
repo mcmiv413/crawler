@@ -2,10 +2,7 @@ import { describe, it, expect, vi } from 'vitest';
 import type { MapView, EntityView } from '@dungeon/presenter';
 import { renderMap } from './canvas-renderer.js';
 import { CELL_SIZE } from '../config/ui-config.js';
-import {
-  getMoveRenderedOffsetPx,
-  getSquashStretchScale,
-} from '../animations/move-style-profiles.js';
+import * as moveStyleProfiles from '../animations/move-style-profiles.js';
 
 describe('canvas-renderer with bump animations', () => {
   function createMockCanvasContext(): CanvasRenderingContext2D {
@@ -196,14 +193,54 @@ describe('canvas-renderer with bump animations', () => {
 
     renderMap(mockCtx, map, 0, 0, 30, 22, [], [move]);
 
-    const offset = getMoveRenderedOffsetPx(move, CELL_SIZE, 'enemy-1');
-    const scale = getSquashStretchScale('dart', 0.1);
+    const offset = moveStyleProfiles.getMoveRenderedOffsetPx(move, CELL_SIZE, 'enemy-1');
+    const scale = moveStyleProfiles.getSquashStretchScale('dart', 0.1);
     const translateCalls = vi.mocked(mockCtx.translate).mock.calls;
     const entityTranslate = translateCalls[1]!;
 
     expect(entityTranslate[0]).toBeCloseTo((11 * CELL_SIZE) + offset.x + (CELL_SIZE / 2));
     expect(entityTranslate[1]).toBeCloseTo((10 * CELL_SIZE) + offset.y + (CELL_SIZE / 2));
     expect(mockCtx.font).toBe(`${Math.max((CELL_SIZE * Math.min(scale.scaleX, scale.scaleY)) - 2, 1)}px monospace`);
+  });
+
+  it('applies phase-aware step squash/stretch scale', () => {
+    const baseMap = createMockMapView();
+    const mockCtx = createMockCanvasContext();
+    const move = {
+      id: 'move-step-1',
+      entityId: 'enemy-1',
+      fromPos: { x: 10, y: 10 },
+      toPos: { x: 11, y: 10 },
+      style: 'step' as const,
+      progress: 0.2,
+      walkPhase: 'middle' as const,
+    };
+    const map: MapView = {
+      ...baseMap,
+      cells: baseMap.cells.map((cell) => ({ ...cell, spriteName: undefined })),
+      entities: [
+        {
+          id: 'enemy-1',
+          type: 'enemy',
+          x: 11,
+          y: 10,
+          color: '#f00',
+          ascii: 'e',
+          name: 'Enemy',
+          templateId: 'goblin',
+        },
+      ],
+    };
+
+    const phaseScale = moveStyleProfiles.getSquashStretchScale(move.style, move.progress, move.walkPhase);
+    const defaultScale = moveStyleProfiles.getSquashStretchScale(move.style, move.progress);
+    expect(phaseScale).not.toEqual(defaultScale);
+
+    renderMap(mockCtx, map, 0, 0, 30, 22, [], [move]);
+
+    expect(mockCtx.font).toBe(
+      `${Math.max((CELL_SIZE * Math.min(phaseScale.scaleX, phaseScale.scaleY)) - 2, 1)}px monospace`,
+    );
   });
 });
 

@@ -21,6 +21,7 @@ import { useAutoWalk } from './hooks/useAutoWalk.js';
 import { useBreakpoint } from './hooks/useBreakpoint.js';
 import { useDismissedNotices } from './hooks/useDismissedNotices.js';
 import { useKeyboard } from './hooks/useKeyboard.js';
+import { useWalkController } from './hooks/useWalkController.js';
 import { useGameStore } from './store/game-store.js';
 
 type Screen = 'main' | 'inventory' | 'character' | 'log';
@@ -500,6 +501,7 @@ export function App(): React.ReactNode {
   useKeyboard(() => {
     // Keyboard shortcuts for future use
   });
+  useWalkController();
   useAutoWalk();
 
   async function talkToNpc(npcId: string, npcName: string): Promise<void> {

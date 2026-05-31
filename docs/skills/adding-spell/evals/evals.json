@@ -1,0 +1,49 @@
+{
+  "skill_name": "adding-spell",
+  "evals": [
+    {
+      "id": 0,
+      "prompt": "Add a new fire spell with different range, damage, and mana cost, but otherwise reuse the existing fire pattern.",
+      "expected_output": "Keeps the ask on the ring-spell path, classifies it as pattern reuse, and names the correct content/runtime surfaces without inventing generic-ability or platform work.",
+      "files": [],
+      "expectations": [
+        "Treats the ask as a ring spell",
+        "Classifies it as pattern reuse or equivalent low-scope spell work",
+        "Names ring-spell content and runtime definition surfaces"
+      ]
+    },
+    {
+      "id": 1,
+      "prompt": "Add a new spell that needs a projectile trail and impact burst nobody has authored yet.",
+      "expected_output": "Routes the spell to animation ownership work in addition to normal ring-spell authoring.",
+      "files": [],
+      "expectations": [
+        "Treats the ask as a ring spell",
+        "Routes to adding-animation or names animation ownership surfaces explicitly",
+        "Does not stop at only the spell content file"
+      ]
+    },
+    {
+      "id": 2,
+      "prompt": "I want a combo spell that requires two schools before it can be studied. What else has to change?",
+      "expected_output": "Treats the ask as combo-school platform work, names presenter or study-surface limitations, and routes to mechanic-style expansion honestly.",
+      "files": [],
+      "expectations": [
+        "Treats the ask as ring-spell work",
+        "Classifies it as combo-school or platform expansion",
+        "Names presenter, game-view, or ring-spell availability surfaces"
+      ]
+    },
+    {
+      "id": 3,
+      "prompt": "Add a generic sword ability that is not tied to rings.",
+      "expected_output": "Redirects away from the ring-spell path and points to the generic ability workflow.",
+      "files": [],
+      "expectations": [
+        "Does not keep the answer on the ring-spell path",
+        "Redirects to generic ability guidance",
+        "Avoids naming ring-spell-only surfaces as if they were required"
+      ]
+    }
+  ]
+}

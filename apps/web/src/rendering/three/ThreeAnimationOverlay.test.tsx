@@ -46,6 +46,11 @@ const {
   mockGetAnimationModule,
   mockCreateAtmosphereVignette,
   mockAtmosphereVignette,
+  mockCreateEntitySprite,
+  mockApplyEntitySpriteAppearance,
+  mockDisposeEntitySprite,
+  mockSetEntitySpritePosition,
+  mockSetEntitySpriteScale,
 } = vi.hoisted(() => {
   const mockRenderer = {
     setSize: vi.fn(),
@@ -93,6 +98,12 @@ const {
 
   const mockCreateAtmosphereVignette = vi.fn(() => mockAtmosphereVignette);
 
+  const mockCreateEntitySprite = vi.fn(() => ({ tag: 'entity-sprite' }));
+  const mockApplyEntitySpriteAppearance = vi.fn();
+  const mockDisposeEntitySprite = vi.fn();
+  const mockSetEntitySpritePosition = vi.fn();
+  const mockSetEntitySpriteScale = vi.fn();
+
   return {
     mockCreateRenderer,
     mockRenderer,
@@ -100,6 +111,11 @@ const {
     mockGetAnimationModule,
     mockCreateAtmosphereVignette,
     mockAtmosphereVignette,
+    mockCreateEntitySprite,
+    mockApplyEntitySpriteAppearance,
+    mockDisposeEntitySprite,
+    mockSetEntitySpritePosition,
+    mockSetEntitySpriteScale,
   };
 });
 
@@ -118,6 +134,14 @@ vi.mock('./lib/atmosphere-plane.js', () => ({
   createAtmosphereVignette: mockCreateAtmosphereVignette,
 }));
 
+vi.mock('./entities/three-entity-sprite.js', () => ({
+  createEntitySprite: mockCreateEntitySprite,
+  applyEntitySpriteAppearance: mockApplyEntitySpriteAppearance,
+  disposeEntitySprite: mockDisposeEntitySprite,
+  setEntitySpritePosition: mockSetEntitySpritePosition,
+  setEntitySpriteScale: mockSetEntitySpriteScale,
+}));
+
 // ---------------------------------------------------------------------------
 // Deferred import after mocks are wired
 // ---------------------------------------------------------------------------
@@ -129,6 +153,7 @@ import {
   resolveThreeOwnedEntityIds,
 } from './ThreeAnimationOverlay.js';
 import type { ThreeAnimationOverlayProps } from './ThreeAnimationOverlay.js';
+import * as moveStyleProfiles from '../../animations/move-style-profiles.js';
 
 // ---------------------------------------------------------------------------
 // Fixture factories — use ActiveConsumableAnimation (has id, startTime, progress)
@@ -265,6 +290,11 @@ function resetMocks() {
   mockAtmosphereVignette.setSize.mockClear();
   mockAtmosphereVignette.setOpacity.mockClear();
   mockAtmosphereVignette.dispose.mockClear();
+  mockCreateEntitySprite.mockClear();
+  mockApplyEntitySpriteAppearance.mockClear();
+  mockDisposeEntitySprite.mockClear();
+  mockSetEntitySpritePosition.mockClear();
+  mockSetEntitySpriteScale.mockClear();
   // Restore default behaviour
   mockCreateRenderer.mockImplementation((_canvas: HTMLCanvasElement): typeof mockRenderer | null => {
     mockRenderer.domElement = document.createElement('canvas');
@@ -279,6 +309,7 @@ function resetMocks() {
       : undefined,
   );
   mockCreateAtmosphereVignette.mockImplementation(() => mockAtmosphereVignette);
+  mockCreateEntitySprite.mockImplementation(() => ({ tag: 'entity-sprite' }));
 }
 
 // ---------------------------------------------------------------------------
@@ -456,6 +487,35 @@ describe('ThreeAnimationOverlay – render gating', () => {
       />,
     );
     expect(getByTestId('three-animation-overlay')).toBeTruthy();
+  });
+});
+
+describe('ThreeAnimationOverlay – move walk phase propagation', () => {
+  beforeEach(resetMocks);
+
+  it('applies phase-aware step squash/stretch scale to move-owned entities', async () => {
+    const move = makeMoveAnimation({
+      progress: 0.2,
+      walkPhase: 'middle',
+    });
+    const phaseScale = moveStyleProfiles.getSquashStretchScale(move.style, move.progress, move.walkPhase);
+    const defaultScale = moveStyleProfiles.getSquashStretchScale(move.style, move.progress);
+    expect(phaseScale).not.toEqual(defaultScale);
+
+    render(
+      <ThreeAnimationOverlay
+        {...makeDefaultProps({
+          map: makeMap({ entities: [makeEntity()] }),
+          moveAnimations: [move],
+        })}
+      />,
+    );
+
+    await waitFor(() => expect(mockSetEntitySpriteScale).toHaveBeenCalled());
+    expect(mockSetEntitySpriteScale.mock.calls.at(-1)?.[1]).toEqual({
+      x: phaseScale.scaleX,
+      y: phaseScale.scaleY,
+    });
   });
 });
 

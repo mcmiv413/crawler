@@ -31,6 +31,7 @@ Each guide below includes a "Quick Start" section that reminds you to run this c
 | [Adding a Game Mechanic](guides/adding-mechanic.md) | Implementing a new system end-to-end (the 6-hop chain) |
 | [Adding an Ability](guides/adding-ability.md) | Data-driven ability definitions and the execution pipeline |
 | [Adding an Animation](guides/adding-animation.md) | Defining animation refs, required timing fields, and generator workflow |
+| [Adding a Ring Spell](guides/adding-ring-spell.md) | Ring spell authoring, hidden escalation cases, and proof-home selection |
 | [Adding an Enemy](guides/adding-enemy.md) | Enemy templates, archetypes, spawning, AI behavior |
 | [Adding a Biome](guides/adding-biome.md) | Biome definitions, map generation, visual theming |
 | [Adding an Enchantment](guides/adding-enchantment.md) | Enchantment definitions, hook system, stacking rules |

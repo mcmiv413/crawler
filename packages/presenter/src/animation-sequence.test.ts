@@ -282,8 +282,16 @@ describe('buildAnimationSequence', () => {
       style: 'step',
       durationMs: 140,
     });
-    expect((fastEnemyMove?.data as { entityId: string }).entityId).toBe(entityId('enemy-2'));
-    expect((slowEnemyMove?.data as { entityId: string }).entityId).toBe(entityId('enemy-1'));
+    expect(fastEnemyMove?.data).toMatchObject({
+      entityId: entityId('enemy-2'),
+      style: 'step',
+      durationMs: 140,
+    });
+    expect(slowEnemyMove?.data).toMatchObject({
+      entityId: entityId('enemy-1'),
+      style: 'step',
+      durationMs: 140,
+    });
     expect(fastEnemyMove!.delayMs).toBeGreaterThanOrEqual(playerMove!.delayMs + (playerMove!.data as { durationMs: number }).durationMs);
   });
 

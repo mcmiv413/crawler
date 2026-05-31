@@ -40,6 +40,8 @@ const ARCHETYPE_STYLE_RULES: readonly {
   { style: 'lurch', matches: ['horror', 'beast', 'lurker'] },
 ] as const;
 
+const ENABLE_ENEMY_MOVE_STYLE_OVERRIDES = false;
+
 export const CONSUMABLE_ANIMATION_METADATA: Readonly<Record<ConsumableAnimationEffect, ConsumableAnimationPresentationView>> = {
   heal: {
     kind: 'heal_hearts',
@@ -144,6 +146,17 @@ export function getMoveAnimationStyle(args: {
 }): MoveAnimStyle {
   if (args.isPlayer) return 'step';
 
+  return resolveEnemyMoveAnimationStyleOverride(args) ?? 'step';
+}
+
+function resolveEnemyMoveAnimationStyleOverride(args: {
+  readonly movementBehaviorId?: string;
+  readonly archetype?: string;
+}): MoveAnimStyle | undefined {
+  if (!ENABLE_ENEMY_MOVE_STYLE_OVERRIDES) {
+    return undefined;
+  }
+
   const behaviorStyle = args.movementBehaviorId === undefined
     ? undefined
     : MOVEMENT_BEHAVIOR_STYLES[args.movementBehaviorId];
@@ -156,7 +169,7 @@ export function getMoveAnimationStyle(args: {
     }
   }
 
-  return 'slide';
+  return undefined;
 }
 
 export function isConsumableAnimationEffect(effect: string): effect is ConsumableAnimationEffect {

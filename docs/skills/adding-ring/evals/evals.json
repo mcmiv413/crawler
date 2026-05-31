@@ -1,0 +1,38 @@
+{
+  "skill_name": "adding-ring",
+  "evals": [
+    {
+      "id": 0,
+      "prompt": "Add a new ember ring that grants a tuned fire spell and uses the existing fire school.",
+      "expected_output": "Keeps the ask on the ring-package path, names the item, grant, school, and spell surfaces, and does not invent unnecessary platform work.",
+      "files": [],
+      "expectations": [
+        "Names the ring item surface",
+        "Names the enchantment grant surface",
+        "Keeps the school path on existing-school wiring rather than new-school expansion"
+      ]
+    },
+    {
+      "id": 1,
+      "prompt": "I want a brand-new frost ring school with its own ring item and spell package. What files and hidden work are involved?",
+      "expected_output": "Treats the ask as new-school ring work, names school files and contract implications, and routes any deeper platform behavior honestly.",
+      "files": [],
+      "expectations": [
+        "Names packages/content/src/ring-schools surfaces",
+        "Calls out types or allowlist implications for new schools",
+        "Does not pretend the work is only item plus spell content"
+      ]
+    },
+    {
+      "id": 2,
+      "prompt": "Add a new ring whose starter spell needs a brand-new projectile visual.",
+      "expected_output": "Keeps the ring-package workflow but routes the visual branch through animation-specific surfaces.",
+      "files": [],
+      "expectations": [
+        "Keeps the answer on the ring-package path",
+        "Routes the animation branch to adding-animation or equivalent animation surfaces",
+        "Names both ring and spell surfaces"
+      ]
+    }
+  ]
+}

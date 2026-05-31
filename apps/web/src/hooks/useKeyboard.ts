@@ -1,29 +1,33 @@
 import { useEffect, useRef } from 'react';
+import type { Direction } from '@dungeon/contracts';
 import { useGameStore } from '../store/game-store.js';
 
-const KEY_MAP: Record<string, unknown> = {
-  ArrowUp:    { type: 'MOVE', direction: 'N' },
-  ArrowDown:  { type: 'MOVE', direction: 'S' },
-  ArrowRight: { type: 'MOVE', direction: 'E' },
-  ArrowLeft:  { type: 'MOVE', direction: 'W' },
+export const MOVEMENT_KEY_DIRECTIONS: Readonly<Record<string, Direction>> = {
+  ArrowUp: 'N',
+  ArrowDown: 'S',
+  ArrowRight: 'E',
+  ArrowLeft: 'W',
   // Numpad
-  Numpad8: { type: 'MOVE', direction: 'N' },
-  Numpad2: { type: 'MOVE', direction: 'S' },
-  Numpad6: { type: 'MOVE', direction: 'E' },
-  Numpad4: { type: 'MOVE', direction: 'W' },
-  Numpad7: { type: 'MOVE', direction: 'NW' },
-  Numpad9: { type: 'MOVE', direction: 'NE' },
-  Numpad1: { type: 'MOVE', direction: 'SW' },
-  Numpad3: { type: 'MOVE', direction: 'SE' },
+  Numpad8: 'N',
+  Numpad2: 'S',
+  Numpad6: 'E',
+  Numpad4: 'W',
+  Numpad7: 'NW',
+  Numpad9: 'NE',
+  Numpad1: 'SW',
+  Numpad3: 'SE',
   // Vi keys
-  k: { type: 'MOVE', direction: 'N' },
-  j: { type: 'MOVE', direction: 'S' },
-  l: { type: 'MOVE', direction: 'E' },
-  h: { type: 'MOVE', direction: 'W' },
-  y: { type: 'MOVE', direction: 'NW' },
-  u: { type: 'MOVE', direction: 'NE' },
-  b: { type: 'MOVE', direction: 'SW' },
-  n: { type: 'MOVE', direction: 'SE' },
+  k: 'N',
+  j: 'S',
+  l: 'E',
+  h: 'W',
+  y: 'NW',
+  u: 'NE',
+  b: 'SW',
+  n: 'SE',
+};
+
+const STATIC_KEY_COMMANDS: Record<string, { readonly type: 'WAIT' }> = {
   // Wait
   '.': { type: 'WAIT' },
   Numpad5: { type: 'WAIT' },
@@ -50,8 +54,11 @@ export function useKeyboard(onInspectToggle?: () => void): void {
 
       if (view?.phase !== 'dungeon') return;
 
-      // Static key map (movement + wait)
-      const command = KEY_MAP[e.key];
+      if (e.key in MOVEMENT_KEY_DIRECTIONS) {
+        return;
+      }
+
+      const command = STATIC_KEY_COMMANDS[e.key];
       if (command) {
         e.preventDefault();
         sendCommand(command);

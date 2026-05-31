@@ -1,0 +1,34 @@
+[
+  {
+    "query": "Add a new elemental ring package.",
+    "should_trigger": true
+  },
+  {
+    "query": "Create a new frost ring school with a ring item and spell package.",
+    "should_trigger": true
+  },
+  {
+    "query": "Make a new ring that grants a starter spell.",
+    "should_trigger": true
+  },
+  {
+    "query": "Add a new ring with its own school.",
+    "should_trigger": true
+  },
+  {
+    "query": "Add a new ring spell inside the existing fire package.",
+    "should_trigger": false
+  },
+  {
+    "query": "Add a new projectile animation for this spell.",
+    "should_trigger": false
+  },
+  {
+    "query": "Implement a new combat mechanic.",
+    "should_trigger": false
+  },
+  {
+    "query": "Summarize the docs folder.",
+    "should_trigger": false
+  }
+]
