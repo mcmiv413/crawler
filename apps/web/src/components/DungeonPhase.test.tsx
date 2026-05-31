@@ -32,6 +32,7 @@ const {
   defenderHitState,
   gameStoreSpy,
   dungeonRenderStateResult,
+  displayMapState,
   animationRendererMode,
   overlayLifecycleState,
 } = vi.hoisted(() => ({
@@ -84,6 +85,7 @@ const {
   // individual tests can make assertions against it.
   dungeonRenderStateResult: {
     current: null as null | {
+      displayMap: MapView;
       bumpAnimations: unknown[];
       moveAnimations: unknown[];
       consumableAnimations: unknown[];
@@ -93,6 +95,9 @@ const {
       vpTop: number;
       cameraOffset: { x: number; y: number };
     },
+  },
+  displayMapState: {
+    current: null as MapView | null,
   },
   animationRendererMode: { current: 'canvas' as 'canvas' | 'three' },
   overlayLifecycleState: {
@@ -179,6 +184,7 @@ vi.mock('../hooks/useDungeonRenderState.js', () => ({
       _vpTilesHeight: number,
     ) => {
       const result = {
+        displayMap: displayMapState.current ?? _map,
         bumpAnimations: bumpAnimationState.current,
         moveAnimations: moveAnimationState.current,
         consumableAnimations: consumableAnimationState.current,
@@ -524,6 +530,7 @@ describe('DungeonPhase – legacy rendering (regression)', () => {
     defenderHitState.current = new Map();
     gameStoreSpy.statuses = [];
     dungeonRenderStateResult.current = null;
+    displayMapState.current = null;
   });
 
   afterEach(() => {
@@ -612,6 +619,7 @@ describe('DungeonPhase – Three flag OFF (canvas-only behavior unchanged)', () 
     defenderHitState.current = new Map();
     gameStoreSpy.statuses = [];
     dungeonRenderStateResult.current = null;
+    displayMapState.current = null;
   });
 
   afterEach(() => {
@@ -660,6 +668,7 @@ describe('DungeonPhase – Three flag ON', () => {
     defenderHitState.current = new Map();
     gameStoreSpy.statuses = [];
     dungeonRenderStateResult.current = null;
+    displayMapState.current = null;
   });
 
   afterEach(() => {
@@ -832,6 +841,7 @@ describe('ThreeAnimationOverlay – pointer-events: none', () => {
     fxAnimationState.current = [];
     defenderHitState.current = new Map();
     gameStoreSpy.statuses = [];
+    displayMapState.current = null;
   });
 
   afterEach(() => {
@@ -877,6 +887,7 @@ describe('DungeonPhase – props flow and no duplication', () => {
     defenderHitState.current = new Map();
     gameStoreSpy.statuses = [];
     dungeonRenderStateResult.current = null;
+    displayMapState.current = null;
   });
 
   afterEach(() => {
@@ -899,6 +910,85 @@ describe('DungeonPhase – props flow and no duplication', () => {
 
     const [mapArg] = vi.mocked(useDungeonRenderState).mock.calls[0]!;
     expect(mapArg).toBe(customMap);
+  });
+
+  it('passes the retained display map to DungeonCanvas instead of the raw final map', async () => {
+    const rawMap: MapView = {
+      ...BASE_MAP,
+      entities: [],
+    };
+    displayMapState.current = {
+      ...rawMap,
+      entities: [
+        {
+          id: 'enemy-1',
+          x: 6,
+          y: 5,
+          ascii: 'g',
+          color: '#0f0',
+          name: 'Retained Goblin',
+          type: 'enemy',
+          templateId: 'goblin',
+        },
+      ],
+    };
+
+    renderDungeonPhase({ map: rawMap }, { useSprites: true });
+
+    await waitFor(() => {
+      expect(vi.mocked(renderMap).mock.calls.at(-1)?.[1]).toEqual(displayMapState.current);
+    });
+  });
+
+  it('passes the retained display map through the ASCII renderer path', () => {
+    const rawMap: MapView = {
+      ...BASE_MAP,
+      entities: [],
+    };
+    displayMapState.current = {
+      ...rawMap,
+      entities: [
+        {
+          id: 'enemy-1',
+          x: 6,
+          y: 5,
+          ascii: 'g',
+          color: '#0f0',
+          name: 'Retained Goblin',
+          type: 'enemy',
+          templateId: 'goblin',
+        },
+      ],
+    };
+
+    renderDungeonPhase({ map: rawMap }, { useSprites: false });
+
+    expect(screen.getByTitle('Retained Goblin')).toBeInTheDocument();
+  });
+
+  it('passes the retained display map to the Three overlay path', () => {
+    vi.mocked(getAnimationRendererMode).mockReturnValue('three');
+    animationRendererMode.current = 'three';
+    consumableAnimationState.current = [makeHandledConsumableAnimation()];
+    displayMapState.current = {
+      ...BASE_MAP,
+      entities: [
+        {
+          id: 'enemy-1',
+          x: 6,
+          y: 5,
+          ascii: 'g',
+          color: '#0f0',
+          name: 'Retained Goblin',
+          type: 'enemy',
+          templateId: 'goblin',
+        },
+      ],
+    };
+
+    renderDungeonPhase({}, { useSprites: true });
+
+    expect(vi.mocked(ThreeAnimationOverlay).mock.calls.at(-1)?.[0].map).toEqual(displayMapState.current);
   });
 
   it('animation arrays flowing into the overlay come from hook output, not independent subscriptions', () => {
@@ -935,6 +1025,7 @@ describe('DungeonPhase – props flow and no duplication', () => {
     // After render the hoisted spy records what the hook returned.
     expect(dungeonRenderStateResult.current).not.toBeNull();
     expect(dungeonRenderStateResult.current).toMatchObject({
+      displayMap: expect.any(Object),
       bumpAnimations: expect.any(Array),
       moveAnimations: expect.any(Array),
       consumableAnimations: expect.any(Array),
@@ -969,6 +1060,7 @@ describe('DungeonPhase – overlay ownership and canvas fallback', () => {
     gameStoreSpy.statuses = [];
     dungeonRenderStateResult.current = null;
     overlayLifecycleState.enabled = true;
+    displayMapState.current = null;
     overlayLifecycleState.mountedIds = ['fx.self.healing-pulse'];
     overlayLifecycleState.cleanupIds = [];
   });

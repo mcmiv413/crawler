@@ -26,6 +26,7 @@ export interface HitStopEntry {
 export interface DefenderHitEntry {
   readonly entityId: EntityId;
   readonly durationMs: number;
+  readonly position?: { readonly x: number; readonly y: number };
 }
 
 export type AnimatedEventType =
@@ -120,6 +121,25 @@ function getEnemyById(
     if (enemy.id === id) return enemy;
   }
   return null;
+}
+
+type Position = { readonly x: number; readonly y: number };
+type AbilityTargetSnapshotLookup = ReadonlyMap<EntityId, Position>;
+
+function buildAbilityTargetSnapshotLookup(
+  event: Extract<DomainEvent, { type: 'ABILITY_USED' }>,
+): AbilityTargetSnapshotLookup {
+  return new Map(
+    (event.targetSnapshots ?? []).map((snapshot) => [snapshot.targetId, snapshot.position]),
+  );
+}
+
+function resolveAbilityTargetPosition(
+  targetId: EntityId,
+  state: GameState,
+  targetSnapshotLookup: AbilityTargetSnapshotLookup,
+): Position | null {
+  return targetSnapshotLookup.get(targetId) ?? getEntityPosition(targetId, state);
 }
 
 function getConsumableAnimationId(
@@ -289,10 +309,11 @@ function buildMoveAction(
 function resolveAbilityBlastPositions(
   event: Extract<DomainEvent, { type: 'ABILITY_USED' }>,
   state: GameState,
+  targetSnapshotLookup: AbilityTargetSnapshotLookup,
 ): readonly { readonly x: number; readonly y: number }[] {
   if (event.abilityId === 'axe_cleave' && event.damageByTarget) {
     return Array.from(event.damageByTarget.keys()).flatMap((targetId) => {
-      const position = getEntityPosition(targetId, state);
+      const position = resolveAbilityTargetPosition(targetId, state, targetSnapshotLookup);
       return position === null ? [] : [position];
     });
   }
@@ -300,7 +321,7 @@ function resolveAbilityBlastPositions(
   if (event.abilityId === 'ranged_volley') {
     return event.damageByTarget
       ? Array.from(event.damageByTarget.keys()).flatMap((targetId) => {
-          const position = getEntityPosition(targetId, state);
+          const position = resolveAbilityTargetPosition(targetId, state, targetSnapshotLookup);
           return position === null ? [] : [position];
         })
       : Array.from(state.run?.enemies.values() ?? []).map((enemy) => enemy.position);
@@ -308,7 +329,7 @@ function resolveAbilityBlastPositions(
 
   if (event.abilityId === 'cinder_wake' && event.affectedTargetIds !== undefined) {
     return event.affectedTargetIds.flatMap((targetId) => {
-      const position = getEntityPosition(targetId, state);
+      const position = resolveAbilityTargetPosition(targetId, state, targetSnapshotLookup);
       return position === null ? [] : [position];
     });
   }
@@ -319,12 +340,13 @@ function resolveAbilityBlastPositions(
 function resolveAbilityDamagePositions(
   event: Extract<DomainEvent, { type: 'ABILITY_USED' }>,
   state: GameState,
+  targetSnapshotLookup: AbilityTargetSnapshotLookup,
 ): readonly { readonly pos: { readonly x: number; readonly y: number }; readonly damage: number }[] {
   const mutableDamagePositions: Array<{ pos: { x: number; y: number }; damage: number }> = [];
 
   if ((event.abilityId === 'axe_cleave' || event.abilityId === 'ranged_volley') && event.damageByTarget) {
     for (const [targetId, damage] of event.damageByTarget.entries()) {
-      const position = getEntityPosition(targetId, state);
+      const position = resolveAbilityTargetPosition(targetId, state, targetSnapshotLookup);
       if (position !== null) {
         mutableDamagePositions.push({ pos: position, damage });
       }
@@ -333,7 +355,7 @@ function resolveAbilityDamagePositions(
   }
 
   if (event.targetId !== undefined && event.damage !== undefined && event.damage > 0) {
-    const targetPos = getEntityPosition(event.targetId, state);
+    const targetPos = resolveAbilityTargetPosition(event.targetId, state, targetSnapshotLookup);
     if (targetPos !== null) {
       mutableDamagePositions.push({ pos: targetPos, damage: event.damage });
     }
@@ -365,9 +387,12 @@ function buildAbilityAction(
   if (animRef === undefined) return null;
 
   const playerPos = state.player.position;
-  const targetPos = event.targetId ? getEntityPosition(event.targetId, state) : undefined;
-  const blastPositions = resolveAbilityBlastPositions(event, state);
-  const damagePositions = resolveAbilityDamagePositions(event, state);
+  const targetSnapshotLookup = buildAbilityTargetSnapshotLookup(event);
+  const targetPos = event.targetId
+    ? resolveAbilityTargetPosition(event.targetId, state, targetSnapshotLookup) ?? undefined
+    : undefined;
+  const blastPositions = resolveAbilityBlastPositions(event, state, targetSnapshotLookup);
+  const damagePositions = resolveAbilityDamagePositions(event, state, targetSnapshotLookup);
   const impactTargetIds = resolveAbilityImpactTargetIds(event);
 
   let targetHpFraction: number | undefined;
@@ -422,12 +447,14 @@ function buildAbilityAction(
   if (hasImpactFlash(animRef)) {
     const defenderHitDurationMs = hitStopMs ?? animRef.recoveryMs;
     for (const targetId of impactTargetIds) {
+      const impactPosition = resolveAbilityTargetPosition(targetId, state, targetSnapshotLookup);
       mutableEvents.push({
         type: 'defender-hit',
         beatRelativeDelayMs: impactFrameMs,
         data: {
           entityId: targetId,
           durationMs: defenderHitDurationMs,
+          ...(impactPosition !== null ? { position: impactPosition } : {}),
         } satisfies DefenderHitEntry,
       });
     }
@@ -586,7 +613,7 @@ function isPendingAnimatedEventVisible(
     case 'defender-hit': {
       const defenderHit = event.data as DefenderHitEntry;
       if (defenderHit.entityId === state.player.id) return true;
-      const targetPosition = getEntityPosition(defenderHit.entityId, state);
+      const targetPosition = defenderHit.position ?? getEntityPosition(defenderHit.entityId, state);
       return targetPosition !== null && isPositionVisible(targetPosition, state);
     }
     case 'hit-stop':

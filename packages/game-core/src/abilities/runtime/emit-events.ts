@@ -1,4 +1,4 @@
-import type { DomainEvent, EntityId } from '@dungeon/contracts';
+import type { AbilityTargetSnapshot, DomainEvent, EntityId } from '@dungeon/contracts';
 import type { AbilityContext } from '../types.js';
 
 interface AbilityExecutionResult {
@@ -8,6 +8,7 @@ interface AbilityExecutionResult {
   targetName?: string;
   damageByTarget?: ReadonlyMap<EntityId, number>;
   affectedTargetIds?: readonly EntityId[];
+  targetSnapshots?: readonly AbilityTargetSnapshot[];
 }
 
 /**
@@ -34,6 +35,7 @@ export function buildAbilityUsedEvent(
     healAmount: result.healAmount,
     damageByTarget: result.damageByTarget,
     affectedTargetIds: result.affectedTargetIds,
+    targetSnapshots: result.targetSnapshots,
     timestamp: context.state.turnNumber,
     turnNumber: context.state.turnNumber,
   };
