@@ -9,7 +9,7 @@ Use this reference when the prompt needs a hard classification and an exact next
 | Pattern reuse | Existing school, existing spell pattern, tuned numbers, no new platform behavior | spell content, runtime definition, contracts, targeted runtime/presenter proofs | `adding-spell` or `adding-ring` |
 | New status or animation work | New persistent effect, new pulse, projectile, impact, aoe, or self visual | status definitions, presenter surfaces for active effects, animation refs, canvas modules, Three ownership proofs | `adding-spell` or `adding-ring` plus `adding-animation` |
 | Custom mechanic/runtime work | New behavior that existing ring-spell helpers do not already model cleanly | runtime helpers, events, presenter data, UI wiring, full feature-chain proofs | `adding-spell` or `adding-ring` plus `adding-game-mechanic` |
-| New-school or combo-school expansion | New ring school, new damage/progression assumptions, multi-school gating, combo-school study logic | ring-school source files, helper assumptions, presenter/game-view study surfaces, contract allowlists | `adding-ring` or `adding-spell` plus `adding-game-mechanic` |
+| New-school or combo-school expansion | New ring school, new damage/progression assumptions, multi-school gating, combo-school study logic | ring-school source files, helper assumptions, presenter/game-view study surfaces, contract allowlists, and an explicit starter-vs-ladder-vs-combo rollout decision | `adding-ring` or `adding-spell` plus `adding-game-mechanic` |
 
 ## Non-obvious repo rules
 
@@ -21,6 +21,7 @@ Use this reference when the prompt needs a hard classification and an exact next
 - `tests/contracts/content-cross-references.contract.test.ts` has hardcoded accepted ring-school strings.
 - `packages/game-core/src/abilities/definitions/ring-spell-utils.ts` still contains school-specific assumptions.
 - `packages/presenter/src/game-view.ts`, `packages/presenter/src/builders/town-view-builder.ts`, and `packages/presenter/src/builders/player-hud-builder.ts` currently surface one school XP gate most naturally.
+- The existing fire package is a three-spell ladder (`ember`, `heat_surge`, `cinder_wake`), so new-school asks should explicitly say whether they are shipping only a starter spell or a comparable ladder, plus whether combo spells are included.
 
 ## Proof-home hints
 

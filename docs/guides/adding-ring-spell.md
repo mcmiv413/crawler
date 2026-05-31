@@ -102,6 +102,7 @@ If the spell adds new events, new view data, or new interaction rules:
 
 If the spell adds a new school or multi-school progression:
 
+- explicitly decide whether the school rollout is starter-only, full ladder, or full ladder plus combo spells with already-supported schools
 - update ring-school source files and union types
 - inspect `packages/game-core/src/abilities/definitions/ring-spell-utils.ts` for damage-type assumptions
 - inspect `packages/game-core/src/systems/magic-xp.ts` and `packages/game-core/src/engine/handlers/combat.ts` for school-specific progression hooks

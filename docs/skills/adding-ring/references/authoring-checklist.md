@@ -20,6 +20,7 @@ Use this reference when the prompt needs exact ring-package surfaces or the hidd
 
 - Ring items use `armor.slot: 'ring'` with stable `itemId`s.
 - Ring-school mappings are source files, not ad hoc config.
+- New-school asks should explicitly declare whether they ship a starter spell only, a full ladder, and any combo spells with already-supported schools.
 - Ring spells are generated into ability exports; do not duplicate them under `packages/content/src/abilities/`.
 - Learned spells live in `player.learnedRingSpellIds`.
 - School mastery lives in `player.ringMastery`.
@@ -36,6 +37,10 @@ Use this reference when the prompt needs exact ring-package surfaces or the hidd
 | New runtime, events, presenter data, or UI behavior | `adding-game-mechanic` |
 | New school or combo-school platform behavior | `adding-game-mechanic` plus ring-specific school surfaces |
 
+For a **brand-new school**, require one extra scope line in the answer:
+
+- **School rollout:** starter-only, full ladder, or full ladder plus combo spells with already-supported schools
+
 ## Proof homes
 
 | Ask shape | Proofs to name |
@@ -49,5 +54,6 @@ Use this reference when the prompt needs exact ring-package surfaces or the hidd
 
 - Adding the ring item but forgetting the grant enchantment
 - Adding the school file but not the union or allowlist implications
+- Adding a new school without deciding whether later-tier or combo spells are part of the rollout
 - Treating the spell branch as content-only when it clearly needs animation or mechanic work
 - Forgetting `pnpm generate:indexes`
