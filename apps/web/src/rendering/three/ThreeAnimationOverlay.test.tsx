@@ -44,6 +44,8 @@ const {
   mockRenderer,
   mockAnimationModule,
   mockGetAnimationModule,
+  mockCreateAtmosphereVignette,
+  mockAtmosphereVignette,
 } = vi.hoisted(() => {
   const mockRenderer = {
     setSize: vi.fn(),
@@ -80,7 +82,25 @@ const {
       : undefined,
   );
 
-  return { mockCreateRenderer, mockRenderer, mockAnimationModule, mockGetAnimationModule };
+  const mockAtmosphereVignette = {
+    object: { tag: 'atmosphere-vignette' },
+    material: {},
+    texture: null,
+    setSize: vi.fn(),
+    setOpacity: vi.fn(),
+    dispose: vi.fn(),
+  };
+
+  const mockCreateAtmosphereVignette = vi.fn(() => mockAtmosphereVignette);
+
+  return {
+    mockCreateRenderer,
+    mockRenderer,
+    mockAnimationModule,
+    mockGetAnimationModule,
+    mockCreateAtmosphereVignette,
+    mockAtmosphereVignette,
+  };
 });
 
 vi.mock('./three-renderer-factory.js', () => ({
@@ -92,6 +112,10 @@ vi.mock('./three-animation-registry.js', () => ({
   registerAnimationModule: vi.fn(),
   listAnimationIds: vi.fn(() => []),
   resetForTesting: vi.fn(),
+}));
+
+vi.mock('./lib/atmosphere-plane.js', () => ({
+  createAtmosphereVignette: mockCreateAtmosphereVignette,
 }));
 
 // ---------------------------------------------------------------------------
@@ -237,6 +261,10 @@ function resetMocks() {
   mockAnimationModule.update.mockClear();
   mockAnimationModule.dispose.mockClear();
   mockGetAnimationModule.mockClear();
+  mockCreateAtmosphereVignette.mockClear();
+  mockAtmosphereVignette.setSize.mockClear();
+  mockAtmosphereVignette.setOpacity.mockClear();
+  mockAtmosphereVignette.dispose.mockClear();
   // Restore default behaviour
   mockCreateRenderer.mockImplementation((_canvas: HTMLCanvasElement): typeof mockRenderer | null => {
     mockRenderer.domElement = document.createElement('canvas');
@@ -250,6 +278,7 @@ function resetMocks() {
       ? mockAnimationModule
       : undefined,
   );
+  mockCreateAtmosphereVignette.mockImplementation(() => mockAtmosphereVignette);
 }
 
 // ---------------------------------------------------------------------------
@@ -325,6 +354,21 @@ describe('ThreeAnimationOverlay – render gating', () => {
       />,
     );
     expect(queryByTestId('three-animation-overlay')).toBeNull();
+    expect(mockCreateAtmosphereVignette).not.toHaveBeenCalled();
+  });
+
+  it('renders null when no active visuals are present and atmosphereEnabled=false', () => {
+    const { queryByTestId } = render(
+      <ThreeAnimationOverlay
+        {...makeDefaultProps({
+          consumableAnimations: [],
+          fxAnimations: [],
+          atmosphereEnabled: false,
+        })}
+      />,
+    );
+    expect(queryByTestId('three-animation-overlay')).toBeNull();
+    expect(mockCreateAtmosphereVignette).not.toHaveBeenCalled();
   });
 
   it('renders null when active animations have no registered module', () => {
@@ -379,6 +423,19 @@ describe('ThreeAnimationOverlay – render gating', () => {
         {...makeDefaultProps({
           map: makeMap({ entities: [makeEntity()] }),
           moveAnimations: [makeMoveAnimation()],
+        })}
+      />,
+    );
+    expect(getByTestId('three-animation-overlay')).toBeTruthy();
+  });
+
+  it('renders canvas when atmosphereEnabled=true without other active visuals', () => {
+    const { getByTestId } = render(
+      <ThreeAnimationOverlay
+        {...makeDefaultProps({
+          consumableAnimations: [],
+          fxAnimations: [],
+          atmosphereEnabled: true,
         })}
       />,
     );
@@ -499,6 +556,57 @@ describe('ThreeAnimationOverlay – renderer lifecycle', () => {
       vpTilesWidth * CELL_SIZE,
       vpTilesHeight * CELL_SIZE,
     );
+  });
+
+  it('creates and resizes the atmosphere vignette when atmosphereEnabled=true', async () => {
+    render(
+      <ThreeAnimationOverlay
+        {...makeDefaultProps({
+          consumableAnimations: [],
+          fxAnimations: [],
+          atmosphereEnabled: true,
+        })}
+      />,
+    );
+
+    expect(mockCreateAtmosphereVignette).toHaveBeenCalledWith({
+      width: 20 * CELL_SIZE,
+      height: 15 * CELL_SIZE,
+    });
+    expect(mockRenderer.scene.add).toHaveBeenCalledWith(mockAtmosphereVignette.object);
+    await waitFor(() => {
+      expect(mockAtmosphereVignette.setSize).toHaveBeenCalledWith(20 * CELL_SIZE, 15 * CELL_SIZE);
+    });
+  });
+
+  it('disposes the atmosphere vignette cleanly when atmosphereEnabled flips off', () => {
+    const { rerender, queryByTestId } = render(
+      <ThreeAnimationOverlay
+        {...makeDefaultProps({
+          consumableAnimations: [],
+          fxAnimations: [],
+          atmosphereEnabled: true,
+        })}
+      />,
+    );
+
+    expect(queryByTestId('three-animation-overlay')).toBeTruthy();
+    expect(mockRenderer.scene.add).toHaveBeenCalledWith(mockAtmosphereVignette.object);
+
+    rerender(
+      <ThreeAnimationOverlay
+        {...makeDefaultProps({
+          consumableAnimations: [],
+          fxAnimations: [],
+          atmosphereEnabled: false,
+        })}
+      />,
+    );
+
+    expect(queryByTestId('three-animation-overlay')).toBeNull();
+    expect(mockRenderer.scene.remove).toHaveBeenCalledWith(mockAtmosphereVignette.object);
+    expect(mockAtmosphereVignette.dispose).toHaveBeenCalledTimes(1);
+    expect(mockRenderer.dispose).toHaveBeenCalledTimes(1);
   });
 });
 

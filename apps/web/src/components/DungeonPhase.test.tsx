@@ -34,6 +34,7 @@ const {
   dungeonRenderStateResult,
   displayMapState,
   animationRendererMode,
+  depthAtmosphereEnabled,
   overlayLifecycleState,
 } = vi.hoisted(() => ({
   bumpAnimationState: {
@@ -100,6 +101,7 @@ const {
     current: null as MapView | null,
   },
   animationRendererMode: { current: 'canvas' as 'canvas' | 'three' },
+  depthAtmosphereEnabled: { current: false },
   overlayLifecycleState: {
     enabled: false,
     mountedIds: ['fx.self.healing-pulse'] as readonly string[],
@@ -205,6 +207,7 @@ vi.mock('../hooks/useDungeonRenderState.js', () => ({
 // Renderer mode wiring for the Three overlay.
 vi.mock('../config/feature-flags.js', () => ({
   isBeatSchedulerEnabledFlag: vi.fn(() => false),
+  isDepthAtmosphereEnabledFlag: vi.fn(() => depthAtmosphereEnabled.current),
   isThreeEffectsEnabledFlag: vi.fn(() => animationRendererMode.current === 'three'),
   getAnimationRendererMode: vi.fn(() => animationRendererMode.current),
 }));
@@ -239,6 +242,7 @@ vi.mock('./ThreeAnimationOverlay.js', () => ({
       map: MapView;
       vpTilesWidth: number;
       vpTilesHeight: number;
+      atmosphereEnabled?: boolean;
       bumpAnimations: unknown[];
       moveAnimations: unknown[];
       consumableAnimations: unknown[];
@@ -276,6 +280,7 @@ vi.mock('./ThreeAnimationOverlay.js', () => ({
           data-testid="three-animation-overlay"
           data-vp-tiles-width={props.vpTilesWidth}
           data-vp-tiles-height={props.vpTilesHeight}
+          data-atmosphere-enabled={props.atmosphereEnabled ?? false}
           data-vp-left={props.vpLeft}
           data-vp-top={props.vpTop}
           data-camera-offset-x={props.cameraOffset.x}
@@ -354,6 +359,7 @@ beforeEach(() => {
     value: vi.fn(() => makeCtxStub()),
   });
   overlayLifecycleState.enabled = false;
+  depthAtmosphereEnabled.current = false;
   defenderHitState.current = new Map();
   combatIndicatorState.current = [];
   overlayLifecycleState.mountedIds = ['fx.self.healing-pulse'];
@@ -689,6 +695,29 @@ describe('DungeonPhase – Three flag ON', () => {
 
     expect(screen.queryByTestId('three-animation-overlay')).not.toBeInTheDocument();
     expect(vi.mocked(ThreeAnimationOverlay)).not.toHaveBeenCalled();
+  });
+
+  it('does not render ThreeAnimationOverlay with no active visuals when atmosphere is disabled', () => {
+    consumableAnimationState.current = [];
+    fxAnimationState.current = [];
+
+    renderDungeonPhase({}, { useSprites: true });
+
+    expect(screen.queryByTestId('three-animation-overlay')).not.toBeInTheDocument();
+    expect(vi.mocked(ThreeAnimationOverlay)).not.toHaveBeenCalled();
+  });
+
+  it('renders ThreeAnimationOverlay with no active visuals when atmosphere is enabled', () => {
+    consumableAnimationState.current = [];
+    fxAnimationState.current = [];
+    depthAtmosphereEnabled.current = true;
+
+    renderDungeonPhase({}, { useSprites: true });
+
+    expect(screen.getByTestId('three-animation-overlay')).toHaveAttribute(
+      'data-atmosphere-enabled',
+      'true',
+    );
   });
 
   it('renders ThreeAnimationOverlay for move ownership even without a handled module animation', () => {

@@ -36,6 +36,10 @@ import {
   setCombatLabelPosition,
   type CombatLabel,
 } from './text/three-combat-label.js';
+import {
+  createAtmosphereVignette,
+  type AtmosphereVignette,
+} from './lib/atmosphere-plane.js';
 
 type CreateRendererFn = (canvas: HTMLCanvasElement) => ThreeRendererHandle | null;
 
@@ -335,6 +339,7 @@ function buildOwnershipReport(
 export interface ThreeAnimationOverlayProps {
   map: MapView | null;
   isEnabled: boolean;
+  atmosphereEnabled?: boolean;
   vpTilesWidth: number;
   vpTilesHeight: number;
   bumpAnimations?: DungeonRenderState['bumpAnimations'];
@@ -357,6 +362,7 @@ export function ThreeAnimationOverlay(props: ThreeAnimationOverlayProps): React.
   const {
     map,
     isEnabled,
+    atmosphereEnabled = false,
     vpTilesWidth,
     vpTilesHeight,
     bumpAnimations = EMPTY_BUMP_ANIMATIONS,
@@ -410,6 +416,7 @@ export function ThreeAnimationOverlay(props: ThreeAnimationOverlayProps): React.
     || ownedEntityIds.length > 0
     || defenderHits.size > 0
     || combatIndicators.length > 0
+    || atmosphereEnabled
   );
 
   const factory = createRendererProp ?? createThreeRenderer;
@@ -424,6 +431,7 @@ export function ThreeAnimationOverlay(props: ThreeAnimationOverlayProps): React.
   const entitySpriteEntriesRef = useRef<Map<EntityId, EntitySpriteEntry>>(new Map());
   const defenderHitEntriesRef = useRef<Map<EntityId, DefenderHitFlashEntry>>(new Map());
   const combatLabelEntriesRef = useRef<Map<string, CombatLabelEntry>>(new Map());
+  const vignetteRef = useRef<AtmosphereVignette | null>(null);
   const rafIdRef = useRef<number | null>(null);
   const latestFrameRef = useRef<FrameState>(EMPTY_FRAME_STATE);
 
@@ -467,6 +475,14 @@ export function ThreeAnimationOverlay(props: ThreeAnimationOverlayProps): React.
     }
 
     rendererRef.current = handle;
+    if (atmosphereEnabled) {
+      const vignette = createAtmosphereVignette({
+        width: canvasWidth,
+        height: canvasHeight,
+      });
+      handle.scene.add(vignette.object);
+      vignetteRef.current = vignette;
+    }
     setRendererReady(true);
     const animationEntries = animationEntriesRef.current;
     const entitySpriteEntries = entitySpriteEntriesRef.current;
@@ -499,11 +515,17 @@ export function ThreeAnimationOverlay(props: ThreeAnimationOverlayProps): React.
       }
       combatLabelEntries.clear();
 
+      if (vignetteRef.current !== null) {
+        handle.scene.remove(vignetteRef.current.object);
+        vignetteRef.current.dispose();
+        vignetteRef.current = null;
+      }
+
       handle.dispose();
       rendererRef.current = null;
       setRendererReady(false);
     };
-  }, [factory, shouldRender]);
+  }, [atmosphereEnabled, factory, shouldRender]);
 
   useEffect(() => {
     if (!rendererReady || rendererRef.current === null) {
@@ -517,6 +539,7 @@ export function ThreeAnimationOverlay(props: ThreeAnimationOverlayProps): React.
     handle.camera.top = canvasHeight;
     handle.camera.bottom = 0;
     handle.camera.updateProjectionMatrix();
+    vignetteRef.current?.setSize(canvasWidth, canvasHeight);
   }, [canvasWidth, canvasHeight, rendererReady]);
 
   useEffect(() => {

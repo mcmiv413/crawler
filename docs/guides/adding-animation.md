@@ -96,6 +96,16 @@ Add a Three module when the feature needs one of these:
 
 If the player-visible behavior must survive renderer fallback, keep the canvas path correct too.
 
+### Overlay-owned persistent objects (atmosphere)
+
+`createAtmosphereVignette()` in `apps/web/src/rendering/three/lib/atmosphere-plane.ts` is **not** a registered animation module. It is an overlay-owned helper that the inner `apps/web/src/rendering/three/ThreeAnimationOverlay.tsx` creates once, resizes with the viewport, and disposes on teardown.
+
+- it lives in `lib/`, not `modules/`
+- it uses normal (non-additive) blending over black because it darkens the scene
+- it sits at `z = -1` with `renderOrder = -100` so effect modules still render above it
+- it is gated by `isDepthAtmosphereEnabledFlag()` and stays on by default unless explicitly disabled
+- never import it from registry, ownership, or type-boundary files; keep that `three` dependency inside the overlay-heavy implementation layer
+
 ### Module authoring contract
 
 Use `ThreeAnimationModule` from `apps/web/src/rendering/three/three-animation-types.ts`.
