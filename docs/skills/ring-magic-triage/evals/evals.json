@@ -1,0 +1,49 @@
+{
+  "skill_name": "ring-magic-triage",
+  "evals": [
+    {
+      "id": 0,
+      "prompt": "I want to add a new fire-school ring spell that behaves like an existing fire spell but with different range and damage numbers. What kind of work is this?",
+      "expected_output": "Classifies the ask as pattern reuse and keeps the route on the ring-spell authoring path without inventing unnecessary mechanic scope.",
+      "files": [],
+      "expectations": [
+        "Classifies the ask as pattern reuse or the equivalent low-scope bucket",
+        "Routes to adding-spell or ring-spell authoring",
+        "Does not invent new-school platform work"
+      ]
+    },
+    {
+      "id": 1,
+      "prompt": "Add a new ring spell that needs a brand-new projectile visual and impact burst. What else do I need beyond the spell file?",
+      "expected_output": "Classifies the ask as animation-heavy work and routes to both spell authoring and animation ownership surfaces.",
+      "files": [],
+      "expectations": [
+        "Classifies the ask as new status or animation work",
+        "Routes to adding-animation in addition to adding-spell",
+        "Names animation refs and web-rendering surfaces"
+      ]
+    },
+    {
+      "id": 2,
+      "prompt": "I want a combo spell that requires mastery in two schools before study unlocks. Is this still just ring-spell content?",
+      "expected_output": "Rejects content-only scope, classifies the ask as platform expansion, and calls out presenter/UI or study-surface limitations.",
+      "files": [],
+      "expectations": [
+        "Classifies the ask as new-school or combo expansion",
+        "Says the work is not content-only",
+        "Names presenter, game-view, or ring-spell availability surfaces"
+      ]
+    },
+    {
+      "id": 3,
+      "prompt": "I want to add a brand-new frost ring school and a spell package for it. What buckets does that trip?",
+      "expected_output": "Treats the ask as new-school platform work, names school files plus downstream runtime and contract implications, and routes to ring plus mechanic workflows.",
+      "files": [],
+      "expectations": [
+        "Classifies the ask as new-school expansion",
+        "Names packages/content/src/ring-schools surfaces",
+        "Calls out runtime or contract implications beyond content"
+      ]
+    }
+  ]
+}

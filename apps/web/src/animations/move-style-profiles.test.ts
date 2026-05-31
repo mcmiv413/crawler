@@ -1,6 +1,7 @@
 import { describe, expect, it } from 'vitest';
 import {
   MOVE_STYLE_PROFILES,
+  type WalkMotionPhase,
   applyMoveStyleEasing,
   getMoveStyleProfile,
 } from './move-style-profiles.js';
@@ -79,7 +80,7 @@ describe('MOVE_STYLE_PROFILES', () => {
   it('applies the spec easing curve for each movement style', () => {
     const samples = [0, 0.25, 0.5, 0.75, 1] as const;
     const expected = {
-      step: [0, 0.578125, 0.875, 0.984375, 1],
+      step: [0, 0.2295918367, 0.5, 0.7569444444, 1],
       slide: [0, 0.4375, 0.75, 0.9375, 1],
       dart: [0, 0.015625, 0.125, 0.421875, 1],
       drift: [0, 0.015625, 0.5, 0.984375, 1],
@@ -90,6 +91,22 @@ describe('MOVE_STYLE_PROFILES', () => {
     for (const [style, values] of Object.entries(expected)) {
       samples.forEach((progress, index) => {
         expect(applyMoveStyleEasing(style as keyof typeof expected, progress)).toBeCloseTo(values[index]!, 6);
+      });
+    }
+  });
+
+  it('supports walk-chain phases for the shared step baseline', () => {
+    const samples = [0, 0.25, 0.5, 0.75, 1] as const;
+    const expectedByPhase: Record<WalkMotionPhase, readonly number[]> = {
+      single: [0, 0.2295918367, 0.5, 0.7569444444, 1],
+      start: [0, 0.2295918367, 0.5, 0.75, 1],
+      middle: [0, 0.25, 0.5, 0.75, 1],
+      end: [0, 0.25, 0.5, 0.7569444444, 1],
+    };
+
+    for (const [walkPhase, expected] of Object.entries(expectedByPhase) as Array<[WalkMotionPhase, readonly number[]]>) {
+      samples.forEach((progress, index) => {
+        expect(applyMoveStyleEasing('step', progress, walkPhase)).toBeCloseTo(expected[index]!, 6);
       });
     }
   });

@@ -2,6 +2,8 @@
 
 Elemental rings are equipment-driven spell packages. A complete ring must cover content, core runtime, presenter/UI, generated indexes, and tests.
 
+If the task is **only** adding or changing a spell inside the existing ring-magic system, start with [adding-ring-spell.md](adding-ring-spell.md). Come back to this guide when the work also adds a new ring item, new enchantment grant, or new school package.
+
 Rings are associated with schools via `RING_SCHOOL_BY_ID`, which maps each ring's `itemId` to its school(s). Spells can belong to one or multiple schools; combo spells require multiple equipped schools and have `equippedSchool` requirements for each school.
 
 Follow [Architecture Patterns](architecture-patterns.md): add source entity files, regenerate indexes, keep content static, keep runtime decisions in core/server, and expose display-ready state through the presenter.

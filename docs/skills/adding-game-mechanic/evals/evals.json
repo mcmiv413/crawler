@@ -1,0 +1,38 @@
+{
+  "skill_name": "adding-game-mechanic",
+  "evals": [
+    {
+      "id": 0,
+      "prompt": "Add a new town mechanic where the player can donate gold to a shrine and see the blessing in the town UI.",
+      "expected_output": "Maps the feature across entry, state, event, presenter, UI, and test surfaces, and keeps the work centered on the 6-hop chain rather than a single system file.",
+      "files": [],
+      "expectations": [
+        "Names a town action or equivalent entry surface",
+        "Names presenter and UI surfaces",
+        "Requires a proving test strategy beyond state-only checks"
+      ]
+    },
+    {
+      "id": 1,
+      "prompt": "Implement a new combat mechanic where a curse stacks on hit and changes what the player sees in the HUD.",
+      "expected_output": "Treats the ask as cross-layer mechanic work, names state/event/presenter/UI surfaces, and calls out any extra status or animation follow-up instead of burying it.",
+      "files": [],
+      "expectations": [
+        "Maps the mechanic across the 6-hop chain",
+        "Mentions HUD or presenter surfaces",
+        "Calls out extra status or animation work when relevant"
+      ]
+    },
+    {
+      "id": 2,
+      "prompt": "I need a new mechanic that references live content IDs for relics and quests. What else has to change besides the system code?",
+      "expected_output": "Adds contract-test requirements and cross-reference validation instead of limiting the answer to runtime code.",
+      "files": [],
+      "expectations": [
+        "Requires contract coverage for live IDs",
+        "Mentions content or generated-index implications if data is added",
+        "Does not stop at only game-core system changes"
+      ]
+    }
+  ]
+}

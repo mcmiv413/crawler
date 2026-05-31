@@ -13,12 +13,16 @@ describe('move style secondary motion', () => {
       expect(getAnticipationOffsetPx(style, 0.1)).toBe(0);
       expect(getRecoilOffsetPx(style, 0.92)).toBe(0);
       expect(getJitterOffsetPx(style, 0.1, 'enemy-1')).toBe(0);
-      expect(getSquashStretchScale(style, 0.5)).toEqual({ scaleX: 1, scaleY: 1 });
+      if (style === 'step') {
+        expect(getSquashStretchScale(style, 0.5)).toEqual({ scaleX: 0.97, scaleY: 1.03 });
+      } else {
+        expect(getSquashStretchScale(style, 0.5)).toEqual({ scaleX: 1, scaleY: 1 });
+      }
     }
   });
 
   it('matches deployed dungeon arc offsets', () => {
-    expect(getMoveArcOffsetPx('step', 0.5, 24)).toBeCloseTo(-4);
+    expect(getMoveArcOffsetPx('step', 0.5, 24)).toBeCloseTo(-1.44);
     expect(getMoveArcOffsetPx('slide', 0.5, 24)).toBeCloseTo(-3);
     expect(getMoveArcOffsetPx('drift', 0.5, 24)).toBeCloseTo(-2);
     expect(getMoveArcOffsetPx('dart', 0.5, 24)).toBe(0);

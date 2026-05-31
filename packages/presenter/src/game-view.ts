@@ -540,11 +540,12 @@ export interface InventoryItemView {
 
 /**
  * Visual style of a movement animation.
- * Derived from EnemyTemplate.movementBehaviorId or archetype in buildAnimationSequence.
+ * Presenter-owned metadata. Step is the shared baseline today, and the extra enemy
+ * variants remain available for an explicit future override.
  */
 export type MoveAnimStyle =
-  | 'step'    // Player — snappy ease-out cubic
-  | 'slide'   // Default enemy — ease-out quadratic
+  | 'step'    // Shared walk baseline
+  | 'slide'   // Reserved future enemy override
   | 'dart'    // wall_stalker — ease-in cubic, explosive start
   | 'drift'   // rearline_anchor — ease-in-out quintic, floaty
   | 'stomp'   // chokepoint_holder — back ease-out, overshoots then settles

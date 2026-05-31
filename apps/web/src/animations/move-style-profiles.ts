@@ -30,7 +30,17 @@ export interface MoveTravelInput {
   readonly style: MoveAnimStyle;
   readonly progress: number;
   readonly fromOffsetPx?: Point;
+  readonly walkPhase?: WalkMotionPhase;
 }
+
+export type WalkMotionPhase = 'single' | 'start' | 'middle' | 'end';
+
+export const STEP_WALK_BOUNDARY_PROGRESS = 0.5;
+export const STEP_WALK_ENTRY_PROGRESS = 0.35;
+export const STEP_WALK_EXIT_PROGRESS = 0.7;
+
+const STEP_STRIDE_BOB_FACTOR = 0.06;
+const STEP_STRIDE_SCALE = 0.03;
 
 export const MOVE_STYLE_PROFILES: Readonly<Record<MoveAnimStyle, MoveStyleProfile>> = {
   step: {
@@ -99,12 +109,16 @@ export function getMoveStyleProfile(style: MoveAnimStyle): MoveStyleProfile {
   return MOVE_STYLE_PROFILES[style];
 }
 
-export function applyMoveStyleEasing(style: MoveAnimStyle, progress: number): number {
+export function applyMoveStyleEasing(
+  style: MoveAnimStyle,
+  progress: number,
+  walkPhase: WalkMotionPhase = 'single',
+): number {
   const p = Math.min(Math.max(progress, 0), 1);
 
   switch (style) {
     case 'step':
-      return 1 - Math.pow(1 - p, 3);
+      return applyStepWalkEasing(walkPhase, p);
     case 'slide':
       return 1 - Math.pow(1 - p, 2);
     case 'dart':
@@ -125,12 +139,17 @@ export function applyMoveStyleEasing(style: MoveAnimStyle, progress: number): nu
   }
 }
 
-export function getMoveArcOffsetPx(style: MoveAnimStyle, progress: number, _cellSize: number): number {
+export function getMoveArcOffsetPx(
+  style: MoveAnimStyle,
+  progress: number,
+  cellSize: number,
+  walkPhase: WalkMotionPhase = 'single',
+): number {
   const p = Math.min(Math.max(progress, 0), 1);
 
   switch (style) {
     case 'step':
-      return -Math.sin(p * Math.PI) * 4;
+      return -Math.sin(applyStepWalkEasing(walkPhase, p) * Math.PI) * Math.min(cellSize * STEP_STRIDE_BOB_FACTOR, 2);
     case 'slide':
       return -Math.sin(p * Math.PI) * 3;
     case 'drift':
@@ -162,7 +181,15 @@ export function getRecoilOffsetPx(style: MoveAnimStyle, progress: number): numbe
   return profile.recoilPx * Math.sin(recoilProgress * Math.PI);
 }
 
-export function getSquashStretchScale(style: MoveAnimStyle, progress: number): Scale {
+export function getSquashStretchScale(
+  style: MoveAnimStyle,
+  progress: number,
+  walkPhase: WalkMotionPhase = 'single',
+): Scale {
+  if (style === 'step') {
+    return getStepStrideScale(progress, walkPhase);
+  }
+
   const profile = getMoveStyleProfile(style);
   const p = Math.min(Math.max(progress, 0), 1);
   let scaleX = 1;
@@ -211,7 +238,7 @@ export function getMoveTravelOffsetPx(
   move: MoveTravelInput,
   cellSize: number,
 ): Point {
-  const t = applyMoveStyleEasing(move.style, move.progress);
+  const t = applyMoveStyleEasing(move.style, move.progress, move.walkPhase);
   const fromOffsetPx = move.fromOffsetPx ?? { x: 0, y: 0 };
 
   return {
@@ -233,7 +260,7 @@ export function getMoveRenderedOffsetPx(
 
   return {
     x: offset.x - (unit.x * anticipationPx) + (unit.x * recoilPx) + getJitterOffsetPx(move.style, p, seed),
-    y: offset.y - (unit.y * anticipationPx) + (unit.y * recoilPx) + getMoveArcOffsetPx(move.style, p, cellSize),
+    y: offset.y - (unit.y * anticipationPx) + (unit.y * recoilPx) + getMoveArcOffsetPx(move.style, p, cellSize, move.walkPhase),
   };
 }
 
@@ -243,6 +270,51 @@ function getLandingPulse(progress: number, recoilFrac: number): number {
   if (progress <= recoilStart) return 0;
   const recoilProgress = (progress - recoilStart) / recoilFrac;
   return Math.sin(recoilProgress * Math.PI);
+}
+
+function applyStepWalkEasing(walkPhase: WalkMotionPhase, progress: number): number {
+  switch (walkPhase) {
+    case 'start':
+      return progress < STEP_WALK_ENTRY_PROGRESS
+        ? getStepEntryProgress(progress)
+        : progress;
+    case 'middle':
+      return progress;
+    case 'end':
+      return progress > STEP_WALK_EXIT_PROGRESS
+        ? getStepExitProgress(progress)
+        : progress;
+    case 'single':
+    default:
+      if (progress < STEP_WALK_ENTRY_PROGRESS) {
+        return getStepEntryProgress(progress);
+      }
+      if (progress > STEP_WALK_EXIT_PROGRESS) {
+        return getStepExitProgress(progress);
+      }
+      return progress;
+  }
+}
+
+function getStepEntryProgress(progress: number): number {
+  const normalized = progress / STEP_WALK_ENTRY_PROGRESS;
+  return STEP_WALK_ENTRY_PROGRESS * (normalized * normalized * (2 - normalized));
+}
+
+function getStepExitProgress(progress: number): number {
+  const exitWindow = 1 - STEP_WALK_EXIT_PROGRESS;
+  const normalized = (progress - STEP_WALK_EXIT_PROGRESS) / exitWindow;
+  return STEP_WALK_EXIT_PROGRESS
+    + (exitWindow * (normalized + (normalized * normalized) - (normalized * normalized * normalized)));
+}
+
+function getStepStrideScale(progress: number, walkPhase: WalkMotionPhase): Scale {
+  const easedProgress = applyStepWalkEasing(walkPhase, progress);
+  const stridePulse = Math.sin(easedProgress * Math.PI) * STEP_STRIDE_SCALE;
+  return {
+    scaleX: 1 - stridePulse,
+    scaleY: 1 + stridePulse,
+  };
 }
 
 function getTravelUnitVector(fromPos: Point, toPos: Point): Point {

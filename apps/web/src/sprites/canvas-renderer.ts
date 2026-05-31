@@ -1,9 +1,13 @@
 import type { MapView, MapCellView, EntityView } from '@dungeon/presenter';
-import type { MoveAnimStyle, StatusPresentationView, ConsumableAnimationPresentationView } from '@dungeon/presenter';
+import type { StatusPresentationView, ConsumableAnimationPresentationView } from '@dungeon/presenter';
 import type { AnimationId } from '@dungeon/content';
 import { resolveModule } from '../animations/registry.js';
 import * as rendererHelpers from '../animations/helpers.js';
-import { getMoveRenderedOffsetPx, getSquashStretchScale } from '../animations/move-style-profiles.js';
+import {
+  getMoveRenderedOffsetPx,
+  getSquashStretchScale,
+  type MoveTravelInput,
+} from '../animations/move-style-profiles.js';
 import { CELL_SIZE } from '../config/ui-config.js';
 import { spriteRegistry } from './sprite-registry.js';
 
@@ -21,14 +25,9 @@ interface BumpAnimationState {
   progress: number;
 }
 
-interface MoveAnimationState {
+interface MoveAnimationState extends MoveTravelInput {
   id: string;
   entityId: string;
-  fromPos: { x: number; y: number };
-  toPos:   { x: number; y: number };
-  style: MoveAnimStyle;
-  progress: number;
-  fromOffsetPx?: { x: number; y: number };
 }
 
 interface ConsumableAnimationState {
@@ -585,7 +584,7 @@ export function renderMap(
       const move = moveLookup.get(entity.id);
       if (move) {
         const moveOffset = getMoveRenderedOffsetPx(move, CELL_SIZE, entity.id);
-        const squashStretch = getSquashStretchScale(move.style, move.progress);
+        const squashStretch = getSquashStretchScale(move.style, move.progress, move.walkPhase);
         offsetX += moveOffset.x;
         offsetY += moveOffset.y;
         moveScaleX *= squashStretch.scaleX;

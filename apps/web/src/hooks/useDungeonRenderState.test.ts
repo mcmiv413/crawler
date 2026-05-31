@@ -306,6 +306,47 @@ describe('useDungeonRenderState', () => {
     });
   });
 
+  it('uses carried walk-chain travel for the camera when a step inherits momentum', () => {
+    const playerMove = {
+      id: 'move-0',
+      entityId: 'player-1',
+      fromPos: { x: 4, y: 5 },
+      toPos: { x: 5, y: 5 },
+      style: 'step' as const,
+      walkPhase: 'middle' as const,
+      progress: 0.5,
+      durationMs: 140,
+      startTime: 0,
+      fromOffsetPx: { x: -CELL_SIZE / 2, y: 0 },
+    };
+
+    moveAnimationState.current = [playerMove];
+
+    const movingMap: MapView = {
+      ...BASE_MAP,
+      entities: [
+        {
+          id: 'player-1',
+          type: 'player',
+          x: 5,
+          y: 5,
+          ascii: '@',
+          color: '#fff',
+          name: 'Hero',
+          templateId: 'player',
+        },
+      ],
+    };
+
+    const expectedOffset = getMoveTravelOffsetPx(playerMove, CELL_SIZE);
+    const { result } = renderHook(() => useDungeonRenderState(movingMap, 20, 15));
+
+    expect(result.current.cameraOffset).toEqual({
+      x: -expectedOffset.x,
+      y: -expectedOffset.y,
+    });
+  });
+
   it('retains killed ability targets at their action-time tile until the beat settles', () => {
     vi.useFakeTimers();
     vi.setSystemTime(new Date('2024-01-01T00:00:00.000Z'));

@@ -33,14 +33,29 @@ The presenter exports `getBeatSettleMs()` and `getAnimatedEventBatchSettleMs()` 
 
 ## Queue Drain Gating
 
-When a dungeon command returns visible animated beats, the store stages the resolved `GameView` immediately so sprite rendering and animation payloads stay aligned. The beat scheduler marks the queue as draining, and auto-walk waits on that visible queue before sending the next step.
+When a dungeon command returns visible animated beats, the store stages the resolved `GameView` immediately so sprite rendering and animation payloads stay aligned. The beat scheduler still owns when the staged combat log and view commit as the settled state.
 
-When the queue drains, the staged combat log and view are committed as the settled state. Hidden beats never enter the queue, so off-FOV enemy turns do not extend visible settle time or stall click-to-move continuation.
+Walking continuation no longer waits for the full visible queue to drain. The web walk controller watches the active player move beat, schedules the next confirmed `MOVE` at the shared step boundary, and only dispatches once the current command has finished loading. Hidden beats still never enter the queue, so off-FOV enemy turns do not extend visible settle time or stall click-to-move continuation.
+
+## Walking Continuity
+
+Movement style selection is still presenter-owned, but the default baseline is now shared:
+
+- player and enemy move beats both default to the `step` timing profile
+- enemy archetype overrides remain available behind an explicit dormant presenter seam
+
+The web runtime layers continuity on top of that shared baseline:
+
+- `useMoveAnimationState()` carries only travel offset between same-entity steps
+- step secondary motion is a subtle stride bob/squash, computed per frame and never accumulated into takeover state
+- step easing uses web-only walk phases so the first confirmed step eases in, interior steps stay linear, and the last confirmed step eases out
+- `useWalkController()` paces held-key walking and auto-walk from the same boundary-cross signal instead of raw key repeat or full-queue waits
 
 ## Where to Tune Motion
 
 - beat decomposition and settle semantics: `packages/presenter/src/animation-sequence.ts`
 - animation timing metadata: `packages/presenter/src/animation-metadata.ts`
 - move rendering profiles: `apps/web/src/animations/move-style-profiles.ts`
+- walk continuity controller: `apps/web/src/hooks/useWalkController.ts`
 - beat scheduler + queue bus: `apps/web/src/animation-runtime/useAnimationOrchestrator.beat.ts`
 - staged command-result commits: `apps/web/src/store/game-store.ts`

@@ -2,7 +2,8 @@ import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import { act, renderHook } from '@testing-library/react';
 import type { MoveAnimationEntry } from '@dungeon/presenter';
 import { CELL_SIZE } from '../config/ui-config.js';
-import { applyMoveStyleEasing, getMoveArcOffsetPx } from '../animations/move-style-profiles.js';
+import { applyMoveStyleEasing } from '../animations/move-style-profiles.js';
+import { dispatchWalkContinuation } from '../animation-runtime/walk-continuation-bus.js';
 import { useMoveAnimationState } from './useMoveAnimationState.js';
 
 function createMoveEntry(overrides: Partial<MoveAnimationEntry> = {}): MoveAnimationEntry {
@@ -31,6 +32,7 @@ describe('useMoveAnimationState', () => {
     const { result } = renderHook(() => useMoveAnimationState());
 
     act(() => {
+      dispatchWalkContinuation({ entityId: 'player-1', continuing: true });
       window.dispatchEvent(new CustomEvent('move-animation', {
         detail: createMoveEntry(),
       }));
@@ -53,8 +55,9 @@ describe('useMoveAnimationState', () => {
     const active = result.current.animations[0]!;
 
     expect(result.current.animations).toHaveLength(1);
+    expect(active.walkPhase).toBe('middle');
     expect(active.fromOffsetPx.x).toBeCloseTo(expectedCarryX, 4);
-    expect(active.fromOffsetPx.y).toBeCloseTo(getMoveArcOffsetPx('step', 0.5, CELL_SIZE), 4);
+    expect(active.fromOffsetPx.y).toBeCloseTo(0, 4);
   });
 
   it('does not carry offset from a completed animation', async () => {
@@ -82,5 +85,24 @@ describe('useMoveAnimationState', () => {
     const active = result.current.animations[0]!;
 
     expect(active.fromOffsetPx).toEqual({ x: 0, y: 0 });
+  });
+
+  it('retargets the active step phase while continuation is still undecided', () => {
+    const { result } = renderHook(() => useMoveAnimationState());
+
+    act(() => {
+      dispatchWalkContinuation({ entityId: 'player-1', continuing: true });
+      window.dispatchEvent(new CustomEvent('move-animation', {
+        detail: createMoveEntry(),
+      }));
+    });
+
+    expect(result.current.animations[0]?.walkPhase).toBe('start');
+
+    act(() => {
+      dispatchWalkContinuation({ entityId: 'player-1', continuing: false });
+    });
+
+    expect(result.current.animations[0]?.walkPhase).toBe('single');
   });
 });

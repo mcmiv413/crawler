@@ -710,7 +710,7 @@ export function ThreeAnimationOverlay(props: ThreeAnimationOverlayProps): React.
         const move = moveById.get(entityId);
         if (move !== undefined) {
           const offset = getMoveRenderedOffsetPx(move, CELL_SIZE, entity.id);
-          const squashStretch = getSquashStretchScale(move.style, move.progress);
+          const squashStretch = getSquashStretchScale(move.style, move.progress, move.walkPhase);
           screenX += offset.x;
           screenY += offset.y;
           scaleX *= squashStretch.scaleX;

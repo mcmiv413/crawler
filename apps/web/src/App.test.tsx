@@ -22,6 +22,10 @@ vi.mock('./hooks/useAutoWalk.js', () => ({
   useAutoWalk: () => undefined,
 }));
 
+vi.mock('./hooks/useWalkController.js', () => ({
+  useWalkController: () => undefined,
+}));
+
 vi.mock('./components/StartScreen.js', () => ({
   StartScreen: () => <div>start</div>,
 }));

@@ -1,0 +1,41 @@
+{
+  "skill_name": "adding-animation",
+  "evals": [
+    {
+      "id": 0,
+      "prompt": "Add a new projectile animation for a ring spell called ember lance. It needs a new visual path and should render correctly in the overlay too.",
+      "expected_output": "Classifies the work as projectile animation plus overlay-owned coverage, names the content ref, canvas module, Three module, generator step, and the right proof homes.",
+      "files": [],
+      "expectations": [
+        "Names the projectile animation-ref surface under packages/content/src/animation-refs",
+        "Names both canvas and Three module surfaces or clearly explains fallback ownership",
+        "Requires pnpm generate:indexes",
+        "Includes check:three-animations or equivalent Three coverage proof"
+      ]
+    },
+    {
+      "id": 1,
+      "prompt": "I only need to retime an existing impact animation so the hit flash lands later. What files and checks matter?",
+      "expected_output": "Keeps the work bounded to the ref timing path, avoids unnecessary mechanic scope, and names ref-focused proofs plus generator expectations if applicable.",
+      "files": [],
+      "expectations": [
+        "Treats the change as a timing or ref-focused animation task",
+        "Mentions impactFrameMs and recoveryMs",
+        "Names packages/content/src/animation-refs/index.test.ts",
+        "Does not invent mechanic or gameplay work"
+      ]
+    },
+    {
+      "id": 2,
+      "prompt": "Give a persistent status effect its own pulse in the Three overlay without breaking canvas fallback.",
+      "expected_output": "Explains status-category animation ownership, keeps canvas fallback intact, and names the overlay ownership proofs instead of only content files.",
+      "files": [],
+      "expectations": [
+        "Classifies the work as status animation",
+        "Mentions the one-owner or canvas-fallback rule",
+        "Names a Three module surface",
+        "Names component or browser ownership proofs"
+      ]
+    }
+  ]
+}

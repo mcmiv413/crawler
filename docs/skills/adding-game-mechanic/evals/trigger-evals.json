@@ -1,0 +1,34 @@
+[
+  {
+    "query": "Add a new town mechanic with a new action and UI output.",
+    "should_trigger": true
+  },
+  {
+    "query": "Implement a new combat mechanic that changes state and the HUD.",
+    "should_trigger": true
+  },
+  {
+    "query": "Make this gameplay feature visible end to end in the UI.",
+    "should_trigger": true
+  },
+  {
+    "query": "Add a new command-driven system to the game.",
+    "should_trigger": true
+  },
+  {
+    "query": "Add a new projectile animation for this effect.",
+    "should_trigger": false
+  },
+  {
+    "query": "Add a new ring spell with mana cost and study requirements.",
+    "should_trigger": false
+  },
+  {
+    "query": "Write a one-paragraph changelog entry.",
+    "should_trigger": false
+  },
+  {
+    "query": "What is 2 + 2?",
+    "should_trigger": false
+  }
+]

@@ -6,6 +6,16 @@ This repo now treats `docs/skills/` as the single canonical source for shared sk
 
 The rollout keeps the strongest PSRE workflow ideas - structured intake, evidence-based research, complexity-aware planning, plan-fidelity implementation, guardrail-focused review, quick-task triage, retrospectives, and structured issue capture - while replacing Jira, Glean, and `.plans/` dependencies with repo-native tooling.
 
+Domain authoring skills can compose with each other. The ring-magic stack is now:
+
+- `ring-magic-triage` for scope classification
+- `adding-ring` for full ring packages
+- `adding-spell` for ring-spell authoring
+- `adding-animation` for animation ownership work
+- `adding-game-mechanic` for 6-hop mechanic expansion
+
+Use the narrower building-block skills when the user asks directly for animation or mechanic work, and let the ring/spell skills route into them when a request expands beyond content-only authoring.
+
 ## Files to Touch
 
 | Step | File | What to do |
@@ -91,6 +101,11 @@ Do not hand-edit the mirror trees. If the mirrors drift, regenerate them from `d
 |------|---------|
 | `docs/skills/planning/` | Canonical planning skill plus planning references |
 | `docs/skills/model-orchestrator/` | Canonical source for the existing model-orchestrator skill |
+| `docs/skills/ring-magic-triage/` | Scope classifier for ring, spell, school, and combo-work asks |
+| `docs/skills/adding-animation/` | Canonical animation-authoring skill and animation ownership references |
+| `docs/skills/adding-game-mechanic/` | Canonical 6-hop mechanic skill and feature-chain references |
+| `docs/skills/adding-ring/` | Canonical full ring-package authoring skill |
+| `docs/skills/adding-spell/` | Canonical ring-spell authoring skill |
 | `scripts/repo-skills-lib.mjs` | Shared helper for generation and drift checks |
 | `scripts/generate-repo-skills.mjs` | Mirror generator |
 | `scripts/check-repo-skills.mjs` | Mirror drift checker |

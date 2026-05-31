@@ -1,0 +1,34 @@
+[
+  {
+    "query": "What surfaces does a combo ring spell touch in this repo?",
+    "should_trigger": true
+  },
+  {
+    "query": "Is adding a new ring school just content or is it platform work?",
+    "should_trigger": true
+  },
+  {
+    "query": "Can this new ring spell reuse an existing pattern or does it need custom mechanic work?",
+    "should_trigger": true
+  },
+  {
+    "query": "Add a new frost ring package and tell me what else it touches.",
+    "should_trigger": true
+  },
+  {
+    "query": "Add a new projectile animation for this effect.",
+    "should_trigger": false
+  },
+  {
+    "query": "Implement a new town mechanic with UI support.",
+    "should_trigger": false
+  },
+  {
+    "query": "Summarize the docs folder.",
+    "should_trigger": false
+  },
+  {
+    "query": "What time is it in UTC?",
+    "should_trigger": false
+  }
+]
