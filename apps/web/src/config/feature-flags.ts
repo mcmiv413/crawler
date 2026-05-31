@@ -4,6 +4,7 @@ export type AnimationRendererMode = 'canvas' | 'three';
 
 declare global {
   var __DUNGEON_BEAT_SCHEDULER_OVERRIDE__: boolean | undefined;
+  var __DUNGEON_DEPTH_ATMOSPHERE_OVERRIDE__: boolean | undefined;
   var __DUNGEON_THREE_EFFECTS_OVERRIDE__: boolean | undefined;
   var __DUNGEON_ANIMATION_RENDERER_MODE_OVERRIDE__: AnimationRendererMode | undefined;
 }
@@ -17,6 +18,17 @@ export function isBeatSchedulerEnabledFlag(): boolean {
   const beatScheduler = env['VITE_BEAT_SCHEDULER'];
 
   return beatScheduler !== 'false' && beatScheduler !== false;
+}
+
+export function isDepthAtmosphereEnabledFlag(): boolean {
+  if (globalThis.__DUNGEON_DEPTH_ATMOSPHERE_OVERRIDE__ !== undefined) {
+    return globalThis.__DUNGEON_DEPTH_ATMOSPHERE_OVERRIDE__;
+  }
+
+  const env = import.meta.env as ViteFeatureEnv;
+  const depthAtmosphere = env['VITE_DEPTH_ATMOSPHERE'];
+
+  return depthAtmosphere !== 'false' && depthAtmosphere !== false;
 }
 
 export function getAnimationRendererMode(): AnimationRendererMode {

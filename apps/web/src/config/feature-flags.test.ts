@@ -1,5 +1,95 @@
 import { describe, it, expect, vi, afterEach } from 'vitest';
-import { isThreeEffectsEnabledFlag, getAnimationRendererMode } from './feature-flags.js';
+import {
+  isDepthAtmosphereEnabledFlag,
+  isThreeEffectsEnabledFlag,
+  getAnimationRendererMode,
+} from './feature-flags.js';
+
+type FeatureFlagEnvValue = string | boolean | undefined;
+
+function withDepthAtmosphereEnv(value: FeatureFlagEnvValue, run: () => void): void {
+  const env = import.meta.env as Record<string, FeatureFlagEnvValue>;
+  const previous = env['VITE_DEPTH_ATMOSPHERE'];
+
+  if (value === undefined) {
+    Reflect.deleteProperty(env, 'VITE_DEPTH_ATMOSPHERE');
+  } else {
+    env['VITE_DEPTH_ATMOSPHERE'] = value;
+  }
+
+  try {
+    run();
+  } finally {
+    if (previous === undefined) {
+      Reflect.deleteProperty(env, 'VITE_DEPTH_ATMOSPHERE');
+    } else {
+      env['VITE_DEPTH_ATMOSPHERE'] = previous;
+    }
+  }
+}
+
+describe('isDepthAtmosphereEnabledFlag', () => {
+  afterEach(() => {
+    vi.unstubAllEnvs();
+    vi.unstubAllGlobals();
+  });
+
+  describe('default behaviour (no env var, no override)', () => {
+    it('returns true when VITE_DEPTH_ATMOSPHERE is not set', () => {
+      withDepthAtmosphereEnv(undefined, () => {
+        expect(isDepthAtmosphereEnabledFlag()).toBe(true);
+      });
+    });
+
+    it('returns true when VITE_DEPTH_ATMOSPHERE is empty', () => {
+      withDepthAtmosphereEnv('', () => {
+        expect(isDepthAtmosphereEnabledFlag()).toBe(true);
+      });
+    });
+  });
+
+  describe('env var control', () => {
+    it('returns true when VITE_DEPTH_ATMOSPHERE is true', () => {
+      withDepthAtmosphereEnv(true, () => {
+        expect(isDepthAtmosphereEnabledFlag()).toBe(true);
+      });
+    });
+
+    it('returns true when VITE_DEPTH_ATMOSPHERE is "true"', () => {
+      withDepthAtmosphereEnv('true', () => {
+        expect(isDepthAtmosphereEnabledFlag()).toBe(true);
+      });
+    });
+
+    it('returns false when VITE_DEPTH_ATMOSPHERE is false', () => {
+      withDepthAtmosphereEnv(false, () => {
+        expect(isDepthAtmosphereEnabledFlag()).toBe(false);
+      });
+    });
+
+    it('returns false when VITE_DEPTH_ATMOSPHERE is "false"', () => {
+      withDepthAtmosphereEnv('false', () => {
+        expect(isDepthAtmosphereEnabledFlag()).toBe(false);
+      });
+    });
+  });
+
+  describe('globalThis override', () => {
+    it('override takes precedence over env var when both are set to conflicting values', () => {
+      withDepthAtmosphereEnv('true', () => {
+        vi.stubGlobal('__DUNGEON_DEPTH_ATMOSPHERE_OVERRIDE__', false);
+        expect(isDepthAtmosphereEnabledFlag()).toBe(false);
+      });
+    });
+
+    it('falls through to env var when override is undefined', () => {
+      withDepthAtmosphereEnv('true', () => {
+        vi.stubGlobal('__DUNGEON_DEPTH_ATMOSPHERE_OVERRIDE__', undefined);
+        expect(isDepthAtmosphereEnabledFlag()).toBe(true);
+      });
+    });
+  });
+});
 
 describe('isThreeEffectsEnabledFlag', () => {
   afterEach(() => {

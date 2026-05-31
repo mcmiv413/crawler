@@ -26,7 +26,10 @@ import { useDungeonRenderState } from '../hooks/useDungeonRenderState.js';
 import { useCombatIndicatorState } from '../hooks/useCombatIndicatorState.js';
 import { useDefenderHitState } from '../hooks/useDefenderHitState.js';
 import { useThreeAnimationOwnership } from '../hooks/useThreeAnimationOwnership.js';
-import { getAnimationRendererMode } from '../config/feature-flags.js';
+import {
+  getAnimationRendererMode,
+  isDepthAtmosphereEnabledFlag,
+} from '../config/feature-flags.js';
 import { filterCombatLogForDisplay } from './combat-log-filter.js';
 import { logEntryColor } from '../styles.js';
 import { reportDungeonE2EReady } from '../testing/e2e-bridge.js';
@@ -175,6 +178,7 @@ function MapDisplay({
     },
     [renderState.consumableAnimations, renderState.fxAnimations, renderState.statusPresentations],
   );
+  const atmosphereEnabled = isDepthAtmosphereEnabledFlag();
   const shouldRenderThreeOverlay = useSprites
     && rendererMode === 'three'
     && map !== null
@@ -183,7 +187,8 @@ function MapDisplay({
       || renderState.moveAnimations.length > 0
       || renderState.bumpAnimations.length > 0
       || defenderHits.size > 0
-        || combatIndicatorLabels.length > 0
+      || combatIndicatorLabels.length > 0
+      || atmosphereEnabled
     );
 
   useEffect(() => {
@@ -274,6 +279,7 @@ function MapDisplay({
           <ThreeAnimationOverlay
             map={displayMap}
             isEnabled={true}
+            atmosphereEnabled={atmosphereEnabled}
             vpTilesWidth={vpTilesWidth}
             vpTilesHeight={vpTilesHeight}
             bumpAnimations={renderState.bumpAnimations}

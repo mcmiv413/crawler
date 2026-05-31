@@ -5,7 +5,8 @@
  * The inner ThreeAnimationOverlay is only loaded when:
  *   - isEnabled is true
  *   - a map is present
- *   - at least one active Three-owned visual exists
+ *   - at least one active Three-owned visual exists, or the persistent
+ *     atmosphere vignette is enabled
  *
  * Import-boundary guardrail: this file must never directly import from
  * apps/web/src/rendering/three/ThreeAnimationOverlay.tsx.
@@ -34,7 +35,9 @@ export function ThreeAnimationOverlay(props: ThreeAnimationOverlayProps): React.
     || (props.defenderHits?.size ?? 0) > 0
     || props.combatIndicators.length > 0;
 
-  const shouldLoad = props.isEnabled && props.map != null && hasAnimations;
+  const shouldLoad = props.isEnabled
+    && props.map != null
+    && (hasAnimations || (props.atmosphereEnabled ?? false));
 
   if (!shouldLoad) {
     return null;

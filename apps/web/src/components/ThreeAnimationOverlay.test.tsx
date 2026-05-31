@@ -2,6 +2,7 @@ import React from 'react';
 import { describe, expect, it, vi, beforeEach } from 'vitest';
 import { render, screen } from '@testing-library/react';
 import type { MapView } from '@dungeon/presenter';
+import type { ThreeAnimationOverlayProps } from './ThreeAnimationOverlay.js';
 
 const { mockInitializeThreeAnimationModules, mockInnerOverlay } = vi.hoisted(() => ({
   mockInitializeThreeAnimationModules: vi.fn(),
@@ -18,7 +19,7 @@ vi.mock('../rendering/three/ThreeAnimationOverlay.js', () => ({
 
 import { ThreeAnimationOverlay } from './ThreeAnimationOverlay.js';
 
-function makeProps() {
+function makeProps(overrides?: Partial<ThreeAnimationOverlayProps>): ThreeAnimationOverlayProps {
   return {
     map: {
       width: 10,
@@ -41,6 +42,7 @@ function makeProps() {
     vpLeft: 0,
     vpTop: 0,
     cameraOffset: { x: 0, y: 0 },
+    ...overrides,
   };
 }
 
@@ -66,5 +68,23 @@ describe('components/ThreeAnimationOverlay', () => {
 
     expect(container.firstChild).toBeNull();
     expect(mockInitializeThreeAnimationModules).not.toHaveBeenCalled();
+  });
+
+  it('loads when atmosphereEnabled is true even without active visuals', async () => {
+    render(
+      <ThreeAnimationOverlay
+        {...makeProps({
+          consumableAnimations: [],
+          fxAnimations: [],
+          atmosphereEnabled: true,
+        })}
+      />,
+    );
+
+    expect(await screen.findByTestId('three-animation-overlay-inner')).toBeInTheDocument();
+    expect(mockInnerOverlay).toHaveBeenCalledWith(
+      expect.objectContaining({ atmosphereEnabled: true }),
+      undefined,
+    );
   });
 });
