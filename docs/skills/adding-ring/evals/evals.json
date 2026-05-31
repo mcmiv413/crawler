@@ -34,6 +34,18 @@
         "Routes the animation branch to adding-animation or equivalent animation surfaces",
         "Names both ring and spell surfaces"
       ]
+    },
+    {
+      "id": 3,
+      "prompt": "Add a lightning ring with a spell of bolt.",
+      "expected_output": "Treats the ask as brand-new school work, forces an explicit choice between starter-only, full ladder, or full ladder plus combo spells with the already-supported fire school, and names the ring-package plus platform surfaces honestly.",
+      "files": [],
+      "expectations": [
+        "Treats the ask as a full ring-package request rather than a spell-only change",
+        "Forces an explicit decision about starter-only versus full ladder versus full ladder plus combo spells",
+        "Mentions the already-supported fire school when describing combo-spell scope",
+        "Names ring-school files or contract implications for the new school"
+      ]
     }
   ]
 }

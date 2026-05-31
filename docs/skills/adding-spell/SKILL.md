@@ -1,6 +1,6 @@
 ---
 name: adding-spell
-description: Add or change a spell in this repo's ring-magic system. Use whenever the prompt asks for a new spell, ring spell, study spell, or spell progression change in the ring system, even if the user only says things like "add a new spell", "make a new fire spell", "add a combo spell", or "what does a new spell touch." If the prompt is clearly about a generic non-ring ability, redirect to the ability workflow instead of using this skill.
+description: Add or change a ring spell in this repo's ring-magic system. Trigger on direct authoring prompts such as add a new ring spell for the fire school, create a new study spell in the ring system, add a combo spell that needs two schools, or ask what a new ring spell touches. Do not use for generic non-ring abilities or full ring-package asks.
 ---
 
 # Adding Spell

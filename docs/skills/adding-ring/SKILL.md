@@ -1,6 +1,6 @@
 ---
 name: adding-ring
-description: Add a new elemental ring package in this repo. Use whenever the prompt asks for a new ring, elemental ring, ring school package, ring item that grants spells, or a ring plus its study and spell wiring, even if the user only says things like "add a new ring", "make a frost ring", "add a new ring school", or "add a ring with a new spell."
+description: Add a new ring package, elemental ring, ring school package, or ring item that grants spells. Trigger on direct authoring prompts such as add a new ring, add a lightning ring with a spell of bolt, create a frost ring school with a ring item and spell package, make a new ring that grants a starter spell, or add a new ring with its own school. Do not use for spell-only changes inside an existing ring package.
 ---
 
 # Adding Ring

@@ -1,6 +1,6 @@
 ---
 name: ring-magic-triage
-description: Classify ring-magic work before implementation. Use whenever the prompt asks to add or change a ring, ring spell, ring school, combo spell, or ring-magic progression rule, or whenever you need to decide whether a ring/spell ask is simple authoring, new animation or status work, custom mechanic/runtime work, or new-school or combo-school platform expansion. Trigger even when the user only asks "what files would this spell touch", "is this a new school or just content", "can I reuse an existing spell pattern", or "what else is needed for a new ring."
+description: Classify ring-magic work before implementation. Trigger on scope questions such as what files would this spell touch, is this new school just content or platform work, can this reuse an existing ring-spell pattern, what else is needed for a new ring, or if I add a lightning ring with bolt is that starter-only work or does it need a ladder and combo-scope decision. Leave direct authoring prompts like add a new ring or add a new ring spell to adding-ring and adding-spell.
 ---
 
 # Ring Magic Triage
@@ -20,6 +20,7 @@ Classify ring and ring-spell requests before implementation guidance starts. Thi
 3. If the ask expands into visuals, route to the animation workflow instead of hand-waving it as a single content file.
 4. If the ask expands into new runtime/event/presenter/UI behavior, route to the game-mechanic workflow instead of pretending it is still content-only.
 5. If the ask introduces a new ring school or combo-school progression, treat it as platform work unless proven otherwise.
+6. This skill is the classifier. Direct authoring prompts should land on `adding-ring` or `adding-spell`, which then apply this triage logic internally.
 
 ## Classification workflow
 
