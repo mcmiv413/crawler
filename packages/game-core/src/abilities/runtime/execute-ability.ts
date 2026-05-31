@@ -15,6 +15,26 @@ import { canUseLearnedRingSpell } from '../../systems/ring-spell-availability.js
 import { RING_SPELL_BY_ID } from '@dungeon/content';
 const ABILITY_REGISTRY = buildRegistry(ALL_ABILITY_DEFINITIONS);
 
+function buildTargetSnapshots(
+  targets: ReadonlyArray<{
+    readonly enemy: {
+      readonly id: EntityId;
+      readonly position: { readonly x: number; readonly y: number };
+    };
+  }>,
+): Array<{ targetId: EntityId; position: { x: number; y: number } }> | undefined {
+  const snapshots = new Map<EntityId, { targetId: EntityId; position: { x: number; y: number } }>();
+
+  for (const { enemy } of targets) {
+    snapshots.set(enemy.id, {
+      targetId: enemy.id,
+      position: { ...enemy.position },
+    });
+  }
+
+  return snapshots.size === 0 ? undefined : Array.from(snapshots.values());
+}
+
 /**
  * Execute an ability by ID, routing through the new data-driven engine.
  * For abilities in ABILITY_REGISTRY, uses the new system.
@@ -64,6 +84,7 @@ export function executeAbility(
 
   // Resolve targets
   const targets = resolveTargets(paidContext, definition.targeting, targetId);
+  const targetSnapshots = buildTargetSnapshots(targets);
 
   // Execute effects in sequence
   let newContext = paidContext;
@@ -147,6 +168,7 @@ export function executeAbility(
     targetId: eventTargetId,
     targetName: targets[0]?.enemy.name,
     affectedTargetIds: targets.map(target => target.enemy.id),
+    targetSnapshots,
   });
   accumulatedEvents = [...accumulatedEvents, ...abilityEvent];
 

@@ -3,7 +3,7 @@ import type { AbilityContext } from '../types.js';
 import { validateRequirements } from './validate-ability.js';
 import { resolveTargets } from './resolve-targets.js';
 import { executeAbility } from './execute-ability.js';
-import { createTestGameStateInCombat, createTestEnemy } from '../../test-utils.js';
+import { createTestGameStateInCombat, createTestEnemy, createTestGameStateWithAbility } from '../../test-utils.js';
 import { SeededRNG } from '../../utils/rng.js';
 import { entityId } from '@dungeon/contracts';
 
@@ -612,6 +612,80 @@ describe('abilities/runtime', () => {
           expect(abilityEvent.damage).toBe(attackEvent.damage);
         }
       }
+    });
+
+    it('captures action-time target snapshots for killing single-target abilities', () => {
+      const baseState = createTestGameStateWithAbility('power_strike', {
+        enemyPosition: { x: 1, y: 0 },
+        enemyHealth: 1,
+      });
+      const targetEnemy = [...baseState.run!.enemies.values()][0]!;
+      const targetId = targetEnemy.id;
+      const state = {
+        ...baseState,
+        player: {
+          ...baseState.player,
+          stats: {
+            ...baseState.player.stats,
+            attack: 999,
+            accuracy: 999,
+          },
+        },
+        run: {
+          ...baseState.run!,
+          enemies: new Map([
+            [
+              `${targetEnemy.position.x},${targetEnemy.position.y}`,
+              {
+                ...targetEnemy,
+                stats: {
+                  ...targetEnemy.stats,
+                  maxHealth: 1,
+                  health: 1,
+                  evasion: 0,
+                },
+              },
+            ],
+          ]),
+        },
+      };
+      const rng = new SeededRNG(42);
+
+      const result = executeAbility(state, 'power_strike', rng, targetId);
+      const abilityEvent = result.events.find(
+        (event): event is Extract<(typeof result.events)[number], { type: 'ABILITY_USED' }> => event.type === 'ABILITY_USED',
+      );
+
+      expect(result.state.run?.enemies.size).toBe(0);
+      expect(abilityEvent?.targetSnapshots).toEqual([
+        {
+          targetId,
+          position: { x: 1, y: 0 },
+        },
+      ]);
+    });
+
+    it('captures every pre-mutation target tile for multi-target abilities', () => {
+      const state = createTestGameStateWithAbility('axe_cleave', {
+        enemyPosition: { x: 1, y: 0 },
+        additionalEnemies: [
+          { id: 'enemy-2', position: { x: 1, y: 1 }, health: 6 },
+        ],
+      });
+      const primaryTargetId = [...state.run!.enemies.values()][0]!.id;
+      const rng = new SeededRNG(42);
+
+      const result = executeAbility(state, 'axe_cleave', rng, primaryTargetId);
+      const abilityEvent = result.events.find(
+        (event): event is Extract<(typeof result.events)[number], { type: 'ABILITY_USED' }> => event.type === 'ABILITY_USED',
+      );
+
+      expect(abilityEvent?.targetSnapshots?.map((snapshot) => snapshot.position)).toEqual(
+        expect.arrayContaining([
+          { x: 1, y: 0 },
+          { x: 1, y: 1 },
+        ]),
+      );
     });
   });
 });

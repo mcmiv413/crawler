@@ -1,4 +1,4 @@
-import { beforeEach, describe, expect, it, vi } from 'vitest';
+import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import { renderHook } from '@testing-library/react';
 import type { MapView } from '@dungeon/presenter';
 import { getMoveTravelOffsetPx } from '../animations/move-style-profiles.js';
@@ -30,6 +30,7 @@ const {
       beneficial: boolean;
       presentation?: { entityScale?: number };
     }>,
+    animatedEvents: [] as unknown[],
   },
 }));
 
@@ -54,6 +55,7 @@ vi.mock('../store/game-store.js', () => ({
     const state = {
       view: {
         player: { statuses: gameStoreSpy.statuses },
+        animatedEvents: gameStoreSpy.animatedEvents,
       },
     };
     return typeof selector === 'function' ? selector(state) : state;
@@ -92,6 +94,11 @@ describe('useDungeonRenderState', () => {
     consumableAnimationState.current = [];
     fxAnimationState.current = [];
     gameStoreSpy.statuses = [];
+    gameStoreSpy.animatedEvents = [];
+  });
+
+  afterEach(() => {
+    vi.useRealTimers();
   });
 
   it('returns the expected render-state fields', () => {
@@ -101,6 +108,7 @@ describe('useDungeonRenderState', () => {
       'bumpAnimations',
       'cameraOffset',
       'consumableAnimations',
+      'displayMap',
       'fxAnimations',
       'moveAnimations',
       'statusPresentations',
@@ -113,6 +121,7 @@ describe('useDungeonRenderState', () => {
     const { result } = renderHook(() => useDungeonRenderState(BASE_MAP, 20, 15));
 
     expect(result.current).toMatchObject({
+      displayMap: BASE_MAP,
       vpLeft: expect.any(Number),
       vpTop: expect.any(Number),
       cameraOffset: {
@@ -295,5 +304,120 @@ describe('useDungeonRenderState', () => {
       x: -expectedOffset.x,
       y: -expectedOffset.y,
     });
+  });
+
+  it('retains killed ability targets at their action-time tile until the beat settles', () => {
+    vi.useFakeTimers();
+    vi.setSystemTime(new Date('2024-01-01T00:00:00.000Z'));
+
+    const previousMap: MapView = {
+      ...BASE_MAP,
+      entities: [
+        {
+          id: 'enemy-1',
+          type: 'enemy',
+          x: 6,
+          y: 5,
+          ascii: 'g',
+          color: '#0f0',
+          name: 'Goblin',
+          templateId: 'goblin',
+        },
+      ],
+    };
+    const finalMap: MapView = {
+      ...BASE_MAP,
+      entities: [],
+    };
+    const { result, rerender } = renderHook(
+      ({ map }) => useDungeonRenderState(map, 20, 15),
+      { initialProps: { map: previousMap } },
+    );
+
+    gameStoreSpy.animatedEvents = [{
+      type: 'ability',
+      sequenceIndex: 0,
+      delayMs: 0,
+      beatId: 'beat-0',
+      beatIndex: 0,
+      beatRelativeDelayMs: 0,
+      batchId: 'batch-0',
+      data: {
+        abilityId: 'power_strike',
+        animationId: 'melee.power-strike',
+        playerPos: { x: 5, y: 5 },
+        targetPos: { x: 6, y: 5 },
+        blastPositions: [],
+        durationMs: 400,
+        impactFrameMs: 200,
+        suppressActorBump: false,
+      },
+    }];
+
+    rerender({ map: finalMap });
+    expect(result.current.displayMap.entities).toEqual(previousMap.entities);
+
+    vi.setSystemTime(new Date('2024-01-01T00:00:00.450Z'));
+    rerender({ map: finalMap });
+    expect(result.current.displayMap.entities).toEqual([]);
+  });
+
+  it('keeps future movers at their previous tile until their move beat starts', () => {
+    vi.useFakeTimers();
+    vi.setSystemTime(new Date('2024-01-01T00:00:00.000Z'));
+
+    const previousMap: MapView = {
+      ...BASE_MAP,
+      entities: [
+        {
+          id: 'enemy-1',
+          type: 'enemy',
+          x: 6,
+          y: 5,
+          ascii: 'g',
+          color: '#0f0',
+          name: 'Goblin',
+          templateId: 'goblin',
+        },
+      ],
+    };
+    const finalMap: MapView = {
+      ...BASE_MAP,
+      entities: [
+        {
+          ...previousMap.entities[0]!,
+          x: 7,
+          y: 5,
+        },
+      ],
+    };
+    const { result, rerender } = renderHook(
+      ({ map }) => useDungeonRenderState(map, 20, 15),
+      { initialProps: { map: previousMap } },
+    );
+
+    gameStoreSpy.animatedEvents = [{
+      type: 'move',
+      sequenceIndex: 0,
+      delayMs: 300,
+      beatId: 'beat-1',
+      beatIndex: 1,
+      beatRelativeDelayMs: 0,
+      batchId: 'batch-1',
+      data: {
+        entityId: 'enemy-1',
+        fromPos: { x: 6, y: 5 },
+        toPos: { x: 7, y: 5 },
+        style: 'step',
+        durationMs: 140,
+      },
+    }];
+
+    rerender({ map: finalMap });
+    expect(result.current.displayMap.entities[0]).toMatchObject({ x: 6, y: 5 });
+
+    vi.setSystemTime(new Date('2024-01-01T00:00:00.350Z'));
+    rerender({ map: finalMap });
+    expect(result.current.displayMap.entities[0]).toMatchObject({ x: 7, y: 5 });
   });
 });

@@ -184,6 +184,23 @@ function withCellVisibilities(
   };
 }
 
+function withEnemies(
+  state: GameState,
+  enemies: readonly ReturnType<typeof createTestEnemy>[],
+): GameState {
+  if (state.run === null) {
+    return state;
+  }
+
+  return {
+    ...state,
+    run: {
+      ...state.run,
+      enemies: new Map(enemies.map((enemy) => [enemy.id, enemy])),
+    },
+  };
+}
+
 function createAttackEvent(args: {
   attackerId: EntityId;
   defenderId: EntityId;
@@ -363,6 +380,145 @@ describe('buildAnimationSequence', () => {
     expect(new Set(damages.map((event) => event.beatId))).toEqual(new Set([ability!.beatId]));
     const impactFrameMs = (ability?.data as { impactFrameMs: number }).impactFrameMs;
     expect(new Set(damages.map((event) => event.beatRelativeDelayMs))).toEqual(new Set([impactFrameMs]));
+  });
+
+  it('anchors single-target ability FX and impact flashes to action-time snapshots for killed targets', () => {
+    const deadTargetState = withEnemies(
+      mockGameState,
+      [...mockGameState.run!.enemies.values()].filter((enemy) => enemy.id !== entityId('enemy-1')),
+    );
+    const events: DomainEvent[] = [{
+      type: 'ABILITY_USED',
+      timestamp: 1000,
+      turnNumber: 1,
+      playerId: entityId('player-1'),
+      abilityId: 'power_strike',
+      abilityName: 'Power Strike',
+      targetId: entityId('enemy-1'),
+      targetName: 'Slow Goblin',
+      damage: 12,
+      targetSnapshots: [{
+        targetId: entityId('enemy-1'),
+        position: { x: 51, y: 50 },
+      }],
+    } as DomainEvent];
+
+    const sequence = buildAnimationSequence(events, deadTargetState);
+    const ability = sequence.find((event) => event.type === 'ability');
+    const damage = sequence.find((event) => event.type === 'damage');
+    const defenderHit = sequence.find((event) => event.type === 'defender-hit');
+
+    expect((ability?.data as { targetPos?: { x: number; y: number } }).targetPos).toEqual({ x: 51, y: 50 });
+    expect(damage?.data).toMatchObject({ x: 51, y: 50 });
+    expect(defenderHit?.data).toMatchObject({
+      entityId: entityId('enemy-1'),
+      position: { x: 51, y: 50 },
+    });
+  });
+
+  it('keeps spell targeting on the pre-move tile when the target moves later in the batch', () => {
+    const movedEnemy = createTestEnemy({
+      id: entityId('enemy-1'),
+      name: 'Slow Goblin',
+      templateId: 'goblin',
+      archetype: 'brute',
+      position: { x: 51, y: 49 },
+      stats: {
+        maxHealth: 20,
+        health: 8,
+        attack: 5,
+        defense: 2,
+        accuracy: 70,
+        evasion: 10,
+        speed: 8,
+      },
+    });
+    const finalState = withEnemies(
+      mockGameState,
+      [movedEnemy, ...[...mockGameState.run!.enemies.values()].filter((enemy) => enemy.id !== entityId('enemy-1'))],
+    );
+    const events: DomainEvent[] = [
+      {
+        type: 'ABILITY_USED',
+        timestamp: 1000,
+        turnNumber: 1,
+        playerId: entityId('player-1'),
+        abilityId: 'power_strike',
+        abilityName: 'Power Strike',
+        targetId: entityId('enemy-1'),
+        targetName: 'Slow Goblin',
+        damage: 12,
+        targetSnapshots: [{
+          targetId: entityId('enemy-1'),
+          position: { x: 51, y: 50 },
+        }],
+      } as DomainEvent,
+      {
+        type: 'ENEMY_MOVED',
+        timestamp: 1001,
+        turnNumber: 1,
+        enemyId: entityId('enemy-1'),
+        from: { x: 51, y: 50 },
+        to: { x: 51, y: 49 },
+      } as DomainEvent,
+    ];
+
+    const sequence = buildAnimationSequence(events, finalState);
+    const ability = sequence.find((event) => event.type === 'ability');
+    const damage = sequence.find((event) => event.type === 'damage');
+    const move = sequence.find((event) => event.type === 'move');
+
+    expect((ability?.data as { targetPos?: { x: number; y: number } }).targetPos).toEqual({ x: 51, y: 50 });
+    expect(damage?.data).toMatchObject({ x: 51, y: 50 });
+    expect((move?.data as { fromPos: { x: number; y: number }; toPos: { x: number; y: number } })).toMatchObject({
+      fromPos: { x: 51, y: 50 },
+      toPos: { x: 51, y: 49 },
+    });
+    expect(move!.delayMs).toBeGreaterThan(ability!.delayMs);
+  });
+
+  it('preserves multi-target blast and damage positions when affected enemies die before the final state', () => {
+    const finalState = withEnemies(
+      mockGameState,
+      [...mockGameState.run!.enemies.values()].filter((enemy) => enemy.id === entityId('enemy-3')),
+    );
+    const events: DomainEvent[] = [{
+      type: 'ABILITY_USED',
+      timestamp: 1000,
+      turnNumber: 1,
+      playerId: entityId('player-1'),
+      abilityId: 'axe_cleave',
+      abilityName: 'Axe Cleave',
+      damageByTarget: new Map([
+        [entityId('enemy-1'), 5],
+        [entityId('enemy-2'), 7],
+      ]),
+      targetSnapshots: [
+        {
+          targetId: entityId('enemy-1'),
+          position: { x: 51, y: 50 },
+        },
+        {
+          targetId: entityId('enemy-2'),
+          position: { x: 52, y: 50 },
+        },
+      ],
+    } as DomainEvent];
+
+    const sequence = buildAnimationSequence(events, finalState);
+    const ability = sequence.find((event) => event.type === 'ability');
+    const damages = sequence.filter((event) => event.type === 'damage');
+
+    expect((ability?.data as { blastPositions: readonly { x: number; y: number }[] }).blastPositions).toEqual([
+      { x: 51, y: 50 },
+      { x: 52, y: 50 },
+    ]);
+    expect(damages.map((event) => event.data)).toEqual(
+      expect.arrayContaining([
+        expect.objectContaining({ x: 51, y: 50, text: '-5' }),
+        expect.objectContaining({ x: 52, y: 50, text: '-7' }),
+      ]),
+    );
   });
 
   it('guarantees beats do not overlap', () => {

@@ -289,6 +289,11 @@ export interface QuestCompletedEvent extends BaseEvent {
   readonly rewardGold: number;
 }
 
+export interface AbilityTargetSnapshot {
+  readonly targetId: EntityId;
+  readonly position: { readonly x: number; readonly y: number };
+}
+
 export interface AbilityUsedEvent extends BaseEvent {
   readonly type: 'ABILITY_USED';
   readonly playerId: EntityId;
@@ -300,6 +305,7 @@ export interface AbilityUsedEvent extends BaseEvent {
   readonly healAmount?: number;
   readonly damageByTarget?: ReadonlyMap<EntityId, number>;
   readonly affectedTargetIds?: readonly EntityId[];
+  readonly targetSnapshots?: readonly AbilityTargetSnapshot[];
 }
 
 export interface MasteryUnlockedEvent extends BaseEvent {

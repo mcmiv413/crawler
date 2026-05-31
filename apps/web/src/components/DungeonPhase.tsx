@@ -216,13 +216,14 @@ function MapDisplay({
   const canvasPxWidth = vpTilesWidth * CELL_SIZE;
   const canvasPxHeight = vpTilesHeight * CELL_SIZE;
   const cellSize = CELL_SIZE;
+  const displayMap = renderState.displayMap;
   const ownedAnimationIdSet = new Set<string>(ownedAnimationIds);
   const ownedEntityIdSet = new Set<string>(ownedEntityIds);
   const canvasMap = ownedEntityIdSet.size === 0
-    ? map
+    ? displayMap
     : {
-        ...map,
-        entities: map.entities.filter((entity) => !ownedEntityIdSet.has(entity.id)),
+        ...displayMap,
+        entities: displayMap.entities.filter((entity) => !ownedEntityIdSet.has(entity.id)),
       };
   const canvasStatusPresentations = statusPresentationOwnedByThree
     ? renderState.statusPresentations.filter((presentation) =>
@@ -268,10 +269,10 @@ function MapDisplay({
               skipHandledAnimationIds={ownedAnimationIds}
             />
           )
-          : <DungeonView map={map} vpTilesWidth={vpTilesWidth} vpTilesHeight={vpTilesHeight} />}
+          : <DungeonView map={displayMap} vpTilesWidth={vpTilesWidth} vpTilesHeight={vpTilesHeight} />}
         {shouldRenderThreeOverlay && (
           <ThreeAnimationOverlay
-            map={map}
+            map={displayMap}
             isEnabled={true}
             vpTilesWidth={vpTilesWidth}
             vpTilesHeight={vpTilesHeight}
