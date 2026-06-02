@@ -8,7 +8,7 @@ export const lightningRing: ArmorTemplate = {
   description: 'A crackling ring that grants command over lightning.',
   itemClass: 'armor',
   rarity: 'common',
-  value: 20,
+  value: 1,
   stackable: false,
   maxStack: 1,
   armor: { defense: 0, evasionPenalty: 0, slot: 'ring', ...slots('common') },

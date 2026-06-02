@@ -242,7 +242,7 @@ export const MAGIC = {
   manaRegenPerActiveTurn: 1,
   levelXpTable: XP_TABLE,
   manaPerMagicLevel: 5,
-  schoolMasteryTierThresholds: [0, 20, 60, 140],
+  schoolMasteryTierThresholds: [0, 20, 60],
   schoolDisplayLevelXpAfterCap: 40,
   schoolXpPerBurningKill: 10,
   burnSpreadRadius: 4,
