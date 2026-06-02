@@ -79,6 +79,14 @@ Agent({ prompt: "Read and implement the plan at: .plans/plan-PSRE-349.md" })
 | Review | same as implementation worker | Reviewing needs the same level of care as implementing |
 | Summary generation | same as implementation worker | Keeps the selected low/medium/high route consistent through final reporting |
 
+Upgrade ladder:
+
+```
+goofy -> cody -> codex
+```
+
+The coordinator upgrades only after a structured failure from implementation or review. It never downgrades, and it never retries the same failed worker from the coordinator.
+
 ## Coordinator State
 
 The coordinator maintains minimal state between steps - just the structured response fields it needs to route decisions:
@@ -88,26 +96,48 @@ storyId: string        (from branch name or argument)
 planPath: string       (inferred or explicit)
 forceWorker: string?   (from --force-worker flag)
 skipReview: boolean    (from --skip-review flag)
+workerAttempts: string[] (selected worker plus any upgrades)
 
 # Populated as steps complete:
 selectedWorker: string (from Step 1: WORKER field)
+currentWorker: string  (worker currently handling implementation/review/summary)
 implStatus: string     (from Step 2: STATUS field)
 reviewStatus: string   (from Step 3: STATUS field)
+lastFailure: string?   (compact ERROR line or one-line failed review summary)
 ```
 
 Total state: ~10 short strings. No arrays, no file contents, no output buffers.
 
 ## Error Recovery Philosophy
 
-The coordinator does NOT attempt recovery. Its error handling is:
+The coordinator does NOT inspect or repair failed work. Its recovery is limited to upgrading workers:
 
 1. Check the STATUS field from the worker response
-2. If not "success"/"clean"/"fixed": report the ERROR field to user and stop
-3. Never read files to investigate
-4. Never retry failed workers (the worker already retried internally)
-5. Never attempt to fix issues itself
+2. If implementation or review failed and current worker is `goofy`, upgrade to `cody`
+3. If implementation or review failed and current worker is `cody`, upgrade to `codex`
+4. If implementation or review failed and current worker is `codex`, report the ERROR field and stop
+5. Never read files to investigate
+6. Never retry the same failed worker from the coordinator
+7. Never attempt to fix issues itself
 
-This keeps the coordinator simple and predictable. Complex error recovery belongs in the workers themselves.
+This keeps the coordinator simple and predictable. Complex error recovery belongs in the upgraded worker.
+
+## Upgrade Prompt Context
+
+When upgrading, keep the prompt compact and avoid copying logs, diffs, or plan content:
+
+```
+The previous worker could not complete this phase.
+
+Plan file: {planPath}
+Failed phase: implementation|review
+Previous worker: {worker}
+Attempt chain: {workerAttempts}
+Failure summary: {lastFailure}
+
+Read the plan and current diff yourself. Fix the failed phase without expanding scope.
+Return the same structured response format required for this phase.
+```
 
 ## Git Operations
 

@@ -76,6 +76,39 @@ Escalate to `codex` regardless of size when the plan includes:
 - Unclear approach or requirements
 - Two failed attempts by lower-effort workers
 
+## Difficulty Upgrade Ladder
+
+Initial routing is a starting point, not a permanent ceiling. If the selected worker is having difficulty doing the work correctly, upgrade instead of repeating the same failed route.
+
+Upgrade order:
+
+1. `goofy` -> `cody`
+2. `cody` -> `codex`
+3. `codex` -> stop and ask for manual intervention
+
+Upgrade when any of these happen:
+
+- Implementation returns `STATUS: failure`
+- Review returns `STATUS: failed`
+- The worker reports uncertainty, missing context, or inability to satisfy the plan
+- The worker repeatedly fixes symptoms while tests or plan compliance still fail
+- The worker changes unrelated scope while trying to recover
+- The same failure mode appears after the worker's internal retry/fix iterations
+
+Do not upgrade for harmless style fixes, normal review findings that are fixed cleanly, or a single targeted test failure that the worker corrects within its own allowed iterations.
+
+When upgrading, pass only compact structured context to the stronger worker:
+
+```
+Previous worker: {worker}
+Failed phase: implementation|review
+Failure summary: {ERROR line or one-line issue summary}
+Prior attempts: {worker attempt chain}
+Plan file: {planPath}
+```
+
+The upgraded worker reads the plan and current diff itself. The coordinator still does not inspect file contents or test output.
+
 ## Force Worker Override
 
 User can override assessment with `--force-worker goofy|cody|codex`.

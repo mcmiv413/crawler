@@ -125,7 +125,7 @@ Examples showing how the skill routes implementation work.
 
 ---
 
-## Example 8: Manual intervention required
+## Example 8: Worker upgrade before manual intervention
 
 **User:** `/implementation-coordinator`
 
@@ -133,10 +133,12 @@ Examples showing how the skill routes implementation work.
 1. Assessment selects Cody.
 2. Cody implements.
 3. Review finds a deviation and attempts fixes.
-4. Review still fails after the allowed iterations.
-5. Coordinator stops and reports the structured error line.
+4. Cody review still fails after the allowed iterations.
+5. Coordinator upgrades to Codex and reruns review with the compact failure summary.
+6. If Codex fixes the issue, summary reports `cody -> codex`.
+7. If Codex still fails, coordinator stops and reports the structured error line.
 
-**Outcome:** The coordinator stops cleanly instead of investigating or expanding scope itself.
+**Outcome:** The coordinator tries the stronger worker before asking for manual intervention, without inspecting files itself.
 
 ---
 
@@ -193,7 +195,7 @@ Examples showing how the skill routes implementation work.
 | 5. Large mechanical | Cody | Medium | Yes | Clarity matters more than LOC |
 | 6. Force Codex | Codex | Override | Yes | User preference |
 | 7. Scope creep | Cody | Medium | Yes | Review caught deviations |
-| 8. Failure | Cody | Medium | No | Graceful failure |
+| 8. Upgrade | Cody -> Codex | Medium -> High | Maybe | Escalates before manual intervention |
 | 9. Split | Codex or split | High | Yes | Avoided risky single-shot work |
 | 10. Force Goofy | Goofy | Override | Risky | Requires careful verification |
 
@@ -201,4 +203,5 @@ Examples showing how the skill routes implementation work.
 - Goofy is for low-effort work with explicit inputs and easy proof.
 - Cody is the default for medium implementation work.
 - Codex is for high-effort, ambiguous, or high-risk work.
+- Failed lower-worker attempts upgrade through `goofy -> cody -> codex`.
 - Lower-worker overrides increase verification burden.
