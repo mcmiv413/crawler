@@ -49,6 +49,8 @@ function classifyTargetMode(
       return 'single_enemy';
     case 'nearest_visible_enemy':
       return 'single_enemy';
+    case 'custom':
+      return 'self';
     default:
       return 'self';
   }

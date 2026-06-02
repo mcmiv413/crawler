@@ -19,6 +19,9 @@ import {
   listAnimationIds,
   resetForTesting,
 } from './three-animation-registry.js';
+import { initializeThreeAnimationModules } from './generated/index.js';
+import { lightningStrike } from './modules/impact/lightning-strike.js';
+import { lightningBolt } from './modules/projectile/lightning-bolt.js';
 import type { ThreeAnimationModule } from './three-animation-types.js';
 import type { AnimationCategory } from '@dungeon/content';
 
@@ -187,6 +190,23 @@ describe('listAnimationIds', () => {
     registerAnimationModule(makeModule(ID_IMPACT));
     resetForTesting();
     expect(listAnimationIds()).toEqual([]);
+  });
+});
+
+describe('generated registry integration', () => {
+  beforeEach(() => {
+    resetForTesting();
+  });
+
+  it('registers the built-in lightning strike and lightning bolt modules', () => {
+    initializeThreeAnimationModules();
+
+    expect(getAnimationModule(lightningStrike.id)).toBe(lightningStrike);
+    expect(getAnimationModule(lightningBolt.id)).toBe(lightningBolt);
+    expect(listAnimationIds()).toEqual(expect.arrayContaining([
+      lightningStrike.id,
+      lightningBolt.id,
+    ]));
   });
 });
 

@@ -110,6 +110,49 @@ describe('AbilityDropdown', () => {
     });
   });
 
+  describe('Tile-target abilities', () => {
+    it('signals tile-target flow instead of using target or direction choosers', () => {
+      const onSelect = vi.fn();
+
+      const abilities: AbilityView[] = [
+        {
+          id: 'thunder_step',
+          name: 'Thunder Step',
+          description: 'Teleport to a visible tile in a burst of lightning',
+          ready: true,
+          cooldownRemaining: 0,
+          requiresTarget: false,
+          requiresDirection: false,
+          tileTarget: true,
+        },
+      ];
+
+      render(
+        <AbilityDropdown
+          abilities={abilities}
+          enemies={[
+            createEnemy('enemy1', 1, 0, 'Goblin 1'),
+            createEnemy('enemy2', 0, 1, 'Goblin 2'),
+          ]}
+          inventory={[]}
+          playerX={0}
+          playerY={0}
+          onSelect={onSelect}
+        />
+      );
+
+      fireEvent.click(screen.getByText('Thunder Step'));
+
+      const selection = onSelect.mock.calls[0]?.[0];
+      expect(selection).toEqual({ abilityId: 'thunder_step', tileTarget: true });
+      expect(selection).not.toHaveProperty('targetId');
+      expect(selection).not.toHaveProperty('direction');
+      expect(screen.queryByText('Goblin 1')).not.toBeInTheDocument();
+      expect(screen.queryByText('Goblin 2')).not.toBeInTheDocument();
+      expect(screen.queryByText('Select trap placement direction')).not.toBeInTheDocument();
+    });
+  });
+
   describe('Single-target abilities', () => {
     it('auto-fires when exactly one enemy in range', () => {
       const onSelect = vi.fn();

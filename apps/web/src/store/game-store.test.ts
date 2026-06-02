@@ -186,6 +186,13 @@ describe('useGameStore (Zustand)', () => {
       expect(result.current.view).toBeNull();
       expect(result.current.loading).toBe(false);
       expect(result.current.error).toBeNull();
+      act(() => {
+        result.current.startTileTargeting('thunder_step');
+      });
+      expect(result.current.tileTargetMode).toEqual({
+        active: true,
+        selectedAbilityId: 'thunder_step',
+      });
 
       // Call createGame
       await act(async () => {
@@ -200,6 +207,7 @@ describe('useGameStore (Zustand)', () => {
       expect(result.current.error).toBeNull();
       expect(result.current.combatLog).toHaveLength(0);
       expect(result.current.sessionToken).toBe(sessionToken);
+      expect(result.current.tileTargetMode).toEqual({ active: false, selectedAbilityId: null });
 
       // Verify saveSession was called
       expect(sessionPersistence.saveSession).toHaveBeenCalledWith(mockGameId, serializedState, sessionToken);
@@ -532,6 +540,13 @@ describe('useGameStore (Zustand)', () => {
       const restoredView = createMockGameView({ gameId: mockGameId });
 
       const { result } = renderHook(() => useGameStore());
+      act(() => {
+        result.current.startTileTargeting('thunder_step');
+      });
+      expect(result.current.tileTargetMode).toEqual({
+        active: true,
+        selectedAbilityId: 'thunder_step',
+      });
 
       // Mock session persistence
       vi.mocked(sessionPersistence.loadSession).mockReturnValueOnce({
@@ -556,6 +571,7 @@ describe('useGameStore (Zustand)', () => {
       expect(result.current.view?.gameId).toBe(mockGameId);
       expect(result.current.combatLog).toHaveLength(0);
       expect(result.current.loading).toBe(false);
+      expect(result.current.tileTargetMode).toEqual({ active: false, selectedAbilityId: null });
     });
 
     it('cold start: Fallback to restoreGame → restores state OR clears on corruption', async () => {
@@ -565,6 +581,13 @@ describe('useGameStore (Zustand)', () => {
       const restoredView = createMockGameView({ gameId: mockGameId });
 
       const { result } = renderHook(() => useGameStore());
+      act(() => {
+        result.current.startTileTargeting('thunder_step');
+      });
+      expect(result.current.tileTargetMode).toEqual({
+        active: true,
+        selectedAbilityId: 'thunder_step',
+      });
 
       // Mock session persistence
       vi.mocked(sessionPersistence.loadSession).mockReturnValueOnce({
@@ -595,6 +618,7 @@ describe('useGameStore (Zustand)', () => {
       expect(result.current.gameId).toBe(mockGameId);
       expect(result.current.view).not.toBeNull();
       expect(vi.mocked(mockRestoreGame)).toHaveBeenCalledWith(serializedState, sessionToken);
+      expect(result.current.tileTargetMode).toEqual({ active: false, selectedAbilityId: null });
     });
 
     it('clears the saved session when restore confirms the local save is invalid', async () => {
@@ -820,6 +844,29 @@ describe('useGameStore (Zustand)', () => {
     });
   });
 
+  describe('tile targeting', () => {
+    it('tracks the selected tile-target ability until targeting is cancelled', () => {
+      const { result } = renderHook(() => useGameStore());
+
+      expect(result.current.tileTargetMode).toEqual({ active: false, selectedAbilityId: null });
+
+      act(() => {
+        result.current.startTileTargeting('thunder_step');
+      });
+
+      expect(result.current.tileTargetMode).toEqual({
+        active: true,
+        selectedAbilityId: 'thunder_step',
+      });
+
+      act(() => {
+        result.current.cancelTileTargeting();
+      });
+
+      expect(result.current.tileTargetMode).toEqual({ active: false, selectedAbilityId: null });
+    });
+  });
+
   // ============================================================================
   // State mutation and error clearing Tests
   // ============================================================================
@@ -855,7 +902,12 @@ describe('useGameStore (Zustand)', () => {
           error: 'some error',
           autoWalkPath: [{ x: 1, y: 1 }],
           autoWalkKnownEnemyIds: new Set(['enemy-1']),
+          tileTargetMode: { active: true, selectedAbilityId: 'thunder_step' },
         });
+      });
+      expect(result.current.tileTargetMode).toEqual({
+        active: true,
+        selectedAbilityId: 'thunder_step',
       });
 
       // Reset
@@ -870,6 +922,7 @@ describe('useGameStore (Zustand)', () => {
       expect(result.current.error).toBeNull();
       expect(result.current.autoWalkPath).toHaveLength(0);
       expect(result.current.autoWalkKnownEnemyIds.size).toBe(0);
+      expect(result.current.tileTargetMode).toEqual({ active: false, selectedAbilityId: null });
 
       // Verify clearSession was called
       expect(sessionPersistence.clearSession).toHaveBeenCalled();

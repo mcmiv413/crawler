@@ -144,6 +144,9 @@ function resolveSelector(
       return mutableTargets;
     }
 
+    case 'custom':
+      return [];
+
     default:
       // eslint-disable-next-line @typescript-eslint/no-explicit-any
       throw new Error(`Unknown selector kind: ${(selector as any).kind}`);

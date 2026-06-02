@@ -25,10 +25,10 @@ const EMPTY_AUTO_WALK_KNOWN_ENEMY_IDS: ReadonlySet<string> = new Set();
 
 export function useWalkController(): void {
   const loading = useGameStore((state) => state.loading);
-  const phase = useGameStore((state) => state.view?.phase ?? null);
-  const autoWalkPath = useGameStore((state) => state.autoWalkPath ?? EMPTY_AUTO_WALK_PATH);
+  const phase = useGameStore((state) => state.view?.phase);
+  const autoWalkPath = useGameStore((state) => state.autoWalkPath);
   const autoWalkKnownEnemyIds = useGameStore(
-    (state) => state.autoWalkKnownEnemyIds ?? EMPTY_AUTO_WALK_KNOWN_ENEMY_IDS,
+    (state) => state.autoWalkKnownEnemyIds,
   );
 
   const autoWalkSessionRef = useRef<AutoWalkSession | null>(null);

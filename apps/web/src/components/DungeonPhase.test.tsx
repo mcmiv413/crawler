@@ -1199,6 +1199,82 @@ describe('DungeonPhase – overlay ownership and canvas fallback', () => {
     });
   });
 
+  it('filters canvas to exclude Three-owned status presentations when ownership is mixed', async () => {
+    overlayLifecycleState.mountedIds = ['fx.status.gold-ring-pulse'];
+    overlayLifecycleState.mountedOwnership = {
+      animationIds: ['fx.status.gold-ring-pulse'],
+      entityIds: ['player-1'],
+      statusPresentation: false, // false: not all statuses are owned by Three
+      combatIndicators: false,
+    };
+    gameStoreSpy.statuses = [
+      {
+        id: 'strength_up',
+        name: 'Strength Up',
+        turnsRemaining: 3,
+        beneficial: true,
+        presentation: {
+          animationId: 'fx.status.gold-ring-pulse', // Three-owned
+          entityScale: 1.35,
+          ring: {
+            colorRgb: '255, 200, 0',
+            alphaBase: 0.35,
+            alphaAmplitude: 0.45,
+            pulsePeriodMs: 180,
+            lineWidth: 1.5,
+            paddingPx: 2,
+          },
+        },
+      },
+      {
+        id: 'fire_weakness',
+        name: 'Fire Weakness',
+        turnsRemaining: 2,
+        beneficial: false,
+        presentation: {
+          // No animationId: canvas-only status
+          entityScale: 1.1,
+          ring: {
+            colorRgb: '255, 50, 0',
+            alphaBase: 0.3,
+            alphaAmplitude: 0.4,
+            pulsePeriodMs: 200,
+            lineWidth: 1,
+            paddingPx: 1,
+          },
+        },
+      },
+    ];
+
+    renderDungeonPhase({
+      map: {
+        ...BASE_MAP,
+        entities: [
+          {
+            id: 'player-1',
+            x: 5,
+            y: 5,
+            ascii: '@',
+            color: '#ffffff',
+            name: 'Hero',
+            type: 'player',
+            templateId: null,
+          },
+        ],
+      },
+    }, { useSprites: true });
+
+    await waitFor(() => {
+      // Canvas should receive only the unowned status (fire_weakness)
+      const canvasStatusArg = vi.mocked(renderMap).mock.calls.at(-1)?.[10];
+      expect(canvasStatusArg?.statusPresentations).toHaveLength(1);
+      expect(canvasStatusArg?.statusPresentations?.[0]?.ring?.colorRgb).toBe('255, 50, 0');
+
+      // Overlay should have the owned animation ID
+      expect(screen.getByTestId('three-animation-overlay')).toBeInTheDocument();
+    });
+  });
+
   it('suppresses DOM combat indicators after Three claims combat-indicator ownership', async () => {
     combatIndicatorState.current = [
       {

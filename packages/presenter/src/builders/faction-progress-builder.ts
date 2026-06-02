@@ -51,6 +51,17 @@ function buildWorldEffectText(faction: FactionState, powerBand: FactionPowerBand
   return `${powerBand[0]!.toUpperCase()}${powerBand.slice(1)} dungeon pressure: members spawn at ${formatBandMultiplier(spawnMultiplier)} and fight at ${formatBandMultiplier(strengthMultiplier)} strength.${leaderClause}`;
 }
 
+
+function getLeaderStateText(leader: FactionLeaderView): string {
+  if (leader.state === 'emerged' && leader.name && leader.title) {
+    return `${leader.name}, ${leader.title}`;
+  }
+  if (leader.state === 'slain') {
+    return 'Leader slain';
+  }
+  return 'No active leader';
+}
+
 function buildTownEffectText(faction: FactionState, powerBand: FactionPowerBand): string {
   const bandImpact = FACTION_CONFIG.town.impactByBand[powerBand];
   const ledModifier = faction.status === 'led' ? FACTION_CONFIG.town.activeLeaderImpactModifier : 0;
@@ -70,6 +81,7 @@ export function buildFactionView(
 ): FactionView {
   const powerBand = getFactionPowerBand(faction);
   const definition = FACTIONS.get(faction.id);
+  const leaderView = buildLeaderView(faction);
 
   return {
     id: faction.id,
@@ -80,12 +92,13 @@ export function buildFactionView(
     disposition: faction.disposition,
     status: faction.status,
     powerBand,
-    leader: buildLeaderView(faction),
+    leader: leaderView,
     membersKilledByPlayer: faction.membersKilledByPlayer,
     leadersKilledByPlayer: faction.leadersKilledByPlayer,
     playerDeathsCaused: faction.playerDeathsCaused,
     worldEffectText: buildWorldEffectText(faction, powerBand),
     townEffectText: buildTownEffectText(faction, powerBand),
+    leaderStateText: getLeaderStateText(leaderView),
     currentDungeonEnemies,
   };
 }

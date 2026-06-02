@@ -7,8 +7,8 @@
  * Consumers must dot-walk through animationRefs to reference animations.
  */
 
-import { radialImpactBurst, forwardSlash, cleaveArc as cleaveArcImpact, executionStrike, staggerShockwave, shatterBurst as shatterBurstImpact, riposteGlint, bleedingStrike, disarmStrike } from './impact.js';
-import { singleArrow, arrowVolley, emberBolt } from './projectile.js';
+import { radialImpactBurst, forwardSlash, cleaveArc as cleaveArcImpact, executionStrike, staggerShockwave, shatterBurst as shatterBurstImpact, riposteGlint, bleedingStrike, disarmStrike, lightningStrike } from './impact.js';
+import { singleArrow, arrowVolley, emberBolt, lightningBolt } from './projectile.js';
 import { healingPulse, staminaSurge, cureSparkle, secondWindBuff, heatSurgeAura } from './self.js';
 import { bombBlast, cleaveArc as cleaveArcAoe, shatterBurst as shatterBurstAoe, cinderWake } from './aoe.js';
 import { goldRingPulse, heatSurgeRing, arcaneChargeRing } from './status.js';
@@ -25,11 +25,13 @@ export const animationRefs = {
     riposteGlint,
     bleedingStrike,
     disarmStrike,
+    lightningStrike,
   },
   projectile: {
     singleArrow,
     arrowVolley,
     emberBolt,
+    lightningBolt,
   },
   self: {
     healingPulse,

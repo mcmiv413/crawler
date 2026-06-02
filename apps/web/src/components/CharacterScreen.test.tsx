@@ -57,6 +57,7 @@ function createPlayer(overrides?: Partial<PlayerHudView>): PlayerHudView {
           emergedOnRun: 2,
           emergedOnDepth: 3,
         },
+        leaderStateText: 'Brakka, Knife-King',
         membersKilledByPlayer: 6,
         leadersKilledByPlayer: 0,
         playerDeathsCaused: 1,

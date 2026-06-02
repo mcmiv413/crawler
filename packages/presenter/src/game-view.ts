@@ -66,6 +66,7 @@ export interface FactionView {
   readonly playerDeathsCaused: number;
   readonly worldEffectText: string;
   readonly townEffectText: string;
+  readonly leaderStateText: string;
   readonly currentDungeonEnemies: readonly string[];
 }
 
@@ -132,6 +133,7 @@ export interface AbilityView {
   readonly requiresTarget: boolean;
   readonly requiresDirection?: boolean;
   readonly isRanged?: boolean;
+  readonly tileTarget?: boolean;  // Indicates ability requires visible-tile selection
   readonly targetRange?: {
     readonly max: number;
     readonly min: number;
@@ -400,6 +402,7 @@ export interface AvailableAction {
   readonly enabled: boolean;
   readonly targetId?: string;
   readonly targetPosition?: { readonly x: number; readonly y: number };
+  readonly tileTarget?: boolean;  // Indicates ability requires tile selection instead of dropdown
   readonly description?: string;  // For tooltips
 }
 
@@ -452,6 +455,13 @@ export interface RingSchoolMasteryView {
   readonly nextDisplayLevelXp: number;
 }
 
+export interface SchoolGateView {
+  readonly school: string;
+  readonly currentXp: number;
+  readonly requiredXp: number;
+  readonly met: boolean;
+}
+
 export interface RingSpellView {
   readonly spellId: string;
   readonly name: string;
@@ -467,14 +477,14 @@ export interface RingSpellView {
   readonly unlocked: boolean;
   readonly affordable: boolean;
   readonly canStudy: boolean;
-  readonly requiredSchoolXp: number;
+  readonly schoolGates: readonly SchoolGateView[];
   readonly goldCost: number;
-  readonly currentSchoolXp: number;
 }
 
 export interface TownStudyableSpellView extends RingSpellView {
   readonly currentSchoolLevel: number;
   readonly nextSchoolLevelXp: number;
+  readonly schoolMasteries: readonly RingSchoolMasteryView[];
 }
 
 export interface NpcView {

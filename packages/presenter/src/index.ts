@@ -12,6 +12,7 @@ export {
   PLAYER_STATUS_PRESENTATION,
   getBeatSettleMs,
 } from './animation-metadata.js';
+
 export type { AnimatedEvent } from './animation-sequence.js';
 export type { ConsumableAnimationEffect } from './animation-metadata.js';
 export type * from './game-view.js';

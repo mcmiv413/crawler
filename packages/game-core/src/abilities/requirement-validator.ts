@@ -13,6 +13,7 @@ export function validateRequirement(
   state: GameState,
   target: HasStats | undefined,
   direction?: Direction,
+  targetPosition?: { x: number; y: number },
 ): boolean {
   switch (requirement.kind) {
     case 'has_mana':
@@ -23,6 +24,10 @@ export function validateRequirement(
       return target !== undefined;
     case 'no_target':
       return target === undefined;
+    case 'has_tile_target':
+      return targetPosition !== undefined;
+    case 'custom_requirement':
+      return true; // Validated by custom handler
     case 'player_missing_hp':
       return player.stats.health < player.stats.maxHealth;
     case 'target_in_melee_range':
@@ -49,8 +54,9 @@ export function validateAllRequirements(
   state: GameState,
   target: HasStats | undefined,
   direction?: Direction,
+  targetPosition?: { x: number; y: number },
 ): boolean {
-  return requirements.every((req) => validateRequirement(req, player, state, target, direction));
+  return requirements.every((req) => validateRequirement(req, player, state, target, direction, targetPosition));
 }
 
 function isInMeleeRange(player: Player, target: HasStats): boolean {

@@ -43,6 +43,32 @@ describe('magic-xp', () => {
     expect(updated.learnedRingSpellIds).toContain(spellId);
   });
 
+  it('applies a multi-school spell cast XP gain to every listed school', () => {
+    const thunderstormCast = {
+      schools: ['fire', 'lightning'] as const,
+      xpGainOnCast: 3,
+    };
+    const player = createTestPlayer({
+      ringMastery: {
+        fire: { xp: 10 },
+        lightning: { xp: 20 },
+      },
+    });
+
+    const updated = thunderstormCast.schools.reduce(
+      (currentPlayer, school) => gainSchoolXp(currentPlayer, school, thunderstormCast.xpGainOnCast),
+      player,
+    );
+
+    expect(updated.ringMastery.fire?.xp).toBe((player.ringMastery.fire?.xp ?? 0) + thunderstormCast.xpGainOnCast);
+    expect(updated.ringMastery.lightning?.xp).toBe(
+      (player.ringMastery.lightning?.xp ?? 0) + thunderstormCast.xpGainOnCast,
+    );
+    expect(getTotalMagicXp(updated) - getTotalMagicXp(player)).toBe(
+      thunderstormCast.schools.length * thunderstormCast.xpGainOnCast,
+    );
+  });
+
   it('increases max mana when total magic XP crosses a global magic-level threshold', () => {
     const player = createTestPlayer({
       ringMastery: {

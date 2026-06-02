@@ -6,6 +6,7 @@ import {
   getThreeOwnedEntityIds,
   isStatusPresentationOwnedByThree,
   areCombatIndicatorsOwnedByThree,
+  isAnimationOwnedByThree,
 } from './three-animation-ownership.js';
 import type { AnimationId } from '@dungeon/content';
 import type { EntityId } from '@dungeon/contracts';
@@ -126,4 +127,29 @@ describe('AnimationOwnershipState', () => {
       expect(getThreeOwnedAnimationIds(state)).toEqual(['fx.impact.radial-impact-burst']);
     });
   });
+
+  describe('isAnimationOwnedByThree', () => {
+    it('returns false for undefined animation ID', () => {
+      const result = isAnimationOwnedByThree(undefined, ['fx.self.healing-pulse']);
+      expect(result).toBe(false);
+    });
+
+    it('returns true when animation ID is in owned IDs', () => {
+      const ownedIds: AnimationId[] = ['fx.self.healing-pulse', 'fx.impact.radial-impact-burst'];
+      const result = isAnimationOwnedByThree('fx.self.healing-pulse', ownedIds);
+      expect(result).toBe(true);
+    });
+
+    it('returns false when animation ID is not in owned IDs', () => {
+      const ownedIds: AnimationId[] = ['fx.self.healing-pulse'];
+      const result = isAnimationOwnedByThree('fx.impact.radial-impact-burst', ownedIds);
+      expect(result).toBe(false);
+    });
+
+    it('returns false for empty owned IDs', () => {
+      const result = isAnimationOwnedByThree('fx.self.healing-pulse', []);
+      expect(result).toBe(false);
+    });
+  });
+
 });

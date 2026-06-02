@@ -101,26 +101,33 @@ function buildStudyableSpellViews(
   equippedItemIds: readonly string[],
 ): RingSpellView[] {
   return evaluateAllRingSpellStudy(state.player, equippedItemIds)
-    .filter(result => result.unlockedForStudy)
-    .map(result => ({
-      spellId: result.spell.id,
-      name: result.spell.name,
-      description: result.spell.description,
-      schools: result.spell.schools,
-      cooldown: result.spell.cooldown,
-      manaCost: result.spell.manaCost ?? 0,
-      xpGainOnCast: result.spell.xpGainOnCast,
-      baseDamage: result.spell.baseDamage ?? 0,
-      range: result.spell.range,
-      unlockLevel: result.requiredSchoolXp,
-      learned: result.alreadyLearned,
-      unlocked: result.unlockedForStudy,
-      affordable: result.affordable,
-      canStudy: result.canStudy,
-      requiredSchoolXp: result.requiredSchoolXp,
-      goldCost: result.goldCost,
-      currentSchoolXp: result.currentSchoolXp,
-    }));
+    .filter(result => result.visibleForStudy)
+    .map(result => {
+      const primaryGate = result.schoolGates[0];
+      return {
+        spellId: result.spell.id,
+        name: result.spell.name,
+        description: result.spell.description,
+        schools: result.spell.schools,
+        cooldown: result.spell.cooldown,
+        manaCost: result.spell.manaCost ?? 0,
+        xpGainOnCast: result.spell.xpGainOnCast,
+        baseDamage: result.spell.baseDamage ?? 0,
+        range: result.spell.range,
+        unlockLevel: primaryGate?.requiredXp ?? 0,
+        learned: result.alreadyLearned,
+        unlocked: result.unlockedForStudy,
+        affordable: result.affordable,
+        canStudy: result.canStudy,
+        schoolGates: result.schoolGates.map((gate) => ({
+          school: gate.school,
+          currentXp: gate.currentXp,
+          requiredXp: gate.requiredXp,
+          met: gate.met,
+        })),
+        goldCost: result.goldCost,
+      };
+    });
 }
 
 export function buildRingMagicSection(state: GameState): RingMagicSection {

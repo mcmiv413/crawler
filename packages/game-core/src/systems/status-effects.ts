@@ -1,9 +1,11 @@
 import type { Player, EnemyInstance, EntityId, StatusId, GameState, DamageType } from '@dungeon/contracts';
 import type { StatusEffect } from '@dungeon/contracts';
 import type { DomainEvent } from '@dungeon/contracts';
+import type { SeededRNG } from '../utils/rng.js';
 import { posKey } from '@dungeon/contracts';
 import { MAGIC, STATUS_DEFAULTS } from '@dungeon/content';
 import { applyDamageToPlayer, applyDamageToEnemy, createDamageDebugEvent } from './damage.js';
+import { processEnemyKill } from '../engine/enemy-death-pipeline.js';
 
 /** Map status IDs that deal damage to their damage types */
 function statusToDamageType(statusId: StatusId): DamageType | null {
@@ -20,6 +22,7 @@ function statusToDamageType(statusId: StatusId): DamageType | null {
     panic: null,
     heat_surge: null,
     arcane_charge: null,
+    storm_active: null,
   };
   return map[statusId] ?? null;
 }
@@ -117,6 +120,7 @@ export function applyStatusToEnemy(
 export function tickPlayerStatuses(
   state: GameState,
   turnNumber: number,
+  rng?: SeededRNG,
 ): { state: GameState; events: DomainEvent[] } {
   let currentState = state;
   let allEvents: DomainEvent[] = [];
@@ -167,6 +171,83 @@ export function tickPlayerStatuses(
           },
         },
       };
+    }
+  }
+
+  // Handle storm_active: strike 1-3 random visible enemies with shock + burn + stun
+  const stormStatus = state.player.statuses.find(s => s.id === 'storm_active');
+  if (stormStatus !== undefined && currentState.player.stats.health > 0 && currentState.run !== null && rng !== undefined) {
+    const visibleEnemies = Array.from(currentState.run.enemies.values()).filter(enemy => {
+      const key = posKey(enemy.position);
+      const cell = currentState.run!.floor.cells.get(key);
+      return cell !== undefined && cell.visibility === 'visible';
+    });
+
+    if (visibleEnemies.length > 0) {
+      // Randomly select 1-3 targets
+      const targetCount = Math.min(visibleEnemies.length, 1 + rng.int(0, 2)); // 1-3
+      const shuffled = rng.shuffle(visibleEnemies);
+      const targets = shuffled.slice(0, targetCount);
+
+      // Strike each target with shock damage + burn + stun
+      for (const enemy of targets) {
+        const enemyKey = posKey(enemy.position);
+        const baseDamage = 8; // Thunderstorm strike damage
+        const damageResult = applyDamageToEnemy(currentState, enemy.id, {
+          amount: baseDamage,
+          damageType: 'shock',
+          source: 'ability',
+          bypassDefense: false,
+          bypassResistance: false,
+        });
+        currentState = damageResult.state;
+
+        allEvents = [...allEvents, {
+          type: 'ABILITY_USED',
+          playerId: currentState.player.id,
+          abilityId: 'thunderstorm',
+          abilityName: 'Thunderstorm Strike',
+          targetId: enemy.id,
+          targetName: enemy.name,
+          damage: damageResult.finalDamage,
+          timestamp: turnNumber,
+          turnNumber,
+          targetSnapshots: [{ targetId: enemy.id, position: { ...enemy.position } }],
+        }];
+
+        if (damageResult.killed === true) {
+          const killResult = processEnemyKill(currentState, enemy, enemyKey, rng);
+          currentState = killResult.state;
+          allEvents = [...allEvents, ...killResult.events];
+          continue;
+        }
+
+        // Apply burn (2 turns, magnitude 1)
+        const burnedEnemy = currentState.run!.enemies.get(enemyKey);
+        if (burnedEnemy !== undefined) {
+          const withBurn = applyStatusToEnemy(burnedEnemy, 'burn', 2, 1, currentState.player.id);
+          currentState = {
+            ...currentState,
+            run: {
+              ...currentState.run!,
+              enemies: new Map(currentState.run!.enemies).set(enemyKey, withBurn),
+            },
+          };
+        }
+
+        // Apply stun long enough to survive the end-of-round enemy status tick
+        const stunnedEnemy = currentState.run!.enemies.get(enemyKey);
+        if (stunnedEnemy !== undefined) {
+          const withStun = applyStatusToEnemy(stunnedEnemy, 'stun', 2, 1, currentState.player.id);
+          currentState = {
+            ...currentState,
+            run: {
+              ...currentState.run!,
+              enemies: new Map(currentState.run!.enemies).set(enemyKey, withStun),
+            },
+          };
+        }
+      }
     }
   }
 

@@ -53,5 +53,11 @@ export function buildRingSpellStatusEffect(
 }
 
 function getRingSpellDamageType(spell: RingSpellDefinition): DamageType {
-  return spell.schools[0] === 'fire' ? 'fire' : 'arcane';
+  if (spell.schools.includes('fire') && !spell.schools.includes('lightning')) {
+    return 'fire';
+  }
+  if (spell.schools.includes('lightning')) {
+    return 'shock';
+  }
+  return 'arcane';
 }

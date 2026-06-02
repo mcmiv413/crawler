@@ -2,8 +2,9 @@ import { describe, it, expect, beforeEach } from 'vitest';
 import { buildPlayerHud } from './player-hud-builder.js';
 import { PLAYER_STATUS_PRESENTATION, getStatusPresentation } from '../animation-metadata.js';
 import { createTestGameState, createTestRunState, createTestGameStateWithAbility } from '@dungeon/core/testing';
+import { addItemToInventory, equipItem, unequipItem } from '@dungeon/core';
 import { entityId } from '@dungeon/contracts';
-import type { GameState } from '@dungeon/contracts';
+import type { GameState, ArmorTemplate } from '@dungeon/contracts';
 
 describe('buildPlayerHud', () => {
   let state: GameState;
@@ -11,6 +12,19 @@ describe('buildPlayerHud', () => {
   beforeEach(() => {
     state = createTestGameState();
   });
+
+  const lightningRingFixture: ArmorTemplate = {
+    itemId: 'lightning_ring',
+    spriteName: 'topaz ring',
+    name: 'Lightning Ring',
+    description: 'A crackling ring that grants command over storms.',
+    itemClass: 'armor',
+    rarity: 'common',
+    value: 20,
+    stackable: false,
+    maxStack: 1,
+    armor: { defense: 0, evasionPenalty: 0, slot: 'ring', enchantmentSlots: 0, enchantments: [] },
+  };
 
   describe('basic player stats', () => {
     it('displays player name', () => {
@@ -308,7 +322,7 @@ describe('buildPlayerHud', () => {
         {
           school: 'fire',
           xp: 100,
-          displayLevel: 3,
+          displayLevel: 2,
           nextDisplayLevelXp: 140,
         },
       ]);
@@ -319,6 +333,115 @@ describe('buildPlayerHud', () => {
           xpGainOnCast: 2,
         }),
       ]);
+    });
+
+    it('shows Lightning mastery after equipping a Lightning Ring before any Lightning spell is learned', () => {
+      state = createTestGameState({
+        player: {
+          abilities: [{ id: 'second_wind', cooldownRemaining: 0 }],
+        },
+      });
+      const { state: withRingInInventory } = addItemToInventory(state, lightningRingFixture);
+      const ringId = withRingInInventory.player.inventory[0]!;
+      const { state: equipped } = equipItem(withRingInInventory, ringId);
+
+      const hud = buildPlayerHud(equipped);
+
+      expect(hud.ringSchoolMasteries).toEqual(expect.arrayContaining([
+        expect.objectContaining({
+          school: 'lightning',
+          xp: 0,
+        }),
+      ]));
+      expect(hud.learnedSpells).toEqual([]);
+      expect(hud.abilities.map(ability => ability.id)).toContain('second_wind');
+      expect(hud.abilities.map(ability => ability.id)).not.toContain('bolt');
+    });
+
+    it('keeps learned Lightning spells in the HUD but only exposes them as castable abilities while a Lightning Ring stays equipped', () => {
+      state = createTestGameState({
+        player: {
+          abilities: [{ id: 'second_wind', cooldownRemaining: 0 }],
+          ringMastery: {
+            lightning: {
+              xp: 60,
+            },
+          },
+          learnedRingSpellIds: ['bolt'],
+        },
+      });
+      const { state: withRingInInventory } = addItemToInventory(state, lightningRingFixture);
+      const ringId = withRingInInventory.player.inventory[0]!;
+      const { state: equipped } = equipItem(withRingInInventory, ringId);
+
+      const equippedHud = buildPlayerHud(equipped);
+      expect(equippedHud.abilities.map(ability => ability.id)).toContain('bolt');
+      expect(equippedHud.learnedSpells).toEqual(expect.arrayContaining([
+        expect.objectContaining({
+          spellId: 'bolt',
+          schools: ['lightning'],
+        }),
+      ]));
+      expect(equippedHud.ringSchoolMasteries).toEqual(expect.arrayContaining([
+        expect.objectContaining({
+          school: 'lightning',
+          xp: 60,
+        }),
+      ]));
+
+      const { state: unequipped } = unequipItem(equipped, ringId);
+      const unequippedHud = buildPlayerHud(unequipped);
+
+      expect(unequippedHud.abilities.map(ability => ability.id)).not.toContain('bolt');
+      expect(unequippedHud.learnedSpells).toEqual(expect.arrayContaining([
+        expect.objectContaining({
+          spellId: 'bolt',
+          schools: ['lightning'],
+        }),
+      ]));
+      expect(unequippedHud.ringSchoolMasteries).toEqual(expect.arrayContaining([
+        expect.objectContaining({
+          school: 'lightning',
+          xp: 60,
+        }),
+      ]));
+    });
+
+    it('keeps learned Lightning spells castable in the HUD when a second equipped Lightning Ring still satisfies the school requirement', () => {
+      state = createTestGameState({
+        player: {
+          abilities: [{ id: 'second_wind', cooldownRemaining: 0 }],
+          ringMastery: {
+            lightning: {
+              xp: 60,
+            },
+          },
+          learnedRingSpellIds: ['bolt'],
+        },
+      });
+      const { state: withFirstRingInInventory } = addItemToInventory(state, lightningRingFixture);
+      const { state: withBothRingsInInventory } = addItemToInventory(withFirstRingInInventory, lightningRingFixture);
+      const firstRingId = withBothRingsInInventory.player.inventory[0]!;
+      const secondRingId = withBothRingsInInventory.player.inventory[1]!;
+      const { state: withFirstRing } = equipItem(withBothRingsInInventory, firstRingId);
+      const { state: withBothRings } = equipItem(withFirstRing, secondRingId);
+      const { state: withOneRingRemoved } = unequipItem(withBothRings, firstRingId);
+
+      const hud = buildPlayerHud(withOneRingRemoved);
+
+      expect(hud.abilities.map(ability => ability.id)).toContain('bolt');
+      expect(hud.learnedSpells).toEqual(expect.arrayContaining([
+        expect.objectContaining({
+          spellId: 'bolt',
+          schools: ['lightning'],
+        }),
+      ]));
+      expect(hud.ringSchoolMasteries).toEqual(expect.arrayContaining([
+        expect.objectContaining({
+          school: 'lightning',
+          xp: 60,
+        }),
+      ]));
     });
   });
 

@@ -18,6 +18,7 @@ import { leatherCap } from './leather-cap.js';
 import { leatherGloves } from './leather-gloves.js';
 import { leatherVest } from './leather-vest.js';
 import { leechWraps } from './leech-wraps.js';
+import { lightningRing } from './lightning-ring.js';
 import { mindVeil } from './mind-veil.js';
 import { phaseSteps } from './phase-steps.js';
 import { plagueMantle } from './plague-mantle.js';
@@ -51,6 +52,7 @@ export const ARMOR: readonly ArmorTemplate[] = [
   leatherGloves,
   leatherVest,
   leechWraps,
+  lightningRing,
   mindVeil,
   phaseSteps,
   plagueMantle,
@@ -67,7 +69,7 @@ export const ARMOR: readonly ArmorTemplate[] = [
 ];
 
 export {
-  blessedRing, boneGuardPlate, chainGauntlets, chainShirt, copperRing, emberCloak, emberRing, fireRing, fireWardCloak, gripGauntlets, ironBand, ironCrown, ironHelm, leatherBoots, leatherCap, leatherGloves, leatherVest, leechWraps, mindVeil, phaseSteps, plagueMantle, plateArmor, regenVest, shadowRing, shadowVest, silverBand, spikedLeather, steelSabatons, swiftBoots, venomRing, wardenHelm,
+  blessedRing, boneGuardPlate, chainGauntlets, chainShirt, copperRing, emberCloak, emberRing, fireRing, fireWardCloak, gripGauntlets, ironBand, ironCrown, ironHelm, leatherBoots, leatherCap, leatherGloves, leatherVest, leechWraps, lightningRing, mindVeil, phaseSteps, plagueMantle, plateArmor, regenVest, shadowRing, shadowVest, silverBand, spikedLeather, steelSabatons, swiftBoots, venomRing, wardenHelm,
 };
 
 // Add custom utilities below this line ↓

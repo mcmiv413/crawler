@@ -2,7 +2,7 @@ import { describe, it, expect } from 'vitest';
 import { processEnemyTurns } from './turn-scheduler.js';
 import { SeededRNG } from '../utils/rng.js';
 import { entityId, posKey, EMPTY_WEAPON_MASTERY, EMPTY_RUN_METRICS } from '@dungeon/contracts';
-import type { GameState, EnemyInstance, MapCell, RunState } from '@dungeon/contracts';
+import type { AbilityUsedEvent, GameState, EnemyInstance, MapCell, RunState } from '@dungeon/contracts';
 import { createTestGameState, createTestEnemy, createTestGameStateInCombat } from '../test-utils.js';
 
 // ---------------------------------------------------------------------------
@@ -277,6 +277,112 @@ describe('processEnemyTurns', () => {
       (e as any).type === 'DAMAGE_TAKEN' || (e as any).type === 'STATUS_TICKED' || (e as any).type === 'ENEMY_DAMAGED'
     );
     expect(damageOrStatusEvent || updatedEnemy!.stats.health < healthBefore).toBe(true);
+  });
+
+  it('uses seeded RNG to keep thunderstorm strike selection deterministic during processEnemyTurns', () => {
+    const rememberedFloorCell: MapCell = {
+      ...FLOOR_TILE,
+      visibility: 'remembered',
+    };
+    const durableEnemyStats = {
+      maxHealth: 100,
+      health: 100,
+      attack: 8,
+      defense: 0,
+      accuracy: 70,
+      evasion: 15,
+      speed: 120,
+    };
+
+    const buildStormState = () => {
+      const visibleEnemies = [
+        createTestEnemy({ position: { x: 6, y: 0 }, stats: durableEnemyStats, isAlerted: false, ambientBehaviorProfile: undefined }),
+        createTestEnemy({ position: { x: 7, y: 0 }, stats: durableEnemyStats, isAlerted: false, ambientBehaviorProfile: undefined }),
+        createTestEnemy({ position: { x: 6, y: 1 }, stats: durableEnemyStats, isAlerted: false, ambientBehaviorProfile: undefined }),
+        createTestEnemy({ position: { x: 7, y: 1 }, stats: durableEnemyStats, isAlerted: false, ambientBehaviorProfile: undefined }),
+      ];
+      const hiddenEnemy = createTestEnemy({
+        position: { x: 8, y: 8 },
+        stats: durableEnemyStats,
+        isAlerted: false,
+        ambientBehaviorProfile: undefined,
+      });
+      const cells = makeOpenCells(10, 10);
+      cells.set(posKey(hiddenEnemy.position), rememberedFloorCell);
+
+      return makeTurnState(
+        { x: 0, y: 0 },
+        [...visibleEnemies, hiddenEnemy],
+        {
+          cells,
+          playerStatuses: [{ id: 'storm_active', turnsRemaining: 3, magnitude: 1, sourceId: null }],
+        },
+      );
+    };
+
+    const firstResult = processEnemyTurns(buildStormState(), new SeededRNG(12345));
+    const secondResult = processEnemyTurns(buildStormState(), new SeededRNG(12345));
+
+    const firstStrikePositions = firstResult.events
+      .filter((event): event is AbilityUsedEvent => event.type === 'ABILITY_USED' && event.abilityId === 'thunderstorm')
+      .flatMap((event) => event.targetSnapshots?.[0]?.position === undefined
+        ? []
+        : [event.targetSnapshots[0].position]);
+    const secondStrikePositions = secondResult.events
+      .filter((event): event is AbilityUsedEvent => event.type === 'ABILITY_USED' && event.abilityId === 'thunderstorm')
+      .flatMap((event) => event.targetSnapshots?.[0]?.position === undefined
+        ? []
+        : [event.targetSnapshots[0].position]);
+
+    expect(firstStrikePositions).toEqual(secondStrikePositions);
+    expect(firstStrikePositions.length).toBeGreaterThan(0);
+    expect(firstStrikePositions.length).toBeLessThanOrEqual(3);
+    expect(firstStrikePositions).not.toContainEqual({ x: 8, y: 8 });
+
+    for (const position of firstStrikePositions) {
+      const enemy = firstResult.state.run?.enemies.get(posKey(position));
+      expect(enemy?.stats.health).toBeLessThan(100);
+      expect(enemy?.statuses.some((status) => status.id === 'burn')).toBe(true);
+      expect(enemy?.statuses.find((status) => status.id === 'stun')).toEqual(
+        expect.objectContaining({ turnsRemaining: 1 }),
+      );
+    }
+
+    expect(firstResult.state.player.statuses.find((status) => status.id === 'storm_active')?.turnsRemaining).toBe(2);
+    expect(secondResult.state.player.statuses.find((status) => status.id === 'storm_active')?.turnsRemaining).toBe(2);
+
+    const hiddenEnemy = firstResult.state.run?.enemies.get(posKey({ x: 8, y: 8 }));
+    expect(hiddenEnemy?.stats.health).toBe(100);
+  });
+
+  it('keeps thunderstorm-struck enemies stunned through their next action phase', () => {
+    const stormTarget = createTestEnemy({
+      id: entityId('storm-target'),
+      position: { x: 1, y: 0 },
+      archetype: 'aggressive_melee',
+      isAlerted: true,
+      stats: { maxHealth: 100, health: 100, attack: 8, defense: 0, accuracy: 100, evasion: 0, speed: 120 },
+    });
+    const initialState = makeTurnState(
+      { x: 0, y: 0 },
+      [stormTarget],
+      {
+        playerStatuses: [{ id: 'storm_active', turnsRemaining: 3, magnitude: 1, sourceId: null }],
+      },
+    );
+
+    const firstRound = processEnemyTurns(initialState, new SeededRNG(12345));
+
+    expect(firstRound.events.some((event) => event.type === 'ATTACK_PERFORMED')).toBe(true);
+    expect(firstRound.state.run?.enemies.get(posKey(stormTarget.position))?.statuses.find((status) => status.id === 'stun')).toEqual(
+      expect.objectContaining({ turnsRemaining: 1 }),
+    );
+
+    const healthBeforeSecondRound = firstRound.state.player.stats.health;
+    const secondRound = processEnemyTurns(firstRound.state, new SeededRNG(12345));
+
+    expect(secondRound.events.filter((event) => event.type === 'ATTACK_PERFORMED')).toHaveLength(0);
+    expect(secondRound.state.player.stats.health).toBe(healthBeforeSecondRound);
   });
 
   // ---------------------------------------------------------------------------

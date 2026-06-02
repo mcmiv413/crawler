@@ -8,10 +8,12 @@ import { makeMockContext, makeMockThreeRenderer } from '../../testing/mock-three
 import { singleArrow } from './single-arrow.js';
 import { arrowVolley } from './arrow-volley.js';
 import { emberBolt } from './ember-bolt.js';
+import { lightningBolt } from './lightning-bolt.js';
 
 describe('singleArrow', () => { runThreeAnimationContract(singleArrow); });
 describe('arrowVolley', () => { runThreeAnimationContract(arrowVolley); });
 describe('emberBolt', () => { runThreeAnimationContract(emberBolt); });
+describe('lightningBolt', () => { runThreeAnimationContract(lightningBolt); });
 
 describe('projectile travel fidelity', () => {
   const handle = makeMockThreeRenderer();

@@ -98,6 +98,7 @@ function buildAbilityUsage(
   | 'requiresTarget'
   | 'requiresDirection'
   | 'isRanged'
+  | 'tileTarget'
   | 'targetRange'
   | 'weaponRequirement'
 > {
@@ -105,6 +106,7 @@ function buildAbilityUsage(
     requiresTarget: definition?.requiresTarget ?? false,
     requiresDirection: definition?.requiresDirection === true,
     isRanged: isRangedAbility(definition),
+    tileTarget: definition?.tileTarget === true,
     targetRange: buildTargetRange(definition),
     weaponRequirement: buildWeaponRequirement(definition, equippedWeaponType),
   };

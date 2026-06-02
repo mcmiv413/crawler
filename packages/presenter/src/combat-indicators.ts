@@ -8,8 +8,26 @@ export interface CombatIndicatorEntry {
   readonly y: number;
 }
 
-function getPos(id: EntityId, state: GameState): { x: number; y: number } | null {
+type Position = { readonly x: number; readonly y: number };
+
+function buildAbilityTargetSnapshotLookup(
+  event: Extract<DomainEvent, { type: 'ABILITY_USED' }>,
+): ReadonlyMap<EntityId, Position> {
+  return new Map(
+    (event.targetSnapshots ?? []).map((snapshot) => [snapshot.targetId, snapshot.position]),
+  );
+}
+
+function getPos(
+  id: EntityId,
+  state: GameState,
+  targetSnapshotLookup: ReadonlyMap<EntityId, Position> = new Map(),
+): { x: number; y: number } | null {
   if (state.run == null) return null;
+  const snapshotPosition = targetSnapshotLookup.get(id);
+  if (snapshotPosition !== undefined) {
+    return snapshotPosition;
+  }
   if (id === state.player.id) return state.player.position;
   // state.run.enemies is keyed by position string, not entityId — must iterate
   for (const enemy of state.run.enemies.values()) {
@@ -65,16 +83,18 @@ function handleAbilityUsed(
   state: GameState,
   indicators: CombatIndicatorEntry[],
 ): void {
+  const targetSnapshotLookup = buildAbilityTargetSnapshotLookup(event);
+
   // Emit damage indicators
   if (event.damageByTarget && event.damageByTarget.size > 0) {
     for (const [targetId, damage] of event.damageByTarget) {
-      const pos = getPos(targetId, state);
+      const pos = getPos(targetId, state, targetSnapshotLookup);
       if (pos) {
         addIndicator(indicators, `-${damage}`, 'damage', pos.x, pos.y);
       }
     }
   } else if (event.damage !== undefined && event.damage > 0 && event.targetId !== undefined) {
-    const pos = getPos(event.targetId, state);
+    const pos = getPos(event.targetId, state, targetSnapshotLookup);
     if (pos) {
       addIndicator(indicators, `-${event.damage}`, 'damage', pos.x, pos.y);
     }
@@ -83,7 +103,7 @@ function handleAbilityUsed(
   // Emit heal indicators
   if (event.healAmount === undefined || event.healAmount <= 0) return;
   if (event.targetId === undefined) return;
-  const pos = getPos(event.targetId, state);
+  const pos = getPos(event.targetId, state, targetSnapshotLookup);
   if (!pos) return;
   addIndicator(indicators, `+${event.healAmount}`, 'heal', pos.x, pos.y);
 }

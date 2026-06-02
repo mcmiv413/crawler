@@ -8,6 +8,7 @@ import { panic } from './panic.js';
 import { poison } from './poison.js';
 import { regeneration } from './regeneration.js';
 import { slow } from './slow.js';
+import { stormActive } from './storm-active.js';
 import { strength } from './strength.js';
 import { stun } from './stun.js';
 import { vulnerability } from './vulnerability.js';
@@ -22,6 +23,7 @@ const items: [string, StatusDefinition][] = [
   [poison.id, poison],
   [regeneration.id, regeneration],
   [slow.id, slow],
+  [stormActive.id, stormActive],
   [strength.id, strength],
   [stun.id, stun],
   [vulnerability.id, vulnerability],
@@ -31,7 +33,7 @@ const items: [string, StatusDefinition][] = [
 export const STATUS_DEFINITIONS: ReadonlyMap<string, StatusDefinition> = new Map(items);
 
 export {
-  arcaneCharge, bleed, burn, heatSurgeStatus, panic, poison, regeneration, slow, strength, stun, vulnerability, weaken,
+  arcaneCharge, bleed, burn, heatSurgeStatus, panic, poison, regeneration, slow, stormActive, strength, stun, vulnerability, weaken,
 };
 
 // Add custom utilities below this line ↓

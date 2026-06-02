@@ -12,7 +12,7 @@ import { chebyshevDistance } from '../utils/grid.js';
 import type { SeededRNG } from '../utils/rng.js';
 import { applyThornsToAttacker, applyBlinkOnHit, getEnchantmentRegenBonus, getTotalThornsReflect } from '../systems/enchantment-hooks.js';
 import { updateRunMetrics } from './command-handler.js';
-import { processEnemyKill } from './handlers/combat.js';
+import { processEnemyKill } from './enemy-death-pipeline.js';
 import { resolveEnemyAbility } from '../systems/enemy-abilities.js';
 import { COMBAT, AMBIENT_PROFILES, OBJECT_TEMPLATES } from '@dungeon/content';
 import { calculateHazardDamage, hazardTypeToDamageType } from '../systems/hazard-damage.js';
@@ -166,7 +166,7 @@ export function processEnemyTurns(
 
   // Tick player statuses at end of round (DoT damage routed through central damage system)
   const healthBeforeStatus = currentState.player.stats.health;
-  const statusResult = tickPlayerStatuses(currentState, currentState.turnNumber);
+  const statusResult = tickPlayerStatuses(currentState, currentState.turnNumber, rng);
   currentState = statusResult.state;
   allEvents = [...allEvents, ...statusResult.events];
   const statusDamage = healthBeforeStatus - currentState.player.stats.health;

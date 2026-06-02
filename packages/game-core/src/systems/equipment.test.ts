@@ -37,11 +37,32 @@ const testArmor: ArmorTemplate = {
 
 const EMBER_ABILITY_ID = 'ember';
 const HEAT_SURGE_ABILITY_ID = 'heat_surge';
+const BOLT_ABILITY_ID = 'bolt';
+const THUNDER_STEP_ABILITY_ID = 'thunder_step';
+const THUNDERSTORM_ABILITY_ID = 'thunderstorm';
 
 const fireRingTemplate: ArmorTemplate = {
   itemId: 'fire_ring',
   name: 'Fire Ring',
   description: 'A ring bound to ember magic.',
+  itemClass: 'armor',
+  rarity: 'rare',
+  value: 100,
+  stackable: false,
+  maxStack: 1,
+  armor: {
+    defense: 0,
+    evasionPenalty: 0,
+    slot: 'ring',
+    enchantmentSlots: 0,
+    enchantments: [],
+  },
+};
+
+const lightningRingTemplate: ArmorTemplate = {
+  itemId: 'lightning_ring',
+  name: 'Lightning Ring',
+  description: 'A ring bound to storm magic.',
   itemClass: 'armor',
   rarity: 'rare',
   value: 100,
@@ -281,6 +302,106 @@ describe('equipItem stat recalculation', () => {
     expect(afterReplacement.player.equipment.ring1).toBe(plainRingId);
     expect(afterReplacement.player.equipment.ring2).toBe(secondFireRingId);
     expect(abilityIds(afterReplacement)).toContain(EMBER_ABILITY_ID);
+  });
+
+  it('discovers Lightning Ring mastery on equip without granting unlearned spells', () => {
+    const state = createTestGameState({
+      player: {
+        abilities: [{ id: 'power_strike', cooldownRemaining: 0 }],
+      },
+    });
+    const { state: withRingInInventory } = addItemToInventory(state, lightningRingTemplate);
+    const ringId = withRingInInventory.player.inventory[0]!;
+
+    const { state: equipped } = equipItem(withRingInInventory, ringId);
+    expect(equipped.player.ringMastery.lightning).toMatchObject({ xp: 0 });
+    expect(abilityIds(equipped)).not.toContain(BOLT_ABILITY_ID);
+    expect(abilityIds(equipped)).toContain('power_strike');
+
+    const { state: unequipped } = unequipItem(equipped, ringId);
+    expect(unequipped.player.ringMastery.lightning).toMatchObject({ xp: 0 });
+    expect(abilityIds(unequipped)).not.toContain(BOLT_ABILITY_ID);
+    expect(abilityIds(unequipped)).toContain('power_strike');
+  });
+
+  it('grants learned Lightning Ring spells only while a Lightning Ring is equipped', () => {
+    const state = createTestGameState({
+      player: {
+        ringMastery: {
+          lightning: {
+            xp: 100,
+          },
+        },
+        learnedRingSpellIds: [BOLT_ABILITY_ID, THUNDER_STEP_ABILITY_ID],
+      },
+    });
+    const { state: withRingInInventory } = addItemToInventory(state, lightningRingTemplate);
+    const ringId = withRingInInventory.player.inventory[0]!;
+
+    const { state: equipped } = equipItem(withRingInInventory, ringId);
+    expect(abilityIds(equipped)).toContain(BOLT_ABILITY_ID);
+    expect(abilityIds(equipped)).toContain(THUNDER_STEP_ABILITY_ID);
+
+    const { state: unequipped } = unequipItem(equipped, ringId);
+    expect(abilityIds(unequipped)).not.toContain(BOLT_ABILITY_ID);
+    expect(abilityIds(unequipped)).not.toContain(THUNDER_STEP_ABILITY_ID);
+  });
+
+  it('grants learned combo ring spells only while all required ring schools are equipped', () => {
+    const state = createTestGameState({
+      player: {
+        ringMastery: {
+          fire: {
+            xp: 140,
+          },
+          lightning: {
+            xp: 140,
+          },
+        },
+        learnedRingSpellIds: [THUNDERSTORM_ABILITY_ID],
+      },
+    });
+    const { state: s1 } = addItemToInventory(state, fireRingTemplate);
+    const { state: s2 } = addItemToInventory(s1, lightningRingTemplate);
+    const fireRingId = s2.player.inventory[0]!;
+    const lightningRingId = s2.player.inventory[1]!;
+
+    const { state: withFireRing } = equipItem(s2, fireRingId);
+    expect(abilityIds(withFireRing)).not.toContain(THUNDERSTORM_ABILITY_ID);
+
+    const { state: withBothRings } = equipItem(withFireRing, lightningRingId);
+    expect(abilityIds(withBothRings)).toContain(THUNDERSTORM_ABILITY_ID);
+
+    const { state: withoutFireRing } = unequipItem(withBothRings, fireRingId);
+    expect(abilityIds(withoutFireRing)).not.toContain(THUNDERSTORM_ABILITY_ID);
+  });
+
+  it('keeps a learned Lightning spell when another equipped ring still grants the school', () => {
+    const state = createTestGameState({
+      player: {
+        ringMastery: {
+          lightning: {
+            xp: 100,
+          },
+        },
+        learnedRingSpellIds: [BOLT_ABILITY_ID],
+      },
+    });
+    const { state: s1 } = addItemToInventory(state, lightningRingTemplate);
+    const { state: s2 } = addItemToInventory(s1, lightningRingTemplate);
+    const { state: s3 } = addItemToInventory(s2, plainRingTemplate);
+    const firstLightningRingId = s3.player.inventory[0]!;
+    const secondLightningRingId = s3.player.inventory[1]!;
+    const plainRingId = s3.player.inventory[2]!;
+
+    const { state: withFirstRing } = equipItem(s3, firstLightningRingId);
+    const { state: withBothLightningRings } = equipItem(withFirstRing, secondLightningRingId);
+    expect(abilityIds(withBothLightningRings)).toContain(BOLT_ABILITY_ID);
+
+    const { state: afterReplacement } = equipItem(withBothLightningRings, plainRingId);
+    expect(afterReplacement.player.equipment.ring1).toBe(plainRingId);
+    expect(afterReplacement.player.equipment.ring2).toBe(secondLightningRingId);
+    expect(abilityIds(afterReplacement)).toContain(BOLT_ABILITY_ID);
   });
 });
 

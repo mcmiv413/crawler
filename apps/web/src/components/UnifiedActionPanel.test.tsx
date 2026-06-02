@@ -9,6 +9,7 @@ import { render, screen, fireEvent, waitFor } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import type { GameView } from '@dungeon/presenter';
 import { UnifiedActionPanel } from './UnifiedActionPanel';
+import { useGameStore } from '../store/game-store';
 
 // Mock fixture: minimal game view with combat scenario
 const createMockGameView = (overrides?: Partial<GameView>): GameView => ({
@@ -539,6 +540,52 @@ describe('UnifiedActionPanel', () => {
         targetId: undefined,
         direction: undefined,
       });
+    });
+
+    it('starts tile-target mode instead of dispatching immediately for tile-target abilities', async () => {
+      const mockStartTileTargeting = vi.fn();
+      const baseStoreState = useGameStore.getState();
+      const getStateSpy = vi.spyOn(useGameStore, 'getState').mockReturnValue({
+        ...baseStoreState,
+        startTileTargeting: mockStartTileTargeting,
+      });
+      const baseView = createMockGameView();
+      const view = createMockGameView({
+        player: {
+          ...baseView.player,
+          abilities: [
+            {
+              id: 'thunder_step',
+              name: 'Thunder Step',
+              description: 'Teleport to a visible tile and strike both endpoints.',
+              ready: true,
+              cooldownRemaining: 0,
+              requiresTarget: false,
+              requiresDirection: false,
+              tileTarget: true,
+            },
+          ],
+        },
+      });
+      const user = userEvent.setup();
+
+      render(
+        <UnifiedActionPanel
+          view={view}
+          onSendCommand={mockSendCommand}
+          onInspectOpen={mockInspectOpen}
+        />
+      );
+
+      await user.click(findActionButton('Ability')!);
+      await waitFor(() => {
+        expect(screen.getByText('Thunder Step')).toBeInTheDocument();
+      });
+      await user.click(screen.getByText('Thunder Step'));
+
+      expect(mockStartTileTargeting).toHaveBeenCalledWith('thunder_step');
+      expect(mockSendCommand).not.toHaveBeenCalled();
+      getStateSpy.mockRestore();
     });
 
     it('dispatches USE_ABILITY for a single-target ability with one enemy in range', async () => {

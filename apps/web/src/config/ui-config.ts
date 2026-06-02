@@ -127,6 +127,16 @@ export const TOWN_MESSAGES_SECTION_MIN_HEIGHT = 200;
 /** Mobile tab bar z-index — above main content but below modals. */
 export const Z_TAB_BAR = 100;
 
+
+export const NPC_ROLE_SPRITES: Record<string, string> = {
+  shopkeeper: 'shopkeeper',
+  healer: 'healer',
+  informant: 'ordinary human',
+  blacksmith: 'guard',
+  elder: 'aligned priest',
+  enchanter: 'wizard',
+};
+
 /** Modal backdrop layer — behind modal cards, above app chrome. */
 export const Z_MODAL_BACKDROP = 900;
 /** Standard modal card / full-screen overlay layer. */

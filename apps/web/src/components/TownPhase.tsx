@@ -14,6 +14,8 @@ import {
   npcBtnTavern,
   npcBtnEnchant,
 } from '../styles.js';
+import { NPC_ROLE_SPRITES } from '../config/ui-config.js';
+
 import { PlayerHud } from './PlayerHud.js';
 import { EnchanterPanel } from './EnchanterPanel.js';
 import { RunSummaryPanel } from './RunSummaryPanel.js';
@@ -37,28 +39,8 @@ interface TownPhaseProps {
   talkingTo: string | null;
 }
 
-// ─── DawnLike sprite for each NPC role ────────────────────────────────────
-const NPC_ROLE_SPRITES: Record<string, string> = {
-  shopkeeper: 'shopkeeper',
-  healer: 'healer',
-  informant: 'ordinary human',
-  blacksmith: 'guard',
-  elder: 'aligned priest',
-  enchanter: 'wizard',
-};
-
 function titleCase(value: string): string {
   return value.replace(/_/g, ' ').replace(/\b\w/g, match => match.toUpperCase());
-}
-
-function leaderStateText(faction: FactionView): string {
-  if (faction.leader.state === 'emerged' && faction.leader.name && faction.leader.title) {
-    return `${faction.leader.name}, ${faction.leader.title}`;
-  }
-  if (faction.leader.state === 'slain') {
-    return 'Leader slain';
-  }
-  return 'No active leader';
 }
 
 // ─── NPC card component ────────────────────────────────────────────────────
@@ -329,7 +311,7 @@ function TavernPanel({ view, onOpenFactionDetails }: { view: GameView; onOpenFac
                   {faction.name} — Power {faction.power}/100 · {titleCase(faction.powerBand)}
                 </div>
                 <div style={{ color: colors.muted, fontSize: 10 }}>
-                  {titleCase(faction.status)} · {leaderStateText(faction)}
+                  {titleCase(faction.status)} · {faction.leaderStateText}
                 </div>
                 <div style={{ color: colors.label, fontSize: 10, marginTop: 2 }}>{faction.townEffectText}</div>
               </div>
@@ -409,7 +391,13 @@ function ElderPanel({
         spells.map((spell: typeof spells[number]) => {
           const disabled = loading || spell.canStudy === false;
           const priceLabel = spell.canStudy ? 'Study' : `Need ${spell.goldCost}g`;
-          const schoolProgressLabel = `${spell.currentSchoolXp} / ${spell.nextSchoolLevelXp} XP`;
+
+          // Build school progress label: show per-school XP for multi-school spells
+          const schoolProgressLabel = spell.schoolGates.length > 0
+            ? spell.schoolGates
+                .map(gate => `${titleCase(gate.school)} ${gate.currentXp}/${gate.requiredXp}`)
+                .join(' · ')
+            : `${spell.currentSchoolLevel} / ${spell.nextSchoolLevelXp} XP`;
 
           return (
             <div
@@ -428,7 +416,7 @@ function ElderPanel({
                   <div style={{ fontSize: 12, fontWeight: 600, color: colors.text }}>{spell.name}</div>
                   <div style={{ fontSize: 10, color: colors.label, marginTop: 3 }}>{spell.description}</div>
                   <div style={{ fontSize: 10, color: colors.muted, marginTop: 6 }}>
-                    {titleCase(spell.schools[0] ?? 'magic')} Lv {spell.currentSchoolLevel} · {schoolProgressLabel} · Range {spell.range} · {spell.goldCost}g
+                    {spell.schools.map((s: string) => `${titleCase(s)} Lv ${spell.schoolMasteries.find(m => m.school === s)?.displayLevel ?? 0}`).join(' + ')} · {schoolProgressLabel} · Range {spell.range} · {spell.goldCost}g
                   </div>
                 </div>
                 <button

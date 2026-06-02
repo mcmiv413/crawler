@@ -86,3 +86,13 @@ export const disarmStrike: AnimationRef = {
   impactFrameMs: 228,
   recoveryMs: 152,
 };
+
+export const lightningStrike: AnimationRef = {
+  id: 'fx.impact.lightning-strike',
+  category: 'impact',
+  durationMs: 360,
+  impactFrameMs: 180,
+  recoveryMs: 180,
+  hitStopMs: 60,
+  impactFlash: true,
+};

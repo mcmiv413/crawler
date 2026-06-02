@@ -9,6 +9,9 @@ import {
   type AnimatedEvent,
 } from './animation-sequence.js';
 
+const LIGHTNING_STRIKE_ANIMATION_ID = 'fx.impact.lightning-strike';
+const RADIAL_IMPACT_BURST_ANIMATION_ID = 'fx.impact.radial-impact-burst';
+
 function createMockGameState(): GameState {
   const baseState = createTestGameStateInCombat();
   const visibleFloorCell = {
@@ -688,5 +691,99 @@ describe('buildAnimationSequence', () => {
     expect(sequence).toHaveLength(1);
     expect(sequence[0]?.type).toBe('move');
     expect((sequence[0]?.data as { entityId: string }).entityId).toBe(entityId('enemy-2'));
+  });
+
+  it('renders thunder_step lightning strikes at both departure and arrival positions while preserving damage positions for removed targets', () => {
+    const state = withEnemies(createMockGameState(), []);
+    const departurePos = { x: 49, y: 50 };
+    const arrivalPos = { x: 52, y: 50 };
+
+    const events: DomainEvent[] = [{
+      type: 'ABILITY_USED',
+      playerId: entityId('player-1'),
+      abilityId: 'thunder_step',
+      abilityName: 'Thunder Step',
+      timestamp: 1,
+      turnNumber: 1,
+      targetSnapshots: [
+        { targetId: entityId('departure_49_50'), position: departurePos },
+        { targetId: entityId('arrival_52_50'), position: arrivalPos },
+        { targetId: entityId('enemy-1'), position: { x: 51, y: 50 } },
+        { targetId: entityId('enemy-2'), position: { x: 52, y: 50 } },
+      ],
+      damageByTarget: new Map([
+        [entityId('enemy-1'), 5],
+        [entityId('enemy-2'), 5],
+      ]),
+    }];
+
+    const sequence = buildAnimationSequence(events, state);
+    const damages = sequence.filter(e => e.type === 'damage');
+
+    expect(sequence.some(e => e.type === 'ability')).toBe(true);
+    const abilityEvent = sequence.find(e => e.type === 'ability');
+    expect(abilityEvent).toBeDefined();
+    const abilityData = abilityEvent?.data as { blastPositions?: readonly { x: number; y: number }[] };
+    expect(abilityData.blastPositions).toBeDefined();
+    expect(abilityData.blastPositions).toHaveLength(2);
+    expect(abilityData.blastPositions).toContainEqual(departurePos);
+    expect(abilityData.blastPositions).toContainEqual(arrivalPos);
+    expect(damages).toHaveLength(2);
+    expect(damages.map(event => event.data)).toEqual(expect.arrayContaining([
+      expect.objectContaining({ x: 51, y: 50, text: '-5' }),
+      expect.objectContaining({ x: 52, y: 50, text: '-5' }),
+    ]));
+  });
+
+  it('renders thunderstorm lightning strikes at each struck enemy position', () => {
+    const state = createMockGameState();
+    const strikePos1 = { x: 51, y: 49 };
+    const strikePos2 = { x: 52, y: 49 };
+
+    const events: DomainEvent[] = [{
+      type: 'ABILITY_USED',
+      playerId: entityId('player-1'),
+      abilityId: 'thunderstorm',
+      abilityName: 'Thunderstorm Strike',
+      timestamp: 1,
+      turnNumber: 1,
+      targetSnapshots: [
+        { targetId: entityId('enemy-1'), position: strikePos1 },
+        { targetId: entityId('enemy-2'), position: strikePos2 },
+      ],
+    }];
+
+    const sequence = buildAnimationSequence(events, state);
+
+    expect(sequence.some(e => e.type === 'ability')).toBe(true);
+    const abilityEvent = sequence.find(e => e.type === 'ability');
+    expect(abilityEvent).toBeDefined();
+    const abilityData = abilityEvent?.data as {
+      animationId?: string;
+      blastPositions?: readonly { x: number; y: number }[];
+    };
+    expect(abilityData.animationId).toBe(LIGHTNING_STRIKE_ANIMATION_ID);
+    expect(abilityData.blastPositions).toBeDefined();
+    expect(abilityData.blastPositions).toHaveLength(2);
+    expect(abilityData.blastPositions).toContainEqual(strikePos1);
+    expect(abilityData.blastPositions).toContainEqual(strikePos2);
+  });
+
+  it('keeps thunderstorm cast using its authored cast animation before recurring strikes fire', () => {
+    const state = createMockGameState();
+    const events: DomainEvent[] = [{
+      type: 'ABILITY_USED',
+      playerId: entityId('player-1'),
+      abilityId: 'thunderstorm',
+      abilityName: 'Thunderstorm',
+      timestamp: 1,
+      turnNumber: 1,
+    }];
+
+    const sequence = buildAnimationSequence(events, state);
+    const abilityEvent = sequence.find(event => event.type === 'ability');
+    const abilityData = abilityEvent?.data as { animationId?: string } | undefined;
+
+    expect(abilityData?.animationId).toBe(RADIAL_IMPACT_BURST_ANIMATION_ID);
   });
 });

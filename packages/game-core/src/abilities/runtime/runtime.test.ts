@@ -5,7 +5,7 @@ import { resolveTargets } from './resolve-targets.js';
 import { executeAbility } from './execute-ability.js';
 import { createTestGameStateInCombat, createTestEnemy, createTestGameStateWithAbility } from '../../test-utils.js';
 import { SeededRNG } from '../../utils/rng.js';
-import { entityId } from '@dungeon/contracts';
+import { entityId, type ItemTemplate } from '@dungeon/contracts';
 
 describe('abilities/runtime', () => {
   describe('validateRequirements', () => {
@@ -539,6 +539,48 @@ describe('abilities/runtime', () => {
   });
 
   describe('executeAbility', () => {
+    function createLearnedRingSpellState(abilityId: string, ringIds: readonly string[]) {
+      const baseState = createTestGameStateInCombat();
+      const items = new Map(baseState.itemRegistry.items);
+      const equipment = { ...baseState.player.equipment };
+
+      for (const [index, ringId] of ringIds.entries()) {
+        const ringEntity = entityId(`${ringId}_${index + 1}`);
+        const ringTemplate: ItemTemplate = {
+          itemId: ringId,
+          name: ringId,
+          description: `${ringId} test fixture`,
+          itemClass: 'relic',
+          rarity: 'common',
+          value: 0,
+          stackable: false,
+          maxStack: 1,
+        };
+
+        items.set(ringEntity, ringTemplate);
+        if (index === 0) {
+          equipment.ring1 = ringEntity;
+        } else if (index === 1) {
+          equipment.ring2 = ringEntity;
+        }
+      }
+
+      return {
+        ...baseState,
+        itemRegistry: {
+          ...baseState.itemRegistry,
+          items,
+        },
+        player: {
+          ...baseState.player,
+          mana: 99,
+          maxMana: 99,
+          equipment,
+          learnedRingSpellIds: [abilityId],
+        },
+      };
+    }
+
     it('should return no events for undefined ability', () => {
       const state = createTestGameStateInCombat();
       const rng = new SeededRNG(42);
@@ -686,6 +728,57 @@ describe('abilities/runtime', () => {
           { x: 1, y: 1 },
         ]),
       );
+    });
+
+    it('awards lightning mastery XP and deals shock damage when Bolt lands', () => {
+      const baseState = createLearnedRingSpellState('bolt', ['lightning_ring']);
+      const targetEnemy = [...baseState.run!.enemies.values()][0]!;
+      const targetKey = `${targetEnemy.position.x},${targetEnemy.position.y}`;
+      const shockResistantState = {
+        ...baseState,
+        run: {
+          ...baseState.run!,
+          enemies: new Map([
+            [
+              targetKey,
+              {
+                ...targetEnemy,
+                affinities: {
+                  ...targetEnemy.affinities,
+                  shock: 0.9,
+                },
+              },
+            ],
+          ]),
+        },
+      };
+      const baseResult = executeAbility(baseState, 'bolt', new SeededRNG(42), targetEnemy.id);
+      const resistantResult = executeAbility(shockResistantState, 'bolt', new SeededRNG(42), targetEnemy.id);
+      const baseAbilityEvent = baseResult.events.find(
+        (event): event is Extract<(typeof baseResult.events)[number], { type: 'ABILITY_USED' }> => event.type === 'ABILITY_USED',
+      );
+      const resistantAbilityEvent = resistantResult.events.find(
+        (event): event is Extract<(typeof resistantResult.events)[number], { type: 'ABILITY_USED' }> => event.type === 'ABILITY_USED',
+      );
+
+      expect(baseAbilityEvent?.damage ?? 0).toBeGreaterThan(resistantAbilityEvent?.damage ?? 0);
+      expect(baseResult.state.player.ringMastery.lightning?.xp ?? 0).toBeGreaterThan(0);
+      expect(baseResult.state.player.ringMastery.fire?.xp ?? 0).toBe(0);
+    });
+
+    it('applies storm_active and awards both schools XP when Thunderstorm is cast', () => {
+      const state = createLearnedRingSpellState('thunderstorm', ['fire_ring', 'lightning_ring']);
+      const result = executeAbility(state, 'thunderstorm', new SeededRNG(42));
+      const fireXp = result.state.player.ringMastery.fire?.xp ?? 0;
+      const lightningXp = result.state.player.ringMastery.lightning?.xp ?? 0;
+
+      expect(result.events.some(
+        (event): event is Extract<(typeof result.events)[number], { type: 'ABILITY_USED' }> =>
+          event.type === 'ABILITY_USED' && event.abilityId === 'thunderstorm',
+      )).toBe(true);
+      expect(result.state.player.statuses.some(status => status.id === 'storm_active')).toBe(true);
+      expect(fireXp).toBeGreaterThan(0);
+      expect(lightningXp).toBe(fireXp);
     });
   });
 });

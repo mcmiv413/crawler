@@ -164,6 +164,7 @@ describe('Targeting Type Validation', () => {
       'all_visible_enemies',
       'line_from_player',
       'target_plus_adjacent_enemies',
+      'custom',
     ]);
 
     for (const ability of ALL_ABILITY_DEFINITIONS) {
@@ -251,10 +252,11 @@ describe('Unlock Level Consistency', () => {
 describe('Ability-Specific Validations', () => {
   it('every ability has at least one effect', () => {
     for (const ability of ALL_ABILITY_DEFINITIONS) {
+      const usesCustomRuntime = ability.targeting.selector.kind === 'custom';
       expect(
-        ability.effects.length,
-        `${ability.id} has no effects (empty ability)`,
-      ).toBeGreaterThan(0);
+        ability.effects.length > 0 || usesCustomRuntime,
+        `${ability.id} has no effects (empty ability) and is not using a custom runtime`,
+      ).toBe(true);
     }
   });
 
@@ -309,6 +311,8 @@ describe('Ability Requirements', () => {
       'target_below_hp_pct',
       'has_mana',
       'has_direction',
+      'has_tile_target',
+      'custom_requirement',
     ]);
 
     for (const ability of ALL_ABILITY_DEFINITIONS) {

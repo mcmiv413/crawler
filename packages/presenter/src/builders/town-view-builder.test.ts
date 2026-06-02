@@ -21,6 +21,19 @@ describe('buildTownView', () => {
     armor: { defense: 0, evasionPenalty: 0, slot: 'ring', enchantmentSlots: 0, enchantments: [] },
   };
 
+  const lightningRingFixture: ArmorTemplate = {
+    itemId: 'lightning_ring',
+    spriteName: 'topaz ring',
+    name: 'Lightning Ring',
+    description: 'A crackling ring that grants command over storms.',
+    itemClass: 'armor',
+    rarity: 'common',
+    value: 20,
+    stackable: false,
+    maxStack: 1,
+    armor: { defense: 0, evasionPenalty: 0, slot: 'ring', enchantmentSlots: 0, enchantments: [] },
+  };
+
   beforeEach(() => {
     state = createTestGameState({ phase: 'town' });
   });
@@ -441,6 +454,106 @@ describe('buildTownView', () => {
       const heatSurge = view.studyableSpells.find(spell => spell.spellId === 'heat_surge');
 
       expect(heatSurge).toBeUndefined();
+    });
+
+    it('surfaces locked thunderstorm progress before both school gates are met', () => {
+      const fireRingEntity = entityId('fire_ring_1');
+      const lightningRingEntity = entityId('lightning_ring_1');
+      state = {
+        ...state,
+        player: {
+          ...state.player,
+          gold: 200,
+          ringMastery: {
+            fire: {
+              xp: 150,
+            },
+            lightning: {
+              xp: 100,
+            },
+          },
+          equipment: {
+            ...state.player.equipment,
+            ring1: fireRingEntity,
+            ring2: lightningRingEntity,
+          },
+          learnedRingSpellIds: ['stormfire'],
+        },
+        itemRegistry: {
+          items: new Map([
+            [fireRingEntity, fireRingFixture],
+            [lightningRingEntity, lightningRingFixture],
+          ]),
+        },
+      };
+
+      const view = buildTownView(state);
+      const thunderstorm = view.studyableSpells.find(spell => spell.spellId === 'thunderstorm');
+
+      expect(thunderstorm).toEqual(expect.objectContaining({
+        affordable: true,
+        canStudy: false,
+        learned: false,
+        unlocked: false,
+      }));
+      expect(thunderstorm?.schoolGates).toEqual([
+        { school: 'fire', currentXp: 150, requiredXp: 140, met: true },
+        { school: 'lightning', currentXp: 100, requiredXp: 140, met: false },
+      ]);
+      expect(thunderstorm?.schoolMasteries).toEqual([
+        { school: 'fire', xp: 150, displayLevel: getSchoolDisplayLevelFromXp(150), nextDisplayLevelXp: getNextSchoolDisplayLevelXp(150) },
+        { school: 'lightning', xp: 100, displayLevel: getSchoolDisplayLevelFromXp(100), nextDisplayLevelXp: getNextSchoolDisplayLevelXp(100) },
+      ]);
+    });
+
+    it('surfaces thunderstorm as a dual-school level 4 study gate once both school gates are met', () => {
+      const fireRingEntity = entityId('fire_ring_1');
+      const lightningRingEntity = entityId('lightning_ring_1');
+      state = {
+        ...state,
+        player: {
+          ...state.player,
+          gold: 200,
+          ringMastery: {
+            fire: {
+              xp: 150,
+            },
+            lightning: {
+              xp: 150,
+            },
+          },
+          equipment: {
+            ...state.player.equipment,
+            ring1: fireRingEntity,
+            ring2: lightningRingEntity,
+          },
+          learnedRingSpellIds: ['stormfire'],
+        },
+        itemRegistry: {
+          items: new Map([
+            [fireRingEntity, fireRingFixture],
+            [lightningRingEntity, lightningRingFixture],
+          ]),
+        },
+      };
+
+      const view = buildTownView(state);
+      const thunderstorm = view.studyableSpells.find(spell => spell.spellId === 'thunderstorm');
+
+      expect(thunderstorm).toEqual(expect.objectContaining({
+        affordable: true,
+        canStudy: true,
+        learned: false,
+        unlocked: true,
+      }));
+      expect(thunderstorm?.schoolGates).toEqual([
+        { school: 'fire', currentXp: 150, requiredXp: 140, met: true },
+        { school: 'lightning', currentXp: 150, requiredXp: 140, met: true },
+      ]);
+      expect(thunderstorm?.schoolMasteries).toEqual([
+        { school: 'fire', xp: 150, displayLevel: getSchoolDisplayLevelFromXp(150), nextDisplayLevelXp: getNextSchoolDisplayLevelXp(150) },
+        { school: 'lightning', xp: 150, displayLevel: getSchoolDisplayLevelFromXp(150), nextDisplayLevelXp: getNextSchoolDisplayLevelXp(150) },
+      ]);
     });
   });
 });

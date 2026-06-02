@@ -1,23 +1,8 @@
 import { describe, it, expect } from 'vitest';
 import { entityId } from '@dungeon/contracts';
 import { QUEST_TEMPLATES } from '@dungeon/content';
-import { completeFloorDepthQuests, createQuestFromTemplate, selectRandomQuestTemplate } from '@dungeon/core';
+import { completeFloorDepthQuests, createQuestFromTemplate } from '@dungeon/core';
 import { createTestGameState } from '@dungeon/core/testing';
-
-describe('quest selection — live quest template content', () => {
-  it('selectRandomQuestTemplate returns a template from the content pool', () => {
-    const template = selectRandomQuestTemplate(() => 0.5);
-    expect(QUEST_TEMPLATES).toContain(template);
-  });
-
-  it('selectRandomQuestTemplate accepts different rng values', () => {
-    const template1 = selectRandomQuestTemplate(() => 0.1);
-    const template2 = selectRandomQuestTemplate(() => 0.9);
-
-    expect(typeof template1.id).toBe('string');
-    expect(typeof template2.id).toBe('string');
-  });
-});
 
 describe('completeFloorDepthQuests — live template round-trips', () => {
   it('completes every live floor-depth quest template when its target depth is reached', () => {

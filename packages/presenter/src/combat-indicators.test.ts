@@ -260,6 +260,43 @@ describe('buildCombatIndicators', () => {
         y: 50,
       });
     });
+
+    it('uses target snapshots for thunder_step damage indicators when struck enemies are gone from the final state', () => {
+      const finalState: GameState = {
+        ...mockGameState,
+        run: {
+          ...mockGameState.run!,
+          enemies: new Map(),
+        },
+      };
+      const events: DomainEvent[] = [
+        {
+          type: 'ABILITY_USED',
+          timestamp: 1000,
+          turnNumber: 1,
+          playerId: 'player-1' as any,
+          abilityId: 'thunder_step',
+          abilityName: 'Thunder Step',
+          damageByTarget: new Map([
+            [entityId('enemy-1'), 5],
+          ]),
+          targetSnapshots: [
+            { targetId: entityId('departure_49_50'), position: { x: 49, y: 50 } },
+            { targetId: entityId('arrival_52_50'), position: { x: 52, y: 50 } },
+            { targetId: entityId('enemy-1'), position: { x: 51, y: 50 } },
+          ],
+        } as any,
+      ];
+
+      const indicators = buildCombatIndicators(events, finalState);
+
+      expect(indicators).toContainEqual({
+        text: '-5',
+        type: 'damage',
+        x: 51,
+        y: 50,
+      });
+    });
   });
 
   describe('GOLD_CHANGED', () => {

@@ -1,10 +1,11 @@
 import { afterEach, describe, expect, it } from 'vitest';
-import { mkdtempSync, mkdirSync, rmSync, writeFileSync } from 'node:fs';
+import { mkdtempSync, mkdirSync, rmSync, writeFileSync, readFileSync } from 'node:fs';
 import { spawnSync } from 'node:child_process';
 import { tmpdir } from 'node:os';
 import { dirname, join } from 'node:path';
 import { checkCentralizedLiterals } from '../../scripts/guardrails/check-centralized-literals.mjs';
 import { checkDocPaths } from '../../scripts/guardrails/check-doc-paths.mjs';
+import { checkFileSizeHotspots } from '../../scripts/guardrails/check-file-size-hotspots.mjs';
 import { checkOptionalImportBoundaries } from '../../scripts/guardrails/check-optional-import-boundaries.mjs';
 import { checkReferenceLiterals } from '../../scripts/guardrails/check-reference-literals.mjs';
 import { checkTestTopology } from '../../scripts/guardrails/check-test-topology.mjs';
@@ -324,5 +325,346 @@ describe('guardrail pattern checks', () => {
     writeFixture(rootDir, 'src/components/View.tsx', "import { useState } from 'react';\nimport { MIN_WIDTH } from '../config.js';\nexport function View() { return useState(MIN_WIDTH)[0]; }\n");
 
     expect(checkCentralizedLiterals({ rootDir, config })).toEqual([]);
+  });
+
+  it('fails when a manually maintained source file exceeds the line budget without allowlist entry', () => {
+    const rootDir = makeTempRoot('guardrail-file-size-bad');
+    const config = {
+      maxLinesPerFile: 500,
+      includedRoots: ['packages/game-core/src'],
+      excludePatterns: [/\.test\.[tj]sx?$/, /\.property\.test\.[tj]sx?$/, /\.balance\.test\.[tj]sx?$/, /\.integration\.test\.[tj]sx?$/, /\.contract\.test\.[tj]sx?$/, /generated/, /-raw\.ts$/, /dist\//, /node_modules\//],
+      allowlistedFiles: [],
+    };
+    // Create a fixture file with 550 lines (exceeds 500-line budget)
+    const lines = Array.from({ length: 550 }, (_, i) => `const line${i} = ${i};`).join('\n');
+    writeFixture(rootDir, 'packages/game-core/src/oversized-handler.ts', lines);
+
+    const failures = checkFileSizeHotspots({ rootDir, config });
+
+    expect(failures.join('\n')).toContain('exceeds 500-line budget');
+    expect(failures.join('\n')).toContain('oversized-handler.ts');
+  });
+
+  it('allows manually maintained source files within the line budget', () => {
+    const rootDir = makeTempRoot('guardrail-file-size-valid-small');
+    const config = {
+      maxLinesPerFile: 500,
+      includedRoots: ['packages/game-core/src'],
+      excludePatterns: [/\.test\.[tj]sx?$/, /\.property\.test\.[tj]sx?$/, /\.balance\.test\.[tj]sx?$/, /\.integration\.test\.[tj]sx?$/, /\.contract\.test\.[tj]sx?$/, /generated/, /-raw\.ts$/, /dist\//, /node_modules\//],
+      allowlistedFiles: [],
+    };
+    // Create a fixture file with 450 lines (within 500-line budget)
+    const lines = Array.from({ length: 450 }, (_, i) => `const line${i} = ${i};`).join('\n');
+    writeFixture(rootDir, 'packages/game-core/src/normal-handler.ts', lines);
+
+    expect(checkFileSizeHotspots({ rootDir, config })).toEqual([]);
+  });
+
+  it('allows oversized files that are in the allowlist with rationale', () => {
+    const rootDir = makeTempRoot('guardrail-file-size-valid-allowlisted');
+    const config = {
+      maxLinesPerFile: 500,
+      includedRoots: ['packages/game-core/src'],
+      excludePatterns: [/\.test\.[tj]sx?$/, /\.property\.test\.[tj]sx?$/, /\.balance\.test\.[tj]sx?$/, /\.integration\.test\.[tj]sx?$/, /\.contract\.test\.[tj]sx?$/, /generated/, /-raw\.ts$/, /dist\//, /node_modules\//],
+      allowlistedFiles: [
+        {
+          path: 'packages/game-core/src/critical-handler.ts',
+          reason: 'Critical mixed-responsibility handler — marked for refactoring',
+          lines: 590,
+        },
+      ],
+    };
+    // Create a fixture file with 590 lines (exceeds budget but is allowlisted)
+    const lines = Array.from({ length: 590 }, (_, i) => `const line${i} = ${i};`).join('\n');
+    writeFixture(rootDir, 'packages/game-core/src/critical-handler.ts', lines);
+
+    expect(checkFileSizeHotspots({ rootDir, config })).toEqual([]);
+  });
+
+  it('excludes test files from the line budget check', () => {
+    const rootDir = makeTempRoot('guardrail-file-size-valid-tests');
+    const config = {
+      maxLinesPerFile: 500,
+      includedRoots: ['packages/game-core/src'],
+      excludePatterns: [/\.test\.[tj]sx?$/, /\.property\.test\.[tj]sx?$/, /\.balance\.test\.[tj]sx?$/, /\.integration\.test\.[tj]sx?$/, /\.contract\.test\.[tj]sx?$/, /generated/, /-raw\.ts$/, /dist\//, /node_modules\//],
+      allowlistedFiles: [],
+    };
+    // Create a test file with 1000 lines (should be excluded regardless of size)
+    const lines = Array.from({ length: 1000 }, (_, i) => `it('test ${i}', () => {});`).join('\n');
+    writeFixture(rootDir, 'packages/game-core/src/handler.test.ts', lines);
+
+    expect(checkFileSizeHotspots({ rootDir, config })).toEqual([]);
+  });
+
+  it('excludes generated files from the line budget check', () => {
+    const rootDir = makeTempRoot('guardrail-file-size-valid-generated');
+    const config = {
+      maxLinesPerFile: 500,
+      includedRoots: ['packages/content/src'],
+      excludePatterns: [/\.test\.[tj]sx?$/, /\.property\.test\.[tj]sx?$/, /\.balance\.test\.[tj]sx?$/, /\.integration\.test\.[tj]sx?$/, /\.contract\.test\.[tj]sx?$/, /generated/, /-raw\.ts$/, /dist\//, /node_modules\//],
+      allowlistedFiles: [],
+    };
+    // Create a generated file with 6000 lines (should be excluded by -raw.ts pattern)
+    const lines = Array.from({ length: 6000 }, (_, i) => `const entry${i} = { id: ${i} };`).join('\n');
+    writeFixture(rootDir, 'packages/content/src/sprites/atlas-raw.ts', lines);
+
+    expect(checkFileSizeHotspots({ rootDir, config })).toEqual([]);
+  });
+
+  it('checks packages outside the originally enumerated set when using dynamic discovery', () => {
+    const rootDir = makeTempRoot('guardrail-file-size-dynamic-discovery');
+    const config = {
+      maxLinesPerFile: 500,
+      // Simulate dynamic discovery by including a package not in the original hardcoded list
+      includedRoots: ['packages/eslint-plugin/src', 'packages/game-core/src'],
+      excludePatterns: [/\.test\.[tj]sx?$/, /\.property\.test\.[tj]sx?$/, /\.balance\.test\.[tj]sx?$/, /\.integration\.test\.[tj]sx?$/, /\.contract\.test\.[tj]sx?$/, /generated/, /-raw\.ts$/, /dist\//, /node_modules\//],
+      allowlistedFiles: [],
+    };
+    // Create an oversized file in a newly discovered package
+    const lines = Array.from({ length: 550 }, (_, i) => `const rule${i} = { name: "rule-${i}" };`).join('\n');
+    writeFixture(rootDir, 'packages/eslint-plugin/src/index.ts', lines);
+
+    const failures = checkFileSizeHotspots({ rootDir, config });
+
+    expect(failures.join('\n')).toContain('packages/eslint-plugin/src/index.ts');
+    expect(failures.join('\n')).toContain('exceeds 500-line budget');
+  });
+
+  it('allows oversized packages when they are in the allowlist with audit rationale', () => {
+    const rootDir = makeTempRoot('guardrail-file-size-dynamic-allowlist');
+    const config = {
+      maxLinesPerFile: 500,
+      includedRoots: ['packages/eslint-plugin/src'],
+      excludePatterns: [/\.test\.[tj]sx?$/, /\.property\.test\.[tj]sx?$/, /\.balance\.test\.[tj]sx?$/, /\.integration\.test\.[tj]sx?$/, /\.contract\.test\.[tj]sx?$/, /generated/, /-raw\.ts$/, /dist\//, /node_modules\//],
+      allowlistedFiles: [
+        {
+          path: 'packages/eslint-plugin/src/index.ts',
+          reason: 'Monolithic custom ESLint plugin — single entry point for multiple rule definitions',
+          auditReportNote: 'Tooling package; split requires breaking plugin interface',
+          lines: 919,
+        },
+      ],
+    };
+    // Create a file with 919 lines (exceeds budget but is allowlisted)
+    const lines = Array.from({ length: 919 }, (_, i) => `const rule${i} = { name: "rule-${i}" };`).join('\n');
+    writeFixture(rootDir, 'packages/eslint-plugin/src/index.ts', lines);
+
+    expect(checkFileSizeHotspots({ rootDir, config })).toEqual([]);
+  });
+
+  it('auto-discovers packages outside explicit enumeration when includedRoots is not provided', () => {
+    const rootDir = makeTempRoot('guardrail-file-size-auto-discovery');
+    const config = {
+      maxLinesPerFile: 500,
+      // Omit includedRoots to trigger auto-discovery
+      excludePatterns: [/\.test\.[tj]sx?$/, /\.property\.test\.[tj]sx?$/, /\.balance\.test\.[tj]sx?$/, /\.integration\.test\.[tj]sx?$/, /\.contract\.test\.[tj]sx?$/, /generated/, /-raw\.ts$/, /dist\//, /node_modules\//],
+      allowlistedFiles: [],
+    };
+    // Create an oversized file in a newly discovered package (not in hardcoded enumeration)
+    const lines = Array.from({ length: 550 }, (_, i) => `const module${i} = { id: "mod-${i}" };`).join('\n');
+    writeFixture(rootDir, 'packages/custom-new-lib/src/helpers.ts', lines);
+
+    const failures = checkFileSizeHotspots({ rootDir, config });
+
+    expect(failures.join('\n')).toContain('packages/custom-new-lib/src/helpers.ts');
+    expect(failures.join('\n')).toContain('exceeds 500-line budget');
+  });
+
+  it('auto-discovers scripts directory when includedRoots is not provided', () => {
+    const rootDir = makeTempRoot('guardrail-file-size-scripts-discovery');
+    const config = {
+      maxLinesPerFile: 500,
+      // Omit includedRoots to trigger auto-discovery
+      excludePatterns: [/\.test\.[tj]sx?$/, /\.property\.test\.[tj]sx?$/, /\.balance\.test\.[tj]sx?$/, /\.integration\.test\.[tj]sx?$/, /\.contract\.test\.[tj]sx?$/, /generated/, /-raw\.ts$/, /dist\//, /node_modules\//],
+      allowlistedFiles: [],
+    };
+    // Create an oversized file in scripts
+    const lines = Array.from({ length: 550 }, (_, i) => `const check${i} = () => {};`).join('\n');
+    writeFixture(rootDir, 'scripts/build/custom-builder.ts', lines);
+
+    const failures = checkFileSizeHotspots({ rootDir, config });
+
+    expect(failures.join('\n')).toContain('scripts/build/custom-builder.ts');
+    expect(failures.join('\n')).toContain('exceeds 500-line budget');
+  });
+
+  it('rejects allowlist entries for files that are below the line budget', () => {
+    const rootDir = makeTempRoot('guardrail-allowlist-below-budget');
+    const config = {
+      maxLinesPerFile: 500,
+      includedRoots: ['packages/game-core/src'],
+      excludePatterns: [/\.test\.[tj]sx?$/, /\.property\.test\.[tj]sx?$/, /\.balance\.test\.[tj]sx?$/, /\.integration\.test\.[tj]sx?$/, /\.contract\.test\.[tj]sx?$/, /generated/, /-raw\.ts$/, /dist\//, /node_modules\//],
+      allowlistedFiles: [
+        {
+          path: 'packages/game-core/src/small-handler.ts',
+          reason: 'This file is actually small and should not be allowlisted',
+          lines: 300, // Below the 500-line budget
+        },
+      ],
+    };
+    // Create a file with only 300 lines (below budget)
+    const lines = Array.from({ length: 300 }, (_, i) => `const line${i} = ${i};`).join('\n');
+    writeFixture(rootDir, 'packages/game-core/src/small-handler.ts', lines);
+
+    const failures = checkFileSizeHotspots({ rootDir, config });
+
+    expect(failures.join('\n')).toContain('small-handler.ts');
+    expect(failures.join('\n')).toContain('below the 500-line budget');
+  });
+
+  it('rejects allowlist entries for files that are excluded by excludePatterns', () => {
+    const rootDir = makeTempRoot('guardrail-allowlist-excluded');
+    const config = {
+      maxLinesPerFile: 500,
+      includedRoots: ['packages/content/src'],
+      excludePatterns: [/\.test\.[tj]sx?$/, /\.property\.test\.[tj]sx?$/, /\.balance\.test\.[tj]sx?$/, /\.integration\.test\.[tj]sx?$/, /\.contract\.test\.[tj]sx?$/, /generated/, /-raw\.ts$/, /dist\//, /node_modules\//],
+      allowlistedFiles: [
+        {
+          path: 'packages/content/src/sprites/atlas-data-raw.ts',
+          reason: 'Generated file that should not be in allowlist',
+          lines: 5000,
+        },
+      ],
+    };
+    // Create a generated file with 5000 lines that matches the excluded pattern
+    const lines = Array.from({ length: 5000 }, (_, i) => `const entry${i} = ${i};`).join('\n');
+    writeFixture(rootDir, 'packages/content/src/sprites/atlas-data-raw.ts', lines);
+
+    const failures = checkFileSizeHotspots({ rootDir, config });
+
+    expect(failures.join('\n')).toContain('atlas-data-raw.ts');
+    expect(failures.join('\n')).toContain('is excluded by excludePatterns');
+  });
+
+  it('rejects allowlist entries with missing reason', () => {
+    const rootDir = makeTempRoot('guardrail-allowlist-no-reason');
+    const config = {
+      maxLinesPerFile: 500,
+      includedRoots: ['packages/game-core/src'],
+      excludePatterns: [/\.test\.[tj]sx?$/, /\.property\.test\.[tj]sx?$/, /\.balance\.test\.[tj]sx?$/, /\.integration\.test\.[tj]sx?$/, /\.contract\.test\.[tj]sx?$/, /generated/, /-raw\.ts$/, /dist\//, /node_modules\//],
+      allowlistedFiles: [
+        {
+          path: 'packages/game-core/src/undocumented-handler.ts',
+          reason: '',
+          lines: 600,
+        },
+      ],
+    };
+    // Create an oversized file with an empty reason
+    const lines = Array.from({ length: 600 }, (_, i) => `const line${i} = ${i};`).join('\n');
+    writeFixture(rootDir, 'packages/game-core/src/undocumented-handler.ts', lines);
+
+    const failures = checkFileSizeHotspots({ rootDir, config });
+
+    expect(failures.join('\n')).toContain('undocumented-handler.ts');
+    expect(failures.join('\n')).toContain('has an empty reason');
+  });
+
+  it('rejects allowlist entries for files that do not exist', () => {
+    const rootDir = makeTempRoot('guardrail-allowlist-nonexistent');
+    const config = {
+      maxLinesPerFile: 500,
+      includedRoots: ['packages/game-core/src'],
+      excludePatterns: [/\.test\.[tj]sx?$/, /\.property\.test\.[tj]sx?$/, /\.balance\.test\.[tj]sx?$/, /\.integration\.test\.[tj]sx?$/, /\.contract\.test\.[tj]sx?$/, /generated/, /-raw\.ts$/, /dist\//, /node_modules\//],
+      allowlistedFiles: [
+        {
+          path: 'packages/game-core/src/missing-handler.ts',
+          reason: 'This file no longer exists',
+          lines: 600,
+        },
+      ],
+    };
+    // Don't create the file — it should be detected as missing
+
+    const failures = checkFileSizeHotspots({ rootDir, config });
+
+    expect(failures.join('\n')).toContain('missing-handler.ts');
+    expect(failures.join('\n')).toContain('does not exist');
+  });
+
+  it('rejects allowlist entries with stale lines metadata (declared vs actual mismatch)', () => {
+    const rootDir = makeTempRoot('guardrail-allowlist-stale-lines');
+    const config = {
+      maxLinesPerFile: 500,
+      includedRoots: ['packages/presenter/src'],
+      excludePatterns: [/\.test\.[tj]sx?$/, /\.property\.test\.[tj]sx?$/, /\.balance\.test\.[tj]sx?$/, /\.integration\.test\.[tj]sx?$/, /\.contract\.test\.[tj]sx?$/, /generated/, /-raw\.ts$/, /dist\//, /node_modules\//],
+      allowlistedFiles: [
+        {
+          path: 'packages/presenter/src/game-view.ts',
+          reason: 'Central DTO/read-model contract surface',
+          lines: 570, // Stale: actual file has 571 lines
+        },
+      ],
+    };
+    // Create a file with 571 lines (mismatches the declared 570)
+    const lines = Array.from({ length: 571 }, (_, i) => `const line${i} = ${i};`).join('\n');
+    writeFixture(rootDir, 'packages/presenter/src/game-view.ts', lines);
+
+    const failures = checkFileSizeHotspots({ rootDir, config });
+
+    expect(failures.join('\n')).toContain('game-view.ts');
+    expect(failures.join('\n')).toContain('stale lines metadata');
+    expect(failures.join('\n')).toContain('declared 570');
+    expect(failures.join('\n')).toContain('actual 571');
+  });
+
+  it('flags oversized .mjs guardrail scripts when scripts directory is included', () => {
+    const rootDir = makeTempRoot('guardrail-file-size-mjs-scripts');
+    const config = {
+      maxLinesPerFile: 500,
+      includedRoots: ['scripts'],
+      excludePatterns: [/\.test\.[tj]sx?$/, /\.property\.test\.[tj]sx?$/, /\.balance\.test\.[tj]sx?$/, /\.integration\.test\.[tj]sx?$/, /\.contract\.test\.[tj]sx?$/, /generated/, /-raw\.ts$/, /dist\//, /node_modules\//],
+      allowlistedFiles: [],
+    };
+    // Create an oversized .mjs guardrail script (550 lines, exceeds 500-line budget)
+    const lines = Array.from({ length: 550 }, (_, i) => `const check${i} = () => { return ${i}; };`).join('\n');
+    writeFixture(rootDir, 'scripts/guardrails/custom-checker.mjs', lines);
+
+    const failures = checkFileSizeHotspots({ rootDir, config });
+
+    expect(failures.join('\n')).toContain('custom-checker.mjs');
+    expect(failures.join('\n')).toContain('exceeds 500-line budget');
+  });
+
+  it('flags oversized .mjs scripts during auto-discovery when includedRoots is omitted', () => {
+    const rootDir = makeTempRoot('guardrail-file-size-mjs-autodiscover');
+    const config = {
+      maxLinesPerFile: 500,
+      // Omit includedRoots to trigger auto-discovery, which should discover scripts
+      excludePatterns: [/\.test\.[tj]sx?$/, /\.property\.test\.[tj]sx?$/, /\.balance\.test\.[tj]sx?$/, /\.integration\.test\.[tj]sx?$/, /\.contract\.test\.[tj]sx?$/, /generated/, /-raw\.ts$/, /dist\//, /node_modules\//],
+      allowlistedFiles: [],
+    };
+    // Create an oversized .mjs guardrail script (550 lines, exceeds 500-line budget)
+    const lines = Array.from({ length: 550 }, (_, i) => `const validate${i} = () => { return true; };`).join('\n');
+    writeFixture(rootDir, 'scripts/guardrails/oversized-validator.mjs', lines);
+
+    const failures = checkFileSizeHotspots({ rootDir, config });
+
+    expect(failures.join('\n')).toContain('oversized-validator.mjs');
+    expect(failures.join('\n')).toContain('exceeds 500-line budget');
+  });
+
+  it('validates thunder-step handler uses advanceTurnAfterPlayerAction', () => {
+    const handlersDir = join(process.cwd(), 'packages/game-core/src/engine/handlers');
+    const thunderStepPath = join(handlersDir, 'thunder-step.ts');
+    const content = readFileSync(thunderStepPath, 'utf-8');
+
+    // Must NOT import turn advance functions directly
+    const forbiddenImports = ['applyActiveTurnManaRegen', 'processEnemyTurns', 'tickAbilityCooldowns'];
+    const violations: string[] = [];
+    for (const forbidden of forbiddenImports) {
+      if (content.includes(forbidden)) {
+        violations.push(`thunder-step imports ${forbidden}`);
+      }
+    }
+    expect(violations, 'thunder-step must use advanceTurnAfterPlayerAction instead').toEqual([]);
+
+    // Must import advanceTurnAfterPlayerAction from turn-advance-pipeline
+    expect(content).toMatch(
+      /import\s+{[^}]*advanceTurnAfterPlayerAction[^}]*}\s+from\s+['"]\.\.\/turn-advance-pipeline\.js['"]/
+    );
+
+    // Must call advanceTurnAfterPlayerAction with newState, events, rng
+    expect(content).toMatch(/advanceTurnAfterPlayerAction\s*\(\s*newState\s*,\s*events\s*,\s*rng\s*\)/);
   });
 });

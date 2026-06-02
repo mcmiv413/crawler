@@ -34,6 +34,8 @@ import {
   handleSetTrap,
 } from './handlers/index.js';
 import { processEnchantArmor } from '../systems/town.js';
+import { RING_SPELL_BY_ID } from '@dungeon/content';
+import { getCustomRingSpellHandler } from './custom-ring-spell-handlers.js';
 
 export type { CommandResult };
 export { updateRunMetrics };
@@ -99,7 +101,16 @@ export function handleCommand(
       return { state, events: [], runEnded: false }; // handled by game engine
     case 'USE_ABILITY': {
       if (!isUseAbilityCommand(command)) return { state, events: [], runEnded: false };
-      return handleUseAbility(state, command.abilityId, rng, command.targetId !== undefined ? entityId(command.targetId) : undefined, command.direction);
+      // Route custom ring spells through their registered handlers
+      const ringSpell = RING_SPELL_BY_ID.get(command.abilityId);
+      if (ringSpell !== undefined && ringSpell.effectKind === 'custom' && ringSpell.effectHandlerId !== undefined) {
+        const handler = getCustomRingSpellHandler(ringSpell.effectHandlerId);
+        if (handler !== undefined) {
+          return handler(state, command, rng);
+        }
+        return { state, events: [], runEnded: false };
+      }
+      return handleUseAbility(state, command.abilityId, rng, command.targetId !== undefined ? entityId(command.targetId) : undefined, command.direction, command.targetPosition);
     }
     case 'ENCHANT_ARMOR': {
       if (!isEnchantArmorCommand(command)) return { state, events: [], runEnded: false };

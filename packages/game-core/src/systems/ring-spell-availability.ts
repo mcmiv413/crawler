@@ -44,6 +44,16 @@ function meetsNonGoldStudyRequirements(
   return requirements.every(requirement => requirement.kind === 'goldCost' || requirement.met === true);
 }
 
+function meetsStudyVisibilityRequirements(
+  requirements: readonly StudyRequirementStatus[],
+): boolean {
+  return requirements.every(requirement =>
+    requirement.kind === 'goldCost'
+    || requirement.kind === 'minimumSchoolXp'
+    || requirement.met === true
+  );
+}
+
 // Spells the player can study right now (meets all requirements including gold)
 export function getStudyableRingSpells(
   player: Player,
@@ -83,15 +93,22 @@ export interface StudyRequirementStatus {
   readonly met: boolean;
 }
 
+export interface SchoolProgressGate {
+  readonly school: RingSchool;
+  readonly currentXp: number;
+  readonly requiredXp: number;
+  readonly met: boolean;
+}
+
 export interface SpellStudyEvaluation {
   readonly spell: RingSpellDefinition;
   readonly alreadyLearned: boolean;
   readonly requirements: readonly StudyRequirementStatus[];
+  readonly visibleForStudy: boolean;
   readonly unlockedForStudy: boolean;
   readonly canStudy: boolean;
   readonly affordable: boolean;
-  readonly currentSchoolXp: number;
-  readonly requiredSchoolXp: number;
+  readonly schoolGates: readonly SchoolProgressGate[];
   readonly goldCost: number;
 }
 
@@ -102,35 +119,51 @@ export function evaluateRingSpellStudy(
 ): SpellStudyEvaluation {
   const equippedSchools = getEquippedRingSchools(equippedItemIds);
   const alreadyLearned = player.learnedRingSpellIds.includes(spell.id);
-  
+
   let goldCost = 0;
-  let requiredSchoolXp = 0;
   const requirements = spell.studyRequirements.map(req => {
     const met = meetsStudyRequirement(req, player, equippedSchools);
     if (req.kind === 'goldCost') {
       goldCost = req.gold;
-    } else if (req.kind === 'minimumSchoolXp') {
-      requiredSchoolXp = req.xp;
     }
     return { kind: req.kind, met };
   });
-  
-  const unlockedForStudy = meetsNonGoldStudyRequirements(requirements) && !alreadyLearned;
+
+  const xpRequirements = spell.studyRequirements.filter(
+    (req): req is Extract<SpellStudyRequirement, { kind: 'minimumSchoolXp' }> =>
+      req.kind === 'minimumSchoolXp'
+  );
+
+  const schoolGates = xpRequirements.map((req) => {
+    const currentXp = (player.ringMastery as Record<string, { xp: number }>)[req.school]?.xp ?? 0;
+    return {
+      school: req.school,
+      currentXp,
+      requiredXp: req.xp,
+      met: currentXp >= req.xp,
+    };
+  });
+
+  // Check if player meets minimum school level requirement
+  const meetsMinimumLevel = spell.minimumSchoolLevel === undefined
+    || spell.schools.some(school => 
+        getSchoolMasteryLevel(player, school) >= spell.minimumSchoolLevel!
+      );
+
+  const visibleForStudy = meetsMinimumLevel && meetsStudyVisibilityRequirements(requirements) && !alreadyLearned;
+  const unlockedForStudy = meetsMinimumLevel && meetsNonGoldStudyRequirements(requirements) && !alreadyLearned;
   const affordable = goldCost === 0 || player.gold >= goldCost;
   const canStudy = unlockedForStudy && affordable;
-  
-  const primarySchool = spell.schools[0];
-  const currentSchoolXp = primarySchool !== undefined ? ((player.ringMastery as Record<string, { xp: number }>)[primarySchool]?.xp ?? 0) : 0;
-  
+
   return {
     spell,
     alreadyLearned,
     requirements,
+    visibleForStudy,
     unlockedForStudy,
     canStudy,
     affordable,
-    currentSchoolXp,
-    requiredSchoolXp,
+    schoolGates,
     goldCost,
   };
 }

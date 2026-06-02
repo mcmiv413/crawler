@@ -1,9 +1,13 @@
 import type { EntityId, Quest } from '@dungeon/contracts';
 import { QUEST_TEMPLATES, type QuestTemplate } from '@dungeon/content';
 
+export function selectFromTemplates(templates: readonly QuestTemplate[], rng: () => number): QuestTemplate {
+  const idx = Math.floor(rng() * templates.length);
+  return templates[Math.min(idx, templates.length - 1)]!;
+}
+
 export function selectRandomQuestTemplate(rng: () => number): QuestTemplate {
-  const idx = Math.floor(rng() * QUEST_TEMPLATES.length);
-  return QUEST_TEMPLATES[Math.min(idx, QUEST_TEMPLATES.length - 1)]!;
+  return selectFromTemplates(QUEST_TEMPLATES, rng);
 }
 
 export function createQuestFromTemplate(
