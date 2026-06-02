@@ -1,5 +1,5 @@
 import type { DomainEvent, EnemyInstance, EntityId, GameState } from '@dungeon/contracts';
-import { ABILITY_DEFINITIONS, ANIMATION_REF_BY_ID } from '@dungeon/content';
+import { ABILITY_DEFINITIONS, ANIMATION_REF_BY_ID, animationRefs } from '@dungeon/content';
 import type { AnimationId } from '@dungeon/content';
 import type {
   AbilityAnimationEntry,
@@ -334,6 +334,24 @@ function resolveAbilityBlastPositions(
     });
   }
 
+  // Thunder Step: render lightning strikes at both departure and arrival positions
+  if (event.abilityId === 'thunder_step' && event.targetSnapshots !== undefined) {
+    return event.targetSnapshots.flatMap((snapshot) => {
+      const snapshotId = String(snapshot.targetId);
+      if (!snapshotId.startsWith('departure_') && !snapshotId.startsWith('arrival_')) {
+        return [];
+      }
+      return snapshot.position ? [snapshot.position] : [];
+    });
+  }
+
+  // Thunderstorm: render lightning strikes at each struck enemy position
+  if (event.abilityId === 'thunderstorm' && event.targetSnapshots !== undefined) {
+    return event.targetSnapshots.flatMap((snapshot) => {
+      return snapshot.position ? [snapshot.position] : [];
+    });
+  }
+
   return [];
 }
 
@@ -344,7 +362,7 @@ function resolveAbilityDamagePositions(
 ): readonly { readonly pos: { readonly x: number; readonly y: number }; readonly damage: number }[] {
   const mutableDamagePositions: Array<{ pos: { x: number; y: number }; damage: number }> = [];
 
-  if ((event.abilityId === 'axe_cleave' || event.abilityId === 'ranged_volley') && event.damageByTarget) {
+  if (event.damageByTarget) {
     for (const [targetId, damage] of event.damageByTarget.entries()) {
       const position = resolveAbilityTargetPosition(targetId, state, targetSnapshotLookup);
       if (position !== null) {
@@ -376,6 +394,17 @@ function resolveAbilityImpactTargetIds(
   return event.targetId === undefined ? [] : [event.targetId];
 }
 
+function resolveAbilityAnimationRef(
+  event: Extract<DomainEvent, { type: 'ABILITY_USED' }>,
+  abilityAnimationId: AnimationId,
+): AnimationRefEntry | undefined {
+  if (event.abilityId === 'thunderstorm' && event.targetSnapshots !== undefined) {
+    return ANIMATION_REF_BY_ID.get(animationRefs.impact.lightningStrike.id as AnimationId);
+  }
+
+  return ANIMATION_REF_BY_ID.get(abilityAnimationId);
+}
+
 function buildAbilityAction(
   event: Extract<DomainEvent, { type: 'ABILITY_USED' }>,
   state: GameState,
@@ -383,7 +412,7 @@ function buildAbilityAction(
   const abilityDef = ABILITY_DEFINITIONS.get(event.abilityId);
   if (!abilityDef?.animation?.id) return null;
 
-  const animRef = ANIMATION_REF_BY_ID.get(abilityDef.animation.id as AnimationId);
+  const animRef = resolveAbilityAnimationRef(event, abilityDef.animation.id as AnimationId);
   if (animRef === undefined) return null;
 
   const playerPos = state.player.position;

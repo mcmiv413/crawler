@@ -59,9 +59,11 @@ export function listCanonicalSkills(repoRoot) {
 
 function getExpectedFiles(repoRoot, skillDirs) {
   const canonicalRoot = getCanonicalRoot(repoRoot);
-  return skillDirs.flatMap((skillDir) =>
-    listFiles(join(canonicalRoot, skillDir)).map((filePath) => join(skillDir, filePath)),
-  );
+  return skillDirs
+    .flatMap((skillDir) =>
+      listFiles(join(canonicalRoot, skillDir)).map((filePath) => join(skillDir, filePath)),
+    )
+    .sort();
 }
 
 export function generateRepoSkills(repoRoot) {

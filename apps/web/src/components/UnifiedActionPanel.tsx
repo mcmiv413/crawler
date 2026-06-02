@@ -8,6 +8,7 @@
 import { useReducer } from 'react';
 import type { Direction, GameCommand } from '@dungeon/contracts';
 import type { GameView } from '@dungeon/presenter';
+import { useGameStore } from '../store/game-store';
 import type { ActionButtonType } from '../config/action-icons';
 import { ACTION_ORDER } from '../config/action-icons';
 import { SPRITE_NAMES } from '../config/sprite-names';
@@ -141,6 +142,7 @@ export function UnifiedActionPanel({
           targetId?: string;
           direction?: Direction;
           itemEntityId?: string;
+          tileTarget?: boolean;
         };
         if (abilitySelection.itemEntityId !== undefined) {
           onSendCommand({
@@ -148,6 +150,10 @@ export function UnifiedActionPanel({
             direction: abilitySelection.direction!,
             itemEntityId: abilitySelection.itemEntityId,
           });
+        } else if (abilitySelection.tileTarget === true) {
+          // Tile-target abilities are handled by DungeonView, start targeting mode here
+          const store = useGameStore.getState();
+          store.startTileTargeting(abilitySelection.abilityId);
         } else {
           onSendCommand({
             type: 'USE_ABILITY',

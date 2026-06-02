@@ -12,6 +12,7 @@ import type { ThreeRendererHandle } from './three-renderer-factory.js';
 import { getAnimationModule } from './three-animation-registry.js';
 import type { ThreeAnimationModule } from './three-animation-types.js';
 import type { ThreeOwnershipReport } from '../three-animation-ownership.js';
+import { areAllStatusPresentationsOwnedByThree, computeAnimationDispatchPolicy } from '../animation-dispatch-policy.js';
 import { tileCenterWorld, worldToScreen } from './three-coordinate-utils.js';
 import { computeBumpScreenPosition } from './entities/three-entity-motion.js';
 import {
@@ -284,27 +285,13 @@ export function resolveHandledModuleAnimations(
   return resolved;
 }
 
-function getHandledIds(resolved: readonly ResolvedModuleAnimation[]): AnimationId[] {
-  const seen = new Set<AnimationId>();
-  for (const animation of resolved) {
-    seen.add(animation.animationId);
-  }
-  return [...seen];
-}
+
 
 export function areStatusPresentationsHandledByThree(
   statusPresentations: readonly StatusPresentationView[],
   handledAnimationIds: readonly AnimationId[],
 ): boolean {
-  if (statusPresentations.length === 0) {
-    return false;
-  }
-
-  const handledIdSet = new Set(handledAnimationIds);
-  return statusPresentations.every((presentation) =>
-    presentation.animationId !== undefined
-    && handledIdSet.has(presentation.animationId as AnimationId),
-  );
+  return areAllStatusPresentationsOwnedByThree(statusPresentations, handledAnimationIds);
 }
 
 export function getStatusPresentationEntityScale(
@@ -316,25 +303,7 @@ export function getStatusPresentationEntityScale(
   );
 }
 
-function buildOwnershipReport(
-  resolvedAnimations: readonly ResolvedModuleAnimation[],
-  statusPresentations: readonly StatusPresentationView[],
-  entityIds: readonly EntityId[],
-  combatIndicators: readonly FloatingCombatIndicator[],
-): ThreeOwnershipReport {
-  const animationIds = getHandledIds(resolvedAnimations);
-  const hasStatusPresentation = areStatusPresentationsHandledByThree(
-    statusPresentations,
-    animationIds,
-  );
 
-  return {
-    animationIds,
-    entityIds,
-    statusPresentation: hasStatusPresentation,
-    combatIndicators: combatIndicators.length > 0,
-  };
-}
 
 export interface ThreeAnimationOverlayProps {
   map: MapView | null;
@@ -392,28 +361,31 @@ export function ThreeAnimationOverlay(props: ThreeAnimationOverlayProps): React.
     [map, consumableAnimations, fxAnimations, statusPresentations],
   );
 
-  const handledIds = useMemo(() => getHandledIds(resolvedAnimations), [resolvedAnimations]);
-  const statusPresentationOwned = useMemo(
-    () => areStatusPresentationsHandledByThree(statusPresentations, handledIds),
-    [handledIds, statusPresentations],
-  );
-  const ownedEntityIds = useMemo(
-    () => resolveThreeOwnedEntityIds(map, moveAnimations, bumpAnimations, statusPresentationOwned),
-    [bumpAnimations, map, moveAnimations, statusPresentationOwned],
-  );
-  const ownershipReport = useMemo(
-    () => buildOwnershipReport(
+  const policy = useMemo(
+    () => computeAnimationDispatchPolicy(
+      map,
       resolvedAnimations,
       statusPresentations,
-      ownedEntityIds,
+      moveAnimations,
+      bumpAnimations,
       combatIndicators,
     ),
-    [combatIndicators, ownedEntityIds, resolvedAnimations, statusPresentations],
+    [bumpAnimations, combatIndicators, map, moveAnimations, resolvedAnimations, statusPresentations],
+  );
+
+  const ownershipReport = useMemo(
+    () => ({
+      animationIds: policy.threeOwnedAnimationIds,
+      entityIds: policy.threeOwnedEntityIds,
+      statusPresentation: policy.threeOwnsStatusPresentations,
+      combatIndicators: policy.threeOwnsCombatIndicators,
+    }),
+    [policy],
   );
 
   const shouldRender = isEnabled && map != null && (
     resolvedAnimations.length > 0
-    || ownedEntityIds.length > 0
+    || policy.threeOwnedEntityIds.length > 0
     || defenderHits.size > 0
     || combatIndicators.length > 0
     || atmosphereEnabled
@@ -438,9 +410,9 @@ export function ThreeAnimationOverlay(props: ThreeAnimationOverlayProps): React.
   latestFrameRef.current = {
     map,
     moduleAnimations: resolvedAnimations,
-    ownedEntityIds,
+    ownedEntityIds: policy.threeOwnedEntityIds,
     statusPresentations,
-    statusPresentationOwned,
+    statusPresentationOwned: policy.threeOwnsStatusPresentations,
     moveAnimations,
     bumpAnimations,
     defenderHits,
@@ -477,8 +449,8 @@ export function ThreeAnimationOverlay(props: ThreeAnimationOverlayProps): React.
     rendererRef.current = handle;
     if (atmosphereEnabled) {
       const vignette = createAtmosphereVignette({
-        width: canvasWidth,
-        height: canvasHeight,
+        width: latestFrameRef.current.canvasWidth,
+        height: latestFrameRef.current.canvasHeight,
       });
       handle.scene.add(vignette.object);
       vignetteRef.current = vignette;
@@ -552,8 +524,8 @@ export function ThreeAnimationOverlay(props: ThreeAnimationOverlayProps): React.
       return;
     }
 
-    onInitialized(handledIds);
-  }, [handledIds, onInitialized, rendererFailed, rendererReady, shouldRender]);
+    onInitialized(policy.threeOwnedAnimationIds);
+  }, [policy, onInitialized, rendererFailed, rendererReady, shouldRender]);
 
   useEffect(() => {
     if (onOwnershipChange === undefined) {

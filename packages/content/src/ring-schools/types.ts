@@ -1,6 +1,6 @@
 import type { ArmorTemplate } from '@dungeon/contracts';
 
-export type RingSchool = 'fire'; // extend here when adding a new school
+export type RingSchool = 'fire' | 'lightning'; // extend here when adding a new school
 
 export type RingItemId = ArmorTemplate['itemId'];
 

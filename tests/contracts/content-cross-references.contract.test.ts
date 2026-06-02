@@ -28,6 +28,7 @@ const CONTRACT_STATUS_IDS = [
   'panic',
   'heat_surge',
   'arcane_charge',
+  'storm_active',
 ] as const satisfies readonly StatusId[];
 
 type MissingStatusIds = Exclude<StatusId, (typeof CONTRACT_STATUS_IDS)[number]>;
@@ -221,15 +222,15 @@ describe('Content Cross-References', () => {
         ).toBeGreaterThan(0);
         for (const school of spell.schools) {
           expect(
-            ['fire', 'frost', 'lightning', 'arcane'].includes(school),
-            `Ring spell "${spellId}" has invalid school "${school}"`,
+            RING_SCHOOL_BY_ID.has(school),
+            `Ring spell "${spellId}" references non-existent ring school "${school}"`,
           ).toBe(true);
         }
       }
     });
 
-    it('magic statuses exist for Fire Ring spell effects', () => {
-      for (const statusId of ['burn', 'panic', 'heat_surge', 'arcane_charge']) {
+    it('magic statuses exist for ring spell effects', () => {
+      for (const statusId of ['burn', 'panic', 'heat_surge', 'arcane_charge', 'stun', 'storm_active']) {
         expect(
           STATUS_DEFINITIONS.has(statusId),
           `Magic status "${statusId}" is missing from status catalog`,

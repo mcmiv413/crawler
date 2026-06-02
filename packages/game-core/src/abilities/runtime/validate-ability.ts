@@ -135,6 +135,15 @@ function validateSingleRequirement(
       }
       return { valid: true };
     }
+    case 'has_tile_target': {
+      if (context.targetPosition === undefined) {
+        return { valid: false, reason: 'Requires a target tile' };
+      }
+      return { valid: true };
+    }
+    case 'custom_requirement': {
+      return { valid: true };
+    }
     default:
       // eslint-disable-next-line @typescript-eslint/no-explicit-any
       throw new Error(`Unknown requirement kind: ${(req as any).kind}`);

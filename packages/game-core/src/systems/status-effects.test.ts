@@ -6,9 +6,10 @@ import {
   getEffectiveStat,
   hasStatus
 } from './status-effects.js';
-import { createTestPlayer, createTestEnemy, createTestGameState } from '../test-utils.js';
+import { createTestPlayer, createTestEnemy, createTestGameState, createTestGameStateInCombat } from '../test-utils.js';
 import { posKey } from '@dungeon/contracts';
-import type { StatusId } from '@dungeon/contracts';
+import type { AbilityUsedEvent, StatusId } from '@dungeon/contracts';
+import { SeededRNG } from '../utils/rng.js';
 
 describe('status-effects', () => {
   it('applies a new status to player', () => {
@@ -438,5 +439,201 @@ describe('Enemy regeneration and position-key storage', () => {
       expect(tickedEnemy.stats.health).toBeGreaterThan(50);
       expect(tickedEnemy.stats.health).toBeLessThanOrEqual(tickedEnemy.stats.maxHealth);
     }
+  });
+
+  it('storm_active deterministically strikes visible enemies and emits animatable thunderstorm events', () => {
+    const visibleFloorCell = {
+      tile: { type: 'floor' as const, walkable: true, blocksVision: false, ascii: '.', color: '#aaa' },
+      visibility: 'visible' as const,
+    };
+    const rememberedFloorCell = {
+      ...visibleFloorCell,
+      visibility: 'remembered' as const,
+    };
+    type TestFloorCell = {
+      tile: typeof visibleFloorCell.tile;
+      visibility: 'visible' | 'remembered';
+    };
+    const durableEnemyStats = {
+      maxHealth: 100,
+      health: 100,
+      attack: 8,
+      defense: 0,
+      accuracy: 70,
+      evasion: 15,
+      speed: 120,
+    };
+
+    const buildStormState = () => {
+      const visibleEnemies = [
+        createTestEnemy({ position: { x: 2, y: 0 }, stats: durableEnemyStats }),
+        createTestEnemy({ position: { x: 3, y: 0 }, stats: durableEnemyStats }),
+        createTestEnemy({ position: { x: 2, y: 1 }, stats: durableEnemyStats }),
+        createTestEnemy({ position: { x: 3, y: 1 }, stats: durableEnemyStats }),
+      ];
+      const hiddenEnemy = createTestEnemy({
+        position: { x: 4, y: 4 },
+        stats: durableEnemyStats,
+      });
+      const enemies = new Map([
+        ...visibleEnemies.map((enemy) => [posKey(enemy.position), enemy] as const),
+        [posKey(hiddenEnemy.position), hiddenEnemy] as const,
+      ]);
+      const baseState = createTestGameStateInCombat();
+      return {
+        ...baseState,
+        player: applyStatusToPlayer(baseState.player, 'storm_active', 3, 1, null),
+        run: {
+          ...baseState.run!,
+          enemies,
+          floor: {
+            ...baseState.run!.floor,
+            cells: new Map<string, TestFloorCell>([
+              ['0,0', visibleFloorCell],
+              ['2,0', visibleFloorCell],
+              ['3,0', visibleFloorCell],
+              ['2,1', visibleFloorCell],
+              ['3,1', visibleFloorCell],
+              ['4,4', rememberedFloorCell],
+            ]),
+          },
+        },
+      };
+    };
+
+    const firstResult = tickPlayerStatuses(buildStormState(), 1, new SeededRNG(12345));
+    const secondResult = tickPlayerStatuses(buildStormState(), 1, new SeededRNG(12345));
+
+    const firstStrikePositions = firstResult.events
+      .filter((event): event is AbilityUsedEvent => event.type === 'ABILITY_USED' && event.abilityId === 'thunderstorm')
+      .map((event) => event.targetSnapshots?.[0]?.position);
+    const secondStrikePositions = secondResult.events
+      .filter((event): event is AbilityUsedEvent => event.type === 'ABILITY_USED' && event.abilityId === 'thunderstorm')
+      .map((event) => event.targetSnapshots?.[0]?.position);
+
+    expect(firstStrikePositions).toEqual(secondStrikePositions);
+    expect(firstStrikePositions.length).toBeGreaterThan(0);
+    expect(firstStrikePositions.length).toBeLessThanOrEqual(3);
+    expect(firstStrikePositions).not.toContainEqual({ x: 4, y: 4 });
+
+    for (const position of firstStrikePositions) {
+      expect(position).toBeDefined();
+      const enemy = position === undefined
+        ? undefined
+        : firstResult.state.run?.enemies.get(posKey(position));
+      expect(enemy?.stats.health).toBeLessThan(100);
+      expect(enemy?.statuses.some((status) => status.id === 'burn')).toBe(true);
+      expect(enemy?.statuses.find((status) => status.id === 'stun')).toEqual(
+        expect.objectContaining({ turnsRemaining: 2 }),
+      );
+    }
+  });
+
+  it('storm_active does not resolve when the player is already dead', () => {
+    const baseState = createTestGameStateInCombat();
+    const enemyKey = posKey({ x: 1, y: 0 });
+    const enemyBefore = baseState.run?.enemies.get(enemyKey);
+    const playerWithStorm = applyStatusToPlayer(baseState.player, 'storm_active', 3, 1, null);
+    const state = {
+      ...baseState,
+      player: {
+        ...playerWithStorm,
+        stats: {
+          ...playerWithStorm.stats,
+          health: 0,
+        },
+      },
+    };
+
+    const result = tickPlayerStatuses(state, 1, new SeededRNG(12345));
+    const stormEvents = result.events.filter(
+      (event): event is AbilityUsedEvent => event.type === 'ABILITY_USED' && event.abilityId === 'thunderstorm',
+    );
+    const enemyAfter = result.state.run?.enemies.get(enemyKey);
+
+    expect(stormEvents).toHaveLength(0);
+    expect(enemyAfter?.stats.health).toBe(enemyBefore?.stats.health);
+    expect(enemyAfter?.statuses).toEqual(enemyBefore?.statuses);
+  });
+
+  it('storm_active does not resolve after an earlier status kills the player in the same tick', () => {
+    const baseState = createTestGameStateInCombat();
+    const enemyKey = posKey({ x: 1, y: 0 });
+    const enemyBefore = baseState.run?.enemies.get(enemyKey);
+    const poisonedPlayer = applyStatusToPlayer(baseState.player, 'poison', 2, 1, null);
+    const playerWithStorm = applyStatusToPlayer(poisonedPlayer, 'storm_active', 3, 1, null);
+    const state = {
+      ...baseState,
+      player: {
+        ...playerWithStorm,
+        stats: {
+          ...playerWithStorm.stats,
+          health: 1,
+        },
+      },
+    };
+
+    const result = tickPlayerStatuses(state, 1, new SeededRNG(12345));
+    const stormEvents = result.events.filter(
+      (event): event is AbilityUsedEvent => event.type === 'ABILITY_USED' && event.abilityId === 'thunderstorm',
+    );
+    const enemyAfter = result.state.run?.enemies.get(enemyKey);
+
+    expect(result.state.player.stats.health).toBeLessThanOrEqual(0);
+    expect(stormEvents).toHaveLength(0);
+    expect(enemyAfter?.stats.health).toBe(enemyBefore?.stats.health);
+    expect(enemyAfter?.statuses).toEqual(enemyBefore?.statuses);
+  });
+
+  it('storm_active routes lethal strikes through enemy kill processing', () => {
+    const visibleFloorCell = {
+      tile: { type: 'floor' as const, walkable: true, blocksVision: false, ascii: '.', color: '#aaa' },
+      visibility: 'visible' as const,
+    };
+    const doomedEnemy = createTestEnemy({
+      position: { x: 2, y: 0 },
+      stats: {
+        maxHealth: 30,
+        health: 1,
+        attack: 8,
+        defense: 0,
+        accuracy: 70,
+        evasion: 15,
+        speed: 120,
+      },
+    });
+    const enemyKey = posKey(doomedEnemy.position);
+    const baseState = createTestGameStateInCombat();
+    const state = {
+      ...baseState,
+      player: applyStatusToPlayer(baseState.player, 'storm_active', 3, 1, null),
+      run: {
+        ...baseState.run!,
+        enemies: new Map([[enemyKey, doomedEnemy]]),
+        floor: {
+          ...baseState.run!.floor,
+          cells: new Map([
+            ['0,0', visibleFloorCell],
+            [enemyKey, visibleFloorCell],
+          ]),
+        },
+      },
+    };
+
+    const result = tickPlayerStatuses(state, 1, new SeededRNG(12345));
+
+    expect(result.state.run?.enemies.get(enemyKey)).toBeUndefined();
+    expect(result.state.player.totalKills).toBe(state.player.totalKills + 1);
+    expect(result.state.player.experience).toBe(state.player.experience + doomedEnemy.experienceValue);
+    expect(result.events).toContainEqual(expect.objectContaining({
+      type: 'ABILITY_USED',
+      abilityId: 'thunderstorm',
+      targetId: doomedEnemy.id,
+    }));
+    expect(result.events).toContainEqual(expect.objectContaining({
+      type: 'ENTITY_DIED',
+      entityId: doomedEnemy.id,
+      killerId: state.player.id,
+    }));
   });
 });

@@ -234,6 +234,7 @@ export const STATUS_DEFAULTS = {
   panic: { defaultDuration: 3 },
   heat_surge: { defaultDuration: 3 },
   arcane_charge: { defaultDuration: 5 },
+  storm_active: { defaultDuration: 3 },
 } as const;
 
 export const MAGIC = {
@@ -241,7 +242,7 @@ export const MAGIC = {
   manaRegenPerActiveTurn: 1,
   levelXpTable: XP_TABLE,
   manaPerMagicLevel: 5,
-  schoolMasteryTierThresholds: [0, 20, 60],
+  schoolMasteryTierThresholds: [0, 20, 60, 140],
   schoolDisplayLevelXpAfterCap: 40,
   schoolXpPerBurningKill: 10,
   burnSpreadRadius: 4,

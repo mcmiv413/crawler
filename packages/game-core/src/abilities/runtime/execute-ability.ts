@@ -45,6 +45,7 @@ export function executeAbility(
   rng: SeededRNG,
   targetId?: EntityId,
   direction?: Direction,
+  targetPosition?: { x: number; y: number },
 ): CommandResult {
   const definition = ABILITY_REGISTRY.get(abilityId);
 
@@ -54,7 +55,7 @@ export function executeAbility(
   }
 
   // New data-driven engine
-  const context = buildContext(state, rng, targetId, direction);
+  const context = buildContext(state, rng, targetId, direction, targetPosition);
 
   // Validate requirements
   const validation = validateRequirements(context, definition.requirements);

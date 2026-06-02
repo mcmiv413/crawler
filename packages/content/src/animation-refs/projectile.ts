@@ -31,3 +31,12 @@ export const emberBolt: AnimationRef = {
   recoveryMs: 72,
   suppressActorBump: true,
 };
+
+export const lightningBolt: AnimationRef = {
+  id: 'fx.projectile.lightning-bolt',
+  category: 'projectile',
+  durationMs: 320,
+  impactFrameMs: 256,
+  recoveryMs: 64,
+  suppressActorBump: true,
+};

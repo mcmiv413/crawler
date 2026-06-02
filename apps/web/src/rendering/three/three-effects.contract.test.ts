@@ -1,8 +1,10 @@
 import { beforeEach, describe, expect, it } from 'vitest';
-import { ANIMATION_REF_BY_ID } from '@dungeon/content';
+import { ANIMATION_REF_BY_ID, animationRefs } from '@dungeon/content';
 import { BUILT_IN_THREE_EFFECT_IDS } from '../three-effect-metadata.js';
 import { initializeThreeAnimationModules } from './generated/index.js';
 import { getAnimationModule, listAnimationIds, resetForTesting } from './three-animation-registry.js';
+import { lightningStrike } from './modules/impact/lightning-strike.js';
+import { lightningBolt } from './modules/projectile/lightning-bolt.js';
 
 describe('Three effect contracts', () => {
   beforeEach(() => {
@@ -31,6 +33,13 @@ describe('Three effect contracts', () => {
     for (const animationId of BUILT_IN_THREE_EFFECT_IDS) {
       expect(getAnimationModule(animationId)).toBeDefined();
     }
+  });
+
+  it('registers the Lightning ring strike and projectile modules into the Three registry', () => {
+    initializeThreeAnimationModules();
+
+    expect(getAnimationModule(animationRefs.impact.lightningStrike.id)).toBe(lightningStrike);
+    expect(getAnimationModule(animationRefs.projectile.lightningBolt.id)).toBe(lightningBolt);
   });
 
   it('includes the MVP healing-pulse effect', () => {

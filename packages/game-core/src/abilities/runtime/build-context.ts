@@ -11,6 +11,7 @@ export function buildContext(
   rng: SeededRNG,
   targetId?: EntityId,
   direction?: Direction,
+  targetPosition?: { x: number; y: number },
 ): AbilityContext {
   let target: { instance: EnemyInstance; key: string } | undefined;
 
@@ -31,5 +32,6 @@ export function buildContext(
     equippedWeaponId: state.player.equipment.weapon,
     direction,
     target,
+    targetPosition,
   };
 }

@@ -68,3 +68,16 @@ function areArraysEqual<T>(left: readonly T[], right: readonly T[]): boolean {
 
   return left.every((value, index) => value === right[index]);
 }
+
+export function isAnimationOwnedByThree(
+  animationId: AnimationId | undefined,
+  ownedIds: readonly AnimationId[],
+): boolean {
+  if (animationId === undefined) {
+    return false;
+  }
+
+  return ownedIds.includes(animationId);
+}
+
+

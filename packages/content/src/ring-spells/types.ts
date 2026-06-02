@@ -34,6 +34,9 @@ export interface RingSpellDefinition extends AbilityDefinition {
   // School XP awarded to each listed school when the spell is successfully cast
   readonly xpGainOnCast: number;
 
+  // Minimum school mastery level required to see this spell (visibility gate)
+  readonly minimumSchoolLevel?: number;
+
   // Composable study requirements — all must be met to unlock
   readonly studyRequirements: readonly SpellStudyRequirement[];
 
@@ -48,7 +51,7 @@ export interface RingSpellDefinition extends AbilityDefinition {
   readonly baseDamage?: number;
   readonly statusEffects?: readonly StatusEffect[];
 
-  // Note: unlockLevel is required for AbilityDefinition compatibility but is NOT the authoritative
-  // study requirement for ring spells. Study gating is controlled by studyRequirements.
+  // Note: unlockLevel is required for AbilityDefinition compatibility but is now derived
+  // from minimumSchoolLevel for display purposes.
   // requiresTarget and requiresDirection are execution fields validated against effectKind.
 }

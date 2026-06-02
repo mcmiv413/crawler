@@ -2,11 +2,12 @@ import { describe, it, expect } from 'vitest';
 import { handleCommand, type CommandResult } from './command-handler.js';
 import { SeededRNG } from '../utils/rng.js';
 import { entityId } from '@dungeon/contracts';
-import type { EntityId, GameState } from '@dungeon/contracts';
+import type { AbilityUsedEvent, EntityId, GameState, ItemTemplate } from '@dungeon/contracts';
 import {
   createTestGameStateInCombat,
   createTestGameStateWithAbility,
   createTestGameState,
+  createTestEnemy,
   createUseAbilityCommand,
   createAttackCommand,
   createMoveCommandWithDirection,
@@ -269,6 +270,187 @@ describe('handleUseAbility', () => {
       );
 
       expect(result.state).toBe(state);
+      expect(result.events).toHaveLength(0);
+    });
+
+    function createThunderStepCommandState() {
+      const visibleFloorCell = {
+        tile: { type: 'floor' as const, walkable: true, blocksVision: false, ascii: '.', color: '#aaa' },
+        visibility: 'visible' as const,
+      };
+      const stationaryEnemyStats = {
+        maxHealth: 30,
+        health: 30,
+        attack: 8,
+        defense: 0,
+        accuracy: 70,
+        evasion: 15,
+        speed: 0,
+      };
+      const departureEnemy = createTestEnemy({
+        position: { x: 0, y: 1 },
+        stats: stationaryEnemyStats,
+      });
+      const arrivalEnemy = createTestEnemy({
+        position: { x: 3, y: 0 },
+        stats: stationaryEnemyStats,
+      });
+      const lightningRingEntity = entityId('lightning_ring_1');
+      const lightningRingTemplate: ItemTemplate = {
+        itemId: 'lightning_ring',
+        name: 'Lightning Ring',
+        description: 'Lightning ring test fixture',
+        itemClass: 'relic',
+        rarity: 'common',
+        value: 0,
+        stackable: false,
+        maxStack: 1,
+      };
+      const baseState = createTestGameStateInCombat();
+
+      return {
+        ...baseState,
+        player: {
+          ...baseState.player,
+          position: { x: 0, y: 0 },
+          mana: 100,
+          maxMana: 100,
+          abilities: [{ id: 'thunder_step', cooldownRemaining: 0 }],
+          learnedRingSpellIds: ['thunder_step'],
+          ringMastery: {
+            ...baseState.player.ringMastery,
+            lightning: { xp: 200, lastLevelCheckpoint: 0 },
+          },
+          equipment: {
+            ...baseState.player.equipment,
+            ring1: lightningRingEntity,
+          },
+        },
+        itemRegistry: {
+          ...baseState.itemRegistry,
+          items: new Map([
+            ...baseState.itemRegistry.items,
+            [lightningRingEntity, lightningRingTemplate],
+          ]),
+        },
+        run: {
+          ...baseState.run!,
+          enemies: new Map([
+            [`${departureEnemy.position.x},${departureEnemy.position.y}`, departureEnemy],
+            [`${arrivalEnemy.position.x},${arrivalEnemy.position.y}`, arrivalEnemy],
+          ]),
+          floor: {
+            ...baseState.run!.floor,
+            cells: new Map([
+              ['0,0', visibleFloorCell],
+              ['0,1', visibleFloorCell],
+              ['1,0', visibleFloorCell],
+              ['1,1', visibleFloorCell],
+              ['2,0', visibleFloorCell],
+              ['2,1', visibleFloorCell],
+              ['3,0', visibleFloorCell],
+            ]),
+          },
+        },
+      };
+    }
+
+    it('routes thunder_step tile targets through the command pipeline and emits both strike positions', () => {
+      const state = createThunderStepCommandState();
+      const result = handleCommand(
+        state,
+        { type: 'USE_ABILITY', abilityId: 'thunder_step', targetPosition: { x: 2, y: 0 } },
+        new SeededRNG(12345),
+      );
+      const abilityEvent = result.events.find(
+        (event): event is AbilityUsedEvent =>
+          event.type === 'ABILITY_USED' && event.abilityId === 'thunder_step',
+      );
+
+      expect(result.state.player.position).toEqual({ x: 2, y: 0 });
+      expect(result.state.player.mana).toBeLessThan(state.player.mana);
+      expect(result.state.player.abilities.find((ability) => ability.id === 'thunder_step')?.cooldownRemaining).toBeGreaterThan(0);
+      expect(abilityEvent?.targetSnapshots?.map((snapshot) => snapshot.position)).toEqual(
+        expect.arrayContaining([{ x: 0, y: 0 }, { x: 2, y: 0 }]),
+      );
+      expect(result.state.run?.enemies.get('0,1')?.stats.health).toBeLessThan(30);
+      expect(result.state.run?.enemies.get('3,0')?.stats.health).toBeLessThan(30);
+    });
+
+    it('rejects thunder_step through the command pipeline when the tile target is missing', () => {
+      const state = createThunderStepCommandState();
+      const departureEnemyHealth = state.run?.enemies.get('0,1')?.stats.health;
+      const arrivalEnemyHealth = state.run?.enemies.get('3,0')?.stats.health;
+      let result!: CommandResult;
+
+      expect(() => {
+        result = handleCommand(
+          state,
+          { type: 'USE_ABILITY', abilityId: 'thunder_step' },
+          new SeededRNG(12345),
+        );
+      }).not.toThrow();
+
+      expect(result.state).toBe(state);
+      expect(result.state.player.position).toEqual(state.player.position);
+      expect(result.state.player.mana).toBe(state.player.mana);
+      expect(result.state.turnNumber).toBe(state.turnNumber);
+      expect(result.state.run?.enemies.get('0,1')?.stats.health).toBe(departureEnemyHealth);
+      expect(result.state.run?.enemies.get('3,0')?.stats.health).toBe(arrivalEnemyHealth);
+      expect(result.events).toHaveLength(0);
+    });
+
+    it('rejects thunder_step through the command pipeline when mana is insufficient', () => {
+      const baseState = createThunderStepCommandState();
+      const state = {
+        ...baseState,
+        player: {
+          ...baseState.player,
+          mana: 0,
+        },
+      };
+      const departureEnemyHealth = state.run?.enemies.get('0,1')?.stats.health;
+      const arrivalEnemyHealth = state.run?.enemies.get('3,0')?.stats.health;
+
+      const result = handleCommand(
+        state,
+        { type: 'USE_ABILITY', abilityId: 'thunder_step', targetPosition: { x: 2, y: 0 } },
+        new SeededRNG(12345),
+      );
+
+      expect(result.state).toBe(state);
+      expect(result.state.player.position).toEqual(state.player.position);
+      expect(result.state.player.mana).toBe(state.player.mana);
+      expect(result.state.turnNumber).toBe(state.turnNumber);
+      expect(result.state.run?.enemies.get('0,1')?.stats.health).toBe(departureEnemyHealth);
+      expect(result.state.run?.enemies.get('3,0')?.stats.health).toBe(arrivalEnemyHealth);
+      expect(result.events).toHaveLength(0);
+    });
+
+    it('rejects thunder_step through the command pipeline while on cooldown', () => {
+      const baseState = createThunderStepCommandState();
+      const state = {
+        ...baseState,
+        player: {
+          ...baseState.player,
+          abilities: [{ id: 'thunder_step', cooldownRemaining: 1 }],
+        },
+      };
+      const departureEnemyHealth = state.run?.enemies.get('0,1')?.stats.health;
+      const arrivalEnemyHealth = state.run?.enemies.get('3,0')?.stats.health;
+
+      const result = handleCommand(
+        state,
+        { type: 'USE_ABILITY', abilityId: 'thunder_step', targetPosition: { x: 2, y: 0 } },
+        new SeededRNG(12345),
+      );
+
+      expect(result.state).toBe(state);
+      expect(result.state.player.position).toEqual(state.player.position);
+      expect(result.state.player.mana).toBe(state.player.mana);
+      expect(result.state.turnNumber).toBe(state.turnNumber);
+      expect(result.state.run?.enemies.get('0,1')?.stats.health).toBe(departureEnemyHealth);
+      expect(result.state.run?.enemies.get('3,0')?.stats.health).toBe(arrivalEnemyHealth);
       expect(result.events).toHaveLength(0);
     });
   });

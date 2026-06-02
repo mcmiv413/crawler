@@ -13,9 +13,9 @@ export const heatSurge: RingSpellDefinition = {
   xpGainOnCast: 2,
   animation: { id: animationRefs.self.heatSurgeAura.id },
   schools: ['fire'],
+  minimumSchoolLevel: 1,
   studyRequirements: [
     { kind: 'equippedSchool', school: 'fire' },
-    { kind: 'minimumSchoolXp', school: 'fire', xp: 20 },
     { kind: 'goldCost', gold: 60 },
   ],
   effectKind: 'self_buff',

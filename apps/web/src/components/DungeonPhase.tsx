@@ -32,7 +32,7 @@ import {
 } from '../config/feature-flags.js';
 import { filterCombatLogForDisplay } from './combat-log-filter.js';
 import { logEntryColor } from '../styles.js';
-import { reportDungeonE2EReady } from '../testing/e2e-bridge.js';
+import { reportDungeonE2EReady } from '../testing/e2e-reporter.js';
 
 interface DungeonPhaseProps {
   view: GameView;
@@ -230,12 +230,11 @@ function MapDisplay({
         ...displayMap,
         entities: displayMap.entities.filter((entity) => !ownedEntityIdSet.has(entity.id)),
       };
-  const canvasStatusPresentations = statusPresentationOwnedByThree
-    ? renderState.statusPresentations.filter((presentation) =>
-        presentation.animationId === undefined
-        || !ownedAnimationIdSet.has(presentation.animationId as AnimationId),
-      )
-    : renderState.statusPresentations;
+  const canvasStatusPresentations = renderState.statusPresentations.filter(
+    (presentation) =>
+      presentation.animationId === undefined
+      || !ownedAnimationIdSet.has(presentation.animationId as AnimationId),
+  );
 
   return (
     <div

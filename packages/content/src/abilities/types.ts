@@ -13,5 +13,6 @@ export interface AbilityDefinition {
   readonly requiresWeaponTypes?: readonly WeaponType[];
   readonly range?: number;
   readonly minRange?: number;
+  readonly tileTarget?: boolean;
   readonly animation: { readonly id: AnimationId };
 }

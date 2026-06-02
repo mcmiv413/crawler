@@ -85,10 +85,25 @@ function buildStudyableSpells(state: GameState): readonly TownStudyableSpellView
   const equippedItemIds = getEquippedRingItemIds(state.player.equipment, state.itemRegistry.items);
 
   return evaluateAllRingSpellStudy(state.player, equippedItemIds)
-    .filter(evalResult => evalResult.unlockedForStudy)
+    .filter(evalResult => evalResult.visibleForStudy)
     .map(evalResult => {
-      const currentSchoolLevel = getSchoolDisplayLevelFromXp(evalResult.currentSchoolXp);
-      const nextSchoolLevelXp = getNextSchoolDisplayLevelXp(evalResult.currentSchoolXp);
+      // Use first school gate for legacy current/next level fields
+      const primaryGate = evalResult.schoolGates[0];
+      const currentSchoolLevel = primaryGate ? getSchoolDisplayLevelFromXp(primaryGate.currentXp) : 0;
+      const nextSchoolLevelXp = primaryGate ? getNextSchoolDisplayLevelXp(primaryGate.currentXp) : 0;
+
+      // Build mastery data for all schools on this spell
+      const schoolMasteries = evalResult.spell.schools.map(school => {
+        const schoolXp = ((state.player.ringMastery as Record<string, { xp: number }>)[school]?.xp ?? 0);
+        const displayLevel = getSchoolDisplayLevelFromXp(schoolXp);
+        const nextLevelXp = getNextSchoolDisplayLevelXp(schoolXp);
+        return {
+          school,
+          xp: schoolXp,
+          displayLevel,
+          nextDisplayLevelXp: nextLevelXp,
+        };
+      });
 
       return {
         spellId: evalResult.spell.id,
@@ -100,16 +115,21 @@ function buildStudyableSpells(state: GameState): readonly TownStudyableSpellView
         xpGainOnCast: evalResult.spell.xpGainOnCast,
         baseDamage: evalResult.spell.baseDamage ?? 0,
         range: evalResult.spell.range,
-        unlockLevel: evalResult.requiredSchoolXp,
+        unlockLevel: primaryGate?.requiredXp ?? 0,
         learned: evalResult.alreadyLearned,
         unlocked: evalResult.unlockedForStudy,
         affordable: evalResult.affordable,
         canStudy: evalResult.canStudy,
-        requiredSchoolXp: evalResult.requiredSchoolXp,
+        schoolGates: evalResult.schoolGates.map(gate => ({
+          school: gate.school,
+          currentXp: gate.currentXp,
+          requiredXp: gate.requiredXp,
+          met: gate.met,
+        })),
         goldCost: evalResult.goldCost,
-        currentSchoolXp: evalResult.currentSchoolXp,
         currentSchoolLevel,
         nextSchoolLevelXp,
+        schoolMasteries,
       } satisfies TownStudyableSpellView;
     });
 }

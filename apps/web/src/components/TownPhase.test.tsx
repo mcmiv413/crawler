@@ -41,6 +41,7 @@ const baseFaction: FactionView = {
   playerDeathsCaused: 1,
   worldEffectText: 'Stable dungeon pressure: members spawn at normal rates and fight at baseline strength. Active leader pressure is in play.',
   townEffectText: 'Town effect per run: prosperity -1, corruption +1.',
+  leaderStateText: 'Brakka, Knife-King',
   currentDungeonEnemies: [],
 };
 
@@ -741,15 +742,22 @@ describe('TownPhase Component', () => {
               baseDamage: 0,
               range: 1,
               unlockLevel: 1,
-              requiredSchoolXp: 1,
               goldCost: 80,
-              currentSchoolXp: 0,
               currentSchoolLevel: 7,
               nextSchoolLevelXp: 999,
               learned: false,
               unlocked: false,
               affordable: true,
               canStudy: true,
+              schoolGates: [],
+              schoolMasteries: [
+                {
+                  school: 'fire',
+                  xp: 0,
+                  displayLevel: 7,
+                  nextDisplayLevelXp: 999,
+                },
+              ],
             },
           ],
         },
@@ -772,7 +780,7 @@ describe('TownPhase Component', () => {
       fireEvent.click(screen.getByRole('button', { name: /Study →/i }));
       expect(screen.getByRole('heading', { name: /Ring Study/i })).toBeVisible();
       expect(screen.getByText('Gold: 200g')).toBeVisible();
-      expect(screen.getByText('Fire Lv 7 · 0 / 999 XP · Range 1 · 80g')).toBeVisible();
+      expect(screen.getByText(/Fire Lv 7.*7 \/ 999 XP.*Range 1.*80g/)).toBeVisible();
       expect(screen.queryByText(/Max tier/i)).not.toBeInTheDocument();
 
       fireEvent.click(screen.getByRole('button', { name: /^Study$/i }));
@@ -1132,6 +1140,143 @@ describe('TownPhase Component', () => {
       
       // Action buttons should also be accessible
       expect(screen.getByRole('button', { name: /Enter Dungeon/i })).toBeVisible();
+    });
+  });
+
+  describe('Multi-school spell study UI', () => {
+    it('renders per-school XP progress gates for combo spells', () => {
+      const mockView: GameView = {
+        ...createMockGameView(),
+        phase: 'town',
+        town: {
+          ...createMockGameView().town!,
+          npcs: [
+            {
+              id: 'npc_elder',
+              name: 'Abelson',
+              role: 'elder',
+              available: true,
+            } as NpcView,
+          ],
+          studyableSpells: [
+            {
+              spellId: 'thunderstorm',
+              name: 'Thunderstorm',
+              description: 'Call a storm that chains lightning through visible foes.',
+              schools: ['fire', 'lightning'],
+              cooldown: 5,
+              manaCost: 20,
+              xpGainOnCast: 3,
+              baseDamage: 0,
+              range: 0,
+              unlockLevel: 4,
+              learned: false,
+              unlocked: false,
+              affordable: true,
+              canStudy: false,
+              schoolGates: [
+               { school: 'fire', currentXp: 80, requiredXp: 140, met: false },
+               { school: 'lightning', currentXp: 120, requiredXp: 140, met: false },
+              ],
+              goldCost: 150,
+              currentSchoolLevel: 0,
+              nextSchoolLevelXp: 0,
+              schoolMasteries: [
+               { school: 'fire', xp: 80, displayLevel: 2, nextDisplayLevelXp: 100 },
+               { school: 'lightning', xp: 120, displayLevel: 3, nextDisplayLevelXp: 140 },
+              ],
+            },
+          ],
+        },
+      };
+
+      render(
+        <TownPhase
+          view={mockView}
+          combatLog={[]}
+          loading={false}
+          error={null}
+          sendCommand={vi.fn()}
+          talkToNpc={vi.fn()}
+          npcDialogue={null}
+          setNpcDialogue={vi.fn()}
+          talkingTo={null}
+        />
+      );
+
+      fireEvent.click(screen.getByRole('button', { name: /Study →/i }));
+
+      expect(screen.getByText('Thunderstorm')).toBeInTheDocument();
+      expect(screen.getByText(/Fire Lv 2 \+ Lightning Lv 3/i)).toBeInTheDocument();
+      expect(screen.getByText(/Fire 80\/140/i)).toBeInTheDocument();
+      expect(screen.getByText(/Lightning 120\/140/i)).toBeInTheDocument();
+    });
+
+    it('shows all school gates as met when spell is unlocked', () => {
+      const mockView: GameView = {
+        ...createMockGameView(),
+        phase: 'town',
+        town: {
+          ...createMockGameView().town!,
+          npcs: [
+            {
+              id: 'npc_elder',
+              name: 'Abelson',
+              role: 'elder',
+              available: true,
+            } as NpcView,
+          ],
+          studyableSpells: [
+            {
+              spellId: 'thunderstorm',
+              name: 'Thunderstorm',
+              description: 'Call a storm that chains lightning through visible foes.',
+              schools: ['fire', 'lightning'],
+              cooldown: 5,
+              manaCost: 20,
+              xpGainOnCast: 3,
+              baseDamage: 0,
+              range: 0,
+              unlockLevel: 4,
+              learned: false,
+              unlocked: true,
+              affordable: true,
+              canStudy: true,
+              schoolGates: [
+               { school: 'fire', currentXp: 150, requiredXp: 140, met: true },
+               { school: 'lightning', currentXp: 150, requiredXp: 140, met: true },
+              ],
+              goldCost: 150,
+              currentSchoolLevel: 0,
+              nextSchoolLevelXp: 0,
+              schoolMasteries: [
+               { school: 'fire', xp: 150, displayLevel: 4, nextDisplayLevelXp: 180 },
+               { school: 'lightning', xp: 150, displayLevel: 4, nextDisplayLevelXp: 180 },
+              ],
+            },
+          ],
+        },
+      };
+
+      render(
+        <TownPhase
+          view={mockView}
+          combatLog={[]}
+          loading={false}
+          error={null}
+          sendCommand={vi.fn()}
+          talkToNpc={vi.fn()}
+          npcDialogue={null}
+          setNpcDialogue={vi.fn()}
+          talkingTo={null}
+        />
+      );
+
+      fireEvent.click(screen.getByRole('button', { name: /Study →/i }));
+
+      expect(screen.getByText(/Fire 150\/140/i)).toBeInTheDocument();
+      expect(screen.getByText(/Lightning 150\/140/i)).toBeInTheDocument();
+      expect(screen.getByRole('button', { name: /^Study$/i })).toBeEnabled();
     });
   });
 });

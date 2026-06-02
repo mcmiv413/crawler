@@ -9,6 +9,32 @@
 import { describe, it, expect, beforeEach, vi } from 'vitest';
 import type { AnimationModule } from '../types.js';
 
+function createMockGradient(): CanvasGradient {
+  return {
+    addColorStop: vi.fn(),
+  } as unknown as CanvasGradient;
+}
+
+export function createMockCanvasContext(): CanvasRenderingContext2D {
+  return {
+    save: vi.fn(),
+    restore: vi.fn(),
+    translate: vi.fn(),
+    rotate: vi.fn(),
+    fillRect: vi.fn(),
+    clearRect: vi.fn(),
+    beginPath: vi.fn(),
+    closePath: vi.fn(),
+    moveTo: vi.fn(),
+    lineTo: vi.fn(),
+    arc: vi.fn(),
+    fill: vi.fn(),
+    stroke: vi.fn(),
+    createLinearGradient: vi.fn(() => createMockGradient()),
+    createRadialGradient: vi.fn(() => createMockGradient()),
+  } as unknown as CanvasRenderingContext2D;
+}
+
 /**
  * Run the contract test for a given animation module.
  * Call this helper from individual module test files.
@@ -28,18 +54,7 @@ export function runAnimationContract(module: AnimationModule): void {
     let ctx: CanvasRenderingContext2D;
 
     beforeEach(() => {
-      // Create a mock canvas context
-      const canvas = document.createElement('canvas');
-      ctx = canvas.getContext('2d') as CanvasRenderingContext2D;
-      vi.spyOn(ctx, 'save');
-      vi.spyOn(ctx, 'restore');
-      vi.spyOn(ctx, 'translate');
-      vi.spyOn(ctx, 'rotate');
-      vi.spyOn(ctx, 'fillRect');
-      vi.spyOn(ctx, 'beginPath');
-      vi.spyOn(ctx, 'arc');
-      vi.spyOn(ctx, 'fill');
-      vi.spyOn(ctx, 'stroke');
+      ctx = createMockCanvasContext();
     });
 
     it('has valid AnimationId format', () => {

@@ -27,7 +27,9 @@ export type AbilityRequirement =
   | { kind: 'target_visible' }
   | { kind: 'target_below_hp_pct'; percentage: number }
   | { kind: 'has_mana'; amount: number }
-  | { kind: 'has_direction' };
+  | { kind: 'has_direction' }
+  | { kind: 'has_tile_target' }
+  | { kind: 'custom_requirement'; requirementId: string };
 
 /**
  * Conditions for conditional effects.
@@ -47,7 +49,8 @@ export type TargetSelector =
   | { kind: 'nearest_visible_enemy' }
   | { kind: 'all_visible_enemies' }
   | { kind: 'line_from_player'; range: number }
-  | { kind: 'target_plus_adjacent_enemies' };
+  | { kind: 'target_plus_adjacent_enemies' }
+  | { kind: 'custom'; selectorId: string };
 
 /**
  * Targeting specification.
@@ -141,6 +144,7 @@ export interface AbilityDefinition {
   readonly requirements: readonly AbilityRequirement[];
   readonly targeting: AbilityTargeting;
   readonly effects: readonly AbilityEffect[];
+  readonly tileTarget?: boolean;
 }
 
 /**
@@ -154,4 +158,5 @@ export interface AbilityContext {
   readonly equippedWeaponId: GameState['player']['equipment']['weapon'];
   readonly direction?: Direction;
   readonly target?: { instance: EnemyInstance; key: string };
+  readonly targetPosition?: { x: number; y: number };
 }

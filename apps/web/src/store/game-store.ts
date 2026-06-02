@@ -1,17 +1,29 @@
 import { create } from 'zustand';
-import { getAnimatedEventBatchSettleMs } from '@dungeon/presenter';
 import type { GameView, CombatLogEntry } from '@dungeon/presenter';
 import {
   createGame as createGameRequest,
   fetchGameView,
-  GameNotFoundError,
-  restoreGame,
-  sendCommand as sendCommandRequest,
 } from '../api/client.js';
 import type { CommandResponse } from '../api/client.js';
-import { isQueueDraining, onQueueDrained } from '../animation-runtime/animation-queue-bus.js';
-import { isBeatSchedulerEnabledFlag } from '../config/feature-flags.js';
 import { saveSession, loadSession, clearSession } from './session-persistence.js';
+import {
+  shouldClearSavedSession,
+  sendCommandWithColdRestore,
+  restoreSessionWarmOrCold,
+} from './session-restore-service.js';
+import {
+  clearPendingAnimationCommits,
+  scheduleCommandResultCommit,
+  type CommandResultCommitOptions,
+} from './command-result-commit-coordinator.js';
+import {
+  logDebugAttack,
+  logDebugCombatResult,
+} from './debug-logging.js';
+import {
+  appendCombatLog,
+  isDeathTransition,
+} from './command-result-reducer.js';
 
 interface Position {
   readonly x: number;
@@ -29,6 +41,7 @@ interface GameStore {
   debugLogging: boolean;
   deathTransitioning: boolean;
   sessionToken: string | null;
+  tileTargetMode: { active: boolean; selectedAbilityId: string | null };
 
   createGame: (seed?: number, playerName?: string) => Promise<void>;
   sendCommand: (command: unknown) => Promise<void>;
@@ -39,50 +52,15 @@ interface GameStore {
   startAutoWalk: (path: Position[]) => void;
   cancelAutoWalk: () => void;
   toggleDebugLogging: () => Promise<void>;
+  startTileTargeting: (abilityId: string) => void;
+  cancelTileTargeting: () => void;
 }
-
-let pendingViewTimeout: ReturnType<typeof setTimeout> | null = null;
-let pendingQueueDrainUnsubscribe: (() => void) | null = null;
-let pendingQueueDrainCommit: {
-  readonly view: GameView;
-  readonly combatLog: CombatLogEntry[];
-} | null = null;
 
 type SetGameStore = (partial: Partial<GameStore>) => void;
 type GetGameStore = () => GameStore;
 
-const FATAL_RESTORE_CODES = new Set([
-  'INCOMPATIBLE_SAVE_FILE',
-  'INVALID_GAME_STATE',
-  'INVALID_SAVE_FILE',
-  'MISSING_SERIALIZED_STATE',
-]);
-
-const FATAL_RESTORE_MESSAGES = new Set([
-  'Incompatible save file',
-  'Invalid game state',
-  'Invalid save file',
-  'Missing serializedState',
-]);
-
-function shouldClearSavedSession(error: unknown): boolean {
-  if (!(error instanceof Error)) {
-    return false;
-  }
-
-  const apiError = error as Error & { readonly code?: string; readonly status?: number };
-
-  // 403 SESSION_FORBIDDEN is fatal — clear the saved session
-  if (apiError.status === 403 && apiError.code === 'SESSION_FORBIDDEN') {
-    return true;
-  }
-
-  // Legacy 400 errors
-  if (apiError.status !== 400) {
-    return false;
-  }
-
-  return FATAL_RESTORE_CODES.has(apiError.code ?? '') || FATAL_RESTORE_MESSAGES.has(apiError.message);
+function inactiveTileTargetMode(): GameStore['tileTargetMode'] {
+  return { active: false, selectedAbilityId: null };
 }
 
 function initialStoreState(): Pick<
@@ -97,6 +75,7 @@ function initialStoreState(): Pick<
   | 'debugLogging'
   | 'deathTransitioning'
   | 'sessionToken'
+  | 'tileTargetMode'
 > {
   return {
     gameId: null,
@@ -109,130 +88,11 @@ function initialStoreState(): Pick<
     debugLogging: false,
     deathTransitioning: false,
     sessionToken: null,
+    tileTargetMode: inactiveTileTargetMode(),
   };
 }
 
-function appendCombatLog(current: readonly CombatLogEntry[], next: readonly CombatLogEntry[]): CombatLogEntry[] {
-  return [...current, ...next].slice(-50);
-}
 
-function isAttackCommand(command: unknown): boolean {
-  return typeof command === 'object' &&
-    command !== null &&
-    (command as Record<string, unknown>).type === 'ATTACK';
-}
-
-function logDebugAttack(debugLogging: boolean, command: unknown, view: GameView | null): void {
-  if (!debugLogging || !isAttackCommand(command)) {
-    return;
-  }
-
-  // eslint-disable-next-line no-console
-  console.log('[DEBUG] Attack Command:', {
-    playerAccuracy: view?.player.accuracy,
-    playerAttack: view?.player.attack,
-    command,
-    timestamp: new Date().toISOString(),
-  });
-}
-
-function logDebugCombatResult(debugLogging: boolean, view: GameView): void {
-  if (!debugLogging || view.combatLog.length === 0) {
-    return;
-  }
-
-  const lastEntry = view.combatLog[view.combatLog.length - 1];
-  // eslint-disable-next-line no-console
-  console.log('[DEBUG] Combat Result:', {
-    lastLogEntry: lastEntry?.text,
-    playerHealth: view.player.health,
-    timestamp: new Date().toISOString(),
-  });
-}
-
-async function sendCommandWithColdRestore(
-  gameId: string,
-  command: unknown,
-  sessionToken: string | null,
-  set: SetGameStore,
-): Promise<{ result: CommandResponse; sessionToken: string | undefined }> {
-  const currentSessionToken = sessionToken ?? undefined;
-
-  try {
-    const result = await sendCommandRequest(gameId, command, currentSessionToken);
-    return { result, sessionToken: currentSessionToken };
-  } catch (err) {
-    if (!(err instanceof GameNotFoundError)) {
-      throw err;
-    }
-  }
-
-  const saved = loadSession();
-  if (!saved) {
-    throw new Error('Game session expired. Please start a new game.');
-  }
-
-  const restored = await restoreGame(saved.serializedState, saved.sessionToken);
-  set({ sessionToken: restored.sessionToken });
-  const result = await sendCommandRequest(gameId, command, restored.sessionToken);
-  return { result, sessionToken: restored.sessionToken };
-}
-
-function isDeathTransition(currentView: GameView | null, nextView: GameView): boolean {
-  const dungeonToEndPhase =
-    currentView !== null &&
-    currentView.phase === 'dungeon' &&
-    (nextView.phase === 'town' || nextView.phase === 'game_over');
-
-  const hasDeathSignal =
-    Boolean(nextView.deathContext?.killerName) ||
-    nextView.runResult === 'permadeath';
-
-  return dungeonToEndPhase && hasDeathSignal;
-}
-
-function clearPendingViewTimeout(): void {
-  if (pendingViewTimeout) {
-    clearTimeout(pendingViewTimeout);
-  }
-  pendingViewTimeout = null;
-}
-
-function clearPendingQueueDrainCommit(): void {
-  pendingQueueDrainUnsubscribe?.();
-  pendingQueueDrainUnsubscribe = null;
-  pendingQueueDrainCommit = null;
-}
-
-function clearPendingAnimationCommits(): void {
-  clearPendingViewTimeout();
-  clearPendingQueueDrainCommit();
-}
-
-function isBeatSchedulerEnabled(): boolean {
-  return isBeatSchedulerEnabledFlag();
-}
-
-function ensureQueueDrainSubscription(set: SetGameStore): void {
-  if (pendingQueueDrainUnsubscribe !== null) {
-    return;
-  }
-
-  pendingQueueDrainUnsubscribe = onQueueDrained(() => {
-    const pendingCommit = pendingQueueDrainCommit;
-    clearPendingQueueDrainCommit();
-    if (pendingCommit === null) {
-      return;
-    }
-
-    set({
-      view: pendingCommit.view,
-      combatLog: pendingCommit.combatLog,
-      loading: false,
-      deathTransitioning: false,
-    });
-  });
-}
 
 function applyCommandResult(
   result: CommandResponse,
@@ -242,77 +102,18 @@ function applyCommandResult(
 ): void {
   const currentView = get().view;
   const combatLog = appendCombatLog(get().combatLog, result.view.combatLog);
-  const animationSettleMs = getAnimatedEventBatchSettleMs(result.view.animatedEvents);
-  const shouldStageView =
-    currentView !== null
-    && currentView.phase === 'dungeon'
-    && animationSettleMs > 0;
 
-  if (!shouldStageView && !isDeath) {
-    clearPendingAnimationCommits();
-    set({
-      view: result.view,
-      combatLog,
-      loading: false,
-      deathTransitioning: false,
-    });
-    return;
-  }
-
-  clearPendingViewTimeout();
-
-  if (shouldStageView) {
-    if (isBeatSchedulerEnabled()) {
-      pendingQueueDrainCommit = {
-        view: result.view,
-        combatLog,
-      };
-      ensureQueueDrainSubscription(set);
-      set({
-        view: result.view,
-        combatLog,
-        deathTransitioning: isDeath,
-        loading: false,
-      });
-      return;
-    }
-
-    clearPendingQueueDrainCommit();
-    set({
-      view: result.view,
-      combatLog,
-      deathTransitioning: isDeath,
-      loading: false,
-    });
-
-    pendingViewTimeout = setTimeout(() => {
-      set({
-        view: result.view,
-        combatLog,
-        loading: false,
-        deathTransitioning: false,
-      });
-      pendingViewTimeout = null;
-    }, isDeath ? Math.max(animationSettleMs, 2000) : animationSettleMs);
-    return;
-  }
-
-  clearPendingQueueDrainCommit();
-  set({
+  const options: CommandResultCommitOptions = {
     view: result.view,
     combatLog,
-    deathTransitioning: true,
-    loading: false,
-  });
+    isDeath,
+    currentView,
+    onCommit: (state) => {
+      set(state);
+    },
+  };
 
-  pendingViewTimeout = setTimeout(() => {
-    set({
-      view: result.view,
-      deathTransitioning: false,
-      combatLog,
-    });
-    pendingViewTimeout = null;
-  }, 2000);
+  scheduleCommandResultCommit(options);
 }
 
 function createCreateGameAction(set: SetGameStore): GameStore['createGame'] {
@@ -328,6 +129,7 @@ function createCreateGameAction(set: SetGameStore): GameStore['createGame'] {
         combatLog: [],
         loading: false,
         sessionToken: result.sessionToken,
+        tileTargetMode: inactiveTileTargetMode(),
       });
     } catch (err) {
       set({ error: (err as Error).message, loading: false });
@@ -344,7 +146,8 @@ function createSendCommandAction(set: SetGameStore, get: GetGameStore): GameStor
     try {
       logDebugAttack(debugLogging, command, get().view);
       const { result, sessionToken: currentSessionToken } =
-        await sendCommandWithColdRestore(gameId, command, sessionToken, set);
+        await sendCommandWithColdRestore(gameId, command, sessionToken);
+      set({ sessionToken: currentSessionToken });
       saveSession(gameId, result.serializedState, currentSessionToken);
       logDebugCombatResult(debugLogging, result.view);
       const currentView = get().view;
@@ -385,17 +188,15 @@ function createRestoreSessionAction(set: SetGameStore): GameStore['restoreSessio
     clearPendingAnimationCommits();
     set({ loading: true, error: null });
     try {
-      // Try fetching view directly (server may still have it warm)
-      try {
-        const view = await fetchGameView(saved.gameId, saved.sessionToken);
-        set({ gameId: saved.gameId, view, combatLog: [], loading: false, sessionToken: saved.sessionToken ?? null });
-        return true;
-      } catch {
-        // Server lost it (cold start) — restore from client state
-      }
-      const result = await restoreGame(saved.serializedState, saved.sessionToken);
-      saveSession(result.gameId, result.serializedState, result.sessionToken);
-      set({ gameId: result.gameId, view: result.view, combatLog: [], loading: false, sessionToken: result.sessionToken });
+      const { gameId, view, sessionToken } = await restoreSessionWarmOrCold(saved);
+      set({
+        gameId,
+        view,
+        combatLog: [],
+        loading: false,
+        sessionToken: sessionToken ?? null,
+        tileTargetMode: inactiveTileTargetMode(),
+      });
       return true;
     } catch (err) {
       if (shouldClearSavedSession(err)) {
@@ -411,7 +212,17 @@ function createResetGameAction(set: SetGameStore): GameStore['resetGame'] {
   return () => {
     clearPendingAnimationCommits();
     clearSession();
-    set({ gameId: null, view: null, combatLog: [], error: null, autoWalkPath: [], autoWalkKnownEnemyIds: new Set(), deathTransitioning: false, sessionToken: null });
+    set({
+      gameId: null,
+      view: null,
+      combatLog: [],
+      error: null,
+      autoWalkPath: [],
+      autoWalkKnownEnemyIds: new Set(),
+      deathTransitioning: false,
+      sessionToken: null,
+      tileTargetMode: inactiveTileTargetMode(),
+    });
   };
 }
 
@@ -442,6 +253,8 @@ function createGameStore(set: SetGameStore, get: GetGameStore): GameStore {
     toggleDebugLogging: async () => {
       await get().sendCommand({ type: 'TOGGLE_DEBUG' });
     },
+    startTileTargeting: (abilityId: string) => set({ tileTargetMode: { active: true, selectedAbilityId: abilityId } }),
+    cancelTileTargeting: () => set({ tileTargetMode: inactiveTileTargetMode() }),
   };
 }
 

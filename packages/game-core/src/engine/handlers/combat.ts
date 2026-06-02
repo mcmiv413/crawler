@@ -1,35 +1,27 @@
 import type {
   GameState, EntityId, DamageType, DomainEvent, WeaponType, WeaponTemplate, EnemyInstance, StatusId, Direction,
 } from '@dungeon/contracts';
-import { entityId } from '@dungeon/contracts';
 import type { CommandResult } from './shared.js';
 import type { SeededRNG } from '../../utils/rng.js';
-import { ABILITY_DEFINITIONS, COMBAT, MAGIC, STATUS_DEFAULTS, burn, daggerDisarm, daggerSetTrap, getPrimaryFactionId, getWeaponDamageProfile, heatSurgeStatus } from '@dungeon/content';
-import { applyActiveTurnManaRegen, updateRunMetrics } from './shared.js';
+import { ABILITY_DEFINITIONS, COMBAT, STATUS_DEFAULTS, burn, daggerDisarm, daggerSetTrap, getWeaponDamageProfile, heatSurgeStatus } from '@dungeon/content';
+import { updateRunMetrics } from './shared.js';
+import { advanceTurnAfterPlayerAction } from '../turn-advance-pipeline.js';
 import { executeAbility } from '../../abilities/runtime/execute-ability.js';
 import { resolveAttack } from '../../systems/combat.js';
 import { getEffectiveStat, applyStatusToEnemy } from '../../systems/status-effects.js';
 import { applyDamageToEnemy } from '../../systems/damage.js';
 import { applyDefense, applyRangeAccuracyPenalty } from '../../utils/dice.js';
-import { processEnemyLoot } from '../../systems/loot.js';
-import { checkLevelUp } from '../../systems/progression.js';
-import { applyDungeonOgreSlain, applyFactionLeaderSlain, applyFactionMemberKill } from '../../systems/factions.js';
 import { canUseAbility, setAbilityCooldown } from '../../systems/abilities.js';
-import { applyLifeStealOnKill, getExpBonusMultiplier } from '../../systems/enchantment-hooks.js';
 import { checkWeaponMasteryUnlocks } from '../../systems/weapon-mastery.js';
 import { chebyshevDistance } from '../../utils/grid.js';
-import { processEnemyTurns } from '../turn-scheduler.js';
-import { tickAbilityCooldowns } from '../../systems/abilities.js';
+
 import { handleDisarmTrap } from './disarm-trap.js';
 import { handleSetTrap } from './set-trap.js';
-import { spreadBurnFromDeadEnemy } from '../../systems/burn-spread.js';
 import {
-  canFireMasteryRestoreManaOnBurnKill,
-  gainSchoolXp,
   getFireBurnDuration,
   getFireBurnMagnitude,
 } from '../../systems/magic-xp.js';
-import { restorePlayerMana } from '../../systems/mana.js';
+import { processEnemyKill } from '../enemy-death-pipeline.js';
 
 export const LEGACY_CONTENT_ABILITY_HANDLER_IDS = [daggerDisarm.id, daggerSetTrap.id] as const;
 
@@ -53,164 +45,6 @@ export function getEquippedWeaponDamageType(state: GameState): DamageType {
   const tpl = state.itemRegistry.items.get(state.player.equipment.weapon);
   if (!tpl || tpl.itemClass !== 'weapon') return 'physical';
   return (tpl as WeaponTemplate).weapon.damageType;
-}
-
-/**
- * Processes enemy death: removes from map, awards XP, processes loot, handles quests,
- * faction progression, level ups, and victory conditions.
- *
- * This is extracted to ensure feature parity between regular attacks and ability kills.
- */
-export function processEnemyKill(
-  state: GameState,
-  enemy: EnemyInstance,
-  enemyPosKey: string,
-  rng: SeededRNG,
-): { state: GameState, events: DomainEvent[] } {
-  let events: DomainEvent[] = [];
-  let newState = state;
-
-  // 1. Remove enemy from map
-  const newEnemies = new Map(newState.run!.enemies);
-  newEnemies.delete(enemyPosKey);
-  const hadBurn = enemy.statuses.some(status => status.id === burn.id);
-
-  // 2. Emit ENTITY_DIED
-  events = [...events, {
-    type: 'ENTITY_DIED',
-    entityId: enemy.id,
-    killerId: newState.player.id,
-    entityName: enemy.name,
-    timestamp: newState.turnNumber,
-    turnNumber: newState.turnNumber,
-  }];
-
-  // 3. Calculate XP with enchantment bonus
-  const expGained = Math.round(enemy.experienceValue * getExpBonusMultiplier(newState));
-
-  // 4. Apply life-steal-on-kill
-  const lifeStealHp = applyLifeStealOnKill(newState);
-  const newHealthAfterSteal = lifeStealHp > 0
-    ? Math.min(newState.player.stats.maxHealth, newState.player.stats.health + lifeStealHp)
-    : newState.player.stats.health;
-
-  // Emit life steal event if applicable
-  if (lifeStealHp > 0) {
-    events = [...events, {
-      type: 'LIFE_STEAL',
-      playerId: newState.player.id,
-      enemyId: enemy.id,
-      enemyName: enemy.name,
-      hpRestored: lifeStealHp,
-      timestamp: newState.turnNumber,
-      turnNumber: newState.turnNumber,
-    }];
-  }
-
-  // 5. Update player stats (totalKills, experience, health)
-  newState = {
-    ...newState,
-    run: { ...newState.run!, enemies: newEnemies },
-    player: {
-      ...newState.player,
-      totalKills: newState.player.totalKills + 1,
-      experience: newState.player.experience + expGained,
-      stats: { ...newState.player.stats, health: newHealthAfterSteal },
-    },
-  };
-
-  if (hadBurn === true) {
-    const spreadResult = spreadBurnFromDeadEnemy(newState, enemy, rng);
-    const playerWithSchoolXp = gainSchoolXp(newState.player, 'fire', MAGIC.schoolXpPerBurningKill);
-    newState = {
-      ...newState,
-      run: newState.run === null ? null : { ...newState.run, enemies: spreadResult.enemies },
-      player: playerWithSchoolXp,
-    };
-    events = [...events, ...spreadResult.events];
-
-    if (canFireMasteryRestoreManaOnBurnKill(playerWithSchoolXp) === true) {
-      const manaResult = restorePlayerMana(newState, MAGIC.burnKillManaRestore, 'Burning kill');
-      newState = manaResult.state;
-      events = [...events, ...manaResult.events];
-    }
-  }
-
-  // 6. Process loot + gold tracking
-  const goldBeforeLoot = newState.player.gold;
-  const lootResult = processEnemyLoot(newState, enemy, rng);
-  newState = lootResult.state;
-  events = [...events, ...lootResult.events];
-  const goldFromLoot = newState.player.gold - goldBeforeLoot;
-  if (goldFromLoot > 0) newState = updateRunMetrics(newState, { goldEarned: goldFromLoot });
-
-  // 8. Update faction progression
-  const eventContext = {
-    timestamp: newState.turnNumber,
-    turnNumber: newState.turnNumber,
-    depth: newState.run?.floor.depth ?? state.player.floor,
-  };
-  const leaderFaction = newState.world.factions.find(faction => faction.activeLeaderId === enemy.id);
-
-  if (newState.world.dungeonOgre.status === 'emerged' && enemy.id === entityId('dungeon_ogre')) {
-    const ogreResult = applyDungeonOgreSlain(newState.world, eventContext);
-    newState = { ...newState, world: ogreResult.world };
-    events = [...events, ...ogreResult.events];
-    newState = updateRunMetrics(newState, { causeOfEnd: 'victory' });
-    const victoryRun = newState.run!;
-    newState = { ...newState, phase: 'game_over' };
-    events = [...events, {
-      type: 'RUN_ENDED',
-      runId: victoryRun.runId,
-      reason: 'victory',
-      floorsCleared: victoryRun.floor.depth,
-      timestamp: newState.turnNumber,
-      turnNumber: newState.turnNumber,
-    }];
-  } else if (leaderFaction !== undefined) {
-    const factionResult = applyFactionLeaderSlain(newState.world, leaderFaction.id, eventContext, state.seed);
-    newState = { ...newState, world: factionResult.world };
-    events = [...events, ...factionResult.events];
-  } else {
-    const factionResult = applyFactionMemberKill(newState.world, getPrimaryFactionId(enemy.templateId), eventContext);
-    newState = { ...newState, world: factionResult.world };
-    events = [...events, ...factionResult.events];
-  }
-
-  // 9. Track kill metric
-  newState = updateRunMetrics(newState, { enemiesKilled: 1 });
-
-  // 10. Check for level up
-  const levelResult = checkLevelUp(newState);
-  newState = levelResult.state;
-  events = [...events, ...levelResult.events];
-
-  // 11. Update quest progress from enemy defeat (defeat_enemy objectives)
-  const updatedQuests = newState.activeQuests.map(q => {
-    if (q.status !== 'active' || q.objective.type !== 'defeat_enemy') {
-      return q;
-    }
-    // Check if this quest is for this enemy template
-    if (q.objective.targetId !== enemy.templateId) {
-      return q;
-    }
-    // Increment progress (targetCount defaults to 1)
-    const targetCount = q.objective.targetCount ?? 1;
-    const newProgress = Math.min(q.objective.progress + 1, targetCount);
-    return {
-      ...q,
-      objective: {
-        ...q.objective,
-        progress: newProgress,
-      },
-    };
-  });
-  newState = {
-    ...newState,
-    activeQuests: updatedQuests,
-  };
-
-  return { state: newState, events };
 }
 
 export function handleAttack(
@@ -513,18 +347,7 @@ export function handleAttack(
     }
   }
 
-  const manaResult = applyActiveTurnManaRegen(newState, events);
-  newState = manaResult.state;
-  events = manaResult.events;
-
-  // Process enemy turns with player speed for speed-based action accumulation, then tick ability cooldowns
-  const enemyResult = processEnemyTurns(newState, rng, newState.player.stats.speed);
-  newState = enemyResult.state;
-  events = [...events, ...enemyResult.events];
-  newState = tickAbilityCooldowns(newState);
-
-  const runEnded = newState.phase === 'town' || newState.phase === 'game_over';
-  return { state: newState, events, runEnded };
+  return advanceTurnAfterPlayerAction(newState, events, rng);
 }
 
 export function handleUseAbility(
@@ -533,6 +356,7 @@ export function handleUseAbility(
   rng: SeededRNG,
   targetId?: EntityId,
   direction?: Direction,
+  targetPosition?: { x: number; y: number },
 ): CommandResult {
   if (state.run === null) return { state, events: [], runEnded: false };
   if (canUseAbility(state, abilityId) !== true) return { state, events: [], runEnded: false };
@@ -550,7 +374,7 @@ export function handleUseAbility(
   if (abilityId === daggerDisarm.id && direction) {
     return handleDisarmTrap(state, direction as Direction, rng);
   }
-  if (abilityId === daggerSetTrap.id && direction && targetId) {
+  if (abilityId === daggerSetTrap.id && direction && targetId !== undefined) {
     return handleSetTrap(state, direction as Direction, targetId, rng);
   }
 
@@ -563,7 +387,7 @@ export function handleUseAbility(
   newState = updateRunMetrics(newState, { turnsElapsed: 1 });
 
   // Execute ability using data-driven engine
-  const abilityResult = executeAbility(newState, abilityId, rng, targetId, direction);
+  const abilityResult = executeAbility(newState, abilityId, rng, targetId, direction, targetPosition);
   if (abilityResult.events.length === 0) {
     // Ability not found or failed validation
     return { state, events: [], runEnded: false };
@@ -572,18 +396,7 @@ export function handleUseAbility(
   let resultState = abilityResult.state;
   let resultEvents: DomainEvent[] = [...abilityResult.events];
 
-  const manaResult = applyActiveTurnManaRegen(resultState, resultEvents);
-  resultState = manaResult.state;
-  resultEvents = manaResult.events;
-
-  // Enemy turns with player speed for speed-based action accumulation, then tick cooldowns
-  const enemyResult = processEnemyTurns(resultState, rng, resultState.player.stats.speed);
-  resultState = enemyResult.state;
-  resultEvents = [...resultEvents, ...enemyResult.events];
-  resultState = tickAbilityCooldowns(resultState);
-
-  const runEnded = resultState.phase === 'town' || resultState.phase === 'game_over';
-  return { state: resultState, events: resultEvents, runEnded };
+  return advanceTurnAfterPlayerAction(resultState, resultEvents, rng);
 }
 
 /** Helper: Complete a quest and emit event. Returns updated state and event. */

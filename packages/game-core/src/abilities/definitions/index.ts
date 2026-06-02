@@ -12,6 +12,12 @@ import { RANGED_VOLLEY_DEFINITION } from './ranged-volley.js';
 import { EMBER_DEFINITION } from './ember.js';
 import { HEAT_SURGE_DEFINITION } from './heat-surge.js';
 import { CINDER_WAKE_DEFINITION } from './cinder-wake.js';
+import { BOLT_DEFINITION } from './bolt.js';
+import { THUNDER_STEP_DEFINITION } from './thunder-step.js';
+import { ROLLING_THUNDER_DEFINITION } from './rolling-thunder.js';
+import { PLASMA_ARC_DEFINITION } from './plasma-arc.js';
+import { STORMFIRE_DEFINITION } from './stormfire.js';
+import { THUNDERSTORM_DEFINITION } from './thunderstorm.js';
 
 /**
  * All ability definitions.
@@ -36,4 +42,10 @@ export const ALL_ABILITY_DEFINITIONS: readonly AbilityDefinition[] = [
   EMBER_DEFINITION,
   HEAT_SURGE_DEFINITION,
   CINDER_WAKE_DEFINITION,
+  BOLT_DEFINITION,
+  THUNDER_STEP_DEFINITION,
+  ROLLING_THUNDER_DEFINITION,
+  PLASMA_ARC_DEFINITION,
+  STORMFIRE_DEFINITION,
+  THUNDERSTORM_DEFINITION,
 ];

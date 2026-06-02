@@ -22,7 +22,7 @@ export type Direction = 'N' | 'S' | 'E' | 'W' | 'NE' | 'NW' | 'SE' | 'SW';
 export type DamageType = 'physical' | 'fire' | 'frost' | 'poison' | 'shock' | 'corruption' | 'arcane' | 'shadow';
 
 /** Status effect identifiers */
-export type StatusId = 'poison' | 'burn' | 'slow' | 'stun' | 'bleed' | 'weaken' | 'vulnerability' | 'regeneration' | 'strength' | 'panic' | 'heat_surge' | 'arcane_charge';
+export type StatusId = 'poison' | 'burn' | 'slow' | 'stun' | 'bleed' | 'weaken' | 'vulnerability' | 'regeneration' | 'strength' | 'panic' | 'heat_surge' | 'arcane_charge' | 'storm_active';
 
 /** Tile types on a dungeon map */
 export type TileType = 'floor' | 'wall' | 'door' | 'obstacle' | 'hazard' | 'chest' | 'stairs_down' | 'stairs_up' | 'event' | 'interactable';

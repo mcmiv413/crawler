@@ -21,6 +21,8 @@ import { daggerSetTrapModule } from '../modules/dagger-set-trap.js';
 import { emberBoltModule } from '../modules/ember-bolt.js';
 import { healingPulseModule } from '../modules/healing-pulse.js';
 import { heatSurgeAuraModule } from '../modules/heat-surge-aura.js';
+import { lightningBoltModule } from '../modules/lightning-bolt.js';
+import { lightningStrikeModule } from '../modules/lightning-strike.js';
 import { powerStrikeModule } from '../modules/power-strike.js';
 import { rangedPinModule } from '../modules/ranged-pin.js';
 import { rangedVolleyModule } from '../modules/ranged-volley.js';
@@ -44,6 +46,8 @@ export function initializeAnimationModules(): void {
   registerModule(emberBoltModule);
   registerModule(healingPulseModule);
   registerModule(heatSurgeAuraModule);
+  registerModule(lightningBoltModule);
+  registerModule(lightningStrikeModule);
   registerModule(powerStrikeModule);
   registerModule(rangedPinModule);
   registerModule(rangedVolleyModule);

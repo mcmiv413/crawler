@@ -15,6 +15,7 @@ type AbilitySelection = {
   targetId?: string;
   direction?: Direction;
   itemEntityId?: string;
+  tileTarget?: boolean;
 };
 
 type MapCellLike = {
@@ -132,6 +133,12 @@ export function AbilityDropdown({
 
   const handleAbilitySelect = (ability: AbilityView) => {
     if (ability.ready !== true) {
+      return;
+    }
+
+    // Skip tile-target abilities - they're handled by DungeonView instead
+    if (ability.tileTarget === true) {
+      onSelect({ abilityId: ability.id, tileTarget: true });
       return;
     }
 

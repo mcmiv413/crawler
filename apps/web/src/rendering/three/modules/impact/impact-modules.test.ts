@@ -14,6 +14,7 @@ import { shatterBurst } from './shatter-burst.js';
 import { riposteGlint } from './riposte-glint.js';
 import { bleedingStrike } from './bleeding-strike.js';
 import { disarmStrike } from './disarm-strike.js';
+import { lightningStrike } from './lightning-strike.js';
 
 describe('radialImpactBurst', () => { runThreeAnimationContract(radialImpactBurst); });
 describe('forwardSlash', () => { runThreeAnimationContract(forwardSlash); });
@@ -24,3 +25,4 @@ describe('shatterBurst (impact)', () => { runThreeAnimationContract(shatterBurst
 describe('riposteGlint', () => { runThreeAnimationContract(riposteGlint); });
 describe('bleedingStrike', () => { runThreeAnimationContract(bleedingStrike); });
 describe('disarmStrike', () => { runThreeAnimationContract(disarmStrike); });
+describe('lightningStrike', () => { runThreeAnimationContract(lightningStrike); });

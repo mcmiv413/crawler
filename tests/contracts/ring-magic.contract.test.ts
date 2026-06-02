@@ -4,6 +4,7 @@ import { RING_SPELL_BY_ID, RING_SCHOOL_BY_ID } from '@dungeon/content';
 import { ABILITY_DEFINITIONS } from '@dungeon/content';
 import { STATUS_DEFINITIONS } from '@dungeon/content';
 import { ITEM_BY_ID } from '@dungeon/content';
+import { getSchoolDisplayLevelFromXp } from '@dungeon/core';
 
 /**
  * Ring Magic System Contract Tests
@@ -17,6 +18,14 @@ import { ITEM_BY_ID } from '@dungeon/content';
  *
  * Run before every commit to ensure magic system integrity.
  */
+
+function getMinimumXpForDisplayLevel(displayLevel: number): number {
+  let xp = 0;
+  while (getSchoolDisplayLevelFromXp(xp) < displayLevel) {
+    xp += 1;
+  }
+  return xp;
+}
 
 describe('Ring Magic System Contracts', () => {
   describe('When RING_SPELL_BY_ID is populated', () => {
@@ -40,6 +49,21 @@ describe('Ring Magic System Contracts', () => {
           spell.xpGainOnCast,
           `Spell "${id}" must define positive xpGainOnCast metadata`,
         ).toBeGreaterThan(0);
+      }
+    });
+
+    it('lightning single-school ladder matches the baseline cast XP progression', () => {
+      const baselinePairs = [
+        ['bolt', 'ember'],
+        ['thunder_step', 'heat_surge'],
+        ['rolling_thunder', 'cinder_wake'],
+      ] as const;
+
+      for (const [lightningSpellId, baselineSpellId] of baselinePairs) {
+        expect(
+          RING_SPELL_BY_ID.get(lightningSpellId)?.xpGainOnCast,
+          `Spell "${lightningSpellId}" should match baseline cast XP from "${baselineSpellId}"`,
+        ).toBe(RING_SPELL_BY_ID.get(baselineSpellId)?.xpGainOnCast);
       }
     });
 
@@ -93,6 +117,35 @@ describe('Ring Magic System Contracts', () => {
       }
     });
 
+    it('combo spell mastery gates stay paired to equipped-school requirements without duplicates', () => {
+      for (const [spellId, spell] of RING_SPELL_BY_ID) {
+        if (spell.schools.length < 2) continue;
+
+        const equippedSchools = new Set(
+          spell.studyRequirements
+            .filter((requirement): requirement is { kind: 'equippedSchool'; school: string } =>
+              requirement.kind === 'equippedSchool')
+            .map((requirement) => requirement.school),
+        );
+        const minimumSchoolXpRequirements = spell.studyRequirements
+          .filter((requirement): requirement is { kind: 'minimumSchoolXp'; school: string; xp: number } =>
+            requirement.kind === 'minimumSchoolXp');
+        const seenSchools = new Set<string>();
+
+        for (const requirement of minimumSchoolXpRequirements) {
+          expect(
+            seenSchools.has(requirement.school),
+            `Combo spell "${spellId}" declares duplicate minimumSchoolXp gates for "${requirement.school}"`,
+          ).toBe(false);
+          seenSchools.add(requirement.school);
+          expect(
+            equippedSchools.has(requirement.school),
+            `Combo spell "${spellId}" must pair minimumSchoolXp gate "${requirement.school}" with equippedSchool`,
+          ).toBe(true);
+        }
+      }
+    });
+
     it('every prerequisiteSpell requirement references an existing spell', () => {
       for (const [spellId, spell] of RING_SPELL_BY_ID) {
         for (const req of spell.studyRequirements) {
@@ -135,6 +188,43 @@ describe('Ring Magic System Contracts', () => {
           }
         }
       }
+    });
+
+    it('combo spells only declare minimumSchoolXp gates for their own schools', () => {
+      for (const [spellId, spell] of RING_SPELL_BY_ID) {
+        if (spell.schools.length < 2) continue;
+
+        const minimumSchoolXpRequirements = spell.studyRequirements
+          .filter((requirement): requirement is { kind: 'minimumSchoolXp'; school: string; xp: number } =>
+            requirement.kind === 'minimumSchoolXp');
+
+        for (const requirement of minimumSchoolXpRequirements) {
+          expect(
+            spell.schools.includes(requirement.school),
+            `Combo spell "${spellId}" has minimumSchoolXp gate for unrelated school "${requirement.school}"`,
+          ).toBe(true);
+        }
+      }
+    });
+
+    it('thunderstorm stays locked until both Fire and Lightning reach display level 4', () => {
+      const thunderstorm = RING_SPELL_BY_ID.get('thunderstorm');
+      const minimumXpForLevelFour = getMinimumXpForDisplayLevel(4);
+      const xpRequirements = thunderstorm?.studyRequirements
+        .filter((requirement): requirement is { kind: 'minimumSchoolXp'; school: string; xp: number } =>
+          requirement.kind === 'minimumSchoolXp');
+      const equippedSchools = thunderstorm?.studyRequirements
+        .filter((requirement): requirement is { kind: 'equippedSchool'; school: string } =>
+          requirement.kind === 'equippedSchool')
+        .map(requirement => requirement.school);
+
+      expect(thunderstorm?.schools).toEqual(['fire', 'lightning']);
+      expect(equippedSchools).toEqual(expect.arrayContaining(['fire', 'lightning']));
+      expect(xpRequirements).toEqual(expect.arrayContaining([
+        expect.objectContaining({ school: 'fire', xp: minimumXpForLevelFour }),
+        expect.objectContaining({ school: 'lightning', xp: minimumXpForLevelFour }),
+      ]));
+      expect(xpRequirements).toHaveLength(2);
     });
   });
 

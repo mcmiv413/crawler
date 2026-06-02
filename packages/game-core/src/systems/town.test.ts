@@ -6,6 +6,9 @@ import type { NpcState, ArmorTemplate } from '@dungeon/contracts';
 
 const FIRE_RING_SPELL_ID = 'heat_surge';
 const FIRE_RING_ENCHANTMENT_ID = 'fire_ring_ember';
+const BOLT_SPELL_ID = 'bolt';
+const THUNDER_STEP_SPELL_ID = 'thunder_step';
+const ROLLING_THUNDER_SPELL_ID = 'rolling_thunder';
 
 const fireRingTemplate: ArmorTemplate = {
   itemId: 'fire_ring',
@@ -22,6 +25,24 @@ const fireRingTemplate: ArmorTemplate = {
     slot: 'ring',
     enchantmentSlots: 1,
     enchantments: [FIRE_RING_ENCHANTMENT_ID],
+  },
+};
+
+const lightningRingTemplate: ArmorTemplate = {
+  itemId: 'lightning_ring',
+  name: 'Lightning Ring',
+  description: 'A ring bound to storm magic.',
+  itemClass: 'armor',
+  rarity: 'rare',
+  value: 100,
+  stackable: false,
+  maxStack: 1,
+  armor: {
+    defense: 0,
+    evasionPenalty: 0,
+    slot: 'ring',
+    enchantmentSlots: 0,
+    enchantments: [],
   },
 };
 
@@ -52,6 +73,48 @@ function makeStateWithFireRingEquipped(): ReturnType<typeof createTestGameState>
     ...base,
     itemRegistry: {
       items: new Map([[ringId, fireRingTemplate]]),
+    },
+  };
+}
+
+function makeStateWithLightningRingEquipped(
+  {
+    gold = 500,
+    lightningXp = 0,
+    learnedRingSpellIds = [],
+  }: {
+    gold?: number;
+    lightningXp?: number;
+    learnedRingSpellIds?: string[];
+  } = {},
+): ReturnType<typeof createTestGameState> {
+  const ringId = entityId('lightning_ring_instance');
+  const base = createTestGameState({
+    player: {
+      gold,
+      equipment: {
+        weapon: null,
+        secondaryWeapon: null,
+        chest: null,
+        head: null,
+        gloves: null,
+        boots: null,
+        ring1: ringId,
+        ring2: null,
+      },
+      ringMastery: {
+        lightning: {
+          xp: lightningXp,
+        },
+      },
+      learnedRingSpellIds,
+    },
+  });
+
+  return {
+    ...base,
+    itemRegistry: {
+      items: new Map([[ringId, lightningRingTemplate]]),
     },
   };
 }
@@ -332,6 +395,101 @@ describe('processTownAction study_spell', () => {
 
     expect(result.state).toBe(state);
     expect(result.events).toHaveLength(0);
+  });
+
+  it('studies the Lightning ladder in order, spending gold without granting Lightning XP', () => {
+    const state = makeStateWithLightningRingEquipped({ lightningXp: 60 });
+    const initialLightningXp = state.player.ringMastery.lightning?.xp ?? 0;
+
+    const boltResult = processTownAction(
+      state,
+      'study_spell',
+      undefined,
+      undefined,
+      undefined,
+      BOLT_SPELL_ID,
+    );
+    expect(boltResult.state.player.gold).toBeLessThan(state.player.gold);
+    expect(boltResult.state.player.learnedRingSpellIds).toContain(BOLT_SPELL_ID);
+    expect(boltResult.state.player.abilities.map(ability => ability.id)).toContain(BOLT_SPELL_ID);
+    expect(boltResult.state.player.ringMastery.lightning?.xp).toBe(initialLightningXp);
+    expect(boltResult.events.some(event => event.type === 'GOLD_CHANGED')).toBe(true);
+    expect(boltResult.events.some(event => event.type === 'SPELL_UNLOCKED' && event.spellId === BOLT_SPELL_ID)).toBe(true);
+
+    const thunderStepResult = processTownAction(
+      boltResult.state,
+      'study_spell',
+      undefined,
+      undefined,
+      undefined,
+      THUNDER_STEP_SPELL_ID,
+    );
+    expect(thunderStepResult.state.player.gold).toBeLessThan(boltResult.state.player.gold);
+    expect(thunderStepResult.state.player.learnedRingSpellIds).toEqual(expect.arrayContaining([
+      BOLT_SPELL_ID,
+      THUNDER_STEP_SPELL_ID,
+    ]));
+    expect(thunderStepResult.state.player.abilities.map(ability => ability.id)).toEqual(expect.arrayContaining([
+      BOLT_SPELL_ID,
+      THUNDER_STEP_SPELL_ID,
+    ]));
+    expect(thunderStepResult.state.player.ringMastery.lightning?.xp).toBe(initialLightningXp);
+    expect(thunderStepResult.events.some(event => event.type === 'GOLD_CHANGED')).toBe(true);
+    expect(thunderStepResult.events.some(event => event.type === 'SPELL_UNLOCKED' && event.spellId === THUNDER_STEP_SPELL_ID)).toBe(true);
+
+    const rollingThunderResult = processTownAction(
+      thunderStepResult.state,
+      'study_spell',
+      undefined,
+      undefined,
+      undefined,
+      ROLLING_THUNDER_SPELL_ID,
+    );
+    expect(rollingThunderResult.state.player.gold).toBeLessThan(thunderStepResult.state.player.gold);
+    expect(rollingThunderResult.state.player.learnedRingSpellIds).toEqual(expect.arrayContaining([
+      BOLT_SPELL_ID,
+      THUNDER_STEP_SPELL_ID,
+      ROLLING_THUNDER_SPELL_ID,
+    ]));
+    expect(rollingThunderResult.state.player.abilities.map(ability => ability.id)).toEqual(expect.arrayContaining([
+      BOLT_SPELL_ID,
+      THUNDER_STEP_SPELL_ID,
+      ROLLING_THUNDER_SPELL_ID,
+    ]));
+    expect(rollingThunderResult.state.player.ringMastery.lightning?.xp).toBe(initialLightningXp);
+    expect(rollingThunderResult.events.some(event => event.type === 'GOLD_CHANGED')).toBe(true);
+    expect(rollingThunderResult.events.some(event => event.type === 'SPELL_UNLOCKED' && event.spellId === ROLLING_THUNDER_SPELL_ID)).toBe(true);
+  });
+
+  it('rejects Lightning study until prerequisite and mastery gates are met', () => {
+    const missingPrerequisiteState = makeStateWithLightningRingEquipped({ lightningXp: 60 });
+    const thunderStepResult = processTownAction(
+      missingPrerequisiteState,
+      'study_spell',
+      undefined,
+      undefined,
+      undefined,
+      THUNDER_STEP_SPELL_ID,
+    );
+
+    expect(thunderStepResult.state).toBe(missingPrerequisiteState);
+    expect(thunderStepResult.events).toHaveLength(0);
+
+    const missingXpState = makeStateWithLightningRingEquipped({
+      lightningXp: 59,
+      learnedRingSpellIds: [BOLT_SPELL_ID, THUNDER_STEP_SPELL_ID],
+    });
+    const rollingThunderResult = processTownAction(
+      missingXpState,
+      'study_spell',
+      undefined,
+      undefined,
+      undefined,
+      ROLLING_THUNDER_SPELL_ID,
+    );
+
+    expect(rollingThunderResult.state).toBe(missingXpState);
+    expect(rollingThunderResult.events).toHaveLength(0);
   });
 });
 

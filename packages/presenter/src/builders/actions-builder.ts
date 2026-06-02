@@ -126,11 +126,12 @@ function buildAbilityAction(
   }
 
   const definition = ABILITY_DEFINITIONS.get(ability.id);
+  const isTileTarget = definition?.tileTarget === true;
   const requiresTarget = definition?.requiresTarget === true;
   const targetRange = getAbilityTargetRange(ability.id, weaponRange);
   const hasTargetInRange = !requiresTarget || hasVisibleEnemyTargetInRange(state, targetRange.max, targetRange.min);
   const hasEnoughMana = definition?.manaCost === undefined || state.player.mana >= definition.manaCost;
-  const enabled = ability.cooldownRemaining === 0 && hasTargetInRange && hasEnoughMana;
+  const enabled = ability.cooldownRemaining === 0 && (isTileTarget || hasTargetInRange) && hasEnoughMana;
   const abilityName = definition?.name ?? ability.id;
 
   return {
@@ -138,6 +139,7 @@ function buildAbilityAction(
     label: buildAbilityLabel(abilityName, ability.cooldownRemaining, requiresTarget, hasTargetInRange),
     type: 'ability',
     enabled,
+    tileTarget: isTileTarget,
     description: definition?.description,
   };
 }

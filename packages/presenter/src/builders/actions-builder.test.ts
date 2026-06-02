@@ -304,6 +304,32 @@ describe('buildAvailableActions', () => {
       expect(abilityAction?.enabled).toBe(true);
     });
 
+    it('marks tile-target spells as enabled without a visible enemy target', () => {
+      const baseState = createTestGameStateInCombat();
+      state = {
+        ...baseState,
+        player: {
+          ...baseState.player,
+          mana: 99,
+          abilities: [
+            {
+              id: 'thunder_step',
+              cooldownRemaining: 0,
+            },
+          ],
+        },
+      };
+
+      const actions = buildAvailableActions(state);
+      const abilityAction = actions.find(a => a.id === 'use_ability_thunder_step');
+
+      expect(abilityAction).toEqual(expect.objectContaining({
+        enabled: true,
+        tileTarget: true,
+        type: 'ability',
+      }));
+    });
+
     it('includes consumable item actions', () => {
       state = {
         ...state,

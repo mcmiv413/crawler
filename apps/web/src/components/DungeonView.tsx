@@ -28,18 +28,54 @@ export function DungeonView({ map, vpTilesWidth, vpTilesHeight }: Props) {
 
   const cellLookup = buildPositionMap(map.cells);
 
+  // Handle ESC to cancel tile-targeting mode
+  React.useEffect(() => {
+    const handleKeyDown = (e: KeyboardEvent) => {
+      if (e.key === 'Escape') {
+        const store = useGameStore.getState();
+        if (store.tileTargetMode.active) {
+          store.cancelTileTargeting();
+          e.preventDefault();
+        }
+      }
+    };
+    window.addEventListener('keydown', handleKeyDown);
+    return () => window.removeEventListener('keydown', handleKeyDown);
+  }, []);
+
   const handleCellClick = useCallback(
     (x: number, y: number) => {
-      const cell = cellLookup.get(`${x},${y}`);
-      if (!cell || cell.visibility === 'hidden' || !cell.walkable) return;
+      const store = useGameStore.getState();
+      const targetKey = `${x},${y}`;
+      const cell = cellLookup.get(targetKey);
+      if (!cell || cell.visibility === 'hidden') return;
+
+      // Handle tile-target mode
+      const selectedAbilityId = store.tileTargetMode.selectedAbilityId;
+      if (store.tileTargetMode.active && selectedAbilityId) {
+        const isPlayerTile = x === map.playerPosition.x && y === map.playerPosition.y;
+        const isInvalidThunderStepTarget = selectedAbilityId === 'thunder_step'
+          && (isPlayerTile || entityMap.has(targetKey));
+        if (cell.visibility !== 'visible' || !cell.walkable || isInvalidThunderStepTarget) return;
+
+        store.sendCommand({
+          type: 'USE_ABILITY',
+          abilityId: selectedAbilityId,
+          targetPosition: { x, y },
+        });
+        store.cancelTileTargeting();
+        return;
+      }
+
+      // Normal auto-walk mode
+      if (!cell.walkable) return;
 
       const path = findPath(map, map.playerPosition, { x, y });
       if (path.length === 0) return;
 
-      const { startAutoWalk } = useGameStore.getState();
-      startAutoWalk(path);
+      store.startAutoWalk(path);
     },
-    [map, cellLookup],
+    [map, cellLookup, entityMap],
   );
 
   const rows: React.ReactNode[] = [];

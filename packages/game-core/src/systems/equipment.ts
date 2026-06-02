@@ -107,6 +107,21 @@ function collectEquipmentAbilityGrants(
 ): Set<string> {
   const grants = new Set<string>();
   const slots: readonly (keyof Equipment)[] = ['weapon', 'secondaryWeapon', ...ARMOR_EQUIP_SLOTS];
+  const learnedRingSpellIds = new Set(player.learnedRingSpellIds);
+  const equippedRingSchools = new Set<string>();
+
+  for (const slot of slots) {
+    const itemId = player.equipment[slot];
+    if (itemId === null) continue;
+
+    const template = registry.get(itemId);
+    if (template?.itemClass !== 'armor') continue;
+
+    const school = getSchoolForRing(template.itemId);
+    if (school !== undefined) {
+      equippedRingSchools.add(school);
+    }
+  }
 
   for (const slot of slots) {
     const itemId = player.equipment[slot];
@@ -127,7 +142,10 @@ function collectEquipmentAbilityGrants(
     if (school === undefined) continue;
 
     for (const spell of getSchoolSpells(school)) {
-      if (player.learnedRingSpellIds.includes(spell.id)) grants.add(spell.id);
+      if (learnedRingSpellIds.has(spell.id) !== true) continue;
+      if (spell.schools.every(requiredSchool => equippedRingSchools.has(requiredSchool))) {
+        grants.add(spell.id);
+      }
     }
   }
 
