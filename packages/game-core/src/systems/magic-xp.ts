@@ -54,16 +54,18 @@ export function getSchoolDisplayLevelFromXp(xp: number): number {
   return masteryLevel + Math.floor((xp - maxConfiguredXp) / MAGIC.schoolDisplayLevelXpAfterCap);
 }
 
-export function getNextSchoolDisplayLevelXp(xp: number): number {
-  const nextConfiguredXp = getNextSchoolMasteryXp(xp);
-  if (nextConfiguredXp !== null) {
-    return nextConfiguredXp;
+export function getSchoolDisplayLevelXpThreshold(displayLevel: number): number {
+  if (displayLevel < MAGIC.schoolMasteryTierThresholds.length) {
+    return MAGIC.schoolMasteryTierThresholds[Math.max(0, displayLevel)] ?? 0;
   }
 
-  const maxConfiguredXp = MAGIC.schoolMasteryTierThresholds[MAGIC.schoolMasteryTierThresholds.length - 1] ?? 0;
-  const completedPostCapLevels = Math.floor((xp - maxConfiguredXp) / MAGIC.schoolDisplayLevelXpAfterCap);
+  const maxConfiguredLevel = MAGIC.schoolMasteryTierThresholds.length - 1;
+  const maxConfiguredXp = MAGIC.schoolMasteryTierThresholds[maxConfiguredLevel] ?? 0;
+  return maxConfiguredXp + ((displayLevel - maxConfiguredLevel) * MAGIC.schoolDisplayLevelXpAfterCap);
+}
 
-  return maxConfiguredXp + ((completedPostCapLevels + 1) * MAGIC.schoolDisplayLevelXpAfterCap);
+export function getNextSchoolDisplayLevelXp(xp: number): number {
+  return getSchoolDisplayLevelXpThreshold(getSchoolDisplayLevelFromXp(xp) + 1);
 }
 
 export function getMaxManaForMagicLevel(magicLevel: number): number {

@@ -2,12 +2,21 @@ import { RING_SPELL_BY_ID } from '@dungeon/content';
 import { getSchoolForRing } from '@dungeon/content';
 import type { Player, Equipment, EntityId, AnyItemTemplate } from '@dungeon/contracts';
 import type { RingSchool, SpellStudyRequirement, RingSpellDefinition } from '@dungeon/content';
-import { getSchoolMasteryLevelFromXp } from './magic-xp.js';
+import {
+  getSchoolDisplayLevelFromXp,
+  getSchoolDisplayLevelXpThreshold,
+  getSchoolMasteryLevelFromXp,
+} from './magic-xp.js';
 
 // Derive school mastery level from XP (not stored)
 export function getSchoolMasteryLevel(player: Player, school: RingSchool): number {
   const xp = (player.ringMastery as Record<string, { xp: number }>)[school]?.xp ?? 0;
   return getSchoolMasteryLevelFromXp(xp);
+}
+
+function getSchoolDisplayLevel(player: Player, school: RingSchool): number {
+  const xp = (player.ringMastery as Record<string, { xp: number }>)[school]?.xp ?? 0;
+  return getSchoolDisplayLevelFromXp(xp);
 }
 
 // Evaluate all study requirements against runtime player state
@@ -133,8 +142,17 @@ export function evaluateRingSpellStudy(
     (req): req is Extract<SpellStudyRequirement, { kind: 'minimumSchoolXp' }> =>
       req.kind === 'minimumSchoolXp'
   );
+  const explicitXpRequirementSchools = new Set(xpRequirements.map(req => req.school));
+  const implicitDisplayLevelRequirements = spell.minimumSchoolLevel === undefined
+    ? []
+    : spell.schools
+        .filter(school => !explicitXpRequirementSchools.has(school))
+        .map(school => ({
+          school,
+          xp: getSchoolDisplayLevelXpThreshold(spell.minimumSchoolLevel!),
+        }));
 
-  const schoolGates = xpRequirements.map((req) => {
+  const schoolGates = [...xpRequirements, ...implicitDisplayLevelRequirements].map((req) => {
     const currentXp = (player.ringMastery as Record<string, { xp: number }>)[req.school]?.xp ?? 0;
     return {
       school: req.school,
@@ -147,11 +165,12 @@ export function evaluateRingSpellStudy(
   // Check if player meets minimum school level requirement
   const meetsMinimumLevel = spell.minimumSchoolLevel === undefined
     || spell.schools.some(school => 
-        getSchoolMasteryLevel(player, school) >= spell.minimumSchoolLevel!
+        getSchoolDisplayLevel(player, school) >= spell.minimumSchoolLevel!
       );
+  const meetsSchoolGates = schoolGates.every(gate => gate.met);
 
   const visibleForStudy = meetsMinimumLevel && meetsStudyVisibilityRequirements(requirements) && !alreadyLearned;
-  const unlockedForStudy = meetsMinimumLevel && meetsNonGoldStudyRequirements(requirements) && !alreadyLearned;
+  const unlockedForStudy = meetsMinimumLevel && meetsSchoolGates && meetsNonGoldStudyRequirements(requirements) && !alreadyLearned;
   const affordable = goldCost === 0 || player.gold >= goldCost;
   const canStudy = unlockedForStudy && affordable;
 

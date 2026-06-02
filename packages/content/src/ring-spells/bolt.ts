@@ -9,12 +9,12 @@ export const bolt: RingSpellDefinition = {
   requiresTarget: true,
   unlockLevel: 0,
   manaCost: 7,
-  xpGainOnCast: 1,
+  xpGainOnCast: 100,
   animation: { id: animationRefs.projectile.lightningBolt.id },
   schools: ['lightning'],
   studyRequirements: [
     { kind: 'equippedSchool', school: 'lightning' },
-    { kind: 'goldCost', gold: 30 },
+    { kind: 'goldCost', gold: 1 }, //30
   ],
   effectKind: 'single_target_damage',
   range: 4,

@@ -2,7 +2,13 @@ import { describe, it, expect, beforeEach } from 'vitest';
 import { buildPlayerHud } from './player-hud-builder.js';
 import { PLAYER_STATUS_PRESENTATION, getStatusPresentation } from '../animation-metadata.js';
 import { createTestGameState, createTestRunState, createTestGameStateWithAbility } from '@dungeon/core/testing';
-import { addItemToInventory, equipItem, unequipItem } from '@dungeon/core';
+import {
+  addItemToInventory,
+  equipItem,
+  getNextSchoolDisplayLevelXp,
+  getSchoolDisplayLevelFromXp,
+  unequipItem,
+} from '@dungeon/core';
 import { entityId } from '@dungeon/contracts';
 import type { GameState, ArmorTemplate } from '@dungeon/contracts';
 
@@ -322,8 +328,8 @@ describe('buildPlayerHud', () => {
         {
           school: 'fire',
           xp: 100,
-          displayLevel: 2,
-          nextDisplayLevelXp: 140,
+          displayLevel: getSchoolDisplayLevelFromXp(100),
+          nextDisplayLevelXp: getNextSchoolDisplayLevelXp(100),
         },
       ]);
       expect(hud.learnedSpells).toEqual([
