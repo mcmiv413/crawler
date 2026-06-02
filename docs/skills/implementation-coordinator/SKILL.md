@@ -20,6 +20,7 @@ This skill is a **traffic controller**, not a worker. Every cognitive task - rea
 - Parse arguments (plan path, flags)
 - Run 3 quick bash commands for prerequisites (branch name, clean tree, plan exists)
 - Launch workers sequentially
+- Upgrade to a stronger worker when the current worker cannot complete or correct the work
 - Report 1-line status updates between steps
 - Ask user for confirmation at the end
 
@@ -102,6 +103,10 @@ Warning: Plan triggers auto-escalation ({reason}) but --force-worker overrides t
 
 Report: `Plan analyzed: {STORY-ID} -> {worker} ({effort}; {rationale})`
 
+**Upgrade ladder:** `goofy -> cody -> codex`.
+
+Use the selected worker as the first attempt. If that worker fails or cannot correct the implementation, upgrade one step and retry the failed phase. Do not retry the same worker from the coordinator. If `codex` fails, stop and report manual intervention required.
+
 ---
 
 ### Step 2: Implement (WORKER)
@@ -136,7 +141,10 @@ SUMMARY: <one sentence of what was implemented>
 
 **Coordinator receives:** ~5 lines. Check STATUS field.
 
-If STATUS is "failure": report the ERROR line to user and stop.
+If STATUS is "failure":
+- If current worker is `goofy` or `cody`, upgrade to the next worker and rerun Step 2 with the same plan path.
+- Include the prior ERROR line in the upgraded worker prompt as context.
+- If current worker is `codex`, report the ERROR line to user and stop.
 
 Report: `Implementation complete: {SUMMARY}`
 
@@ -178,7 +186,10 @@ ERROR: <error description or "none">
 
 **Coordinator receives:** ~7 lines. Check STATUS field.
 
-If STATUS is "failed": report ERROR to user with suggestion for manual intervention, then stop.
+If STATUS is "failed":
+- If current worker is `goofy` or `cody`, upgrade to the next worker and rerun Step 3 with the same plan path and current diff.
+- Include the prior ERROR line, issue counts, and iteration count in the upgraded worker prompt as context.
+- If current worker is `codex`, report ERROR to user with suggestion for manual intervention, then stop.
 
 Report: `Review {STATUS}: {ITERATIONS} iteration(s), {ISSUES_FIXED} issues fixed`
 
@@ -199,6 +210,7 @@ Generate a final implementation summary for story {STORY-ID}.
 Context (from coordinator):
 - Plan file: {planPath}
 - Implementation worker: {worker}
+- Worker attempts: {worker attempt chain, e.g. "goofy -> cody"}
 - Implementation status: {step2 STATUS}
 - Review status: {step3 STATUS or "skipped"}
 - Review iterations: {step3 ITERATIONS or "N/A"}
@@ -208,6 +220,7 @@ Do the following:
 2. Run tests one final time to confirm passing
 3. Generate a markdown summary with:
    - Worker used and rationale
+   - Any worker upgrades and why they happened
    - Files changed (from git diff --stat)
    - Review results
    - Test status
@@ -253,11 +266,13 @@ Compare to old approach: coordinator would read plan (50-200 lines), read diffs 
 | Dirty working tree | One-line error, stop |
 | Plan file missing | One-line error, stop |
 | Step 1 worker fails | Report "Effort assessment failed", stop |
-| Step 2 STATUS=failure | Report ERROR line, stop |
-| Step 3 STATUS=failed | Report ERROR line + "Manual intervention required", stop |
+| Step 2 STATUS=failure on `goofy` or `cody` | Upgrade one worker level and rerun Step 2 |
+| Step 2 STATUS=failure on `codex` | Report ERROR line, stop |
+| Step 3 STATUS=failed on `goofy` or `cody` | Upgrade one worker level and rerun Step 3 |
+| Step 3 STATUS=failed on `codex` | Report ERROR line + "Manual intervention required", stop |
 | Step 4 worker fails | Report "Summary generation failed" + basic status from prior steps |
 
-In ALL cases: the coordinator reports the short structured error. It does NOT investigate, read files, or attempt recovery. That's what workers are for.
+In ALL cases: the coordinator reports the short structured error. It does NOT investigate, read files, or fix issues itself. Recovery is limited to upgrading through the worker ladder.
 
 ---
 
@@ -274,6 +289,8 @@ Workers invoke these skills (coordinator never invokes them directly):
 - Requires clean working tree (checked in Step 0)
 - User confirmation required before considering complete
 - Max 3 review iterations (enforced by Step 3 worker, not coordinator)
+- Max 2 upgrades per run (`goofy -> cody -> codex`)
+- Never downgrade after upgrading; final summary reports the full worker attempt chain
 - Coordinator never writes code or modifies files
 
 ---
