@@ -6,8 +6,10 @@ import { CELL_SIZE } from '../config/ui-config.js';
 
 // ── Hoisted spies ─────────────────────────────────────────────────────────────
 
-const { startAutoWalkSpy } = vi.hoisted(() => ({
+const { startAutoWalkSpy, sendCommandSpy, cancelTileTargetingSpy } = vi.hoisted(() => ({
   startAutoWalkSpy: vi.fn(),
+  sendCommandSpy: vi.fn(),
+  cancelTileTargetingSpy: vi.fn(),
 }));
 
 // ── Module mocks ──────────────────────────────────────────────────────────────
@@ -37,13 +39,21 @@ vi.mock('../store/game-store.js', () => ({
     vi.fn((selector) => {
       const state = {
         startAutoWalk: startAutoWalkSpy,
+        sendCommand: sendCommandSpy,
+        cancelTileTargeting: cancelTileTargetingSpy,
+        tileTargetMode: { active: false, selectedAbilityId: null },
         view: { animatedEvents: [], player: { statuses: [] } },
       };
       if (typeof selector === 'function') return selector(state);
       return state;
     }),
     {
-      getState: () => ({ startAutoWalk: startAutoWalkSpy }),
+      getState: vi.fn(() => ({
+        startAutoWalk: startAutoWalkSpy,
+        sendCommand: sendCommandSpy,
+        cancelTileTargeting: cancelTileTargetingSpy,
+        tileTargetMode: { active: false, selectedAbilityId: null },
+      })),
     },
   ),
 }));
@@ -52,6 +62,7 @@ vi.mock('../store/game-store.js', () => ({
 
 import { renderMap } from '../sprites/canvas-renderer.js';
 import { findPath } from '../utils/pathfinding.js';
+import { useGameStore } from '../store/game-store.js';
 import { DungeonCanvas } from './DungeonCanvas.js';
 
 // ── Shared fixtures ───────────────────────────────────────────────────────────
@@ -136,6 +147,8 @@ describe('DungeonCanvas', () => {
   beforeEach(() => {
     vi.clearAllMocks();
     startAutoWalkSpy.mockReset();
+    sendCommandSpy.mockReset();
+    cancelTileTargetingSpy.mockReset();
     vi.mocked(findPath).mockReturnValue([]);
     setupCanvas();
   });
@@ -750,6 +763,139 @@ describe('DungeonCanvas', () => {
       rerender(<DungeonCanvas {...defaultProps} vpLeft={4} vpTop={2} />);
       expect(vi.mocked(renderMap).mock.calls[1]?.[2]).toBe(4);
       expect(vi.mocked(renderMap).mock.calls[1]?.[3]).toBe(2);
+    });
+  });
+
+  // ── 6. Tile-target mode (Thunder Step) ─────────────────────────────────
+
+  describe('tile-target mode', () => {
+    it('sends USE_ABILITY with targetPosition when tileTargetMode is active and a valid tile is clicked', () => {
+      // Override the getState mock to return tileTargetMode.active = true
+      vi.mocked(useGameStore.getState).mockReturnValue({
+        startAutoWalk: startAutoWalkSpy,
+        sendCommand: sendCommandSpy,
+        cancelTileTargeting: cancelTileTargetingSpy,
+        tileTargetMode: { active: true, selectedAbilityId: 'thunder_step' },
+      } as any);
+
+      const { container } = render(
+        <DungeonCanvas {...defaultProps} vpLeft={0} vpTop={0} />,
+      );
+
+      const canvas = container.querySelector('canvas')!;
+      fakeBoundingRect(canvas, 5, 4);
+
+      // Click on tile (3, 2) — offset x=3*CELL_SIZE+1, y=2*CELL_SIZE+1
+      fireEvent.click(canvas, {
+        clientX: 3 * CELL_SIZE + 1,
+        clientY: 2 * CELL_SIZE + 1,
+      });
+
+      expect(sendCommandSpy).toHaveBeenCalledWith({
+        type: 'USE_ABILITY',
+        abilityId: 'thunder_step',
+        targetPosition: { x: 3, y: 2 },
+      });
+      expect(cancelTileTargetingSpy).toHaveBeenCalled();
+    });
+
+    it('does not send USE_ABILITY when clicking the player tile in tileTargetMode', () => {
+      vi.mocked(useGameStore.getState).mockReturnValue({
+        startAutoWalk: startAutoWalkSpy,
+        sendCommand: sendCommandSpy,
+        cancelTileTargeting: cancelTileTargetingSpy,
+        tileTargetMode: { active: true, selectedAbilityId: 'thunder_step' },
+      } as any);
+
+      const { container } = render(
+        <DungeonCanvas {...defaultProps} vpLeft={0} vpTop={0} />,
+      );
+
+      const canvas = container.querySelector('canvas')!;
+      fakeBoundingRect(canvas, 5, 4);
+
+      // Click on the player tile (2, 2)
+      fireEvent.click(canvas, {
+        clientX: 2 * CELL_SIZE + 1,
+        clientY: 2 * CELL_SIZE + 1,
+      });
+
+      expect(sendCommandSpy).not.toHaveBeenCalled();
+      expect(cancelTileTargetingSpy).not.toHaveBeenCalled();
+    });
+
+    it('does not send USE_ABILITY when clicking an occupied tile in tileTargetMode', () => {
+      // Create a map with an entity at (3, 2)
+      const mapWithEntity: MapView = {
+        ...baseMap,
+        entities: [
+          ...baseMap.entities,
+          {
+            id: 'goblin-1',
+            type: 'enemy' as const,
+            x: 3, y: 2,
+            color: '#f00', ascii: 'G',
+            name: 'Goblin',
+            templateId: 'goblin',
+          },
+        ],
+      };
+
+      vi.mocked(useGameStore.getState).mockReturnValue({
+        startAutoWalk: startAutoWalkSpy,
+        sendCommand: sendCommandSpy,
+        cancelTileTargeting: cancelTileTargetingSpy,
+        tileTargetMode: { active: true, selectedAbilityId: 'thunder_step' },
+      } as any);
+
+      const { container } = render(
+        <DungeonCanvas {...defaultProps} map={mapWithEntity} vpLeft={0} vpTop={0} />,
+      );
+
+      const canvas = container.querySelector('canvas')!;
+      fakeBoundingRect(canvas, 5, 4);
+
+      // Click on the occupied tile (3, 2)
+      fireEvent.click(canvas, {
+        clientX: 3 * CELL_SIZE + 1,
+        clientY: 2 * CELL_SIZE + 1,
+      });
+
+      expect(sendCommandSpy).not.toHaveBeenCalled();
+      expect(cancelTileTargetingSpy).not.toHaveBeenCalled();
+    });
+
+    it('continues to use auto-walk when tileTargetMode is inactive', () => {
+      const path = [{ x: 2, y: 2 }, { x: 3, y: 2 }];
+      vi.mocked(findPath).mockReturnValue(path);
+
+      // tileTargetMode is inactive by default in the mock
+      vi.mocked(useGameStore.getState).mockReturnValue({
+        startAutoWalk: startAutoWalkSpy,
+        sendCommand: sendCommandSpy,
+        cancelTileTargeting: cancelTileTargetingSpy,
+        tileTargetMode: { active: false, selectedAbilityId: null },
+      } as any);
+
+      const { container } = render(
+        <DungeonCanvas {...defaultProps} vpLeft={0} vpTop={0} />,
+      );
+
+      const canvas = container.querySelector('canvas')!;
+      fakeBoundingRect(canvas, 5, 4);
+
+      fireEvent.click(canvas, {
+        clientX: 3 * CELL_SIZE + 1,
+        clientY: 2 * CELL_SIZE + 1,
+      });
+
+      expect(findPath).toHaveBeenCalledWith(
+        baseMap,
+        baseMap.playerPosition,
+        { x: 3, y: 2 },
+      );
+      expect(startAutoWalkSpy).toHaveBeenCalledWith(path);
+      expect(sendCommandSpy).not.toHaveBeenCalled();
     });
   });
 });
