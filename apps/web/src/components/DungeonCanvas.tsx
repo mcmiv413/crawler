@@ -112,10 +112,29 @@ export function DungeonCanvas({
     const cell = map.cells.find(c => c.x === grid.x && c.y === grid.y);
     if (cell === undefined || cell.visibility === 'hidden' || !cell.walkable) return;
 
+    // Handle tile-target mode
+    const store = useGameStore.getState();
+    const selectedAbilityId = store.tileTargetMode.selectedAbilityId;
+    if (store.tileTargetMode.active && selectedAbilityId) {
+      const isPlayerTile = grid.x === map.playerPosition.x && grid.y === map.playerPosition.y;
+      const isInvalidThunderStepTarget = selectedAbilityId === 'thunder_step'
+        && (isPlayerTile || map.entities.some(e => e.x === grid.x && e.y === grid.y));
+      if (isInvalidThunderStepTarget) return;
+
+      store.sendCommand({
+        type: 'USE_ABILITY',
+        abilityId: selectedAbilityId,
+        targetPosition: grid,
+      });
+      store.cancelTileTargeting();
+      return;
+    }
+
+    // Normal auto-walk mode
     const path = findPath(map, map.playerPosition, grid);
     if (path.length === 0) return;
 
-    const { startAutoWalk } = useGameStore.getState();
+    const { startAutoWalk } = store;
     startAutoWalk(path);
   }, [map, vpTilesWidth, vpTilesHeight, cameraOffset]);
 
