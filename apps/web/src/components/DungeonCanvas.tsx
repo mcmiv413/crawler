@@ -118,7 +118,7 @@ export function DungeonCanvas({
     if (store.tileTargetMode.active && selectedAbilityId) {
       const isPlayerTile = grid.x === map.playerPosition.x && grid.y === map.playerPosition.y;
       const isInvalidThunderStepTarget = selectedAbilityId === 'thunder_step'
-        && (isPlayerTile || map.entities.some(e => e.x === grid.x && e.y === grid.y));
+        && (isPlayerTile || cell.visibility !== 'visible' || map.entities.some(e => e.x === grid.x && e.y === grid.y));
       if (isInvalidThunderStepTarget) return;
 
       store.sendCommand({
