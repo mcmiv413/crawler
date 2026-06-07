@@ -581,26 +581,37 @@ describe('abilities/runtime', () => {
       };
     }
 
-    it('should return no events for undefined ability', () => {
+    it('should return PLAYER_ACTION_REJECTED for undefined ability', () => {
       const state = createTestGameStateInCombat();
       const rng = new SeededRNG(42);
 
       const result = executeAbility(state, 'undefined_ability_xyz', rng);
 
       expect(result.state).toBe(state);
-      expect(result.events).toEqual([]);
+      expect(result.events.length).toBeGreaterThan(0);
+      const rejectionEvent = result.events.find(
+        (event): event is any =>
+          typeof event === 'object' && event !== null && 'type' in event && event.type === 'PLAYER_ACTION_REJECTED',
+      );
+      expect(rejectionEvent).toBeDefined();
+      expect(rejectionEvent?.reasonCode).toBe('ABILITY_NOT_FOUND');
       expect(result.runEnded).toBe(false);
     });
 
-    it('should return no events when validation fails', () => {
+    it('should return PLAYER_ACTION_REJECTED when validation fails', () => {
       const state = createTestGameStateInCombat();
       const rng = new SeededRNG(42);
 
-      // Try to execute an ability that requires a target but we have no target
-      // This depends on actual ability definitions, so we'll test the general pattern
+      // Try to execute an ability that doesn't exist
       const result = executeAbility(state, 'any_ability_id', rng);
 
-      // Since the ability doesn't exist, it returns no events
+      // Should emit PLAYER_ACTION_REJECTED instead of no events
+      expect(result.events.length).toBeGreaterThan(0);
+      const rejectionEvent = result.events.find(
+        (event): event is any =>
+          typeof event === 'object' && event !== null && 'type' in event && event.type === 'PLAYER_ACTION_REJECTED',
+      );
+      expect(rejectionEvent).toBeDefined();
       expect(result.runEnded).toBe(false);
     });
 

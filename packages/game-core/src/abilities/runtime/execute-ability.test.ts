@@ -130,4 +130,93 @@ describe('executeAbility ring spell runtime', () => {
     expect(fireXp).toBeGreaterThan(initialFireXp);
     expect(lightningXp - initialLightningXp).toBe(fireXp - initialFireXp);
   });
+
+  describe('Slice 1: Ability execution rejection guardrails', () => {
+    it('rejects ability with ABILITY_NOT_FOUND when definition is missing', () => {
+      const state = createTestGameStateInCombat();
+      const result = executeAbility(state, 'nonexistent_ability_xyz', new SeededRNG(42));
+
+      expect(result.events.length).toBeGreaterThan(0);
+      const rejectionEvent = result.events.find(
+        (event): event is any =>
+          typeof event === 'object' && event !== null && 'type' in event && event.type === 'PLAYER_ACTION_REJECTED',
+      );
+      expect(rejectionEvent).toBeDefined();
+      expect(rejectionEvent?.reasonCode).toBe('ABILITY_NOT_FOUND');
+      expect(result.state).toEqual(state);
+      expect(result.runEnded).toBe(false);
+    });
+
+    it('rejects ability with INSUFFICIENT_MANA when player lacks mana', () => {
+      const state = createTestGameStateInCombat();
+      const lowManaState = {
+        ...state,
+        player: {
+          ...state.player,
+          mana: 1, // Not enough for any spell
+          maxMana: 1,
+        },
+      };
+      const targetEnemy = [...lowManaState.run!.enemies.values()][0]!;
+
+      const result = executeAbility(lowManaState, 'bolt', new SeededRNG(42), targetEnemy.id);
+
+      expect(result.events.length).toBeGreaterThan(0);
+      const rejectionEvent = result.events.find(
+        (event): event is any =>
+          typeof event === 'object' && event !== null && 'type' in event && event.type === 'PLAYER_ACTION_REJECTED',
+      );
+      expect(rejectionEvent).toBeDefined();
+      expect(rejectionEvent?.reasonCode).toBe('INSUFFICIENT_MANA');
+      expect(result.state.player.mana).toBe(lowManaState.player.mana);
+      expect(result.runEnded).toBe(false);
+    });
+
+    it('rejects ring spell with ABILITY_NOT_AVAILABLE when not equipped', () => {
+      const state = createLearnedRingSpellState('thunderstorm', ['fire_ring', 'lightning_ring']);
+      // Remove the rings from equipment to test the availability check
+      const unequippedState = {
+        ...state,
+        player: {
+          ...state.player,
+          equipment: {
+            ...state.player.equipment,
+            ring1: null,
+            ring2: null,
+          },
+        },
+      };
+
+      const result = executeAbility(unequippedState, 'thunderstorm', new SeededRNG(42));
+
+      expect(result.events.length).toBeGreaterThan(0);
+      const rejectionEvent = result.events.find(
+        (event): event is any =>
+          typeof event === 'object' && event !== null && 'type' in event && event.type === 'PLAYER_ACTION_REJECTED',
+      );
+      expect(rejectionEvent).toBeDefined();
+      expect(rejectionEvent?.reasonCode).toBe('ABILITY_NOT_AVAILABLE');
+      expect(result.state.player.mana).toBe(unequippedState.player.mana);
+      expect(result.runEnded).toBe(false);
+    });
+
+    it('does not emit ABILITY_USED on rejected ability attempts', () => {
+      const state = createTestGameStateInCombat();
+      const result = executeAbility(state, 'nonexistent_ability_xyz', new SeededRNG(42));
+
+      const abilityUsedEvent = result.events.find(
+        (event): event is any =>
+          typeof event === 'object' && event !== null && 'type' in event && event.type === 'ABILITY_USED',
+      );
+      expect(abilityUsedEvent).toBeUndefined();
+    });
+
+    it('does not spend mana on rejected ability attempts', () => {
+      const state = createTestGameStateInCombat();
+      const initialMana = state.player.mana;
+      const result = executeAbility(state, 'nonexistent_ability_xyz', new SeededRNG(42));
+
+      expect(result.state.player.mana).toBe(initialMana);
+    });
+  });
 });
