@@ -268,8 +268,16 @@ export function equipItem(
   itemId: EntityId,
 ): { state: GameState; events: DomainEvent[] } {
   const template = state.itemRegistry.items.get(itemId);
-  if (template === undefined) return { state, events: [] };
-  if (template.itemClass === 'trap') return { state, events: [] };
+
+  // Validate item exists and is equippable before modifying state
+  if (template === undefined || template.itemClass === 'trap') {
+    return { state, events: [] };
+  }
+
+  // Only weapon and armor classes are equippable
+  if (template.itemClass !== 'weapon' && template.itemClass !== 'armor') {
+    return { state, events: [] };
+  }
 
   let newEquipment = { ...state.player.equipment };
   let events: DomainEvent[] = [];
@@ -306,7 +314,7 @@ export function equipItem(
       newEquipment = { ...newEquipment, weapon: itemId };
       updatedInventory = [...updatedInventory, oldPrimary];
     }
-  } else if (template.itemClass === 'armor') {
+  } else {
     const armor = (template as ArmorTemplate).armor;
     if (armor.slot === 'ring') {
       // FIFO Ring Policy: Implement a simple first-in-first-out queue for rings.
