@@ -865,6 +865,41 @@ describe('DungeonCanvas', () => {
       expect(cancelTileTargetingSpy).not.toHaveBeenCalled();
     });
 
+    it('does not send USE_ABILITY when clicking a dim (out-of-FOV) tile in tileTargetMode', () => {
+      // Create a map where tile (3, 2) is previously-seen but currently out of FOV
+      // (visibility 'dim'). It is still walkable, so it passes the outer guard,
+      // but Thunder Step must only target currently-visible tiles.
+      const dimCellMap: MapView = {
+        ...baseMap,
+        cells: baseMap.cells.map(c =>
+          c.x === 3 && c.y === 2 ? { ...c, visibility: 'remembered' as const } : c,
+        ),
+      };
+
+      vi.mocked(useGameStore.getState).mockReturnValue({
+        startAutoWalk: startAutoWalkSpy,
+        sendCommand: sendCommandSpy,
+        cancelTileTargeting: cancelTileTargetingSpy,
+        tileTargetMode: { active: true, selectedAbilityId: 'thunder_step' },
+      } as any);
+
+      const { container } = render(
+        <DungeonCanvas {...defaultProps} map={dimCellMap} vpLeft={0} vpTop={0} />,
+      );
+
+      const canvas = container.querySelector('canvas')!;
+      fakeBoundingRect(canvas, 5, 4);
+
+      // Click on the dim tile (3, 2)
+      fireEvent.click(canvas, {
+        clientX: 3 * CELL_SIZE + 1,
+        clientY: 2 * CELL_SIZE + 1,
+      });
+
+      expect(sendCommandSpy).not.toHaveBeenCalled();
+      expect(cancelTileTargetingSpy).not.toHaveBeenCalled();
+    });
+
     it('continues to use auto-walk when tileTargetMode is inactive', () => {
       const path = [{ x: 2, y: 2 }, { x: 3, y: 2 }];
       vi.mocked(findPath).mockReturnValue(path);
