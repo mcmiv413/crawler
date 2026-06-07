@@ -93,9 +93,9 @@ export default {
     },
     {
       path: 'scripts/audit-player-action-noops.ts',
-      reason: 'Audit script with comprehensive classification taxonomy — centralizes all 116 silent-failure pattern categories (P/G/A/D/B) and KNOWN_PATTERNS registry without touching source files',
-      auditReportNote: 'Guardrails infrastructure; classification registry grows as audit findings increase; future split seam is separating KNOWN_PATTERNS map into dedicated JSON config once taxonomy stabilizes',
-      lines: 598,
+      reason: 'Audit script with comprehensive classification taxonomy — centralizes all Phase 1+2 silent-failure pattern categories (P/G/A/D/B) and KNOWN_PATTERNS registry with Phase 2 summary reporting',
+      auditReportNote: 'Guardrails infrastructure; Phase 2 adds 20 rejection codes (4 slices) to KNOWN_PATTERNS map plus Phase 1/2 summary breakdown in output; future split seam is separating KNOWN_PATTERNS into dedicated JSON config once taxonomy stabilizes',
+      lines: 683,
     },
   ],
 };

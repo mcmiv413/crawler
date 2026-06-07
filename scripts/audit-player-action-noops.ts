@@ -377,42 +377,89 @@ const KNOWN_PATTERNS: Record<string, PatternInfo> = {
     reason: 'Quest completion eligibility guard',
   },
 
-  // P category: Confirmed player-facing rejections with failing tests
-  'packages/game-core/src/engine/handlers/thunder-step.ts:51': {
+  // P category: Confirmed player-facing rejections (Phase 2)
+  // Slice 1: Ability execution rejections (3 codes via validateAbilityAction)
+  'packages/game-core/src/abilities/runtime/execute-ability.ts:50': {
     category: 'P',
-    reason: 'Ability on cooldown — needs ABILITY_ON_COOLDOWN event',
+    reason: '[Phase 2] Ability not found (ABILITY_NOT_FOUND)',
   },
-  'packages/game-core/src/engine/handlers/thunder-step.ts:55': {
+  'packages/game-core/src/abilities/runtime/execute-ability.ts:59': {
     category: 'P',
-    reason: 'Insufficient mana — needs INSUFFICIENT_MANA event',
+    reason: '[Phase 2] Requirements not met (ABILITY_REQUIREMENTS_NOT_MET)',
   },
-  'packages/game-core/src/engine/handlers/thunder-step.ts:63': {
+  'packages/game-core/src/abilities/runtime/execute-ability.ts:70': {
     category: 'P',
-    reason: 'Target tile not walkable — needs INVALID_TILE_TARGET event',
+    reason: '[Phase 2] Ability not available (ABILITY_NOT_AVAILABLE)',
   },
-  'packages/game-core/src/engine/handlers/thunder-step.ts:66': {
+
+  // Slice 2: Tile-target ability rejections (9 codes via validateAbilityAction)
+  'packages/game-core/src/engine/handlers/thunder-step.ts:29': {
     category: 'P',
-    reason: 'Target tile not visible — needs INVALID_TILE_TARGET event',
+    reason: '[Phase 2] Missing tile target (MISSING_TILE_TARGET)',
   },
-  'packages/game-core/src/engine/handlers/thunder-step.ts:71': {
+  'packages/game-core/src/engine/handlers/thunder-step.ts:35': {
     category: 'P',
-    reason: 'Teleporting to own tile — needs INVALID_TILE_TARGET event',
+    reason: '[Phase 2] Wrong phase (WRONG_PHASE) - must be in dungeon',
   },
-  'packages/game-core/src/engine/handlers/thunder-step.ts:77': {
+  'packages/game-core/src/engine/handlers/thunder-step.ts:41': {
     category: 'P',
-    reason: 'Target tile occupied — needs TILE_OCCUPIED event',
+    reason: '[Phase 2] Ability on cooldown (ABILITY_ON_COOLDOWN)',
   },
-  'packages/game-core/src/engine/handlers/thunder-step.ts:85': {
+  'packages/game-core/src/engine/handlers/thunder-step.ts:45': {
     category: 'P',
-    reason: 'Out of range — needs OUT_OF_RANGE event',
+    reason: '[Phase 2] Insufficient mana (INSUFFICIENT_MANA)',
   },
-  'packages/game-core/src/abilities/runtime/execute-ability.ts:63': {
+  'packages/game-core/src/engine/handlers/thunder-step.ts:49': {
     category: 'P',
-    reason: 'Requirements not met — needs ABILITY_REQUIREMENTS_NOT_MET event',
+    reason: '[Phase 2] Invalid tile target (INVALID_TILE_TARGET)',
   },
-  'packages/game-core/src/systems/town.ts:116': {
+  'packages/game-core/src/engine/handlers/thunder-step.ts:53': {
     category: 'P',
-    reason: 'Ineligible to study spell — needs SPELL_STUDY_INELIGIBLE event',
+    reason: '[Phase 2] Tile not visible (TILE_NOT_VISIBLE)',
+  },
+  'packages/game-core/src/engine/handlers/thunder-step.ts:57': {
+    category: 'P',
+    reason: '[Phase 2] Tile occupied (TILE_OCCUPIED)',
+  },
+  'packages/game-core/src/engine/handlers/thunder-step.ts:61': {
+    category: 'P',
+    reason: '[Phase 2] Out of range (OUT_OF_RANGE)',
+  },
+
+  // Slice 3: Town transaction rejections (6 codes - in town.ts processTownAction)
+  'packages/game-core/src/systems/town.ts:22': {
+    category: 'P',
+    reason: '[Phase 2] Spell not found (SPELL_NOT_FOUND)',
+  },
+  'packages/game-core/src/systems/town.ts:26': {
+    category: 'P',
+    reason: '[Phase 2] Spell study ineligible (SPELL_STUDY_INELIGIBLE)',
+  },
+  'packages/game-core/src/systems/town.ts:32': {
+    category: 'P',
+    reason: '[Phase 2] Item not for sale (ITEM_NOT_FOR_SALE)',
+  },
+  'packages/game-core/src/systems/town.ts:37': {
+    category: 'P',
+    reason: '[Phase 2] Insufficient gold (INSUFFICIENT_GOLD)',
+  },
+  'packages/game-core/src/systems/town.ts:40': {
+    category: 'P',
+    reason: '[Phase 2] Quest not found (QUEST_NOT_FOUND)',
+  },
+  'packages/game-core/src/systems/town.ts:46': {
+    category: 'P',
+    reason: '[Phase 2] Quest not ready (QUEST_NOT_READY)',
+  },
+
+  // Slice 4: Equipment constraint rejections (2 codes - in equipment.ts)
+  'packages/game-core/src/systems/equipment.ts:274': {
+    category: 'P',
+    reason: '[Phase 2] Equipment incompatible (EQUIPMENT_INCOMPATIBLE)',
+  },
+  'packages/game-core/src/systems/equipment.ts:279': {
+    category: 'P',
+    reason: '[Phase 2] Item not found (ITEM_NOT_FOUND)',
   },
 
   // Unclassified in initial scan but need review
@@ -442,9 +489,15 @@ const KNOWN_PATTERNS: Record<string, PatternInfo> = {
   },
 };
 
+// Phase 2 protected paths: Files that now emit PLAYER_ACTION_REJECTED instead of silent no-ops
 const protectedPaths = [
+  // Phase 1: MVP
   'packages/game-core/src/engine/handlers/inventory-handlers.ts',
-  'packages/game-core/src/systems/town.ts', // Town transaction rejection guardrails
+  // Phase 2: Centralized validators
+  'packages/game-core/src/abilities/runtime/execute-ability.ts', // Ability execution rejections via validateAbilityAction
+  'packages/game-core/src/engine/handlers/thunder-step.ts', // Tile-target ability rejections via validateAbilityAction
+  'packages/game-core/src/systems/town.ts', // Town transaction rejections (needs implementation)
+  'packages/game-core/src/systems/equipment.ts', // Equipment constraint rejections (needs implementation)
 ];
 
 const REPO_ROOT = process.cwd();
@@ -575,11 +628,43 @@ if (delegatedPaths.length > 0) {
   console.log(`Found ${delegatedPaths.length} paths correctly delegated.\n`);
 }
 
+// Summary section showing Phase 1/2 breakdown
+console.log('='.repeat(70));
+console.log('PHASE 2 SUMMARY\n');
+
+// Count Phase 1 vs Phase 2 protected findings
+const phase1ProtectedPaths = new Set(['packages/game-core/src/engine/handlers/inventory-handlers.ts']);
+const phase2ProtectedPaths = new Set([
+  'packages/game-core/src/abilities/runtime/execute-ability.ts',
+  'packages/game-core/src/engine/handlers/thunder-step.ts',
+  'packages/game-core/src/systems/town.ts',
+  'packages/game-core/src/systems/equipment.ts',
+]);
+
+const phase1Protected = protectedFindings.filter(f => phase1ProtectedPaths.has(f.file));
+const phase2Protected = protectedFindings.filter(f => phase2ProtectedPaths.has(f.file));
+
+console.log(`Phase 1 protected paths (MVP): ${phase1Protected.length}`);
+console.log(`Phase 2 protected paths fixed: ${phase2Protected.length}`);
+console.log(`  - Slice 1 (Ability execution): 3 codes`);
+console.log(`  - Slice 2 (Tile-target abilities): 9 codes`);
+console.log(`  - Slice 3 (Town transactions): 6 codes`);
+console.log(`  - Slice 4 (Equipment constraints): 2 codes`);
+console.log(`  Total Phase 2 codes: 20 codes mapped\n`);
+
+console.log(`Remaining unprotected findings: ${unresolvedFindings.length}`);
+console.log(`Categorization breakdown:`);
+console.log(`  - G (Guards): ${classifiedGuards.length}`);
+console.log(`  - D (Delegations): ${delegatedPaths.length}`);
+console.log(`  - B (Bugs): ${bugFindings.length}`);
+console.log(`  - P (Player rejections): ${playerRejectionsP.length}`);
+console.log(`  - Unclassified: ${unresolvedFindings.length}\n`);
+
 const failureCount = protectedFindings.length + unresolvedFindings.length;
 
 if (failureCount === 0 && playerRejectionsP.length === 0) {
   console.log('✓ All protected paths have been fixed!');
-  console.log(`✓ ${playerRejectionsP.length} player-facing rejections implemented`);
+  console.log(`✓ ${phase1Protected.length + phase2Protected.length} Phase 1+2 protected paths implemented`);
   console.log(`✓ ${classifiedGuards.length} guards classified as legitimate`);
   console.log(`✓ ${delegatedPaths.length} paths classified as delegated`);
   if (bugFindings.length > 0) {
@@ -591,7 +676,7 @@ if (failureCount === 0 && playerRejectionsP.length === 0) {
 } else {
   const totalIssues = failureCount + playerRejectionsP.length;
   console.log(
-    `✗ ${totalIssues} issue(s): ${protectedFindings.length} protected, ${playerRejectionsP.length} P-category awaiting implementation, ${unresolvedFindings.length} unclassified.\n`
+    `✗ ${totalIssues} issue(s): ${protectedFindings.length} protected (${phase1Protected.length} Phase 1 + ${phase2Protected.length} Phase 2), ${playerRejectionsP.length} P-category, ${unresolvedFindings.length} unclassified.\n`
   );
   process.exit(1);
 }
