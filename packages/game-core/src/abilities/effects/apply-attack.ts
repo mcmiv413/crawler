@@ -52,13 +52,47 @@ export function applyAttack(
   let generatedEvents: DomainEvent[] = [];
 
   if (newState.run === null) {
-    return { state: newState, events: [], hit: false, damage: 0 };
+    // No active run — cannot resolve attack. Emit a visible invalid-target event so the
+    // player can see why no damage was applied rather than getting a silent no-op.
+    const invalidTargetEvent: DomainEvent = {
+      type: 'ATTACK_PERFORMED',
+      attackerId: context.player.id,
+      defenderId: context.target?.instance.id ?? context.player.id,
+      attackerName: context.player.name,
+      defenderName: context.target?.instance.name ?? 'unknown',
+      damage: 0,
+      damageType: effect.damageType ?? 'physical',
+      hit: false,
+      critical: false,
+      position: context.target?.instance.position ?? context.player.position,
+      reason: 'invalid_target',
+      timestamp: newState.turnNumber,
+      turnNumber: newState.turnNumber,
+    };
+    return { state: newState, events: [invalidTargetEvent], hit: false, damage: 0 };
   }
 
   // Look up the target from the current state using the targetKey
   const target = newState.run.enemies.get(targetKey);
   if (target === undefined) {
-    return { state: newState, events: [], hit: false, damage: 0 };
+    // Target not found in enemy map — may have died or been removed since the ability was cast.
+    // Emit a visible invalid-target event so the player can see why no damage was applied.
+    const invalidTargetEvent: DomainEvent = {
+      type: 'ATTACK_PERFORMED',
+      attackerId: context.player.id,
+      defenderId: context.target?.instance.id ?? context.player.id,
+      attackerName: context.player.name,
+      defenderName: context.target?.instance.name ?? 'unknown',
+      damage: 0,
+      damageType: effect.damageType ?? 'physical',
+      hit: false,
+      critical: false,
+      position: context.target?.instance.position ?? context.player.position,
+      reason: 'invalid_target',
+      timestamp: newState.turnNumber,
+      turnNumber: newState.turnNumber,
+    };
+    return { state: newState, events: [invalidTargetEvent], hit: false, damage: 0 };
   }
 
   const defenderDefense = getEffectiveStat(target.stats.defense, 'defense', target.statuses);

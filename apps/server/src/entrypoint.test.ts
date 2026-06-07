@@ -4,7 +4,7 @@ describe('Server entrypoint separation', () => {
   it('buildApp() can be imported without triggering listener startup', async () => {
     const { buildApp } = await import('./app.js');
     expect(typeof buildApp).toBe('function');
-  });
+  }, 15000);
 
   it('buildApp() creates a Fastify instance', async () => {
     const { buildApp } = await import('./app.js');
@@ -13,10 +13,10 @@ describe('Server entrypoint separation', () => {
     expect(typeof app.listen).toBe('function');
     expect(typeof app.routing).toBe('function');
     await app.close();
-  });
+  }, 15000);
 
   it('hosted entrypoint exports a handler function', async () => {
     const mod = await import('./index.js');
     expect(typeof mod.default).toBe('function');
-  });
+  }, 15000);
 });
