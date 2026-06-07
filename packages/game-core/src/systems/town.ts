@@ -9,6 +9,7 @@ import { processTalkNpc } from './npc.js';
 import { learnRingSpell } from './magic-xp.js';
 import { syncEquipmentGrantedAbilities } from './equipment.js';
 import { evaluateRingSpellStudy, getEquippedRingItemIds } from './ring-spell-availability.js';
+import { validateTownTransaction } from './town-validator.js';
 
 /** Process enchanting an equipped armor piece */
 export function processEnchantArmor(
@@ -104,21 +105,41 @@ function processStudySpell(
   state: GameState,
   spellId?: string,
 ): { state: GameState; events: DomainEvent[] } {
-  if (spellId === undefined || spellId.length === 0) return { state, events: [] };
+  // Validate via central validator
+  const validation = validateTownTransaction(state, 'STUDY_SPELL', { spellId });
+  if (validation.valid === false) {
+    return {
+      state,
+      events: [{
+        type: 'PLAYER_ACTION_REJECTED',
+        actionType: 'TOWN_ACTION',
+        actionId: spellId ?? '',
+        reasonCode: validation.rejectionCode,
+        message: validation.message,
+        playerId: state.player.id,
+        timestamp: state.turnNumber,
+        turnNumber: state.turnNumber,
+      }],
+    };
+  }
 
-  const spell = getStudySpell(spellId);
-  if (spell === undefined) return { state, events: [] };
+  const spell = getStudySpell(spellId!);
+  if (spell === undefined) {
+    // Should not reach here due to validation, but defensive
+    return { state, events: [] };
+  }
 
   const equippedItemIds = getEquippedRingItemIds(state.player.equipment, state.itemRegistry.items);
   const evalResult = evaluateRingSpellStudy(state.player, equippedItemIds, spell);
 
   if (evalResult.canStudy === false) {
+    // Should not reach here due to validation, but defensive
     return { state, events: [] };
   }
 
   const learnedPlayer = learnRingSpell(
     { ...state.player, gold: state.player.gold - evalResult.goldCost },
-    spellId,
+    spellId!,
   );
   const updatedPlayer = syncEquipmentGrantedAbilities(learnedPlayer, state.itemRegistry.items);
 
@@ -138,7 +159,7 @@ function processStudySpell(
     }, {
       type: 'SPELL_UNLOCKED',
       playerId: state.player.id,
-      spellId,
+      spellId: spellId!,
       spellName: spell.name,
       timestamp: state.turnNumber,
       turnNumber: state.turnNumber,
@@ -229,10 +250,26 @@ function processShopBuy(
   state: GameState,
   itemId?: string,
 ): { state: GameState; events: DomainEvent[] } {
-  if (itemId === undefined) return { state, events: [] };
+  // Validate via central validator
+  const validation = validateTownTransaction(state, 'BUY_ITEM', { itemId });
+  if (validation.valid === false) {
+    return {
+      state,
+      events: [{
+        type: 'PLAYER_ACTION_REJECTED',
+        actionType: 'TOWN_ACTION',
+        actionId: itemId ?? '',
+        reasonCode: validation.rejectionCode,
+        message: validation.message,
+        playerId: state.player.id,
+        timestamp: state.turnNumber,
+        turnNumber: state.turnNumber,
+      }],
+    };
+  }
 
   const shopItem = state.world.shop.items.find(i => i.itemId === itemId);
-  if (shopItem === undefined || shopItem.stock <= 0) return { state, events: [] };
+  if (shopItem === undefined || shopItem.stock <= 0) return { state, events: [] }; // Should not reach due to validation
 
   const basePrice = shopItem.price;
   const shopkeeper = state.world.npcs.find(n => n.role === 'shopkeeper');
@@ -241,10 +278,8 @@ function processShopBuy(
     : 0;
   const price = Math.max(1, Math.floor(basePrice * (1 - discountPct / 100)));
 
-  if (state.player.gold < price) return { state, events: [] };
-
-  const template = ITEM_BY_ID.get(itemId);
-  if (template === undefined) return { state, events: [] };
+  const template = ITEM_BY_ID.get(itemId!);
+  if (template === undefined) return { state, events: [] }; // Should not reach due to validation
 
   // Server-side rarity gate: enforce the same rules as the presenter filter
   if (isRarityBuyable(template.rarity, state.world.highestRarityFound) !== true) {
@@ -280,7 +315,7 @@ function processShopBuy(
     ...result.state.world.shop,
     lastTransaction: {
       type: 'buy' as const,
-      itemId,
+      itemId: itemId!,
       quantity: 1,
       goldDelta: -price,
       snapshot: {
@@ -394,15 +429,26 @@ function processTurnInQuest(
   state: GameState,
   questId?: EntityId,
 ): { state: GameState; events: DomainEvent[] } {
-  if (questId === undefined) return { state, events: [] };
+  // Validate via central validator
+  const validation = validateTownTransaction(state, 'TURN_IN_QUEST', { questId });
+  if (validation.valid === false) {
+    return {
+      state,
+      events: [{
+        type: 'PLAYER_ACTION_REJECTED',
+        actionType: 'TOWN_ACTION',
+        actionId: questId ?? '',
+        reasonCode: validation.rejectionCode,
+        message: validation.message,
+        playerId: state.player.id,
+        timestamp: state.turnNumber,
+        turnNumber: state.turnNumber,
+      }],
+    };
+  }
 
   const quest = state.activeQuests.find(q => q.id === questId);
-  if (quest === undefined) return { state, events: [] };
-
-  // Guard: quest must be ready to turn in
-  if (quest.status !== 'ready_to_turn_in') {
-    return { state, events: [] };
-  }
+  if (quest === undefined) return { state, events: [] }; // Should not reach due to validation
 
   const result = redeemQuest(state, quest);
   return {

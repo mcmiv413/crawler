@@ -86,7 +86,26 @@ async function main() {
     } else {
       const lines = result.output.split('\n');
       // TS6059: cross-package rootDir warnings are expected in monorepos with path aliases
-      const realErrors = lines.filter((line) => !line.includes('TS6059'));
+      // Filter out TS6059 error blocks: skip the header line AND its indented context lines
+      const realErrors = [];
+      let skipContextLines = false;
+      for (const line of lines) {
+        if (line.includes('error TS6059')) {
+          skipContextLines = true;
+        } else if (skipContextLines && line.startsWith('  ')) {
+          // Skip indented context lines that follow TS6059 errors
+          continue;
+        } else if (skipContextLines && line.trim() === '') {
+          // Empty line ends the TS6059 block
+          skipContextLines = false;
+        } else if (skipContextLines && !line.startsWith('  ')) {
+          // Non-indented line ends the TS6059 block
+          skipContextLines = false;
+          realErrors.push(line);
+        } else {
+          realErrors.push(line);
+        }
+      }
       const realErrorCount = realErrors.filter((line) => line.includes('error TS')).length;
 
       if (realErrorCount > 0) {

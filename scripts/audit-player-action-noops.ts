@@ -20,7 +20,7 @@ interface Finding {
 }
 
 interface PatternInfo {
-  category: 'G' | 'D' | 'B';
+  category: 'P' | 'G' | 'D' | 'B';
   reason: string;
 }
 
@@ -444,6 +444,7 @@ const KNOWN_PATTERNS: Record<string, PatternInfo> = {
 
 const protectedPaths = [
   'packages/game-core/src/engine/handlers/inventory-handlers.ts',
+  'packages/game-core/src/systems/town.ts', // Town transaction rejection guardrails
 ];
 
 const REPO_ROOT = process.cwd();
