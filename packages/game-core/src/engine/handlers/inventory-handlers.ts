@@ -4,13 +4,28 @@ import type { CommandResult } from './shared.js';
 import { applyActiveTurnManaRegen, updateRunMetrics } from './shared.js';
 import { useConsumable } from '../../systems/inventory.js';
 import { equipItem, unequipItem, swapWeaponSets } from '../../systems/equipment.js';
+import { validateEquipmentAction } from '../../systems/equipment-validator.js';
 import { processEnemyTurns } from '../turn-scheduler.js';
 import { tickAbilityCooldowns } from '../../systems/abilities.js';
 import { isPlayerThreatened } from '../../systems/threat.js';
 import { rejectPlayerAction } from '../action-rejection.js';
 
 export function handleEquip(state: GameState, itemId: string): CommandResult {
-  // Block equip if player is threatened (under immediate attack range)
+  // 1. Validate equipment constraints first (item exists, is equippable, etc.)
+  const validation = validateEquipmentAction(state, itemId as EntityId);
+  if (validation.valid === false) {
+    return rejectPlayerAction(
+      state,
+      'EQUIP',
+      itemId,
+      validation.rejectionCode,
+      validation.message,
+      state.player.id,
+      { itemId },
+    );
+  }
+
+  // 2. Block equip if player is threatened (under immediate attack range)
   if (state.phase === 'dungeon' && isPlayerThreatened(state)) {
     return {
       state,

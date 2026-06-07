@@ -6,9 +6,8 @@ import {
   swapWeaponSets,
 } from './equipment.js';
 import { addItemToInventory } from './inventory.js';
-import { entityId, EMPTY_WEAPON_MASTERY } from '@dungeon/contracts';
-import type { Equipment } from '@dungeon/contracts';
-import type { WeaponTemplate, ArmorTemplate, RunState } from '@dungeon/contracts';
+import { entityId } from '@dungeon/contracts';
+import type { WeaponTemplate, ArmorTemplate } from '@dungeon/contracts';
 import { BASE_TEST_STATS, createTestGameState } from '../test-utils.js';
 
 const testWeapon: WeaponTemplate = {
@@ -796,6 +795,137 @@ describe('EQUIPMENT BUGS - Critical Inventory Loss Issues', () => {
 
       const { state: finalUnequipped } = unequipItem(reequipped, chestId);
       expect(finalUnequipped.player.inventory).toContain(chestId);
+    });
+  });
+
+  describe('Equipment constraint validation', () => {
+    describe('Incompatible item class rejection', () => {
+      it('should reject equipping consumable item (non-equippable)', () => {
+        let state = createTestGameState();
+
+        // Add a consumable to inventory (using proper ConsumableTemplate type)
+        const consumableTemplate: import('@dungeon/contracts').ConsumableTemplate = {
+          itemId: 'healing_potion',
+          name: 'Healing Potion',
+          description: 'A potion',
+          itemClass: 'consumable',
+          rarity: 'common',
+          value: 10,
+          stackable: true,
+          maxStack: 99,
+          consumable: { effect: 'heal', magnitude: 50 },
+        };
+
+        const { state: withConsumable } = addItemToInventory(state, consumableTemplate);
+        const consumableEntityId = withConsumable.player.inventory[0]!;
+        const inventoryCountBefore = withConsumable.player.inventory.length;
+
+        // Try to equip it - should silently fail (equipItem returns state/events unchanged)
+        const result = equipItem(withConsumable, consumableEntityId);
+
+        // Equipment should be unchanged
+        expect(result.state.player.equipment.chest).toBeNull();
+        expect(result.state.player.equipment.weapon).toBeNull();
+
+        // Item should still be in inventory
+        expect(result.state.player.inventory).toHaveLength(inventoryCountBefore);
+        expect(result.state.player.inventory).toContain(consumableEntityId);
+
+        // No success events should be emitted
+        expect(result.events).toEqual([]);
+      });
+
+      it('should reject equipping trap item (non-equippable)', () => {
+        let state = createTestGameState();
+
+        // Add a trap to inventory (using proper TrapItemTemplate type)
+        const trapTemplate: import('@dungeon/contracts').TrapItemTemplate = {
+          itemId: 'bear_trap',
+          name: 'Bear Trap',
+          description: 'A dangerous trap',
+          itemClass: 'trap',
+          rarity: 'common',
+          value: 20,
+          stackable: false,
+          maxStack: 1,
+          trapTemplateId: 'bear_trap_template',
+        };
+
+        const { state: withTrap } = addItemToInventory(state, trapTemplate);
+        const trapId = withTrap.player.inventory[0]!;
+
+        // Try to equip it - should silently fail
+        const result = equipItem(withTrap, trapId);
+
+        // Equipment should be unchanged
+        expect(result.state.player.equipment.chest).toBeNull();
+        expect(result.state.player.equipment.weapon).toBeNull();
+
+        // Item should still be in inventory
+        expect(result.state.player.inventory).toContain(trapId);
+
+        // No success events should be emitted
+        expect(result.events).toEqual([]);
+      });
+    });
+
+    describe('Item not in inventory rejection', () => {
+      it('should silently fail when equipping item player does not have', () => {
+        const state = createTestGameState();
+        const fakeItemId = entityId('fake_item_not_in_inventory');
+
+        // Try to equip item that player does not have
+        const result = equipItem(state, fakeItemId);
+
+        // State should be unchanged
+        expect(result.state.player.equipment.weapon).toBeNull();
+        expect(result.state.player.inventory).not.toContain(fakeItemId);
+
+        // No success events should be emitted
+        expect(result.events).toEqual([]);
+      });
+    });
+
+    describe('Successful equipment change', () => {
+      it('should emit events when equipping valid armor from inventory', () => {
+        let state = createTestGameState();
+        const { state: withArmor } = addItemToInventory(state, testArmor);
+        const armorId = withArmor.player.inventory[0]!;
+
+        const result = equipItem(withArmor, armorId);
+
+        // Equipment should be updated
+        expect(result.state.player.equipment.chest).toBe(armorId);
+
+        // Item should be removed from inventory
+        expect(result.state.player.inventory).not.toContain(armorId);
+
+        // Stats should be recalculated (defense should increase)
+        expect(result.state.player.stats.defense).toBeGreaterThan(state.player.stats.defense);
+
+        // No events for successful equip (per current design)
+        expect(result.events).toEqual([]);
+      });
+
+      it('should emit events when equipping valid weapon from inventory', () => {
+        let state = createTestGameState();
+        const { state: withWeapon } = addItemToInventory(state, testWeapon);
+        const weaponId = withWeapon.player.inventory[0]!;
+
+        const result = equipItem(withWeapon, weaponId);
+
+        // Equipment should be updated
+        expect(result.state.player.equipment.weapon).toBe(weaponId);
+
+        // Item should be removed from inventory
+        expect(result.state.player.inventory).not.toContain(weaponId);
+
+        // Stats should be recalculated (attack should increase)
+        expect(result.state.player.stats.attack).toBeGreaterThan(state.player.stats.attack);
+
+        // No events for successful equip
+        expect(result.events).toEqual([]);
+      });
     });
   });
 });
