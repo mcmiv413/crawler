@@ -1,5 +1,5 @@
 import type {
-  GameState, EntityId, DamageType, DomainEvent, WeaponType, WeaponTemplate, EnemyInstance, StatusId, Direction,
+  GameState, EntityId, DamageType, DomainEvent, WeaponType, WeaponTemplate, EnemyInstance, StatusId, Direction, PlayerActionRejectedEvent,
 } from '@dungeon/contracts';
 import type { CommandResult } from './shared.js';
 import type { SeededRNG } from '../../utils/rng.js';
@@ -378,25 +378,35 @@ export function handleUseAbility(
     return handleSetTrap(state, direction as Direction, targetId, rng);
   }
 
-  // Pre-set cooldown and turn tracking
+  // Execute ability using data-driven engine FIRST (without advancing turn)
+  const abilityResult = executeAbility(state, abilityId, rng, targetId, direction, targetPosition);
+
+  // Check if execution was rejected (contains PLAYER_ACTION_REJECTED event)
+  const rejectionEvent = abilityResult.events.find(
+    (event): event is PlayerActionRejectedEvent => 'reasonCode' in event,
+  );
+
+  if (rejectionEvent !== undefined) {
+    // Rejection events should not advance turn or consume resources
+    return { state: abilityResult.state, events: abilityResult.events, runEnded: false };
+  }
+
+  if (abilityResult.events.length === 0) {
+    // Ability execution produced no events (old silent guard)
+    return { state, events: [], runEnded: false };
+  }
+
+  // Only advance turn and set cooldown for successful ability execution
   let newState: GameState = {
-    ...state,
-    turnNumber: state.turnNumber + 1,
+    ...abilityResult.state,
+    turnNumber: abilityResult.state.turnNumber + 1,
   };
   newState = setAbilityCooldown(newState, abilityId, def.cooldown);
   newState = updateRunMetrics(newState, { turnsElapsed: 1 });
 
-  // Execute ability using data-driven engine
-  const abilityResult = executeAbility(newState, abilityId, rng, targetId, direction, targetPosition);
-  if (abilityResult.events.length === 0) {
-    // Ability not found or failed validation
-    return { state, events: [], runEnded: false };
-  }
-
-  let resultState = abilityResult.state;
   let resultEvents: DomainEvent[] = [...abilityResult.events];
 
-  return advanceTurnAfterPlayerAction(resultState, resultEvents, rng);
+  return advanceTurnAfterPlayerAction(newState, resultEvents, rng);
 }
 
 /** Helper: Complete a quest and emit event. Returns updated state and event. */

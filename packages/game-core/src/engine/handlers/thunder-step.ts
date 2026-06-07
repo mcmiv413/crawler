@@ -1,15 +1,16 @@
 import type { GameState, DomainEvent, EntityId, UseAbilityCommand } from '@dungeon/contracts';
-import { posKey, entityId } from '@dungeon/contracts';
+import { entityId } from '@dungeon/contracts';
 import { thunderStep, RING_SPELL_BY_ID } from '@dungeon/content';
 import type { CommandResult } from './shared.js';
 import { updateRunMetrics } from './shared.js';
+import { rejectPlayerAction } from '../action-rejection.js';
 import { advanceTurnAfterPlayerAction } from '../turn-advance-pipeline.js';
 import { applyDamageToEnemy } from '../../systems/damage.js';
 import { processEnemyKill } from '../enemy-death-pipeline.js';
-import { setAbilityCooldown, canUseAbility } from '../../systems/abilities.js';
-import { spendMana, canAffordMana } from '../../systems/mana.js';
+import { setAbilityCooldown } from '../../systems/abilities.js';
+import { spendMana } from '../../systems/mana.js';
 import { gainSchoolXp } from '../../systems/magic-xp.js';
-import { canUseLearnedRingSpell } from '../../systems/ring-spell-availability.js';
+import { validateAbilityAction } from '../../systems/ability-validator.js';
 import { computeFov } from '../../systems/fov.js';
 import { buildAbilityUsedEvent } from '../../abilities/runtime/emit-events.js';
 import type { SeededRNG } from '../../utils/rng.js';
@@ -23,66 +24,46 @@ export function handleThunderStep(
   command: UseAbilityCommand,
   rng: SeededRNG,
 ): CommandResult {
-  if (command.targetPosition === undefined) {
-    return { state, events: [], runEnded: false };
+  // Use central validator to check all ability constraints
+  const validation = validateAbilityAction(state, thunderStep.id, command.targetPosition);
+  if (validation.valid === false) {
+    return rejectPlayerAction(
+      state,
+      'ABILITY',
+      thunderStep.id,
+      validation.rejectionCode,
+      validation.message,
+      state.player.id,
+      { abilityId: thunderStep.id, targetPosition: command.targetPosition },
+    );
   }
 
-  if (state.run === null || state.phase !== 'dungeon') {
-    return { state, events: [], runEnded: false };
+  if (command.targetPosition === undefined) {
+    // Should never happen due to validator, but fail safely
+    return rejectPlayerAction(
+      state,
+      'ABILITY',
+      thunderStep.id,
+      'MISSING_TILE_TARGET',
+      'Target position is required for Thunder Step.',
+      state.player.id,
+      { abilityId: thunderStep.id },
+    );
   }
 
   const targetPosition = command.targetPosition;
 
   const ringSpell = RING_SPELL_BY_ID.get(thunderStep.id);
   if (ringSpell === undefined) {
-    return { state, events: [], runEnded: false };
-  }
-
-  // Check ring spell eligibility
-  const equippedItemIds = Object.values(state.player.equipment)
-    .filter((id): id is EntityId => id !== null)
-    .map(entityId => state.itemRegistry.items.get(entityId)?.itemId)
-    .filter((id): id is string => id !== undefined);
-  if (!canUseLearnedRingSpell(state.player, thunderStep.id, equippedItemIds)) {
-    return { state, events: [], runEnded: false };
-  }
-
-  if (!canUseAbility(state, thunderStep.id)) {
-    return { state, events: [], runEnded: false };
-  }
-
-  if (!canAffordMana(state.player.mana, ringSpell.manaCost ?? 0)) {
-    return { state, events: [], runEnded: false };
-  }
-
-  // Validate target position: visible, walkable, unoccupied
-  const targetKey = posKey(targetPosition);
-  const targetCell = state.run.floor.cells.get(targetKey);
-
-  if (targetCell === undefined || targetCell.tile.walkable !== true) {
-    return { state, events: [], runEnded: false };
-  }
-
-  if (targetCell.visibility !== 'visible') {
-    return { state, events: [], runEnded: false };
-  }
-
-  if (targetPosition.x === state.player.position.x && targetPosition.y === state.player.position.y) {
-    return { state, events: [], runEnded: false };
-  }
-
-  const noEnemy = state.run.enemies.get(targetKey) === undefined;
-  const noObject = state.run.objects.get(targetKey) === undefined;
-
-  if (!noEnemy || !noObject) {
-    return { state, events: [], runEnded: false };
-  }
-
-  // Check range
-  const distance = chebyshevDistance(state.player.position, targetPosition);
-  const maxRange = ringSpell.range;
-  if (distance > maxRange) {
-    return { state, events: [], runEnded: false };
+    return rejectPlayerAction(
+      state,
+      'ABILITY',
+      thunderStep.id,
+      'ABILITY_NOT_FOUND',
+      'Thunder Step definition not found.',
+      state.player.id,
+      { abilityId: thunderStep.id },
+    );
   }
 
   let events: DomainEvent[] = [];

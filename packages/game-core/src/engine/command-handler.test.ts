@@ -103,8 +103,14 @@ describe('handleUseAbility', () => {
 
       const result = useAbility(noManaState, 'ember', rng, targetId);
 
-      expect(result.state).toBe(noManaState);
-      expect(result.events).toHaveLength(0);
+      expect(result.state.player.mana).toBe(noManaState.player.mana);
+      const abilityUsedEvents = result.events.filter((e) => e.type === 'ABILITY_USED');
+      expect(abilityUsedEvents).toHaveLength(0);
+      const rejectionEvent = result.events.find(
+        (event): event is any =>
+          typeof event === 'object' && event !== null && 'type' in event && event.type === 'PLAYER_ACTION_REJECTED',
+      );
+      expect(rejectionEvent).toBeDefined();
     });
   });
 
@@ -265,8 +271,14 @@ describe('handleUseAbility', () => {
         rng,
       );
 
-      expect(result.state).toBe(state);
-      expect(result.events).toHaveLength(0);
+      expect(result.state.player.mana).toBe(state.player.mana);
+      const abilityUsedEvents = result.events.filter((e) => e.type === 'ABILITY_USED');
+      expect(abilityUsedEvents).toHaveLength(0);
+      const rejectionEvent = result.events.find(
+        (event): event is any =>
+          typeof event === 'object' && event !== null && 'type' in event && event.type === 'PLAYER_ACTION_REJECTED',
+      );
+      expect(rejectionEvent).toBeDefined();
     });
 
     function createThunderStepCommandState() {
@@ -393,7 +405,12 @@ describe('handleUseAbility', () => {
       expect(result.state.turnNumber).toBe(state.turnNumber);
       expect(result.state.run?.enemies.get('0,1')?.stats.health).toBe(departureEnemyHealth);
       expect(result.state.run?.enemies.get('3,0')?.stats.health).toBe(arrivalEnemyHealth);
-      expect(result.events).toHaveLength(0);
+      expect(result.events.length).toBeGreaterThan(0);
+      const rejectionEvent = result.events.find(
+        (event): event is any =>
+          typeof event === 'object' && event !== null && 'type' in event && event.type === 'PLAYER_ACTION_REJECTED',
+      );
+      expect(rejectionEvent).toBeDefined();
     });
 
     it('rejects thunder_step through the command pipeline when mana is insufficient', () => {
@@ -420,7 +437,12 @@ describe('handleUseAbility', () => {
       expect(result.state.turnNumber).toBe(state.turnNumber);
       expect(result.state.run?.enemies.get('0,1')?.stats.health).toBe(departureEnemyHealth);
       expect(result.state.run?.enemies.get('3,0')?.stats.health).toBe(arrivalEnemyHealth);
-      expect(result.events).toHaveLength(0);
+      expect(result.events.length).toBeGreaterThan(0);
+      const rejectionEvent = result.events.find(
+        (event): event is any =>
+          typeof event === 'object' && event !== null && 'type' in event && event.type === 'PLAYER_ACTION_REJECTED',
+      );
+      expect(rejectionEvent).toBeDefined();
     });
 
     it('rejects thunder_step through the command pipeline while on cooldown', () => {
@@ -447,7 +469,12 @@ describe('handleUseAbility', () => {
       expect(result.state.turnNumber).toBe(state.turnNumber);
       expect(result.state.run?.enemies.get('0,1')?.stats.health).toBe(departureEnemyHealth);
       expect(result.state.run?.enemies.get('3,0')?.stats.health).toBe(arrivalEnemyHealth);
-      expect(result.events).toHaveLength(0);
+      expect(result.events.length).toBeGreaterThan(0);
+      const rejectionEvent = result.events.find(
+        (event): event is any =>
+          typeof event === 'object' && event !== null && 'type' in event && event.type === 'PLAYER_ACTION_REJECTED',
+      );
+      expect(rejectionEvent).toBeDefined();
     });
   });
 
@@ -476,8 +503,12 @@ describe('handleUseAbility', () => {
 
       const abilityUsedEvents = result.events.filter((e) => e.type === 'ABILITY_USED');
       expect(abilityUsedEvents).toHaveLength(0);
-      expect(result.state.turnNumber).toBe(state.turnNumber);
       expect(result.state.player.abilities).toEqual(state.player.abilities);
+      const rejectionEvent = result.events.find(
+        (event): event is any =>
+          typeof event === 'object' && event !== null && 'type' in event && event.type === 'PLAYER_ACTION_REJECTED',
+      );
+      expect(rejectionEvent).toBeDefined();
     });
   });
 

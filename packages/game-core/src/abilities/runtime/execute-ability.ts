@@ -1,8 +1,8 @@
 import type { GameState, EntityId, DomainEvent, Direction } from '@dungeon/contracts';
 import type { SeededRNG } from '../../utils/rng.js';
 import type { CommandResult } from '../../engine/handlers/shared.js';
+import { rejectPlayerAction } from '../../engine/action-rejection.js';
 import { buildContext } from './build-context.js';
-import { validateRequirements } from './validate-ability.js';
 import { resolveTargets } from './resolve-targets.js';
 import { buildAbilityUsedEvent } from './emit-events.js';
 import { applyEffect } from '../effects/apply-effect.js';
@@ -10,10 +10,11 @@ import { ALL_ABILITY_DEFINITIONS } from '../definitions/index.js';
 import { buildRegistry } from '../registry.js';
 import { spendMana } from '../../systems/mana.js';
 import { gainSchoolXp } from '../../systems/magic-xp.js';
-
-import { canUseLearnedRingSpell } from '../../systems/ring-spell-availability.js';
+import { validateAbilityAction } from '../../systems/ability-validator.js';
 import { RING_SPELL_BY_ID } from '@dungeon/content';
+
 const ABILITY_REGISTRY = buildRegistry(ALL_ABILITY_DEFINITIONS);
+const RING_SPELL_LOOKUP = RING_SPELL_BY_ID;
 
 function buildTargetSnapshots(
   targets: ReadonlyArray<{
@@ -47,33 +48,36 @@ export function executeAbility(
   direction?: Direction,
   targetPosition?: { x: number; y: number },
 ): CommandResult {
-  const definition = ABILITY_REGISTRY.get(abilityId);
+  // Use central validator to check all ability constraints
+  const validation = validateAbilityAction(state, abilityId, targetPosition, targetId, direction);
+  if (validation.valid === false) {
+    return rejectPlayerAction(
+      state,
+      'ABILITY',
+      abilityId,
+      validation.rejectionCode,
+      validation.message,
+      state.player.id,
+      { abilityId },
+    );
+  }
 
-  // Not yet migrated to new engine
+  const definition = ABILITY_REGISTRY.get(abilityId);
   if (definition === undefined) {
-    return { state, events: [], runEnded: false };
+    // Should never happen due to validator check, but fail safely
+    return rejectPlayerAction(
+      state,
+      'ABILITY',
+      abilityId,
+      'ABILITY_NOT_FOUND',
+      `Ability "${abilityId}" is not defined.`,
+      state.player.id,
+      { abilityId },
+    );
   }
 
   // New data-driven engine
   const context = buildContext(state, rng, targetId, direction, targetPosition);
-
-  // Validate requirements
-  const validation = validateRequirements(context, definition.requirements);
-  if (validation.valid === false) {
-    return { state, events: [], runEnded: false };
-  }
-
-  // Check ring spell eligibility (learned + equipped rings)
-  const ringSpell = RING_SPELL_BY_ID.get(abilityId);
-  if (ringSpell !== undefined) {
-    const equippedItemIds = Object.values(state.player.equipment)
-      .filter((id): id is EntityId => id !== null)
-      .map(entityId => state.itemRegistry.items.get(entityId)?.itemId)
-      .filter((id): id is string => id !== undefined);
-    if (!canUseLearnedRingSpell(state.player, abilityId, equippedItemIds)) {
-      return { state, events: [], runEnded: false };
-    }
-  }
 
   const manaRequirement = definition.requirements.find(requirement => requirement.kind === 'has_mana');
   let spendResult: { state: GameState; events: DomainEvent[] } = { state, events: [] };
@@ -143,6 +147,7 @@ export function executeAbility(
     resultData.damageByTarget = new Map(damageByTarget);
   }
 
+  const ringSpell = RING_SPELL_LOOKUP.get(abilityId);
   if (ringSpell !== undefined) {
     const updatedPlayer = ringSpell.schools.reduce(
       (player, school) => gainSchoolXp(player, school, ringSpell.xpGainOnCast),

@@ -182,15 +182,21 @@ describe('handleThunderStep', () => {
     }));
   });
 
-  it('rejects remembered-but-not-visible targets', () => {
+  it('rejects remembered-but-not-visible targets with TILE_NOT_VISIBLE', () => {
     const state = createThunderStepState('remembered');
     const result = handleThunderStep(state, { type: 'USE_ABILITY', abilityId: 'thunder_step', targetPosition: { x: 2, y: 0 } }, new SeededRNG(12345));
 
     expect(result.state.player.position).toEqual({ x: 0, y: 0 });
-    expect(result.events).toHaveLength(0);
+    expect(result.events.length).toBeGreaterThan(0);
+    const rejectionEvent = result.events.find(
+      (event): event is any =>
+        typeof event === 'object' && event !== null && 'type' in event && event.type === 'PLAYER_ACTION_REJECTED',
+    );
+    expect(rejectionEvent).toBeDefined();
+    expect(rejectionEvent?.reasonCode).toBe('TILE_NOT_VISIBLE');
   });
 
-  it('rejects unwalkable target tiles', () => {
+  it('rejects unwalkable target tiles with INVALID_TILE_TARGET', () => {
     const baseState = createThunderStepState();
     const run = baseState.run;
     if (run === null) {
@@ -217,10 +223,16 @@ describe('handleThunderStep', () => {
     const result = handleThunderStep(state, { type: 'USE_ABILITY', abilityId: 'thunder_step', targetPosition: { x: 2, y: 0 } }, new SeededRNG(12345));
 
     expect(result.state).toBe(state);
-    expect(result.events).toHaveLength(0);
+    expect(result.events.length).toBeGreaterThan(0);
+    const rejectionEvent = result.events.find(
+      (event): event is any =>
+        typeof event === 'object' && event !== null && 'type' in event && event.type === 'PLAYER_ACTION_REJECTED',
+    );
+    expect(rejectionEvent).toBeDefined();
+    expect(rejectionEvent?.reasonCode).toBe('INVALID_TILE_TARGET');
   });
 
-  it('rejects occupied target tiles', () => {
+  it('rejects occupied target tiles with TILE_OCCUPIED', () => {
     const baseState = createThunderStepState();
     const run = baseState.run;
     if (run === null) {
@@ -242,7 +254,13 @@ describe('handleThunderStep', () => {
     const result = handleThunderStep(state, { type: 'USE_ABILITY', abilityId: 'thunder_step', targetPosition: { x: 2, y: 0 } }, new SeededRNG(12345));
 
     expect(result.state).toBe(state);
-    expect(result.events).toHaveLength(0);
+    expect(result.events.length).toBeGreaterThan(0);
+    const rejectionEvent = result.events.find(
+      (event): event is any =>
+        typeof event === 'object' && event !== null && 'type' in event && event.type === 'PLAYER_ACTION_REJECTED',
+    );
+    expect(rejectionEvent).toBeDefined();
+    expect(rejectionEvent?.reasonCode).toBe('TILE_OCCUPIED');
   });
 
   it('rejects casts without enough mana before moving or dealing damage', () => {
@@ -265,7 +283,13 @@ describe('handleThunderStep', () => {
     expect(result.state.turnNumber).toBe(state.turnNumber);
     expect(result.state.run?.enemies.get('0,1')?.stats.health).toBe(departureEnemyHealth);
     expect(result.state.run?.enemies.get('3,0')?.stats.health).toBe(arrivalEnemyHealth);
-    expect(result.events).toHaveLength(0);
+    expect(result.events.length).toBeGreaterThan(0);
+    const rejectionEvent = result.events.find(
+      (event): event is any =>
+        typeof event === 'object' && event !== null && 'type' in event && event.type === 'PLAYER_ACTION_REJECTED',
+    );
+    expect(rejectionEvent).toBeDefined();
+    expect(rejectionEvent?.reasonCode).toBe('INSUFFICIENT_MANA');
   });
 
   it('rejects casts while thunder_step is on cooldown', () => {
@@ -288,7 +312,13 @@ describe('handleThunderStep', () => {
     expect(result.state.turnNumber).toBe(state.turnNumber);
     expect(result.state.run?.enemies.get('0,1')?.stats.health).toBe(departureEnemyHealth);
     expect(result.state.run?.enemies.get('3,0')?.stats.health).toBe(arrivalEnemyHealth);
-    expect(result.events).toHaveLength(0);
+    expect(result.events.length).toBeGreaterThan(0);
+    const rejectionEvent = result.events.find(
+      (event): event is any =>
+        typeof event === 'object' && event !== null && 'type' in event && event.type === 'PLAYER_ACTION_REJECTED',
+    );
+    expect(rejectionEvent).toBeDefined();
+    expect(rejectionEvent?.reasonCode).toBe('ABILITY_ON_COOLDOWN');
   });
 
   it('rejects the player current tile without spending mana or hitting either blast zone', () => {
@@ -303,6 +333,12 @@ describe('handleThunderStep', () => {
     expect(result.state.turnNumber).toBe(state.turnNumber);
     expect(result.state.run?.enemies.get('0,1')?.stats.health).toBe(departureEnemyHealth);
     expect(result.state.run?.enemies.get('3,0')?.stats.health).toBe(arrivalEnemyHealth);
-    expect(result.events).toHaveLength(0);
+    expect(result.events.length).toBeGreaterThan(0);
+    const rejectionEvent = result.events.find(
+      (event): event is any =>
+        typeof event === 'object' && event !== null && 'type' in event && event.type === 'PLAYER_ACTION_REJECTED',
+    );
+    expect(rejectionEvent).toBeDefined();
+    expect(rejectionEvent?.reasonCode).toBe('INVALID_TILE_TARGET');
   });
 });
