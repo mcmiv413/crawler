@@ -95,7 +95,7 @@ export default {
       path: 'scripts/audit-player-action-noops.ts',
       reason: 'Audit script with comprehensive classification taxonomy — centralizes all 116 silent-failure pattern categories (P/G/A/D/B) and KNOWN_PATTERNS registry without touching source files',
       auditReportNote: 'Guardrails infrastructure; classification registry grows as audit findings increase; future split seam is separating KNOWN_PATTERNS map into dedicated JSON config once taxonomy stabilizes',
-      lines: 597,
+      lines: 598,
     },
   ],
 };

@@ -1,8 +1,9 @@
 import { describe, it, expect } from 'vitest';
 import { processTownAction, processEnchantArmor } from './town.js';
+import { validateTownTransaction } from './town-validator.js';
 import { createTestGameState } from '../test-utils.js';
 import { entityId } from '@dungeon/contracts';
-import type { NpcState, ArmorTemplate } from '@dungeon/contracts';
+import type { NpcState, ArmorTemplate, EntityId } from '@dungeon/contracts';
 
 const FIRE_RING_SPELL_ID = 'heat_surge';
 const FIRE_RING_ENCHANTMENT_ID = 'fire_ring_ember';
@@ -371,7 +372,11 @@ describe('processTownAction study_spell', () => {
     );
 
     expect(result.state).toBe(state);
-    expect(result.events).toHaveLength(0);
+    expect(result.events).toHaveLength(1);
+    expect(result.events[0]?.type).toBe('PLAYER_ACTION_REJECTED');
+    if (result.events[0] && result.events[0].type === 'PLAYER_ACTION_REJECTED') {
+      expect(result.events[0].reasonCode).toBe('SPELL_STUDY_INELIGIBLE');
+    }
   });
 
   it('rejects Elder study when the spell is already unlocked', () => {
@@ -394,7 +399,11 @@ describe('processTownAction study_spell', () => {
     );
 
     expect(result.state).toBe(state);
-    expect(result.events).toHaveLength(0);
+    expect(result.events).toHaveLength(1);
+    expect(result.events[0]).toMatchObject({
+      type: 'PLAYER_ACTION_REJECTED',
+      reasonCode: 'SPELL_STUDY_INELIGIBLE',
+    });
   });
 
   it('studies the Lightning ladder in order, spending gold without granting Lightning XP', () => {
@@ -490,6 +499,144 @@ describe('processTownAction study_spell', () => {
 
     expect(rollingThunderResult.state).toBe(missingXpState);
     expect(rollingThunderResult.events).toHaveLength(0);
+  });
+});
+
+// ---------------------------------------------------------------------------
+// validateTownTransaction & rejection events
+// ---------------------------------------------------------------------------
+
+describe('validateTownTransaction STUDY_SPELL rejections', () => {
+  it('rejects when spell does not exist (SPELL_NOT_FOUND)', () => {
+    const state = makeStateWithLightningRingEquipped({ gold: 500 });
+    const result = validateTownTransaction(state, 'STUDY_SPELL', { spellId: 'nonexistent_spell' });
+    expect(result.valid).toBe(false);
+    expect((result as any).rejectionCode).toBe('SPELL_NOT_FOUND');
+  });
+
+  it('rejects when spell already learned (SPELL_STUDY_INELIGIBLE)', () => {
+    const state = makeStateWithLightningRingEquipped({
+      gold: 500,
+      learnedRingSpellIds: [BOLT_SPELL_ID],
+    });
+    const result = validateTownTransaction(state, 'STUDY_SPELL', { spellId: BOLT_SPELL_ID });
+    expect(result.valid).toBe(false);
+    expect((result as any).rejectionCode).toBe('SPELL_STUDY_INELIGIBLE');
+  });
+});
+
+describe('validateTownTransaction BUY_ITEM rejections', () => {
+  it('rejects when item not in shop (ITEM_NOT_FOR_SALE)', () => {
+    const state = createTestGameState({ player: { gold: 1000 } });
+    const result = validateTownTransaction(state, 'BUY_ITEM', { itemId: 'nonexistent_item' });
+    expect(result.valid).toBe(false);
+    expect((result as any).rejectionCode).toBe('ITEM_NOT_FOR_SALE');
+  });
+
+  it('rejects when player has insufficient gold (INSUFFICIENT_GOLD)', () => {
+    const state = createTestGameState({ player: { gold: 10 } }); // very low gold
+    // Assuming shop has items — find one and try to buy it with insufficient funds
+    const shopItem = state.world.shop.items[0];
+    if (shopItem !== undefined && shopItem.price > 10) {
+      const result = validateTownTransaction(state, 'BUY_ITEM', { itemId: shopItem.itemId });
+      expect(result.valid).toBe(false);
+      expect((result as any).rejectionCode).toBe('INSUFFICIENT_GOLD');
+    }
+  });
+});
+
+describe('validateTownTransaction TURN_IN_QUEST rejections', () => {
+  it('rejects when quest does not exist (QUEST_NOT_FOUND)', () => {
+    const state = createTestGameState({ player: { gold: 500 } });
+    const result = validateTownTransaction(state, 'TURN_IN_QUEST', { questId: entityId('nonexistent_quest') });
+    expect(result.valid).toBe(false);
+    expect((result as any).rejectionCode).toBe('QUEST_NOT_FOUND');
+  });
+
+  it('rejects when quest is not ready to turn in (QUEST_NOT_READY)', () => {
+    const state = createTestGameState({ player: { gold: 500 } });
+    // Assume there's an active quest not in ready_to_turn_in status
+    if (state.activeQuests.length > 0) {
+      const quest = state.activeQuests[0];
+      if (quest && quest.status !== 'ready_to_turn_in') {
+        const result = validateTownTransaction(state, 'TURN_IN_QUEST', { questId: quest.id as EntityId });
+        expect(result.valid).toBe(false);
+        expect((result as any).rejectionCode).toBe('QUEST_NOT_READY');
+      }
+    }
+  });
+});
+
+describe('processTownAction rejection events', () => {
+  it('emits PLAYER_ACTION_REJECTED for invalid spell study', () => {
+    const state = createTestGameState({ player: { gold: 500 } });
+    const { events } = processTownAction(state, 'study_spell', undefined, undefined, undefined, 'nonexistent_spell');
+
+    const rejectionEvent = events.find(e => e.type === 'PLAYER_ACTION_REJECTED');
+    expect(rejectionEvent).toBeDefined();
+    if (rejectionEvent && rejectionEvent.type === 'PLAYER_ACTION_REJECTED') {
+      expect(rejectionEvent.actionType).toBe('TOWN_ACTION');
+      expect(rejectionEvent.actionId).toBe('nonexistent_spell');
+      expect(rejectionEvent.reasonCode).toBe('SPELL_NOT_FOUND');
+    }
+  });
+
+  it('emits PLAYER_ACTION_REJECTED for invalid item purchase', () => {
+    const state = createTestGameState({ player: { gold: 500 } });
+    const { events } = processTownAction(state, 'shop_buy', undefined, 'nonexistent_item');
+
+    const rejectionEvent = events.find(e => e.type === 'PLAYER_ACTION_REJECTED');
+    expect(rejectionEvent).toBeDefined();
+    if (rejectionEvent && rejectionEvent.type === 'PLAYER_ACTION_REJECTED') {
+      expect(rejectionEvent.actionType).toBe('TOWN_ACTION');
+      expect(rejectionEvent.actionId).toBe('nonexistent_item');
+      expect(rejectionEvent.reasonCode).toBe('ITEM_NOT_FOR_SALE');
+    }
+  });
+
+  it('emits PLAYER_ACTION_REJECTED for insufficient gold on buy', () => {
+    const state = createTestGameState({ player: { gold: 5 } });
+    const shopItem = state.world.shop.items[0];
+    if (shopItem !== undefined && shopItem.price > 5) {
+      const { events } = processTownAction(state, 'shop_buy', undefined, shopItem.itemId);
+
+      const rejectionEvent = events.find(e => e.type === 'PLAYER_ACTION_REJECTED');
+      expect(rejectionEvent).toBeDefined();
+      if (rejectionEvent && rejectionEvent.type === 'PLAYER_ACTION_REJECTED') {
+        expect(rejectionEvent.actionType).toBe('TOWN_ACTION');
+        expect(rejectionEvent.reasonCode).toBe('INSUFFICIENT_GOLD');
+      }
+    }
+  });
+
+  it('emits PLAYER_ACTION_REJECTED for quest not ready', () => {
+    const state = createTestGameState({ player: { gold: 500 } });
+    if (state.activeQuests.length > 0) {
+      const quest = state.activeQuests[0];
+      if (quest && quest.status !== 'ready_to_turn_in') {
+        const { events } = processTownAction(state, 'turn_in_quest', quest.id as EntityId);
+
+        const rejectionEvent = events.find(e => e.type === 'PLAYER_ACTION_REJECTED');
+        expect(rejectionEvent).toBeDefined();
+        if (rejectionEvent && rejectionEvent.type === 'PLAYER_ACTION_REJECTED') {
+          expect(rejectionEvent.actionType).toBe('TOWN_ACTION');
+          expect(rejectionEvent.reasonCode).toBe('QUEST_NOT_READY');
+        }
+      }
+    }
+  });
+
+  it('does not advance turn or consume resources on rejection', () => {
+    const state = createTestGameState({ player: { gold: 500 } });
+    const initialTurn = state.turnNumber;
+    const initialGold = state.player.gold;
+    const initialInventorySize = state.player.inventory.length;
+
+    const { state: resultState } = processTownAction(state, 'study_spell', undefined, undefined, undefined, 'nonexistent_spell');
+
+    expect(resultState.turnNumber).toBe(initialTurn);
+    expect(resultState.player.gold).toBe(initialGold);
+    expect(resultState.player.inventory.length).toBe(initialInventorySize);
   });
 });
 
