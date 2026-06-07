@@ -80,6 +80,30 @@ describe('player-action-observability integration tests', () => {
     });
   });
 
+  describe('movement blocked visibility', () => {
+    it('moving off-map emits a formattable MOVEMENT_BLOCKED event without advancing the turn', () => {
+      // Player at (0,0); enemy moved away; moving W targets (-1,0) (no cell).
+      const state = createTestGameStateInCombat({ enemyAt: { x: 5, y: 5 } });
+      const rng = new SeededRNG(12345);
+      const turnsBefore = state.turnNumber;
+
+      const result = handleCommand(state, createMoveCommandWithDirection('W'), rng);
+
+      const blocked = result.events.find((e) => e.type === 'MOVEMENT_BLOCKED');
+      expect(blocked).toBeDefined();
+      if (blocked && blocked.type === 'MOVEMENT_BLOCKED') {
+        expect(blocked.reasonCode).toBe('OUT_OF_BOUNDS');
+        expect(blocked.playerId).toBe(state.player.id);
+        const formatted = formatEvent(blocked);
+        expect(formatted?.text.length).toBeGreaterThan(0);
+      }
+
+      expect(result.events.some((e) => e.type === 'PLAYER_MOVED')).toBe(false);
+      expect(result.state.turnNumber).toBe(turnsBefore);
+      expect(result.runEnded).toBe(false);
+    });
+  });
+
   describe('rejection with context fields', () => {
     it('rejection includes context fields when available', () => {
       const state = createTestGameState();
