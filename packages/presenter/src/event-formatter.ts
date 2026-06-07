@@ -375,6 +375,12 @@ const EVENT_FORMATTERS = {
     timestamp: event.timestamp,
   }),
 
+  'PLAYER_ACTION_REJECTED': (event) => ({
+    text: `Action failed: ${event.message}`,
+    type: 'info',
+    timestamp: event.timestamp,
+  }),
+
   'PLAYER_MOVED': () => null,
   'ENEMY_MOVED': () => null,
   'PHASE_CHANGED': () => null,

@@ -441,6 +441,20 @@ export interface DebugDamageCalcEvent extends BaseEvent {
   readonly critMultiplier: number;
 }
 
+export interface PlayerActionRejectedEvent extends BaseEvent {
+  readonly type: 'PLAYER_ACTION_REJECTED';
+  readonly actionType: string;
+  readonly actionId: string;
+  readonly reasonCode: string;
+  readonly message: string;
+  readonly playerId: EntityId;
+  readonly targetId?: EntityId;
+  readonly targetPosition?: Position;
+  readonly itemId?: string;
+  readonly abilityId?: string;
+  readonly source?: string;
+}
+
 export type DomainEvent =
   | PlayerMovedEvent
   | EnemyMovedEvent
@@ -493,6 +507,7 @@ export type DomainEvent =
   | BlinkDodgedEvent
   | LifeStealEvent
   | DebugMissStreakEvent
-  | DebugDamageCalcEvent;
+  | DebugDamageCalcEvent
+  | PlayerActionRejectedEvent;
 
 export type EventType = DomainEvent['type'];

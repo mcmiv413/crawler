@@ -85,5 +85,11 @@ export default {
       auditReportNote: 'Refactor target — action item',
       lines: 516,
     },
+    {
+      path: 'packages/game-contracts/src/events/index.ts',
+      reason: 'Central discriminated union of all domain events — consolidation target for event type safety',
+      auditReportNote: 'Event type definitions added for player action observability guardrails; acceptable aggregation',
+      lines: 514,
+    },
   ],
 };
