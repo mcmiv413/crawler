@@ -7,6 +7,7 @@ import { equipItem, unequipItem, swapWeaponSets } from '../../systems/equipment.
 import { processEnemyTurns } from '../turn-scheduler.js';
 import { tickAbilityCooldowns } from '../../systems/abilities.js';
 import { isPlayerThreatened } from '../../systems/threat.js';
+import { rejectPlayerAction } from '../action-rejection.js';
 
 export function handleEquip(state: GameState, itemId: string): CommandResult {
   // Block equip if player is threatened (under immediate attack range)
@@ -92,5 +93,13 @@ export function handleUseItem(
     const runEnded = newState.phase === 'town' || newState.phase === 'game_over';
     return { state: newState, events, runEnded };
   }
-  return { state, events: [], runEnded: false };
+  return rejectPlayerAction(
+    state,
+    'ITEM',
+    itemId,
+    'WRONG_PHASE',
+    'Items can only be used during combat.',
+    state.player.id,
+    { itemId },
+  );
 }
