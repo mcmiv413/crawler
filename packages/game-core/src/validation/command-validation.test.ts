@@ -65,8 +65,14 @@ describe('Command Validation: State Validation', () => {
 
     const result = handleCommand(state, { type: 'MOVE', direction: 'N' }, rng);
 
-    // Command should be rejected (no run active)
-    expect(result.events.length).toBe(0);
+    // Movement is now observable: blocked movement with no active run emits a
+    // MOVEMENT_BLOCKED event (NOT_IN_DUNGEON) while still not advancing the turn.
+    const blocked = result.events.find((e) => e.type === 'MOVEMENT_BLOCKED');
+    expect(blocked).toBeDefined();
+    if (blocked && blocked.type === 'MOVEMENT_BLOCKED') {
+      expect(blocked.reasonCode).toBe('NOT_IN_DUNGEON');
+    }
+    expect(result.events.some((e) => e.type === 'PLAYER_MOVED')).toBe(false);
     expect(result.state.turnNumber).toBe(state.turnNumber);
   });
 
@@ -81,9 +87,13 @@ describe('Command Validation: State Validation', () => {
     };
     const rng = new SeededRNG(42);
 
-    // Dead player cannot move
+    // Dead player cannot move: from (0,0) moving N is out of bounds, so the move
+    // is blocked. It now emits an observable MOVEMENT_BLOCKED event but must not
+    // move the player or advance the turn.
     const moveResult = handleCommand(deadState, { type: 'MOVE', direction: 'N' }, rng);
-    expect(moveResult.events.length).toBe(0);
+    expect(moveResult.events.some((e) => e.type === 'PLAYER_MOVED')).toBe(false);
+    expect(moveResult.state.player.position).toEqual(deadState.player.position);
+    expect(moveResult.state.turnNumber).toBe(deadState.turnNumber);
 
     // Dead player cannot attack
     const target = Array.from(deadState.run!.enemies.values())[0]!;
@@ -181,10 +191,13 @@ describe('Command Validation: Context-Specific Rules', () => {
   it('validates MOVE command differently in combat vs town', () => {
     const rng = new SeededRNG(42);
 
-    // In town: MOVE is invalid (no run)
+    // In town: MOVE is blocked (no run) and now observable via MOVEMENT_BLOCKED,
+    // but still does not advance the turn.
     const townState = createTestGameState();
     const townResult = handleCommand(townState, { type: 'MOVE', direction: 'N' }, rng);
-    expect(townResult.events.length).toBe(0);
+    expect(townResult.events.some((e) => e.type === 'MOVEMENT_BLOCKED')).toBe(true);
+    expect(townResult.events.some((e) => e.type === 'PLAYER_MOVED')).toBe(false);
+    expect(townResult.state.turnNumber).toBe(townState.turnNumber);
 
     // In combat: MOVE is valid
     const combatState = createTestGameStateInCombat();

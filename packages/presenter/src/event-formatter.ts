@@ -381,6 +381,12 @@ const EVENT_FORMATTERS = {
     timestamp: event.timestamp,
   }),
 
+  'MOVEMENT_BLOCKED': (event) => ({
+    text: event.message.length > 0 ? event.message : 'You cannot move there.',
+    type: 'info',
+    timestamp: event.timestamp,
+  }),
+
   'PLAYER_MOVED': () => null,
   'ENEMY_MOVED': () => null,
   'PHASE_CHANGED': () => null,

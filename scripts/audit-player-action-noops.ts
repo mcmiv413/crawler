@@ -179,25 +179,22 @@ const KNOWN_PATTERNS: Record<string, PatternInfo> = {
     category: 'G',
     reason: 'State consistency check',
   },
-  'packages/game-core/src/engine/handlers/movement.ts:39': {
+  // Phase 4A: handleMove blocked-terrain paths now emit MOVEMENT_BLOCKED
+  // (no longer empty-event returns). They are protected via the movement.ts
+  // entry in protectedPaths below; the previously-tracked movement.ts:39/42
+  // empty returns have been replaced by visible MOVEMENT_BLOCKED events.
+  // handleInteract guards remain legitimate internal no-ops (G category).
+  'packages/game-core/src/engine/handlers/movement.ts:180': {
     category: 'G',
-    reason: 'Bounds validation',
+    reason: 'handleInteract run state guard — internal validation',
   },
-  'packages/game-core/src/engine/handlers/movement.ts:42': {
+  'packages/game-core/src/engine/handlers/movement.ts:184': {
     category: 'G',
-    reason: 'Obstacle detection',
+    reason: 'handleInteract object registry lookup — internal validation',
   },
-  'packages/game-core/src/engine/handlers/movement.ts:161': {
+  'packages/game-core/src/engine/handlers/movement.ts:187': {
     category: 'G',
-    reason: 'Run state guard',
-  },
-  'packages/game-core/src/engine/handlers/movement.ts:165': {
-    category: 'G',
-    reason: 'Object registry lookup',
-  },
-  'packages/game-core/src/engine/handlers/movement.ts:168': {
-    category: 'G',
-    reason: 'Template registry lookup',
+    reason: 'handleInteract template registry lookup — internal validation',
   },
   'packages/game-core/src/engine/handlers/retreat-handler.ts:8': {
     category: 'G',
@@ -487,6 +484,8 @@ const protectedPaths = [
   'packages/game-core/src/engine/handlers/thunder-step.ts', // Tile-target ability rejections
   // Phase 3: Combat observability
   'packages/game-core/src/abilities/effects/apply-attack.ts', // Invalid target emits ATTACK_PERFORMED(hit:false)
+  // Phase 4A: Movement blocked observability
+  'packages/game-core/src/engine/handlers/movement.ts', // Blocked terrain/bounds emits MOVEMENT_BLOCKED
 ];
 
 const REPO_ROOT = process.cwd();
@@ -677,7 +676,10 @@ console.log(`  - Slice 2 (Tile-target abilities): 8 rejection codes via validate
 console.log(`  - Slice 3 (Town transactions): validateTownTransaction (SPELL_NOT_FOUND, SPELL_STUDY_INELIGIBLE, ITEM_NOT_FOR_SALE, INSUFFICIENT_GOLD, QUEST_NOT_FOUND, QUEST_NOT_READY)`);
 console.log(`  - Slice 4 (Equipment constraints): validateEquipmentAction (EQUIPMENT_INCOMPATIBLE, ITEM_NOT_FOUND)`);
 console.log(`Phase 3 combat observability: implemented`);
-console.log(`  - apply-attack.ts: invalid target (run null or enemy not found) emits ATTACK_PERFORMED(hit:false)\n`);
+console.log(`  - apply-attack.ts: invalid target (run null or enemy not found) emits ATTACK_PERFORMED(hit:false)`);
+console.log(`Phase 4A movement blocked observability: implemented`);
+console.log(`  - movement.ts handleMove: blocked terrain/bounds/invalid-direction/not-in-dungeon emits MOVEMENT_BLOCKED (INVALID_DIRECTION, NOT_IN_DUNGEON, OUT_OF_BOUNDS, NOT_WALKABLE, TARGET_NOT_FOUND)`);
+console.log(`  - Phase 4B candidates (not yet implemented): disarm-trap.ts, set-trap.ts\n`);
 
 console.log(`Remaining unprotected findings: ${unresolvedFindings.length}`);
 console.log(`Categorization breakdown:`);

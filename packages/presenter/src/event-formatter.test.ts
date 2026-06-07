@@ -382,6 +382,39 @@ describe('event format coverage guardrail', () => {
     expect(result!.type).toBe('info');
   });
 
+  it('formats MOVEMENT_BLOCKED using the event message', () => {
+    const event: DomainEvent = {
+      ...base,
+      type: 'MOVEMENT_BLOCKED',
+      playerId: entityId('p1'),
+      from: { x: 0, y: 0 },
+      attemptedTo: { x: 0, y: 1 },
+      direction: 'N',
+      reasonCode: 'NOT_WALKABLE',
+      message: 'That way is blocked.',
+    };
+    const result = formatEvent(event);
+    expect(result).not.toBeNull();
+    expect(result!.text).toBe('That way is blocked.');
+    expect(result!.type).toBe('info');
+  });
+
+  it('formats MOVEMENT_BLOCKED with a fallback when message is empty', () => {
+    const event: DomainEvent = {
+      ...base,
+      type: 'MOVEMENT_BLOCKED',
+      playerId: entityId('p1'),
+      from: { x: 0, y: 0 },
+      attemptedTo: { x: -1, y: 0 },
+      direction: 'W',
+      reasonCode: 'OUT_OF_BOUNDS',
+      message: '',
+    };
+    const result = formatEvent(event);
+    expect(result).not.toBeNull();
+    expect(result!.text.length).toBeGreaterThan(0);
+  });
+
   it('formats LOOT_DROPPED showing item and enemy name', () => {
     const event: DomainEvent = {
       ...base,
@@ -694,6 +727,7 @@ describe('formatEvents', () => {
         'DEBUG_MISS_STREAK',
         'DEBUG_DAMAGE_CALC',
         'ENEMY_AMBIENT_STATE_CHANGED',
+        'MOVEMENT_BLOCKED',
         ...silentEventTypes,
       ];
 
@@ -777,6 +811,8 @@ describe('formatEvents', () => {
             return { ...base, type, playerAccuracy: 50, playerEvasion: 20, enemyAccuracy: 45, enemyEvasion: 15, rngSeed: 123, streakLength: 3 };
           case 'DEBUG_DAMAGE_CALC':
             return { ...base, type, attackerId: entityId('p1'), defenderId: entityId('e1'), baseDamage: 10, defenderDefense: 5, finalDamage: 8 };
+          case 'MOVEMENT_BLOCKED':
+            return { ...base, type, playerId: entityId('p1'), from: { x: 0, y: 0 }, attemptedTo: { x: 0, y: 1 }, direction: 'N', reasonCode: 'NOT_WALKABLE', message: 'That way is blocked.' };
           default:
             throw new Error(`Unhandled event type in test: ${type}`);
         }

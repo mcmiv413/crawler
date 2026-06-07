@@ -7,7 +7,8 @@ Audit of player action paths for silent no-op returns (empty event emissions). G
 **Phase 1 (MVP):** ✅ **All protected paths fixed** (UseItem handler — 1 path)
 **Phase 2:** ✅ **20 rejection codes implemented** across 4 vertical slices with centralized validators
 **Phase 3:** ✅ **Combat observability implemented** — invalid-target paths in `apply-attack.ts` emit `ATTACK_PERFORMED(hit:false)`
-**Remaining:** Guards, delegations, bugs, and lower-priority paths documented below
+**Phase 4A:** ✅ **Movement blocked observability implemented** — `handleMove` blocked terrain/bounds/invalid-direction/not-in-dungeon paths emit `MOVEMENT_BLOCKED`
+**Remaining:** Trap disarm/placement (Phase 4B), guards, delegations, bugs, and lower-priority paths documented below
 
 ---
 
@@ -81,22 +82,36 @@ The initial scan found ~116 findings across `packages/game-core/src`:
 
 ---
 
-## Remaining High Impact (Phase 4 candidates)
+## Phase 4A Implemented (Movement Blocked Observability)
 
-These paths remain silent for player-visible rejection scenarios and are candidates for the next phase.
+- ✅ `packages/game-core/src/engine/handlers/movement.ts` — `handleMove` now emits `MOVEMENT_BLOCKED` for blocked non-enemy movement instead of returning empty events:
+  - `INVALID_DIRECTION` — Direction string not recognized
+  - `NOT_IN_DUNGEON` — No active dungeon run
+  - `OUT_OF_BOUNDS` — Target tile off the map
+  - `NOT_WALKABLE` — Target tile is a wall/obstacle
+  - `TARGET_NOT_FOUND` — Enemy-occupied validation but no matching enemy to bump-attack
+- Mapping from `validateMove` reason → reason code/message is centralized in `packages/game-core/src/engine/handlers/movement-blocked.ts` (`buildMovementBlockedEvent` / `buildTargetNotFoundMovementBlockedEvent`).
+- Bump-to-attack into an enemy is unchanged (still routes to `handleAttack`, emits no `MOVEMENT_BLOCKED`).
+- Blocked movement does not advance the turn, process enemy turns, tick cooldowns, regen mana, update metrics, recompute FOV, or mutate player position.
+- Protected: `movement.ts` added to audit `protectedPaths` — CI fails if blocked-terrain branches regress to empty events.
 
-#### Movement & Spatial
-- `packages/game-core/src/engine/handlers/movement.ts:39,42` — Bounds and obstacle validation
-  - Recommendation: Emit `MOVEMENT_BLOCKED` event with reason code
+---
+
+## Remaining High Impact (Phase 4B candidates)
+
+These paths remain silent for player-visible rejection scenarios and are the next slice (trap interactions).
+
+#### Trap Disarm & Placement
+- `packages/game-core/src/engine/handlers/disarm-trap.ts:22,35,44,50,55,95` — Trap disarm state and skill checks
+- `packages/game-core/src/engine/handlers/set-trap.ts:25,31,37,43,52,58,109` — Trap placement validation and inventory checks
+  - Recommendation: Emit a trap-action rejection/blocked event with reason code
 
 ---
 
 ## Remaining Medium Impact (Backlog)
 
-#### Movement & Spatial (11 paths)
-- `packages/game-core/src/engine/handlers/movement.ts:161,165,168` — Run state and entity/template lookup
-- `packages/game-core/src/engine/handlers/disarm-trap.ts:22,35,44,50,55,95` — Trap state and skill checks
-- `packages/game-core/src/engine/handlers/set-trap.ts:25,31,37,43,52,58,109` — Placement validation and inventory checks
+#### Movement & Spatial
+- `packages/game-core/src/engine/handlers/movement.ts:180,184,187` — `handleInteract` run state and entity/template lookup guards (internal, not player-facing rejections)
 
 #### Spell & Ability (3 paths)
 - `packages/game-core/src/abilities/effects/apply-conditional.ts:17` — Conditional effect guards
@@ -172,11 +187,17 @@ return { state, events: [], runEnded: false };
 - **Validator contract tests:** Direct tests for `validateAbilityAction`, `validateTownTransaction`, `validateEquipmentAction`
 - **Protected paths:** `apply-attack.ts` added to audit protected paths — CI fails if it regresses to empty events
 
-### Phase 4: Movement & Spatial (Recommended next)
-- Movement rejection events (bounds, obstacle — 2 paths in handlers)
-- Trap disarm validation (6 paths)
-- Placement validation (7 paths)
-- **Impact:** Spatial action feedback
+### Phase 4A: ✅ COMPLETE
+- **Movement blocked observability:** `handleMove` blocked terrain/bounds/invalid-direction/not-in-dungeon paths emit `MOVEMENT_BLOCKED` instead of silent empty returns
+- **Reason codes:** `INVALID_DIRECTION`, `NOT_IN_DUNGEON`, `OUT_OF_BOUNDS`, `NOT_WALKABLE`, `OCCUPIED_BY_OBJECT`, `TARGET_NOT_FOUND` exported from `packages/game-core/src/engine/rejection-codes.ts`
+- **Centralized mapping:** `packages/game-core/src/engine/handlers/movement-blocked.ts`
+- **Protected path:** `movement.ts` added to audit protected paths — CI fails if it regresses to empty events
+- **Bump-to-attack unchanged**
+
+### Phase 4B: Trap Disarm & Placement (Recommended next)
+- Trap disarm validation (`disarm-trap.ts` — 6 paths)
+- Trap placement validation (`set-trap.ts` — 7 paths)
+- **Impact:** Spatial action feedback for trap interactions
 
 ### Phase 5: Autonomous System Audit (Low Impact)
 - Document legitimate no-ops in autonomous systems

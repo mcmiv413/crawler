@@ -17,6 +17,7 @@ import { handleAttack } from './combat.js';
 import { handlePlayerDeath } from '../../systems/death.js';
 import { calculateHazardDamage, hazardTypeToDamageType } from '../../systems/hazard-damage.js';
 import { applyDamageToPlayer } from '../../systems/damage.js';
+import { buildMovementBlockedEvent, buildTargetNotFoundMovementBlockedEvent } from './movement-blocked.js';
 
 export function handleMove(
   state: GameState,
@@ -35,11 +36,29 @@ export function handleMove(
           }
         }
       } catch {
-        // If moveInDirection fails (invalid direction), just return empty result
-        return { state, events: [], runEnded: false };
+        // moveInDirection failed (invalid direction) — emit blocked movement
+        return {
+          state,
+          events: [buildMovementBlockedEvent(state, direction, validation)],
+          runEnded: false,
+        };
       }
+      // Enemy-occupied validation but no matching enemy found to attack
+      return {
+        state,
+        events: [buildTargetNotFoundMovementBlockedEvent(state, direction)],
+        runEnded: false,
+      };
     }
-    return { state, events: [], runEnded: false };
+    // All other invalid movement (bounds, non-walkable, invalid direction,
+    // not in a dungeon run): emit a visible MOVEMENT_BLOCKED event.
+    // Does not advance the turn, process enemy turns, tick cooldowns,
+    // regenerate mana, update metrics, recompute FOV, or mutate position.
+    return {
+      state,
+      events: [buildMovementBlockedEvent(state, direction, validation)],
+      runEnded: false,
+    };
   }
 
   const newPos = validation.newPosition;

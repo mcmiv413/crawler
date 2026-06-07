@@ -53,6 +53,26 @@ export const ITEM_UNUSABLE = 'ITEM_UNUSABLE' as const;
 export const ITEM_WRONG_PHASE = 'ITEM_WRONG_PHASE' as const;
 
 // ---------------------------------------------------------------------------
+// Movement-blocked reason codes (used by buildMovementBlockedEvent / handleMove)
+// These describe normal spatial interactions, NOT invalid-command rejections,
+// and are emitted via MOVEMENT_BLOCKED rather than PLAYER_ACTION_REJECTED.
+// ---------------------------------------------------------------------------
+export const INVALID_DIRECTION = 'INVALID_DIRECTION' as const;
+export const NOT_IN_DUNGEON = 'NOT_IN_DUNGEON' as const;
+export const OUT_OF_BOUNDS = 'OUT_OF_BOUNDS' as const;
+export const NOT_WALKABLE = 'NOT_WALKABLE' as const;
+export const OCCUPIED_BY_OBJECT = 'OCCUPIED_BY_OBJECT' as const;
+export const TARGET_NOT_FOUND = 'TARGET_NOT_FOUND' as const;
+
+export type MovementBlockedCode =
+  | typeof INVALID_DIRECTION
+  | typeof NOT_IN_DUNGEON
+  | typeof OUT_OF_BOUNDS
+  | typeof NOT_WALKABLE
+  | typeof OCCUPIED_BY_OBJECT
+  | typeof TARGET_NOT_FOUND;
+
+// ---------------------------------------------------------------------------
 // Union type for all known rejection reason codes
 // ---------------------------------------------------------------------------
 export type RejectionCode =

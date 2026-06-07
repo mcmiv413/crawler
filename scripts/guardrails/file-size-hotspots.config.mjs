@@ -88,14 +88,14 @@ export default {
     {
       path: 'packages/game-contracts/src/events/index.ts',
       reason: 'Central discriminated union of all domain events — consolidation target for event type safety',
-      auditReportNote: 'Event type definitions added for player action observability guardrails; acceptable aggregation',
-      lines: 514,
+      auditReportNote: 'Event type definitions added for player action observability guardrails; Phase 4A adds MovementBlockedEvent; acceptable aggregation',
+      lines: 534,
     },
     {
       path: 'scripts/audit-player-action-noops.ts',
       reason: 'Audit script with comprehensive classification taxonomy — centralizes all Phase 1+2+3 silent-failure pattern categories (P/G/A/D/B) and KNOWN_PATTERNS registry with Phase summary reporting',
-      auditReportNote: 'Guardrails infrastructure; Phase 2 adds 20 rejection codes (4 slices); Phase 3 adds combat observability (apply-attack.ts invalid target); KNOWN_PATTERNS registry updated with corrected line numbers; future split seam is separating KNOWN_PATTERNS into dedicated JSON config once taxonomy stabilizes',
-      lines: 710,
+      auditReportNote: 'Guardrails infrastructure; Phase 2 adds 20 rejection codes (4 slices); Phase 3 adds combat observability (apply-attack.ts invalid target); Phase 4A adds movement-blocked protected path; KNOWN_PATTERNS registry updated with corrected line numbers; future split seam is separating KNOWN_PATTERNS into dedicated JSON config once taxonomy stabilizes',
+      lines: 712,
     },
   ],
 };

@@ -1,4 +1,4 @@
-import type { EntityId, Position, DamageType, StatusId, GamePhase, WeaponType } from '../types/common.js';
+import type { EntityId, Position, Direction, DamageType, StatusId, GamePhase, WeaponType } from '../types/common.js';
 import type { AmbientState } from '../types/ambient-behavior.js';
 import type { FactionPowerBand, FactionPowerChangeReason, FactionStatus } from '../types/town.js';
 
@@ -455,6 +455,25 @@ export interface PlayerActionRejectedEvent extends BaseEvent {
   readonly source?: string;
 }
 
+/** Reason codes for blocked player movement (Phase 4A). */
+export type MovementBlockedReasonCode =
+  | 'INVALID_DIRECTION'
+  | 'NOT_IN_DUNGEON'
+  | 'OUT_OF_BOUNDS'
+  | 'NOT_WALKABLE'
+  | 'OCCUPIED_BY_OBJECT'
+  | 'TARGET_NOT_FOUND';
+
+export interface MovementBlockedEvent extends BaseEvent {
+  readonly type: 'MOVEMENT_BLOCKED';
+  readonly playerId: EntityId;
+  readonly from: Position;
+  readonly attemptedTo: Position;
+  readonly direction: Direction;
+  readonly reasonCode: MovementBlockedReasonCode;
+  readonly message: string;
+}
+
 export type DomainEvent =
   | PlayerMovedEvent
   | EnemyMovedEvent
@@ -508,6 +527,7 @@ export type DomainEvent =
   | LifeStealEvent
   | DebugMissStreakEvent
   | DebugDamageCalcEvent
-  | PlayerActionRejectedEvent;
+  | PlayerActionRejectedEvent
+  | MovementBlockedEvent;
 
 export type EventType = DomainEvent['type'];
