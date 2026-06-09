@@ -474,6 +474,26 @@ export interface MovementBlockedEvent extends BaseEvent {
   readonly message: string;
 }
 
+export interface TrapDisarmedEvent extends BaseEvent {
+  readonly type: 'TRAP_DISARMED';
+  readonly trapObjectId: EntityId;
+  readonly trapName: string;
+  readonly position: Position;
+  readonly recoveredItemId: EntityId;
+  readonly recoveredItemName: string;
+  readonly playerId: EntityId;
+}
+
+export interface TrapPlacedEvent extends BaseEvent {
+  readonly type: 'TRAP_PLACED';
+  readonly trapObjectId: EntityId;
+  readonly trapName: string;
+  readonly trapTemplateId: string;
+  readonly itemEntityId: EntityId;
+  readonly position: Position;
+  readonly playerId: EntityId;
+}
+
 export type DomainEvent =
   | PlayerMovedEvent
   | EnemyMovedEvent
@@ -528,6 +548,8 @@ export type DomainEvent =
   | DebugMissStreakEvent
   | DebugDamageCalcEvent
   | PlayerActionRejectedEvent
-  | MovementBlockedEvent;
+  | MovementBlockedEvent
+  | TrapDisarmedEvent
+  | TrapPlacedEvent;
 
 export type EventType = DomainEvent['type'];

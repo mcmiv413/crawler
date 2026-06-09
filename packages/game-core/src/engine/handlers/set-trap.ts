@@ -1,19 +1,18 @@
 import type { GameState, Direction, EntityId, ObjectInstance } from '@dungeon/contracts';
-import { posKey } from '@dungeon/contracts';
-import { OBJECT_TEMPLATES } from '@dungeon/content';
+import { entityId } from '@dungeon/contracts';
 import type { CommandResult } from './shared.js';
 import { updateRunMetrics, updateFloorCacheForCurrentFloor } from './shared.js';
-import { moveInDirection } from '../../utils/grid.js';
 import { processEnemyTurns } from '../turn-scheduler.js';
 import { tickAbilityCooldowns } from '../../systems/abilities.js';
 import { generateId } from '../../utils/id.js';
-import { entityId } from '@dungeon/contracts';
 import type { SeededRNG } from '../../utils/rng.js';
-import type { TrapItemTemplate } from '@dungeon/contracts';
+import { validateSetTrapAction } from '../../systems/trap-action-validator.js';
+import { rejectPlayerAction } from '../action-rejection.js';
 
 /**
  * Handle SET_TRAP command.
  * Validates adjacent tile is empty, removes trap item from inventory, and places trap on floor.
+ * Emits TRAP_PLACED on success or PLAYER_ACTION_REJECTED on failure.
  */
 export function handleSetTrap(
   state: GameState,
@@ -21,91 +20,81 @@ export function handleSetTrap(
   itemEntityId: EntityId,
   rng: SeededRNG,
 ): CommandResult {
-  if (state.run === null || state.phase !== 'dungeon') {
-    return { state, events: [], runEnded: false };
+  // Validate the set trap action using centralized validator
+  const validation = validateSetTrapAction(state, direction, itemEntityId);
+
+  if (validation.valid === false) {
+    // Rejected placement: emit PLAYER_ACTION_REJECTED and return unchanged state
+    return rejectPlayerAction(
+      state,
+      'SET_TRAP',
+      'SET_TRAP',
+      validation.rejectionCode,
+      validation.message,
+      state.player.id,
+    );
   }
 
-  try {
-    // Check inventory contains the trap item
-    if (!state.player.inventory.includes(itemEntityId)) {
-      return { state, events: [], runEnded: false };
-    }
+  // Successful placement: mutation phase
+  const run = state.run!; // Validation already checked this exists
 
-    // Look up the trap item in registry
-    const trapItem = state.itemRegistry.items.get(itemEntityId);
-    if (trapItem === undefined || trapItem.itemClass !== 'trap') {
-      return { state, events: [], runEnded: false };
-    }
+  // Create trap instance on floor
+  const trapInstance: ObjectInstance = {
+    id: entityId(generateId()),
+    templateId: validation.trapItemTemplate.trapTemplateId,
+    position: validation.adjacentPos,
+    isExhausted: false,
+  };
 
-    const trapItemTemplate = trapItem as TrapItemTemplate;
-    const hazardTemplate = OBJECT_TEMPLATES.get(trapItemTemplate.trapTemplateId);
-    if (hazardTemplate === undefined) {
-      return { state, events: [], runEnded: false };
-    }
+  // Remove trap item from inventory
+  const newInventory = state.player.inventory.filter(id => id !== itemEntityId);
 
-    // Get adjacent position
-    const adjacentPos = moveInDirection(state.player.position, direction);
-    const objKey = posKey(adjacentPos);
+  // Add trap to floor
+  const newObjects = new Map(run.objects);
+  newObjects.set(validation.objectKey, trapInstance);
 
-    // Validate adjacent tile is empty and walkable
-    if (state.run.objects.has(objKey)) {
-      return { state, events: [], runEnded: false };
-    }
+  // Update state
+  let newState: GameState = {
+    ...state,
+    player: {
+      ...state.player,
+      inventory: newInventory,
+    },
+    run: {
+      ...run,
+      objects: newObjects,
+      turnCount: run.turnCount + 1,
+    },
+    turnNumber: state.turnNumber + 1,
+  };
 
-    // Validate not blocked by enemy
-    for (const enemy of state.run.enemies.values()) {
-      if (enemy.position.x === adjacentPos.x && enemy.position.y === adjacentPos.y) {
-        return { state, events: [], runEnded: false };
-      }
-    }
+  // Emit TRAP_PLACED event
+  const trapPlacedEvent = {
+    type: 'TRAP_PLACED' as const,
+    timestamp: newState.turnNumber,
+    turnNumber: newState.turnNumber,
+    trapObjectId: trapInstance.id,
+    trapName: validation.hazardTemplate.name || 'trap',
+    trapTemplateId: validation.trapItemTemplate.trapTemplateId,
+    itemEntityId,
+    position: validation.adjacentPos,
+    playerId: state.player.id,
+  };
 
-    // Create trap instance on floor
-    const trapInstance: ObjectInstance = {
-      id: entityId(generateId()),
-      templateId: trapItemTemplate.trapTemplateId,
-      position: adjacentPos,
-      isExhausted: false,
-    };
+  // Tick ability cooldowns
+  newState = tickAbilityCooldowns(newState);
 
-    // Remove trap item from inventory
-    const newInventory = state.player.inventory.filter(id => id !== itemEntityId);
+  // Update metrics
+  newState = updateRunMetrics(newState, { turnsElapsed: 1 });
 
-    // Add trap to floor
-    const newObjects = new Map(state.run.objects);
-    newObjects.set(objKey, trapInstance);
+  // Update cache to persist modified floor state
+  newState = updateFloorCacheForCurrentFloor(newState);
 
-    // Update state
-    let newState: GameState = {
-      ...state,
-      player: {
-        ...state.player,
-        inventory: newInventory,
-      },
-      run: {
-        ...state.run,
-        objects: newObjects,
-        turnCount: state.run.turnCount + 1,
-      },
-      turnNumber: state.turnNumber + 1,
-    };
+  // Process enemy turns with player speed for speed-based action accumulation
+  const enemyResult = processEnemyTurns(newState, rng, newState.player.stats.speed);
+  newState = enemyResult.state;
 
-    // Tick ability cooldowns
-    newState = tickAbilityCooldowns(newState);
+  const events = [trapPlacedEvent, ...enemyResult.events];
 
-    // Update metrics
-    newState = updateRunMetrics(newState, { turnsElapsed: 1 });
-
-    // Update cache to persist modified floor state
-    newState = updateFloorCacheForCurrentFloor(newState);
-
-    // Process enemy turns with player speed for speed-based action accumulation
-    const enemyResult = processEnemyTurns(newState, rng, newState.player.stats.speed);
-    newState = enemyResult.state;
-
-    const events = enemyResult.events;
-
-    return { state: newState, events, runEnded: false };
-  } catch {
-    return { state, events: [], runEnded: false };
-  }
+  return { state: newState, events, runEnded: false };
 }

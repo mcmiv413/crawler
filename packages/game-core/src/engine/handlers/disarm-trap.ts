@@ -1,144 +1,101 @@
-import type { GameState, Direction, DomainEvent } from '@dungeon/contracts';
-import { posKey } from '@dungeon/contracts';
-import { OBJECT_TEMPLATES, ITEM_BY_ID, woodenSpikeTrap, ironSpikeTrap, steelSpikeTrap, fireTrap, infernoTrap, blazingTrap, poisonGasTrap, toxicTrap, lethalPoisonTrap, frostTrapItem as frostTrap, frozenTrap, absoluteZeroTrap, lightningTrapItem as lightningTrap, thunderTrap } from '@dungeon/content';
+import type { GameState, Direction, DomainEvent, EntityId } from '@dungeon/contracts';
+import { OBJECT_TEMPLATES } from '@dungeon/content';
+import { entityId } from '@dungeon/contracts';
 import type { CommandResult } from './shared.js';
 import { updateRunMetrics, updateFloorCacheForCurrentFloor } from './shared.js';
 import { addItemToInventory } from '../../systems/inventory.js';
-import { moveInDirection } from '../../utils/grid.js';
 import { processEnemyTurns } from '../turn-scheduler.js';
 import { tickAbilityCooldowns } from '../../systems/abilities.js';
 import type { SeededRNG } from '../../utils/rng.js';
+import { validateDisarmTrapAction } from '../../systems/trap-action-validator.js';
+import { rejectPlayerAction } from '../action-rejection.js';
 
 /**
  * Handle DISARM_TRAP command.
  * Validates adjacent tile has a disarmable trap, removes it, and adds it to inventory.
+ * Emits TRAP_DISARMED on success or PLAYER_ACTION_REJECTED on failure.
  */
 export function handleDisarmTrap(
   state: GameState,
   direction: Direction,
   rng: SeededRNG,
 ): CommandResult {
-  if (state.run === null || state.phase !== 'dungeon') {
-    return { state, events: [], runEnded: false };
+  // Validate the disarm action using centralized validator
+  const validation = validateDisarmTrapAction(state, direction);
+
+  if (validation.valid === false) {
+    // Rejected disarm: emit PLAYER_ACTION_REJECTED and return unchanged state
+    return rejectPlayerAction(
+      state,
+      'DISARM_TRAP',
+      'DISARM_TRAP',
+      validation.rejectionCode,
+      validation.message,
+      state.player.id,
+    );
   }
 
+  // Successful disarm: mutation phase
   let events: DomainEvent[] = [];
 
-  try {
-    // Get adjacent position
-    const adjacentPos = moveInDirection(state.player.position, direction);
-    const objKey = posKey(adjacentPos);
-    const objAtPos = state.run.objects.get(objKey);
+  const run = state.run!; // Validation already checked this exists
 
-    // Validate trap exists
-    if (objAtPos === undefined) {
-      return { state, events: [], runEnded: false };
-    }
+  // Remove trap from floor
+  const newObjects = new Map(run.objects);
+  newObjects.delete(validation.objectKey);
 
-    const template = OBJECT_TEMPLATES.get(objAtPos.templateId);
-    if (
-      template === undefined ||
-      template.isHazard !== true ||
-      !isDisarmableTrapType(template.hazardType ?? '')
-    ) {
-      return { state, events: [], runEnded: false };
-    }
+  // Add trap item to inventory
+  const inventoryResult = addItemToInventory(state, validation.recoveredItemTemplate);
 
-    // Find matching trap item based on hazard type and rarity
-    const trapItemId = findTrapItemForHazard(template.hazardType === undefined ? '' : template.hazardType, template.rarity ?? 'common');
-    if (trapItemId === null) {
-      return { state, events: [], runEnded: false };
-    }
-
-    const trapTemplate = ITEM_BY_ID.get(trapItemId);
-    if (trapTemplate === undefined) {
-      return { state, events: [], runEnded: false };
-    }
-
-    // Remove trap from floor
-    const newObjects = new Map(state.run.objects);
-    newObjects.delete(objKey);
-
-    // Add trap item to inventory
-    const inventoryResult = addItemToInventory(state, trapTemplate);
-
-    // Update state
-    let newState: GameState = {
-      ...inventoryResult.state,
-      run: {
-        ...state.run,
-        objects: newObjects,
-        turnCount: state.run.turnCount + 1,
-      },
-      turnNumber: state.turnNumber + 1,
-    };
-
-    // Gather events (inventory events + any new events)
-    events = [...events, ...inventoryResult.events];
-
-    // Tick ability cooldowns (consumes action)
-    newState = tickAbilityCooldowns(newState);
-
-    // Update metrics
-    newState = updateRunMetrics(newState, { turnsElapsed: 1 });
-
-    // Update cache to persist modified floor state
-    newState = updateFloorCacheForCurrentFloor(newState);
-
-    // Process enemy turns with player speed for speed-based action accumulation
-    const enemyResult = processEnemyTurns(newState, rng, newState.player.stats.speed);
-    newState = enemyResult.state;
-    events = [...events, ...enemyResult.events];
-
-    return { state: newState, events, runEnded: false };
-  } catch {
-    return { state, events: [], runEnded: false };
-  }
-}
-
-/**
- * Check if a hazard type is disarmable.
- */
-function isDisarmableTrapType(hazardType: string): boolean {
-  return ['spike', 'fire', 'poison', 'frost', 'lightning'].includes(hazardType);
-}
-
-/**
- * Find a trap item that matches the given hazard type and rarity.
- */
-function findTrapItemForHazard(hazardType: string, rarity: string): string | null {
-  const trapMap: Record<string, Record<string, string>> = {
-    spike: {
-      common: woodenSpikeTrap.itemId,
-      uncommon: ironSpikeTrap.itemId,
-      rare: steelSpikeTrap.itemId,
-      epic: steelSpikeTrap.itemId,
+  // Update state
+  let newState: GameState = {
+    ...inventoryResult.state,
+    run: {
+      ...run,
+      objects: newObjects,
+      turnCount: run.turnCount + 1,
     },
-    fire: {
-      common: fireTrap.itemId,
-      uncommon: infernoTrap.itemId,
-      rare: blazingTrap.itemId,
-      epic: blazingTrap.itemId,
-    },
-    poison: {
-      uncommon: poisonGasTrap.itemId,
-      rare: toxicTrap.itemId,
-      epic: lethalPoisonTrap.itemId,
-    },
-    frost: {
-      uncommon: frostTrap.itemId,
-      rare: frozenTrap.itemId,
-      epic: absoluteZeroTrap.itemId,
-    },
-    lightning: {
-      rare: lightningTrap.itemId,
-      epic: thunderTrap.itemId,
-    },
+    turnNumber: state.turnNumber + 1,
   };
 
-  const trapItems = trapMap[hazardType];
-  if (trapItems === undefined) return null;
+  // Emit TRAP_DISARMED event
+  const trapTemplate = OBJECT_TEMPLATES.get(validation.trapObject.templateId);
+  const trapName = trapTemplate?.name ?? 'trap';
 
-  // Try exact match first, then fallback to epic variant
-  return trapItems[rarity] ?? trapItems.epic ?? null;
+  // Extract the item ID from the LOOT_ACQUIRED event
+  const lootEvent = inventoryResult.events.find(
+    (e): e is Extract<typeof inventoryResult.events[0], { type: 'LOOT_ACQUIRED' }> => e.type === 'LOOT_ACQUIRED'
+  );
+  const recoveredItemId: EntityId = lootEvent?.itemId ?? entityId('unknown');
+
+  events = [
+    {
+      type: 'TRAP_DISARMED',
+      timestamp: newState.turnNumber,
+      turnNumber: newState.turnNumber,
+      trapObjectId: validation.trapObject.id as EntityId,
+      trapName,
+      position: validation.adjacentPos,
+      recoveredItemId,
+      recoveredItemName: validation.recoveredItemTemplate.name,
+      playerId: state.player.id,
+    },
+    ...inventoryResult.events,
+  ];
+
+  // Tick ability cooldowns (consumes action)
+  newState = tickAbilityCooldowns(newState);
+
+  // Update metrics
+  newState = updateRunMetrics(newState, { turnsElapsed: 1 });
+
+  // Update cache to persist modified floor state
+  newState = updateFloorCacheForCurrentFloor(newState);
+
+  // Process enemy turns with player speed for speed-based action accumulation
+  const enemyResult = processEnemyTurns(newState, rng, newState.player.stats.speed);
+  newState = enemyResult.state;
+  events = [...events, ...enemyResult.events];
+
+  return { state: newState, events, runEnded: false };
 }

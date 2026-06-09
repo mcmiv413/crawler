@@ -64,6 +64,17 @@ export const NOT_WALKABLE = 'NOT_WALKABLE' as const;
 export const OCCUPIED_BY_OBJECT = 'OCCUPIED_BY_OBJECT' as const;
 export const TARGET_NOT_FOUND = 'TARGET_NOT_FOUND' as const;
 
+// ---------------------------------------------------------------------------
+// Trap action rejection codes (used by validateDisarmTrapAction, validateSetTrapAction)
+// ---------------------------------------------------------------------------
+export const NO_TRAP_TARGET = 'NO_TRAP_TARGET' as const;
+export const TRAP_NOT_DISARMABLE = 'TRAP_NOT_DISARMABLE' as const;
+export const TRAP_ITEM_NOT_FOUND = 'TRAP_ITEM_NOT_FOUND' as const;
+export const TRAP_TEMPLATE_NOT_FOUND = 'TRAP_TEMPLATE_NOT_FOUND' as const;
+export const TRAP_ITEM_NOT_IN_INVENTORY = 'TRAP_ITEM_NOT_IN_INVENTORY' as const;
+export const ITEM_NOT_TRAP = 'ITEM_NOT_TRAP' as const;
+export const TILE_OCCUPIED_BY_ENEMY = 'TILE_OCCUPIED_BY_ENEMY' as const;
+
 export type MovementBlockedCode =
   | typeof INVALID_DIRECTION
   | typeof NOT_IN_DUNGEON
@@ -98,4 +109,11 @@ export type RejectionCode =
   | typeof ITEM_NOT_IN_INVENTORY
   | typeof EQUIPMENT_INCOMPATIBLE
   | typeof ITEM_UNUSABLE
-  | typeof ITEM_WRONG_PHASE;
+  | typeof ITEM_WRONG_PHASE
+  | typeof NO_TRAP_TARGET
+  | typeof TRAP_NOT_DISARMABLE
+  | typeof TRAP_ITEM_NOT_FOUND
+  | typeof TRAP_TEMPLATE_NOT_FOUND
+  | typeof TRAP_ITEM_NOT_IN_INVENTORY
+  | typeof ITEM_NOT_TRAP
+  | typeof TILE_OCCUPIED_BY_ENEMY;
