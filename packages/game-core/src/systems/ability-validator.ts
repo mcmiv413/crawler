@@ -60,6 +60,15 @@ export function validateAbilityAction(
     };
   }
 
+  // 1.5. Check phase and run BEFORE buildContext
+  if (state.phase !== 'dungeon' || state.run === null) {
+    return {
+      valid: false,
+      rejectionCode: 'WRONG_PHASE',
+      message: `${definition.name} can only be used during dungeon exploration.`,
+    };
+  }
+
   // 2a. Check cooldown FIRST (only if the ability is in the player's abilities list)
   // If the ability isn't in the list, validateRequirements will handle that with a more specific error
   const abilityInList = state.player.abilities.some(a => a.id === abilityId);
@@ -86,15 +95,6 @@ export function validateAbilityAction(
         valid: false,
         rejectionCode: 'INSUFFICIENT_MANA',
         message: `${definition.name} requires ${manaRequirement.amount} mana.`,
-      };
-    }
-
-    // Check phase
-    if (state.phase !== 'dungeon') {
-      return {
-        valid: false,
-        rejectionCode: 'WRONG_PHASE',
-        message: `${definition.name} can only be used during dungeon exploration.`,
       };
     }
 
@@ -125,7 +125,7 @@ export function validateAbilityAction(
   }
 
   // 4. Tile target validation (if targetPosition provided)
-  if (targetPosition !== undefined && state.run !== null) {
+  if (targetPosition !== undefined) {
     // Check tile target exists and is walkable
     const targetKey = posKey(targetPosition);
     const targetCell = state.run.floor.cells.get(targetKey);
@@ -178,7 +178,7 @@ export function validateAbilityAction(
     }
 
     // Check range (if ring spell has range)
-    if (ringSpell?.range !== undefined) {
+    if (ringSpell !== undefined) {
       const distance = chebyshevDistance(state.player.position, targetPosition);
       if (distance > ringSpell.range) {
         return {
@@ -188,7 +188,7 @@ export function validateAbilityAction(
         };
       }
     }
-  } else if (definition.tileTarget === true && targetPosition === undefined) {
+  } else if (definition.tileTarget === true) {
     // Tile-target abilities require a target position
     return {
       valid: false,

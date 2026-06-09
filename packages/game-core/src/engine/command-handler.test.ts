@@ -592,9 +592,13 @@ describe('handleUseAbility', () => {
 
       const result = useAbility(stateWithAbility, 'blade_bleed', rng, targetId);
 
-      // Should be rejected — no state change
+      // Should be rejected — no state change, PLAYER_ACTION_REJECTED event emitted
       expect(result.state.turnNumber).toBe(stateWithAbility.turnNumber);
-      expect(result.events).toHaveLength(0);
+      const rejectionEvent = result.events.find(
+        (event): event is any =>
+          typeof event === 'object' && event !== null && 'type' in event && event.type === 'PLAYER_ACTION_REJECTED',
+      );
+      expect(rejectionEvent).toBeDefined();
     });
   });
 
@@ -956,7 +960,11 @@ describe('handleUseAbility', () => {
       const result = useAbility(cooldownState, 'power_strike', rng, targetId);
 
       expect(result.state.turnNumber).toBe(cooldownState.turnNumber);
-      expect(result.events).toHaveLength(0);
+      const rejectionEvent = result.events.find(
+        (event): event is any =>
+          typeof event === 'object' && event !== null && 'type' in event && event.type === 'PLAYER_ACTION_REJECTED',
+      );
+      expect(rejectionEvent).toBeDefined();
     });
 
     it('ability not in player list: rejected', () => {
@@ -967,7 +975,11 @@ describe('handleUseAbility', () => {
       const result = useAbility(state, 'power_strike', rng, 'e1');
 
       expect(result.state.turnNumber).toBe(state.turnNumber);
-      expect(result.events).toHaveLength(0);
+      const rejectionEvent = result.events.find(
+        (event): event is any =>
+          typeof event === 'object' && event !== null && 'type' in event && event.type === 'PLAYER_ACTION_REJECTED',
+      );
+      expect(rejectionEvent).toBeDefined();
     });
 
     it('unknown abilityId: rejected', () => {
@@ -984,7 +996,11 @@ describe('handleUseAbility', () => {
       const result = useAbility(stateWithAbility, 'nonexistent_ability', rng);
 
       expect(result.state.turnNumber).toBe(stateWithAbility.turnNumber);
-      expect(result.events).toHaveLength(0);
+      const rejectionEvent = result.events.find(
+        (event): event is any =>
+          typeof event === 'object' && event !== null && 'type' in event && event.type === 'PLAYER_ACTION_REJECTED',
+      );
+      expect(rejectionEvent).toBeDefined();
     });
   });
 });
