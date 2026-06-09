@@ -58,7 +58,7 @@ The initial scan found ~116 findings across `packages/game-core/src`:
   - `QUEST_NOT_READY` — Quest completion prerequisites not met
 
 #### Slice 4: Equipment Constraint Rejections (2 rejection codes)
-- ✅ `packages/game-core/src/systems/equipment.ts` — Equipment handlers use `validateEquipmentAction()` to emit rejection events:
+- ✅ `packages/game-core/src/engine/handlers/inventory-handlers.ts` — Equipment handlers emit rejection events after `validateEquipmentAction()`:
   - `EQUIPMENT_INCOMPATIBLE` — Item cannot be equipped (class/slot mismatch)
   - `ITEM_NOT_FOUND` — Item entity not found in registry
 

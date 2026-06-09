@@ -11,7 +11,9 @@ import { resolveAttack } from '../../systems/combat.js';
 import { getEffectiveStat, applyStatusToEnemy } from '../../systems/status-effects.js';
 import { applyDamageToEnemy } from '../../systems/damage.js';
 import { applyDefense, applyRangeAccuracyPenalty } from '../../utils/dice.js';
-import { canUseAbility, setAbilityCooldown } from '../../systems/abilities.js';
+import { setAbilityCooldown } from '../../systems/abilities.js';
+import { validateAbilityAction } from '../../systems/ability-validator.js';
+import { rejectPlayerAction } from '../action-rejection.js';
 import { checkWeaponMasteryUnlocks } from '../../systems/weapon-mastery.js';
 import { chebyshevDistance } from '../../utils/grid.js';
 
@@ -358,19 +360,7 @@ export function handleUseAbility(
   direction?: Direction,
   targetPosition?: { x: number; y: number },
 ): CommandResult {
-  if (state.run === null) return { state, events: [], runEnded: false };
-  if (canUseAbility(state, abilityId) !== true) return { state, events: [], runEnded: false };
-
-  const def = ABILITY_DEFINITIONS.get(abilityId);
-  if (def === undefined) return { state, events: [], runEnded: false };
-
-  // Check weapon type requirement for mastery abilities
-  if (Array.isArray(def.requiresWeaponTypes) && def.requiresWeaponTypes.length > 0) {
-    const equippedType = getEquippedWeaponType(state);
-    if (!equippedType || !def.requiresWeaponTypes.includes(equippedType)) return { state, events: [], runEnded: false };
-  }
-
-  // Route directional abilities to their handlers
+  // Route directional abilities to their handlers FIRST (before validation)
   if (abilityId === daggerDisarm.id && direction) {
     return handleDisarmTrap(state, direction as Direction, rng);
   }
@@ -378,12 +368,27 @@ export function handleUseAbility(
     return handleSetTrap(state, direction as Direction, targetId, rng);
   }
 
+  // Validate ability action before executing
+  const validation = validateAbilityAction(state, abilityId, targetPosition, targetId, direction);
+  if (validation.valid === false) {
+    // Use the validator's rejection, don't execute
+    return rejectPlayerAction(
+      state,
+      'ABILITY',
+      abilityId,
+      validation.rejectionCode,
+      validation.message,
+      state.player.id,
+      { abilityId },
+    );
+  }
+
   // Execute ability using data-driven engine FIRST (without advancing turn)
   const abilityResult = executeAbility(state, abilityId, rng, targetId, direction, targetPosition);
 
   // Check if execution was rejected (contains PLAYER_ACTION_REJECTED event)
   const rejectionEvent = abilityResult.events.find(
-    (event): event is PlayerActionRejectedEvent => 'reasonCode' in event,
+    (event): event is PlayerActionRejectedEvent => event.type === 'PLAYER_ACTION_REJECTED',
   );
 
   if (rejectionEvent !== undefined) {
@@ -392,8 +397,17 @@ export function handleUseAbility(
   }
 
   if (abilityResult.events.length === 0) {
-    // Ability execution produced no events (old silent guard)
-    return { state, events: [], runEnded: false };
+    // No events and no rejection: executeAbility should produce at least one event
+    // Treat as silent failure and reject
+    return rejectPlayerAction(
+      state,
+      'ABILITY',
+      abilityId,
+      'EXECUTION_FAILED',
+      `${ABILITY_DEFINITIONS.get(abilityId)?.name ?? 'Unknown ability'} execution produced no observable result.`,
+      state.player.id,
+      { abilityId },
+    );
   }
 
   // Only advance turn and set cooldown for successful ability execution
@@ -401,7 +415,7 @@ export function handleUseAbility(
     ...abilityResult.state,
     turnNumber: abilityResult.state.turnNumber + 1,
   };
-  newState = setAbilityCooldown(newState, abilityId, def.cooldown);
+  newState = setAbilityCooldown(newState, abilityId, ABILITY_DEFINITIONS.get(abilityId)!.cooldown);
   newState = updateRunMetrics(newState, { turnsElapsed: 1 });
 
   let resultEvents: DomainEvent[] = [...abilityResult.events];

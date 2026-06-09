@@ -17,6 +17,7 @@ import {
   TILE_NOT_VISIBLE,
   TILE_OCCUPIED,
   OUT_OF_RANGE,
+  WRONG_PHASE,
 } from '../engine/rejection-codes.js';
 import { entityId } from '@dungeon/contracts';
 import type { AnyItemTemplate, ArmorTemplate } from '@dungeon/contracts';
@@ -227,10 +228,14 @@ describe('validateAbilityAction', () => {
     it('rejects when ability requirements are not met', () => {
       const abilityId = 'power_strike';
       // power_strike requires has_target and target_in_melee_range
-      // Create state with no run (no enemies) so target requirement fails
-      const state = createTestGameState({ phase: 'dungeon' });
+      // Use combat state (has run) but with no enemies so target requirement fails
+      const state = createTestGameStateInCombat();
       const stateWithAbility = {
         ...state,
+        run: state.run && {
+          ...state.run,
+          enemies: new Map(), // Clear enemies so target requirement fails
+        },
         player: {
           ...state.player,
           abilities: [{ id: abilityId, cooldownRemaining: 0 }],
@@ -269,6 +274,57 @@ describe('validateAbilityAction', () => {
 
       expect(state.player.gold).toBe(originalGold);
       expect(state.turnNumber).toBe(originalTurn);
+    });
+  });
+
+  describe('wrong phase guard', () => {
+    it('rejects when phase is not dungeon', () => {
+      const state = createTestGameStateWithAbility(THUNDER_STEP_ID);
+      // createTestGameStateWithAbility may put us in town; ensure phase is town
+      const stateInTown = {
+        ...state,
+        phase: 'town' as const,
+      };
+      const result = validateAbilityAction(stateInTown, THUNDER_STEP_ID);
+      expect(result.valid).toBe(false);
+      if (result.valid === false) {
+        expect(result.rejectionCode).toBe(WRONG_PHASE);
+        expect(result.message.length).toBeGreaterThan(0);
+      }
+    });
+
+    it('rejects when run is null', () => {
+      const state = createTestGameStateWithAbility(THUNDER_STEP_ID);
+      // Explicitly set run to null
+      const stateWithNullRun = {
+        ...state,
+        run: null,
+        phase: 'dungeon' as const,
+      };
+      const result = validateAbilityAction(stateWithNullRun, THUNDER_STEP_ID);
+      expect(result.valid).toBe(false);
+      if (result.valid === false) {
+        expect(result.rejectionCode).toBe(WRONG_PHASE);
+        expect(result.message.length).toBeGreaterThan(0);
+      }
+    });
+
+    it('allows ability use when phase is dungeon and run is not null', () => {
+      // createTestGameStateInCombat puts us in dungeon phase with a run
+      const state = createTestGameStateInCombat();
+      const stateWithAbility = {
+        ...state,
+        player: {
+          ...state.player,
+          abilities: [{ id: THUNDER_STEP_ID, cooldownRemaining: 0 }],
+        },
+      };
+      // Just verify we don't get WRONG_PHASE rejection for a valid ability in dungeon
+      const result = validateAbilityAction(stateWithAbility, THUNDER_STEP_ID);
+      // We may get other rejections (missing target, insufficient mana, etc.) but not WRONG_PHASE
+      if (result.valid === false) {
+        expect(result.rejectionCode).not.toBe(WRONG_PHASE);
+      }
     });
   });
 
