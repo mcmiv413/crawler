@@ -88,8 +88,8 @@ export default {
     {
       path: 'packages/game-contracts/src/events/index.ts',
       reason: 'Central discriminated union of all domain events — consolidation target for event type safety',
-      auditReportNote: 'Event type definitions added for player action observability guardrails; Phase 4A adds MovementBlockedEvent; acceptable aggregation',
-      lines: 534,
+      auditReportNote: 'Event type definitions added for player action observability guardrails; Phase 4A adds MovementBlockedEvent; Phase 4B adds TrapDisarmedEvent and TrapPlacedEvent; acceptable aggregation',
+      lines: 556,
     },
     {
       path: 'scripts/audit-player-action-noops.ts',

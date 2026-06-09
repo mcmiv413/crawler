@@ -387,6 +387,18 @@ const EVENT_FORMATTERS = {
     timestamp: event.timestamp,
   }),
 
+  'TRAP_DISARMED': (event) => ({
+    text: `Disarmed ${event.trapName}.`,
+    type: 'info',
+    timestamp: event.timestamp,
+  }),
+
+  'TRAP_PLACED': (event) => ({
+    text: `Placed ${event.trapName}.`,
+    type: 'info',
+    timestamp: event.timestamp,
+  }),
+
   'PLAYER_MOVED': () => null,
   'ENEMY_MOVED': () => null,
   'PHASE_CHANGED': () => null,
