@@ -21,6 +21,39 @@
   margin: 0 auto;
 }
 
+.targetSummary {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(7rem, 1fr));
+  gap: 0.375rem;
+}
+
+.targetSummaryItem {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: 0.5rem;
+  min-width: 0;
+  padding: 0.375rem 0.5rem;
+  border: 1px solid #3a4a6a;
+  border-radius: 4px;
+  background: #0a1520;
+  color: #dbe7f3;
+  font-family: monospace;
+  font-size: 0.75rem;
+}
+
+.targetName {
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.targetHp {
+  flex-shrink: 0;
+  color: #ffb3a8;
+}
+
 .dropdownContainer {
   position: fixed;
   bottom: 0;

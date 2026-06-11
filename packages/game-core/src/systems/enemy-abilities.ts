@@ -155,8 +155,6 @@ export function resolveEnemyAbility(
       turnCount: state.run.turnCount,
       isActive: state.run.isActive,
       runMetrics: state.run.runMetrics,
-      floorHistory: state.run.floorHistory,
-      floorCache: state.run.floorCache,
       weaponMastery: state.weaponMastery,
       speedAccumulators: state.run.speedAccumulators,
     },

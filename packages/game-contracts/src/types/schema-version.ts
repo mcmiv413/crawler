@@ -14,13 +14,15 @@
  *   Adds: player mana, maxMana, and ringMastery state
  * - v4: Ring magic generalization (2026-05-11)
  *   Changes: ringMastery shape from Record<'fire', {xp, spellsUnlocked}> to Record<school, {xp}>; spellsUnlocked removed (use learnedRingSpellIds)
+ * - v5: Canonical floor persistence (2026-06-11)
+ *   Changes: run.floorHistory and run.floorCache are migrated into persistedFloorCache
  */
 
 /**
  * Current schema version for serialized GameState.
  * Increment when the serialized format structure changes materially.
  */
-export const CURRENT_SCHEMA_VERSION = 4;
+export const CURRENT_SCHEMA_VERSION = 5;
 
 /**
  * Type for a serialized game state with explicit schema version.

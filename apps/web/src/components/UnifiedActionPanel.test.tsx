@@ -930,6 +930,26 @@ describe('UnifiedActionPanel', () => {
   });
 
   describe('Button Enable/Disable States', () => {
+    it('exposes attackable enemy summary as row elements for E2E enemy helpers', () => {
+      const view = createMockGameView();
+
+      const { container } = render(
+        <UnifiedActionPanel
+          view={view}
+          onSendCommand={mockSendCommand}
+          onInspectOpen={mockInspectOpen}
+        />
+      );
+
+      const enemyRows = container.querySelectorAll('[data-testid*="enemy"], .enemy, [class*="enemy"]');
+      expect(enemyRows).toHaveLength(1);
+      expect(enemyRows[0]).toHaveTextContent('Goblin');
+      expect(enemyRows[0]?.querySelector('.name')).toHaveTextContent('Goblin');
+      expect(enemyRows[0]?.querySelector('.hp')).toHaveTextContent('30/30');
+      expect(container.querySelector('[data-testid="enemy-name"]')).toBeNull();
+      expect(container.querySelector('[data-testid="enemy-hp"]')).toBeNull();
+    });
+
     it('disables Attack button when no enemies in range', () => {
       const view = createMockGameView({
         map: {

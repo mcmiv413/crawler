@@ -17,7 +17,7 @@ const EVENT_FORMATTERS = {
     if (event.hit) {
       const critText = event.critical ? ' CRIT!' : '';
       return {
-        text: `[${event.attackerName} -> ${event.defenderName}] ${event.damage} ${event.damageType} dmg${critText}`,
+        text: `[${event.attackerName} -> ${event.defenderName}] hit for ${event.damage} ${event.damageType} damage${critText}`,
         type: 'attack',
         timestamp: event.timestamp,
       };

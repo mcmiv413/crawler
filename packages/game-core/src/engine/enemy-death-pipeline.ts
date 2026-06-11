@@ -31,6 +31,9 @@ export function processEnemyKill(
   const newEnemies = new Map(newState.run!.enemies);
   newEnemies.delete(enemyPosKey);
   const hadBurn = enemy.statuses.some(status => status.id === burn.id);
+  const hadPlayerBurn = enemy.statuses.some(status =>
+    status.id === burn.id && status.sourceId === newState.player.id
+  );
 
   // 2. Emit ENTITY_DIED
   events = [...events, {
@@ -78,7 +81,9 @@ export function processEnemyKill(
 
   if (hadBurn === true) {
     const spreadResult = spreadBurnFromDeadEnemy(newState, enemy, rng);
-    const playerWithSchoolXp = gainSchoolXp(newState.player, 'fire', MAGIC.schoolXpPerBurningKill);
+    const playerWithSchoolXp = hadPlayerBurn === true
+      ? gainSchoolXp(newState.player, 'fire', MAGIC.schoolXpPerBurningKill)
+      : newState.player;
     newState = {
       ...newState,
       run: newState.run === null ? null : { ...newState.run, enemies: spreadResult.enemies },
@@ -86,7 +91,7 @@ export function processEnemyKill(
     };
     events = [...events, ...spreadResult.events];
 
-    if (canFireMasteryRestoreManaOnBurnKill(playerWithSchoolXp) === true) {
+    if (hadPlayerBurn === true && canFireMasteryRestoreManaOnBurnKill(playerWithSchoolXp) === true) {
       const manaResult = restorePlayerMana(newState, MAGIC.burnKillManaRestore, 'Burning kill');
       newState = manaResult.state;
       events = [...events, ...manaResult.events];

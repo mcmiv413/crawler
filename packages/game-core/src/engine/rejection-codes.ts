@@ -17,6 +17,7 @@
 // Ability rejection codes (used by validateAbilityAction and executeAbility)
 // ---------------------------------------------------------------------------
 export const ABILITY_NOT_FOUND = 'ABILITY_NOT_FOUND' as const;
+export const ABILITY_NOT_UNLOCKED = 'ABILITY_NOT_UNLOCKED' as const;
 export const ABILITY_REQUIREMENTS_NOT_MET = 'ABILITY_REQUIREMENTS_NOT_MET' as const;
 export const ABILITY_NOT_AVAILABLE = 'ABILITY_NOT_AVAILABLE' as const;
 export const ABILITY_ON_COOLDOWN = 'ABILITY_ON_COOLDOWN' as const;
@@ -27,6 +28,7 @@ export const INVALID_TILE_TARGET = 'INVALID_TILE_TARGET' as const;
 export const TILE_NOT_VISIBLE = 'TILE_NOT_VISIBLE' as const;
 export const TILE_OCCUPIED = 'TILE_OCCUPIED' as const;
 export const OUT_OF_RANGE = 'OUT_OF_RANGE' as const;
+export const PLAYER_DEAD = 'PLAYER_DEAD' as const;
 
 // ---------------------------------------------------------------------------
 // Town rejection codes (used by validateTownTransaction)
@@ -37,6 +39,10 @@ export const ITEM_NOT_FOR_SALE = 'ITEM_NOT_FOR_SALE' as const;
 export const INSUFFICIENT_GOLD = 'INSUFFICIENT_GOLD' as const;
 export const QUEST_NOT_FOUND = 'QUEST_NOT_FOUND' as const;
 export const QUEST_NOT_READY = 'QUEST_NOT_READY' as const;
+export const ENCHANTMENT_NOT_FOUND = 'ENCHANTMENT_NOT_FOUND' as const;
+export const ENCHANTMENT_NOT_UNLOCKED = 'ENCHANTMENT_NOT_UNLOCKED' as const;
+export const NO_ENCHANTMENT_SLOT = 'NO_ENCHANTMENT_SLOT' as const;
+export const DUPLICATE_ENCHANTMENT = 'DUPLICATE_ENCHANTMENT' as const;
 
 // ---------------------------------------------------------------------------
 // Equipment rejection codes (used by validateEquipmentAction)
@@ -88,6 +94,7 @@ export type MovementBlockedCode =
 // ---------------------------------------------------------------------------
 export type RejectionCode =
   | typeof ABILITY_NOT_FOUND
+  | typeof ABILITY_NOT_UNLOCKED
   | typeof ABILITY_REQUIREMENTS_NOT_MET
   | typeof ABILITY_NOT_AVAILABLE
   | typeof ABILITY_ON_COOLDOWN
@@ -98,12 +105,17 @@ export type RejectionCode =
   | typeof TILE_NOT_VISIBLE
   | typeof TILE_OCCUPIED
   | typeof OUT_OF_RANGE
+  | typeof PLAYER_DEAD
   | typeof SPELL_NOT_FOUND
   | typeof SPELL_STUDY_INELIGIBLE
   | typeof ITEM_NOT_FOR_SALE
   | typeof INSUFFICIENT_GOLD
   | typeof QUEST_NOT_FOUND
   | typeof QUEST_NOT_READY
+  | typeof ENCHANTMENT_NOT_FOUND
+  | typeof ENCHANTMENT_NOT_UNLOCKED
+  | typeof NO_ENCHANTMENT_SLOT
+  | typeof DUPLICATE_ENCHANTMENT
   | typeof ITEM_NOT_FOUND
   | typeof ITEM_NOT_EQUIPPABLE
   | typeof ITEM_NOT_IN_INVENTORY

@@ -98,7 +98,13 @@ describe('Command Validation: State Validation', () => {
     // Dead player cannot attack
     const target = Array.from(deadState.run!.enemies.values())[0]!;
     const attackResult = handleCommand(deadState, { type: 'ATTACK', targetId: target.id }, rng);
-    expect(attackResult.events.length).toBe(0);
+    expect(attackResult.events).toEqual([
+      expect.objectContaining({
+        type: 'PLAYER_ACTION_REJECTED',
+        reasonCode: 'PLAYER_DEAD',
+      }),
+    ]);
+    expect(attackResult.state).toEqual(deadState);
   });
 
   it('rejects movement to out-of-bounds coordinates', () => {
@@ -135,8 +141,13 @@ describe('Command Validation: Combat Validation', () => {
 
     const result = handleCommand(state, { type: 'ATTACK', targetId: fakeEnemyId }, rng);
 
-    // Attack should be rejected (enemy doesn't exist)
-    expect(result.events.length).toBe(0);
+    // Attack should be visibly rejected when the enemy doesn't exist.
+    expect(result.events).toEqual([
+      expect.objectContaining({
+        type: 'PLAYER_ACTION_REJECTED',
+        reasonCode: 'TARGET_NOT_FOUND',
+      }),
+    ]);
     expect(result.state).toEqual(state);
   });
 

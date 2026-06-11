@@ -9,6 +9,8 @@
 import { z } from 'zod';
 import { CURRENT_SCHEMA_VERSION } from './schema-version.js';
 
+const MIN_SUPPORTED_SCHEMA_VERSION = 4;
+
 /**
  * Custom error for schema version mismatches.
  * Thrown when a save file has a version that doesn't match the current schema.
@@ -104,7 +106,7 @@ export function validateSchemaVersion(jsonString: string): {
   }
 
   // Step 5: Check version compatibility
-  if (schemaVersion !== CURRENT_SCHEMA_VERSION) {
+  if (schemaVersion < MIN_SUPPORTED_SCHEMA_VERSION || schemaVersion > CURRENT_SCHEMA_VERSION) {
     throw new SchemaVersionMismatchError(schemaVersion, CURRENT_SCHEMA_VERSION);
   }
 

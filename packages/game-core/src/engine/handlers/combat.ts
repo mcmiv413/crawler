@@ -3,7 +3,9 @@ import type {
 } from '@dungeon/contracts';
 import type { CommandResult } from './shared.js';
 import type { SeededRNG } from '../../utils/rng.js';
-import { ABILITY_DEFINITIONS, COMBAT, STATUS_DEFAULTS, burn, daggerDisarm, daggerSetTrap, getWeaponDamageProfile, heatSurgeStatus } from '@dungeon/content';
+import { COMBAT, STATUS_DEFAULTS, burn, daggerDisarm, daggerSetTrap, getWeaponDamageProfile, heatSurgeStatus } from '@dungeon/content';
+import { buildRegistry } from '../../abilities/registry.js';
+import { ALL_ABILITY_DEFINITIONS } from '../../abilities/definitions/index.js';
 import { updateRunMetrics } from './shared.js';
 import { advanceTurnAfterPlayerAction } from '../turn-advance-pipeline.js';
 import { executeAbility } from '../../abilities/runtime/execute-ability.js';
@@ -26,6 +28,7 @@ import {
 import { processEnemyKill } from '../enemy-death-pipeline.js';
 
 export const LEGACY_CONTENT_ABILITY_HANDLER_IDS = [daggerDisarm.id, daggerSetTrap.id] as const;
+const ABILITY_REGISTRY = buildRegistry(ALL_ABILITY_DEFINITIONS);
 
 /** Returns the WeaponType of the currently equipped weapon, or null if none/unknown */
 export function getEquippedWeaponType(state: GameState): WeaponType | null {
@@ -54,10 +57,30 @@ export function handleAttack(
   targetId: EntityId,
   rng: SeededRNG,
 ): CommandResult {
-  if (state.run === null) return { state, events: [], runEnded: false };
+  if (state.run === null) {
+    return rejectPlayerAction(
+      state,
+      'ATTACK',
+      targetId,
+      'TARGET_NOT_FOUND',
+      'No active dungeon run.',
+      state.player.id,
+      { targetId },
+    );
+  }
   
   // Check if player is dead
-  if (state.player.stats.health <= 0) return { state, events: [], runEnded: false };
+  if (state.player.stats.health <= 0) {
+    return rejectPlayerAction(
+      state,
+      'ATTACK',
+      targetId,
+      'PLAYER_DEAD',
+      'You cannot attack while defeated.',
+      state.player.id,
+      { targetId },
+    );
+  }
 
   // Find the target enemy
   let targetEnemy: EnemyInstance | null = null;
@@ -71,7 +94,17 @@ export function handleAttack(
     }
   }
 
-  if (targetEnemy === null || targetKey === null) return { state, events: [], runEnded: false };
+  if (targetEnemy === null || targetKey === null) {
+    return rejectPlayerAction(
+      state,
+      'ATTACK',
+      targetId,
+      'TARGET_NOT_FOUND',
+      'Target not found.',
+      state.player.id,
+      { targetId },
+    );
+  }
 
   // Range check — use equipped weapon's range (default 1 for unarmed/melee)
   const dist = chebyshevDistance(state.player.position, targetEnemy.position);
@@ -382,6 +415,7 @@ export function handleUseAbility(
       { abilityId },
     );
   }
+  const definition = ABILITY_REGISTRY.get(abilityId);
 
   // Execute ability using data-driven engine FIRST (without advancing turn)
   const abilityResult = executeAbility(state, abilityId, rng, targetId, direction, targetPosition);
@@ -404,7 +438,7 @@ export function handleUseAbility(
       'ABILITY',
       abilityId,
       'EXECUTION_FAILED',
-      `${ABILITY_DEFINITIONS.get(abilityId)?.name ?? 'Unknown ability'} execution produced no observable result.`,
+      `${definition?.name ?? 'Unknown ability'} execution produced no observable result.`,
       state.player.id,
       { abilityId },
     );
@@ -415,7 +449,7 @@ export function handleUseAbility(
     ...abilityResult.state,
     turnNumber: abilityResult.state.turnNumber + 1,
   };
-  newState = setAbilityCooldown(newState, abilityId, ABILITY_DEFINITIONS.get(abilityId)!.cooldown);
+  newState = setAbilityCooldown(newState, abilityId, definition?.cooldown ?? 0);
   newState = updateRunMetrics(newState, { turnsElapsed: 1 });
 
   let resultEvents: DomainEvent[] = [...abilityResult.events];

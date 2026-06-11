@@ -32,6 +32,7 @@ export type AbilityValidationResult =
  *
  * Rejection codes:
  * - ABILITY_NOT_FOUND: Ability is not defined
+ * - ABILITY_NOT_UNLOCKED: Ability is defined but not present in the player's ability list
  * - ABILITY_REQUIREMENTS_NOT_MET: Failed a requirement (mana, health, etc.)
  * - ABILITY_NOT_AVAILABLE: Ring spell not learned or required rings not equipped
  * - ABILITY_ON_COOLDOWN: Ability is still on cooldown
@@ -69,10 +70,17 @@ export function validateAbilityAction(
     };
   }
 
-  // 2a. Check cooldown FIRST (only if the ability is in the player's abilities list)
-  // If the ability isn't in the list, validateRequirements will handle that with a more specific error
+  // 2a. Check player has unlocked or equipped the ability before any runtime checks.
   const abilityInList = state.player.abilities.some(a => a.id === abilityId);
-  if (abilityInList && !canUseAbility(state, abilityId)) {
+  if (abilityInList === false) {
+    return {
+      valid: false,
+      rejectionCode: 'ABILITY_NOT_UNLOCKED',
+      message: `${definition.name} is not unlocked.`,
+    };
+  }
+
+  if (!canUseAbility(state, abilityId)) {
     return {
       valid: false,
       rejectionCode: 'ABILITY_ON_COOLDOWN',

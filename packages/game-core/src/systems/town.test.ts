@@ -154,11 +154,16 @@ describe('processTownAction rest', () => {
       },
     });
 
-    const { state: newState } = processTownAction(state, 'rest');
+    const { state: newState, events } = processTownAction(state, 'rest');
 
     expect(newState.player.stats.health).toBeGreaterThan(initialHealth);
     expect(newState.player.stats.health).toBeLessThanOrEqual(newState.player.stats.maxHealth);
     expect(newState.player.gold).toBeLessThanOrEqual(state.player.gold);
+    expect(events).toContainEqual(expect.objectContaining({
+      type: 'GOLD_CHANGED',
+      amount: newState.player.gold - state.player.gold,
+      newTotal: newState.player.gold,
+    }));
   });
 
   it('returns unchanged state when already at full HP', () => {
@@ -201,9 +206,14 @@ describe('processTownAction shop_sell', () => {
       itemRegistry: { items: newRegistry },
       world: { ...baseState.world, shop: { ...baseState.world.shop, buybackMultiplier: 0.4 } },
     };
-    const { state: newState } = processTownAction(stateWithItem, 'shop_sell', itemInstanceId);
+    const { state: newState, events } = processTownAction(stateWithItem, 'shop_sell', itemInstanceId);
     expect(newState.player.gold).toBeGreaterThan(initialGold);
     expect(newState.player.inventory).not.toContain(itemInstanceId);
+    expect(events).toContainEqual(expect.objectContaining({
+      type: 'GOLD_CHANGED',
+      amount: newState.player.gold - stateWithItem.player.gold,
+      newTotal: newState.player.gold,
+    }));
   });
 });
 
@@ -221,10 +231,15 @@ describe('processTownAction shop_buy', () => {
   it('deducts gold and adds item to inventory', () => {
     const initialGold = shopState.player.gold;
     const initialInvLength = shopState.player.inventory.length;
-    const { state: newState } = processTownAction(shopState, 'shop_buy', undefined, 'health_potion');
+    const { state: newState, events } = processTownAction(shopState, 'shop_buy', undefined, 'health_potion');
 
     expect(newState.player.gold).toBeLessThan(initialGold);
     expect(newState.player.inventory.length).toBeGreaterThan(initialInvLength);
+    expect(events).toContainEqual(expect.objectContaining({
+      type: 'GOLD_CHANGED',
+      amount: newState.player.gold - shopState.player.gold,
+      newTotal: newState.player.gold,
+    }));
   });
 
   it('fails when player has insufficient gold — state unchanged', () => {
@@ -250,6 +265,19 @@ describe('processTownAction shop_buy', () => {
 
     const shopItem = newState.world.shop.items.find(i => i.itemId === 'health_potion');
     expect(shopItem?.stock ?? 0).toBeLessThan(initialStock);
+  });
+
+  it('emits gold change when undoing a shop purchase', () => {
+    const bought = processTownAction(shopState, 'shop_buy', undefined, 'health_potion').state;
+
+    const { state: undone, events } = processTownAction(bought, 'shop_undo');
+
+    expect(undone.player.gold).toBe(shopState.player.gold);
+    expect(events).toContainEqual(expect.objectContaining({
+      type: 'GOLD_CHANGED',
+      amount: undone.player.gold - bought.player.gold,
+      newTotal: undone.player.gold,
+    }));
   });
 
   it('shopkeeper with disposition=50 applies 5% discount per 10 disposition (25% total)', () => {
@@ -482,7 +510,11 @@ describe('processTownAction study_spell', () => {
     );
 
     expect(thunderStepResult.state).toBe(missingPrerequisiteState);
-    expect(thunderStepResult.events).toHaveLength(0);
+    expect(thunderStepResult.events).toHaveLength(1);
+    expect(thunderStepResult.events[0]).toMatchObject({
+      type: 'PLAYER_ACTION_REJECTED',
+      reasonCode: 'SPELL_STUDY_INELIGIBLE',
+    });
 
     const missingXpState = makeStateWithLightningRingEquipped({
       lightningXp: 59,
@@ -498,7 +530,33 @@ describe('processTownAction study_spell', () => {
     );
 
     expect(rollingThunderResult.state).toBe(missingXpState);
-    expect(rollingThunderResult.events).toHaveLength(0);
+    expect(rollingThunderResult.events).toHaveLength(1);
+    expect(rollingThunderResult.events[0]).toMatchObject({
+      type: 'PLAYER_ACTION_REJECTED',
+      reasonCode: 'SPELL_STUDY_INELIGIBLE',
+    });
+  });
+
+  it('rejects starter spell study when gold is insufficient', () => {
+    const state = makeStateWithLightningRingEquipped({ gold: 0 });
+
+    const result = processTownAction(
+      state,
+      'study_spell',
+      undefined,
+      undefined,
+      undefined,
+      BOLT_SPELL_ID,
+    );
+
+    expect(result.state).toBe(state);
+    expect(result.state.player.gold).toBe(state.player.gold);
+    expect(result.state.player.learnedRingSpellIds).toEqual(state.player.learnedRingSpellIds);
+    expect(result.events).toHaveLength(1);
+    expect(result.events[0]).toMatchObject({
+      type: 'PLAYER_ACTION_REJECTED',
+      reasonCode: 'INSUFFICIENT_GOLD',
+    });
   });
 });
 
@@ -698,8 +756,12 @@ describe('processEnchantArmor', () => {
   it('rejects if player has insufficient gold', () => {
     const initialGold = 35;
     const state = makeStateWithArmorEquipped(chestArmor, initialGold);
-    const { state: s2 } = processEnchantArmor(state, 'chest', 'hp_regen');
+    const { state: s2, events } = processEnchantArmor(state, 'chest', 'hp_regen');
     expect(s2.player.gold).toBe(initialGold); // unchanged due to insufficient gold
+    expect(events).toContainEqual(expect.objectContaining({
+      type: 'PLAYER_ACTION_REJECTED',
+      reasonCode: 'INSUFFICIENT_GOLD',
+    }));
   });
 
   it('rejects if no item in the equipment slot', () => {

@@ -2,12 +2,13 @@ import { describe, it, expect } from 'vitest';
 import {
   calculateEquippedStats,
   equipItem,
+  syncEquipmentGrantedAbilities,
   unequipItem,
   swapWeaponSets,
 } from './equipment.js';
 import { addItemToInventory } from './inventory.js';
 import { entityId } from '@dungeon/contracts';
-import type { WeaponTemplate, ArmorTemplate } from '@dungeon/contracts';
+import type { WeaponTemplate, ArmorTemplate, EnchantmentDefinition } from '@dungeon/contracts';
 import { BASE_TEST_STATS, createTestGameState } from '../test-utils.js';
 
 const testWeapon: WeaponTemplate = {
@@ -344,6 +345,96 @@ describe('equipItem stat recalculation', () => {
     const { state: unequipped } = unequipItem(equipped, ringId);
     expect(abilityIds(unequipped)).not.toContain(BOLT_ABILITY_ID);
     expect(abilityIds(unequipped)).not.toContain(THUNDER_STEP_ABILITY_ID);
+  });
+
+  it('preserves a learned ring spell cooldown while the granting ring is unequipped and re-equipped', () => {
+    const ringId = entityId('cooldown_lightning_ring');
+    const registry = new Map([[ringId, lightningRingTemplate]]);
+    const state = createTestGameState({
+      player: {
+        equipment: {
+          weapon: null,
+          secondaryWeapon: null,
+          chest: null,
+          head: null,
+          gloves: null,
+          boots: null,
+          ring1: ringId,
+          ring2: null,
+        },
+        learnedRingSpellIds: [BOLT_ABILITY_ID],
+        abilities: [{ id: BOLT_ABILITY_ID, cooldownRemaining: 3 }],
+      },
+    });
+    const expectedCooldown = state.player.abilities.find(ability => ability.id === BOLT_ABILITY_ID)?.cooldownRemaining;
+    expect(expectedCooldown).toBeGreaterThan(0);
+
+    const unequippedPlayer = syncEquipmentGrantedAbilities(
+      {
+        ...state.player,
+        equipment: { ...state.player.equipment, ring1: null },
+      },
+      registry,
+    );
+    const reequippedPlayer = syncEquipmentGrantedAbilities(
+      {
+        ...unequippedPlayer,
+        equipment: state.player.equipment,
+      },
+      registry,
+    );
+
+    expect(unequippedPlayer.abilities.find(ability => ability.id === BOLT_ABILITY_ID)?.cooldownRemaining).toBe(expectedCooldown);
+    expect(reequippedPlayer.abilities.find(ability => ability.id === BOLT_ABILITY_ID)?.cooldownRemaining).toBe(expectedCooldown);
+  });
+
+  it('removes enchantment-granted abilities when the granting armor is unequipped', () => {
+    const armorId = entityId('grant_armor');
+    const grantedAbilityId = 'local_equipment_grant';
+    const grantingArmor: ArmorTemplate = {
+      ...testArmor,
+      armor: {
+        ...testArmor.armor,
+        enchantmentSlots: 1,
+        enchantments: ['local_grant'],
+      },
+    };
+    const grantEnchantment: EnchantmentDefinition = {
+      id: 'local_grant',
+      name: 'Local Grant',
+      description: 'Grants a local test ability.',
+      tier: 1,
+      effect: { type: 'grant_ability', abilityId: grantedAbilityId },
+    };
+    const registry = new Map([[armorId, grantingArmor]]);
+    const enchantments = new Map([[grantEnchantment.id, grantEnchantment]]);
+    const state = createTestGameState({
+      player: {
+        equipment: {
+          weapon: null,
+          secondaryWeapon: null,
+          chest: armorId,
+          head: null,
+          gloves: null,
+          boots: null,
+          ring1: null,
+          ring2: null,
+        },
+      },
+    });
+
+    const withGrant = syncEquipmentGrantedAbilities(state.player, registry, enchantments);
+    const withoutGrant = syncEquipmentGrantedAbilities(
+      {
+        ...withGrant,
+        equipment: { ...withGrant.equipment, chest: null },
+      },
+      registry,
+      enchantments,
+    );
+
+    expect(withGrant.abilities.map(ability => ability.id)).toContain(grantedAbilityId);
+    expect(withoutGrant.abilities.map(ability => ability.id)).not.toContain(grantedAbilityId);
   });
 
   it('grants learned combo ring spells only while all required ring schools are equipped', () => {

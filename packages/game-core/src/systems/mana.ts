@@ -5,8 +5,6 @@ export function canAffordMana(mana: number, cost: number): boolean {
   return mana >= cost;
 }
 
-export const canAfordMana = canAffordMana;
-
 export function deductMana(current: number, cost: number): number {
   return Math.max(0, current - cost);
 }

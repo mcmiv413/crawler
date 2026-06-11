@@ -23,7 +23,7 @@ describe('formatEvent', () => {
     };
     const result = formatEvent(event);
     expect(result).toEqual({
-      text: '[Adventurer -> Skeleton] 15 physical dmg',
+      text: '[Adventurer -> Skeleton] hit for 15 physical damage',
       type: 'attack',
       timestamp: ts,
     });
@@ -45,7 +45,7 @@ describe('formatEvent', () => {
     };
     const result = formatEvent(event);
     expect(result).toEqual({
-      text: '[Adventurer -> Skeleton] 30 physical dmg CRIT!',
+      text: '[Adventurer -> Skeleton] hit for 30 physical damage CRIT!',
       type: 'attack',
       timestamp: ts,
     });
@@ -576,7 +576,7 @@ describe('formatEvents', () => {
     ];
     const formatted = formatEvents(events);
     expect(formatted).toHaveLength(2);
-    expect(formatted[0]!.text).toContain('10 physical dmg');
+    expect(formatted[0]!.text).toContain('10 physical damage');
     expect(formatted[1]!.text).toContain('Sword');
   });
 

@@ -4,6 +4,31 @@ import { entityId, type GameState, type StoredFloor } from '@dungeon/contracts';
 import { GameEngine } from './game-engine.js';
 import { serializeState, deserializeState } from '../state/serialization.js';
 import { createTestGameStateInCombat, createWaitCommand } from '../test-utils.js';
+import { handlePlayerDeath } from '../systems/death.js';
+import { SeededRNG } from '../utils/rng.js';
+
+type FloorPersistenceAction = 'enter' | 'descend' | 'ascend' | 'retreat' | 'death' | 'saveLoad';
+type CardinalDirection = 'N' | 'S' | 'E' | 'W';
+
+interface FloorFingerprint {
+  readonly depth: number;
+  readonly biomeId: string;
+  readonly seed: number;
+  readonly entrance: string;
+  readonly exit: string;
+  readonly cells: readonly string[];
+}
+
+const CARDINAL_STEPS: ReadonlyArray<{
+  readonly direction: CardinalDirection;
+  readonly dx: number;
+  readonly dy: number;
+}> = [
+  { direction: 'N', dx: 0, dy: -1 },
+  { direction: 'S', dx: 0, dy: 1 },
+  { direction: 'E', dx: 1, dy: 0 },
+  { direction: 'W', dx: -1, dy: 0 },
+];
 
 function normalizeNewGameState(state: GameState): GameState {
   return {
@@ -29,6 +54,118 @@ function createStoredFloorSnapshot(state: GameState): StoredFloor {
     originalEnemyCount: state.run.enemies.size,
     lastSimulatedTurn: 23,
   };
+}
+
+function positionKey(pos: { readonly x: number; readonly y: number }): string {
+  return `${pos.x},${pos.y}`;
+}
+
+function fingerprintFloor(storedFloor: StoredFloor): FloorFingerprint {
+  const floor = storedFloor.floor;
+  return {
+    depth: floor.depth,
+    biomeId: floor.biomeId,
+    seed: floor.seed,
+    entrance: positionKey(floor.entrance),
+    exit: positionKey(floor.exit),
+    cells: Array.from(floor.cells.entries())
+      .map(([key, cell]) => `${key}:${cell.tile.type}:${cell.tile.walkable}:${cell.tile.blocksVision}:${cell.tile.ascii}:${cell.tile.color}`)
+      .sort(),
+  };
+}
+
+function activeFloorAsStoredFloor(state: GameState): StoredFloor {
+  if (state.run === null) {
+    throw new Error('Expected active run');
+  }
+
+  return {
+    floor: state.run.floor,
+    enemies: state.run.enemies,
+    objects: state.run.objects,
+    playerPosition: state.player.position,
+  };
+}
+
+function clearRunEnemies(state: GameState): GameState {
+  if (state.run === null) return state;
+
+  return {
+    ...state,
+    run: {
+      ...state.run,
+      enemies: new Map(),
+      speedAccumulators: {},
+    },
+  };
+}
+
+function findPathTo(state: GameState, target: { readonly x: number; readonly y: number }): CardinalDirection[] {
+  if (state.run === null) {
+    throw new Error('Expected active run');
+  }
+
+  const queue: Array<{
+    readonly pos: { readonly x: number; readonly y: number };
+    readonly path: CardinalDirection[];
+  }> = [{ pos: state.player.position, path: [] }];
+  const visited = new Set([positionKey(state.player.position)]);
+  const targetKey = positionKey(target);
+
+  while (queue.length > 0) {
+    const current = queue.shift()!;
+    if (positionKey(current.pos) === targetKey) {
+      return current.path;
+    }
+
+    for (const step of CARDINAL_STEPS) {
+      const nextPos = { x: current.pos.x + step.dx, y: current.pos.y + step.dy };
+      const nextKey = positionKey(nextPos);
+      if (visited.has(nextKey)) continue;
+      const cell = state.run.floor.cells.get(nextKey);
+      if (cell?.tile.walkable !== true) continue;
+
+      visited.add(nextKey);
+      queue.push({ pos: nextPos, path: [...current.path, step.direction] });
+    }
+  }
+
+  throw new Error(`No path found to ${targetKey}`);
+}
+
+function descendOneFloor(engine: GameEngine, state: GameState): GameState {
+  if (state.run === null) return state;
+
+  let nextState = clearRunEnemies(state);
+  for (const direction of findPathTo(nextState, nextState.run!.floor.exit)) {
+    nextState = clearRunEnemies(engine.submitCommand(nextState, { type: 'MOVE', direction }).state);
+  }
+  return nextState;
+}
+
+function assertAndRecordVisitedFloor(
+  state: GameState,
+  expectedFingerprints: Map<number, FloorFingerprint>,
+): void {
+  if (state.run !== null) {
+    const activeFingerprint = fingerprintFloor(activeFloorAsStoredFloor(state));
+    const expected = expectedFingerprints.get(state.player.floor);
+    if (expected === undefined) {
+      expectedFingerprints.set(state.player.floor, activeFingerprint);
+    } else {
+      expect(activeFingerprint).toEqual(expected);
+    }
+  }
+
+  for (const [depth, storedFloor] of state.persistedFloorCache ?? []) {
+    const storedFingerprint = fingerprintFloor(storedFloor);
+    const expected = expectedFingerprints.get(depth);
+    if (expected === undefined) {
+      expectedFingerprints.set(depth, storedFingerprint);
+    } else {
+      expect(storedFingerprint).toEqual(expected);
+    }
+  }
 }
 
 function collectNonEnumerablePaths(
@@ -216,7 +353,7 @@ describe('save/load roundtrip property tests', () => {
     );
   });
 
-  it('floorCache and floorHistory survive serialization roundtrip', () => {
+  it('active runs serialize without legacy floor caches while persisted floors roundtrip', () => {
     fc.assert(
       fc.property(
         fc.integer({ min: 1, max: 100_000 }),
@@ -234,34 +371,19 @@ describe('save/load roundtrip property tests', () => {
           if (!original.run) return;
 
           // Roundtrip
-          const restored = deserializeState(serializeState(original));
+          const serialized = serializeState(original);
+          const parsed = JSON.parse(serialized) as { run?: Record<string, unknown> | null };
+          expect(parsed.run).not.toHaveProperty('floorHistory');
+          expect(parsed.run).not.toHaveProperty('floorCache');
+
+          const restored = deserializeState(serialized);
           if (!restored.run) return;
 
-          // floorHistory should roundtrip
-          expect(restored.run.floorHistory.length).toBe(original.run.floorHistory.length);
-          for (let i = 0; i < original.run.floorHistory.length; i++) {
-            const origSf = original.run.floorHistory[i]!;
-            const restSf = restored.run.floorHistory[i]!;
-            expect(restSf.floor.cells).toBeInstanceOf(Map);
-            expect(restSf.enemies).toBeInstanceOf(Map);
-            expect(restSf.floor.cells.size).toBe(origSf.floor.cells.size);
-            expect(restSf.enemies.size).toBe(origSf.enemies.size);
-            expect(restSf.playerPosition).toEqual(origSf.playerPosition);
-          }
-
-          // floorCache should roundtrip (may be undefined initially)
-          if (original.run.floorCache) {
-            expect(restored.run.floorCache).toBeDefined();
-            expect(restored.run.floorCache).toBeInstanceOf(Map);
-            expect(restored.run.floorCache!.size).toBe(original.run.floorCache.size);
-            for (const [depth, origSf] of original.run.floorCache) {
-              const restSf = restored.run.floorCache!.get(depth);
-              expect(restSf).toBeDefined();
-              expect(restSf!.floor.cells).toBeInstanceOf(Map);
-              expect(restSf!.enemies).toBeInstanceOf(Map);
-              expect(restSf!.floor.cells.size).toBe(origSf.floor.cells.size);
-            }
-          }
+          expect(restored.run.floor.depth).toBe(original.run.floor.depth);
+          expect(restored.persistedFloorCache?.get(1)?.floor.cells).toBeInstanceOf(Map);
+          expect(restored.persistedFloorCache?.get(1)?.floor.cells.size).toBe(
+            original.persistedFloorCache?.get(1)?.floor.cells.size,
+          );
         },
       ),
       { numRuns: 100 },
@@ -285,9 +407,7 @@ describe('save/load roundtrip property tests', () => {
           let stateWithCache = entered.state;
           if (!stateWithCache.run) return;
 
-          // Simulate having retreated by populating persistedFloorCache
-          const retrievedFloor = stateWithCache.run.floorHistory[0];
-          if (!retrievedFloor) return;
+          const retrievedFloor = createStoredFloorSnapshot(stateWithCache);
 
           stateWithCache = {
             ...stateWithCache,
@@ -327,20 +447,11 @@ describe('save/load roundtrip property tests', () => {
     const storedFloor = createStoredFloorSnapshot(baseState);
     const stateWithCaches: GameState = {
       ...baseState,
-      run: {
-        ...baseState.run!,
-        floorHistory: [storedFloor],
-        floorCache: new Map([[3, storedFloor]]),
-      },
       persistedFloorCache: new Map([[7, storedFloor]]),
     };
 
     const restored = deserializeState(serializeState(stateWithCaches));
 
-    expect(restored.run?.floorHistory[0]?.originalEnemyCount).toBe(storedFloor.originalEnemyCount);
-    expect(restored.run?.floorHistory[0]?.lastSimulatedTurn).toBe(23);
-    expect([...restored.run!.floorCache!.keys()]).toEqual([3]);
-    expect(restored.run?.floorCache?.get(3)?.playerPosition).toEqual(baseState.player.position);
     expect([...restored.persistedFloorCache!.keys()]).toEqual([7]);
     expect(restored.persistedFloorCache?.get(7)?.lastSimulatedTurn).toBe(23);
   });
@@ -415,6 +526,54 @@ describe('save/load roundtrip property tests', () => {
         },
       ),
       { numRuns: 50 },
+    );
+  });
+
+  it('never changes visited floor fingerprints across random transitions', () => {
+    fc.assert(
+      fc.property(
+        fc.integer({ min: 1, max: 20_000 }),
+        fc.array(
+          fc.constantFrom<FloorPersistenceAction>('enter', 'descend', 'ascend', 'retreat', 'death', 'saveLoad'),
+          { minLength: 8, maxLength: 24 },
+        ),
+        (seed, actions) => {
+          const engine = new GameEngine();
+          let state = engine.createNewGame(seed);
+          const expectedFingerprints = new Map<number, FloorFingerprint>();
+
+          for (const action of actions) {
+            if (action === 'saveLoad') {
+              state = deserializeState(serializeState(state));
+            } else if (state.phase === 'town' && action === 'enter') {
+              const maxDepth = Math.max(1, state.world.deepestFloor);
+              const startDepth = ((seed + expectedFingerprints.size) % maxDepth) + 1;
+              state = engine.submitCommand(state, {
+                type: 'TOWN_ACTION',
+                action: 'enter_dungeon',
+                startDepth,
+              }).state;
+            } else if (state.run !== null && action === 'descend' && state.player.floor < 6) {
+              state = descendOneFloor(engine, state);
+            } else if (state.run !== null && action === 'ascend' && state.player.floor > 1) {
+              state = clearRunEnemies(engine.submitCommand(clearRunEnemies(state), { type: 'ASCEND' }).state);
+            } else if (state.run !== null && action === 'retreat') {
+              state = engine.submitCommand(clearRunEnemies(state), { type: 'RETREAT' }).state;
+            } else if (state.run !== null && action === 'death') {
+              state = handlePlayerDeath(
+                clearRunEnemies(state),
+                null,
+                'floor persistence property',
+                new SeededRNG(seed),
+                0,
+              ).state;
+            }
+
+            assertAndRecordVisitedFloor(state, expectedFingerprints);
+          }
+        },
+      ),
+      { numRuns: 20 },
     );
   });
 });

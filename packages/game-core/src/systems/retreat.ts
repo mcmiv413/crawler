@@ -1,10 +1,11 @@
-import type { GameState, StoredFloor } from '@dungeon/contracts';
+import type { GameState } from '@dungeon/contracts';
 import type { DomainEvent } from '@dungeon/contracts';
 import { EMPTY_RUN_METRICS, posKey } from '@dungeon/contracts';
 import { randomizeShop } from '../state/world-state.js';
 import type { SeededRNG } from '../utils/rng.js';
 import { AMBIENT_PROFILES } from '@dungeon/content';
 import { preSimulateAmbientBehavior } from './ambient-behavior-engine.js';
+import { snapshotActiveFloor, withPersistedFloor } from '../state/floor-cache.js';
 
 /** Check if the player can retreat (must be on stairs_up or entrance) */
 export function canRetreat(state: GameState): boolean {
@@ -53,26 +54,12 @@ export function executeRetreat(state: GameState, rng: SeededRNG): { state: GameS
 
   // Save the current floor to persistedFloorCache before clearing the run
   const currentFloorDepth = state.player.floor;
-  const currentFloorSnapshot: StoredFloor = {
-    floor: state.run!.floor,
+  const currentFloorSnapshot = snapshotActiveFloor(state, {
     enemies: simulatedEnemies,
-    objects: state.run!.objects,
-    playerPosition: state.player.position,
-    // Capture metadata for respawn simulation on re-entry
     originalEnemyCount: state.run!.enemies.size,
-    lastSimulatedTurn: state.run!.turnCount,
-  };
-
-  // Merge all floors from in-run floorCache into persisted cache
-  const updatedCache = new Map(state.persistedFloorCache ?? []);
-  // eslint-disable-next-line dungeon/no-implicit-boolean
-  if (state.run!.floorCache) {
-    for (const [depth, floor] of state.run!.floorCache) {
-      updatedCache.set(depth, floor);
-    }
-  }
-  // Save current floor (highest priority, overwrites any cached version)
-  updatedCache.set(currentFloorDepth, currentFloorSnapshot);
+    lastSimulatedTurn: state.turnNumber,
+  })!;
+  const stateWithPersistedFloor = withPersistedFloor(state, currentFloorDepth, currentFloorSnapshot);
 
   const finalRunMetrics = {
     ...(state.run!.runMetrics ?? EMPTY_RUN_METRICS),
@@ -82,10 +69,9 @@ export function executeRetreat(state: GameState, rng: SeededRNG): { state: GameS
 
   return {
     state: {
-      ...state,
+      ...stateWithPersistedFloor,
       phase: 'town',
       run: null,
-      persistedFloorCache: updatedCache,
       lastRetreatFloor: currentFloorDepth,
       lastRunMetrics: finalRunMetrics,
       player: {

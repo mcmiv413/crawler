@@ -11,7 +11,7 @@ import {
 } from '../animation-runtime/walk-continuation-bus.js';
 import { CELL_SIZE } from '../config/ui-config.js';
 
-interface ActiveMoveAnimation extends MoveAnimationEntry {
+export interface ActiveMoveAnimation extends MoveAnimationEntry {
   id: string;
   startTime: number;
   progress: number;
@@ -21,6 +21,78 @@ interface ActiveMoveAnimation extends MoveAnimationEntry {
 
 interface UseMoveAnimationStateReturn {
   animations: ActiveMoveAnimation[];
+}
+
+type MoveAnimationSubscriber = (entry: MoveAnimationEntry) => void;
+
+interface MoveAnimationSubscription {
+  readonly subscriber: MoveAnimationSubscriber;
+  active: boolean;
+  refCount: number;
+}
+
+const moveAnimationSubscribers = new Set<MoveAnimationSubscription>();
+const moveAnimationSubscriptionBySubscriber = new WeakMap<
+  MoveAnimationSubscriber,
+  MoveAnimationSubscription
+>();
+
+export function registerMoveAnimation(entry: MoveAnimationEntry): void {
+  for (const subscription of [...moveAnimationSubscribers]) {
+    if (!subscription.active || !moveAnimationSubscribers.has(subscription)) {
+      continue;
+    }
+    subscription.subscriber(entry);
+  }
+}
+
+export function subscribeMoveAnimation(subscriber: MoveAnimationSubscriber): () => void {
+  const existingSubscription = moveAnimationSubscriptionBySubscriber.get(subscriber);
+  if (existingSubscription?.active === true) {
+    existingSubscription.refCount += 1;
+    return () => {
+      unsubscribeMoveAnimation(existingSubscription);
+    };
+  }
+
+  const subscription: MoveAnimationSubscription = {
+    subscriber,
+    active: true,
+    refCount: 1,
+  };
+  moveAnimationSubscriptionBySubscriber.set(subscriber, subscription);
+  moveAnimationSubscribers.add(subscription);
+  return () => {
+    unsubscribeMoveAnimation(subscription);
+  };
+}
+
+export function clearMoveAnimationSubscribers(): void {
+  for (const subscription of moveAnimationSubscribers) {
+    subscription.active = false;
+    subscription.refCount = 0;
+  }
+  moveAnimationSubscribers.clear();
+}
+
+function unsubscribeMoveAnimation(subscription: MoveAnimationSubscription): void {
+  if (!subscription.active) {
+    return;
+  }
+
+  subscription.refCount -= 1;
+  if (subscription.refCount > 0) {
+    return;
+  }
+
+  subscription.active = false;
+  moveAnimationSubscribers.delete(subscription);
+}
+
+if (import.meta.hot) {
+  import.meta.hot.dispose(() => {
+    clearMoveAnimationSubscribers();
+  });
 }
 
 /**
@@ -33,21 +105,22 @@ interface UseMoveAnimationStateReturn {
  */
 export function useMoveAnimationState(): UseMoveAnimationStateReturn {
   const [animations, setAnimations] = useState<ActiveMoveAnimation[]>([]);
-  const rafRef = useRef<number | undefined>(undefined);
   const nextIdRef = useRef(0);
   const mutableTimersRef = useRef<ReturnType<typeof setTimeout>[]>([]);
   const continuationByEntityRef = useRef(new Map<string, boolean>());
 
   useEffect(() => {
     const mutableTimers = mutableTimersRef.current;
-    const handleMoveAnimation = (event: Event) => {
-      const customEvent = event as CustomEvent<MoveAnimationEntry>;
-      const entry = customEvent.detail;
+    const handleMoveAnimationEntry = (entry: MoveAnimationEntry) => {
       const now = Date.now();
       const id = `move-${nextIdRef.current++}`;
 
       setAnimations((prev) => {
         const prior = prev.find((a) => a.entityId === entry.entityId);
+        if (prior !== undefined && isDuplicateMove(prior, entry, now)) {
+          return prev;
+        }
+
         const priorProgress = prior === undefined ? 1 : getAnimationProgress(prior, now);
         const carryingMomentum = prior !== undefined && priorProgress < 1;
         const fromOffsetPx = carryingMomentum
@@ -81,6 +154,12 @@ export function useMoveAnimationState(): UseMoveAnimationStateReturn {
       mutableTimers.push(timer);
     };
 
+    const unsubscribeMoveAnimation = subscribeMoveAnimation(handleMoveAnimationEntry);
+    const handleMoveAnimation = (event: Event) => {
+      const customEvent = event as CustomEvent<MoveAnimationEntry>;
+      registerMoveAnimation(customEvent.detail);
+    };
+
     const handleWalkContinuation = (event: Event) => {
       const customEvent = event as CustomEvent<WalkContinuationDetail>;
       const detail = customEvent.detail;
@@ -112,36 +191,44 @@ export function useMoveAnimationState(): UseMoveAnimationStateReturn {
     return () => {
       window.removeEventListener('move-animation', handleMoveAnimation);
       window.removeEventListener(WALK_CONTINUATION_EVENT, handleWalkContinuation);
+      unsubscribeMoveAnimation();
       mutableTimers.forEach((t) => clearTimeout(t));
-    };
-  }, []);
-
-  // Drive progress on every frame
-  useEffect(() => {
-    const tick = () => {
-      const now = Date.now();
-      setAnimations((prev) =>
-        prev.map((anim) => {
-          const elapsed = now - anim.startTime;
-          const progress = Math.min(elapsed / anim.durationMs, 1);
-          return { ...anim, progress };
-        }),
-      );
-      rafRef.current = requestAnimationFrame(tick);
-    };
-
-    rafRef.current = requestAnimationFrame(tick);
-    return () => {
-      if (rafRef.current !== undefined) cancelAnimationFrame(rafRef.current);
     };
   }, []);
 
   return { animations };
 }
 
-function getAnimationProgress(animation: ActiveMoveAnimation, now: number): number {
+export function getAnimationProgress(animation: ActiveMoveAnimation, now: number): number {
+  if (typeof animation.startTime !== 'number' || Number.isFinite(animation.startTime) === false) {
+    return Math.min(Math.max(animation.progress, 0), 1);
+  }
   if (animation.durationMs <= 0) return 1;
   return Math.min(Math.max((now - animation.startTime) / animation.durationMs, 0), 1);
+}
+
+export function resolveMoveAnimationProgress(
+  animation: ActiveMoveAnimation,
+  now: number,
+): ActiveMoveAnimation {
+  const progress = getAnimationProgress(animation, now);
+  return progress === animation.progress
+    ? animation
+    : { ...animation, progress };
+}
+
+function isDuplicateMove(
+  prior: ActiveMoveAnimation,
+  entry: MoveAnimationEntry,
+  now: number,
+): boolean {
+  return getAnimationProgress(prior, now) < 1
+    && prior.fromPos.x === entry.fromPos.x
+    && prior.fromPos.y === entry.fromPos.y
+    && prior.toPos.x === entry.toPos.x
+    && prior.toPos.y === entry.toPos.y
+    && prior.style === entry.style
+    && prior.durationMs === entry.durationMs;
 }
 
 function hasWalkMomentum(walkPhase: WalkMotionPhase): boolean {

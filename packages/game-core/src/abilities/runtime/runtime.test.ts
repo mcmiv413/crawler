@@ -576,6 +576,7 @@ describe('abilities/runtime', () => {
           mana: 99,
           maxMana: 99,
           equipment,
+          abilities: [{ id: abilityId, cooldownRemaining: 0 }],
           learnedRingSpellIds: [abilityId],
         },
       };
@@ -630,7 +631,7 @@ describe('abilities/runtime', () => {
 
     it('should include damage in ABILITY_USED event when ability deals damage', () => {
       // Create state with an enemy to target
-      const state = createTestGameStateInCombat({ equippedWeaponId: 'rusty_sword' });
+      const state = createTestGameStateWithAbility('power_strike');
       const rng = new SeededRNG(42);
 
       // Get first enemy as target

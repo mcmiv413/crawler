@@ -11,46 +11,81 @@ import { syncEquipmentGrantedAbilities } from './equipment.js';
 import { evaluateRingSpellStudy, getEquippedRingItemIds } from './ring-spell-availability.js';
 import { validateTownTransaction } from './town-validator.js';
 
+function buildTownActionRejectedEvent(
+  state: GameState,
+  actionId: string,
+  rejectionCode: string,
+  message: string,
+): DomainEvent {
+  return {
+    type: 'PLAYER_ACTION_REJECTED',
+    actionType: 'TOWN_ACTION',
+    actionId,
+    reasonCode: rejectionCode,
+    message,
+    playerId: state.player.id,
+    timestamp: state.turnNumber,
+    turnNumber: state.turnNumber,
+  };
+}
+
 /** Process enchanting an equipped armor piece */
 export function processEnchantArmor(
   state: GameState,
   equipSlot: EquipSlot,
   enchantmentId: string,
 ): { state: GameState; events: DomainEvent[] } {
-  // Guard: enchantment must be unlocked
-  if (!state.world.unlockedBlueprints.includes(enchantmentId)) {
-    return { state, events: [] };
+  const validation = validateTownTransaction(state, 'ENCHANT_ARMOR', { equipSlot, enchantmentId });
+  if (validation.valid === false) {
+    return {
+      state,
+      events: [buildTownActionRejectedEvent(state, enchantmentId, validation.rejectionCode, validation.message)],
+    };
   }
 
   const enchDef = ENCHANTMENT_BY_ID.get(enchantmentId);
-  if (enchDef === undefined) return { state, events: [] };
+  if (enchDef === undefined) {
+    return {
+      state,
+      events: [buildTownActionRejectedEvent(state, enchantmentId, 'ENCHANTMENT_NOT_FOUND', `Enchantment "${enchantmentId}" not found in game content.`)],
+    };
+  }
 
   const cost = getEnchantmentCost(enchantmentId);
 
-  // Guard: sufficient gold
-  if (state.player.gold < cost) {
-    return { state, events: [] };
+  const itemId = state.player.equipment[equipSlot];
+  if (itemId === null) {
+    return {
+      state,
+      events: [buildTownActionRejectedEvent(state, enchantmentId, 'NO_ENCHANTMENT_SLOT', 'No item is equipped in that slot.')],
+    };
   }
 
-  // Guard: item in slot
-  const itemId = state.player.equipment[equipSlot];
-  if (itemId === null) return { state, events: [] };
-
   const template = state.itemRegistry.items.get(itemId);
-  if (template === undefined || template.itemClass !== 'armor') return { state, events: [] };
+  if (template === undefined || template.itemClass !== 'armor') {
+    return {
+      state,
+      events: [buildTownActionRejectedEvent(state, enchantmentId, 'NO_ENCHANTMENT_SLOT', 'Only armor can be enchanted.')],
+    };
+  }
 
   const armorTemplate = template as ArmorTemplate;
   const armor = armorTemplate.armor;
 
-  // Guard: has slots
-  if (armor.enchantmentSlots <= 0) return { state, events: [] };
-
-  // Guard: slot available
   const firstNull = armor.enchantments.indexOf(null);
-  if (firstNull === -1) return { state, events: [] };
+  if (armor.enchantmentSlots <= 0 || firstNull === -1) {
+    return {
+      state,
+      events: [buildTownActionRejectedEvent(state, enchantmentId, 'NO_ENCHANTMENT_SLOT', `${template.name} has no open enchantment slot.`)],
+    };
+  }
 
-  // Guard: not duplicate
-  if (armor.enchantments.includes(enchantmentId)) return { state, events: [] };
+  if (armor.enchantments.includes(enchantmentId)) {
+    return {
+      state,
+      events: [buildTownActionRejectedEvent(state, enchantmentId, 'DUPLICATE_ENCHANTMENT', `${template.name} already has ${enchDef.name}.`)],
+    };
+  }
 
   // Apply: new enchantments array
   const newEnchantments = [...armor.enchantments] as (string | null)[];
@@ -209,16 +244,26 @@ function processRest(state: GameState): { state: GameState; events: DomainEvent[
     const affordable = Math.floor(state.player.gold / ECONOMY.healCostPerHp);
     if (affordable <= 0) return { state, events };
 
+    const goldDelta = -(affordable * ECONOMY.healCostPerHp);
     return {
       state: {
         ...state,
         player: {
           ...state.player,
           stats: { ...state.player.stats, health: state.player.stats.health + affordable },
-          gold: state.player.gold - (affordable * ECONOMY.healCostPerHp),
+          statuses: [],
+          gold: state.player.gold + goldDelta,
         },
       },
-      events,
+      events: [{
+        type: 'GOLD_CHANGED',
+        playerId: state.player.id,
+        amount: goldDelta,
+        newTotal: state.player.gold + goldDelta,
+        reason: 'Healing at town',
+        timestamp: state.turnNumber,
+        turnNumber: state.turnNumber,
+      }],
     };
   }
 
@@ -331,7 +376,15 @@ function processShopBuy(
       ...result.state,
       world: { ...result.state.world, shop: newShop },
     },
-    events: result.events,
+    events: [{
+      type: 'GOLD_CHANGED',
+      playerId: state.player.id,
+      amount: -price,
+      newTotal: result.state.player.gold,
+      reason: `Purchased ${template.name}`,
+      timestamp: state.turnNumber,
+      turnNumber: state.turnNumber,
+    }, ...result.events],
   };
 }
 
@@ -375,7 +428,15 @@ function processShopSell(
       ...resultState,
       world: { ...resultState.world, shop: newShop },
     },
-    events: [],
+    events: [{
+      type: 'GOLD_CHANGED',
+      playerId: state.player.id,
+      amount: sellPrice,
+      newTotal: resultState.player.gold,
+      reason: `Sold ${template.name}`,
+      timestamp: state.turnNumber,
+      turnNumber: state.turnNumber,
+    }],
   };
 }
 
@@ -386,6 +447,7 @@ function processShopUndo(
   if (transaction === undefined) return { state, events: [] };
 
   const { snapshot } = transaction;
+  const goldDelta = snapshot.playerGold - state.player.gold;
 
   // Restore player gold and inventory
   const stateWithGold = {
@@ -420,7 +482,15 @@ function processShopUndo(
         shop: newShop,
       },
     },
-    events: [],
+    events: goldDelta === 0 ? [] : [{
+      type: 'GOLD_CHANGED',
+      playerId: state.player.id,
+      amount: goldDelta,
+      newTotal: snapshot.playerGold,
+      reason: 'Undid shop transaction',
+      timestamp: state.turnNumber,
+      turnNumber: state.turnNumber,
+    }],
   };
 }
 

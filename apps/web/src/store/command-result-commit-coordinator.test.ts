@@ -4,10 +4,14 @@ import * as presenter from '@dungeon/presenter';
 import { scheduleCommandResultCommit, clearPendingAnimationCommits } from './command-result-commit-coordinator.js';
 import * as animationQueueBus from '../animation-runtime/animation-queue-bus.js';
 import * as featureFlags from '../config/feature-flags.js';
+import { registerMoveAnimation } from '../hooks/useMoveAnimationState.js';
 
 vi.mock('@dungeon/presenter');
 vi.mock('../animation-runtime/animation-queue-bus.js');
 vi.mock('../config/feature-flags.js');
+vi.mock('../hooks/useMoveAnimationState.js', () => ({
+  registerMoveAnimation: vi.fn(),
+}));
 
 function createMockGameView(overrides?: Partial<GameView>): GameView {
   return {
@@ -202,5 +206,45 @@ describe('CommandResultCommitCoordinator', () => {
       deathTransitioning: false,
       loading: false,
     });
+  });
+
+  it('registers immediate move animations before committing the staged view', () => {
+    const moveAnimation = {
+      entityId: 'player-1',
+      fromPos: { x: 4, y: 5 },
+      toPos: { x: 5, y: 5 },
+      style: 'step',
+      durationMs: 140,
+    };
+    const view = createMockGameView({
+      animatedEvents: [{
+        type: 'move',
+        sequenceIndex: 0,
+        delayMs: 0,
+        beatId: 'beat-1',
+        beatIndex: 0,
+        beatRelativeDelayMs: 0,
+        batchId: 'batch-1',
+        data: moveAnimation,
+      }],
+    });
+    const callOrder: string[] = [];
+    vi.mocked(registerMoveAnimation).mockImplementation(() => {
+      callOrder.push('register');
+    });
+    const commitCb = vi.fn(() => {
+      callOrder.push('commit');
+    });
+
+    scheduleCommandResultCommit({
+      view,
+      combatLog: [],
+      isDeath: false,
+      currentView: createMockGameView({ phase: 'dungeon' }),
+      onCommit: commitCb,
+    });
+
+    expect(registerMoveAnimation).toHaveBeenCalledWith(moveAnimation);
+    expect(callOrder).toEqual(['register', 'commit']);
   });
 });

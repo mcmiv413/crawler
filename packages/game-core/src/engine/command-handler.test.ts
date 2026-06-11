@@ -1079,6 +1079,41 @@ describe('handleAttack', () => {
     expect(result.events.some(event => event.type === 'MANA_CHANGED' && event.reason === 'Burning kill')).toBe(true);
   });
 
+  it('burning kills from non-player sources do not award fire school XP or restore mana', () => {
+    const state = createTestGameStateInCombat();
+    const enemies = new Map(state.run!.enemies);
+    const [key, enemy] = [...enemies.entries()][0]!;
+    enemies.set(key, {
+      ...enemy,
+      stats: { ...enemy.stats, health: 1, evasion: 0 },
+      statuses: [{ id: 'burn', turnsRemaining: 2, magnitude: 1, sourceId: entityId('trap_source') }],
+    });
+    const masteredState: GameState = {
+      ...state,
+      run: { ...state.run!, enemies },
+      player: {
+        ...state.player,
+        mana: 0,
+        ringMastery: {
+          fire: {
+            xp: 10_000,
+          },
+        },
+        stats: {
+          ...state.player.stats,
+          accuracy: 100,
+        },
+      },
+    };
+    const targetId = firstEnemyId(masteredState);
+    const rng = new SeededRNG(1);
+
+    const result = handleCommand(masteredState, createAttackCommand(entityId(targetId)), rng);
+
+    expect(result.state.player.ringMastery.fire).toEqual(masteredState.player.ringMastery.fire);
+    expect(result.events.some(event => event.type === 'MANA_CHANGED' && event.reason === 'Burning kill')).toBe(false);
+  });
+
   it('out of range: no state change, no turn consumed', () => {
     const state = createTestGameStateInCombat({ enemyAt: { x: 5, y: 5 } });
     const targetId = firstEnemyId(state);
@@ -1471,7 +1506,12 @@ describe('handleEnchantArmor', () => {
 
     // No change
     expect(result.state.player.gold).toBe(state.player.gold);
-    expect(result.events).toHaveLength(0);
+    expect(result.events).toEqual([
+      expect.objectContaining({
+        type: 'PLAYER_ACTION_REJECTED',
+        reasonCode: 'ENCHANTMENT_NOT_UNLOCKED',
+      }),
+    ]);
   });
 
   it('reject if insufficient gold', () => {
@@ -1516,8 +1556,13 @@ describe('handleEnchantArmor', () => {
     );
 
     // No change
-    expect(result.state.player.gold).toBe(1);
-    expect(result.events).toHaveLength(0);
+    expect(result.state.player.gold).toBe(state.player.gold);
+    expect(result.events).toEqual([
+      expect.objectContaining({
+        type: 'PLAYER_ACTION_REJECTED',
+        reasonCode: 'INSUFFICIENT_GOLD',
+      }),
+    ]);
   });
 });
 

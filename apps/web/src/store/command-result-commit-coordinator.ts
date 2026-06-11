@@ -1,7 +1,8 @@
 import { getAnimatedEventBatchSettleMs } from '@dungeon/presenter';
-import type { GameView, CombatLogEntry } from '@dungeon/presenter';
+import type { AnimatedEvent, GameView, CombatLogEntry, MoveAnimationEntry } from '@dungeon/presenter';
 import { onQueueDrained } from '../animation-runtime/animation-queue-bus.js';
 import { isBeatSchedulerEnabledFlag } from '../config/feature-flags.js';
+import { registerMoveAnimation } from '../hooks/useMoveAnimationState.js';
 
 let pendingViewTimeout: ReturnType<typeof setTimeout> | null = null;
 let pendingQueueDrainUnsubscribe: (() => void) | null = null;
@@ -37,6 +38,14 @@ export function clearPendingAnimationCommits(): void {
 
 function isBeatSchedulerEnabled(): boolean {
   return isBeatSchedulerEnabledFlag();
+}
+
+function registerImmediateMoveAnimations(animatedEvents: readonly AnimatedEvent[]): void {
+  for (const event of animatedEvents) {
+    if (event.type === 'move' && event.delayMs <= 0) {
+      registerMoveAnimation(event.data as MoveAnimationEntry);
+    }
+  }
 }
 
 function ensureQueueDrainSubscription(): void {
@@ -83,6 +92,7 @@ export function scheduleCommandResultCommit(options: CommandResultCommitOptions)
 
   if (!shouldStageView && !options.isDeath) {
     clearPendingAnimationCommits();
+    registerImmediateMoveAnimations(options.view.animatedEvents);
     options.onCommit({
       view: options.view,
       combatLog: options.combatLog,
@@ -103,6 +113,7 @@ export function scheduleCommandResultCommit(options: CommandResultCommitOptions)
         onDrain: options.onDrain,
       };
       ensureQueueDrainSubscription();
+      registerImmediateMoveAnimations(options.view.animatedEvents);
       options.onCommit({
         view: options.view,
         combatLog: options.combatLog,
@@ -113,6 +124,7 @@ export function scheduleCommandResultCommit(options: CommandResultCommitOptions)
     }
 
     clearPendingQueueDrainCommit();
+    registerImmediateMoveAnimations(options.view.animatedEvents);
     options.onCommit({
       view: options.view,
       combatLog: options.combatLog,

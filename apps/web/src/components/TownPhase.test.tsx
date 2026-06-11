@@ -1208,8 +1208,10 @@ describe('TownPhase Component', () => {
 
       expect(screen.getByText('Thunderstorm')).toBeInTheDocument();
       expect(screen.getByText(/Fire Lv 2 \+ Lightning Lv 3/i)).toBeInTheDocument();
-      expect(screen.getByText(/Fire 80\/140/i)).toBeInTheDocument();
+      expect(screen.getAllByText(/Fire 80\/140/i).length).toBeGreaterThan(0);
       expect(screen.getByText(/Lightning 120\/140/i)).toBeInTheDocument();
+      expect(screen.getByRole('button', { name: /Requires Fire 80\/140 XP/i })).toBeDisabled();
+      expect(screen.queryByRole('button', { name: /Need 150g/i })).not.toBeInTheDocument();
     });
 
     it('shows all school gates as met when spell is unlocked', () => {

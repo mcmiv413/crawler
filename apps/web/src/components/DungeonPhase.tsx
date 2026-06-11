@@ -86,8 +86,9 @@ function MiniCombatLog({
 
   return (
     <div
+      data-testid="combat-log"
+      className="combat-log"
       ref={scrollRef}
-      data-testid="dungeon-mini-combat-log"
       style={{
         height: '100%',
         minHeight: 0,
@@ -99,6 +100,7 @@ function MiniCombatLog({
       {filtered.map((entry, index) => (
         <div
           key={`${entry.type}-${entry.text}`}
+          data-testid="combat-log-entry"
           style={{
             fontSize: COMBAT_LOG_MINI_FONT_SIZE,
             lineHeight: COMBAT_LOG_MINI_LINE_HEIGHT,
@@ -426,6 +428,8 @@ export function DungeonPhase({
 
   return (
     <div
+      data-testid="dungeon-view"
+      className="dungeon-phase"
       style={{
         padding: 8,
         fontFamily: 'monospace',

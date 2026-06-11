@@ -512,6 +512,34 @@ describe('Game Routes', () => {
       expect(body.code).toBe('INVALID_SAVE_FILE');
     });
 
+    it('returns 400 when restored state has invalid content and item references', async () => {
+      const state = createTestGameStateInCombat();
+      const invalidState: GameState = {
+        ...state,
+        player: {
+          ...state.player,
+          learnedRingSpellIds: ['made_up_spell'],
+          equipment: {
+            ...state.player.equipment,
+            chest: entityId('missing_equipment_entity'),
+          },
+        },
+      };
+
+      const response = await app.inject({
+        method: 'POST',
+        url: '/api/games/restore',
+        payload: { serializedState: serializeState(invalidState) },
+      });
+
+      expect(response.statusCode).toBe(400);
+      const body = JSON.parse(response.body);
+      expect(body.code).toBe('INVALID_SAVE_FILE');
+      expect(body.message).toBe('The submitted save file could not be parsed or validated.');
+      expect(body.message).not.toContain('learnedRingSpellIds.made_up_spell');
+      expect(body.message).not.toContain('player.equipment.chest');
+    });
+
     it('returns existing game when the submitted save matches the stored state', async () => {
       // Create a game
       const createResponse = await app.inject({

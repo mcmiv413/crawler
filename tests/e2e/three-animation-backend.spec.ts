@@ -364,6 +364,9 @@ async function openDungeon(
       __DUNGEON_ANIMATION_RENDERER_MODE_OVERRIDE__?: 'canvas' | 'three';
     }).__DUNGEON_ANIMATION_RENDERER_MODE_OVERRIDE__ = payload.rendererMode;
     (window as Window & {
+      __DUNGEON_DEPTH_ATMOSPHERE_OVERRIDE__?: boolean;
+    }).__DUNGEON_DEPTH_ATMOSPHERE_OVERRIDE__ = false;
+    (window as Window & {
       __DUNGEON_E2E__?: { enabled?: boolean };
     }).__DUNGEON_E2E__ = { enabled: true };
     window.sessionStorage.setItem('dungeon-session', JSON.stringify(payload.storedSession));

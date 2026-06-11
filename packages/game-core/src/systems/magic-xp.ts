@@ -1,5 +1,6 @@
 import type { Player } from '@dungeon/contracts';
 import { MAGIC } from '@dungeon/content';
+import type { RingSchool } from '@dungeon/content';
 
 function getConfiguredLevel(
   xp: number,
@@ -87,7 +88,7 @@ export function recalculateMagicMana(player: Player): Player {
   };
 }
 
-export function gainSchoolXp(player: Player, school: string, amount: number): Player {
+export function gainSchoolXp(player: Player, school: RingSchool, amount: number): Player {
   const current = player.ringMastery[school] ?? { xp: 0 };
   const updatedPlayer = {
     ...player,

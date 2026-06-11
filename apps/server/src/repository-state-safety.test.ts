@@ -297,9 +297,11 @@ describe('Repository: State Safety', () => {
       expect(metrics).toEqual([]);
     });
 
-    it('preserves floor history and persisted floor cache across create -> load -> save -> reload', async () => {
+    it('preserves canonical persisted floor cache across create -> load -> save -> reload', async () => {
       const combatState = createTestGameStateInCombat();
       const storedFloor = createStoredFloorSnapshot(combatState);
+      const storedFloor2 = { ...storedFloor, floor: { ...storedFloor.floor, depth: 2 } };
+      const storedFloor5 = { ...storedFloor, floor: { ...storedFloor.floor, depth: 5 } };
       const gameId = entityId('lifecycle_floor_cache');
       const state = createMinimalGameState({
         ...combatState,
@@ -307,16 +309,22 @@ describe('Repository: State Safety', () => {
         run: {
           ...combatState.run!,
           floorHistory: [storedFloor],
-          floorCache: new Map([[2, storedFloor]]),
+          floorCache: new Map([[2, storedFloor2]]),
         },
-        persistedFloorCache: new Map([[5, storedFloor]]),
+        persistedFloorCache: new Map([
+          [1, storedFloor],
+          [2, storedFloor2],
+          [5, storedFloor5],
+        ]),
       });
 
       await repo.createGame(state);
 
       const loaded = await repo.loadGame(gameId);
-      expect(loaded?.run?.floorHistory[0]?.lastSimulatedTurn).toBe(11);
-      expect(loaded?.run?.floorCache?.get(2)?.originalEnemyCount).toBe(
+      expect(loaded?.run?.floorHistory).toBeUndefined();
+      expect(loaded?.run?.floorCache).toBeUndefined();
+      expect(loaded?.persistedFloorCache?.get(1)?.lastSimulatedTurn).toBe(11);
+      expect(loaded?.persistedFloorCache?.get(2)?.originalEnemyCount).toBe(
         storedFloor.originalEnemyCount,
       );
       expect(loaded?.persistedFloorCache?.get(5)?.playerPosition).toEqual(
@@ -326,8 +334,10 @@ describe('Repository: State Safety', () => {
       await repo.saveGame(gameId, loaded!);
 
       const reloaded = await repo.loadGame(gameId);
-      expect(reloaded?.run?.floorHistory[0]?.lastSimulatedTurn).toBe(11);
-      expect(reloaded?.run?.floorCache?.get(2)?.playerPosition).toEqual(
+      expect(reloaded?.run?.floorHistory).toBeUndefined();
+      expect(reloaded?.run?.floorCache).toBeUndefined();
+      expect(reloaded?.persistedFloorCache?.get(1)?.lastSimulatedTurn).toBe(11);
+      expect(reloaded?.persistedFloorCache?.get(2)?.playerPosition).toEqual(
         combatState.player.position,
       );
       expect(reloaded?.persistedFloorCache?.get(5)?.originalEnemyCount).toBe(

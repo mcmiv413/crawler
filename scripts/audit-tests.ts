@@ -99,6 +99,38 @@ export function auditAllTests(dir = '.'): AuditResult[] {
   });
 }
 
+export function findContractPlaceboAssertions(dir = '.'): string[] {
+  const repoRoot = path.resolve(dir);
+  const contractRoot = path.join(repoRoot, 'tests/contracts');
+  const findings: string[] = [];
+
+  function walk(current: string): void {
+    const entries = fs.readdirSync(current, { withFileTypes: true });
+    for (const entry of entries) {
+      const fullPath = path.join(current, entry.name);
+      if (entry.isDirectory()) {
+        walk(fullPath);
+        continue;
+      }
+      if (!entry.name.endsWith('.test.ts')) continue;
+
+      const content = fs.readFileSync(fullPath, 'utf-8');
+      const lines = content.split('\n');
+      lines.forEach((line, index) => {
+        if (/expect\s*\(\s*true\s*\)\s*\.\s*toBe\s*\(\s*true\s*\)/.test(line)) {
+          findings.push(`${normalizeTestPath(path.relative(repoRoot, fullPath))}:${index + 1}`);
+        }
+      });
+    }
+  }
+
+  if (fs.existsSync(contractRoot)) {
+    walk(contractRoot);
+  }
+
+  return findings;
+}
+
 export function generateReport(results: AuditResult[]): string {
   const lines: string[] = [];
 
@@ -223,6 +255,15 @@ async function main(): Promise<void> {
   const results = auditAllTests(process.cwd());
   console.error(`Found ${results.length} test files. Analyzing...`);
   console.log(generateReport(results));
+
+  const placeboAssertions = findContractPlaceboAssertions(process.cwd());
+  if (placeboAssertions.length > 0) {
+    console.error('Contract tests must not contain placebo assertions:');
+    for (const finding of placeboAssertions) {
+      console.error(`  ${finding}`);
+    }
+    process.exitCode = 1;
+  }
 }
 
 const isMain = process.argv[1] !== undefined

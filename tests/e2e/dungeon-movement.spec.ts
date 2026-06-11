@@ -1,6 +1,7 @@
 import { expect, test } from '@playwright/test';
-import type { Page, Request } from '@playwright/test';
+import type { Locator, Page, Request } from '@playwright/test';
 import { CELL_SIZE } from '../../apps/web/src/config/ui-config.js';
+import { STEP_WALK_BOUNDARY_PROGRESS } from '../../apps/web/src/animations/move-style-profiles.js';
 
 interface DungeonMapSnapshot {
   readonly playerPosition: { readonly x: number; readonly y: number };
@@ -113,6 +114,15 @@ async function startSeededDungeonRun(page: Page, seed: number): Promise<DungeonM
       moveResponses: [],
       moveAnimations: [],
     };
+
+    // Init scripts accumulate across startSeededDungeonRun calls; only the
+    // first one may wire the fetch/animation probes or requests get counted
+    // once per registered script.
+    const wireGuard = window as Window & { __movementProbeWired?: boolean };
+    if (wireGuard.__movementProbeWired === true) {
+      return;
+    }
+    wireGuard.__movementProbeWired = true;
 
     const originalFetch = window.fetch.bind(window);
     window.fetch = async (...args) => {
@@ -316,6 +326,87 @@ function pickClickTarget(map: DungeonMapSnapshot): ClickTarget | null {
   return candidates[0] ?? null;
 }
 
+function pickLongClickTarget(map: DungeonMapSnapshot): ClickTarget | null {
+  const candidates = map.cells
+    .filter((cell) =>
+      cell.visibility === 'visible'
+      && cell.walkable
+      && (cell.x !== map.playerPosition.x || cell.y !== map.playerPosition.y))
+    .map((cell) => ({
+      target: { x: cell.x, y: cell.y },
+      path: findPath(map, map.playerPosition, { x: cell.x, y: cell.y }),
+    }))
+    .filter((candidate) => candidate.path.length >= 4)
+    .sort((a, b) => {
+      if (a.path.length !== b.path.length) {
+        return a.path.length - b.path.length;
+      }
+      if (a.target.y !== b.target.y) {
+        return a.target.y - b.target.y;
+      }
+      return a.target.x - b.target.x;
+    });
+
+  return candidates[0] ?? null;
+}
+
+interface CanvasFrameSample {
+  readonly visiblePixels: number;
+  readonly centerVisiblePixels: number;
+  readonly sampledLuma: readonly number[];
+}
+
+async function sampleCanvasFrame(canvas: Locator): Promise<CanvasFrameSample> {
+  return canvas.evaluate((element) => {
+    const canvasElement = element as HTMLCanvasElement;
+    const ctx = canvasElement.getContext('2d');
+    if (ctx === null) {
+      return { visiblePixels: 0, centerVisiblePixels: 0, sampledLuma: [] };
+    }
+
+    const { width, height } = canvasElement;
+    const image = ctx.getImageData(0, 0, width, height).data;
+    let visiblePixels = 0;
+    let centerVisiblePixels = 0;
+    const sampledLuma: number[] = [];
+    const centerLeft = Math.floor(width * 0.25);
+    const centerRight = Math.ceil(width * 0.75);
+    const centerTop = Math.floor(height * 0.25);
+    const centerBottom = Math.ceil(height * 0.75);
+    const sampleStride = Math.max(1, Math.floor((width * height) / 512));
+
+    for (let pixel = 0; pixel < width * height; pixel += 1) {
+      const offset = pixel * 4;
+      const luma = image[offset]! + image[offset + 1]! + image[offset + 2]!;
+      if (luma > 12) {
+        visiblePixels += 1;
+        const x = pixel % width;
+        const y = Math.floor(pixel / width);
+        if (x >= centerLeft && x <= centerRight && y >= centerTop && y <= centerBottom) {
+          centerVisiblePixels += 1;
+        }
+      }
+
+      if (pixel % sampleStride === 0) {
+        sampledLuma.push(Math.round(luma / 3));
+      }
+    }
+
+    return { visiblePixels, centerVisiblePixels, sampledLuma };
+  });
+}
+
+function averageFrameDelta(a: CanvasFrameSample, b: CanvasFrameSample): number {
+  const count = Math.min(a.sampledLuma.length, b.sampledLuma.length);
+  if (count === 0) return 0;
+
+  let total = 0;
+  for (let index = 0; index < count; index += 1) {
+    total += Math.abs(a.sampledLuma[index]! - b.sampledLuma[index]!);
+  }
+  return total / count;
+}
+
 function positionToDirection(
   from: { readonly x: number; readonly y: number },
   to: { readonly x: number; readonly y: number },
@@ -337,7 +428,7 @@ test('click auto-walk collapses hidden turns and waits only for visible animatio
   const target = pickClickTarget(dungeonMap);
   expect(target).not.toBeNull();
 
-  const canvas = page.locator('canvas').nth(1);
+  const canvas = page.getByTestId('dungeon-canvas');
   const box = await canvas.boundingBox();
   expect(box).not.toBeNull();
 
@@ -381,11 +472,91 @@ test('click auto-walk collapses hidden turns and waits only for visible animatio
   const firstMoveResponse = probe.moveResponses[0];
   expect(firstMoveAnimation).toBeDefined();
   expect(firstMoveResponse).toBeDefined();
-  expect(probe.moveRequests[1]!.at - firstMoveAnimation!.at).toBeGreaterThanOrEqual(firstMoveAnimation!.durationMs);
+  expect(probe.moveRequests[1]!.at - firstMoveAnimation!.at).toBeGreaterThanOrEqual(
+    firstMoveAnimation!.durationMs * STEP_WALK_BOUNDARY_PROGRESS,
+  );
   const hiddenEnemyTurns = firstMoveResponse!.events.filter((event) =>
     event.enemyId !== undefined || (event.attackerId !== undefined && event.attackerId !== 'player-1'),
   );
   expect(hiddenEnemyTurns.length).toBeGreaterThan(0);
   const visibleSettleMs = getAnimatedEventBatchSettleUpperBoundMs(firstMoveResponse!.animatedEvents);
   expect(probe.moveRequests[1]!.at - firstMoveResponse!.at).toBeLessThanOrEqual(visibleSettleMs + 250);
+});
+
+test('four-tile click auto-walk stays visually continuous on canvas', async ({ page }) => {
+  // Auto-walk intentionally cancels when a newly revealed enemy interrupts the
+  // route, so probe candidate seeds until one supports an uninterrupted walk.
+  const candidateSeeds = [7, 1, 5, 9, 13, 17, 19, 25, 31, 34];
+
+  for (const seed of candidateSeeds) {
+    const dungeonMap = await startSeededDungeonRun(page, seed);
+    const target = pickLongClickTarget(dungeonMap);
+    if (target === null) {
+      continue;
+    }
+
+    const canvas = page.getByTestId('dungeon-canvas');
+    const box = await canvas.boundingBox();
+    expect(box).not.toBeNull();
+
+    const vpWidth = Math.round(box!.width / CELL_SIZE);
+    const vpHeight = Math.round(box!.height / CELL_SIZE);
+    const minX = Math.min(...dungeonMap.cells.map((cell) => cell.x));
+    const minY = Math.min(...dungeonMap.cells.map((cell) => cell.y));
+    const vpLeft = Math.max(minX, dungeonMap.playerPosition.x - Math.floor(vpWidth / 2));
+    const vpTop = Math.max(minY, dungeonMap.playerPosition.y - Math.floor(vpHeight / 2));
+
+    await canvas.click({
+      position: {
+        x: ((target.target.x - vpLeft) * CELL_SIZE) + (CELL_SIZE / 2),
+        y: ((target.target.y - vpTop) * CELL_SIZE) + (CELL_SIZE / 2),
+      },
+    });
+
+    const samples: CanvasFrameSample[] = [];
+    let moveCount = 0;
+    let lastCount = 0;
+    let stagnantIterations = 0;
+    for (let index = 0; index < 60; index += 1) {
+      await page.waitForTimeout(50);
+      samples.push(await sampleCanvasFrame(canvas));
+      moveCount = await page.evaluate(
+        () => (window as Window & { __movementProbe: MovementProbe }).__movementProbe.moveRequests.length,
+      );
+      if (moveCount === lastCount) {
+        stagnantIterations += 1;
+      } else {
+        stagnantIterations = 0;
+        lastCount = moveCount;
+      }
+      if (moveCount >= 4 || stagnantIterations >= 16) {
+        break;
+      }
+    }
+
+    if (moveCount < 4) {
+      // The walk was interrupted by a revealed threat; try the next seed.
+      continue;
+    }
+
+    for (let index = 0; index < 4; index += 1) {
+      await page.waitForTimeout(50);
+      samples.push(await sampleCanvasFrame(canvas));
+    }
+
+    // Early-run maps are smaller than the canvas viewport and render clamped
+    // to the top-left, so the canvas center is legitimately dark; continuity
+    // means no frame ever collapses toward blank.
+    const maxVisible = Math.max(...samples.map((sample) => sample.visiblePixels));
+    expect(maxVisible).toBeGreaterThan(0);
+    for (const sample of samples) {
+      expect(sample.visiblePixels).toBeGreaterThan(maxVisible * 0.5);
+    }
+
+    const deltas = samples.slice(1).map((sample, index) => averageFrameDelta(samples[index]!, sample));
+    expect(Math.max(...deltas)).toBeLessThan(140);
+    return;
+  }
+
+  throw new Error('No candidate seed produced an uninterrupted four-tile auto-walk');
 });

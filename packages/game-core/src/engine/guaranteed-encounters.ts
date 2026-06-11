@@ -164,12 +164,6 @@ function isEntityPresentAnywhere(
     return true;
   }
 
-  for (const floor of state.run?.floorCache?.values() ?? []) {
-    if (hasEnemyId(floor.enemies, entityIdToFind)) {
-      return true;
-    }
-  }
-
   for (const floor of state.persistedFloorCache?.values() ?? []) {
     if (hasEnemyId(floor.enemies, entityIdToFind)) {
       return true;

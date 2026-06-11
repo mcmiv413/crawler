@@ -148,7 +148,7 @@ describe('executeAbility ring spell runtime', () => {
     });
 
     it('rejects ability with INSUFFICIENT_MANA when player lacks mana', () => {
-      const state = createTestGameStateInCombat();
+      const state = createLearnedRingSpellState('bolt', ['lightning_ring']);
       const lowManaState = {
         ...state,
         player: {

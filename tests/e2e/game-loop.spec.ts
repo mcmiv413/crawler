@@ -1,6 +1,8 @@
 import { test, expect } from '@playwright/test';
 import type { Page } from '@playwright/test';
 
+import { seedAttackReadyDungeon } from './helpers/seeded-dungeon.js';
+
 /**
  * Page Object Model for common game UI interactions
  */
@@ -27,6 +29,14 @@ class GamePage {
     // Start the game
     await startButton.click();
     await this.page.waitForTimeout(500); // Allow state to update
+  }
+
+  async enterDungeon() {
+    const enterButton = this.page.locator('button:has-text("Enter Dungeon")').first();
+    if (await enterButton.isVisible({ timeout: 3000 }).catch(() => false)) {
+      await enterButton.click();
+    }
+    await expect(this.page.locator('[data-testid="dungeon-view"]')).toBeVisible({ timeout: 5000 });
   }
 
   async waitForGameLoaded() {
@@ -97,6 +107,10 @@ class GamePage {
     
     if (await attackButton.isVisible({ timeout: 1000 }).catch(() => false)) {
       await attackButton.click();
+      const firstTarget = this.page.locator('[role="dialog"] button').first();
+      if (await firstTarget.isVisible({ timeout: 300 }).catch(() => false)) {
+        await firstTarget.click();
+      }
     } else {
       await this.page.keyboard.press('Space');
     }
@@ -354,40 +368,25 @@ test.describe('Combat Flow', () => {
 
   test('should show enemy health changing after player attacks', async ({ page }) => {
     const gamePage = new GamePage(page);
-    
+
     await gamePage.navigateToGame();
-    await gamePage.startNewGame('EnemyHPTest');
+    await seedAttackReadyDungeon(page, 'EnemyHPTest');
     await gamePage.waitForGameLoaded();
 
-    // Navigate to find enemy
-    let enemyFound = false;
-    for (let i = 0; i < 15; i++) {
-      const enemies = await gamePage.getVisibleEnemies();
-      if (enemies.length > 0) {
-        enemyFound = true;
-        // Record initial enemy state
-        const initialEnemy = enemies[0];
+    const initialEnemies = await gamePage.getVisibleEnemies();
+    expect(initialEnemies.length).toBeGreaterThan(0);
 
-        // Attack
-        await gamePage.attackNearestEnemy();
-        await page.waitForTimeout(500);
+    await gamePage.attackNearestEnemy();
+    await page.waitForTimeout(500);
 
-        // Check if enemy health or state changed
-        const newEnemies = await gamePage.getVisibleEnemies();
-        expect(newEnemies.length).toBeGreaterThanOrEqual(0);
-        break;
-      }
-
-      const direction = (['right', 'down', 'left', 'up'][i % 4] as any);
-      try {
-        await gamePage.movePlayer(direction);
-      } catch (e) {
-        // Skip
-      }
-      await page.waitForTimeout(100);
-    }
-
-    expect(enemyFound).toBeTruthy();
+    // The attack must produce visible combat feedback: a damage/miss indicator
+    // or a change in the visible enemy roster (e.g. the enemy died).
+    const indicator = page.locator('[data-testid="combat-indicator"], .combat-indicator')
+      .filter({ hasText: /^-\d+$|^miss$/i });
+    const indicatorCount = await indicator.count();
+    const newEnemies = await gamePage.getVisibleEnemies();
+    const rosterChanged = JSON.stringify(newEnemies) !== JSON.stringify(initialEnemies);
+    expect(indicatorCount > 0 || rosterChanged).toBe(true);
   });
 });
 
@@ -645,49 +644,54 @@ test.describe('Complete Game Loop Journey', () => {
 test.describe('Combat Indicators', () => {
   test('should display floating damage indicators when player attacks', async ({ page }) => {
     const gamePage = new GamePage(page);
-    
+
     await gamePage.navigateToGame();
-    await gamePage.startNewGame('CombatIndicatorTest');
+    await seedAttackReadyDungeon(page, 'CombatIndicatorTest');
     await gamePage.waitForGameLoaded();
 
-    // Find and move towards enemy
-    let enemyFound = false;
-    for (let i = 0; i < 15 && !enemyFound; i++) {
-      const enemies = await gamePage.getVisibleEnemies();
-      if (enemies.length > 0) {
-        enemyFound = true;
-        // Attack enemy
-        await gamePage.attackNearestEnemy();
-        await page.waitForTimeout(300);
-        
-        // Look for floating indicator elements (they use position: absolute with specific styles)
-        const indicator = page.locator('div').filter({ has: page.locator('text=/^-\\d+$/') });
-        const indicatorVisible = await indicator.isVisible({ timeout: 1000 }).catch(() => false);
-        
-        // If visible, check styling
-        if (indicatorVisible) {
-          const color = await indicator.evaluate(el => window.getComputedStyle(el).color);
-          const opacity = await indicator.evaluate(el => window.getComputedStyle(el).opacity);
-          
-          // Color should be reddish for damage indicator
-          expect(color).toBeTruthy();
-          expect(opacity).toBeTruthy();
+    // Indicators are transient, so record their appearance with an observer
+    // installed before the attack instead of racing their fade-out.
+    await page.evaluate(() => {
+      const seen: string[] = [];
+      (window as Window & { __indicatorSeen?: string[] }).__indicatorSeen = seen;
+      const record = (node: Node): void => {
+        if (!(node instanceof HTMLElement)) {
+          return;
         }
-        break;
-      }
+        const selector = '[data-testid="combat-indicator"], .combat-indicator';
+        const candidates = node.matches(selector)
+          ? [node, ...node.querySelectorAll(selector)]
+          : [...node.querySelectorAll(selector)];
+        for (const element of candidates) {
+          const text = (element.textContent ?? '').trim();
+          if (/^-\d+$/.test(text) || /^miss$/i.test(text)) {
+            seen.push(text);
+          }
+        }
+      };
+      const observer = new MutationObserver((mutations) => {
+        for (const mutation of mutations) {
+          mutation.addedNodes.forEach(record);
+        }
+      });
+      observer.observe(document.body, { childList: true, subtree: true });
+    });
 
-      const direction = (['right', 'down', 'left', 'up'][i % 4] as any);
-      try {
-        await gamePage.movePlayer(direction);
-      } catch (e) {
-        // Skip if direction unavailable
-      }
-      await page.waitForTimeout(100);
-    }
+    await gamePage.attackNearestEnemy();
 
-    // Verify combat log shows the attack
+    // A floating damage (or miss) indicator must appear for the attack.
+    await expect.poll(
+      async () => page.evaluate(
+        () => (window as Window & { __indicatorSeen?: string[] }).__indicatorSeen?.length ?? 0,
+      ),
+      { timeout: 5000 },
+    ).toBeGreaterThan(0);
+
+    // Verify the combat log records the attack outcome.
+    await page.locator('button:has-text("Log")').first().click();
+    await page.waitForTimeout(300);
     const logText = await page.locator('body').textContent();
-    expect(logText).toContain('damage'); // Should have damage reference
+    expect(/damage|miss/i.test(logText ?? '')).toBe(true);
   });
 
   test('should display floating damage indicators when player takes damage', async ({ page }) => {
@@ -791,9 +795,9 @@ test.describe('Character Panel - Clickable Stats & Breakdowns', () => {
       const defButton = page.locator('button, div').filter({ hasText: /DEF|Defense/ });
 
       // Stats should be visible
-      expect(await hpButton.isVisible({ timeout: 1000 }).catch(() => false) || 
-             await atkButton.isVisible({ timeout: 1000 }).catch(() => false) ||
-             await defButton.isVisible({ timeout: 1000 }).catch(() => false)).toBeTruthy();
+      expect(await hpButton.first().isVisible({ timeout: 1000 }).catch(() => false) ||
+             await atkButton.first().isVisible({ timeout: 1000 }).catch(() => false) ||
+             await defButton.first().isVisible({ timeout: 1000 }).catch(() => false)).toBeTruthy();
     }
   });
 
@@ -880,7 +884,7 @@ test.describe('Character Panel - Clickable Stats & Breakdowns', () => {
         }
 
         // Character panel should still be visible
-        const charPanel = page.locator('body').textContent();
+        const charPanel = await page.locator('body').textContent();
         expect(charPanel).toBeTruthy();
       }
     }

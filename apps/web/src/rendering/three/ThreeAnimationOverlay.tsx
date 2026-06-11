@@ -6,7 +6,12 @@ import { CELL_SIZE, COMBAT_INDICATOR_FADEOUT_MS } from '../../config/ui-config.j
 import { getMoveRenderedOffsetPx, getSquashStretchScale } from '../../animations/move-style-profiles.js';
 import type { FloatingCombatIndicator } from '../../hooks/useCombatIndicatorState.js';
 import type { DefenderHitEntry } from '../../hooks/useDefenderHitState.js';
-import type { DungeonRenderState } from '../../hooks/useDungeonRenderState.js';
+import {
+  findActivePlayerMove,
+  getCameraOffsetForPlayerMove,
+  type DungeonRenderState,
+} from '../../hooks/useDungeonRenderState.js';
+import { resolveMoveAnimationProgress } from '../../hooks/useMoveAnimationState.js';
 import { createThreeRenderer } from './three-renderer-factory.js';
 import type { ThreeRendererHandle } from './three-renderer-factory.js';
 import { getAnimationModule } from './three-animation-registry.js';
@@ -91,6 +96,8 @@ interface FrameState {
   readonly cameraOffset: { readonly x: number; readonly y: number };
   readonly canvasWidth: number;
   readonly canvasHeight: number;
+  readonly vpTilesWidth: number;
+  readonly vpTilesHeight: number;
 }
 
 const EMPTY_MOVE_ANIMATIONS: DungeonRenderState['moveAnimations'] = [];
@@ -112,6 +119,8 @@ const EMPTY_FRAME_STATE: FrameState = {
   cameraOffset: { x: 0, y: 0 },
   canvasWidth: 0,
   canvasHeight: 0,
+  vpTilesWidth: 0,
+  vpTilesHeight: 0,
 };
 
 const EMPTY_OWNERSHIP_REPORT: ThreeOwnershipReport = {
@@ -422,6 +431,8 @@ export function ThreeAnimationOverlay(props: ThreeAnimationOverlayProps): React.
     cameraOffset,
     canvasWidth,
     canvasHeight,
+    vpTilesWidth,
+    vpTilesHeight,
   };
 
   useEffect(() => {
@@ -564,8 +575,22 @@ export function ThreeAnimationOverlay(props: ThreeAnimationOverlayProps): React.
         vpTop: currentVpTop,
         cameraOffset: currentCameraOffset,
         canvasHeight: currentCanvasHeight,
+        vpTilesWidth: currentVpTilesWidth,
+        vpTilesHeight: currentVpTilesHeight,
       } = latestFrameRef.current;
       const now = Date.now();
+      const frameMoveAnimations = activeMoveAnimations.map((animation) =>
+        resolveMoveAnimationProgress(animation, now),
+      );
+      const currentMap = latestFrameRef.current.map;
+      const frameCameraOffset = currentMap === null || frameMoveAnimations.length === 0
+        ? currentCameraOffset
+        : getCameraOffsetForPlayerMove(
+            currentMap,
+            currentVpTilesWidth,
+            currentVpTilesHeight,
+            findActivePlayerMove(currentMap, frameMoveAnimations),
+          );
 
       const activeAnimationKeys = new Set<string>();
       for (const animation of moduleAnimations) {
@@ -605,18 +630,18 @@ export function ThreeAnimationOverlay(props: ThreeAnimationOverlayProps): React.
         const source = animation.sourcePosition === undefined
           ? undefined
           : {
-              x: (animation.sourcePosition.x - currentVpLeft) * CELL_SIZE + CELL_SIZE / 2 + currentCameraOffset.x,
-              y: currentCanvasHeight - ((animation.sourcePosition.y - currentVpTop) * CELL_SIZE + CELL_SIZE / 2 + currentCameraOffset.y),
+              x: (animation.sourcePosition.x - currentVpLeft) * CELL_SIZE + CELL_SIZE / 2 + frameCameraOffset.x,
+              y: currentCanvasHeight - ((animation.sourcePosition.y - currentVpTop) * CELL_SIZE + CELL_SIZE / 2 + frameCameraOffset.y),
             };
         const target = animation.targetPosition === undefined
           ? undefined
           : {
-              x: (animation.targetPosition.x - currentVpLeft) * CELL_SIZE + CELL_SIZE / 2 + currentCameraOffset.x,
-              y: currentCanvasHeight - ((animation.targetPosition.y - currentVpTop) * CELL_SIZE + CELL_SIZE / 2 + currentCameraOffset.y),
+              x: (animation.targetPosition.x - currentVpLeft) * CELL_SIZE + CELL_SIZE / 2 + frameCameraOffset.x,
+              y: currentCanvasHeight - ((animation.targetPosition.y - currentVpTop) * CELL_SIZE + CELL_SIZE / 2 + frameCameraOffset.y),
             };
         entry.module.setPosition(entry.instance, {
-          x: (animation.position.x - currentVpLeft) * CELL_SIZE + CELL_SIZE / 2 + currentCameraOffset.x,
-          y: currentCanvasHeight - ((animation.position.y - currentVpTop) * CELL_SIZE + CELL_SIZE / 2 + currentCameraOffset.y),
+          x: (animation.position.x - currentVpLeft) * CELL_SIZE + CELL_SIZE / 2 + frameCameraOffset.x,
+          y: currentCanvasHeight - ((animation.position.y - currentVpTop) * CELL_SIZE + CELL_SIZE / 2 + frameCameraOffset.y),
           z: 0,
           source,
           target,
@@ -631,8 +656,8 @@ export function ThreeAnimationOverlay(props: ThreeAnimationOverlayProps): React.
         }
       }
 
-      const entityById = new Map((latestFrameRef.current.map?.entities ?? []).map((entity) => [entity.id as EntityId, entity]));
-      const moveById = new Map(activeMoveAnimations.map((move) => [move.entityId as EntityId, move]));
+      const entityById = new Map((currentMap?.entities ?? []).map((entity) => [entity.id as EntityId, entity]));
+      const moveById = new Map(frameMoveAnimations.map((move) => [move.entityId as EntityId, move]));
       const bumpById = new Map(activeBumpAnimations.map((bump) => [bump.attackerId as EntityId, bump]));
       const activeEntityIds = new Set<EntityId>();
       const entityScreenPositions = new Map<EntityId, { x: number; y: number }>();
@@ -672,7 +697,7 @@ export function ThreeAnimationOverlay(props: ThreeAnimationOverlayProps): React.
           currentVpLeft,
           currentVpTop,
           CELL_SIZE,
-          currentCameraOffset,
+          frameCameraOffset,
         );
         let screenX = baseScreen.x;
         let screenY = baseScreen.y;
@@ -701,7 +726,7 @@ export function ThreeAnimationOverlay(props: ThreeAnimationOverlayProps): React.
             CELL_SIZE,
             currentVpLeft,
             currentVpTop,
-            currentCameraOffset,
+            frameCameraOffset,
           );
           const attackerWorld = tileCenterWorld(bump.attackerPos.x, bump.attackerPos.y, CELL_SIZE);
           const attackerBaseScreen = worldToScreen(
@@ -710,7 +735,7 @@ export function ThreeAnimationOverlay(props: ThreeAnimationOverlayProps): React.
             currentVpLeft,
             currentVpTop,
             CELL_SIZE,
-            currentCameraOffset,
+            frameCameraOffset,
           );
           screenX += bumpScreen.x - attackerBaseScreen.x;
           screenY += bumpScreen.y - attackerBaseScreen.y;
@@ -777,7 +802,7 @@ export function ThreeAnimationOverlay(props: ThreeAnimationOverlayProps): React.
             currentVpLeft,
             currentVpTop,
             CELL_SIZE,
-            currentCameraOffset,
+            frameCameraOffset,
           );
         })();
 
@@ -835,8 +860,8 @@ export function ThreeAnimationOverlay(props: ThreeAnimationOverlayProps): React.
         setCombatLabelPosition(
           entry.label,
           {
-            x: (indicator.x - currentVpLeft) * CELL_SIZE + CELL_SIZE + currentCameraOffset.x,
-            y: (indicator.y - currentVpTop) * CELL_SIZE + stackOffset - progress * 15 + currentCameraOffset.y,
+            x: (indicator.x - currentVpLeft) * CELL_SIZE + CELL_SIZE + frameCameraOffset.x,
+            y: (indicator.y - currentVpTop) * CELL_SIZE + stackOffset - progress * 15 + frameCameraOffset.y,
             z: 4,
           },
           currentCanvasHeight,

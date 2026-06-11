@@ -2,8 +2,21 @@ import { describe, it, expect } from 'vitest';
 import { handleAttack } from './combat.js';
 import { createTestGameStateInCombat } from '../../test-utils.js';
 import { SeededRNG } from '../../utils/rng.js';
+import { entityId } from '@dungeon/contracts';
 
 describe('handleAttack integration', () => {
+  it('rejects attacks against a missing target', () => {
+    const state = createTestGameStateInCombat();
+
+    const result = handleAttack(state, entityId('missing_target'), new SeededRNG(1000));
+
+    expect(result.state).toBe(state);
+    expect(result.events).toContainEqual(expect.objectContaining({
+      type: 'PLAYER_ACTION_REJECTED',
+      reasonCode: 'TARGET_NOT_FOUND',
+    }));
+  });
+
   it('should pass weapon damage profile to combat resolver', () => {
     const state = createTestGameStateInCombat();
 
