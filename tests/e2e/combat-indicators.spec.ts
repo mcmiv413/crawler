@@ -1,6 +1,8 @@
 import { test, expect } from '@playwright/test';
 import type { Page } from '@playwright/test';
 
+import { seedAttackReadyDungeon } from './helpers/seeded-dungeon.js';
+
 /**
  * Combat indicators E2E test
  * Validates that damage/heal indicators and debug output work correctly
@@ -27,6 +29,18 @@ class GamePage {
     await this.page.waitForTimeout(500);
   }
 
+  async startAttackReadyDungeon(playerName: string = 'CombatTest') {
+    await seedAttackReadyDungeon(this.page, playerName);
+  }
+
+  async enterDungeon() {
+    const enterButton = this.page.locator('button:has-text("Enter Dungeon")').first();
+    if (await enterButton.isVisible({ timeout: 3000 }).catch(() => false)) {
+      await enterButton.click();
+    }
+    await expect(this.page.locator('[data-testid="dungeon-view"]')).toBeVisible({ timeout: 5000 });
+  }
+
   async waitForDungeonLoaded() {
     const dungeonView = this.page.locator('canvas, .dungeon-phase, [data-testid="dungeon-view"]');
     await Promise.race([
@@ -36,10 +50,26 @@ class GamePage {
   }
 
   async attackEnemy() {
-    const attackButton = this.page.locator('button:has-text("Attack"), [data-testid*="attack"]');
-    await attackButton.waitFor({ state: 'visible', timeout: 3000 });
-    await attackButton.click();
-    await this.page.waitForTimeout(500); // Wait for combat animation
+    const attackButton = this.page.locator('button:has-text("Attack"), [data-testid*="attack"]').first();
+    const directions = ['ArrowRight', 'ArrowDown', 'ArrowLeft', 'ArrowUp'] as const;
+
+    for (let attempt = 0; attempt < 20; attempt += 1) {
+      await attackButton.waitFor({ state: 'visible', timeout: 3000 });
+      if (await attackButton.isEnabled().catch(() => false)) {
+        await attackButton.click();
+        const firstTarget = this.page.locator('[role="dialog"] button').first();
+        if (await firstTarget.isVisible({ timeout: 300 }).catch(() => false)) {
+          await firstTarget.click();
+        }
+        await this.page.waitForTimeout(500); // Wait for combat animation
+        return;
+      }
+
+      await this.page.keyboard.press(directions[attempt % directions.length]!);
+      await this.page.waitForTimeout(150);
+    }
+
+    throw new Error('Attack button never became enabled');
   }
 
   async toggleDebugMode() {
@@ -50,21 +80,32 @@ class GamePage {
     }
   }
 
+  async openLogPanel() {
+    const logTab = this.page.locator('button:has-text("Log")').first();
+    await logTab.waitFor({ state: 'visible', timeout: 3000 });
+    await logTab.click();
+    await this.page.waitForTimeout(300);
+  }
+
   async getCombatLogText() {
-    const combatLog = this.page.locator('[data-testid="combat-log"], .combat-log-view, .combat-log');
+    const combatLog = this.page.locator('[data-testid="combat-log-entries"], .combat-log-view, .combat-log').first();
+    if (!(await combatLog.isVisible({ timeout: 1000 }).catch(() => false))) {
+      // The combat log renders nothing while it has no entries.
+      return '';
+    }
     const text = await combatLog.textContent();
     return text || '';
   }
 
   async getDamageIndicators() {
-    // Look for red damage text floating labels
-    const indicators = this.page.locator('div:has-text(/^-\\d+$/), div:has-text("miss")');
+    const indicators = this.page.locator('[data-testid="combat-indicator"], .combat-indicator')
+      .filter({ hasText: /^-\d+$|^miss$/i });
     return await indicators.count();
   }
 
   async getHealIndicators() {
-    // Look for green heal text floating labels
-    const indicators = this.page.locator('div:has-text(/^\\+\\d+$/)');
+    const indicators = this.page.locator('[data-testid="combat-indicator"], .combat-indicator')
+      .filter({ hasText: /^\+\d+$/ });
     return await indicators.count();
   }
 }
@@ -78,8 +119,7 @@ test.describe('Combat Indicators', () => {
   });
 
   test('should show damage indicator when attacking enemy', async ({ page }) => {
-    // Start game
-    await gamePage.startNewGame('DamageTest');
+    await gamePage.startAttackReadyDungeon('DamageTest');
     await gamePage.waitForDungeonLoaded();
 
     // Get initial indicator count
@@ -95,9 +135,9 @@ test.describe('Combat Indicators', () => {
   });
 
   test('should show damage in combat log', async ({ page }) => {
-    // Start game
-    await gamePage.startNewGame('LogTest');
+    await gamePage.startAttackReadyDungeon('LogTest');
     await gamePage.waitForDungeonLoaded();
+    await gamePage.openLogPanel();
 
     // Get initial log
     const initialLog = await gamePage.getCombatLogText();
@@ -116,8 +156,7 @@ test.describe('Combat Indicators', () => {
   });
 
   test('should show debug output when enabled', async ({ page }) => {
-    // Start game
-    await gamePage.startNewGame('DebugTest');
+    await gamePage.startAttackReadyDungeon('DebugTest');
     await gamePage.waitForDungeonLoaded();
 
     // Enable debug mode
@@ -144,7 +183,8 @@ test.describe('Combat Indicators', () => {
 
     // Check if healing item is available
     const healButton = page.locator('button:has-text("Heal"), [data-testid*="heal"]');
-    const canHeal = await healButton.isVisible({ timeout: 1000 }).catch(() => false);
+    const canHeal = await healButton.isVisible({ timeout: 1000 }).catch(() => false)
+      && await healButton.isEnabled().catch(() => false);
 
     if (canHeal) {
       // Use heal action
@@ -158,8 +198,7 @@ test.describe('Combat Indicators', () => {
   });
 
   test('should show miss indicator on failed attack', async ({ page }) => {
-    // Start game (this may or may not result in misses depending on stats)
-    await gamePage.startNewGame('MissTest');
+    await gamePage.startAttackReadyDungeon('MissTest');
     await gamePage.waitForDungeonLoaded();
 
     // Try attacking multiple times to potentially get a miss
@@ -175,8 +214,7 @@ test.describe('Combat Indicators', () => {
   });
 
   test('combat indicators should persist long enough to be visible', async ({ page }) => {
-    // Start game
-    await gamePage.startNewGame('PersistTest');
+    await gamePage.startAttackReadyDungeon('PersistTest');
     await gamePage.waitForDungeonLoaded();
 
     // Attack enemy

@@ -1,5 +1,6 @@
 import type { EntityId, GameState, IGameRepository } from '@dungeon/contracts';
-import { deserializeState } from '@dungeon/core';
+import { SchemaParseError } from '@dungeon/contracts';
+import { deserializeState, validateGameState } from '@dungeon/core';
 
 import { buildRestoreResponse, canonicalizeGameState } from './game-response-service.js';
 import { generateSessionToken } from './session-token-service.js';
@@ -25,6 +26,12 @@ export function getRestoreSerializedState(body: unknown): string | null {
 
 export function parseRestoreState(serializedState: string): ParsedRestoreState {
   const parsedState = deserializeState(serializedState);
+  const validation = validateGameState(parsedState);
+  if (validation.isValid === false) {
+    throw new SchemaParseError(
+      `Save file state validation failed: ${validation.errors.map(error => `${error.path}: ${error.message}`).join('; ')}`,
+    );
+  }
   const canonicalState = canonicalizeGameState(parsedState);
 
   return {

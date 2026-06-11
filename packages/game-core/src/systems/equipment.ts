@@ -1,7 +1,7 @@
 import type {
   EntityId, GameState, Player, AnyItemTemplate,
   WeaponTemplate, ArmorTemplate,
-  Equipment, PlayerStats, DamageType,
+  Equipment, PlayerStats, DamageType, EnchantmentDefinition,
 } from '@dungeon/contracts';
 import type { DomainEvent } from '@dungeon/contracts';
 import { ENCHANTMENT_BY_ID, RING_SPELL_BY_ID, getImpliedBlueprints, getSchoolForRing, getSchoolSpells } from '@dungeon/content';
@@ -83,12 +83,21 @@ function markEquippedRingSchoolsDiscovered(
 export function syncEquipmentGrantedAbilities(
   player: Player,
   registry: ReadonlyMap<EntityId, AnyItemTemplate>,
+  enchantments: ReadonlyMap<string, EnchantmentDefinition> = ENCHANTMENT_BY_ID,
 ): Player {
   const discoveredPlayer = markEquippedRingSchoolsDiscovered(player, registry);
-  const grantIds = collectEquipmentAbilityGrants(discoveredPlayer, registry);
+  const grantIds = collectEquipmentAbilityGrants(discoveredPlayer, registry, enchantments);
   const ringGrantableIds = new Set(RING_SPELL_BY_ID.keys());
+  const enchantmentGrantableIds = new Set(
+    Array.from(enchantments.values())
+      .map(enchantment => enchantment.effect.type === 'grant_ability' ? enchantment.effect.abilityId : undefined)
+      .filter((abilityId): abilityId is string => abilityId !== undefined),
+  );
+  const equipmentGrantableIds = new Set([...ringGrantableIds, ...enchantmentGrantableIds]);
   const retainedAbilities = discoveredPlayer.abilities.filter(ability =>
-    ringGrantableIds.has(ability.id) === false || grantIds.has(ability.id) === true,
+    grantIds.has(ability.id) === true
+    || (ringGrantableIds.has(ability.id) === true && ability.cooldownRemaining > 0)
+    || equipmentGrantableIds.has(ability.id) === false,
   );
   const retainedIds = new Set(retainedAbilities.map(ability => ability.id));
   const grantedAbilities = Array.from(grantIds)
@@ -104,6 +113,7 @@ export function syncEquipmentGrantedAbilities(
 function collectEquipmentAbilityGrants(
   player: Player,
   registry: ReadonlyMap<EntityId, AnyItemTemplate>,
+  enchantments: ReadonlyMap<string, EnchantmentDefinition>,
 ): Set<string> {
   const grants = new Set<string>();
   const slots: readonly (keyof Equipment)[] = ['weapon', 'secondaryWeapon', ...ARMOR_EQUIP_SLOTS];
@@ -133,7 +143,7 @@ function collectEquipmentAbilityGrants(
 
     for (const enchantmentId of armor.enchantments) {
       if (enchantmentId === null) continue;
-      const enchantment = ENCHANTMENT_BY_ID.get(enchantmentId);
+      const enchantment = enchantments.get(enchantmentId);
       const abilityId = enchantment?.effect.type === 'grant_ability' ? enchantment.effect.abilityId : undefined;
       if (abilityId !== undefined) grants.add(abilityId);
     }

@@ -1,5 +1,5 @@
-import type { GameState, EntityId } from '@dungeon/contracts';
-import { ITEM_BY_ID, getStudySpell, getSchoolForRing } from '@dungeon/content';
+import type { GameState, EntityId, EquipSlot, ArmorTemplate } from '@dungeon/contracts';
+import { ITEM_BY_ID, ENCHANTMENT_BY_ID, getEnchantmentCost, getStudySpell, getSchoolForRing } from '@dungeon/content';
 import type { RingSchool, SpellStudyRequirement } from '@dungeon/content';
 import { evaluateRingSpellStudy, getEquippedRingItemIds } from './ring-spell-availability.js';
 
@@ -18,6 +18,7 @@ export type TownValidationResult =
  * 1. STUDY_SPELL: spell exists, is eligible to learn
  * 2. BUY_ITEM: item is for sale, player has sufficient gold
  * 3. TURN_IN_QUEST: quest exists, is ready to turn in
+ * 4. ENCHANT_ARMOR: enchantment exists, is unlocked, armor slot can accept it
  *
  * Rejection codes:
  * - SPELL_NOT_FOUND: Spell doesn't exist in content
@@ -26,14 +27,20 @@ export type TownValidationResult =
  * - INSUFFICIENT_GOLD: Player lacks gold for purchase
  * - QUEST_NOT_FOUND: Quest doesn't exist in active quests
  * - QUEST_NOT_READY: Quest is not ready to turn in (wrong status/phase)
+ * - ENCHANTMENT_NOT_FOUND: Enchantment doesn't exist in content
+ * - ENCHANTMENT_NOT_UNLOCKED: Enchantment blueprint hasn't been unlocked
+ * - NO_ENCHANTMENT_SLOT: Target slot/item cannot accept the enchantment
+ * - DUPLICATE_ENCHANTMENT: Target item already has this enchantment
  */
 export function validateTownTransaction(
   state: GameState,
-  actionType: 'STUDY_SPELL' | 'BUY_ITEM' | 'TURN_IN_QUEST',
+  actionType: 'STUDY_SPELL' | 'BUY_ITEM' | 'TURN_IN_QUEST' | 'ENCHANT_ARMOR',
   actionPayload: {
     spellId?: string;
     itemId?: string;
     questId?: EntityId;
+    equipSlot?: EquipSlot;
+    enchantmentId?: string;
   },
 ): TownValidationResult {
   switch (actionType) {
@@ -43,6 +50,8 @@ export function validateTownTransaction(
       return validateBuyItem(state, actionPayload.itemId);
     case 'TURN_IN_QUEST':
       return validateTurnInQuest(state, actionPayload.questId);
+    case 'ENCHANT_ARMOR':
+      return validateEnchantArmor(state, actionPayload.equipSlot, actionPayload.enchantmentId);
     default:
       const _never: never = actionType;
       return _never;
@@ -108,9 +117,132 @@ function validateStudySpell(
       };
     }
 
-    // Other unmet requirements (xp gates, prerequisites, insufficient gold)
-    // Treat as silent guards
-    return { valid: true };
+    if (evalResult.affordable === false) {
+      return {
+        valid: false,
+        rejectionCode: 'INSUFFICIENT_GOLD',
+        message: `Cannot study "${spell.name}": requires ${evalResult.goldCost} gold.`,
+      };
+    }
+
+    const unmetPrerequisite = spell.studyRequirements.find(req =>
+      req.kind === 'prerequisiteSpell' && !state.player.learnedRingSpellIds.includes(req.spellId)
+    );
+    if (unmetPrerequisite?.kind === 'prerequisiteSpell') {
+      return {
+        valid: false,
+        rejectionCode: 'SPELL_STUDY_INELIGIBLE',
+        message: `Cannot study "${spell.name}": requires ${unmetPrerequisite.spellId}.`,
+      };
+    }
+
+    const unmetGate = evalResult.schoolGates.find(gate => gate.met === false);
+    if (unmetGate !== undefined) {
+      return {
+        valid: false,
+        rejectionCode: 'SPELL_STUDY_INELIGIBLE',
+        message: `Cannot study "${spell.name}": ${unmetGate.school} XP ${unmetGate.currentXp}/${unmetGate.requiredXp}.`,
+      };
+    }
+
+    return {
+      valid: false,
+      rejectionCode: 'SPELL_STUDY_INELIGIBLE',
+      message: `Cannot study "${spell.name}".`,
+    };
+  }
+
+  return { valid: true };
+}
+
+function validateEnchantArmor(
+  state: GameState,
+  equipSlot: EquipSlot | undefined,
+  enchantmentId: string | undefined,
+): TownValidationResult {
+  if (state.phase !== 'town') {
+    return {
+      valid: false,
+      rejectionCode: 'WRONG_PHASE',
+      message: 'Armor can only be enchanted in town.',
+    };
+  }
+
+  if (enchantmentId === undefined || enchantmentId.length === 0) {
+    return {
+      valid: false,
+      rejectionCode: 'ENCHANTMENT_NOT_FOUND',
+      message: 'No enchantment ID provided.',
+    };
+  }
+
+  const enchDef = ENCHANTMENT_BY_ID.get(enchantmentId);
+  if (enchDef === undefined) {
+    return {
+      valid: false,
+      rejectionCode: 'ENCHANTMENT_NOT_FOUND',
+      message: `Enchantment "${enchantmentId}" not found in game content.`,
+    };
+  }
+
+  if (!state.world.unlockedBlueprints.includes(enchantmentId)) {
+    return {
+      valid: false,
+      rejectionCode: 'ENCHANTMENT_NOT_UNLOCKED',
+      message: `${enchDef.name} is not unlocked.`,
+    };
+  }
+
+  const cost = getEnchantmentCost(enchantmentId);
+  if (state.player.gold < cost) {
+    return {
+      valid: false,
+      rejectionCode: 'INSUFFICIENT_GOLD',
+      message: `${enchDef.name} requires ${cost} gold.`,
+    };
+  }
+
+  if (equipSlot === undefined) {
+    return {
+      valid: false,
+      rejectionCode: 'NO_ENCHANTMENT_SLOT',
+      message: 'No equipment slot provided.',
+    };
+  }
+
+  const itemId = state.player.equipment[equipSlot];
+  if (itemId === null) {
+    return {
+      valid: false,
+      rejectionCode: 'NO_ENCHANTMENT_SLOT',
+      message: 'No item is equipped in that slot.',
+    };
+  }
+
+  const template = state.itemRegistry.items.get(itemId);
+  if (template === undefined || template.itemClass !== 'armor') {
+    return {
+      valid: false,
+      rejectionCode: 'NO_ENCHANTMENT_SLOT',
+      message: 'Only armor can be enchanted.',
+    };
+  }
+
+  const armor = (template as ArmorTemplate).armor;
+  if (armor.enchantmentSlots <= 0 || armor.enchantments.length === 0 || armor.enchantments.indexOf(null) === -1) {
+    return {
+      valid: false,
+      rejectionCode: 'NO_ENCHANTMENT_SLOT',
+      message: `${template.name} has no open enchantment slot.`,
+    };
+  }
+
+  if (armor.enchantments.includes(enchantmentId)) {
+    return {
+      valid: false,
+      rejectionCode: 'DUPLICATE_ENCHANTMENT',
+      message: `${template.name} already has ${enchDef.name}.`,
+    };
   }
 
   return { valid: true };

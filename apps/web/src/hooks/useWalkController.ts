@@ -7,6 +7,7 @@ import { MOVEMENT_KEY_DIRECTIONS } from './useKeyboard.js';
 import { useGameStore } from '../store/game-store.js';
 import { positionToDirection } from '../utils/direction.js';
 import { detectNewThreats } from '../utils/threat-detection.js';
+import { subscribeMoveAnimation } from './useMoveAnimationState.js';
 
 interface AutoWalkSession {
   readonly path: readonly { readonly x: number; readonly y: number }[];
@@ -279,15 +280,19 @@ export function useWalkController(): void {
   }, [cancelActiveAutoWalk, maybeDispatchNextMove, updateWalkContinuationSignal]);
 
   useEffect(() => {
-    const handleMoveAnimation = (event: Event) => {
-      const customEvent = event as CustomEvent<MoveAnimationEntry>;
-      const entry = customEvent.detail;
+    const handleMoveAnimation = (entry: MoveAnimationEntry) => {
       const currentView = useGameStore.getState().view;
       if (currentView?.phase !== 'dungeon' || currentView.map === null) {
         return;
       }
+      const playerEntityId = currentView.map.entities.find((entity) => entity.type === 'player')?.id;
+      if (playerEntityId !== undefined && entry.entityId !== playerEntityId) {
+        return;
+      }
       const playerPosition = currentView.map.playerPosition;
-      if (playerPosition.x !== entry.toPos.x || playerPosition.y !== entry.toPos.y) {
+      const matchesCommittedPosition = playerPosition.x === entry.toPos.x && playerPosition.y === entry.toPos.y;
+      const matchesPreCommitPosition = playerPosition.x === entry.fromPos.x && playerPosition.y === entry.fromPos.y;
+      if (!matchesCommittedPosition && !matchesPreCommitPosition) {
         return;
       }
 
@@ -316,9 +321,9 @@ export function useWalkController(): void {
       }, entry.durationMs);
     };
 
-    window.addEventListener('move-animation', handleMoveAnimation, { capture: true });
+    const unsubscribeMoveAnimation = subscribeMoveAnimation(handleMoveAnimation);
     return () => {
-      window.removeEventListener('move-animation', handleMoveAnimation, { capture: true });
+      unsubscribeMoveAnimation();
       if (boundaryTimerRef.current !== undefined) {
         window.clearTimeout(boundaryTimerRef.current);
       }

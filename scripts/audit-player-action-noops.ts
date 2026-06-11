@@ -20,6 +20,7 @@ interface Finding {
   snippet: string;
   category: 'P' | 'G' | 'D' | 'B' | 'unclassified';
   protected: boolean;
+  pattern?: PatternInfo;
 }
 
 interface PatternInfo {
@@ -27,8 +28,13 @@ interface PatternInfo {
   reason: string;
 }
 
+interface SnippetPatternInfo extends PatternInfo {
+  snippet: string;
+}
+
 const findings: Finding[] = [];
 const scanErrors: string[] = [];
+const matchedSnippetPatternKeys = new Set<string>();
 
 // Autonomous system files to exclude (A category — not player actions)
 const EXCLUDED_PATHS = new Set([
@@ -471,6 +477,154 @@ const KNOWN_PATTERNS: Record<string, PatternInfo> = {
   },
 };
 
+// Stable classifications keyed by file plus source snippet/context instead of line number.
+// These are preferred over KNOWN_PATTERNS so line drift does not silently reclassify
+// a different no-op. Multi-part snippets use the two previous non-empty lines plus
+// the return line, separated by ` | `.
+const KNOWN_SNIPPET_PATTERNS: Record<string, readonly SnippetPatternInfo[]> = {
+  'packages/game-core/src/engine/command-handler.ts': [
+    {
+      snippet: "if (!isMoveCommand(command)) return { state, events: [], runEnded: false };",
+      category: 'G',
+      reason: 'Type-guard dispatch — defensive pattern',
+    },
+    {
+      snippet: "if (!isAttackCommand(command)) return { state, events: [], runEnded: false };",
+      category: 'G',
+      reason: 'Type-guard dispatch — defensive pattern',
+    },
+    {
+      snippet: "if (!isUseItemCommand(command)) return { state, events: [], runEnded: false };",
+      category: 'G',
+      reason: 'Type-guard dispatch — defensive pattern',
+    },
+    {
+      snippet: "if (!isTownActionCommand(command)) return { state, events: [], runEnded: false };",
+      category: 'G',
+      reason: 'Type-guard dispatch — defensive pattern',
+    },
+    {
+      snippet: "if (!isEquipCommand(command)) return { state, events: [], runEnded: false };",
+      category: 'G',
+      reason: 'Type-guard dispatch — defensive pattern',
+    },
+    {
+      snippet: "if (!isUnequipCommand(command)) return { state, events: [], runEnded: false };",
+      category: 'G',
+      reason: 'Type-guard dispatch — defensive pattern',
+    },
+    {
+      snippet: "if (!isInteractCommand(command)) return { state, events: [], runEnded: false };",
+      category: 'G',
+      reason: 'Type-guard dispatch — defensive pattern',
+    },
+    {
+      snippet: "return { state, events: [], runEnded: false }; // handled by game engine",
+      category: 'D',
+      reason: 'ASCEND handled at game-engine layer',
+    },
+    {
+      snippet: "if (!isUseAbilityCommand(command)) return { state, events: [], runEnded: false };",
+      category: 'G',
+      reason: 'Type-guard dispatch — defensive pattern',
+    },
+    {
+      snippet: "return { state, events: [], runEnded: false };",
+      category: 'B',
+      reason: 'Unregistered custom ring-spell handler — should log or emit DEBUG event',
+    },
+    {
+      snippet: "if (!isEnchantArmorCommand(command)) return { state, events: [], runEnded: false };",
+      category: 'G',
+      reason: 'Type-guard dispatch — defensive pattern',
+    },
+    {
+      snippet: "if (!isDisarmTrapCommand(command)) return { state, events: [], runEnded: false };",
+      category: 'G',
+      reason: 'Type-guard dispatch — defensive pattern',
+    },
+    {
+      snippet: "if (!isSetTrapCommand(command)) return { state, events: [], runEnded: false };",
+      category: 'G',
+      reason: 'Type-guard dispatch — defensive pattern',
+    },
+  ],
+  'packages/game-core/src/systems/equipment.ts': [
+    {
+      snippet: "if (newIds.length === 0) return { state, events: [] };",
+      category: 'G',
+      reason: 'No new unlocks — legitimate no-op',
+    },
+    {
+      snippet: "// Validate item exists and is equippable before modifying state | if (template === undefined || template.itemClass === 'trap') { | return { state, events: [] };",
+      category: 'G',
+      reason: 'Item registry guard — validated by validateEquipmentAction before equipItem',
+    },
+    {
+      snippet: "// Only weapon and armor classes are equippable | if (template.itemClass !== 'weapon' && template.itemClass !== 'armor') { | return { state, events: [] };",
+      category: 'G',
+      reason: 'Item class guard — validated by validateEquipmentAction before equipItem',
+    },
+  ],
+  'packages/game-core/src/systems/town.ts': [
+    {
+      snippet: "if (spell === undefined) { | // Should not reach here due to validation, but defensive | return { state, events: [] };",
+      category: 'G',
+      reason: 'Spell not found — defensive post-validation guard',
+    },
+    {
+      snippet: "if (evalResult.canStudy === false) { | // Should not reach here due to validation, but defensive | return { state, events: [] };",
+      category: 'G',
+      reason: 'Study ineligible — defensive post-validation guard',
+    },
+    {
+      snippet: "return processShopUndo(state); | case 'enter_dungeon': | return { state, events: [] };",
+      category: 'D',
+      reason: 'enter_dungeon delegated to game-engine layer',
+    },
+    {
+      snippet: "return processTalkNpc(state, targetId, rng); | case 'enchant_armor': | return { state, events: [] };",
+      category: 'B',
+      reason: 'Dead code — enchant_armor case superseded by ENCHANT_ARMOR command',
+    },
+    {
+      snippet: "if (shopItem === undefined || shopItem.stock <= 0) return { state, events: [] }; // Should not reach due to validation",
+      category: 'G',
+      reason: 'Stock guard — defensive post-validation guard',
+    },
+    {
+      snippet: "if (template === undefined) return { state, events: [] }; // Should not reach due to validation",
+      category: 'G',
+      reason: 'Template guard — defensive post-validation guard',
+    },
+    {
+      snippet: "// Server-side rarity gate: enforce the same rules as the presenter filter | if (isRarityBuyable(template.rarity, state.world.highestRarityFound) !== true) { | return { state, events: [] };",
+      category: 'G',
+      reason: 'Rarity gate — server-side buy restriction',
+    },
+    {
+      snippet: "if (itemEntityId === undefined) return { state, events: [] };",
+      category: 'G',
+      reason: 'Item entity ID validation (processShopSell)',
+    },
+    {
+      snippet: "if (template === undefined) return { state, events: [] };",
+      category: 'G',
+      reason: 'Item template validation (processShopSell)',
+    },
+    {
+      snippet: "if (transaction === undefined) return { state, events: [] };",
+      category: 'D',
+      reason: 'Undo with no transaction has nothing to reverse',
+    },
+    {
+      snippet: "if (quest === undefined) return { state, events: [] }; // Should not reach due to validation",
+      category: 'G',
+      reason: 'Quest not found — defensive post-validation guard',
+    },
+  ],
+};
+
 // Protected file paths: files that should emit visible events (not silent no-ops)
 // for player-facing rejection or combat resolution scenarios.
 // A finding in these files is only a "protected failure" if it has no KNOWN_PATTERNS entry
@@ -489,6 +643,40 @@ const protectedPaths = [
 ];
 
 const REPO_ROOT = process.cwd();
+
+function snippetPatternKey(file: string, snippet: string): string {
+  return `${file}\0${snippet}`;
+}
+
+function buildSnippetContext(lines: readonly string[], lineIndex: number): string {
+  const previousLines: string[] = [];
+  for (let i = lineIndex - 1; i >= 0 && previousLines.length < 2; i--) {
+    const trimmed = lines[i]?.trim();
+    if (trimmed !== undefined && trimmed.length > 0) {
+      previousLines.unshift(trimmed);
+    }
+  }
+
+  return [...previousLines, lines[lineIndex]?.trim() ?? ''].join(' | ');
+}
+
+function findKnownPattern(
+  file: string,
+  line: number,
+  snippet: string,
+  snippetContext: string,
+): PatternInfo | undefined {
+  const snippetPatterns = KNOWN_SNIPPET_PATTERNS[file] ?? [];
+  const snippetPattern = snippetPatterns.find(pattern => pattern.snippet === snippetContext)
+    ?? snippetPatterns.find(pattern => pattern.snippet === snippet);
+
+  if (snippetPattern !== undefined) {
+    matchedSnippetPatternKeys.add(snippetPatternKey(file, snippetPattern.snippet));
+    return snippetPattern;
+  }
+
+  return KNOWN_PATTERNS[`${file}:${line}`];
+}
 
 function scanDirectory(dir: string) {
   let entries;
@@ -542,22 +730,24 @@ function scanFile(filePath: string) {
   for (let i = 0; i < lines.length; i++) {
     const line = lines[i];
     if (line && line.includes('return') && line.includes('events:') && line.includes('[]')) {
-      const patternKey = `${relPath}:${i + 1}`;
-      const pattern = KNOWN_PATTERNS[patternKey];
+      const lineNumber = i + 1;
+      const snippet = line.trim();
+      const pattern = findKnownPattern(relPath, lineNumber, snippet, buildSnippetContext(lines, i));
 
-      // KNOWN_PATTERNS always wins for category classification.
+      // Known classifications win for category classification.
       // A finding is a "protected failure" only if:
       //   1. It is in a protected file, AND
-      //   2. It has no KNOWN_PATTERNS entry (unclassified) OR its KNOWN_PATTERNS category is 'P'
+      //   2. It has no known entry (unclassified) OR its known category is 'P'
       const category: Finding['category'] = pattern?.category ?? (isInProtectedFile ? 'P' : 'unclassified');
       const isProtectedFailure = isInProtectedFile && (pattern === undefined || pattern.category === 'P');
 
       findings.push({
         file: relPath,
-        line: i + 1,
-        snippet: line.trim(),
+        line: lineNumber,
+        snippet,
         category,
         protected: isProtectedFailure,
+        pattern,
       });
     }
   }
@@ -566,6 +756,14 @@ function scanFile(filePath: string) {
 console.log('Auditing player action paths for silent no-op returns...\n');
 
 scanDirectory(join(REPO_ROOT, 'packages/game-core/src'));
+
+for (const [file, patterns] of Object.entries(KNOWN_SNIPPET_PATTERNS)) {
+  for (const pattern of patterns) {
+    if (!matchedSnippetPatternKeys.has(snippetPatternKey(file, pattern.snippet))) {
+      scanErrors.push(`Dangling known no-op snippet pattern: ${file}: ${pattern.snippet}`);
+    }
+  }
+}
 
 // Report scan errors immediately
 if (scanErrors.length > 0) {
@@ -591,7 +789,7 @@ if (protectedFailures.length > 0) {
   console.log('[FAIL] PROTECTED PATHS — CI FAILURE (must emit rejection events):');
   console.log(`Found ${protectedFailures.length} paths that still return empty events:\n`);
   for (const finding of protectedFailures) {
-    const pattern = KNOWN_PATTERNS[`${finding.file}:${finding.line}`];
+    const pattern = finding.pattern;
     console.log(`  ${finding.file}:${finding.line}`);
     if (pattern) {
       console.log(`    ${pattern.reason}`);
@@ -605,7 +803,7 @@ if (playerRejectionsP.length > 0) {
   console.log('[P] CONFIRMED player-facing rejections (already implemented via validators):');
   console.log(`Found ${playerRejectionsP.length} implemented rejection paths:\n`);
   for (const finding of playerRejectionsP) {
-    const pattern = KNOWN_PATTERNS[`${finding.file}:${finding.line}`];
+    const pattern = finding.pattern;
     console.log(`  ${finding.file}:${finding.line}`);
     if (pattern) {
       console.log(`    ${pattern.reason}`);
@@ -629,7 +827,7 @@ if (bugFindings.length > 0) {
   console.log('[B] BUG FINDINGS (successful mutations missing events):');
   console.log(`Found ${bugFindings.length} paths with missing events:\n`);
   for (const finding of bugFindings) {
-    const pattern = KNOWN_PATTERNS[`${finding.file}:${finding.line}`];
+    const pattern = finding.pattern;
     console.log(`  ${finding.file}:${finding.line}`);
     if (pattern) {
       console.log(`    Reason: ${pattern.reason}`);

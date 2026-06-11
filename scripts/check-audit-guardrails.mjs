@@ -31,6 +31,12 @@ function expectNotContains(relativePath, needle, message) {
   }
 }
 
+function expectNotMatches(relativePath, pattern, message) {
+  if (pattern.test(read(relativePath))) {
+    failures.push(`${relativePath}: ${message}`);
+  }
+}
+
 function walk(relativePath) {
   const absolutePath = join(repoRoot, relativePath);
   const entries = readdirSync(absolutePath, { withFileTypes: true });
@@ -127,6 +133,52 @@ if (existsSync(join(repoRoot, 'tools', 'balance'))) {
   failures.push('tools/balance: orphaned placeholder balance tooling should be removed from the active repo surface');
 }
 
+const removedDeadSurfacePaths = [
+  'packages/game-core/src/engine/action-pipeline.ts',
+  'packages/game-core/src/engine/action-pipeline.test.ts',
+  'packages/game-core/src/abilities/requirement-validator.ts',
+  'apps/web/src/components/TrapPlacementModal.tsx',
+  'apps/web/src/components/InventoryPanel.tsx',
+  'apps/web/src/components/InspectScreen.tsx',
+  'apps/web/src/components/EquipmentOverview.tsx',
+  'apps/web/src/components/dropdowns/InspectDropdown.tsx',
+  'apps/web/src/components/dropdowns/SwapDropdown.tsx',
+  'apps/web/src/components/ActionOverlay.tsx',
+  'apps/web/src/components/DPad.tsx',
+];
+
+for (const relativePath of removedDeadSurfacePaths) {
+  if (existsSync(join(repoRoot, relativePath))) {
+    failures.push(`${relativePath}: dead rule/UI surface should stay removed`);
+  }
+}
+
+expectNotContains(
+  'packages/game-core/src/systems/index.ts',
+  'getStudyableRingSpells',
+  'dead studyability helper must not be re-exported',
+);
+expectNotMatches(
+  'packages/game-core/src/systems/index.ts',
+  /\bgetSchoolMasteryLevel\b/,
+  'dead school mastery helper must not be re-exported',
+);
+expectNotContains(
+  'packages/game-core/src/systems/mana.ts',
+  'canAfordMana',
+  'misspelled mana alias should stay removed',
+);
+expectNotContains(
+  'packages/content/src/factions/utilities.ts',
+  'getTemplateIdsForFaction',
+  'dead faction helper should stay removed',
+);
+expectNotContains(
+  'packages/content/src/factions/utilities.ts',
+  'getFactionIdsForTemplate',
+  'dead faction helper should stay removed',
+);
+
 const gameCoreFiles = walk('packages/game-core/src').filter(
   (relativePath) =>
     relativePath.endsWith('.ts') &&
@@ -137,6 +189,18 @@ const gameCoreFiles = walk('packages/game-core/src').filter(
     relativePath.includes('.contract.test.') === false &&
     relativePath.includes('.balance.test.') === false,
 );
+
+for (const relativePath of gameCoreFiles) {
+  if (
+    relativePath !== 'packages/game-core/src/engine/floor-transition-service.ts'
+    && relativePath !== 'packages/game-core/src/generation/map-generator.ts'
+    && /\bgenerateFloor\s*\(/.test(read(relativePath))
+  ) {
+    failures.push(
+      `${relativePath}: generated floors must flow through floor-transition-service.ts so persistedFloorCache is checked first`,
+    );
+  }
+}
 
 for (const relativePath of gameCoreFiles) {
   const lines = read(relativePath).split('\n');

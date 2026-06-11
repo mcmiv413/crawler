@@ -58,8 +58,6 @@ export {
   canFireMasteryRestoreManaOnBurnKill,
 } from './magic-xp.js';
 export {
-  getSchoolMasteryLevel,
-  getStudyableRingSpells,
   getEquippedRingItemIds,
   evaluateRingSpellStudy,
   evaluateAllRingSpellStudy,

@@ -7,7 +7,12 @@ import { findPath } from '../utils/pathfinding.js';
 import { useGameStore } from '../store/game-store.js';
 import { initializeAnimationModules } from '../animations/generated/index.js';
 import { CELL_SIZE } from '../config/ui-config.js';
-import type { DungeonRenderState } from '../hooks/useDungeonRenderState.js';
+import {
+  findActivePlayerMove,
+  getCameraOffsetForPlayerMove,
+  type DungeonRenderState,
+} from '../hooks/useDungeonRenderState.js';
+import { resolveMoveAnimationProgress } from '../hooks/useMoveAnimationState.js';
 
 interface Props {
   map: MapView;
@@ -44,6 +49,17 @@ export function DungeonCanvas({
 
   const vpRef = useRef({ left: vpLeft, top: vpTop });
   vpRef.current = { left: vpLeft, top: vpTop };
+  const cameraOffsetRef = useRef(cameraOffset);
+  const didDrawRef = useRef(false);
+  const hasFrameAnimations =
+    bumpAnimations.length > 0
+    || moveAnimations.length > 0
+    || consumableAnimations.length > 0
+    || fxAnimations.length > 0
+    || statusPresentations.length > 0;
+  const hasFrameAnimationsRef = useRef(hasFrameAnimations);
+  const drawFrameRef = useRef<() => void>(() => {});
+  hasFrameAnimationsRef.current = hasFrameAnimations;
 
   useEffect(() => {
     spriteRegistry.onReady(() => setSpritesReady(true));
@@ -64,32 +80,93 @@ export function DungeonCanvas({
     const dpr = window.devicePixelRatio;
     const cssWidth  = vpTilesWidth  * CELL_SIZE;
     const cssHeight = vpTilesHeight * CELL_SIZE;
+    const pixelWidth = Math.round(cssWidth * dpr);
+    const pixelHeight = Math.round(cssHeight * dpr);
 
-    canvas.width  = cssWidth  * dpr;
-    canvas.height = cssHeight * dpr;
-    canvas.style.width  = `${cssWidth}px`;
-    canvas.style.height = `${cssHeight}px`;
+    if (canvas.width !== pixelWidth) {
+      canvas.width = pixelWidth;
+    }
+    if (canvas.height !== pixelHeight) {
+      canvas.height = pixelHeight;
+    }
+    if (canvas.style.width !== `${cssWidth}px`) {
+      canvas.style.width = `${cssWidth}px`;
+    }
+    if (canvas.style.height !== `${cssHeight}px`) {
+      canvas.style.height = `${cssHeight}px`;
+    }
+  }, [vpTilesWidth, vpTilesHeight]);
 
-    const ctx = canvas.getContext('2d')!;
-    ctx.scale(dpr, dpr);
-    ctx.imageSmoothingEnabled = false;
+  useEffect(() => {
+    cameraOffsetRef.current = cameraOffset;
+    if (!didDrawRef.current || hasFrameAnimationsRef.current) {
+      return;
+    }
+    drawFrameRef.current();
+  }, [cameraOffset]);
 
-    renderMap(
-      ctx,
-      map,
-      vpRef.current.left,
-      vpRef.current.top,
-      vpTilesWidth,
-      vpTilesHeight,
-      bumpAnimations,
-      moveAnimations,
-      consumableAnimations,
-      fxAnimations,
-      { statusPresentations },
-      cameraOffset,
-      skipHandledAnimationIds,
-    );
-  }, [map, spritesReady, vpTilesWidth, vpTilesHeight, vpLeft, vpTop, bumpAnimations, moveAnimations, consumableAnimations, fxAnimations, statusPresentations, cameraOffset, skipHandledAnimationIds]);
+  useEffect(() => {
+    const canvas = canvasRef.current;
+    if (!canvas) return;
+
+    let rafId: number | undefined;
+    let cancelled = false;
+
+    drawFrameRef.current = () => {
+      if (cancelled) return;
+
+      const dpr = window.devicePixelRatio;
+      const ctx = canvas.getContext('2d')!;
+      ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
+      ctx.imageSmoothingEnabled = false;
+      const now = Date.now();
+      const frameMoveAnimations = moveAnimations.map((animation) =>
+        resolveMoveAnimationProgress(animation, now),
+      );
+      const frameCameraOffset = frameMoveAnimations.length === 0
+        ? cameraOffsetRef.current
+        : getCameraOffsetForPlayerMove(
+            map,
+            vpTilesWidth,
+            vpTilesHeight,
+            findActivePlayerMove(map, frameMoveAnimations),
+          );
+
+      renderMap(
+        ctx,
+        map,
+        vpRef.current.left,
+        vpRef.current.top,
+        vpTilesWidth,
+        vpTilesHeight,
+        bumpAnimations,
+        frameMoveAnimations,
+        consumableAnimations,
+        fxAnimations,
+        { statusPresentations },
+        frameCameraOffset,
+        skipHandledAnimationIds,
+      );
+      didDrawRef.current = true;
+    };
+
+    const draw = () => {
+      if (cancelled) return;
+      drawFrameRef.current();
+      if (hasFrameAnimations) {
+        rafId = requestAnimationFrame(draw);
+      }
+    };
+
+    draw();
+
+    return () => {
+      cancelled = true;
+      if (rafId !== undefined) {
+        cancelAnimationFrame(rafId);
+      }
+    };
+  }, [map, spritesReady, vpTilesWidth, vpTilesHeight, vpLeft, vpTop, bumpAnimations, moveAnimations, consumableAnimations, fxAnimations, statusPresentations, hasFrameAnimations, skipHandledAnimationIds]);
 
   const handleClick = useCallback((e: React.MouseEvent<HTMLCanvasElement>) => {
     const canvas = canvasRef.current;

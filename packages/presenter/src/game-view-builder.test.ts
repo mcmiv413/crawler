@@ -200,16 +200,22 @@ describe('buildGameView shop effectivePrice', () => {
 });
 
 describe('buildGameView ascend action', () => {
-  it('includes ascend action when player is on stairs_up tile with floor history', () => {
-    const state = makeState({ run: makeRunState(2, true, true) });
+  it('includes ascend action when player is on stairs_up tile below floor 1', () => {
+    const state = makeState({
+      run: makeRunState(2, true, false),
+      player: { ...makeState().player, floor: 2 },
+    });
     const view = buildGameView(state);
     const ascendAction = view.availableActions.find(a => a.type === 'ascend');
     expect(ascendAction).toBeDefined();
     expect(ascendAction?.id).toBe('ascend');
   });
 
-  it('does NOT include ascend action when on stairs_up but no floor history (floor 1)', () => {
-    const state = makeState({ run: makeRunState(1, true, false) });
+  it('does NOT include ascend action when on stairs_up but player is on floor 1', () => {
+    const state = makeState({
+      run: makeRunState(1, true, false),
+      player: { ...makeState().player, floor: 1 },
+    });
     const view = buildGameView(state);
     const ascendAction = view.availableActions.find(a => a.type === 'ascend');
     expect(ascendAction).toBeUndefined();

@@ -123,6 +123,7 @@ function setupCanvas() {
     writable: true,
     value: vi.fn(() => ({
       scale: vi.fn(),
+      setTransform: vi.fn(),
       imageSmoothingEnabled: false,
     }) as unknown as CanvasRenderingContext2D),
   });
@@ -387,6 +388,78 @@ describe('DungeonCanvas', () => {
 
       rerender(<DungeonCanvas {...defaultProps} vpLeft={1} />);
       expect(vi.mocked(renderMap)).toHaveBeenCalledTimes(2);
+    });
+
+    it('does not reset canvas dimensions when only animation props change', () => {
+      const widthDescriptor = Object.getOwnPropertyDescriptor(HTMLCanvasElement.prototype, 'width');
+      const heightDescriptor = Object.getOwnPropertyDescriptor(HTMLCanvasElement.prototype, 'height');
+      const requestAnimationFrameDescriptor = Object.getOwnPropertyDescriptor(window, 'requestAnimationFrame');
+      const cancelAnimationFrameDescriptor = Object.getOwnPropertyDescriptor(window, 'cancelAnimationFrame');
+      let widthValue = 0;
+      let heightValue = 0;
+      const widthSetter = vi.fn((value: number) => {
+        widthValue = value;
+      });
+      const heightSetter = vi.fn((value: number) => {
+        heightValue = value;
+      });
+
+      Object.defineProperty(HTMLCanvasElement.prototype, 'width', {
+        configurable: true,
+        get: () => widthValue,
+        set: widthSetter,
+      });
+      Object.defineProperty(HTMLCanvasElement.prototype, 'height', {
+        configurable: true,
+        get: () => heightValue,
+        set: heightSetter,
+      });
+      Object.defineProperty(window, 'requestAnimationFrame', {
+        configurable: true,
+        value: vi.fn(() => 1),
+      });
+      Object.defineProperty(window, 'cancelAnimationFrame', {
+        configurable: true,
+        value: vi.fn(),
+      });
+
+      try {
+        const { rerender } = render(<DungeonCanvas {...defaultProps} />);
+        widthSetter.mockClear();
+        heightSetter.mockClear();
+
+        rerender(<DungeonCanvas
+          {...defaultProps}
+          moveAnimations={[{
+            id: 'move-1',
+            entityId: 'player-1',
+            fromPos: { x: 1, y: 2 },
+            toPos: { x: 2, y: 2 },
+            style: 'step',
+            progress: 0,
+            durationMs: 140,
+            startTime: 0,
+            fromOffsetPx: { x: 0, y: 0 },
+            walkPhase: 'single',
+          }] as any[]}
+        />);
+
+        expect(widthSetter).not.toHaveBeenCalled();
+        expect(heightSetter).not.toHaveBeenCalled();
+      } finally {
+        if (widthDescriptor) {
+          Object.defineProperty(HTMLCanvasElement.prototype, 'width', widthDescriptor);
+        }
+        if (heightDescriptor) {
+          Object.defineProperty(HTMLCanvasElement.prototype, 'height', heightDescriptor);
+        }
+        if (requestAnimationFrameDescriptor) {
+          Object.defineProperty(window, 'requestAnimationFrame', requestAnimationFrameDescriptor);
+        }
+        if (cancelAnimationFrameDescriptor) {
+          Object.defineProperty(window, 'cancelAnimationFrame', cancelAnimationFrameDescriptor);
+        }
+      }
     });
   });
 

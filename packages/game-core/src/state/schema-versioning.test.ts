@@ -17,6 +17,7 @@ import {
   validateSchemaVersion,
 } from '@dungeon/contracts';
 import { createTestGameState } from '../testing/index.js';
+import { createTestGameStateInCombat } from '../test-utils.js';
 
 describe('Schema Versioning', () => {
   let baseState = createTestGameState();
@@ -64,14 +65,104 @@ describe('Schema Versioning', () => {
       expect(() => deserializeState(modified)).toThrow(SchemaVersionMismatchError);
     });
 
-    it('should reject explicit legacy schema versions even when the payload shape still looks valid', () => {
+    it('should reject unsupported legacy schema versions even when the payload shape still looks valid', () => {
       const serialized = serializeState(baseState);
       const parsed = JSON.parse(serialized);
-      parsed.schemaVersion = CURRENT_SCHEMA_VERSION - 1;
+      parsed.schemaVersion = CURRENT_SCHEMA_VERSION - 2;
 
       expect(() => deserializeState(JSON.stringify(parsed))).toThrow(
         SchemaVersionMismatchError,
       );
+    });
+
+    it('migrates v4 run floor caches into persistedFloorCache', () => {
+      const combatState = createTestGameStateInCombat();
+      const storedFloorState = {
+        ...combatState,
+        persistedFloorCache: new Map([[
+          1,
+          {
+            floor: combatState.run!.floor,
+            enemies: combatState.run!.enemies,
+            objects: combatState.run!.objects,
+            playerPosition: combatState.player.position,
+            originalEnemyCount: combatState.run!.enemies.size,
+            lastSimulatedTurn: 12,
+          },
+        ]]),
+      };
+      const parsed = JSON.parse(serializeState(storedFloorState));
+      const storedFloorJson = parsed.persistedFloorCache['1'];
+      const historyFloorJson = {
+        ...storedFloorJson,
+        floor: {
+          ...storedFloorJson.floor,
+          depth: 2,
+        },
+      };
+      const cachedFloorJson = {
+        ...storedFloorJson,
+        floor: {
+          ...storedFloorJson.floor,
+          depth: 3,
+        },
+      };
+
+      parsed.schemaVersion = CURRENT_SCHEMA_VERSION - 1;
+      parsed.run.floorHistory = [historyFloorJson];
+      parsed.run.floorCache = { 3: cachedFloorJson };
+
+      const deserialized = deserializeState(JSON.stringify(parsed));
+
+      expect(deserialized.run?.floorHistory).toBeUndefined();
+      expect(deserialized.run?.floorCache).toBeUndefined();
+      expect([...deserialized.persistedFloorCache!.keys()].sort()).toEqual([1, 2, 3]);
+      expect(deserialized.persistedFloorCache?.get(2)?.lastSimulatedTurn).toBe(12);
+      expect(deserialized.persistedFloorCache?.get(3)?.floor.cells).toBeInstanceOf(Map);
+    });
+
+    it('migrates legacy floor cache entries with numeric-string floor depths', () => {
+      const combatState = createTestGameStateInCombat();
+      const storedFloorState = {
+        ...combatState,
+        persistedFloorCache: new Map([[
+          1,
+          {
+            floor: combatState.run!.floor,
+            enemies: combatState.run!.enemies,
+            objects: combatState.run!.objects,
+            playerPosition: combatState.player.position,
+            originalEnemyCount: combatState.run!.enemies.size,
+            lastSimulatedTurn: 12,
+          },
+        ]]),
+      };
+      const parsed = JSON.parse(serializeState(storedFloorState));
+      const storedFloorJson = parsed.persistedFloorCache['1'];
+      const historyFloorJson = {
+        ...storedFloorJson,
+        floor: {
+          ...storedFloorJson.floor,
+          depth: '2',
+        },
+      };
+      const cachedFloorJson = {
+        ...storedFloorJson,
+        floor: {
+          ...storedFloorJson.floor,
+          depth: '3',
+        },
+      };
+
+      parsed.schemaVersion = CURRENT_SCHEMA_VERSION - 1;
+      parsed.run.floorHistory = [historyFloorJson];
+      parsed.run.floorCache = { 3: cachedFloorJson };
+
+      const deserialized = deserializeState(JSON.stringify(parsed));
+
+      expect([...deserialized.persistedFloorCache!.keys()].sort()).toEqual([1, 2, 3]);
+      expect(deserialized.persistedFloorCache?.get(2)?.floor.depth).toBe(2);
+      expect(deserialized.persistedFloorCache?.get(3)?.floor.depth).toBe(3);
     });
 
     it('should throw SchemaVersionMismatchError with correct version info', () => {

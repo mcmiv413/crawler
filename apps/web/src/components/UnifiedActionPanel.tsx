@@ -68,6 +68,10 @@ export function UnifiedActionPanel({
   const playerPos = view.map?.playerPosition ?? { x: 0, y: 0 };
   const weaponRange = view.inventory.equipped.weapon?.weaponStats?.weaponRange ?? 1;
   const minRange = view.inventory.equipped.weapon?.weaponStats?.minRange ?? 0;
+  const attackableEnemies = enemies.filter((enemy) => {
+    const distance = calculateDistance(playerPos.x, playerPos.y, enemy.x, enemy.y);
+    return distance <= weaponRange && distance >= minRange;
+  });
   const consumablesWithQty = view.inventory.items
     .filter((item) => item.itemClass === 'consumable')
     .map((item) => ({
@@ -95,13 +99,8 @@ export function UnifiedActionPanel({
         }
         break;
       case 'ATTACK': {
-        const inRangeEnemies = enemies.filter((enemy) => {
-          const distance = calculateDistance(playerPos.x, playerPos.y, enemy.x, enemy.y);
-          return distance <= weaponRange && distance >= minRange;
-        });
-
-        if (inRangeEnemies.length === 1) {
-          const enemy = inRangeEnemies[0];
+        if (attackableEnemies.length === 1) {
+          const enemy = attackableEnemies[0];
           if (enemy !== undefined) {
             onSendCommand({ type: 'ATTACK', targetId: enemy.id });
           }
@@ -212,10 +211,7 @@ export function UnifiedActionPanel({
       case 'WAIT':
         return true;
       case 'ATTACK':
-        return enemies.some((enemy) => {
-          const distance = calculateDistance(playerPos.x, playerPos.y, enemy.x, enemy.y);
-          return distance <= weaponRange && distance >= minRange;
-        });
+        return attackableEnemies.length > 0;
       case 'SWAP':
         return view.inventory.equipped.weapon !== null || view.inventory.equipped.secondaryWeapon !== null;
       case 'ABILITY':
@@ -278,6 +274,25 @@ export function UnifiedActionPanel({
           />
         )}
       </div>
+
+      {dropdown.active === null && attackableEnemies.length > 0 && (
+        <div className={styles.targetSummary} aria-label="Attackable enemies">
+          {attackableEnemies.map((enemy) => (
+            <div
+              key={enemy.id}
+              data-testid={`enemy-${enemy.id}`}
+              className={styles.targetSummaryItem}
+            >
+              <span className={`${styles.targetName} name`}>
+                {enemy.name}
+              </span>
+              <span className={`${styles.targetHp} hp`}>
+                {enemy.health}/{enemy.maxHealth}
+              </span>
+            </div>
+          ))}
+        </div>
+      )}
 
       {dropdown.active !== null && (
         <div className={styles.dropdownContainer} role="dialog" aria-modal="true">

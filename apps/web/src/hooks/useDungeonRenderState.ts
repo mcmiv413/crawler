@@ -13,13 +13,15 @@ import { useBumpAnimationState } from './useBumpAnimationState.js';
 import { useMoveAnimationState } from './useMoveAnimationState.js';
 import { useConsumableAnimationState } from './useConsumableAnimationState.js';
 import { useFxAnimationState } from './useFxAnimationState.js';
-import { getMoveTravelOffsetPx } from '../animations/move-style-profiles.js';
+import { applyMoveStyleEasing } from '../animations/move-style-profiles.js';
 import { CELL_SIZE } from '../config/ui-config.js';
 import { useGameStore } from '../store/game-store.js';
+import type { ActiveMoveAnimation } from './useMoveAnimationState.js';
 
 const EMPTY_STATUSES: readonly StatusView[] = [];
 const EMPTY_ANIMATED_EVENTS: readonly AnimatedEvent[] = [];
 const ZERO_CAMERA_OFFSET = { x: 0, y: 0 } as const;
+const mapBoundsCache = new WeakMap<MapView, { readonly minX: number; readonly minY: number }>();
 
 interface RetainedBatchState {
   readonly batchId: string;
@@ -47,6 +49,84 @@ export interface DungeonRenderState {
 
 function positionKey(position: { readonly x: number; readonly y: number }): string {
   return `${position.x},${position.y}`;
+}
+
+export function getViewportOriginForPosition(
+  map: MapView,
+  position: { readonly x: number; readonly y: number },
+  vpTilesWidth: number,
+  vpTilesHeight: number,
+): { readonly vpLeft: number; readonly vpTop: number } {
+  const { minX, minY } = getMapBounds(map);
+
+  return {
+    vpLeft: Math.max(minX, position.x - Math.floor(vpTilesWidth / 2)),
+    vpTop: Math.max(minY, position.y - Math.floor(vpTilesHeight / 2)),
+  };
+}
+
+function getMapBounds(map: MapView): { readonly minX: number; readonly minY: number } {
+  const cachedBounds = mapBoundsCache.get(map);
+  if (cachedBounds !== undefined) {
+    return cachedBounds;
+  }
+
+  if (map.cells.length === 0) {
+    const bounds = { minX: 0, minY: 0 };
+    mapBoundsCache.set(map, bounds);
+    return bounds;
+  }
+
+  let minX = Number.POSITIVE_INFINITY;
+  let minY = Number.POSITIVE_INFINITY;
+  for (const cell of map.cells) {
+    if (cell.x < minX) {
+      minX = cell.x;
+    }
+    if (cell.y < minY) {
+      minY = cell.y;
+    }
+  }
+
+  const bounds = { minX, minY };
+  mapBoundsCache.set(map, bounds);
+  return bounds;
+}
+
+export function findActivePlayerMove(
+  map: MapView,
+  moveAnimations: readonly ActiveMoveAnimation[],
+): ActiveMoveAnimation | undefined {
+  const playerEntityId = map.entities.find((entity) => entity.type === 'player')?.id;
+  return playerEntityId === undefined
+    ? moveAnimations.find(
+        (animation) =>
+          animation.toPos.x === map.playerPosition.x
+          && animation.toPos.y === map.playerPosition.y,
+      )
+    : moveAnimations.find((animation) => animation.entityId === playerEntityId);
+}
+
+export function getCameraOffsetForPlayerMove(
+  map: MapView,
+  vpTilesWidth: number,
+  vpTilesHeight: number,
+  move: ActiveMoveAnimation | undefined,
+  cellSize: number = CELL_SIZE,
+): { readonly x: number; readonly y: number } {
+  if (move === undefined) {
+    return ZERO_CAMERA_OFFSET;
+  }
+
+  const fromOrigin = getViewportOriginForPosition(map, move.fromPos, vpTilesWidth, vpTilesHeight);
+  const toOrigin = getViewportOriginForPosition(map, move.toPos, vpTilesWidth, vpTilesHeight);
+  const easedProgress = applyMoveStyleEasing(move.style, move.progress, move.walkPhase);
+  const remaining = 1 - easedProgress;
+
+  return {
+    x: (toOrigin.vpLeft - fromOrigin.vpLeft) * cellSize * remaining,
+    y: (toOrigin.vpTop - fromOrigin.vpTop) * cellSize * remaining,
+  };
 }
 
 function getAbilityRetentionPositions(
@@ -190,33 +270,19 @@ export function useDungeonRenderState(
   }, [map, retainedBatch]);
 
   const { vpLeft, vpTop, cameraOffset } = useMemo(() => {
-    const minX = displayMap.cells.length > 0 ? Math.min(...displayMap.cells.map((c) => c.x)) : 0;
-    const minY = displayMap.cells.length > 0 ? Math.min(...displayMap.cells.map((c) => c.y)) : 0;
-
-    const idealVpLeft = displayMap.playerPosition.x - Math.floor(vpTilesWidth / 2);
-    const idealVpTop = displayMap.playerPosition.y - Math.floor(vpTilesHeight / 2);
-
-    const vpLeft = Math.max(minX, idealVpLeft);
-    const vpTop = Math.max(minY, idealVpTop);
-
-    const playerEntityId = displayMap.entities.find((entity) => entity.type === 'player')?.id;
-    const activePlayerMove = playerEntityId === undefined
-      ? moveAnimations.find(
-          (animation) =>
-            animation.toPos.x === displayMap.playerPosition.x
-            && animation.toPos.y === displayMap.playerPosition.y,
-        )
-      : moveAnimations.find((animation) => animation.entityId === playerEntityId);
-
-    const cameraOffset = activePlayerMove === undefined
-      ? ZERO_CAMERA_OFFSET
-      : (() => {
-          const offset = getMoveTravelOffsetPx(activePlayerMove, CELL_SIZE);
-          return {
-            x: -offset.x,
-            y: -offset.y,
-          };
-        })();
+    const { vpLeft, vpTop } = getViewportOriginForPosition(
+      displayMap,
+      displayMap.playerPosition,
+      vpTilesWidth,
+      vpTilesHeight,
+    );
+    const activePlayerMove = findActivePlayerMove(displayMap, moveAnimations);
+    const cameraOffset = getCameraOffsetForPlayerMove(
+      displayMap,
+      vpTilesWidth,
+      vpTilesHeight,
+      activePlayerMove,
+    );
 
     return {
       vpLeft,

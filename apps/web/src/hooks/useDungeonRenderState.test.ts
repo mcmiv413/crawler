@@ -1,7 +1,7 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import { renderHook } from '@testing-library/react';
 import type { MapView } from '@dungeon/presenter';
-import { getMoveTravelOffsetPx } from '../animations/move-style-profiles.js';
+import { applyMoveStyleEasing } from '../animations/move-style-profiles.js';
 
 const {
   bumpAnimationState,
@@ -62,7 +62,7 @@ vi.mock('../store/game-store.js', () => ({
   }),
 }));
 
-import { useDungeonRenderState } from './useDungeonRenderState.js';
+import { getViewportOriginForPosition, useDungeonRenderState } from './useDungeonRenderState.js';
 
 const BASE_MAP: MapView = {
   width: 10,
@@ -206,6 +206,22 @@ describe('useDungeonRenderState', () => {
     expect(result.current.vpTop).toBe(20);
   });
 
+  it('computes viewport bounds without spreading all map cells', () => {
+    const largeMap: MapView = {
+      ...BASE_MAP,
+      cells: Array.from({ length: 150_000 }, (_, index) => ({
+        ...BASE_MAP.cells[0]!,
+        x: index + 20,
+        y: index + 30,
+      })),
+    };
+
+    expect(getViewportOriginForPosition(largeMap, { x: 25, y: 35 }, 20, 20)).toEqual({
+      vpLeft: 20,
+      vpTop: 30,
+    });
+  });
+
   it('centers odd-width viewports with the pre-extraction canvas math', () => {
     const oddWidthMap: MapView = {
       ...BASE_MAP,
@@ -266,12 +282,12 @@ describe('useDungeonRenderState', () => {
     expect(result.current.cameraOffset).toEqual({ x: 0, y: 0 });
   });
 
-  it('returns the inverse player move travel offset during an active player move', () => {
+  it('returns remaining viewport pan during an active player move', () => {
     const playerMove = {
       id: 'move-0',
       entityId: 'player-1',
-      fromPos: { x: 4, y: 5 },
-      toPos: { x: 5, y: 5 },
+      fromPos: { x: 9, y: 5 },
+      toPos: { x: 10, y: 5 },
       style: 'step' as const,
       progress: 0.25,
       durationMs: 120,
@@ -283,11 +299,12 @@ describe('useDungeonRenderState', () => {
 
     const movingMap: MapView = {
       ...BASE_MAP,
+      playerPosition: { x: 10, y: 5 },
       entities: [
         {
           id: 'player-1',
           type: 'player',
-          x: 5,
+          x: 10,
           y: 5,
           ascii: '@',
           color: '#fff',
@@ -297,21 +314,21 @@ describe('useDungeonRenderState', () => {
       ],
     };
 
-    const expectedOffset = getMoveTravelOffsetPx(playerMove, CELL_SIZE);
-    const { result } = renderHook(() => useDungeonRenderState(movingMap, 20, 15));
+    const expectedRemaining = 1 - applyMoveStyleEasing('step', playerMove.progress);
+    const { result } = renderHook(() => useDungeonRenderState(movingMap, 5, 5));
 
     expect(result.current.cameraOffset).toEqual({
-      x: -expectedOffset.x,
-      y: -expectedOffset.y,
+      x: CELL_SIZE * expectedRemaining,
+      y: 0,
     });
   });
 
-  it('uses carried walk-chain travel for the camera when a step inherits momentum', () => {
+  it('uses walk phase easing for camera pan when a step inherits momentum', () => {
     const playerMove = {
       id: 'move-0',
       entityId: 'player-1',
-      fromPos: { x: 4, y: 5 },
-      toPos: { x: 5, y: 5 },
+      fromPos: { x: 9, y: 5 },
+      toPos: { x: 10, y: 5 },
       style: 'step' as const,
       walkPhase: 'middle' as const,
       progress: 0.5,
@@ -324,11 +341,12 @@ describe('useDungeonRenderState', () => {
 
     const movingMap: MapView = {
       ...BASE_MAP,
+      playerPosition: { x: 10, y: 5 },
       entities: [
         {
           id: 'player-1',
           type: 'player',
-          x: 5,
+          x: 10,
           y: 5,
           ascii: '@',
           color: '#fff',
@@ -338,13 +356,51 @@ describe('useDungeonRenderState', () => {
       ],
     };
 
-    const expectedOffset = getMoveTravelOffsetPx(playerMove, CELL_SIZE);
-    const { result } = renderHook(() => useDungeonRenderState(movingMap, 20, 15));
+    const expectedRemaining = 1 - applyMoveStyleEasing('step', playerMove.progress, 'middle');
+    const { result } = renderHook(() => useDungeonRenderState(movingMap, 5, 5));
 
     expect(result.current.cameraOffset).toEqual({
-      x: -expectedOffset.x,
-      y: -expectedOffset.y,
+      x: CELL_SIZE * expectedRemaining,
+      y: 0,
     });
+  });
+
+  it('does not pan the camera when a move happens at a clamped viewport edge', () => {
+    const playerMove = {
+      id: 'move-0',
+      entityId: 'player-1',
+      fromPos: { x: 0, y: 0 },
+      toPos: { x: 1, y: 0 },
+      style: 'step' as const,
+      walkPhase: 'single' as const,
+      progress: 0,
+      durationMs: 120,
+      startTime: 0,
+      fromOffsetPx: { x: 0, y: 0 },
+    };
+
+    moveAnimationState.current = [playerMove];
+
+    const edgeMap: MapView = {
+      ...BASE_MAP,
+      playerPosition: { x: 1, y: 0 },
+      entities: [
+        {
+          id: 'player-1',
+          type: 'player',
+          x: 1,
+          y: 0,
+          ascii: '@',
+          color: '#fff',
+          name: 'Hero',
+          templateId: 'player',
+        },
+      ],
+    };
+
+    const { result } = renderHook(() => useDungeonRenderState(edgeMap, 20, 15));
+
+    expect(result.current.cameraOffset).toEqual({ x: 0, y: 0 });
   });
 
   it('retains killed ability targets at their action-time tile until the beat settles', () => {

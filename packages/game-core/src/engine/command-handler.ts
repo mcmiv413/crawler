@@ -36,6 +36,7 @@ import {
 import { processEnchantArmor } from '../systems/town.js';
 import { RING_SPELL_BY_ID } from '@dungeon/content';
 import { getCustomRingSpellHandler } from './custom-ring-spell-handlers.js';
+import { rejectPlayerAction } from './action-rejection.js';
 
 export type { CommandResult };
 export { updateRunMetrics };
@@ -114,7 +115,16 @@ export function handleCommand(
     }
     case 'ENCHANT_ARMOR': {
       if (!isEnchantArmorCommand(command)) return { state, events: [], runEnded: false };
-      if (state.phase !== 'town') return { state, events: [], runEnded: false };
+      if (state.phase !== 'town') {
+        return rejectPlayerAction(
+          state,
+          'TOWN_ACTION',
+          command.enchantmentId,
+          'WRONG_PHASE',
+          'Armor can only be enchanted in town.',
+          state.player.id,
+        );
+      }
       const result = processEnchantArmor(state, command.equipSlot, command.enchantmentId);
       return { state: result.state, events: result.events, runEnded: false };
     }

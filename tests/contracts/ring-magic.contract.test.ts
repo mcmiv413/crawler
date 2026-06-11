@@ -1,10 +1,14 @@
 import { describe, it, expect } from 'vitest';
+import { readdirSync, readFileSync } from 'node:fs';
+import { join } from 'node:path';
+import { GameEngine } from '@dungeon/core';
 import type { RingSpellDefinition, RingSchoolDefinition } from '@dungeon/content';
 import { RING_SPELL_BY_ID, RING_SCHOOL_BY_ID } from '@dungeon/content';
 import { ABILITY_DEFINITIONS } from '@dungeon/content';
 import { STATUS_DEFINITIONS } from '@dungeon/content';
-import { ITEM_BY_ID } from '@dungeon/content';
+import { ITEM_BY_ID, MAGIC } from '@dungeon/content';
 import { getSchoolDisplayLevelFromXp } from '@dungeon/core';
+import { entityId } from '@dungeon/contracts';
 
 /**
  * Ring Magic System Contract Tests
@@ -25,6 +29,14 @@ function getMinimumXpForDisplayLevel(displayLevel: number): number {
     xp += 1;
   }
   return xp;
+}
+
+function collectSourceFiles(dir: string): string[] {
+  return readdirSync(dir, { withFileTypes: true }).flatMap((entry) => {
+    const fullPath = join(dir, entry.name);
+    if (entry.isDirectory()) return collectSourceFiles(fullPath);
+    return entry.isFile() && /\.(ts|tsx)$/.test(entry.name) ? [fullPath] : [];
+  });
 }
 
 describe('Ring Magic System Contracts', () => {
@@ -49,6 +61,26 @@ describe('Ring Magic System Contracts', () => {
           spell.xpGainOnCast,
           `Spell "${id}" must define positive xpGainOnCast metadata`,
         ).toBeGreaterThan(0);
+      }
+    });
+
+    it('starter casts cannot clear a mastery tier and study gold costs stay non-trivial', () => {
+      const firstMasteryThreshold = MAGIC.schoolMasteryTierThresholds[1];
+      expect(firstMasteryThreshold).toBeGreaterThan(0);
+
+      for (const [id, spell] of RING_SPELL_BY_ID) {
+        expect(
+          spell.xpGainOnCast,
+          `Spell "${id}" cast XP must not clear a school mastery tier in one cast`,
+        ).toBeLessThan(firstMasteryThreshold);
+
+        const goldCosts = spell.studyRequirements
+          .filter((requirement): requirement is { kind: 'goldCost'; gold: number } =>
+            requirement.kind === 'goldCost');
+        expect(goldCosts.length, `Spell "${id}" must not define multiple gold costs`).toBeLessThanOrEqual(1);
+        for (const cost of goldCosts) {
+          expect(cost.gold, `Spell "${id}" study gold cost must stay non-trivial`).toBeGreaterThanOrEqual(10);
+        }
       }
     });
 
@@ -256,10 +288,10 @@ describe('Ring Magic System Contracts', () => {
 
   describe('When Player state is created', () => {
     it('new players have learnedRingSpellIds initialized as empty array', () => {
-      // New player fixtures in game-core start with empty learnedRingSpellIds
-      const emptyLearnedSpells: string[] = [];
-      expect(Array.isArray(emptyLearnedSpells), 'learnedRingSpellIds must be an array').toBe(true);
-      expect(emptyLearnedSpells.length, 'new players start with no learned spells').toBe(0);
+      const state = new GameEngine().createNewGame(1);
+
+      expect(Array.isArray(state.player.learnedRingSpellIds), 'learnedRingSpellIds must be an array').toBe(true);
+      expect(state.player.learnedRingSpellIds.length, 'new players start with no learned spells').toBe(0);
     });
 
     it('learnedRingSpellIds can only contain valid spell IDs from RING_SPELL_BY_ID', () => {
@@ -276,18 +308,27 @@ describe('Ring Magic System Contracts', () => {
     });
 
     it('ringMastery entries use { xp: number } not { xp, level }', () => {
-      // ringMastery is a Record<school, {xp: number}> with no level field
-      // Each school entry should only have xp property, not level
-      const testMastery = { fire: { xp: 30 }, frost: { xp: 0 } };
-      for (const [school, entry] of Object.entries(testMastery)) {
-        expect(
-          typeof entry.xp === 'number',
-          `ringMastery.${school} must have xp as number`,
-        ).toBe(true);
-        expect(
-          !('level' in entry),
-          `ringMastery.${school} must not have a level property (level is computed from xp)`,
-        ).toBe(true);
+      const engine = new GameEngine();
+      const state = engine.createNewGame(1);
+      const ringEntityId = entityId('contract_fire_ring');
+      const fireRing = ITEM_BY_ID.get('fire_ring');
+      expect(fireRing).toBeDefined();
+      const withRing = {
+        ...state,
+        player: {
+          ...state.player,
+          inventory: [ringEntityId],
+        },
+        itemRegistry: {
+          items: new Map([[ringEntityId, fireRing!]]),
+        },
+      };
+      const equipped = engine.submitCommand(withRing, { type: 'EQUIP', itemId: ringEntityId }).state;
+
+      expect(Object.keys(equipped.player.ringMastery).length).toBeGreaterThan(0);
+      for (const [school, entry] of Object.entries(equipped.player.ringMastery)) {
+        expect(Object.keys(entry), `ringMastery.${school} must only store xp`).toEqual(['xp']);
+        expect(Number.isFinite(entry.xp), `ringMastery.${school}.xp must be finite`).toBe(true);
       }
     });
   });
@@ -300,18 +341,36 @@ describe('Ring Magic System Contracts', () => {
       expect(fireSchool?.ringId).toBe('fire_ring');
     });
 
-    it('no content package imports game-core or game-contracts', () => {
-      expect(true).toBe(true);
+    it('content package does not import game-core', () => {
+      const contentFiles = collectSourceFiles(join(process.cwd(), 'packages/content/src'))
+        .filter(filePath => !filePath.endsWith('.test.ts'));
+
+      for (const filePath of contentFiles) {
+        const source = readFileSync(filePath, 'utf8');
+        expect(source, `${filePath} must not import @dungeon/core`).not.toMatch(/from ['"]@dungeon\/core(?:\/|['"])/);
+      }
     });
   });
 
   describe('Type system verification', () => {
     it('RingSpellDefinition extends AbilityDefinition', () => {
-      expect(true).toBe(true);
+      for (const spell of RING_SPELL_BY_ID.values()) {
+        const abilityLike: Pick<RingSpellDefinition, 'id' | 'name' | 'description' | 'cooldown'> = spell;
+        expect(abilityLike.id).toBe(spell.id);
+        expect(abilityLike.name.length).toBeGreaterThan(0);
+        expect(abilityLike.description.length).toBeGreaterThan(0);
+        expect(abilityLike.cooldown).toBeGreaterThanOrEqual(0);
+      }
     });
 
     it('RingSchoolDefinition has required fields', () => {
-      expect(true).toBe(true);
+      for (const school of RING_SCHOOL_BY_ID.values()) {
+        const requiredFields: Pick<RingSchoolDefinition, 'id' | 'label' | 'ringId' | 'description'> = school;
+        expect(requiredFields.id.length).toBeGreaterThan(0);
+        expect(requiredFields.label.length).toBeGreaterThan(0);
+        expect(requiredFields.ringId.length).toBeGreaterThan(0);
+        expect(requiredFields.description.length).toBeGreaterThan(0);
+      }
     });
   });
 });

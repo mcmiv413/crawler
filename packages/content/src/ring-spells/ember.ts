@@ -10,12 +10,12 @@ export const ember: RingSpellDefinition = {
   requiresTarget: true,
   unlockLevel: 0,
   manaCost: 7,
-  xpGainOnCast: 100,
+  xpGainOnCast: 2,
   animation: { id: animationRefs.projectile.emberBolt.id },
   schools: ['fire'],
   studyRequirements: [
     { kind: 'equippedSchool', school: 'fire' },
-    { kind: 'goldCost', gold: 1 }, //30
+    { kind: 'goldCost', gold: 30 },
   ],
   effectKind: 'single_target_damage',
   range: 4,

@@ -4,7 +4,12 @@ import type { MoveAnimationEntry } from '@dungeon/presenter';
 import { CELL_SIZE } from '../config/ui-config.js';
 import { applyMoveStyleEasing } from '../animations/move-style-profiles.js';
 import { dispatchWalkContinuation } from '../animation-runtime/walk-continuation-bus.js';
-import { useMoveAnimationState } from './useMoveAnimationState.js';
+import {
+  clearMoveAnimationSubscribers,
+  registerMoveAnimation,
+  subscribeMoveAnimation,
+  useMoveAnimationState,
+} from './useMoveAnimationState.js';
 
 function createMoveEntry(overrides: Partial<MoveAnimationEntry> = {}): MoveAnimationEntry {
   return {
@@ -24,6 +29,7 @@ describe('useMoveAnimationState', () => {
   });
 
   afterEach(() => {
+    clearMoveAnimationSubscribers();
     vi.useRealTimers();
     vi.restoreAllMocks();
   });
@@ -58,6 +64,12 @@ describe('useMoveAnimationState', () => {
     expect(active.walkPhase).toBe('middle');
     expect(active.fromOffsetPx.x).toBeCloseTo(expectedCarryX, 4);
     expect(active.fromOffsetPx.y).toBeCloseTo(0, 4);
+  });
+
+  it('does not schedule an idle animation frame loop', () => {
+    renderHook(() => useMoveAnimationState());
+
+    expect(vi.getTimerCount()).toBe(0);
   });
 
   it('does not carry offset from a completed animation', async () => {
@@ -104,5 +116,22 @@ describe('useMoveAnimationState', () => {
     });
 
     expect(result.current.animations[0]?.walkPhase).toBe('single');
+  });
+
+  it('dispatches once for duplicate subscriptions of the same callback', () => {
+    const subscriber = vi.fn();
+    const unsubscribeFirst = subscribeMoveAnimation(subscriber);
+    const unsubscribeSecond = subscribeMoveAnimation(subscriber);
+
+    registerMoveAnimation(createMoveEntry());
+    expect(subscriber).toHaveBeenCalledTimes(1);
+
+    unsubscribeFirst();
+    registerMoveAnimation(createMoveEntry({ fromPos: { x: 1, y: 0 }, toPos: { x: 2, y: 0 } }));
+    expect(subscriber).toHaveBeenCalledTimes(2);
+
+    unsubscribeSecond();
+    registerMoveAnimation(createMoveEntry({ fromPos: { x: 2, y: 0 }, toPos: { x: 3, y: 0 } }));
+    expect(subscriber).toHaveBeenCalledTimes(2);
   });
 });

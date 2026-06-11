@@ -39,6 +39,28 @@ describe('useCombatIndicatorState', () => {
     expect(result.current).toEqual([]);
   });
 
+  it('keeps combat indicators visible until the configured fade duration elapses', () => {
+    vi.useFakeTimers();
+    const { result } = renderHook(() => useCombatIndicatorState(750));
+
+    act(() => {
+      emitCombatIndicator({ x: 4, y: 5, text: 'miss', type: 'damage' });
+    });
+
+    act(() => {
+      vi.advanceTimersByTime(749);
+    });
+
+    expect(result.current).toHaveLength(1);
+    expect(result.current[0]?.text).toBe('miss');
+
+    act(() => {
+      vi.advanceTimersByTime(1);
+    });
+
+    expect(result.current).toEqual([]);
+  });
+
   it('clears labels and ignores new events when disabled', () => {
     vi.useFakeTimers();
     const { result, rerender } = renderHook(

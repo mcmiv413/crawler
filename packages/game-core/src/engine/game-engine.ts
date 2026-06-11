@@ -83,7 +83,7 @@ export class GameEngine implements IGameEngine {
         if (cell?.tile.type === 'stairs_down') {
           return this.finalizeCommandResult(descendFloor(result.state, rng, result.events), false);
         }
-        if (cell?.tile.type === 'stairs_up' && result.state.run!.floorHistory.length > 0) {
+        if (cell?.tile.type === 'stairs_up' && result.state.player.floor > 1) {
           // Auto-ascend only when there's a prior floor to return to.
           // On floor 1 (no history), stairs_up is the entrance — use RETREAT to leave.
           return this.finalizeCommandResult(ascendFloor(result.state, result.events, rng), false);

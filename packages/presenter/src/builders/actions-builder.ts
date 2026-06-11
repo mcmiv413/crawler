@@ -209,7 +209,7 @@ export function buildAvailableActions(state: GameState): AvailableAction[] {
     }
 
     const playerCell = state.run.floor.cells.get(posKey(state.player.position));
-    if (playerCell?.tile.type === 'stairs_up' && state.run.floorHistory.length > 0) {
+    if (playerCell?.tile.type === 'stairs_up' && state.player.floor > 1) {
       actions = [...actions, { id: 'ascend', label: 'Ascend (<)', type: 'ascend', enabled: true }];
     }
 

@@ -73,11 +73,11 @@ describe('magic-xp', () => {
     const player = createTestPlayer({
       ringMastery: {
         fire: { xp: LEVEL_TWO_MAGIC_XP - 5 },
-        ice: { xp: 4 },
+        lightning: { xp: 4 },
       },
     });
 
-    const updated = gainSchoolXp(player, 'ice', 1);
+    const updated = gainSchoolXp(player, 'lightning', 1);
 
     expect(getTotalMagicXp(updated)).toBe(LEVEL_TWO_MAGIC_XP);
     expect(getMagicLevel(updated)).toBe(LEVEL_TWO);
@@ -131,5 +131,15 @@ describe('magic-xp', () => {
 
     expect(learned.learnedRingSpellIds).toContain(spellId);
     expect(duplicate).toBe(learned);
+  });
+
+  it('rejects invalid school keys at compile time', () => {
+    const player = createTestPlayer();
+    if (false) {
+      // @ts-expect-error gainSchoolXp only accepts authored ring schools.
+      gainSchoolXp(player, 'not_a_school', 1);
+    }
+
+    expect(gainSchoolXp(player, 'fire', 1).ringMastery.fire?.xp).toBeGreaterThan(0);
   });
 });

@@ -206,17 +206,11 @@ describe('buildAvailableActions', () => {
       expect(actions.some(a => a.id === 'retreat')).toBe(true);
     });
 
-    it('includes ascend action when on stairs_up with floor history', () => {
+    it('includes ascend action when on stairs_up below floor 1', () => {
       state = {
         ...state,
         run: {
           ...state.run!,
-          floorHistory: [{
-            floor: state.run!.floor,
-            enemies: state.run!.enemies,
-            objects: state.run!.objects,
-            playerPosition: state.player.position,
-          }],
           floor: {
             ...state.run!.floor,
             cells: new Map([
@@ -238,6 +232,7 @@ describe('buildAvailableActions', () => {
         },
         player: {
           ...state.player,
+          floor: 2,
           position: { x: 5, y: 5 },
         },
       };

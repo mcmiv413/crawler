@@ -25,8 +25,10 @@ export interface RunState {
   readonly turnCount: number;
   readonly isActive: boolean;
   readonly runMetrics?: RunMetrics;
-  readonly floorHistory: readonly StoredFloor[];
-  readonly floorCache?: ReadonlyMap<number, StoredFloor>;  // cleared floors by depth
+  /** @deprecated Legacy save compatibility only. Runtime floor persistence uses GameState.persistedFloorCache. */
+  readonly floorHistory?: readonly StoredFloor[];
+  /** @deprecated Legacy save compatibility only. Runtime floor persistence uses GameState.persistedFloorCache. */
+  readonly floorCache?: ReadonlyMap<number, StoredFloor>;
   readonly speedAccumulators: Readonly<Record<EntityId, number>>;  // fractional movement accumulation for speed-based kiting
 }
 

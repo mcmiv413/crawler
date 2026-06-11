@@ -1,5 +1,9 @@
 import type { GameState, RunState, Player, EnemyInstance, WorldState } from '@dungeon/contracts';
 import { posKey } from '@dungeon/contracts';
+import { RING_SPELL_BY_ID } from '@dungeon/content';
+import { ALL_ABILITY_DEFINITIONS } from '../abilities/definitions/index.js';
+
+const ABILITY_IDS = new Set(ALL_ABILITY_DEFINITIONS.map(definition => definition.id));
 
 export interface ValidationError {
   readonly path: string;
@@ -37,6 +41,8 @@ export function validateGameState(state: GameState): ValidationResult {
 
   mutableErrors.push(...validatePlayer(state.player).map(e => ({ ...e, path: `player.${e.path}` })));
   mutableErrors.push(...validateWorldState(state.world).map(e => ({ ...e, path: `world.${e.path}` })));
+  mutableErrors.push(...validateInventoryReferences(state));
+  mutableErrors.push(...validateEquipmentReferences(state));
 
   // Validate run if present
   if (state.run !== null) {
@@ -108,6 +114,68 @@ export function validatePlayer(player: Player): ValidationError[] {
     mutableErrors.push({ path: 'gold', message: 'gold must be non-negative' });
   }
 
+  if (typeof player.mana !== 'number' || !Number.isFinite(player.mana) || player.mana < 0) {
+    mutableErrors.push({ path: 'mana', message: 'mana must be finite and non-negative' });
+  }
+
+  if (typeof player.maxMana !== 'number' || !Number.isFinite(player.maxMana) || player.maxMana < 0) {
+    mutableErrors.push({ path: 'maxMana', message: 'maxMana must be finite and non-negative' });
+  }
+
+  for (const spellId of player.learnedRingSpellIds) {
+    if (!RING_SPELL_BY_ID.has(spellId)) {
+      mutableErrors.push({ path: `learnedRingSpellIds.${spellId}`, message: 'learned ring spell id must exist in content' });
+    }
+  }
+
+  for (const ability of player.abilities) {
+    if (!ABILITY_IDS.has(ability.id)) {
+      mutableErrors.push({ path: `abilities.${ability.id}`, message: 'ability id must exist in game-core definitions' });
+    }
+    if (typeof ability.cooldownRemaining !== 'number' || !Number.isFinite(ability.cooldownRemaining) || ability.cooldownRemaining < 0) {
+      mutableErrors.push({ path: `abilities.${ability.id}.cooldownRemaining`, message: 'ability cooldown must be finite and non-negative' });
+    }
+  }
+
+  for (const [school, mastery] of Object.entries(player.ringMastery as Record<string, unknown>)) {
+    if (typeof mastery !== 'object' || mastery === null) {
+      mutableErrors.push({ path: `ringMastery.${school}`, message: 'ring mastery entries must be exactly { xp: finite non-negative number }' });
+      continue;
+    }
+
+    const masteryRecord = mastery as Record<string, unknown>;
+    const keys = Object.keys(masteryRecord);
+    if (
+      keys.length !== 1
+      || keys[0] !== 'xp'
+      || typeof masteryRecord.xp !== 'number'
+      || !Number.isFinite(masteryRecord.xp)
+      || masteryRecord.xp < 0
+    ) {
+      mutableErrors.push({ path: `ringMastery.${school}`, message: 'ring mastery entries must be exactly { xp: finite non-negative number }' });
+    }
+  }
+
+  return mutableErrors;
+}
+
+function validateInventoryReferences(state: GameState): ValidationError[] {
+  const mutableErrors: ValidationError[] = [];
+  for (const entityId of state.player.inventory) {
+    if (!state.itemRegistry.items.has(entityId)) {
+      mutableErrors.push({ path: `player.inventory.${entityId}`, message: 'inventory item entity id must exist in itemRegistry' });
+    }
+  }
+  return mutableErrors;
+}
+
+function validateEquipmentReferences(state: GameState): ValidationError[] {
+  const mutableErrors: ValidationError[] = [];
+  for (const [slot, entityId] of Object.entries(state.player.equipment)) {
+    if (entityId !== null && !state.itemRegistry.items.has(entityId)) {
+      mutableErrors.push({ path: `player.equipment.${slot}`, message: 'equipment item entity id must exist in itemRegistry' });
+    }
+  }
   return mutableErrors;
 }
 

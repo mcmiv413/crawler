@@ -2,8 +2,10 @@ import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import { act, renderHook } from '@testing-library/react';
 import type { MoveAnimationEntry } from '@dungeon/presenter';
 import { STEP_WALK_BOUNDARY_PROGRESS } from '../animations/move-style-profiles.js';
+import { WALK_CONTINUATION_EVENT, type WalkContinuationDetail } from '../animation-runtime/walk-continuation-bus.js';
 import { useGameStore } from '../store/game-store.js';
 import { useWalkController } from './useWalkController.js';
+import { clearMoveAnimationSubscribers, registerMoveAnimation } from './useMoveAnimationState.js';
 
 const STEP_DURATION_MS = 140;
 const BOUNDARY_MS = STEP_DURATION_MS * STEP_WALK_BOUNDARY_PROGRESS;
@@ -56,15 +58,13 @@ function emitPlayerMove(
   fromPos: { readonly x: number; readonly y: number },
   toPos: { readonly x: number; readonly y: number },
 ): void {
-  window.dispatchEvent(new CustomEvent<MoveAnimationEntry>('move-animation', {
-    detail: {
-      entityId: 'player-1' as any,
-      fromPos,
-      toPos,
-      style: 'step',
-      durationMs: STEP_DURATION_MS,
-    },
-  }));
+  registerMoveAnimation({
+    entityId: 'player-1' as any,
+    fromPos,
+    toPos,
+    style: 'step',
+    durationMs: STEP_DURATION_MS,
+  });
 }
 
 describe('useWalkController', () => {
@@ -83,6 +83,7 @@ describe('useWalkController', () => {
   });
 
   afterEach(() => {
+    clearMoveAnimationSubscribers();
     act(() => {
       useGameStore.getState().resetGame();
     });
@@ -213,6 +214,100 @@ describe('useWalkController', () => {
       [{ type: 'MOVE', direction: 'E' }],
     ]);
     expect(useGameStore.getState().autoWalkPath).toEqual([]);
+  });
+
+  it('advances auto-walk when the move animation is registered before the committed view arrives', async () => {
+    let currentPosition = { x: 1, y: 1 };
+    const sendCommand = vi.fn((command: { readonly type: string; readonly direction: string }) => {
+      const fromPos = currentPosition;
+      const toPos = movePosition(currentPosition, command.direction);
+      emitPlayerMove(fromPos, toPos);
+      currentPosition = toPos;
+      useGameStore.setState({
+        view: createDungeonView(currentPosition.x, currentPosition.y),
+      });
+    });
+    useGameStore.setState({ sendCommand: sendCommand as any });
+
+    renderHook(() => useWalkController());
+
+    act(() => {
+      useGameStore.setState({
+        autoWalkPath: [{ x: 2, y: 1 }, { x: 3, y: 1 }],
+        autoWalkKnownEnemyIds: new Set(),
+      });
+    });
+
+    await act(async () => {
+      await Promise.resolve();
+    });
+
+    expect(sendCommand.mock.calls).toEqual([
+      [{ type: 'MOVE', direction: 'E' }],
+    ]);
+
+    await act(async () => {
+      await vi.advanceTimersByTimeAsync(BOUNDARY_MS + 1);
+    });
+
+    expect(sendCommand.mock.calls).toEqual([
+      [{ type: 'MOVE', direction: 'E' }],
+      [{ type: 'MOVE', direction: 'E' }],
+    ]);
+    expect(useGameStore.getState().autoWalkPath).toEqual([]);
+  });
+
+  it('chains a four-tile auto-walk with continuation until the final step', async () => {
+    let currentPosition = { x: 1, y: 1 };
+    const continuationSignals: boolean[] = [];
+    const handleContinuation = (event: Event) => {
+      continuationSignals.push((event as CustomEvent<WalkContinuationDetail>).detail.continuing);
+    };
+    window.addEventListener(WALK_CONTINUATION_EVENT, handleContinuation);
+
+    const sendCommand = vi.fn((command: { readonly type: string; readonly direction: string }) => {
+      const fromPos = currentPosition;
+      currentPosition = movePosition(currentPosition, command.direction);
+      useGameStore.setState({
+        view: createDungeonView(currentPosition.x, currentPosition.y),
+      });
+      emitPlayerMove(fromPos, currentPosition);
+    });
+    useGameStore.setState({ sendCommand: sendCommand as any });
+
+    try {
+      renderHook(() => useWalkController());
+
+      act(() => {
+        useGameStore.setState({
+          autoWalkPath: [
+            { x: 2, y: 1 },
+            { x: 3, y: 1 },
+            { x: 4, y: 1 },
+            { x: 5, y: 1 },
+          ],
+          autoWalkKnownEnemyIds: new Set(),
+        });
+      });
+
+      await act(async () => {
+        await Promise.resolve();
+      });
+
+      for (let expectedCalls = 2; expectedCalls <= 4; expectedCalls += 1) {
+        await act(async () => {
+          await vi.advanceTimersByTimeAsync(BOUNDARY_MS + 1);
+        });
+        expect(sendCommand).toHaveBeenCalledTimes(expectedCalls);
+      }
+
+      expect(sendCommand.mock.calls.map(([command]) => command.direction)).toEqual(['E', 'E', 'E', 'E']);
+      expect(continuationSignals.slice(0, 4)).toEqual([true, true, true, false]);
+      expect(continuationSignals.at(-1)).toBe(false);
+      expect(useGameStore.getState().autoWalkPath).toEqual([]);
+    } finally {
+      window.removeEventListener(WALK_CONTINUATION_EVENT, handleContinuation);
+    }
   });
 
   it('cancels auto-walk when the next step is blocked', async () => {

@@ -49,7 +49,7 @@ export function StartScreen({
           disabled={loading}
           style={{ ...btnPrimaryStyle, minWidth: 160 }}
         >
-          {loading ? 'Creating...' : 'New Game'}
+          {loading ? 'Creating...' : 'Start New Game'}
         </button>
 
         {error && <p style={{ color: colors.blood, marginTop: 12, fontSize: 12 }}>{error}</p>}

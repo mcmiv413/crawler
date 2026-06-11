@@ -10,6 +10,7 @@ import type {
   WorldState,
 } from '@dungeon/contracts';
 import { EMPTY_RUN_METRICS, entityId, posKey } from '@dungeon/contracts';
+import { BIOME_DEFINITIONS } from '@dungeon/content';
 import { generateId } from '../utils/id.js';
 import { generateFloor } from '../generation/map-generator.js';
 import { populateFloor } from '../generation/floor-populator.js';
@@ -23,6 +24,7 @@ import { completeFloorDepthQuests } from '../systems/quests.js';
 import { selectBiomeForFloor } from '../systems/biome-selection.js';
 import { applyGuaranteedEncounters, countGuaranteedEncountersForFloor } from './guaranteed-encounters.js';
 import { recoverDeathStash } from './death-stash-recovery.js';
+import { snapshotActiveFloor, withPersistedFloor } from '../state/floor-cache.js';
 import type { SeededRNG } from '../utils/rng.js';
 import { chebyshevDistance } from '../utils/grid.js';
 
@@ -31,6 +33,7 @@ interface PreparedFloor {
   enemies: ReadonlyMap<string, EnemyInstance>;
   objects: ReadonlyMap<string, ObjectInstance>;
   playerPosition: Position;
+  storeOnEnter: boolean;
 }
 
 export function enterDungeon(
@@ -45,11 +48,7 @@ export function enterDungeon(
   const depth = startDepth !== undefined
     ? Math.max(1, Math.min(startDepth, maxAllowed))
     : defaultDepth;
-  const biome = selectBiomeForFloor(depth, state.world, rng);
-  const cachedFloor = state.persistedFloorCache?.get(depth);
-  const preparedFloor = cachedFloor !== undefined
-    ? restorePersistedFloor(state, cachedFloor, biome, depth, rng)
-    : createGeneratedFloor(state, state.world, depth, biome, rng);
+  const preparedFloor = getOrRestoreFloor(state, state.world, depth, rng, 'enter');
   const enemies = applyGuaranteedEncounters(
     state,
     state.world,
@@ -99,7 +98,12 @@ export function enterDungeon(
     turnNumber: state.turnNumber + 1,
   };
 
-  return finalizeEnteredFloor(nextState, depth, events, true);
+  return finalizeEnteredFloor(
+    withEnteredFloorPersisted(nextState, preparedFloor, depth),
+    depth,
+    events,
+    true,
+  );
 }
 
 export function descendFloor(
@@ -123,31 +127,20 @@ export function descendFloor(
     events = [...events, ...pressureResult.events];
   }
 
-  const biome = selectBiomeForFloor(newDepth, worldForDepth, rng);
-  const snapshot: StoredFloor = {
-    floor: state.run!.floor,
-    enemies: state.run!.enemies,
-    objects: state.run!.objects,
-    playerPosition: state.player.position,
-  };
-  const newHistory = [...state.run!.floorHistory, snapshot].slice(-3);
-  const existingCache = state.run!.floorCache ?? new Map<number, StoredFloor>();
-  const cachedFloor = state.persistedFloorCache?.get(newDepth) ?? existingCache.get(newDepth);
-  const preparedFloor = cachedFloor !== undefined
-    ? restoreVisitedFloor(cachedFloor, cachedFloor.floor.entrance)
-    : createGeneratedFloor(state, worldForDepth, newDepth, biome, rng);
+  const stateWithCurrentFloorPersisted = withCurrentFloorPersisted(state);
+  const preparedFloor = getOrRestoreFloor(stateWithCurrentFloorPersisted, worldForDepth, newDepth, rng, 'descend');
   const enemies = applyGuaranteedEncounters(
-    state,
+    stateWithCurrentFloorPersisted,
     worldForDepth,
     preparedFloor.floor,
     preparedFloor.enemies,
     rng,
   );
 
-  events = [...events, buildFloorEnteredEvent(newDepth, biome.biomeId, state.turnNumber)];
+  events = [...events, buildFloorEnteredEvent(newDepth, preparedFloor.floor.biomeId, state.turnNumber)];
 
   const nextState: GameState = {
-    ...state,
+    ...stateWithCurrentFloorPersisted,
     player: {
       ...state.player,
       position: preparedFloor.playerPosition,
@@ -159,8 +152,8 @@ export function descendFloor(
       enemies,
       objects: preparedFloor.objects,
       turnCount: 0,
-      floorHistory: newHistory,
-      floorCache: existingCache,
+      floorHistory: [],
+      floorCache: new Map(),
       speedAccumulators: buildSpeedAccumulators(enemies),
     },
     world: {
@@ -169,7 +162,12 @@ export function descendFloor(
     },
   };
 
-  return finalizeEnteredFloor(nextState, newDepth, events, true);
+  return finalizeEnteredFloor(
+    withEnteredFloorPersisted(nextState, preparedFloor, newDepth),
+    newDepth,
+    events,
+    true,
+  );
 }
 
 export function ascendFloor(
@@ -193,34 +191,20 @@ export function ascendFloor(
 
   const currentDepth = state.run.floor.depth;
   const targetDepth = currentDepth - 1;
-  const biome = selectBiomeForFloor(targetDepth, state.world, rng);
-  const cacheSnapshot: StoredFloor = {
-    floor: state.run.floor,
-    enemies: state.run.enemies,
-    objects: state.run.objects,
-    playerPosition: state.player.position,
-  };
-  const newCache = new Map(state.run.floorCache ?? []);
-  newCache.set(currentDepth, cacheSnapshot);
-
-  const cachedFloor = state.run.floorHistory[0]
-    ?? state.run.floorCache?.get(targetDepth)
-    ?? state.persistedFloorCache?.get(targetDepth);
-  const preparedFloor = cachedFloor !== undefined
-    ? restoreVisitedFloor(cachedFloor, cachedFloor.playerPosition)
-    : createGeneratedFloor(state, state.world, targetDepth, biome, rng);
+  const stateWithCurrentFloorPersisted = withCurrentFloorPersisted(state);
+  const preparedFloor = getOrRestoreFloor(stateWithCurrentFloorPersisted, state.world, targetDepth, rng, 'ascend');
   const enemies = applyGuaranteedEncounters(
-    state,
+    stateWithCurrentFloorPersisted,
     state.world,
     preparedFloor.floor,
     preparedFloor.enemies,
     rng,
   );
 
-  events = [...events, buildFloorEnteredEvent(targetDepth, biome.biomeId, state.turnNumber)];
+  events = [...events, buildFloorEnteredEvent(targetDepth, preparedFloor.floor.biomeId, state.turnNumber)];
 
   const nextState: GameState = {
-    ...state,
+    ...stateWithCurrentFloorPersisted,
     player: {
       ...state.player,
       position: preparedFloor.playerPosition,
@@ -232,18 +216,78 @@ export function ascendFloor(
       enemies,
       objects: preparedFloor.objects,
       turnCount: 0,
-      floorHistory: state.run.floorHistory.slice(0, -1),
-      floorCache: newCache,
+      floorHistory: [],
+      floorCache: new Map(),
       speedAccumulators: buildSpeedAccumulators(enemies),
     },
   };
 
   const questResult = completeFloorDepthQuests(nextState, targetDepth);
   return {
-    state: questResult.state,
+    state: withEnteredFloorPersisted(questResult.state, preparedFloor, targetDepth),
     events: [...events, ...questResult.events],
     runEnded: false,
   };
+}
+
+function withCurrentFloorPersisted(state: GameState): GameState {
+  const snapshot = snapshotActiveFloor(state, {
+    originalEnemyCount: state.run?.enemies.size,
+    lastSimulatedTurn: state.turnNumber,
+  });
+  if (snapshot === null) return state;
+
+  return withPersistedFloor(state, snapshot.floor.depth, snapshot);
+}
+
+function withEnteredFloorPersisted(
+  state: GameState,
+  preparedFloor: PreparedFloor,
+  depth: number,
+): GameState {
+  if (preparedFloor.storeOnEnter !== true) return state;
+
+  return withPersistedFloor(state, depth, {
+    floor: preparedFloor.floor,
+    enemies: preparedFloor.enemies,
+    objects: preparedFloor.objects,
+    playerPosition: preparedFloor.playerPosition,
+    originalEnemyCount: preparedFloor.enemies.size,
+    lastSimulatedTurn: state.turnNumber,
+  });
+}
+
+function getOrRestoreFloor(
+  state: GameState,
+  world: WorldState,
+  depth: number,
+  rng: SeededRNG,
+  direction: 'enter' | 'descend' | 'ascend',
+): PreparedFloor {
+  const selectedBiome = selectBiomeForFloor(depth, world, rng);
+  const cachedFloor = getCachedFloorForDepth(state, depth);
+  if (cachedFloor !== undefined) {
+    const biome = BIOME_DEFINITIONS.get(cachedFloor.floor.biomeId) ?? selectedBiome;
+    if (direction === 'enter') {
+      return restorePersistedFloor(state, cachedFloor, biome, depth, rng);
+    }
+
+    const playerPosition = direction === 'descend'
+      ? cachedFloor.floor.entrance
+      : cachedFloor.playerPosition;
+    return restoreVisitedFloor(cachedFloor, playerPosition);
+  }
+
+  return createGeneratedFloor(state, world, depth, selectedBiome, rng);
+}
+
+function getCachedFloorForDepth(state: GameState, depth: number): StoredFloor | undefined {
+  const cachedFloor = state.persistedFloorCache?.get(depth);
+  if (cachedFloor?.floor.depth === depth) {
+    return cachedFloor;
+  }
+
+  return undefined;
 }
 
 function buildFloorEnteredEvent(depth: number, biomeId: string, turnNumber: number): DomainEvent {
@@ -299,6 +343,7 @@ function createGeneratedFloor(
     enemies,
     objects,
     playerPosition: floor.entrance,
+    storeOnEnter: true,
   };
 }
 
@@ -324,6 +369,7 @@ function restorePersistedFloor(
     enemies: simulatedFloor.enemies,
     objects: simulatedFloor.objects,
     playerPosition: simulatedFloor.floor.entrance,
+    storeOnEnter: false,
   };
 }
 
@@ -336,6 +382,7 @@ function restoreVisitedFloor(
     enemies: cachedFloor.enemies,
     objects: cachedFloor.objects,
     playerPosition,
+    storeOnEnter: false,
   };
 }
 

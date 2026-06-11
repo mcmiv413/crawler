@@ -241,4 +241,30 @@ describe('CharacterScreen faction progress', () => {
 
     expect(screen.queryByText(/blade Mastery/i)).not.toBeInTheDocument();
   });
+
+  it('closes an opened stat detail panel from the close button', () => {
+    render(
+      <CharacterScreen
+        player={createPlayer({
+          statBreakdowns: {
+            health: {
+              stat: 'health',
+              base: 42,
+              bonuses: [],
+              total: 42,
+              description: 'Current health total.',
+            },
+          },
+        })}
+        sendCommand={vi.fn()}
+      />,
+    );
+
+    fireEvent.click(screen.getByTitle('Click to see HP breakdown'));
+    expect(screen.getByText(/Base Value/i)).toBeInTheDocument();
+
+    fireEvent.click(screen.getByRole('button', { name: 'Close' }));
+    expect(screen.queryByText(/Base Value/i)).not.toBeInTheDocument();
+    expect(screen.getByText(/Faction Progress/i)).toBeInTheDocument();
+  });
 });

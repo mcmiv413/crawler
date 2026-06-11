@@ -94,9 +94,6 @@ export const BTN_MIN_HEIGHT = 44;
 /** Minimum height (px) of navigation buttons — slightly larger touch target. */
 export const NAV_BTN_MIN_HEIGHT = 48;
 
-/** Size (px) of each DPad directional button. */
-export const DPAD_BTN_SIZE = 48;
-
 // ── HUD ─────────────────────────────────────────────────────────
 /** Height (px) of HP / XP stat bars. */
 export const STAT_BAR_HEIGHT = 8;

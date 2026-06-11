@@ -29,6 +29,7 @@ export function CombatLogView({ entries, debugMode, maxHeight }: CombatLogViewPr
 
   return (
     <div
+      className="combat-log-view"
       style={{
         marginTop: 10,
         maxHeight: computedMaxHeight,
@@ -98,6 +99,7 @@ export function CombatLogView({ entries, debugMode, maxHeight }: CombatLogViewPr
         {filteredEntries.map((entry, index) => (
           <div
             key={`${entry.type}-${entry.text}`}
+            data-testid="combat-log-entry"
             style={{
               fontSize: 11,
               lineHeight: 1.4,

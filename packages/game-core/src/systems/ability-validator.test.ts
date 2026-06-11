@@ -11,6 +11,7 @@ import { validateAbilityAction } from './ability-validator.js';
 import { createTestGameStateInCombat, createTestGameState, createTestGameStateWithAbility } from '../test-utils.js';
 import {
   ABILITY_NOT_FOUND,
+  ABILITY_NOT_UNLOCKED,
   ABILITY_ON_COOLDOWN,
   ABILITY_REQUIREMENTS_NOT_MET,
   MISSING_TILE_TARGET,
@@ -124,6 +125,19 @@ describe('validateAbilityAction', () => {
       const result = validateAbilityAction(state, abilityId);
       if (result.valid === false) {
         expect(result.rejectionCode).not.toBe(ABILITY_ON_COOLDOWN);
+      }
+    });
+  });
+
+  describe('ability not unlocked', () => {
+    it('rejects defined abilities that are not in the player ability list', () => {
+      const state = createTestGameStateInCombat();
+      const result = validateAbilityAction(state, 'power_strike');
+
+      expect(result.valid).toBe(false);
+      if (result.valid === false) {
+        expect(result.rejectionCode).toBe(ABILITY_NOT_UNLOCKED);
+        expect(result.message.length).toBeGreaterThan(0);
       }
     });
   });

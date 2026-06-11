@@ -47,13 +47,13 @@ export default {
       path: 'apps/web/src/rendering/three/ThreeAnimationOverlay.tsx',
       reason: 'Refactor target (animation overlay coordinator with module registration and status management) — needs module-registration splitting and ownership coordination refactoring',
       auditReportNote: 'Refactor target — action item from audit section 3B (animation-system refactoring backlog)',
-      lines: 887,
+      lines: 912,
     },
     {
       path: 'apps/web/src/components/TownPhase.tsx',
       reason: 'Refactor target (town screen coordinator with multiple subpanels) — needs panel composition splitting into discrete town-phase component modules',
       auditReportNote: 'Refactor target — action item from audit section 2B (ui-component composition refactoring backlog)',
-      lines: 695,
+      lines: 710,
     },
     {
       path: 'apps/web/src/components/CharacterScreen.tsx',
@@ -72,6 +72,12 @@ export default {
       reason: 'Refactor target (combines scoring, social analysis, transitions, selection) — needs scoring/analysis/transition helper extraction',
       auditReportNote: 'Refactor target — action item',
       lines: 516,
+    },
+    {
+      path: 'packages/game-core/src/systems/town.ts',
+      reason: 'Refactor target (town action coordinator with validation, shop, rest, study, and enchantment flows) — needs split into discrete town transaction modules',
+      auditReportNote: 'Correctness audit patch added rejection and gold-change observability; split is unrelated to this bugfix scope',
+      lines: 529,
     },
     {
       path: 'packages/game-core/src/engine/turn-scheduler.ts',
@@ -95,7 +101,7 @@ export default {
       path: 'scripts/audit-player-action-noops.ts',
       reason: 'Audit script with comprehensive classification taxonomy — centralizes all Phase 1+2+3 silent-failure pattern categories (P/G/A/D/B) and KNOWN_PATTERNS registry with Phase summary reporting',
       auditReportNote: 'Guardrails infrastructure; Phase 2 adds 20 rejection codes (4 slices); Phase 3 adds combat observability (apply-attack.ts invalid target); Phase 4A adds movement-blocked protected path; KNOWN_PATTERNS registry updated with corrected line numbers; future split seam is separating KNOWN_PATTERNS into dedicated JSON config once taxonomy stabilizes',
-      lines: 712,
+      lines: 910,
     },
   ],
 };

@@ -15,7 +15,6 @@ import {
   CONSUMABLES_BAR_MAX_HEIGHT,
   BTN_MIN_HEIGHT,
   NAV_BTN_MIN_HEIGHT,
-  DPAD_BTN_SIZE,
 } from './config/ui-config.js';
 
 /**
@@ -46,7 +45,6 @@ describe('Config Governance: UI Sizing', () => {
     expect(CONSUMABLES_BAR_MAX_HEIGHT).toBeGreaterThan(0);
     expect(BTN_MIN_HEIGHT).toBeGreaterThan(0);
     expect(NAV_BTN_MIN_HEIGHT).toBeGreaterThan(0);
-    expect(DPAD_BTN_SIZE).toBeGreaterThan(0);
   });
 
   it('computed viewport pixel dimensions equal tiles × cell size', () => {

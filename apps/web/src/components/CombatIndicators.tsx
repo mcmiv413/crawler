@@ -43,6 +43,9 @@ export function CombatIndicators({
         return (
           <div
             key={label.id}
+            data-testid="combat-indicator"
+            data-indicator-type={label.type}
+            className="combat-indicator"
             style={{
               position: 'absolute',
               left: `${screenX}px`,

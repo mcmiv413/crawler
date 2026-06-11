@@ -377,6 +377,19 @@ function ElderPanel({
   sendCommand: (command: unknown) => Promise<void>;
 }) {
   const spells = view.town?.studyableSpells ?? [];
+  const studyButtonLabel = (spell: typeof spells[number]) => {
+    if (spell.canStudy) return 'Study';
+    if (spell.unlocked === false) {
+      const unmetGate = spell.schoolGates.find(gate => gate.met === false);
+      if (unmetGate !== undefined) {
+        return `Requires ${titleCase(unmetGate.school)} ${unmetGate.currentXp}/${unmetGate.requiredXp} XP`;
+      }
+      return 'Requires prerequisite';
+    }
+    if (spell.affordable === false) return `Need ${spell.goldCost}g`;
+    return 'Study';
+  };
+
   return (
     <div style={{ fontFamily: FONT_STACK, color: colors.text }}>
       <h3 style={{ color: colors.purple, fontSize: 13, fontWeight: 600, letterSpacing: '0.08em', margin: 0, marginBottom: 10 }}>
@@ -390,7 +403,7 @@ function ElderPanel({
       ) : (
         spells.map((spell: typeof spells[number]) => {
           const disabled = loading || spell.canStudy === false;
-          const priceLabel = spell.canStudy ? 'Study' : `Need ${spell.goldCost}g`;
+          const priceLabel = studyButtonLabel(spell);
 
           // Build school progress label: show per-school XP for multi-school spells
           const schoolProgressLabel = spell.schoolGates.length > 0
@@ -498,6 +511,8 @@ export function TownPhase({
 
   return (
     <div
+      data-testid="town-view"
+      className="town-phase"
       style={{
         fontFamily: FONT_STACK,
         color: colors.text,

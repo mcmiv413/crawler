@@ -497,6 +497,7 @@ describe('ThreeAnimationOverlay – move walk phase propagation', () => {
     const move = makeMoveAnimation({
       progress: 0.2,
       walkPhase: 'middle',
+      startTime: undefined,
     });
     const phaseScale = moveStyleProfiles.getSquashStretchScale(move.style, move.progress, move.walkPhase);
     const defaultScale = moveStyleProfiles.getSquashStretchScale(move.style, move.progress);

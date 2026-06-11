@@ -5,14 +5,7 @@ import type { RingSchool, SpellStudyRequirement, RingSpellDefinition } from '@du
 import {
   getSchoolDisplayLevelFromXp,
   getSchoolDisplayLevelXpThreshold,
-  getSchoolMasteryLevelFromXp,
 } from './magic-xp.js';
-
-// Derive school mastery level from XP (not stored)
-export function getSchoolMasteryLevel(player: Player, school: RingSchool): number {
-  const xp = (player.ringMastery as Record<string, { xp: number }>)[school]?.xp ?? 0;
-  return getSchoolMasteryLevelFromXp(xp);
-}
 
 function getSchoolDisplayLevel(player: Player, school: RingSchool): number {
   const xp = (player.ringMastery as Record<string, { xp: number }>)[school]?.xp ?? 0;
@@ -61,23 +54,6 @@ function meetsStudyVisibilityRequirements(
     || requirement.kind === 'minimumSchoolXp'
     || requirement.met === true
   );
-}
-
-// Spells the player can study right now (meets all requirements including gold)
-export function getStudyableRingSpells(
-  player: Player,
-  equippedItemIds: readonly string[],
-): readonly RingSpellDefinition[] {
-  const equippedSchools = new Set(
-    equippedItemIds
-      .map(itemId => getSchoolForRing(itemId))
-      .filter(Boolean) as RingSchool[]
-  );
-  const learned = new Set(player.learnedRingSpellIds);
-  return [...RING_SPELL_BY_ID.values()].filter(spell => {
-    if (learned.has(spell.id)) return false;
-    return spell.studyRequirements.every((req: SpellStudyRequirement) => meetsStudyRequirement(req, player, equippedSchools));
-  });
 }
 
 // Extract equipped item IDs from equipment + registry

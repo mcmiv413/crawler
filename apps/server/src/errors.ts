@@ -1,6 +1,8 @@
 import type { FastifyReply } from 'fastify';
 import { SchemaVersionMismatchError, SchemaParseError, getSchemaVersionErrorMessage } from '@dungeon/contracts';
 
+const INVALID_SAVE_FILE_MESSAGE = 'The submitted save file could not be parsed or validated.';
+
 export class ConcurrentModificationError extends Error {
   constructor(message: string) {
     super(message);
@@ -21,7 +23,7 @@ export function handleRouteError(error: unknown, reply: FastifyReply): boolean {
     reply.code(400).send({
       error: 'Invalid save file',
       code: 'INVALID_SAVE_FILE',
-      message: error.message,
+      message: INVALID_SAVE_FILE_MESSAGE,
     });
     return true;
   }

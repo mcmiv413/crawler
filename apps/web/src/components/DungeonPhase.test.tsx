@@ -139,6 +139,7 @@ vi.mock('../hooks/useBumpAnimationState.js', () => ({
 
 vi.mock('../hooks/useMoveAnimationState.js', () => ({
   useMoveAnimationState: () => ({ animations: moveAnimationState.current }),
+  resolveMoveAnimationProgress: (animation: unknown) => animation,
 }));
 
 vi.mock('../hooks/useConsumableAnimationState.js', () => ({
@@ -202,6 +203,9 @@ vi.mock('../hooks/useDungeonRenderState.js', () => ({
       return result;
     },
   ),
+  findActivePlayerMove: () => undefined,
+  getCameraOffsetForPlayerMove: () => ({ x: 0, y: 0 }),
+  getViewportOriginForPosition: () => ({ x: 0, y: 0 }),
 }));
 
 // Renderer mode wiring for the Three overlay.

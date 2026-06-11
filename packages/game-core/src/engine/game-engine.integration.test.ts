@@ -47,6 +47,31 @@ function makeEnemy(id: string, x: number, y: number): EnemyInstance {
 // ---------------------------------------------------------------------------
 
 describe('GameEngine floor navigation', () => {
+  it('rejects locked abilities without damaging enemies or advancing the turn', () => {
+    const engine = new GameEngine();
+    const dungeonState = enterDungeon(engine);
+    const firstEnemyEntry = dungeonState.run!.enemies.entries().next().value;
+    if (firstEnemyEntry === undefined) {
+      throw new Error('Expected generated dungeon to contain an enemy');
+    }
+    const [, enemy] = firstEnemyEntry;
+
+    const result = engine.submitCommand(dungeonState, {
+      type: 'USE_ABILITY',
+      abilityId: 'power_strike',
+      targetId: enemy.id,
+    });
+
+    const unchangedEnemy = Array.from(result.state.run!.enemies.values())
+      .find(candidate => candidate.id === enemy.id);
+    expect(result.events).toContainEqual(expect.objectContaining({
+      type: 'PLAYER_ACTION_REJECTED',
+      reasonCode: 'ABILITY_NOT_UNLOCKED',
+    }));
+    expect(unchangedEnemy?.stats.health).toBe(enemy.stats.health);
+    expect(result.state.turnNumber).toBe(dungeonState.turnNumber);
+  });
+
   it('entering the dungeon completes floor-depth quests that target depth 1', () => {
     const engine = new GameEngine();
     const townState = engine.createNewGame(42);
@@ -116,11 +141,11 @@ describe('GameEngine floor navigation', () => {
     expect(result.state.phase).toBe('town');
   });
 
-  it('ASCEND with history restores prior floor and player position', () => {
+  it('ASCEND restores the prior floor from persisted cache and player position', () => {
     const engine = new GameEngine();
     const dungeonState = enterDungeon(engine);
 
-    // Fake having descended: inject a stored floor snapshot into run state
+    // Fake having descended: inject a stored floor snapshot into canonical cache
     const priorPosition = { x: 3, y: 3 };
     const snapshot: StoredFloor = {
       floor: dungeonState.run!.floor,
@@ -135,16 +160,15 @@ describe('GameEngine floor navigation', () => {
       run: {
         ...dungeonState.run!,
         floor: { ...dungeonState.run!.floor, depth: 2 },
-        floorHistory: [snapshot],
       },
+      persistedFloorCache: new Map([[1, snapshot]]),
     };
 
     const result = engine.submitCommand(stateOnFloor2, { type: 'ASCEND' });
 
     expect(result.runEnded).toBe(false);
     expect(result.state.phase).toBe('dungeon');
-    expect(result.state.player.floor).toBeGreaterThanOrEqual(1);
-    expect(result.state.player.floor).toBeLessThanOrEqual(2);
+    expect(result.state.player.floor).toBe(1);
     expect(result.state.player.position).toEqual(priorPosition);
     expect(result.state.run!.floorHistory).toHaveLength(0);
   });
@@ -193,12 +217,12 @@ describe('GameEngine floor navigation', () => {
     expect(result.events.some(event => event.type === 'QUEST_READY' && event.questId === quest.id)).toBe(true);
   });
 
-  it('ASCEND with 2 floors of history leaves 1 floor in history', () => {
+  it('ASCEND stores the departed floor in persisted cache', () => {
     const engine = new GameEngine();
     const dungeonState = enterDungeon(engine);
 
     const snapshot: StoredFloor = {
-      floor: dungeonState.run!.floor,
+      floor: { ...dungeonState.run!.floor, depth: 2 },
       enemies: new Map(),
       objects: new Map(),
       playerPosition: { x: 1, y: 1 },
@@ -210,15 +234,15 @@ describe('GameEngine floor navigation', () => {
       run: {
         ...dungeonState.run!,
         floor: { ...dungeonState.run!.floor, depth: 3 },
-        floorHistory: [snapshot, snapshot],
       },
+      persistedFloorCache: new Map([[2, snapshot]]),
     };
 
     const result = engine.submitCommand(stateOnFloor3, { type: 'ASCEND' });
 
-    expect(result.state.run!.floorHistory).toHaveLength(1);
-    expect(result.state.player.floor).toBeGreaterThanOrEqual(1);
-    expect(result.state.player.floor).toBeLessThan(3);
+    expect(result.state.run!.floorHistory).toHaveLength(0);
+    expect(result.state.persistedFloorCache?.get(3)?.floor.depth).toBe(3);
+    expect(result.state.player.floor).toBe(2);
   });
 
   it('descending pushes current floor onto history', () => {
@@ -329,15 +353,15 @@ describe('GameEngine floor cache', () => {
 
     const result = engine.submitCommand(floor2State, { type: 'ASCEND' });
 
-    // After ascending from depth 2, cache should contain depth 2
-    expect(result.state.run!.floorCache?.has(2)).toBe(true);
-    // The cached floor 2 had no enemies (cleared)
-    const cached = result.state.run!.floorCache?.get(2);
+    // After ascending from depth 2, persisted cache should contain depth 2
+    expect(result.state.persistedFloorCache?.has(2)).toBe(true);
+    // The persisted floor 2 had no enemies (cleared)
+    const cached = result.state.persistedFloorCache?.get(2);
     expect(cached?.enemies.size).toBe(0);
     expect(result.state.player.floor).toBe(1);
   });
 
-  it('descending into a cached depth restores it instead of regenerating', () => {
+  it('persisted cache preserves cleared floor state across ascend', () => {
     const engine = new GameEngine();
     const dungeonState = enterDungeon(engine);
 
@@ -349,23 +373,7 @@ describe('GameEngine floor cache', () => {
       playerPosition: dungeonState.run!.floor.entrance,
     };
 
-    // State on floor 1 with depth-2 in cache
-    const stateWithCache: GameState = {
-      ...dungeonState,
-      run: {
-        ...dungeonState.run!,
-        floorCache: new Map([[2, cachedSnapshot]]),
-      },
-    };
-
-    // Simulate descend by injecting result via history snapshot + manual descend trigger.
-    // We test descendFloor indirectly: after patching state to have cache, verify that
-    // the resulting state from an ascend-then-descend cycle preserves enemy count.
-
-    // Ascend first to save floor 1 into cache (floor 1 has enemies from generation)
-    const floor1EnemyCount = stateWithCache.run!.enemies.size;
-
-    // Directly create a floor 2 → ascend → verify floor 2 in cache has cleared enemies
+    // Directly create a floor 2 → ascend → verify floor 2 in persisted cache has cleared enemies
     const floor2State: GameState = {
       ...dungeonState,
       player: { ...dungeonState.player, floor: 2 },
@@ -373,26 +381,20 @@ describe('GameEngine floor cache', () => {
         ...dungeonState.run!,
         floor: { ...dungeonState.run!.floor, depth: 2 },
         enemies: clearedEnemies,
-        floorHistory: [
-          {
-            floor: dungeonState.run!.floor,
-            enemies: dungeonState.run!.enemies,
-            objects: new Map(),
-            playerPosition: dungeonState.run!.floor.entrance,
-          },
-        ],
-        floorCache: new Map(),
       },
+      persistedFloorCache: new Map([
+        ...(dungeonState.persistedFloorCache ?? []),
+        [2, cachedSnapshot],
+      ]),
     };
 
     const afterAscend = engine.submitCommand(floor2State, { type: 'ASCEND' });
-    // Now on floor 1, cache has depth=2 with 0 enemies
-    expect(afterAscend.state.run!.floorCache?.get(2)?.enemies.size).toBe(0);
-    // Floor 1 enemy count restored from history
+    // Now on floor 1, persisted cache has depth=2 with 0 enemies
+    expect(afterAscend.state.persistedFloorCache?.get(2)?.enemies.size).toBe(0);
+    // Floor 1 enemy count restored from persisted cache
     expect(afterAscend.state.run!.enemies.size).toBeGreaterThanOrEqual(0);
-    // The cache preserved the cleared state, not floor1EnemyCount
-    expect(afterAscend.state.run!.floorCache?.get(2)?.enemies.size).toBe(0);
-    void floor1EnemyCount; // used above
+    // The cache preserved the cleared state
+    expect(afterAscend.state.persistedFloorCache?.get(2)?.enemies.size).toBe(0);
   });
 });
 
