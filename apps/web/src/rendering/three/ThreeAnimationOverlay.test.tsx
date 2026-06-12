@@ -51,6 +51,10 @@ const {
   mockDisposeEntitySprite,
   mockSetEntitySpritePosition,
   mockSetEntitySpriteScale,
+  mockCreateDefenderHitFlash,
+  mockDisposeDefenderHitFlash,
+  mockSetDefenderHitFlashPosition,
+  mockUpdateDefenderHitFlash,
 } = vi.hoisted(() => {
   const mockRenderer = {
     setSize: vi.fn(),
@@ -103,6 +107,10 @@ const {
   const mockDisposeEntitySprite = vi.fn();
   const mockSetEntitySpritePosition = vi.fn();
   const mockSetEntitySpriteScale = vi.fn();
+  const mockCreateDefenderHitFlash = vi.fn(() => ({ tag: 'defender-hit-flash' }));
+  const mockDisposeDefenderHitFlash = vi.fn();
+  const mockSetDefenderHitFlashPosition = vi.fn();
+  const mockUpdateDefenderHitFlash = vi.fn();
 
   return {
     mockCreateRenderer,
@@ -116,6 +124,10 @@ const {
     mockDisposeEntitySprite,
     mockSetEntitySpritePosition,
     mockSetEntitySpriteScale,
+    mockCreateDefenderHitFlash,
+    mockDisposeDefenderHitFlash,
+    mockSetDefenderHitFlashPosition,
+    mockUpdateDefenderHitFlash,
   };
 });
 
@@ -140,6 +152,13 @@ vi.mock('./entities/three-entity-sprite.js', () => ({
   disposeEntitySprite: mockDisposeEntitySprite,
   setEntitySpritePosition: mockSetEntitySpritePosition,
   setEntitySpriteScale: mockSetEntitySpriteScale,
+}));
+
+vi.mock('./entities/three-defender-hit-flash.js', () => ({
+  createDefenderHitFlash: mockCreateDefenderHitFlash,
+  disposeDefenderHitFlash: mockDisposeDefenderHitFlash,
+  setDefenderHitFlashPosition: mockSetDefenderHitFlashPosition,
+  updateDefenderHitFlash: mockUpdateDefenderHitFlash,
 }));
 
 // ---------------------------------------------------------------------------
@@ -209,6 +228,7 @@ function makeFxAnimation(overrides?: Record<string, unknown>) {
     id: 'fx-0',
     abilityId: 'fireball',
     animationId: 'fx.self.healing-pulse' as any,
+    selfTargeted: true,
     playerPos: { x: 5, y: 5 },
     blastPositions: [],
     durationMs: 500,
@@ -295,6 +315,10 @@ function resetMocks() {
   mockDisposeEntitySprite.mockClear();
   mockSetEntitySpritePosition.mockClear();
   mockSetEntitySpriteScale.mockClear();
+  mockCreateDefenderHitFlash.mockClear();
+  mockDisposeDefenderHitFlash.mockClear();
+  mockSetDefenderHitFlashPosition.mockClear();
+  mockUpdateDefenderHitFlash.mockClear();
   // Restore default behaviour
   mockCreateRenderer.mockImplementation((_canvas: HTMLCanvasElement): typeof mockRenderer | null => {
     mockRenderer.domElement = document.createElement('canvas');
@@ -310,6 +334,7 @@ function resetMocks() {
   );
   mockCreateAtmosphereVignette.mockImplementation(() => mockAtmosphereVignette);
   mockCreateEntitySprite.mockImplementation(() => ({ tag: 'entity-sprite' }));
+  mockCreateDefenderHitFlash.mockImplementation(() => ({ tag: 'defender-hit-flash' }));
 }
 
 // ---------------------------------------------------------------------------
@@ -487,6 +512,50 @@ describe('ThreeAnimationOverlay – render gating', () => {
       />,
     );
     expect(getByTestId('three-animation-overlay')).toBeTruthy();
+  });
+
+  it('renders defender-hit flash at snapshot position when entity is absent from the map', async () => {
+    const defenderHits = new Map<EntityId, { startTime: number; durationMs: number; position: { x: number; y: number } }>([[
+      entityId('enemy-1'),
+      { startTime: Date.now(), durationMs: 250, position: { x: 7, y: 4 } },
+    ]]);
+    render(
+      <ThreeAnimationOverlay
+        {...makeDefaultProps({
+          map: makeMap({ entities: [] }),
+          defenderHits,
+        })}
+      />,
+    );
+
+    await waitFor(() => {
+      expect(mockSetDefenderHitFlashPosition).toHaveBeenCalledWith(
+        expect.anything(),
+        { x: 180, y: 108, z: 3 },
+        15 * CELL_SIZE,
+      );
+    });
+  });
+
+  it('skips defender-hit flash when entity is absent and no snapshot position exists', async () => {
+    const defenderHits = new Map<EntityId, { startTime: number; durationMs: number }>([[
+      entityId('enemy-1'),
+      { startTime: Date.now(), durationMs: 250 },
+    ]]);
+    render(
+      <ThreeAnimationOverlay
+        {...makeDefaultProps({
+          map: makeMap({ entities: [] }),
+          defenderHits,
+        })}
+      />,
+    );
+
+    await waitFor(() => {
+      expect(mockRenderer.render).toHaveBeenCalled();
+    });
+    expect(mockCreateDefenderHitFlash).not.toHaveBeenCalled();
+    expect(mockSetDefenderHitFlashPosition).not.toHaveBeenCalled();
   });
 });
 

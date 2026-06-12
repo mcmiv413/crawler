@@ -35,19 +35,19 @@ export default {
       path: 'packages/presenter/src/game-view.ts',
       reason: 'Central DTO/read-model contract surface — consolidation target only if behavior leaks in',
       auditReportNote: 'Acceptable aggregation',
-      lines: 572,
+      lines: 573,
     },
     {
       path: 'packages/presenter/src/animation-sequence.ts',
       reason: 'Specialized event scheduling helpers — split by event family if behavior keeps growing',
       auditReportNote: 'Large but specialized',
-      lines: 862,
+      lines: 864,
     },
     {
       path: 'apps/web/src/rendering/three/ThreeAnimationOverlay.tsx',
       reason: 'Refactor target (animation overlay coordinator with module registration and status management) — needs module-registration splitting and ownership coordination refactoring',
       auditReportNote: 'Refactor target — action item from audit section 3B (animation-system refactoring backlog)',
-      lines: 912,
+      lines: 928,
     },
     {
       path: 'apps/web/src/components/TownPhase.tsx',
@@ -83,7 +83,7 @@ export default {
       path: 'packages/game-core/src/engine/turn-scheduler.ts',
       reason: 'Refactor target — orchestration file candidate for split into discrete scheduler/turn-advance modules',
       auditReportNote: 'Refactor target — action item',
-      lines: 546,
+      lines: 547,
     },
     {
       path: 'scripts/balance/simulation.ts',
@@ -95,7 +95,7 @@ export default {
       path: 'packages/game-contracts/src/events/index.ts',
       reason: 'Central discriminated union of all domain events — consolidation target for event type safety',
       auditReportNote: 'Event type definitions added for player action observability guardrails; Phase 4A adds MovementBlockedEvent; Phase 4B adds TrapDisarmedEvent and TrapPlacedEvent; acceptable aggregation',
-      lines: 556,
+      lines: 559,
     },
     {
       path: 'scripts/audit-player-action-noops.ts',

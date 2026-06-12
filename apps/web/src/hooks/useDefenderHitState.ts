@@ -1,9 +1,11 @@
 import { useEffect, useState } from 'react';
 import type { EntityId } from '@dungeon/contracts';
+import type { DefenderHitEntry as PresenterDefenderHitEntry } from '@dungeon/presenter';
 
 export interface DefenderHitEntry {
-  readonly durationMs: number;
+  readonly durationMs: PresenterDefenderHitEntry['durationMs'];
   readonly startTime: number;
+  readonly position?: PresenterDefenderHitEntry['position'];
 }
 
 type DefenderHitListener = (updates: Map<EntityId, DefenderHitEntry>) => void;
@@ -32,7 +34,11 @@ export function useDefenderHitState(): Map<EntityId, DefenderHitEntry> {
   return hits;
 }
 
-export function triggerDefenderHit(entityId: EntityId, durationMs: number): void {
+export function triggerDefenderHit(
+  entityId: EntityId,
+  durationMs: number,
+  position?: PresenterDefenderHitEntry['position'],
+): void {
   const existingTimer = defenderHitTimers.get(entityId);
   if (existingTimer !== undefined) {
     clearTimeout(existingTimer);
@@ -41,6 +47,7 @@ export function triggerDefenderHit(entityId: EntityId, durationMs: number): void
   defenderHitChannel.set(entityId, {
     durationMs,
     startTime: Date.now(),
+    ...(position !== undefined ? { position } : {}),
   });
   notifyDefenderHitListeners();
 

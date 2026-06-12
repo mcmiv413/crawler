@@ -1,6 +1,7 @@
 import type { DomainEvent, EnemyInstance, EntityId, GameState } from '@dungeon/contracts';
 import { ABILITY_DEFINITIONS, ANIMATION_REF_BY_ID, animationRefs } from '@dungeon/content';
 import type { AnimationId } from '@dungeon/content';
+import { ALL_ABILITY_DEFINITIONS } from '@dungeon/core';
 import type {
   AbilityAnimationEntry,
   BumpAnimationEntry,
@@ -78,6 +79,7 @@ interface BeatActionSpec {
 }
 
 type AnimationRefEntry = NonNullable<ReturnType<typeof ANIMATION_REF_BY_ID.get>>;
+const CORE_ABILITY_DEFINITION_BY_ID = new Map(ALL_ABILITY_DEFINITIONS.map((definition) => [definition.id, definition]));
 
 function getSuppressActorBump(animationRef: AnimationRefEntry): boolean {
   return 'suppressActorBump' in animationRef && animationRef.suppressActorBump === true;
@@ -415,6 +417,7 @@ function buildAbilityAction(
   const animRef = resolveAbilityAnimationRef(event, abilityDef.animation.id as AnimationId);
   if (animRef === undefined) return null;
 
+  const coreAbilityDef = CORE_ABILITY_DEFINITION_BY_ID.get(event.abilityId);
   const playerPos = state.player.position;
   const targetSnapshotLookup = buildAbilityTargetSnapshotLookup(event);
   const targetPos = event.targetId
@@ -440,6 +443,7 @@ function buildAbilityAction(
     data: {
       abilityId: event.abilityId,
       animationId: animRef.id,
+      selfTargeted: coreAbilityDef?.targeting.selector.kind === 'self',
       playerPos,
       targetPos: targetPos ?? undefined,
       blastPositions,
@@ -505,8 +509,8 @@ function buildAttackAction(
   state: GameState,
 ): BeatActionSpec | null {
   const attackerPos = getEntityPosition(event.attackerId, state);
-  const defenderPos = getEntityPosition(event.defenderId, state) ?? event.position;
-  if (attackerPos === null || defenderPos === null) return null;
+  const defenderPos = event.position;
+  if (attackerPos === null) return null;
 
   const { durationMs, impactFrameMs } = getBumpTiming(event.attackerId, state);
 
@@ -579,10 +583,8 @@ function buildConsumableAction(
 
 function buildStatusDamageEvent(
   event: Extract<DomainEvent, { type: 'STATUS_DAMAGE_TICK' }>,
-  state: GameState,
 ): PendingAnimatedEvent | null {
-  const targetPos = getEntityPosition(event.targetId, state);
-  if (targetPos === null) return null;
+  const targetPos = event.position;
 
   return {
     type: 'damage',
@@ -809,7 +811,7 @@ export function buildAnimationSequence(
       }
       case 'STATUS_DAMAGE_TICK': {
         statusBeat ??= createBeatBuilder('status');
-        const statusEvent = buildStatusDamageEvent(event, state);
+        const statusEvent = buildStatusDamageEvent(event);
         if (statusEvent !== null) {
           statusBeat.mutableEvents = [...statusBeat.mutableEvents, statusEvent];
         }

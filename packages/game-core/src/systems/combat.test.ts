@@ -37,6 +37,18 @@ describe('resolveAttack', () => {
     expect(result.defenderDied).toBe(false);
   });
 
+  it('forceHit skips the hit roll and lands even when the next roll would miss', () => {
+    const ctx = { ...baseCtx, attackerAccuracy: -999, defenderEvasion: 999, forceHit: true };
+    const forcedRng = new SeededRNG(1);
+    vi.spyOn(forcedRng, 'next').mockReturnValueOnce(0.99).mockReturnValue(0.5);
+
+    const result = resolveAttack(ctx, forcedRng);
+
+    expect(result.hit).toBe(true);
+    expect(result.hitRoll).toBeUndefined();
+    expect(result.damage).toBeGreaterThan(0);
+  });
+
   it('should calculate damage correctly with attack and defense', () => {
     const ctx = { ...baseCtx, attackerAttack: 80, defenderDefense: 30, attackerAccuracy: 100, defenderEvasion: 0 };
     const result = resolveAttack(ctx, new SeededRNG(1));

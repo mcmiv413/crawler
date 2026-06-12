@@ -184,6 +184,13 @@ const EVENT_FORMATTERS = {
       };
     }
     if (event.targetName !== undefined) {
+      if (event.hit === false) {
+        return {
+          text: `${event.abilityName}! Missed ${event.targetName}.`,
+          type: 'attack',
+          timestamp: event.timestamp,
+        };
+      }
       return {
         text: `${event.abilityName}! ${event.damage ?? 0} damage to ${event.targetName}.`,
         type: 'attack',

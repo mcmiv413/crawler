@@ -48,11 +48,10 @@ function addIndicator(
 
 function handleAttackPerformed(
   event: Extract<DomainEvent, { type: 'ATTACK_PERFORMED' }>,
-  state: GameState,
+  _state: GameState,
   indicators: CombatIndicatorEntry[],
 ): void {
-  const pos = getPos(event.defenderId, state);
-  if (!pos) return;
+  const pos = event.position;
   const text = event.hit ? `-${event.damage}` : 'miss';
   addIndicator(indicators, text, 'damage', pos.x, pos.y);
 }
@@ -70,11 +69,10 @@ function handleStatusApplied(
 
 function handleStatusDamageTick(
   event: Extract<DomainEvent, { type: 'STATUS_DAMAGE_TICK' }>,
-  state: GameState,
+  _state: GameState,
   indicators: CombatIndicatorEntry[],
 ): void {
-  const pos = getPos(event.targetId, state);
-  if (!pos) return;
+  const pos = event.position;
   addIndicator(indicators, `-${event.damage}`, 'damage', pos.x, pos.y);
 }
 
@@ -146,11 +144,10 @@ function handleTrapTriggered(
 
 function handleThornsReflected(
   event: Extract<DomainEvent, { type: 'THORNS_REFLECTED' }>,
-  state: GameState,
+  _state: GameState,
   indicators: CombatIndicatorEntry[],
 ): void {
-  const pos = getPos(event.targetId, state);
-  if (!pos) return;
+  const pos = event.position;
   addIndicator(indicators, `-${event.damageAmount}`, 'damage', pos.x, pos.y);
 }
 

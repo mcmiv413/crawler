@@ -377,6 +377,7 @@ export interface ConsumableAnimationEntry {
 export interface AbilityAnimationEntry {
   readonly abilityId: string;
   readonly animationId: string;
+  readonly selfTargeted: boolean;
   readonly playerPos: { readonly x: number; readonly y: number };
   readonly targetPos?: { readonly x: number; readonly y: number };
   readonly blastPositions: readonly { readonly x: number; readonly y: number }[];

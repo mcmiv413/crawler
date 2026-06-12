@@ -148,6 +148,10 @@ export function getOverlayPositions(
     return [animation.targetPos];
   }
 
+  if ('abilityId' in animation) {
+    return animation.selfTargeted === true ? [animation.playerPos] : [];
+  }
+
   return [animation.playerPos];
 }
 
@@ -761,9 +765,6 @@ export function ThreeAnimationOverlay(props: ThreeAnimationOverlayProps): React.
       const activeDefenderHitIds = new Set<EntityId>();
       for (const [entityId, hit] of activeDefenderHits.entries()) {
         const entity = entityById.get(entityId);
-        if (entity === undefined) {
-          continue;
-        }
 
         const progress = Math.min((now - hit.startTime) / hit.durationMs, 1);
         if (progress >= 1) {
@@ -772,6 +773,33 @@ export function ThreeAnimationOverlay(props: ThreeAnimationOverlayProps): React.
             disposeDefenderHitFlash(existing.flash, handle.scene);
             defenderHitEntriesRef.current.delete(entityId);
           }
+          continue;
+        }
+
+        const liveScreenPosition = entity === undefined ? undefined : (entityScreenPositions.get(entityId) ?? (() => {
+          const world = tileCenterWorld(entity.x, entity.y, CELL_SIZE);
+          return worldToScreen(
+            world.x,
+            world.y,
+            currentVpLeft,
+            currentVpTop,
+            CELL_SIZE,
+            frameCameraOffset,
+          );
+        })());
+        const snapshotScreenPosition = hit.position === undefined ? undefined : (() => {
+          const world = tileCenterWorld(hit.position.x, hit.position.y, CELL_SIZE);
+          return worldToScreen(
+            world.x,
+            world.y,
+            currentVpLeft,
+            currentVpTop,
+            CELL_SIZE,
+            frameCameraOffset,
+          );
+        })();
+        const screenPosition = liveScreenPosition ?? snapshotScreenPosition;
+        if (screenPosition === undefined) {
           continue;
         }
 
@@ -793,18 +821,6 @@ export function ThreeAnimationOverlay(props: ThreeAnimationOverlayProps): React.
           };
           defenderHitEntriesRef.current.set(entityId, entry);
         }
-
-        const screenPosition = entityScreenPositions.get(entityId) ?? (() => {
-          const world = tileCenterWorld(entity.x, entity.y, CELL_SIZE);
-          return worldToScreen(
-            world.x,
-            world.y,
-            currentVpLeft,
-            currentVpTop,
-            CELL_SIZE,
-            frameCameraOffset,
-          );
-        })();
 
         setDefenderHitFlashPosition(
           entry.flash,

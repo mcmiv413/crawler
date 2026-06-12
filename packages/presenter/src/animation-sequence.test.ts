@@ -209,6 +209,7 @@ function createAttackEvent(args: {
   defenderId: EntityId;
   timestamp: number;
   damage?: number;
+  position?: { readonly x: number; readonly y: number };
 }): DomainEvent {
   return {
     type: 'ATTACK_PERFORMED',
@@ -222,8 +223,22 @@ function createAttackEvent(args: {
     damageType: 'physical',
     hit: true,
     critical: false,
-    position: { x: 0, y: 0 },
+    position: args.position ?? defaultPositionForEntity(args.defenderId),
   } as DomainEvent;
+}
+
+function defaultPositionForEntity(entityIdValue: EntityId): { readonly x: number; readonly y: number } {
+  switch (entityIdValue) {
+    case entityId('player-1'):
+      return { x: 50, y: 50 };
+    case entityId('enemy-2'):
+      return { x: 52, y: 50 };
+    case entityId('enemy-3'):
+      return { x: 53, y: 50 };
+    case entityId('enemy-1'):
+    default:
+      return { x: 51, y: 50 };
+  }
 }
 
 function groupByBeat(sequence: ReturnType<typeof buildAnimationSequence>) {
@@ -326,6 +341,59 @@ describe('buildAnimationSequence', () => {
     });
   });
 
+  it('anchors attack damage and defender bump to event position when the defender moved later in the batch', () => {
+    const movedEnemy = createTestEnemy({
+      id: entityId('enemy-1'),
+      name: 'Slow Goblin',
+      templateId: 'goblin',
+      archetype: 'brute',
+      position: { x: 51, y: 49 },
+    });
+    const finalState = withEnemies(
+      mockGameState,
+      [movedEnemy, ...[...mockGameState.run!.enemies.values()].filter((enemy) => enemy.id !== entityId('enemy-1'))],
+    );
+    const sequence = buildAnimationSequence([
+      createAttackEvent({
+        attackerId: entityId('player-1'),
+        defenderId: entityId('enemy-1'),
+        timestamp: 1000,
+        position: { x: 51, y: 50 },
+      }),
+      {
+        type: 'ENEMY_MOVED',
+        timestamp: 1001,
+        turnNumber: 1,
+        enemyId: entityId('enemy-1'),
+        from: { x: 51, y: 50 },
+        to: { x: 51, y: 49 },
+      } as DomainEvent,
+    ], finalState);
+    const bump = sequence.find((event) => event.type === 'bump');
+    const damage = sequence.find((event) => event.type === 'damage');
+
+    expect((bump?.data as { defenderPos?: { x: number; y: number } }).defenderPos).toEqual({ x: 51, y: 50 });
+    expect(damage?.data).toMatchObject({ x: 51, y: 50 });
+  });
+
+  it('keeps attack damage visible at event position when the defender is gone from final state', () => {
+    const finalState = withEnemies(
+      mockGameState,
+      [...mockGameState.run!.enemies.values()].filter((enemy) => enemy.id !== entityId('enemy-1')),
+    );
+    const sequence = buildAnimationSequence([
+      createAttackEvent({
+        attackerId: entityId('player-1'),
+        defenderId: entityId('enemy-1'),
+        timestamp: 1000,
+        position: { x: 51, y: 50 },
+      }),
+    ], finalState);
+    const damage = sequence.find((event) => event.type === 'damage');
+
+    expect(damage?.data).toMatchObject({ x: 51, y: 50 });
+  });
+
   it('anchors ability impacts at the ref impact frame within a beat', () => {
     const events: DomainEvent[] = [{
       type: 'ABILITY_USED',
@@ -336,6 +404,7 @@ describe('buildAnimationSequence', () => {
       abilityName: 'Power Strike',
       targetId: entityId('enemy-1'),
       targetName: 'Slow Goblin',
+      hit: true,
       damage: 12,
     } as DomainEvent];
 
@@ -376,6 +445,7 @@ describe('buildAnimationSequence', () => {
       playerId: entityId('player-1'),
       abilityId: 'axe_cleave',
       abilityName: 'Axe Cleave',
+      hit: true,
       damageByTarget: new Map([
         [entityId('enemy-1'), 5],
         [entityId('enemy-2'), 7],
@@ -407,6 +477,7 @@ describe('buildAnimationSequence', () => {
       abilityName: 'Power Strike',
       targetId: entityId('enemy-1'),
       targetName: 'Slow Goblin',
+      hit: true,
       damage: 12,
       targetSnapshots: [{
         targetId: entityId('enemy-1'),
@@ -420,6 +491,7 @@ describe('buildAnimationSequence', () => {
     const defenderHit = sequence.find((event) => event.type === 'defender-hit');
 
     expect((ability?.data as { targetPos?: { x: number; y: number } }).targetPos).toEqual({ x: 51, y: 50 });
+    expect((ability?.data as { selfTargeted?: boolean }).selfTargeted).toBe(false);
     expect(damage?.data).toMatchObject({ x: 51, y: 50 });
     expect(defenderHit?.data).toMatchObject({
       entityId: entityId('enemy-1'),
@@ -458,6 +530,7 @@ describe('buildAnimationSequence', () => {
         abilityName: 'Power Strike',
         targetId: entityId('enemy-1'),
         targetName: 'Slow Goblin',
+        hit: true,
         damage: 12,
         targetSnapshots: [{
           targetId: entityId('enemy-1'),
@@ -488,6 +561,69 @@ describe('buildAnimationSequence', () => {
     expect(move!.delayMs).toBeGreaterThan(ability!.delayMs);
   });
 
+  it('uses status damage event position when the target moved later in the batch', () => {
+    const movedEnemy = createTestEnemy({
+      id: entityId('enemy-1'),
+      name: 'Slow Goblin',
+      templateId: 'goblin',
+      archetype: 'brute',
+      position: { x: 51, y: 49 },
+    });
+    const finalState = withEnemies(
+      mockGameState,
+      [movedEnemy, ...[...mockGameState.run!.enemies.values()].filter((enemy) => enemy.id !== entityId('enemy-1'))],
+    );
+    const events: DomainEvent[] = [
+      {
+        type: 'STATUS_DAMAGE_TICK',
+        timestamp: 1000,
+        turnNumber: 1,
+        targetId: entityId('enemy-1'),
+        targetName: 'Slow Goblin',
+        statusId: 'burn',
+        damage: 4,
+        damageType: 'fire',
+        position: { x: 51, y: 50 },
+      } as DomainEvent,
+      {
+        type: 'ENEMY_MOVED',
+        timestamp: 1001,
+        turnNumber: 1,
+        enemyId: entityId('enemy-1'),
+        from: { x: 51, y: 50 },
+        to: { x: 51, y: 49 },
+      } as DomainEvent,
+    ];
+
+    const sequence = buildAnimationSequence(events, finalState);
+    const damage = sequence.find((event) => event.type === 'damage');
+
+    expect(damage?.data).toMatchObject({ text: '-4', x: 51, y: 50 });
+  });
+
+  it('keeps status damage visible at event position when the target is gone from final state', () => {
+    const finalState = withEnemies(
+      mockGameState,
+      [...mockGameState.run!.enemies.values()].filter((enemy) => enemy.id !== entityId('enemy-1')),
+    );
+    const events: DomainEvent[] = [{
+      type: 'STATUS_DAMAGE_TICK',
+      timestamp: 1000,
+      turnNumber: 1,
+      targetId: entityId('enemy-1'),
+      targetName: 'Slow Goblin',
+      statusId: 'burn',
+      damage: 4,
+      damageType: 'fire',
+      position: { x: 51, y: 50 },
+    } as DomainEvent];
+
+    const sequence = buildAnimationSequence(events, finalState);
+    const damage = sequence.find((event) => event.type === 'damage');
+
+    expect(damage?.data).toMatchObject({ text: '-4', x: 51, y: 50 });
+  });
+
   it('preserves multi-target blast and damage positions when affected enemies die before the final state', () => {
     const finalState = withEnemies(
       mockGameState,
@@ -500,6 +636,7 @@ describe('buildAnimationSequence', () => {
       playerId: entityId('player-1'),
       abilityId: 'axe_cleave',
       abilityName: 'Axe Cleave',
+      hit: true,
       damageByTarget: new Map([
         [entityId('enemy-1'), 5],
         [entityId('enemy-2'), 7],
@@ -543,6 +680,7 @@ describe('buildAnimationSequence', () => {
         abilityName: 'Power Strike',
         targetId: entityId('enemy-1'),
         targetName: 'Slow Goblin',
+        hit: true,
         damage: 12,
       } as DomainEvent,
       createAttackEvent({ attackerId: entityId('enemy-2'), defenderId: entityId('player-1'), timestamp: 1001 }),
@@ -572,6 +710,7 @@ describe('buildAnimationSequence', () => {
       abilityName: 'Power Strike',
       targetId: entityId('enemy-1'),
       targetName: 'Slow Goblin',
+      hit: true,
       damage: 12,
     } as DomainEvent];
 
@@ -703,6 +842,7 @@ describe('buildAnimationSequence', () => {
       playerId: entityId('player-1'),
       abilityId: 'thunder_step',
       abilityName: 'Thunder Step',
+      hit: true,
       timestamp: 1,
       turnNumber: 1,
       targetSnapshots: [
@@ -745,6 +885,7 @@ describe('buildAnimationSequence', () => {
       playerId: entityId('player-1'),
       abilityId: 'thunderstorm',
       abilityName: 'Thunderstorm Strike',
+      hit: true,
       timestamp: 1,
       turnNumber: 1,
       targetSnapshots: [
@@ -776,6 +917,7 @@ describe('buildAnimationSequence', () => {
       playerId: entityId('player-1'),
       abilityId: 'thunderstorm',
       abilityName: 'Thunderstorm',
+      hit: true,
       timestamp: 1,
       turnNumber: 1,
     }];

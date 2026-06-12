@@ -129,10 +129,11 @@ export function applyAttack(
     attackerAttack: effectiveAttack,
     attackerAccuracy: newState.player.stats.accuracy + accuracyBonus,
     defenderDefense,
-    defenderEvasion: forceHit === true ? 0 : target.stats.evasion,
+    defenderEvasion: target.stats.evasion,
     defenderHealth: target.stats.health,
     damageType: abilityWeaponDamageType,
     defenderResistance: abilityDefenderResistance,
+    forceHit,
   }, context.rng);
 
   let damage = 0;
