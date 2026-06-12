@@ -12,8 +12,8 @@ import { dispatchAnimatedEvent } from './dispatchAnimatedEvent.js';
 import { useBeatAnimationOrchestrator } from './useAnimationOrchestrator.beat.js';
 
 function isSameAnimationData(
-  a: BumpAnimationEntry | CombatIndicatorEntry | MoveAnimationEntry | ConsumableAnimationEntry | AbilityAnimationEntry | { durationMs: number } | { entityId: string; durationMs: number },
-  b: BumpAnimationEntry | CombatIndicatorEntry | MoveAnimationEntry | ConsumableAnimationEntry | AbilityAnimationEntry | { durationMs: number } | { entityId: string; durationMs: number },
+  a: BumpAnimationEntry | CombatIndicatorEntry | MoveAnimationEntry | ConsumableAnimationEntry | AbilityAnimationEntry | { durationMs: number } | { entityId: string; durationMs: number; position?: { readonly x: number; readonly y: number } },
+  b: BumpAnimationEntry | CombatIndicatorEntry | MoveAnimationEntry | ConsumableAnimationEntry | AbilityAnimationEntry | { durationMs: number } | { entityId: string; durationMs: number; position?: { readonly x: number; readonly y: number } },
 ): boolean {
   if ('effect' in a && 'effect' in b) {
     const ca = a as ConsumableAnimationEntry;
@@ -80,9 +80,12 @@ function isSameAnimationData(
   }
 
   if ('entityId' in a && 'durationMs' in a && 'entityId' in b && 'durationMs' in b) {
-    const da = a as { entityId: string; durationMs: number };
-    const db = b as { entityId: string; durationMs: number };
-    return da.entityId === db.entityId && da.durationMs === db.durationMs;
+    const da = a as { entityId: string; durationMs: number; position?: { readonly x: number; readonly y: number } };
+    const db = b as { entityId: string; durationMs: number; position?: { readonly x: number; readonly y: number } };
+    return da.entityId === db.entityId
+      && da.durationMs === db.durationMs
+      && da.position?.x === db.position?.x
+      && da.position?.y === db.position?.y;
   }
 
   return false;

@@ -20,7 +20,8 @@ Add or update an animation in the repo's content and web renderer pipelines. Thi
 4. Rerun `pnpm generate:indexes` after animation ref or module changes. Do not hand-edit generated registries.
 5. Treat Three ownership as explicit. Canvas stays correct unless the overlay owns that surface.
 6. Use `apps/web/src/components/ThreeAnimationOverlay.tsx` as the production wrapper. The `ThreeEffectsOverlay` files are compatibility aliases only.
-7. Finish on the right proofs for the change, then `pnpm validate`.
+7. Anchor damage text, defender-hit flashes, and ability/fx animations to event-time positions. Prefer event positions, then event target snapshots, then live state; targeted effects without positions must render nothing instead of falling back to the player.
+8. Finish on the right proofs for the change, then `pnpm validate`.
 
 ## Workflow
 

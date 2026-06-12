@@ -482,6 +482,7 @@ function executeEnemyAction(
             targetName: enemy.name,
             damageAmount: thornsResult.finalDamage,
             byPlayerId: state.player.id,
+            position: { ...enemy.position },
             timestamp: state.turnNumber,
             turnNumber: state.turnNumber,
           };

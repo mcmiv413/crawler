@@ -8,7 +8,9 @@ describe('useDefenderHitState', () => {
   });
 
   afterEach(() => {
-    vi.runOnlyPendingTimers();
+    act(() => {
+      vi.runOnlyPendingTimers();
+    });
     vi.useRealTimers();
   });
 
@@ -26,6 +28,16 @@ describe('useDefenderHitState', () => {
     });
 
     expect(result.current.has('enemy-1' as any)).toBe(false);
+  });
+
+  it('retains optional snapshot position for defender-hit flashes', () => {
+    const { result } = renderHook(() => useDefenderHitState());
+
+    act(() => {
+      triggerDefenderHit('enemy-1' as any, 80, { x: 7, y: 4 });
+    });
+
+    expect(result.current.get('enemy-1' as any)?.position).toEqual({ x: 7, y: 4 });
   });
 
   it('refreshes the timer when the same defender is hit again', () => {

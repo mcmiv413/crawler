@@ -24,6 +24,7 @@ export interface CombatContext {
   readonly defenderHealth: number;
   readonly damageType: DamageType;
   readonly defenderResistance: number;
+  readonly forceHit?: boolean;
   readonly weaponDamageProfile?: string;  // Weapon damage band profile (e.g., 'weapon_bludgeon')
   readonly weaponBaseDamage?: number;     // Base weapon damage value (center of range)
 }

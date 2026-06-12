@@ -27,15 +27,18 @@ export function resolveAttack(
   const combatConfig = config?.combat ?? COMBAT;
 
   // Step 3: Hit resolution
-  const hitChance = calculateHitChance(
-    combatConfig.baseHitChance,
-    ctx.attackerAccuracy,
-    ctx.defenderEvasion,
-    combatConfig.minHitChance,
-    combatConfig.maxHitChance,
-  );
-  const hitRoll = rng.next() * 100;
-  const hit = hitRoll < hitChance;
+  const forceHit = ctx.forceHit === true;
+  const hitChance = forceHit === true
+    ? 100
+    : calculateHitChance(
+      combatConfig.baseHitChance,
+      ctx.attackerAccuracy,
+      ctx.defenderEvasion,
+      combatConfig.minHitChance,
+      combatConfig.maxHitChance,
+    );
+  const hitRoll = forceHit === true ? undefined : rng.next() * 100;
+  const hit = forceHit === true || (hitRoll !== undefined && hitRoll < hitChance);
 
   if (hit !== true) {
     // Determine reason for miss: evasion or accuracy
@@ -119,6 +122,6 @@ export function resolveAttack(
     statusesApplied,
     defenderDied,
     criticalHit,
-    hitRoll,
+    ...(hitRoll !== undefined ? { hitRoll } : {}),
   };
 }

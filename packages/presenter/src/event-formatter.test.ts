@@ -190,6 +190,7 @@ describe('formatEvent', () => {
       playerId: entityId('p1'),
       abilityId: 'second_wind',
       abilityName: 'Second Wind',
+      hit: true,
       healAmount: 25,
     };
     const result = formatEvent(event);
@@ -209,11 +210,32 @@ describe('formatEvent', () => {
       abilityName: 'Power Strike',
       targetId: entityId('e1'),
       targetName: 'Goblin',
+      hit: true,
       damage: 42,
     };
     const result = formatEvent(event);
     expect(result).toEqual({
       text: 'Power Strike! 42 damage to Goblin.',
+      type: 'attack',
+      timestamp: ts,
+    });
+  });
+
+  it('formats ABILITY_USED misses without showing zero damage', () => {
+    const event: DomainEvent = {
+      ...base,
+      type: 'ABILITY_USED',
+      playerId: entityId('p1'),
+      abilityId: 'ember',
+      abilityName: 'Ember',
+      targetId: entityId('e1'),
+      targetName: 'Cave Rat',
+      hit: false,
+      damage: 0,
+    };
+    const result = formatEvent(event);
+    expect(result).toEqual({
+      text: 'Ember! Missed Cave Rat.',
       type: 'attack',
       timestamp: ts,
     });
@@ -592,6 +614,7 @@ describe('formatEvents', () => {
       targetName: 'Skeleton Warrior',
       damageAmount: 8,
       byPlayerId: entityId('p1'),
+      position: { x: 10, y: 10 },
     };
     const result = formatEvent(event);
     expect(result).toBeDefined();

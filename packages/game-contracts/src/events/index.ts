@@ -63,6 +63,7 @@ export interface StatusDamageTickEvent extends BaseEvent {
   readonly statusId: StatusId;
   readonly damage: number;
   readonly damageType: DamageType;
+  readonly position: Position;
 }
 
 export interface LootAcquiredEvent extends BaseEvent {
@@ -301,6 +302,7 @@ export interface AbilityUsedEvent extends BaseEvent {
   readonly abilityName: string;
   readonly targetId?: EntityId;
   readonly targetName?: string;
+  readonly hit: boolean;
   readonly damage?: number;
   readonly healAmount?: number;
   readonly damageByTarget?: ReadonlyMap<EntityId, number>;
@@ -398,6 +400,7 @@ export interface ThornsReflectedEvent extends BaseEvent {
   readonly targetName: string;
   readonly damageAmount: number;
   readonly byPlayerId: EntityId;
+  readonly position: Position;
 }
 
 export interface BlinkDodgedEvent extends BaseEvent {

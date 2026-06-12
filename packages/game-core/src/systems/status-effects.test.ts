@@ -44,10 +44,14 @@ describe('status-effects', () => {
     state = { ...state, player: withPoison };
     const healthBefore = state.player.stats.health;
 
-    const { state: tickedState1 } = tickPlayerStatuses(state, 1);
+    const { state: tickedState1, events: tickEvents1 } = tickPlayerStatuses(state, 1);
     // Poison does damage per turn
     expect(tickedState1.player.stats.health).toBeLessThan(healthBefore);
     expect(tickedState1.player.stats.health).toBeGreaterThanOrEqual(0);
+    expect(tickEvents1).toContainEqual(expect.objectContaining({
+      type: 'STATUS_DAMAGE_TICK',
+      position: state.player.position,
+    }));
 
     const { state: tickedState2 } = tickPlayerStatuses(tickedState1, 2);
     // After second tick, health should be even lower
@@ -153,7 +157,7 @@ describe('Enemy status ticking', () => {
     const enemyKey = posKey(burnEnemy.position);
     state = { ...state, run: { ...state.run!, enemies: new Map([[enemyKey, burnEnemy]]) } };
 
-    const { state: tickedState } = tickEnemyStatuses(state, burnEnemy, 1);
+    const { state: tickedState, events } = tickEnemyStatuses(state, burnEnemy, 1);
     const ticked = tickedState.run?.enemies.get(enemyKey);
 
     // Burn should have dealt damage
@@ -162,6 +166,11 @@ describe('Enemy status ticking', () => {
     // Duration should have decremented
     const burnStatus = ticked?.statuses.find((s: any) => s.id === 'burn');
     expect(burnStatus?.turnsRemaining ?? 0).toBeLessThan(initialDuration);
+    expect(events).toContainEqual(expect.objectContaining({
+      type: 'STATUS_DAMAGE_TICK',
+      targetId: burnEnemy.id,
+      position: burnEnemy.position,
+    }));
   });
 
   it('enemy status expires after duration reaches 0', () => {

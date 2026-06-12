@@ -423,6 +423,7 @@ describe('processEnemyTurns', () => {
     if (thornsEvent) {
       expect((thornsEvent as any).targetName).toBe(thornsEnemy.name);
       expect((thornsEvent as any).damageAmount).toBeGreaterThan(0);
+      expect((thornsEvent as any).position).toEqual(thornsEnemy.position);
     }
 
     // Enemy should have taken damage from thorns

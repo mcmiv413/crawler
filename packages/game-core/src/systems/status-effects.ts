@@ -1,4 +1,4 @@
-import type { Player, EnemyInstance, EntityId, StatusId, GameState, DamageType } from '@dungeon/contracts';
+import type { Player, EnemyInstance, EntityId, StatusId, GameState, DamageType, Position } from '@dungeon/contracts';
 import type { StatusEffect } from '@dungeon/contracts';
 import type { DomainEvent } from '@dungeon/contracts';
 import type { SeededRNG } from '../utils/rng.js';
@@ -41,6 +41,7 @@ function createStatusDamageTickEvent(args: {
   readonly statusId: StatusId;
   readonly targetId: EntityId;
   readonly targetName: string;
+  readonly position: Position;
   readonly turnNumber: number;
 }): DomainEvent {
   return {
@@ -50,6 +51,7 @@ function createStatusDamageTickEvent(args: {
     statusId: args.statusId,
     damage: args.damage,
     damageType: args.damageType,
+    position: { ...args.position },
     timestamp: args.turnNumber,
     turnNumber: args.turnNumber,
   };
@@ -147,6 +149,7 @@ export function tickPlayerStatuses(
           statusId: status.id,
           targetId: currentState.player.id,
           targetName: currentState.player.name,
+          position: currentState.player.position,
           turnNumber,
         })];
       }
@@ -209,6 +212,7 @@ export function tickPlayerStatuses(
           abilityName: 'Thunderstorm Strike',
           targetId: enemy.id,
           targetName: enemy.name,
+          hit: true,
           damage: damageResult.finalDamage,
           timestamp: turnNumber,
           turnNumber,
@@ -348,6 +352,7 @@ export function tickEnemyStatuses(
           statusId: status.id,
           targetId: enemy.id,
           targetName: enemy.name,
+          position: enemy.position,
           turnNumber,
         })];
       }

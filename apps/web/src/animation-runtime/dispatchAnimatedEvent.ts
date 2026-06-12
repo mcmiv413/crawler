@@ -4,9 +4,9 @@ import type {
   BumpAnimationEntry,
   CombatIndicatorEntry,
   ConsumableAnimationEntry,
+  DefenderHitEntry,
   MoveAnimationEntry,
 } from '@dungeon/presenter';
-import type { EntityId } from '@dungeon/contracts';
 import {
   emitAbilityAnimation,
   emitBumpAnimation,
@@ -51,8 +51,8 @@ export function dispatchAnimatedEvent(animEvent: AnimatedEvent): void {
   }
 
   if (animEvent.type === 'defender-hit') {
-    const entry = animEvent.data as { entityId: string; durationMs: number };
-    triggerDefenderHit(entry.entityId as EntityId, entry.durationMs);
+    const entry = animEvent.data as DefenderHitEntry;
+    triggerDefenderHit(entry.entityId, entry.durationMs, entry.position);
     return;
   }
 

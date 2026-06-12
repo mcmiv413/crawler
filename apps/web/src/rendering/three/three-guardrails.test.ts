@@ -21,6 +21,7 @@ import {
 } from './three-animation-registry.js';
 import type { ThreeAnimationModule } from './three-animation-types.js';
 import type { AnimationId, AnimationCategory } from '@dungeon/content';
+import { getOverlayPositions } from './ThreeAnimationOverlay.js';
 
 // ---------------------------------------------------------------------------
 // Stable local test IDs — no live @dungeon/content imports
@@ -163,6 +164,26 @@ describe('AnimationId format', () => {
     expect(TEST_ID_AOE.split('.')[1]).toBe('aoe');
     expect(TEST_ID_STATUS.split('.')[1]).toBe('status');
     expect(TEST_ID_UTILITY.split('.')[1]).toBe('utility');
+  });
+});
+
+describe('targeted overlay positioning guardrails', () => {
+  it('does not fall back to player position for targeted entries without target positions', () => {
+    const positions = getOverlayPositions({
+      id: 'fx-0',
+      abilityId: 'power_strike',
+      animationId: TEST_ID_IMPACT,
+      selfTargeted: false,
+      playerPos: { x: 5, y: 5 },
+      blastPositions: [],
+      durationMs: 500,
+      impactFrameMs: 250,
+      suppressActorBump: false,
+      startTime: 0,
+      progress: 0,
+    } as never);
+
+    expect(positions).toEqual([]);
   });
 });
 

@@ -6,6 +6,7 @@ interface AbilityExecutionResult {
   healAmount?: number;
   targetId?: EntityId;
   targetName?: string;
+  hit?: boolean;
   damageByTarget?: ReadonlyMap<EntityId, number>;
   affectedTargetIds?: readonly EntityId[];
   targetSnapshots?: readonly AbilityTargetSnapshot[];
@@ -31,6 +32,7 @@ export function buildAbilityUsedEvent(
     abilityName,
     targetId: result.targetId,
     targetName: result.targetName,
+    hit: result.hit ?? true,
     damage,
     healAmount: result.healAmount,
     damageByTarget: result.damageByTarget,

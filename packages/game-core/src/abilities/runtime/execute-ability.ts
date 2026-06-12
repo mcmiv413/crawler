@@ -94,8 +94,14 @@ export function executeAbility(
   // Execute effects in sequence
   let newContext = paidContext;
   let accumulatedEvents: DomainEvent[] = [...spendResult.events];
-  let resultData: { damage?: number; healAmount?: number; damageByTarget?: ReadonlyMap<EntityId, number> } = {};
+  let resultData: {
+    damage?: number;
+    healAmount?: number;
+    hit?: boolean;
+    damageByTarget?: ReadonlyMap<EntityId, number>;
+  } = {};
   let lastAttackHit = false;
+  let anyAttackHit = false;
   const damageByTarget = new Map<EntityId, number>();
 
   for (const effect of definition.effects) {
@@ -132,6 +138,8 @@ export function executeAbility(
         // Update lastAttackHit if this was an attack effect
         if (effect.kind === 'attack') {
           lastAttackHit = effectResult.hit ?? false;
+          anyAttackHit = anyAttackHit || lastAttackHit;
+          resultData.hit = anyAttackHit;
           // Capture damage from attack effect and accumulate per victim
           if (effectResult.damage !== undefined) {
             resultData.damage = effectResult.damage;

@@ -99,6 +99,7 @@ describe('buildCombatIndicators', () => {
           damageType: 'physical',
           hit: true,
           critical: false,
+          position: { x: 51, y: 50 },
         } as any,
       ];
 
@@ -128,6 +129,7 @@ describe('buildCombatIndicators', () => {
           hit: false,
           critical: false,
           missReason: 'evasion',
+          position: { x: 51, y: 50 },
         } as any,
       ];
 
@@ -142,7 +144,7 @@ describe('buildCombatIndicators', () => {
       });
     });
 
-    it('skips indicator if defender position is not found', () => {
+    it('uses event position when defender is not found in final state', () => {
       const events: DomainEvent[] = [
         {
           type: 'ATTACK_PERFORMED',
@@ -156,12 +158,90 @@ describe('buildCombatIndicators', () => {
           damageType: 'physical',
           hit: true,
           critical: false,
+          position: { x: 49, y: 50 },
         } as any,
       ];
 
       const indicators = buildCombatIndicators(events, mockGameState);
 
-      expect(indicators).toHaveLength(0);
+      expect(indicators).toEqual([{
+        text: '-15',
+        type: 'damage',
+        x: 49,
+        y: 50,
+      }]);
+    });
+  });
+
+  describe('STATUS_DAMAGE_TICK', () => {
+    it('uses event position when target moved after the tick', () => {
+      const movedTargetState: GameState = {
+        ...mockGameState,
+        run: {
+          ...mockGameState.run!,
+          enemies: new Map([
+            [
+              'enemy-1',
+              createTestEnemy({
+                id: entityId('enemy-1'),
+                name: 'Goblin',
+                templateId: 'goblin',
+                position: { x: 52, y: 50 },
+              }),
+            ],
+          ]),
+        },
+      };
+      const events: DomainEvent[] = [
+        {
+          type: 'STATUS_DAMAGE_TICK',
+          timestamp: 1000,
+          turnNumber: 1,
+          targetId: 'enemy-1' as any,
+          targetName: 'Goblin',
+          statusId: 'burn',
+          damage: 6,
+          damageType: 'fire',
+          position: { x: 51, y: 50 },
+        } as any,
+      ];
+
+      expect(buildCombatIndicators(events, movedTargetState)).toEqual([{
+        text: '-6',
+        type: 'damage',
+        x: 51,
+        y: 50,
+      }]);
+    });
+
+    it('uses event position when target is gone from final state', () => {
+      const finalState: GameState = {
+        ...mockGameState,
+        run: {
+          ...mockGameState.run!,
+          enemies: new Map(),
+        },
+      };
+      const events: DomainEvent[] = [
+        {
+          type: 'STATUS_DAMAGE_TICK',
+          timestamp: 1000,
+          turnNumber: 1,
+          targetId: 'enemy-1' as any,
+          targetName: 'Goblin',
+          statusId: 'burn',
+          damage: 6,
+          damageType: 'fire',
+          position: { x: 51, y: 50 },
+        } as any,
+      ];
+
+      expect(buildCombatIndicators(events, finalState)).toEqual([{
+        text: '-6',
+        type: 'damage',
+        x: 51,
+        y: 50,
+      }]);
     });
   });
 
@@ -450,6 +530,7 @@ describe('buildCombatIndicators', () => {
           targetName: 'Goblin',
           damageAmount: 12,
           byPlayerId: 'player-1' as any,
+          position: { x: 51, y: 50 },
         } as any,
       ];
 
@@ -462,6 +543,35 @@ describe('buildCombatIndicators', () => {
         x: 51,
         y: 50,
       });
+    });
+
+    it('uses event position when reflected target moved or died before render', () => {
+      const finalState: GameState = {
+        ...mockGameState,
+        run: {
+          ...mockGameState.run!,
+          enemies: new Map(),
+        },
+      };
+      const events: DomainEvent[] = [
+        {
+          type: 'THORNS_REFLECTED',
+          timestamp: 1000,
+          turnNumber: 1,
+          targetId: 'enemy-1' as any,
+          targetName: 'Goblin',
+          damageAmount: 12,
+          byPlayerId: 'player-1' as any,
+          position: { x: 51, y: 50 },
+        } as any,
+      ];
+
+      expect(buildCombatIndicators(events, finalState)).toEqual([{
+        text: '-12',
+        type: 'damage',
+        x: 51,
+        y: 50,
+      }]);
     });
   });
 
@@ -480,6 +590,7 @@ describe('buildCombatIndicators', () => {
           damageType: 'physical',
           hit: true,
           critical: false,
+          position: { x: 51, y: 50 },
         } as any,
         {
           type: 'GOLD_CHANGED',
@@ -526,6 +637,7 @@ describe('buildCombatIndicators', () => {
           damageType: 'physical',
           hit: true,
           critical: false,
+          position: { x: 51, y: 50 },
         } as any,
       ];
 
