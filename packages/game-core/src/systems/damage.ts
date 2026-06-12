@@ -44,6 +44,7 @@ export interface DamageOutcome {
   readonly state: GameState;
   readonly finalDamage: number;
   readonly killed: boolean;
+  readonly overkillDamage?: number;
   readonly debugInfo?: {
     readonly rawAmount: number;
     readonly postDefense: number;
@@ -55,6 +56,24 @@ export interface DamageOutcome {
     readonly isCrit: boolean;
     readonly critMultiplier: number;
   };
+}
+
+export interface EnemyDamageSnapshot {
+  readonly id: EnemyInstance['id'];
+  readonly name: EnemyInstance['name'];
+  readonly mapKey: string;
+  readonly position: EnemyInstance['position'];
+  readonly preHealth: number;
+  readonly postHealth: number;
+  readonly maxHealth: number;
+  readonly statuses: EnemyInstance['statuses'];
+  readonly templateId: EnemyInstance['templateId'];
+  readonly archetype: EnemyInstance['archetype'];
+  readonly enemy: EnemyInstance;
+}
+
+export interface EnemyDamageOutcome extends DamageOutcome {
+  readonly targetSnapshot?: EnemyDamageSnapshot;
 }
 
 /** Default bypass flags by source */
@@ -200,7 +219,7 @@ function findEnemyById(state: GameState, enemyId: string): EnemyInstance | undef
  * Returns state with updated enemy health and whether enemy was killed.
  * Handlers are responsible for emitting appropriate events.
  */
-export function applyDamageToEnemy(state: GameState, enemyId: string, input: DamageInput): DamageOutcome {
+export function applyDamageToEnemy(state: GameState, enemyId: string, input: DamageInput): EnemyDamageOutcome {
   if (state.run === null) {
     return { state, finalDamage: 0, killed: false };
   }
@@ -252,27 +271,39 @@ export function applyDamageToEnemy(state: GameState, enemyId: string, input: Dam
 
   const finalDamage = Math.max(COMBAT.minDamage, damage);
 
-  const newHealth = targetEnemy.stats.health - finalDamage;
-  const killed = newHealth <= 0;
+  const preHealth = targetEnemy.stats.health;
+  const rawPostHealth = preHealth - finalDamage;
+  const postHealth = Math.max(0, rawPostHealth);
+  const killed = rawPostHealth <= 0;
+  const overkillDamage = Math.max(0, -rawPostHealth);
 
-  log('final result', { finalDamage, newHealth, killed });
+  log('final result', { finalDamage, newHealth: postHealth, killed });
 
   // Update enemy in state
   const key = posKey(targetEnemy.position);
   const newEnemies = new Map(state.run.enemies);
+  const updatedEnemy: EnemyInstance = {
+    ...targetEnemy,
+    stats: {
+      ...targetEnemy.stats,
+      health: postHealth,
+    },
+  };
+  newEnemies.set(key, updatedEnemy);
 
-  if (killed === true) {
-    newEnemies.delete(key);
-  } else {
-    const updatedEnemy: EnemyInstance = {
-      ...targetEnemy,
-      stats: {
-        ...targetEnemy.stats,
-        health: newHealth,
-      },
-    };
-    newEnemies.set(key, updatedEnemy);
-  }
+  const targetSnapshot: EnemyDamageSnapshot = {
+    id: targetEnemy.id,
+    name: targetEnemy.name,
+    mapKey: key,
+    position: { ...targetEnemy.position },
+    preHealth,
+    postHealth,
+    maxHealth: targetEnemy.stats.maxHealth,
+    statuses: targetEnemy.statuses,
+    templateId: targetEnemy.templateId,
+    archetype: targetEnemy.archetype,
+    enemy: updatedEnemy,
+  };
 
   const resultState = {
     ...state,
@@ -286,6 +317,8 @@ export function applyDamageToEnemy(state: GameState, enemyId: string, input: Dam
     state: resultState,
     finalDamage,
     killed,
+    overkillDamage,
+    targetSnapshot,
     debugInfo: {
       rawAmount,
       postDefense,

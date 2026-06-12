@@ -42,6 +42,12 @@ function createStatusDamageTickEvent(args: {
   readonly targetId: EntityId;
   readonly targetName: string;
   readonly position: Position;
+  readonly preHealth: number;
+  readonly postHealth: number;
+  readonly maxHealth: number;
+  readonly killed: boolean;
+  readonly causeId?: string;
+  readonly causeType?: 'status' | 'ability';
   readonly turnNumber: number;
 }): DomainEvent {
   return {
@@ -52,6 +58,13 @@ function createStatusDamageTickEvent(args: {
     damage: args.damage,
     damageType: args.damageType,
     position: { ...args.position },
+    targetPosition: { ...args.position },
+    preHealth: args.preHealth,
+    postHealth: args.postHealth,
+    maxHealth: args.maxHealth,
+    killed: args.killed,
+    causeId: args.causeId,
+    causeType: args.causeType ?? 'status',
     timestamp: args.turnNumber,
     turnNumber: args.turnNumber,
   };
@@ -133,6 +146,7 @@ export function tickPlayerStatuses(
     const damageAmount = getStatusDamageAmount(status);
     if (damageAmount !== null) {
       const damageType = statusToDamageType(status.id);
+      const preHealth = currentState.player.stats.health;
       // DoT only applies resistance, not defense
       const damageResult = applyDamageToPlayer(currentState, {
         amount: damageAmount,
@@ -150,6 +164,12 @@ export function tickPlayerStatuses(
           targetId: currentState.player.id,
           targetName: currentState.player.name,
           position: currentState.player.position,
+          preHealth,
+          postHealth: currentState.player.stats.health,
+          maxHealth: currentState.player.stats.maxHealth,
+          killed: damageResult.killed,
+          causeId: `status:${status.id}:${currentState.player.id}:${turnNumber}`,
+          causeType: 'status',
           turnNumber,
         })];
       }
@@ -220,7 +240,15 @@ export function tickPlayerStatuses(
         }];
 
         if (damageResult.killed === true) {
-          const killResult = processEnemyKill(currentState, enemy, enemyKey, rng);
+          const killResult = processEnemyKill(currentState, damageResult.targetSnapshot?.enemy ?? enemy, enemyKey, rng, {
+            targetSnapshot: damageResult.targetSnapshot,
+            causeType: 'ability',
+            causeId: 'thunderstorm',
+            killerId: currentState.player.id,
+            killerName: currentState.player.name,
+            sourceEventType: 'ABILITY_USED',
+            turnNumber,
+          });
           currentState = killResult.state;
           allEvents = [...allEvents, ...killResult.events];
           continue;
@@ -323,6 +351,7 @@ export function tickEnemyStatuses(
   state: GameState,
   enemy: EnemyInstance,
   turnNumber: number,
+  rng: SeededRNG,
 ): { state: GameState; events: DomainEvent[] } {
   let currentState = state;
   let allEvents: DomainEvent[] = [];
@@ -345,14 +374,22 @@ export function tickEnemyStatuses(
         bypassResistance: false,
       });
       currentState = damageResult.state;
-      if (damageResult.finalDamage > 0) {
+      const snapshot = damageResult.targetSnapshot;
+      const statusCauseId = `status:${status.id}:${enemy.id}:${turnNumber}`;
+      if (damageResult.finalDamage > 0 && snapshot !== undefined) {
         allEvents = [...allEvents, createStatusDamageTickEvent({
           damage: damageResult.finalDamage,
           damageType: damageType ?? 'physical',
           statusId: status.id,
-          targetId: enemy.id,
-          targetName: enemy.name,
-          position: enemy.position,
+          targetId: snapshot.id,
+          targetName: snapshot.name,
+          position: snapshot.position,
+          preHealth: snapshot.preHealth,
+          postHealth: snapshot.postHealth,
+          maxHealth: snapshot.maxHealth,
+          killed: damageResult.killed,
+          causeId: statusCauseId,
+          causeType: 'status',
           turnNumber,
         })];
       }
@@ -363,6 +400,21 @@ export function tickEnemyStatuses(
         if (debugEvent !== null) {
           allEvents = [...allEvents, { ...debugEvent, turnNumber }];
         }
+      }
+
+      if (damageResult.killed === true && snapshot !== undefined) {
+        const killResult = processEnemyKill(currentState, snapshot.enemy, snapshot.mapKey, rng, {
+          targetSnapshot: snapshot,
+          causeType: 'status',
+          causeId: statusCauseId,
+          killerId: status.sourceId,
+          killerName: status.sourceId === currentState.player.id ? currentState.player.name : null,
+          sourceEventType: 'STATUS_DAMAGE_TICK',
+          turnNumber,
+        });
+        currentState = killResult.state;
+        allEvents = [...allEvents, ...killResult.events];
+        return { state: currentState, events: allEvents };
       }
     }
     if ('healPerTurn' in defaults) {

@@ -1,8 +1,9 @@
 import type {
-  GameState, DomainEvent, EnemyInstance,
+  GameState, DomainEvent, EnemyInstance, CombatCauseType, EntityId,
 } from '@dungeon/contracts';
 import { entityId } from '@dungeon/contracts';
 import type { SeededRNG } from '../utils/rng.js';
+import type { EnemyDamageSnapshot } from '../systems/damage.js';
 import {
   MAGIC, burn, getPrimaryFactionId,
 } from '@dungeon/content';
@@ -18,35 +19,90 @@ import {
 import { restorePlayerMana } from '../systems/mana.js';
 import { updateRunMetrics } from './handlers/shared.js';
 
+export interface EnemyDeathContext {
+  readonly targetSnapshot?: EnemyDamageSnapshot;
+  readonly causeType?: CombatCauseType;
+  readonly causeId?: string;
+  readonly killerId?: EntityId | null;
+  readonly killerName?: string | null;
+  readonly sourceEventType?: string;
+  readonly turnNumber?: number;
+}
+
+function stateContainsEnemy(state: GameState, enemyId: EntityId, enemyPosKey: string): boolean {
+  if (state.run === null) return false;
+  const keyedEnemy = state.run.enemies.get(enemyPosKey);
+  if (keyedEnemy?.id === enemyId) return true;
+  for (const enemy of state.run.enemies.values()) {
+    if (enemy.id === enemyId) return true;
+  }
+  return false;
+}
+
+function removeEnemyById(
+  enemies: ReadonlyMap<string, EnemyInstance>,
+  enemyId: EntityId,
+  preferredKey: string,
+): Map<string, EnemyInstance> {
+  const newEnemies = new Map(enemies);
+  newEnemies.delete(preferredKey);
+  for (const [key, enemy] of newEnemies) {
+    if (enemy.id === enemyId) {
+      newEnemies.delete(key);
+    }
+  }
+  return newEnemies;
+}
+
 export function processEnemyKill(
   state: GameState,
   enemy: EnemyInstance,
   enemyPosKey: string,
   rng: SeededRNG,
+  context: EnemyDeathContext = {},
 ): { state: GameState, events: DomainEvent[] } {
+  if (state.run === null) return { state, events: [] };
+
+  const deathEnemy = context.targetSnapshot?.enemy ?? enemy;
+  const deathEnemyPosKey = context.targetSnapshot?.mapKey ?? enemyPosKey;
+  if (stateContainsEnemy(state, deathEnemy.id, deathEnemyPosKey) === false) {
+    return { state, events: [] };
+  }
+
   let events: DomainEvent[] = [];
   let newState = state;
 
   // 1. Remove enemy from map
-  const newEnemies = new Map(newState.run!.enemies);
-  newEnemies.delete(enemyPosKey);
-  const hadBurn = enemy.statuses.some(status => status.id === burn.id);
-  const hadPlayerBurn = enemy.statuses.some(status =>
+  const newEnemies = removeEnemyById(state.run.enemies, deathEnemy.id, deathEnemyPosKey);
+  const hadBurn = deathEnemy.statuses.some(status => status.id === burn.id);
+  const hadPlayerBurn = deathEnemy.statuses.some(status =>
     status.id === burn.id && status.sourceId === newState.player.id
   );
+  const eventTurnNumber = context.turnNumber ?? newState.turnNumber;
+  const killerId = context.killerId === undefined ? newState.player.id : context.killerId;
+  const killerName = context.killerName === undefined
+    ? (killerId === newState.player.id ? newState.player.name : null)
+    : context.killerName;
+  const entityPosition = context.targetSnapshot?.position ?? deathEnemy.position;
 
   // 2. Emit ENTITY_DIED
   events = [...events, {
     type: 'ENTITY_DIED',
-    entityId: enemy.id,
-    killerId: newState.player.id,
-    entityName: enemy.name,
-    timestamp: newState.turnNumber,
-    turnNumber: newState.turnNumber,
+    entityId: deathEnemy.id,
+    killerId,
+    entityName: deathEnemy.name,
+    entityPosition: { ...entityPosition },
+    entityMapKey: deathEnemyPosKey,
+    killerName,
+    causeId: context.causeId,
+    causeType: context.causeType ?? 'unknown',
+    sourceEventType: context.sourceEventType,
+    timestamp: eventTurnNumber,
+    turnNumber: eventTurnNumber,
   }];
 
   // 3. Calculate XP with enchantment bonus
-  const expGained = Math.round(enemy.experienceValue * getExpBonusMultiplier(newState));
+  const expGained = Math.round(deathEnemy.experienceValue * getExpBonusMultiplier(newState));
 
   // 4. Apply life-steal-on-kill
   const lifeStealHp = applyLifeStealOnKill(newState);
@@ -59,11 +115,11 @@ export function processEnemyKill(
     events = [...events, {
       type: 'LIFE_STEAL',
       playerId: newState.player.id,
-      enemyId: enemy.id,
-      enemyName: enemy.name,
+      enemyId: deathEnemy.id,
+      enemyName: deathEnemy.name,
       hpRestored: lifeStealHp,
-      timestamp: newState.turnNumber,
-      turnNumber: newState.turnNumber,
+      timestamp: eventTurnNumber,
+      turnNumber: eventTurnNumber,
     }];
   }
 
@@ -80,7 +136,7 @@ export function processEnemyKill(
   };
 
   if (hadBurn === true) {
-    const spreadResult = spreadBurnFromDeadEnemy(newState, enemy, rng);
+    const spreadResult = spreadBurnFromDeadEnemy(newState, deathEnemy, rng);
     const playerWithSchoolXp = hadPlayerBurn === true
       ? gainSchoolXp(newState.player, 'fire', MAGIC.schoolXpPerBurningKill)
       : newState.player;
@@ -100,7 +156,7 @@ export function processEnemyKill(
 
   // 6. Process loot + gold tracking
   const goldBeforeLoot = newState.player.gold;
-  const lootResult = processEnemyLoot(newState, enemy, rng);
+  const lootResult = processEnemyLoot(newState, deathEnemy, rng);
   newState = lootResult.state;
   events = [...events, ...lootResult.events];
   const goldFromLoot = newState.player.gold - goldBeforeLoot;
@@ -112,9 +168,9 @@ export function processEnemyKill(
     turnNumber: newState.turnNumber,
     depth: newState.run?.floor.depth ?? state.player.floor,
   };
-  const leaderFaction = newState.world.factions.find(faction => faction.activeLeaderId === enemy.id);
+  const leaderFaction = newState.world.factions.find(faction => faction.activeLeaderId === deathEnemy.id);
 
-  if (newState.world.dungeonOgre.status === 'emerged' && enemy.id === entityId('dungeon_ogre')) {
+  if (newState.world.dungeonOgre.status === 'emerged' && deathEnemy.id === entityId('dungeon_ogre')) {
     const ogreResult = applyDungeonOgreSlain(newState.world, eventContext);
     newState = { ...newState, world: ogreResult.world };
     events = [...events, ...ogreResult.events];
@@ -134,7 +190,7 @@ export function processEnemyKill(
     newState = { ...newState, world: factionResult.world };
     events = [...events, ...factionResult.events];
   } else {
-    const factionResult = applyFactionMemberKill(newState.world, getPrimaryFactionId(enemy.templateId), eventContext);
+    const factionResult = applyFactionMemberKill(newState.world, getPrimaryFactionId(deathEnemy.templateId), eventContext);
     newState = { ...newState, world: factionResult.world };
     events = [...events, ...factionResult.events];
   }
@@ -153,7 +209,7 @@ export function processEnemyKill(
       return q;
     }
     // Check if this quest is for this enemy template
-    if (q.objective.targetId !== enemy.templateId) {
+    if (q.objective.targetId !== deathEnemy.templateId) {
       return q;
     }
     // Increment progress (targetCount defaults to 1)

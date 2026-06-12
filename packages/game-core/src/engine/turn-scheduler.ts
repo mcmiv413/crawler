@@ -196,19 +196,12 @@ export function processEnemyTurns(
     let statusEvents: DomainEvent[] = [];
     const enemiesToTick = Array.from(currentState.run.enemies.values());
     for (const enemy of enemiesToTick) {
-      const statusResult = tickEnemyStatuses(currentState, enemy, currentState.turnNumber);
+      const statusResult = tickEnemyStatuses(currentState, enemy, currentState.turnNumber, rng);
       currentState = statusResult.state;
       statusEvents = [...statusEvents, ...statusResult.events];
 
       if (currentState.run === null) {
         break;
-      }
-
-      const currentEnemy = currentState.run.enemies.get(posKey(enemy.position));
-      if (currentEnemy !== undefined && currentEnemy.stats.health <= 0) {
-        const killResult = processEnemyKill(currentState, currentEnemy, posKey(currentEnemy.position), rng);
-        currentState = killResult.state;
-        statusEvents = [...statusEvents, ...killResult.events];
       }
     }
     allEvents = [...allEvents, ...statusEvents];
@@ -304,6 +297,7 @@ function executeEnemyAction(
             sourceId: hazardAtPos.id,
           });
           newState = damageResult.state as typeof newState;
+          const snapshot = damageResult.targetSnapshot;
 
           events = [...events, {
             type: 'TRAP_TRIGGERED',
@@ -314,20 +308,33 @@ function executeEnemyAction(
             rarity: hazardTemplate.rarity,
             hazardType: hazardTemplate.hazardType,
             statusEffect: hazardTemplate.statusEffect,
+            ...(snapshot !== undefined
+              ? {
+                  targetId: snapshot.id,
+                  targetName: snapshot.name,
+                  targetPosition: { ...snapshot.position },
+                  preHealth: snapshot.preHealth,
+                  postHealth: snapshot.postHealth,
+                  maxHealth: snapshot.maxHealth,
+                  killed: damageResult.killed,
+                }
+              : {}),
             timestamp: state.turnNumber,
             turnNumber: state.turnNumber,
           }];
 
-          // Handle enemy death from hazard (if killed by trap)
-          if (damageResult.killed === true) {
-            events = [...events, {
-              type: 'ENTITY_DIED',
-              entityId: movedEnemy.id,
+          if (damageResult.killed === true && snapshot !== undefined) {
+            const killResult = processEnemyKill(newState, snapshot.enemy, snapshot.mapKey, rng, {
+              targetSnapshot: snapshot,
+              causeType: 'trap',
+              causeId: hazardAtPos.id,
               killerId: null,
-              entityName: movedEnemy.name,
-              timestamp: state.turnNumber,
+              killerName: null,
+              sourceEventType: 'TRAP_TRIGGERED',
               turnNumber: state.turnNumber,
-            }];
+            });
+            newState = killResult.state as typeof newState;
+            events = [...events, ...killResult.events];
           }
         }
       }
@@ -476,13 +483,19 @@ function executeEnemyAction(
         if (thornsAmount > 0) {
           const thornsResult = applyThornsToAttacker(newState as GameState, enemy, thornsAmount);
           newState = thornsResult.state;
+          const snapshot = thornsResult.targetSnapshot;
           const thornsEvent: DomainEvent = {
             type: 'THORNS_REFLECTED',
             targetId: enemy.id,
             targetName: enemy.name,
             damageAmount: thornsResult.finalDamage,
             byPlayerId: state.player.id,
-            position: { ...enemy.position },
+            position: { ...(snapshot?.position ?? enemy.position) },
+            targetPosition: { ...(snapshot?.position ?? enemy.position) },
+            preHealth: snapshot?.preHealth,
+            postHealth: snapshot?.postHealth,
+            maxHealth: snapshot?.maxHealth,
+            killed: thornsResult.killed,
             timestamp: state.turnNumber,
             turnNumber: state.turnNumber,
           };
@@ -494,6 +507,20 @@ function executeEnemyAction(
             if (debugEvent !== null) {
               resultEvents = [...resultEvents, { ...debugEvent, turnNumber: newState.turnNumber }];
             }
+          }
+
+          if (thornsResult.killed === true && snapshot !== undefined) {
+            const killResult = processEnemyKill(newState, snapshot.enemy, snapshot.mapKey, rng, {
+              targetSnapshot: snapshot,
+              causeType: 'thorns',
+              causeId: `thorns:${state.player.id}:${enemy.id}:${state.turnNumber}`,
+              killerId: state.player.id,
+              killerName: state.player.name,
+              sourceEventType: 'THORNS_REFLECTED',
+              turnNumber: state.turnNumber,
+            });
+            newState = killResult.state;
+            resultEvents = [...resultEvents, ...killResult.events];
           }
         }
 

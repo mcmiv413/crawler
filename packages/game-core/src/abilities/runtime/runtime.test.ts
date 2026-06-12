@@ -709,14 +709,30 @@ describe('abilities/runtime', () => {
       const abilityEvent = result.events.find(
         (event): event is Extract<(typeof result.events)[number], { type: 'ABILITY_USED' }> => event.type === 'ABILITY_USED',
       );
+      const deathEvent = result.events.find(
+        (event): event is Extract<(typeof result.events)[number], { type: 'ENTITY_DIED' }> => event.type === 'ENTITY_DIED',
+      );
+      const abilityIndex = result.events.findIndex(event => event.type === 'ABILITY_USED');
+      const deathIndex = result.events.findIndex(event => event.type === 'ENTITY_DIED');
 
       expect(result.state.run?.enemies.size).toBe(0);
+      expect(abilityIndex).toBeGreaterThanOrEqual(0);
+      expect(deathIndex).toBeGreaterThan(abilityIndex);
       expect(abilityEvent?.targetSnapshots).toEqual([
         {
           targetId,
           position: { x: 1, y: 0 },
         },
       ]);
+      expect(deathEvent).toMatchObject({
+        entityId: targetId,
+        entityPosition: { x: 1, y: 0 },
+        causeType: 'ability',
+        sourceEventType: 'ABILITY_USED',
+      });
+      expect(result.events.some(event =>
+        event.type === 'ATTACK_PERFORMED' && event.hit === false && event.reason === 'invalid_target'
+      )).toBe(false);
     });
 
     it('captures every pre-mutation target tile for multi-target abilities', () => {

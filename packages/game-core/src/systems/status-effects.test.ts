@@ -8,7 +8,7 @@ import {
 } from './status-effects.js';
 import { createTestPlayer, createTestEnemy, createTestGameState, createTestGameStateInCombat } from '../test-utils.js';
 import { posKey } from '@dungeon/contracts';
-import type { AbilityUsedEvent, StatusId } from '@dungeon/contracts';
+import type { AbilityUsedEvent, DomainEvent, StatusId } from '@dungeon/contracts';
 import { SeededRNG } from '../utils/rng.js';
 
 describe('status-effects', () => {
@@ -157,7 +157,7 @@ describe('Enemy status ticking', () => {
     const enemyKey = posKey(burnEnemy.position);
     state = { ...state, run: { ...state.run!, enemies: new Map([[enemyKey, burnEnemy]]) } };
 
-    const { state: tickedState, events } = tickEnemyStatuses(state, burnEnemy, 1);
+    const { state: tickedState, events } = tickEnemyStatuses(state, burnEnemy, 1, new SeededRNG(1));
     const ticked = tickedState.run?.enemies.get(enemyKey);
 
     // Burn should have dealt damage
@@ -173,6 +173,50 @@ describe('Enemy status ticking', () => {
     }));
   });
 
+  it('finalizes enemy death immediately after lethal status damage', () => {
+    let state = createTestGameStateInCombat();
+    const enemy = createTestEnemy({
+      position: { x: 1, y: 1 },
+      stats: { maxHealth: 10, health: 1, attack: 8, defense: 0, accuracy: 70, evasion: 15, speed: 120 },
+      statuses: [{ id: 'burn' as StatusId, turnsRemaining: 2, magnitude: 1, sourceId: state.player.id }],
+    });
+    const enemyKey = posKey(enemy.position);
+    state = { ...state, run: { ...state.run!, enemies: new Map([[enemyKey, enemy]]) } };
+
+    const { state: tickedState, events } = tickEnemyStatuses(state, enemy, 1, new SeededRNG(1));
+    const eventTypes = events.map(event => event.type);
+    const statusEvent = events.find(
+      (event): event is Extract<DomainEvent, { type: 'STATUS_DAMAGE_TICK' }> => event.type === 'STATUS_DAMAGE_TICK',
+    );
+    const deathEvent = events.find(
+      (event): event is Extract<DomainEvent, { type: 'ENTITY_DIED' }> => event.type === 'ENTITY_DIED',
+    );
+
+    expect(eventTypes.slice(0, 2)).toEqual(['STATUS_DAMAGE_TICK', 'ENTITY_DIED']);
+    expect(statusEvent).toMatchObject({
+      targetId: enemy.id,
+      targetName: enemy.name,
+      targetPosition: enemy.position,
+      position: enemy.position,
+      preHealth: 1,
+      postHealth: 0,
+      damage: expect.any(Number),
+      killed: true,
+      causeType: 'status',
+    });
+    expect(deathEvent).toMatchObject({
+      entityId: enemy.id,
+      entityName: enemy.name,
+      entityPosition: enemy.position,
+      entityMapKey: enemyKey,
+      causeType: 'status',
+      sourceEventType: 'STATUS_DAMAGE_TICK',
+    });
+    expect(tickedState.run?.enemies.has(enemyKey)).toBe(false);
+    expect(tickedState.player.totalKills).toBe(state.player.totalKills + 1);
+    expect(tickedState.player.experience).toBeGreaterThan(state.player.experience);
+  });
+
   it('enemy status expires after duration reaches 0', () => {
     let state = createTestGameState();
     const enemy = createTestEnemy({ position: { x: 1, y: 1 }, isAlerted: true, lastKnownPlayerPos: null });
@@ -180,7 +224,7 @@ describe('Enemy status ticking', () => {
     const enemyKey = posKey(burnEnemy.position);
     state = { ...state, run: { ...state.run!, enemies: new Map([[enemyKey, burnEnemy]]) } };
 
-    const { state: tickedState } = tickEnemyStatuses(state, burnEnemy, 1);
+    const { state: tickedState } = tickEnemyStatuses(state, burnEnemy, 1, new SeededRNG(1));
     const ticked = tickedState.run?.enemies.get(enemyKey);
 
     // Burn should have expired
@@ -200,7 +244,7 @@ describe('Enemy status ticking', () => {
     const enemyKey = posKey(multiStatus.position);
     state = { ...state, run: { ...state.run!, enemies: new Map([[enemyKey, multiStatus]]) } };
 
-    const { state: tickedState } = tickEnemyStatuses(state, multiStatus, 1);
+    const { state: tickedState } = tickEnemyStatuses(state, multiStatus, 1, new SeededRNG(1));
     const ticked = tickedState.run?.enemies.get(enemyKey);
 
     // Poison should expire, burn should remain
@@ -356,7 +400,7 @@ describe('Health clamping and edge cases (Phase 3)', () => {
   });
 
   it('enemy DoT damage clamps to 0 minimum', () => {
-    let state = createTestGameState();
+    let state = createTestGameStateInCombat();
     const enemy = createTestEnemy({
       position: { x: 1, y: 1 },
       isAlerted: true,
@@ -370,7 +414,7 @@ describe('Health clamping and edge cases (Phase 3)', () => {
     const enemyKey = posKey(burnEnemy.position);
     state = { ...state, run: { ...state.run!, enemies: new Map([[enemyKey, burnEnemy]]) } };
 
-    const { state: tickedState } = tickEnemyStatuses(state, burnEnemy, 1);
+    const { state: tickedState } = tickEnemyStatuses(state, burnEnemy, 1, new SeededRNG(1));
     const ticked = tickedState.run?.enemies.get(enemyKey);
 
     // Health should be >= 0, not negative (or undefined)
@@ -411,7 +455,7 @@ describe('Enemy regeneration and position-key storage', () => {
     state = { ...state, run: { ...state.run!, enemies: new Map([[enemyKey, regenEnemy]]) } };
 
     const healthBefore = regenEnemy.stats.health;
-    const { state: tickedState } = tickEnemyStatuses(state, regenEnemy, 1);
+    const { state: tickedState } = tickEnemyStatuses(state, regenEnemy, 1, new SeededRNG(1));
 
     // Verify enemy is stored under position key after tick
     const tickedEnemy = tickedState.run?.enemies.get(enemyKey);
@@ -440,7 +484,7 @@ describe('Enemy regeneration and position-key storage', () => {
     const enemyKey = posKey(regenEnemy.position);
     state = { ...state, run: { ...state.run!, enemies: new Map([[enemyKey, regenEnemy]]) } };
 
-    const { state: tickedState } = tickEnemyStatuses(state, regenEnemy, 1);
+    const { state: tickedState } = tickEnemyStatuses(state, regenEnemy, 1, new SeededRNG(1));
     const tickedEnemy = tickedState.run?.enemies.get(enemyKey);
 
     // Health should heal and clamp to maxHealth, not exceed it

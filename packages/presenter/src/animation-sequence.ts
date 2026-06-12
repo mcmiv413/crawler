@@ -508,8 +508,8 @@ function buildAttackAction(
   event: Extract<DomainEvent, { type: 'ATTACK_PERFORMED' }>,
   state: GameState,
 ): BeatActionSpec | null {
-  const attackerPos = getEntityPosition(event.attackerId, state);
-  const defenderPos = event.position;
+  const attackerPos = event.attackerPosition ?? getEntityPosition(event.attackerId, state);
+  const defenderPos = event.defenderPosition ?? event.position;
   if (attackerPos === null) return null;
 
   const { durationMs, impactFrameMs } = getBumpTiming(event.attackerId, state);
@@ -584,7 +584,7 @@ function buildConsumableAction(
 function buildStatusDamageEvent(
   event: Extract<DomainEvent, { type: 'STATUS_DAMAGE_TICK' }>,
 ): PendingAnimatedEvent | null {
-  const targetPos = event.position;
+  const targetPos = event.targetPosition ?? event.position;
 
   return {
     type: 'damage',
