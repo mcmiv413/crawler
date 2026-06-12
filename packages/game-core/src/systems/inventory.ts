@@ -2,13 +2,15 @@ import type {
   EntityId, GameState, Player, AnyItemTemplate,
   ConsumableTemplate,
 } from '@dungeon/contracts';
-import { entityId } from '@dungeon/contracts';
+import { entityId, posKey } from '@dungeon/contracts';
 import { generateId } from '../utils/id.js';
 import type { DomainEvent } from '@dungeon/contracts';
 import { applyStatusToPlayer } from './status-effects.js';
 import { chebyshevDistance } from '../utils/grid.js';
 import { applyDamageToEnemy } from './damage.js';
 import { restorePlayerMana } from './mana.js';
+import { processEnemyKill } from '../engine/enemy-death-pipeline.js';
+import type { SeededRNG } from '../utils/rng.js';
 
 const RARITY_RANK: Record<string, number> = {
   common: 0, uncommon: 1, rare: 2, epic: 3, legendary: 4,
@@ -102,6 +104,7 @@ export function useConsumable(
   state: GameState,
   itemId: EntityId,
   targetId?: EntityId,
+  rng?: SeededRNG,
 ): { state: GameState; events: DomainEvent[] } {
   const template = state.itemRegistry.items.get(itemId);
   if (!template || template.itemClass !== 'consumable') {
@@ -112,6 +115,28 @@ export function useConsumable(
   let newPlayer = { ...state.player };
   let newState = state;
   let extraEvents: DomainEvent[] = [];
+  let postItemEvents: DomainEvent[] = [];
+
+  const finalizeConsumableKill = (
+    enemyKey: string,
+    damageResult: ReturnType<typeof applyDamageToEnemy>,
+  ): void => {
+    if (damageResult.killed !== true || damageResult.targetSnapshot === undefined || rng === undefined) {
+      return;
+    }
+    const killResult = processEnemyKill(newState, damageResult.targetSnapshot.enemy, enemyKey, rng, {
+      targetSnapshot: damageResult.targetSnapshot,
+      causeType: 'consumable',
+      causeId: itemId,
+      killerId: newState.player.id,
+      killerName: newState.player.name,
+      sourceEventType: 'ITEM_USED',
+      turnNumber: state.turnNumber,
+    });
+    newState = killResult.state;
+    newPlayer = newState.player;
+    postItemEvents = [...postItemEvents, ...killResult.events];
+  };
 
   switch (consumable.effect) {
     case 'heal': {
@@ -167,6 +192,7 @@ export function useConsumable(
               sourceId: itemId,
             });
             newState = damageResult.state;
+            finalizeConsumableKill(targetKey, damageResult);
           }
         } else {
           // AOE: apply damage to all adjacent enemies (within Chebyshev distance 1)
@@ -181,6 +207,7 @@ export function useConsumable(
                 sourceId: itemId,
               });
               newState = damageResult.state;
+              finalizeConsumableKill(posKey(enemy.position), damageResult);
             }
           }
         }
@@ -203,7 +230,7 @@ export function useConsumable(
     effect: consumable.effect,
     timestamp: state.turnNumber,
     turnNumber: state.turnNumber,
-  }];
+  }, ...postItemEvents];
 
   // Remove from inventory
   return { state: removeItemFromInventory({ ...newState, player: newPlayer }, itemId), events };

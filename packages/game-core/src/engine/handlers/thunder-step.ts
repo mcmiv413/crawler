@@ -80,6 +80,8 @@ export function handleThunderStep(
   const spendResult = spendMana(newState, ringSpell.manaCost ?? 0, thunderStep.name);
   newState = spendResult.state;
   events = [...events, ...spendResult.events];
+  const preEffectEvents = events;
+  events = [];
 
   // Record departure position
   const departurePos = { ...newState.player.position };
@@ -140,7 +142,15 @@ export function handleThunderStep(
         }
 
         if (damageResult.killed === true) {
-          const killResult = processEnemyKill(workingState, enemy, key, rng);
+          const killResult = processEnemyKill(workingState, damageResult.targetSnapshot?.enemy ?? enemy, key, rng, {
+            targetSnapshot: damageResult.targetSnapshot,
+            causeType: 'ability',
+            causeId: thunderStep.id,
+            killerId: workingState.player.id,
+            killerName: workingState.player.name,
+            sourceEventType: 'ABILITY_USED',
+            turnNumber: workingState.turnNumber,
+          });
           workingState = killResult.state;
           workingEvents = [...workingEvents, ...killResult.events];
         }
@@ -168,25 +178,24 @@ export function handleThunderStep(
   newState = { ...newState, player: updatedPlayer };
 
   const abilityTargetSnapshots = [
-      { targetId: entityId('departure_' + departurePos.x + '_' + departurePos.y), position: departurePos },
-      { targetId: entityId('arrival_' + targetPosition.x + '_' + targetPosition.y), position: targetPosition },
-      ...Array.from(damageTargetSnapshots, ([targetId, position]) => ({ targetId, position })),
+    { targetId: entityId('departure_' + departurePos.x + '_' + departurePos.y), position: departurePos },
+    { targetId: entityId('arrival_' + targetPosition.x + '_' + targetPosition.y), position: targetPosition },
+    ...Array.from(damageTargetSnapshots, ([targetId, position]) => ({ targetId, position })),
   ];
-  events = [
-    ...events,
-    ...buildAbilityUsedEvent({
-      state: newState,
-      rng,
-      player: newState.player,
-      run: newState.run,
-      equippedWeaponId: newState.player.equipment.weapon,
-      targetPosition,
-    }, thunderStep.id, thunderStep.name, {
-      damageByTarget: damageByTarget.size > 0 ? new Map(damageByTarget) : undefined,
-      affectedTargetIds: Array.from(damageByTarget.keys()),
-      targetSnapshots: abilityTargetSnapshots,
-    }),
-  ];
+  const abilityEvents = buildAbilityUsedEvent({
+    state: newState,
+    rng,
+    player: newState.player,
+    run: newState.run,
+    equippedWeaponId: newState.player.equipment.weapon,
+    abilityId: thunderStep.id,
+    targetPosition,
+  }, thunderStep.id, thunderStep.name, {
+    damageByTarget: damageByTarget.size > 0 ? new Map(damageByTarget) : undefined,
+    affectedTargetIds: Array.from(damageByTarget.keys()),
+    targetSnapshots: abilityTargetSnapshots,
+  });
+  events = [...preEffectEvents, ...abilityEvents, ...events];
 
   return advanceTurnAfterPlayerAction(newState, events, rng);
 }

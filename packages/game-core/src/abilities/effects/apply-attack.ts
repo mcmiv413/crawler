@@ -6,6 +6,7 @@ import { checkWeaponMasteryUnlocks } from '../../systems/weapon-mastery.js';
 import { getEquippedWeaponType, getEquippedWeaponDamageType } from '../../engine/handlers/combat.js';
 import { processEnemyKill } from '../../engine/enemy-death-pipeline.js';
 import { updateRunMetrics } from '../../engine/handlers/shared.js';
+import { applyDamageToEnemy } from '../../systems/damage.js';
 import { MAGIC, STATUS_DEFAULTS, arcaneCharge, burn, heatSurgeStatus } from '@dungeon/content';
 import { getFireBurnDuration, getFireBurnMagnitude } from '../../systems/magic-xp.js';
 
@@ -139,19 +140,35 @@ export function applyAttack(
   let damage = 0;
 
   if (result.hit === true) {
-    damage = result.damage;
-    newState = updateRunMetrics(newState, { damageDealt: damage });
-    const newHealth = Math.max(0, target.stats.health - damage);
+    const damageResult = applyDamageToEnemy(newState, target.id, {
+      amount: result.damage,
+      damageType: result.damageType,
+      source: 'ability',
+      bypassDefense: true,
+      bypassResistance: true,
+      isCritical: result.criticalHit,
+    });
+    damage = damageResult.finalDamage;
+    newState = updateRunMetrics(damageResult.state, { damageDealt: damage });
 
-    if (newHealth <= 0) {
-      const killResult = processEnemyKill(newState, target, targetKey, context.rng);
+    if (damageResult.killed === true) {
+      const killResult = processEnemyKill(newState, damageResult.targetSnapshot?.enemy ?? target, targetKey, context.rng, {
+        targetSnapshot: damageResult.targetSnapshot,
+        causeType: 'ability',
+        causeId: context.abilityId,
+        killerId: context.player.id,
+        killerName: context.player.name,
+        sourceEventType: 'ABILITY_USED',
+        turnNumber: context.state.turnNumber,
+      });
       newState = killResult.state;
       generatedEvents = [...generatedEvents, ...killResult.events];
     } else if (newState.run !== null) {
       const currentRun = newState.run;
       const newEnemies = new Map(currentRun.enemies);
+      const damagedTarget = currentRun.enemies.get(targetKey) ?? target;
       const heatSurgeResult = applyHeatSurgeBurn(
-        { ...target, stats: { ...target.stats, health: newHealth } },
+        damagedTarget,
         context,
       );
       generatedEvents = [...generatedEvents, ...heatSurgeResult.events];

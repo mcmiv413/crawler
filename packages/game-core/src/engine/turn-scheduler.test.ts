@@ -2,7 +2,7 @@ import { describe, it, expect } from 'vitest';
 import { processEnemyTurns } from './turn-scheduler.js';
 import { SeededRNG } from '../utils/rng.js';
 import { entityId, posKey, EMPTY_WEAPON_MASTERY, EMPTY_RUN_METRICS } from '@dungeon/contracts';
-import type { AbilityUsedEvent, GameState, EnemyInstance, MapCell, RunState } from '@dungeon/contracts';
+import type { AbilityUsedEvent, DomainEvent, GameState, EnemyInstance, MapCell, ObjectInstance, RunState } from '@dungeon/contracts';
 import { createTestGameState, createTestEnemy, createTestGameStateInCombat } from '../test-utils.js';
 
 // ---------------------------------------------------------------------------
@@ -128,6 +128,60 @@ describe('processEnemyTurns', () => {
       entityId('fast'),
       entityId('slow'),
     ]);
+  });
+
+  it('emits TRAP_TRIGGERED before ENTITY_DIED when movement hazard kills an enemy', () => {
+    const trapPosition = { x: 1, y: 0 };
+    const enemy = createTestEnemy({
+      id: entityId('trap_victim'),
+      position: { x: 2, y: 0 },
+      archetype: 'unknown_archetype',
+      isAlerted: true,
+      stats: { maxHealth: 1, health: 1, attack: 8, defense: 0, accuracy: 70, evasion: 0, speed: 100 },
+    });
+    const trap: ObjectInstance = {
+      id: entityId('trap1'),
+      templateId: 'trap_spikes',
+      position: trapPosition,
+      isExhausted: false,
+    };
+    const state = makeTurnState({ x: 0, y: 0 }, [enemy]);
+    const stateWithTrap: GameState = {
+      ...state,
+      run: {
+        ...state.run!,
+        objects: new Map([[posKey(trapPosition), trap]]),
+      },
+    };
+
+    const { state: resultState, events } = processEnemyTurns(stateWithTrap, new SeededRNG(1));
+    const trapIndex = events.findIndex(event => event.type === 'TRAP_TRIGGERED');
+    const deathIndex = events.findIndex(event => event.type === 'ENTITY_DIED');
+    const trapEvent = events.find(
+      (event): event is Extract<DomainEvent, { type: 'TRAP_TRIGGERED' }> => event.type === 'TRAP_TRIGGERED',
+    );
+    const deathEvent = events.find(
+      (event): event is Extract<DomainEvent, { type: 'ENTITY_DIED' }> => event.type === 'ENTITY_DIED',
+    );
+
+    expect(trapIndex).toBeGreaterThanOrEqual(0);
+    expect(deathIndex).toBeGreaterThan(trapIndex);
+    expect(trapEvent).toMatchObject({
+      targetId: enemy.id,
+      targetName: enemy.name,
+      targetPosition: trapPosition,
+      preHealth: 1,
+      postHealth: 0,
+      damage: expect.any(Number),
+      killed: true,
+    });
+    expect(deathEvent).toMatchObject({
+      entityId: enemy.id,
+      entityPosition: trapPosition,
+      causeType: 'trap',
+      sourceEventType: 'TRAP_TRIGGERED',
+    });
+    expect(resultState.run?.enemies.size).toBe(0);
   });
 
   it('un-alerted enemy within range 5 becomes alerted', () => {
@@ -431,6 +485,56 @@ describe('processEnemyTurns', () => {
     if (updatedEnemy) {
       expect(updatedEnemy.stats.health).toBeLessThan(50); // Some damage taken
     }
+  });
+
+  it('emits THORNS_REFLECTED before ENTITY_DIED when reflected damage kills the attacker', () => {
+    const thornsEnemy = createTestEnemy({
+      id: entityId('thorns_kill'),
+      position: { x: 1, y: 0 },
+      isAlerted: true,
+      archetype: 'aggressive_melee',
+      stats: { maxHealth: 1, health: 1, attack: 10, defense: 0, accuracy: 100, evasion: 0, speed: 100 },
+    });
+
+    const state = makeTurnState({ x: 0, y: 0 }, [thornsEnemy], {
+      playerHealth: 50,
+      playerStatuses: [],
+    });
+    const updatedState = {
+      ...state,
+      player: {
+        ...state.player,
+        equipment: { ...state.player.equipment, chest: entityId('spiked_leather') },
+      },
+    };
+
+    const { state: resultState, events } = processEnemyTurns(updatedState, new SeededRNG(1));
+    const thornsIndex = events.findIndex(event => event.type === 'THORNS_REFLECTED');
+    const deathIndex = events.findIndex(event => event.type === 'ENTITY_DIED');
+    const thornsEvent = events.find(
+      (event): event is Extract<DomainEvent, { type: 'THORNS_REFLECTED' }> => event.type === 'THORNS_REFLECTED',
+    );
+    const deathEvent = events.find(
+      (event): event is Extract<DomainEvent, { type: 'ENTITY_DIED' }> => event.type === 'ENTITY_DIED',
+    );
+
+    expect(thornsIndex).toBeGreaterThanOrEqual(0);
+    expect(deathIndex).toBeGreaterThan(thornsIndex);
+    expect(thornsEvent).toMatchObject({
+      targetId: thornsEnemy.id,
+      targetName: thornsEnemy.name,
+      targetPosition: thornsEnemy.position,
+      preHealth: 1,
+      postHealth: 0,
+      killed: true,
+    });
+    expect(deathEvent).toMatchObject({
+      entityId: thornsEnemy.id,
+      entityPosition: thornsEnemy.position,
+      causeType: 'thorns',
+      sourceEventType: 'THORNS_REFLECTED',
+    });
+    expect(resultState.run?.enemies.get(posKey(thornsEnemy.position))).toBeUndefined();
   });
 
   it('blink dodges enemy attack with event', () => {

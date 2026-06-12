@@ -83,7 +83,7 @@ export default {
       path: 'packages/game-core/src/engine/turn-scheduler.ts',
       reason: 'Refactor target — orchestration file candidate for split into discrete scheduler/turn-advance modules',
       auditReportNote: 'Refactor target — action item',
-      lines: 547,
+      lines: 574,
     },
     {
       path: 'scripts/balance/simulation.ts',
@@ -95,7 +95,7 @@ export default {
       path: 'packages/game-contracts/src/events/index.ts',
       reason: 'Central discriminated union of all domain events — consolidation target for event type safety',
       auditReportNote: 'Event type definitions added for player action observability guardrails; Phase 4A adds MovementBlockedEvent; Phase 4B adds TrapDisarmedEvent and TrapPlacedEvent; acceptable aggregation',
-      lines: 559,
+      lines: 602,
     },
     {
       path: 'scripts/audit-player-action-noops.ts',

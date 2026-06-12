@@ -91,7 +91,7 @@ export function handleUseItem(
   targetId?: EntityId,
 ): CommandResult {
   if (state.phase === 'dungeon' && state.run) {
-    const result = useConsumable(state, itemId as EntityId, targetId);
+    const result = useConsumable(state, itemId as EntityId, targetId, rng);
     let newState = result.state;
     let events = [...result.events];
     newState = updateRunMetrics(newState, { itemsUsed: 1, turnsElapsed: 1 });

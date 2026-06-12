@@ -215,6 +215,10 @@ export function handleAttack(
   const debugReason = result.hit === false && result.hitRoll !== undefined
     ? `base:${COMBAT.baseHitChance} +acc:${effectiveAccuracy} -eva:${targetEnemy.stats.evasion} =chance:${expectedHitChance}% roll:${result.hitRoll.toFixed(1)}`
     : undefined;
+  const attackCauseId = `attack:${state.turnNumber}:${state.player.id}:${targetEnemy.id}`;
+  const rawPostHealth = targetEnemy.stats.health - result.damage;
+  const attackPostHealth = result.hit === true ? Math.max(0, rawPostHealth) : targetEnemy.stats.health;
+  const attackKilled = result.hit === true && rawPostHealth <= 0;
 
   events = [...events, {
     type: 'ATTACK_PERFORMED',
@@ -229,6 +233,14 @@ export function handleAttack(
     position: targetEnemy.position,
     reason: debugReason,
     missReason: result.missReason,
+    attackerPosition: { ...state.player.position },
+    defenderPosition: { ...targetEnemy.position },
+    preHealth: targetEnemy.stats.health,
+    postHealth: attackPostHealth,
+    maxHealth: targetEnemy.stats.maxHealth,
+    killed: attackKilled,
+    causeId: attackCauseId,
+    causeType: 'attack',
     timestamp: state.turnNumber,
     turnNumber: state.turnNumber,
   }];
@@ -310,49 +322,58 @@ export function handleAttack(
       events = [...events, debugEvent];
     }
 
-    // Apply on-hit statuses
     let updatedEnemy = newState.run?.enemies.get(targetKey);
     if (updatedEnemy === undefined) {
       updatedEnemy = targetEnemy;  // Fallback if enemy not found
     }
 
-    let statusEvents: DomainEvent[] = [];
-    for (const statusId of result.statusesApplied) {
-      const defaults = STATUS_DEFAULTS[statusId];
-      const duration = 'defaultDuration' in defaults ? (defaults as { defaultDuration: number }).defaultDuration : 3;
-      updatedEnemy = applyStatusToEnemy(updatedEnemy, statusId, duration, 1, state.player.id);
-      statusEvents = [...statusEvents, {
-        type: 'STATUS_APPLIED',
-        targetId: targetEnemy.id,
-        statusId,
-        duration,
-        sourceId: state.player.id,
-        timestamp: newState.turnNumber,
-        turnNumber: newState.turnNumber,
-      }];
-    }
-    events = [...events, ...statusEvents];
+    if (killed === false) {
+      let statusEvents: DomainEvent[] = [];
+      for (const statusId of result.statusesApplied) {
+        const defaults = STATUS_DEFAULTS[statusId];
+        const duration = 'defaultDuration' in defaults ? (defaults as { defaultDuration: number }).defaultDuration : 3;
+        updatedEnemy = applyStatusToEnemy(updatedEnemy, statusId, duration, 1, state.player.id);
+        statusEvents = [...statusEvents, {
+          type: 'STATUS_APPLIED',
+          targetId: targetEnemy.id,
+          statusId,
+          duration,
+          sourceId: state.player.id,
+          timestamp: newState.turnNumber,
+          turnNumber: newState.turnNumber,
+        }];
+      }
+      events = [...events, ...statusEvents];
 
-    const heatSurgeActive = newState.player.statuses.some(status => status.id === heatSurgeStatus.id);
-    if (heatSurgeActive === true && killed === false) {
-      const burnDefaults = STATUS_DEFAULTS.burn;
-      const burnDuration = getFireBurnDuration(newState.player, burnDefaults.defaultDuration);
-      const burnMagnitude = getFireBurnMagnitude(newState.player);
-      updatedEnemy = applyStatusToEnemy(updatedEnemy, burn.id, burnDuration, burnMagnitude, state.player.id);
-      events = [...events, {
-        type: 'STATUS_APPLIED',
-        targetId: targetEnemy.id,
-        statusId: burn.id,
-        duration: burnDuration,
-        sourceId: state.player.id,
-        timestamp: newState.turnNumber,
-        turnNumber: newState.turnNumber,
-      }];
+      const heatSurgeActive = newState.player.statuses.some(status => status.id === heatSurgeStatus.id);
+      if (heatSurgeActive === true) {
+        const burnDefaults = STATUS_DEFAULTS.burn;
+        const burnDuration = getFireBurnDuration(newState.player, burnDefaults.defaultDuration);
+        const burnMagnitude = getFireBurnMagnitude(newState.player);
+        updatedEnemy = applyStatusToEnemy(updatedEnemy, burn.id, burnDuration, burnMagnitude, state.player.id);
+        events = [...events, {
+          type: 'STATUS_APPLIED',
+          targetId: targetEnemy.id,
+          statusId: burn.id,
+          duration: burnDuration,
+          sourceId: state.player.id,
+          timestamp: newState.turnNumber,
+          turnNumber: newState.turnNumber,
+        }];
+      }
     }
 
     if (killed === true) {
       // Enemy died — use shared kill handling logic
-      const killResult = processEnemyKill(newState, targetEnemy, targetKey, rng);
+      const killResult = processEnemyKill(newState, damageResult.targetSnapshot?.enemy ?? targetEnemy, targetKey, rng, {
+        targetSnapshot: damageResult.targetSnapshot,
+        causeType: 'attack',
+        causeId: attackCauseId,
+        killerId: state.player.id,
+        killerName: state.player.name,
+        sourceEventType: 'ATTACK_PERFORMED',
+        turnNumber: state.turnNumber,
+      });
       newState = killResult.state;
       events = [...events, ...killResult.events];
     } else {

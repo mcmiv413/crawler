@@ -1,8 +1,91 @@
 import { describe, it, expect } from 'vitest';
 import { handleAttack } from './combat.js';
+import { processEnemyKill } from '../enemy-death-pipeline.js';
 import { createTestGameStateInCombat } from '../../test-utils.js';
 import { SeededRNG } from '../../utils/rng.js';
 import { entityId } from '@dungeon/contracts';
+import type { AnyItemTemplate, DomainEvent, EntityId, GameState, WeaponTemplate } from '@dungeon/contracts';
+
+function makeLethalAttackState(equippedWeaponId = 'rusty_sword'): {
+  readonly state: GameState;
+  readonly enemyId: ReturnType<typeof entityId>;
+  readonly enemyKey: string;
+  readonly enemyPosition: { readonly x: number; readonly y: number };
+} {
+  const baseState = createTestGameStateInCombat({ equippedWeaponId });
+  const [enemyKey, enemy] = [...baseState.run!.enemies.entries()][0]!;
+  const weakEnemy = {
+    ...enemy,
+    stats: {
+      ...enemy.stats,
+      maxHealth: 1,
+      health: 1,
+      defense: 0,
+      evasion: 0,
+    },
+  };
+  const state: GameState = {
+    ...baseState,
+    player: {
+      ...baseState.player,
+      stats: {
+        ...baseState.player.stats,
+        attack: 999,
+        accuracy: 999,
+      },
+    },
+    run: {
+      ...baseState.run!,
+      enemies: new Map([[enemyKey, weakEnemy]]),
+    },
+  };
+
+  return { state, enemyId: weakEnemy.id, enemyKey, enemyPosition: weakEnemy.position };
+}
+
+function makeGuaranteedStatusWeaponState(): {
+  readonly state: GameState;
+  readonly enemyId: ReturnType<typeof entityId>;
+} {
+  const weaponId = entityId('guaranteed_status_blade');
+  const baseState = makeLethalAttackState('rusty_sword').state;
+  const maybeWeapon = baseState.itemRegistry.items.get(entityId('rusty_sword'));
+  if (maybeWeapon === undefined || maybeWeapon.itemClass !== 'weapon' || !('weapon' in maybeWeapon)) {
+    throw new Error('Expected rusty_sword weapon template');
+  }
+  const baseWeapon: WeaponTemplate = maybeWeapon;
+  const statusWeapon: WeaponTemplate = {
+    ...baseWeapon,
+    weapon: {
+      ...baseWeapon.weapon,
+      onHitStatus: 'burn',
+      onHitChance: 100,
+    },
+  };
+  const itemRegistry: GameState['itemRegistry'] = {
+    items: new Map<EntityId, AnyItemTemplate>([
+      ...baseState.itemRegistry.items,
+      [weaponId, statusWeapon],
+    ]),
+  };
+  const [enemy] = [...baseState.run!.enemies.values()];
+  if (enemy === undefined) throw new Error('Expected enemy');
+
+  return {
+    state: {
+      ...baseState,
+      itemRegistry,
+      player: {
+        ...baseState.player,
+        equipment: {
+          ...baseState.player.equipment,
+          weapon: weaponId,
+        },
+      },
+    },
+    enemyId: enemy.id,
+  };
+}
 
 describe('handleAttack integration', () => {
   it('rejects attacks against a missing target', () => {
@@ -62,5 +145,96 @@ describe('handleAttack integration', () => {
     // Note: defense mitigation affects final damage, but we should still see variation
     expect(damages.length).toBeGreaterThan(0);
     expect(maxDamage - minDamage).toBeGreaterThanOrEqual(3);
+  });
+
+  it('emits ATTACK_PERFORMED before ENTITY_DIED with matching target snapshot', () => {
+    const { state, enemyId, enemyKey, enemyPosition } = makeLethalAttackState();
+
+    const result = handleAttack(state, enemyId, new SeededRNG(1));
+    const attackIndex = result.events.findIndex(event => event.type === 'ATTACK_PERFORMED');
+    const deathIndex = result.events.findIndex(event => event.type === 'ENTITY_DIED');
+    const attackEvent = result.events.find(
+      (event): event is Extract<DomainEvent, { type: 'ATTACK_PERFORMED' }> => event.type === 'ATTACK_PERFORMED',
+    );
+    const deathEvent = result.events.find(
+      (event): event is Extract<DomainEvent, { type: 'ENTITY_DIED' }> => event.type === 'ENTITY_DIED',
+    );
+
+    expect(attackIndex).toBeGreaterThanOrEqual(0);
+    expect(deathIndex).toBeGreaterThan(attackIndex);
+    expect(attackEvent).toMatchObject({
+      defenderId: enemyId,
+      defenderPosition: enemyPosition,
+      position: enemyPosition,
+      preHealth: 1,
+      postHealth: 0,
+      killed: true,
+      causeType: 'attack',
+    });
+    expect(deathEvent).toMatchObject({
+      entityId: enemyId,
+      entityPosition: enemyPosition,
+      entityMapKey: enemyKey,
+      causeType: 'attack',
+      causeId: attackEvent?.causeId,
+      sourceEventType: 'ATTACK_PERFORMED',
+    });
+    expect(result.state.run?.enemies.has(enemyKey)).toBe(false);
+  });
+
+  it('shared enemy death finalization runs only once for the same enemy', () => {
+    const state = createTestGameStateInCombat();
+    const [enemyKey, enemy] = [...state.run!.enemies.entries()][0]!;
+    const deadEnemy = {
+      ...enemy,
+      stats: {
+        ...enemy.stats,
+        health: 0,
+      },
+    };
+    const stateWithDeadEnemy: GameState = {
+      ...state,
+      run: {
+        ...state.run!,
+        enemies: new Map([[enemyKey, deadEnemy]]),
+      },
+    };
+
+    const first = processEnemyKill(stateWithDeadEnemy, deadEnemy, enemyKey, new SeededRNG(1), {
+      causeType: 'attack',
+      causeId: 'attack:test',
+      killerId: state.player.id,
+      killerName: state.player.name,
+      sourceEventType: 'ATTACK_PERFORMED',
+      turnNumber: state.turnNumber,
+    });
+    const second = processEnemyKill(first.state, deadEnemy, enemyKey, new SeededRNG(1), {
+      causeType: 'attack',
+      causeId: 'attack:test',
+      killerId: state.player.id,
+      killerName: state.player.name,
+      sourceEventType: 'ATTACK_PERFORMED',
+      turnNumber: state.turnNumber,
+    });
+    const events: DomainEvent[] = [...first.events, ...second.events];
+
+    expect(events.filter(event => event.type === 'ENTITY_DIED')).toHaveLength(1);
+    expect(first.state.run?.enemies.has(enemyKey)).toBe(false);
+    expect(second.events).toHaveLength(0);
+    expect(second.state.player.totalKills).toBe(state.player.totalKills + 1);
+    expect(second.state.player.experience).toBeGreaterThan(state.player.experience);
+  });
+
+  it('does not apply on-hit statuses after lethal attack damage', () => {
+    const { state, enemyId } = makeGuaranteedStatusWeaponState();
+
+    const result = handleAttack(state, enemyId, new SeededRNG(1));
+
+    expect(result.events.some(event =>
+      event.type === 'STATUS_APPLIED' && event.targetId === enemyId
+    )).toBe(false);
+    expect(result.events.some(event =>
+      event.type === 'ENTITY_DIED' && event.entityId === enemyId
+    )).toBe(true);
   });
 });

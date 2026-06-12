@@ -85,7 +85,7 @@ export function executeAbility(
     spendResult = spendMana(state, manaRequirement.amount, definition.name);
   }
 
-  const paidContext = { ...context, state: spendResult.state, player: spendResult.state.player };
+  const paidContext = { ...context, state: spendResult.state, player: spendResult.state.player, abilityId };
 
   // Resolve targets
   const targets = resolveTargets(paidContext, definition.targeting, targetId);
@@ -93,7 +93,7 @@ export function executeAbility(
 
   // Execute effects in sequence
   let newContext = paidContext;
-  let accumulatedEvents: DomainEvent[] = [...spendResult.events];
+  let accumulatedEvents: DomainEvent[] = [];
   let resultData: {
     damage?: number;
     healAmount?: number;
@@ -127,6 +127,9 @@ export function executeAbility(
     } else if (targets.length > 0) {
       // Target-based effects
       for (const { key: targetKey, enemy } of targets) {
+        if (newContext.state.run?.enemies.has(targetKey) === false) {
+          continue;
+        }
         const effectResult = applyEffect(newContext, effect, targetKey, lastAttackHit);
         newContext = {
           ...newContext,
@@ -184,7 +187,7 @@ export function executeAbility(
     affectedTargetIds: targets.map(target => target.enemy.id),
     targetSnapshots,
   });
-  accumulatedEvents = [...accumulatedEvents, ...abilityEvent];
+  accumulatedEvents = [...spendResult.events, ...abilityEvent, ...accumulatedEvents];
 
   return { state: newContext.state, events: accumulatedEvents, runEnded: false };
 }

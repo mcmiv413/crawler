@@ -156,6 +156,7 @@ export interface AbilityContext {
   readonly player: GameState['player'];
   readonly run: GameState['run'];
   readonly equippedWeaponId: GameState['player']['equipment']['weapon'];
+  readonly abilityId?: string;
   readonly direction?: Direction;
   readonly target?: { instance: EnemyInstance; key: string };
   readonly targetPosition?: { x: number; y: number };

@@ -2,6 +2,16 @@ import type { EntityId, Position, Direction, DamageType, StatusId, GamePhase, We
 import type { AmbientState } from '../types/ambient-behavior.js';
 import type { FactionPowerBand, FactionPowerChangeReason, FactionStatus } from '../types/town.js';
 
+export type CombatCauseType =
+  | 'attack'
+  | 'ability'
+  | 'status'
+  | 'trap'
+  | 'thorns'
+  | 'consumable'
+  | 'environment'
+  | 'unknown';
+
 interface BaseEvent {
   readonly timestamp: number;
   readonly turnNumber: number;
@@ -33,6 +43,14 @@ export interface AttackPerformedEvent extends BaseEvent {
   readonly position: Position;
   readonly reason?: string;
   readonly missReason?: 'accuracy' | 'evasion';
+  readonly attackerPosition?: Position;
+  readonly defenderPosition?: Position;
+  readonly preHealth?: number;
+  readonly postHealth?: number;
+  readonly maxHealth?: number;
+  readonly killed?: boolean;
+  readonly causeId?: string;
+  readonly causeType?: CombatCauseType;
 }
 
 export interface EntityDiedEvent extends BaseEvent {
@@ -40,6 +58,12 @@ export interface EntityDiedEvent extends BaseEvent {
   readonly entityId: EntityId;
   readonly killerId: EntityId | null;
   readonly entityName: string;
+  readonly entityPosition?: Position;
+  readonly entityMapKey?: string;
+  readonly killerName?: string | null;
+  readonly causeId?: string;
+  readonly causeType?: CombatCauseType;
+  readonly sourceEventType?: string;
 }
 
 export interface StatusAppliedEvent extends BaseEvent {
@@ -64,6 +88,13 @@ export interface StatusDamageTickEvent extends BaseEvent {
   readonly damage: number;
   readonly damageType: DamageType;
   readonly position: Position;
+  readonly targetPosition?: Position;
+  readonly preHealth?: number;
+  readonly postHealth?: number;
+  readonly maxHealth?: number;
+  readonly killed?: boolean;
+  readonly causeId?: string;
+  readonly causeType?: CombatCauseType;
 }
 
 export interface LootAcquiredEvent extends BaseEvent {
@@ -392,6 +423,13 @@ export interface TrapTriggeredEvent extends BaseEvent {
   readonly rarity?: string;
   readonly hazardType?: string;
   readonly statusEffect?: StatusId;
+  readonly targetId?: EntityId;
+  readonly targetName?: string;
+  readonly targetPosition?: Position;
+  readonly preHealth?: number;
+  readonly postHealth?: number;
+  readonly maxHealth?: number;
+  readonly killed?: boolean;
 }
 
 export interface ThornsReflectedEvent extends BaseEvent {
@@ -401,6 +439,11 @@ export interface ThornsReflectedEvent extends BaseEvent {
   readonly damageAmount: number;
   readonly byPlayerId: EntityId;
   readonly position: Position;
+  readonly targetPosition?: Position;
+  readonly preHealth?: number;
+  readonly postHealth?: number;
+  readonly maxHealth?: number;
+  readonly killed?: boolean;
 }
 
 export interface BlinkDodgedEvent extends BaseEvent {

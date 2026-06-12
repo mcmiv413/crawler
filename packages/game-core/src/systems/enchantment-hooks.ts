@@ -1,6 +1,7 @@
 import type { GameState, EnemyInstance, ArmorTemplate } from '@dungeon/contracts';
 import { ENCHANTMENT_BY_ID, thorns, hpRegen, expBonus, blink, lifeSteal } from '@dungeon/content';
 import { applyDamageToEnemy } from './damage.js';
+import type { EnemyDamageOutcome } from './damage.js';
 
 const ARMOR_SLOTS = ['chest', 'head', 'gloves', 'boots', 'ring1', 'ring2'] as const;
 
@@ -50,7 +51,7 @@ export function applyThornsToAttacker(
   state: GameState,
   enemy: EnemyInstance,
   thornsAmount: number,
-): { state: GameState; finalDamage: number; killed: boolean } {
+): EnemyDamageOutcome {
   if (thornsAmount <= 0) {
     return { state, finalDamage: 0, killed: false };
   }

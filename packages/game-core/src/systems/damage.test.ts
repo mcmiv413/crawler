@@ -166,7 +166,7 @@ describe('damage system', () => {
       expect(result.killed).toBe(true);
     });
 
-    it('removes enemy from map when killed', () => {
+    it('keeps killed enemy at zero health until death finalization', () => {
       const state = createTestGameStateInCombat();
       const firstEnemy = [...state.run!.enemies.values()][0];
       if (!firstEnemy) throw new Error('No enemies in test state');
@@ -182,7 +182,20 @@ describe('damage system', () => {
         bypassResistance: true,
       });
 
-      expect(result.state.run!.enemies.get(key)).toBeUndefined();
+      const damagedEnemy = result.state.run!.enemies.get(key);
+      expect(damagedEnemy).toBeDefined();
+      expect(damagedEnemy?.stats.health ?? -1).toBeGreaterThanOrEqual(0);
+      expect(damagedEnemy?.stats.health ?? 1).toBeLessThan(1);
+      expect(result.targetSnapshot).toMatchObject({
+        id: firstEnemy.id,
+        name: firstEnemy.name,
+        mapKey: key,
+        position: firstEnemy.position,
+        preHealth: firstEnemy.stats.health,
+        postHealth: 0,
+        maxHealth: firstEnemy.stats.maxHealth,
+      });
+      expect(result.overkillDamage).toBeGreaterThan(0);
     });
 
     it('applies default bypasses by source', () => {

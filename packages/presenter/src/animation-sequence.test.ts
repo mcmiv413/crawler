@@ -624,6 +624,47 @@ describe('buildAnimationSequence', () => {
     expect(damage?.data).toMatchObject({ text: '-4', x: 51, y: 50 });
   });
 
+  it('prefers status damage targetPosition when the dead target is gone from final state', () => {
+    const finalState = withEnemies(
+      mockGameState,
+      [...mockGameState.run!.enemies.values()].filter((enemy) => enemy.id !== entityId('enemy-1')),
+    );
+    const events: DomainEvent[] = [
+      {
+        type: 'STATUS_DAMAGE_TICK',
+        timestamp: 1000,
+        turnNumber: 1,
+        targetId: entityId('enemy-1'),
+        targetName: 'Slow Goblin',
+        statusId: 'burn',
+        damage: 4,
+        damageType: 'fire',
+        position: { x: 0, y: 0 },
+        targetPosition: { x: 51, y: 50 },
+        preHealth: 1,
+        postHealth: 0,
+        maxHealth: 10,
+        killed: true,
+        causeType: 'status',
+      } as DomainEvent,
+      {
+        type: 'ENTITY_DIED',
+        timestamp: 1000,
+        turnNumber: 1,
+        entityId: entityId('enemy-1'),
+        entityName: 'Slow Goblin',
+        killerId: entityId('player-1'),
+        entityPosition: { x: 51, y: 50 },
+        causeType: 'status',
+      } as DomainEvent,
+    ];
+
+    const sequence = buildAnimationSequence(events, finalState);
+    const damage = sequence.find((event) => event.type === 'damage');
+
+    expect(damage?.data).toMatchObject({ text: '-4', x: 51, y: 50 });
+  });
+
   it('preserves multi-target blast and damage positions when affected enemies die before the final state', () => {
     const finalState = withEnemies(
       mockGameState,
