@@ -17,10 +17,6 @@ import type {
   IGameRepository,
   RunMetrics,
 } from '@dungeon/contracts';
-import {
-  buildDeterministicRunSummary,
-  buildDeterministicTownRumors,
-} from './town-text.js';
 import { MAX_EVENT_HISTORY } from '@dungeon/content';
 
 export interface CommandProcessingLogger {
@@ -94,8 +90,8 @@ async function prepareCommandState(
     if (completedMetrics) {
       metrics = completedMetrics;
       archivedEvents = getArchivedEvents(finalState);
-      finalState = attachRunSummary(finalState, result.events);
-      finalState = attachRumors(finalState);
+      // Town rumors and the last-run summary are presentation text; the
+      // presenter derives them from state, so nothing is written here.
     }
   }
 
@@ -105,44 +101,6 @@ async function prepareCommandState(
     finalState,
     metrics,
     runEnded: result.runEnded,
-  };
-}
-
-function attachRunSummary(
-  state: GameState,
-  events: readonly DomainEvent[],
-): GameState {
-  const metrics = state.run?.runMetrics ?? state.lastRunMetrics;
-  if (metrics === undefined) {
-    return state;
-  }
-
-  const summary = buildDeterministicRunSummary(state, metrics, events);
-
-  return {
-    ...state,
-    world: {
-      ...state.world,
-      town: {
-        ...state.world.town,
-        lastRunSummary: summary,
-      },
-    },
-  };
-}
-
-function attachRumors(
-  state: GameState,
-): GameState {
-  return {
-    ...state,
-    world: {
-      ...state.world,
-      town: {
-        ...state.world.town,
-        rumors: buildDeterministicTownRumors(state),
-      },
-    },
   };
 }
 

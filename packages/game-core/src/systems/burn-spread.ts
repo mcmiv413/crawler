@@ -2,6 +2,7 @@ import type { DomainEvent, EnemyInstance, GameState } from '@dungeon/contracts';
 import { MAGIC, STATUS_DEFAULTS, burn, panic } from '@dungeon/content';
 import { chebyshevDistance } from '../utils/grid.js';
 import type { SeededRNG } from '../utils/rng.js';
+import { buildStatusAppliedEvent } from '../abilities/runtime/emit-events.js';
 import {
   canFireMasteryPanicOnSpread,
   getFireBurnDuration,
@@ -44,15 +45,13 @@ export function spreadBurnFromDeadEnemy(
         sourceId: state.player.id,
       };
       mutableStatuses.push(burnStatus);
-      events = [...events, {
-        type: 'STATUS_APPLIED',
+      events = [...events, buildStatusAppliedEvent({
         targetId: enemy.id,
         statusId: burn.id,
         duration: burnDuration,
         sourceId: state.player.id,
-        timestamp: state.turnNumber,
         turnNumber: state.turnNumber,
-      }];
+      })];
     }
 
     if (canFireMasteryPanicOnSpread(state.player) === true && rng.chance(MAGIC.panicOnBurnSpreadChancePct) === true) {
@@ -64,15 +63,13 @@ export function spreadBurnFromDeadEnemy(
           magnitude: 1,
           sourceId: state.player.id,
         });
-        events = [...events, {
-          type: 'STATUS_APPLIED',
+        events = [...events, buildStatusAppliedEvent({
           targetId: enemy.id,
           statusId: panic.id,
           duration: STATUS_DEFAULTS.panic.defaultDuration,
           sourceId: state.player.id,
-          timestamp: state.turnNumber,
           turnNumber: state.turnNumber,
-        }];
+        })];
       }
     }
 

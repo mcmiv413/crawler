@@ -1,14 +1,14 @@
 import type { DomainEvent, EnemyInstance } from '@dungeon/contracts';
 import type { AbilityContext, AttackEffect } from '../types.js';
-import { applyStatusToEnemy, getEffectiveStat } from '../../systems/status-effects.js';
+import { getEffectiveStat } from '../../systems/status-effects.js';
 import { resolveAttack } from '../../systems/combat.js';
 import { checkWeaponMasteryUnlocks } from '../../systems/weapon-mastery.js';
 import { getEquippedWeaponType, getEquippedWeaponDamageType } from '../../engine/handlers/combat.js';
 import { processEnemyKill } from '../../engine/enemy-death-pipeline.js';
 import { updateRunMetrics } from '../../engine/handlers/shared.js';
 import { applyDamageToEnemy } from '../../systems/damage.js';
-import { MAGIC, STATUS_DEFAULTS, arcaneCharge, burn, heatSurgeStatus } from '@dungeon/content';
-import { getFireBurnDuration, getFireBurnMagnitude } from '../../systems/magic-xp.js';
+import { MAGIC, arcaneCharge, burn, heatSurgeStatus } from '@dungeon/content';
+import { applyPlayerStatusToEnemy } from '../../systems/status-application.js';
 
 function arcaneChargeBonus(statuses: AbilityContext['player']['statuses']): number {
   const charge = statuses.find(status => status.id === arcaneCharge.id);
@@ -22,21 +22,10 @@ function applyHeatSurgeBurn(
   const hasHeatSurge = context.state.player.statuses.some(status => status.id === heatSurgeStatus.id);
   if (hasHeatSurge === false) return { enemy, events: [] };
 
-  const defaults = STATUS_DEFAULTS.burn;
-  const duration = getFireBurnDuration(context.player, defaults.defaultDuration);
-  const magnitude = getFireBurnMagnitude(context.player);
-  const updatedEnemy = applyStatusToEnemy(enemy, burn.id, duration, magnitude, context.player.id);
+  const surgeBurn = applyPlayerStatusToEnemy(enemy, burn.id, context.player, context.state.turnNumber);
   return {
-    enemy: updatedEnemy,
-    events: [{
-      type: 'STATUS_APPLIED',
-      targetId: enemy.id,
-      statusId: burn.id,
-      duration,
-      sourceId: context.player.id,
-      timestamp: context.state.turnNumber,
-      turnNumber: context.state.turnNumber,
-    }],
+    enemy: surgeBurn.enemy,
+    events: [surgeBurn.event],
   };
 }
 

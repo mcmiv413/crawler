@@ -95,6 +95,13 @@ export function AbilityDropdown({
   const [selectedTrapItemId, setSelectedTrapItemId] = useState<string | null>(null);
   const playerPosition = useMemo(() => ({ x: playerX, y: playerY }), [playerX, playerY]);
 
+  // Trap workflows key off presenter-provided metadata, not ability ID literals.
+  const selectedAbility = selectedAbilityId === null
+    ? undefined
+    : abilities.find((ability) => ability.id === selectedAbilityId);
+  const selectedIsDisarm = selectedAbility?.trapInteraction === 'disarm';
+  const selectedIsSetTrap = selectedAbility?.trapInteraction === 'place';
+
   const trapItems = useMemo(
     () => inventory.filter((item) => item.itemClass === 'trap'),
     [inventory],
@@ -142,7 +149,7 @@ export function AbilityDropdown({
       return;
     }
 
-    if (ability.id === 'dagger_disarm') {
+    if (ability.trapInteraction === 'disarm') {
       if (disarmableTraps.length === 1) {
         const trap = disarmableTraps[0]!;
         onSelect({
@@ -156,7 +163,7 @@ export function AbilityDropdown({
       return;
     }
 
-    if (ability.id === 'dagger_set_trap' || ability.requiresDirection === true) {
+    if (ability.trapInteraction === 'place' || ability.requiresDirection === true) {
       setSelectedAbilityId(ability.id);
       return;
     }
@@ -183,7 +190,7 @@ export function AbilityDropdown({
       return;
     }
 
-    if (selectedAbilityId === 'dagger_set_trap') {
+    if (selectedIsSetTrap) {
       if (selectedTrapItemId === null) {
         return;
       }
@@ -209,7 +216,7 @@ export function AbilityDropdown({
     );
   }
 
-  if (selectedAbilityId === 'dagger_disarm') {
+  if (selectedAbility !== undefined && selectedIsDisarm) {
     if (disarmableTraps.length === 0) {
       return (
         <div className={styles.emptyState}>
@@ -233,7 +240,7 @@ export function AbilityDropdown({
               className={styles.itemButton}
               onClick={() => {
                 onSelect({
-                  abilityId: 'dagger_disarm',
+                  abilityId: selectedAbility.id,
                   direction: calculateDirection(playerX, playerY, trap.x, trap.y),
                 });
                 resetSelection();
@@ -254,7 +261,7 @@ export function AbilityDropdown({
     );
   }
 
-  if (selectedAbilityId === 'dagger_set_trap' && selectedTrapItemId === null) {
+  if (selectedIsSetTrap && selectedTrapItemId === null) {
     if (trapItems.length === 0) {
       return (
         <div className={styles.emptyState}>
@@ -298,9 +305,8 @@ export function AbilityDropdown({
   }
 
   // Target chooser for abilities with multiple targets
-  const selectedAbility = selectedAbilityId ? abilities.find((a) => a.id === selectedAbilityId) : undefined;
   const targetableEnemies = selectedAbility === undefined ? [] : getTargetableEnemiesForAbility(selectedAbility);
-  if (selectedAbilityId !== null && selectedAbility?.requiresTarget === true && targetableEnemies.length > 1 && selectedAbilityId !== 'dagger_disarm' && selectedAbilityId !== 'dagger_set_trap') {
+  if (selectedAbilityId !== null && selectedAbility?.requiresTarget === true && targetableEnemies.length > 1 && selectedAbility.trapInteraction === undefined) {
     return (
       <div className={styles.listContainer}>
         {targetableEnemies.map((enemy) => (
@@ -345,7 +351,7 @@ export function AbilityDropdown({
   }
 
   if (selectedAbilityId !== null) {
-    const isSetTrap = selectedAbilityId === 'dagger_set_trap';
+    const isSetTrap = selectedIsSetTrap;
 
     return (
       <div className={styles.listContainer}>
@@ -411,9 +417,9 @@ export function AbilityDropdown({
           ? cooldownStatus
           : ability.ready !== true
             ? 'Not enough mana'
-            : ability.id === 'dagger_disarm'
+            : ability.trapInteraction === 'disarm'
             ? (disarmableTraps.length === 0 ? 'No adjacent traps' : undefined)
-            : ability.id === 'dagger_set_trap'
+            : ability.trapInteraction === 'place'
               ? (trapItems.length === 0 ? 'No traps in inventory' : undefined)
               : ability.requiresTarget
                 ? (getTargetableEnemiesForAbility(ability).length === 0 ? 'No valid targets' : undefined)

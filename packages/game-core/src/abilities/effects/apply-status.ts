@@ -1,8 +1,8 @@
 import type { DomainEvent } from '@dungeon/contracts';
-import { burn } from '@dungeon/content';
 import type { AbilityContext, StatusEffect } from '../types.js';
 import { applyStatusToEnemy, applyStatusToPlayer } from '../../systems/status-effects.js';
-import { getFireBurnDuration, getFireBurnMagnitude } from '../../systems/magic-xp.js';
+import { resolveStatusApplication } from '../../systems/status-application.js';
+import { buildStatusAppliedEvent } from '../runtime/emit-events.js';
 
 /**
  * Apply a status effect to a target.
@@ -28,23 +28,24 @@ export function applyStatus(
   }
 
   const statusId = effect.statusId;
-  const baseDuration = effect.duration ?? 3;
-  const duration = statusId === burn.id ? getFireBurnDuration(context.player, baseDuration) : baseDuration;
-  const magnitude = statusId === burn.id ? getFireBurnMagnitude(context.player) : (effect.magnitude ?? 1);
+  const { duration, magnitude } = resolveStatusApplication(
+    context.player,
+    statusId,
+    effect.duration ?? 3,
+    effect.magnitude ?? 1,
+  );
 
   if (effect.target === 'player') {
     const updatedPlayer = applyStatusToPlayer(newState.player, statusId, duration, magnitude, context.player.id);
     return {
       state: { ...newState, player: updatedPlayer },
-      events: [{
-        type: 'STATUS_APPLIED',
+      events: [buildStatusAppliedEvent({
         targetId: newState.player.id,
         statusId,
         duration,
         sourceId: context.player.id,
-        timestamp: context.state.turnNumber,
         turnNumber: context.state.turnNumber,
-      }],
+      })],
     };
   }
 
@@ -66,15 +67,13 @@ export function applyStatus(
   newEnemies.set(targetKey, statusedEnemy);
   newState = { ...newState, run: { ...currentRun, enemies: newEnemies } };
 
-  mutableEvents.push({
-    type: 'STATUS_APPLIED',
+  mutableEvents.push(buildStatusAppliedEvent({
     targetId: target.id,
     statusId,
     duration,
     sourceId: context.player.id,
-    timestamp: context.state.turnNumber,
     turnNumber: context.state.turnNumber,
-  });
+  }));
 
   return { state: newState, events: mutableEvents };
 }

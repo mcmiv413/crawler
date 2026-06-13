@@ -27,7 +27,6 @@ export interface AnimationDrawContext {
  * Pure canvas drawing functions, easing curves, etc.
  */
 export interface RendererHelpers {
-  drawStarBurst(ctx: CanvasRenderingContext2D, x: number, y: number, radius: number, points: number, progress: number): void;
   drawRing(ctx: CanvasRenderingContext2D, x: number, y: number, radius: number, thickness: number, color: string, alpha: number): void;
   drawParticleStream(ctx: CanvasRenderingContext2D, startX: number, startY: number, endX: number, endY: number, count: number, progress: number): void;
   drawArrowAlong(ctx: CanvasRenderingContext2D, fromX: number, fromY: number, toX: number, toY: number, progress: number): void;

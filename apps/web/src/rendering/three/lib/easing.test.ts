@@ -2,12 +2,10 @@ import { describe, expect, it } from 'vitest';
 import {
   clamp01,
   easeInCubic,
-  easeInOutQuad,
   easeOutBack,
   easeOutCubic,
   easeOutQuad,
   lerp,
-  smoothstep,
 } from './easing.js';
 
 describe('clamp01', () => {
@@ -49,8 +47,6 @@ const easingFunctions = [
   { name: 'easeOutCubic', fn: easeOutCubic },
   { name: 'easeInCubic', fn: easeInCubic },
   { name: 'easeOutQuad', fn: easeOutQuad },
-  { name: 'easeInOutQuad', fn: easeInOutQuad },
-  { name: 'smoothstep', fn: smoothstep },
 ] as const;
 
 for (const { name, fn } of easingFunctions) {

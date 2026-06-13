@@ -3,7 +3,7 @@ import type { StatusEffect } from '@dungeon/contracts';
 import type { DomainEvent } from '@dungeon/contracts';
 import type { SeededRNG } from '../utils/rng.js';
 import { posKey } from '@dungeon/contracts';
-import { MAGIC, STATUS_DEFAULTS } from '@dungeon/content';
+import { MAGIC, STATUS_DEFAULTS, arcaneCharge, burn, panic, slow, stormActive, strength, stun, vulnerability, weaken } from '@dungeon/content';
 import { applyDamageToPlayer, applyDamageToEnemy, createDamageDebugEvent } from './damage.js';
 import { processEnemyKill } from '../engine/enemy-death-pipeline.js';
 
@@ -31,7 +31,7 @@ function getStatusDamageAmount(status: StatusEffect): number | null {
   const defaults = STATUS_DEFAULTS[status.id];
   if (!('damagePerTurn' in defaults)) return null;
   const baseDamage = (defaults as { damagePerTurn: number }).damagePerTurn;
-  if (status.id !== 'burn') return baseDamage;
+  if (status.id !== burn.id) return baseDamage;
   return baseDamage + Math.max(0, status.magnitude - 1);
 }
 
@@ -80,7 +80,7 @@ function applyStatusEffect<T extends { readonly statuses: readonly StatusEffect[
   // Don't stack — refresh duration instead
   const existing = entity.statuses.find(s => s.id === statusId);
   if (existing !== undefined) {
-    if (statusId === 'arcane_charge') {
+    if (statusId === arcaneCharge.id) {
       return {
         ...entity,
         statuses: entity.statuses.map(s =>
@@ -198,7 +198,7 @@ export function tickPlayerStatuses(
   }
 
   // Handle storm_active: strike 1-3 random visible enemies with shock + burn + stun
-  const stormStatus = state.player.statuses.find(s => s.id === 'storm_active');
+  const stormStatus = state.player.statuses.find(s => s.id === stormActive.id);
   if (stormStatus !== undefined && currentState.player.stats.health > 0 && currentState.run !== null && rng !== undefined) {
     const visibleEnemies = Array.from(currentState.run.enemies.values()).filter(enemy => {
       const key = posKey(enemy.position);
@@ -257,7 +257,7 @@ export function tickPlayerStatuses(
         // Apply burn (2 turns, magnitude 1)
         const burnedEnemy = currentState.run!.enemies.get(enemyKey);
         if (burnedEnemy !== undefined) {
-          const withBurn = applyStatusToEnemy(burnedEnemy, 'burn', 2, 1, currentState.player.id);
+          const withBurn = applyStatusToEnemy(burnedEnemy, burn.id, 2, 1, currentState.player.id);
           currentState = {
             ...currentState,
             run: {
@@ -270,7 +270,7 @@ export function tickPlayerStatuses(
         // Apply stun long enough to survive the end-of-round enemy status tick
         const stunnedEnemy = currentState.run!.enemies.get(enemyKey);
         if (stunnedEnemy !== undefined) {
-          const withStun = applyStatusToEnemy(stunnedEnemy, 'stun', 2, 1, currentState.player.id);
+          const withStun = applyStatusToEnemy(stunnedEnemy, stun.id, 2, 1, currentState.player.id);
           currentState = {
             ...currentState,
             run: {
@@ -319,26 +319,26 @@ export function getEffectiveStat(
 
   for (const status of statuses) {
     const defaults = STATUS_DEFAULTS[status.id];
-    if (statName === 'attack' && status.id === 'strength') {
+    if (statName === 'attack' && status.id === strength.id) {
       // Strength buff adds its magnitude to attack (additive boost)
       value += status.magnitude;
     }
-    if (statName === 'speed' && status.id === 'slow') {
+    if (statName === 'speed' && status.id === slow.id) {
       value = Math.round(value * (defaults as { speedMultiplier: number }).speedMultiplier);
     }
-    if (statName === 'attack' && status.id === 'weaken') {
+    if (statName === 'attack' && status.id === weaken.id) {
       value = Math.round(value * (defaults as { attackMultiplier: number }).attackMultiplier);
     }
-    if (statName === 'defense' && status.id === 'vulnerability') {
+    if (statName === 'defense' && status.id === vulnerability.id) {
       value = Math.round(value * (defaults as { defenseMultiplier: number }).defenseMultiplier);
     }
     // Future-proof: accuracy can be modified by status effects (currently none, but extensible)
     if (statName === 'accuracy') {
-      if (status.id === 'panic') {
+      if (status.id === panic.id) {
         value = Math.round(value * MAGIC.panicStatMultiplier);
       }
     }
-    if (statName === 'evasion' && status.id === 'panic') {
+    if (statName === 'evasion' && status.id === panic.id) {
       value = Math.round(value * MAGIC.panicStatMultiplier);
     }
   }

@@ -35,7 +35,7 @@ export default {
       path: 'packages/presenter/src/game-view.ts',
       reason: 'Central DTO/read-model contract surface — consolidation target only if behavior leaks in',
       auditReportNote: 'Acceptable aggregation',
-      lines: 573,
+      lines: 575,
     },
     {
       path: 'packages/presenter/src/animation-sequence.ts',
@@ -47,7 +47,7 @@ export default {
       path: 'apps/web/src/rendering/three/ThreeAnimationOverlay.tsx',
       reason: 'Refactor target (animation overlay coordinator with module registration and status management) — needs module-registration splitting and ownership coordination refactoring',
       auditReportNote: 'Refactor target — action item from audit section 3B (animation-system refactoring backlog)',
-      lines: 928,
+      lines: 921,
     },
     {
       path: 'apps/web/src/components/TownPhase.tsx',

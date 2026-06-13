@@ -23,6 +23,13 @@ export const MOVE_ANIMATION_DURATIONS: Readonly<Record<MoveAnimStyle, number>> =
 export const BUMP_ANIMATION_DURATION_MS = 300;
 export const BUMP_IMPACT_FRACTION = 0.5;
 
+/** Default fraction of an animation's duration at which the impact frame lands. */
+export const IMPACT_FRAME_FRACTION = 0.6;
+/** Default fraction of an animation's duration spent recovering after impact. */
+export const RECOVERY_FRACTION = 0.4;
+/** Progress fraction at which the bomb-blast damage animation detonates. */
+export const BOMB_DETONATE_AT_PROGRESS = 0.35;
+
 const MOVEMENT_BEHAVIOR_STYLES: Readonly<Record<string, MoveAnimStyle>> = {
   wall_stalker: 'dart',
   rearline_anchor: 'drift',
@@ -58,7 +65,7 @@ export const CONSUMABLE_ANIMATION_METADATA: Readonly<Record<ConsumableAnimationE
   damage: {
     kind: 'bomb_blast',
     durationMs: 900,
-    detonateAtProgress: 0.35,
+    detonateAtProgress: BOMB_DETONATE_AT_PROGRESS,
     armSpriteName: 'fire bomb',
     blastOffsets: [
       { x: 0, y: 0 },
@@ -130,8 +137,8 @@ export function getBeatSettleMs(timing: {
   readonly recoveryMs?: number;
   readonly hitStopMs?: number;
 }): number {
-  const impactFrameMs = timing.impactFrameMs ?? Math.floor(timing.durationMs * 0.6);
-  const recoveryMs = timing.recoveryMs ?? Math.floor(timing.durationMs * 0.4);
+  const impactFrameMs = timing.impactFrameMs ?? Math.floor(timing.durationMs * IMPACT_FRAME_FRACTION);
+  const recoveryMs = timing.recoveryMs ?? Math.floor(timing.durationMs * RECOVERY_FRACTION);
   return Math.max(timing.durationMs, impactFrameMs + recoveryMs) + (timing.hitStopMs ?? 0);
 }
 

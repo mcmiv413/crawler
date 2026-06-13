@@ -18,6 +18,7 @@ import { handlePlayerDeath } from '../../systems/death.js';
 import { calculateHazardDamage, hazardTypeToDamageType } from '../../systems/hazard-damage.js';
 import { applyDamageToPlayer } from '../../systems/damage.js';
 import { buildMovementBlockedEvent, buildTargetNotFoundMovementBlockedEvent } from './movement-blocked.js';
+import { buildGoldChangedEvent } from '../../abilities/runtime/emit-events.js';
 
 export function handleMove(
   state: GameState,
@@ -236,15 +237,13 @@ export function handleInteract(
       },
     };
 
-    events = [...events, {
-      type: 'GOLD_CHANGED',
+    events = [...events, buildGoldChangedEvent({
       playerId: newState.player.id,
       amount: scaledGold,
       newTotal: goldAfter,
       reason: template.name,
-      timestamp: state.turnNumber,
       turnNumber: state.turnNumber,
-    }];
+    })];
   }
 
   // Roll loot if object has lootTableId

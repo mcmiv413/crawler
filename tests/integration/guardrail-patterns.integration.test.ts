@@ -5,6 +5,7 @@ import { tmpdir } from 'node:os';
 import { dirname, join } from 'node:path';
 import { checkCentralizedLiterals } from '../../scripts/guardrails/check-centralized-literals.mjs';
 import { checkDocPaths } from '../../scripts/guardrails/check-doc-paths.mjs';
+import { checkEventLiterals } from '../../scripts/guardrails/check-event-literals.mjs';
 import { checkFileSizeHotspots } from '../../scripts/guardrails/check-file-size-hotspots.mjs';
 import { checkOptionalImportBoundaries } from '../../scripts/guardrails/check-optional-import-boundaries.mjs';
 import { checkReferenceLiterals } from '../../scripts/guardrails/check-reference-literals.mjs';
@@ -174,6 +175,26 @@ describe('guardrail pattern checks', () => {
     expect(checkReferenceLiterals({ rootDir, config }).join('\n')).toContain('copies status-refs literal "burn"');
   });
 
+  it('fails when implementation code compares ids against a status literal', () => {
+    const rootDir = makeTempRoot('guardrail-status-comparison-bad');
+    const config = [{
+      name: 'status-refs',
+      sourceExport: 'the named status definition',
+      sourceRoots: ['content/statuses'],
+      implementationRoots: ['src'],
+      allowedDeclarationRoots: ['content/statuses'],
+      allowedContractRoots: ['tests/contracts'],
+      allowedFixtureRoots: ['tests/integration'],
+      allowedFilePatterns: [/\.test\.[tj]sx?$/],
+      sourcePattern: /\bid:\s*['"](?<value>[a-z_]+)['"]/g,
+      implementationPattern: /\b(?:statusId\s*(?::|===)|id\s*[!=]==)\s*['"](?<value>[a-z_]+)['"]/g,
+    }];
+    writeFixture(rootDir, 'content/statuses/stun.ts', "export const stun = { id: 'stun' };\n");
+    writeFixture(rootDir, 'src/scheduler.ts', "export const isStunned = (s: { id: string }) => s.id === 'stun';\n");
+
+    expect(checkReferenceLiterals({ rootDir, config }).join('\n')).toContain('copies status-refs literal "stun"');
+  });
+
   it('allows implementation code to dot-walk imported status refs', () => {
     const rootDir = makeTempRoot('guardrail-status-reference-valid');
     const config = [{
@@ -192,6 +213,57 @@ describe('guardrail pattern checks', () => {
     writeFixture(rootDir, 'src/effect.ts', "import { burn } from '../content/statuses/index.js';\nexport const effect = { statusId: burn.id };\n");
 
     expect(checkReferenceLiterals({ rootDir, config })).toEqual([]);
+  });
+
+  it('fails when game-core code builds a factory-owned domain event inline', () => {
+    const rootDir = makeTempRoot('guardrail-event-literal-bad');
+    const config = [{
+      name: 'domain-event-factories',
+      factoryModule: 'src/emit-events.ts',
+      protectedSurfaces: ['src'],
+      allowedFiles: ['src/emit-events.ts'],
+      allowedFilePatterns: [/\.test\.[tj]sx?$/],
+      eventTypes: ['STATUS_APPLIED'],
+    }];
+    writeFixture(
+      rootDir,
+      'src/handler.ts',
+      "export const event = { type: 'STATUS_APPLIED', targetId: 'enemy', duration: 3 };\n",
+    );
+
+    const failures = checkEventLiterals({ rootDir, config }).join('\n');
+
+    expect(failures).toContain('src/handler.ts');
+    expect(failures).toContain('builds STATUS_APPLIED inline');
+  });
+
+  it('allows the factory module and tests to construct domain events', () => {
+    const rootDir = makeTempRoot('guardrail-event-literal-valid');
+    const config = [{
+      name: 'domain-event-factories',
+      factoryModule: 'src/emit-events.ts',
+      protectedSurfaces: ['src'],
+      allowedFiles: ['src/emit-events.ts'],
+      allowedFilePatterns: [/\.test\.[tj]sx?$/],
+      eventTypes: ['STATUS_APPLIED'],
+    }];
+    writeFixture(
+      rootDir,
+      'src/emit-events.ts',
+      "export function buildStatusAppliedEvent() { return { type: 'STATUS_APPLIED' }; }\n",
+    );
+    writeFixture(
+      rootDir,
+      'src/handler.test.ts',
+      "export const expected = { type: 'STATUS_APPLIED' };\n",
+    );
+    writeFixture(
+      rootDir,
+      'src/handler.ts',
+      "import { buildStatusAppliedEvent } from './emit-events.js';\nexport const event = buildStatusAppliedEvent();\n",
+    );
+
+    expect(checkEventLiterals({ rootDir, config })).toEqual([]);
   });
 
   it('fails when content relationship code copies an enemy template literal', () => {
@@ -323,6 +395,58 @@ describe('guardrail pattern checks', () => {
       literals: [{ exportName: 'MIN_WIDTH', patterns: [/\buseState\s*\(\s*15\s*\)/] }],
     }];
     writeFixture(rootDir, 'src/components/View.tsx', "import { useState } from 'react';\nimport { MIN_WIDTH } from '../config.js';\nexport function View() { return useState(MIN_WIDTH)[0]; }\n");
+
+    expect(checkCentralizedLiterals({ rootDir, config })).toEqual([]);
+  });
+
+  it('fails when web components interpret ability IDs instead of view metadata', () => {
+    const rootDir = makeTempRoot('guardrail-web-ability-id-bad');
+    const config = [{
+      name: 'web-ability-id-interpretation',
+      ownerModule: 'packages/presenter/src/builders/player-ability-view-builder.ts',
+      protectedSurfaces: ['apps/web/src'],
+      allowedFiles: [],
+      allowedFilePatterns: [/\.test\.[tj]sx?$/],
+      literals: [{
+        exportName: 'AbilityView.tileTarget / AbilityView.trapInteraction',
+        patterns: [/['"]thunder_step['"]/, /['"]dagger_set_trap['"]/, /['"]dagger_disarm['"]/],
+      }],
+    }];
+    writeFixture(
+      rootDir,
+      'apps/web/src/components/View.tsx',
+      "export const isThunderStep = (abilityId: string) => abilityId === 'thunder_step';\n",
+    );
+
+    const failures = checkCentralizedLiterals({ rootDir, config }).join('\n');
+
+    expect(failures).toContain('apps/web/src/components/View.tsx');
+    expect(failures).toContain('duplicates web-ability-id-interpretation');
+  });
+
+  it('allows web tests to reference ability IDs as fixtures', () => {
+    const rootDir = makeTempRoot('guardrail-web-ability-id-valid');
+    const config = [{
+      name: 'web-ability-id-interpretation',
+      ownerModule: 'packages/presenter/src/builders/player-ability-view-builder.ts',
+      protectedSurfaces: ['apps/web/src'],
+      allowedFiles: [],
+      allowedFilePatterns: [/\.test\.[tj]sx?$/],
+      literals: [{
+        exportName: 'AbilityView.tileTarget / AbilityView.trapInteraction',
+        patterns: [/['"]thunder_step['"]/, /['"]dagger_set_trap['"]/, /['"]dagger_disarm['"]/],
+      }],
+    }];
+    writeFixture(
+      rootDir,
+      'apps/web/src/components/View.test.tsx',
+      "export const fixtureAbilityId = 'dagger_set_trap';\n",
+    );
+    writeFixture(
+      rootDir,
+      'apps/web/src/components/View.tsx',
+      "export const usesMetadata = (ability: { tileTarget?: boolean }) => ability.tileTarget === true;\n",
+    );
 
     expect(checkCentralizedLiterals({ rootDir, config })).toEqual([]);
   });

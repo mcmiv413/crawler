@@ -14,7 +14,7 @@ import { applyThornsToAttacker, applyBlinkOnHit, getEnchantmentRegenBonus, getTo
 import { updateRunMetrics } from './command-handler.js';
 import { processEnemyKill } from './enemy-death-pipeline.js';
 import { resolveEnemyAbility } from '../systems/enemy-abilities.js';
-import { COMBAT, AMBIENT_PROFILES, OBJECT_TEMPLATES } from '@dungeon/content';
+import { COMBAT, AMBIENT_PROFILES, OBJECT_TEMPLATES, stun } from '@dungeon/content';
 import { calculateHazardDamage, hazardTypeToDamageType } from '../systems/hazard-damage.js';
 import { applyDamageToEnemy } from '../systems/damage.js';
 
@@ -116,7 +116,7 @@ export function processEnemyTurns(
       }
 
       // Stun check (applies to both alerted and ambient behaviors)
-      if (updatedEnemy.statuses.some(s => s.id === 'stun')) break;
+      if (updatedEnemy.statuses.some(s => s.id === stun.id)) break;
 
       // Decide action based on alert state
       let action: EnemyAction;

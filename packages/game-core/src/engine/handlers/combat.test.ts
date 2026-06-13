@@ -3,6 +3,7 @@ import { handleAttack } from './combat.js';
 import { processEnemyKill } from '../enemy-death-pipeline.js';
 import { createTestGameStateInCombat } from '../../test-utils.js';
 import { SeededRNG } from '../../utils/rng.js';
+import { getFireBurnDuration, getFireBurnMagnitude, getFireMasteryLevel } from '../../systems/magic-xp.js';
 import { entityId } from '@dungeon/contracts';
 import type { AnyItemTemplate, DomainEvent, EntityId, GameState, WeaponTemplate } from '@dungeon/contracts';
 
@@ -223,6 +224,56 @@ describe('handleAttack integration', () => {
     expect(second.events).toHaveLength(0);
     expect(second.state.player.totalKills).toBe(state.player.totalKills + 1);
     expect(second.state.player.experience).toBeGreaterThan(state.player.experience);
+  });
+
+  it('applies weapon on-hit burn with the same fire-mastery duration/magnitude as the ability path', () => {
+    const makeSurvivableBurnWeaponState = (fireXp: number): {
+      readonly state: GameState;
+      readonly enemyId: EntityId;
+    } => {
+      const { state: armed } = makeGuaranteedStatusWeaponState();
+      const [enemyKey, enemy] = [...armed.run!.enemies.entries()][0]!;
+      const tankyEnemy = {
+        ...enemy,
+        stats: { ...enemy.stats, maxHealth: 1000, health: 1000, defense: 0, evasion: 0 },
+      };
+      return {
+        state: {
+          ...armed,
+          player: {
+            ...armed.player,
+            stats: { ...armed.player.stats, attack: 5, accuracy: 999 },
+            ringMastery: fireXp > 0 ? { fire: { xp: fireXp } } : {},
+          },
+          run: { ...armed.run!, enemies: new Map([[enemyKey, tankyEnemy]]) },
+        },
+        enemyId: tankyEnemy.id,
+      };
+    };
+    const findBurnEvent = (events: readonly DomainEvent[], targetId: EntityId) => events.find(
+      (event): event is Extract<DomainEvent, { type: 'STATUS_APPLIED' }> =>
+        event.type === 'STATUS_APPLIED' && event.targetId === targetId,
+    );
+
+    const baseline = makeSurvivableBurnWeaponState(0);
+    const baselineResult = handleAttack(baseline.state, baseline.enemyId, new SeededRNG(7));
+    const baselineBurn = findBurnEvent(baselineResult.events, baseline.enemyId);
+    expect(baselineBurn).toBeDefined();
+
+    const mastered = makeSurvivableBurnWeaponState(999_999);
+    expect(getFireMasteryLevel(mastered.state.player)).toBeGreaterThan(0);
+    const expectedDuration = getFireBurnDuration(mastered.state.player, baselineBurn!.duration);
+    const expectedMagnitude = getFireBurnMagnitude(mastered.state.player);
+    expect(expectedDuration).not.toBe(baselineBurn!.duration);
+
+    const masteredResult = handleAttack(mastered.state, mastered.enemyId, new SeededRNG(7));
+    const masteredBurn = findBurnEvent(masteredResult.events, mastered.enemyId);
+    expect(masteredBurn?.duration).toBe(expectedDuration);
+
+    const enemyAfter = [...(masteredResult.state.run?.enemies.values() ?? [])]
+      .find(candidate => candidate.id === mastered.enemyId);
+    const appliedBurn = enemyAfter?.statuses.find(status => status.id === baselineBurn!.statusId);
+    expect(appliedBurn?.magnitude).toBe(expectedMagnitude);
   });
 
   it('does not apply on-hit statuses after lethal attack damage', () => {

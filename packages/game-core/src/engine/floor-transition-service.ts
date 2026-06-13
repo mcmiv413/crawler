@@ -24,7 +24,7 @@ import { completeFloorDepthQuests } from '../systems/quests.js';
 import { selectBiomeForFloor } from '../systems/biome-selection.js';
 import { applyGuaranteedEncounters, countGuaranteedEncountersForFloor } from './guaranteed-encounters.js';
 import { recoverDeathStash } from './death-stash-recovery.js';
-import { snapshotActiveFloor, withPersistedFloor } from '../state/floor-cache.js';
+import { withActiveFloorPersisted, withPersistedFloor } from '../state/floor-cache.js';
 import type { SeededRNG } from '../utils/rng.js';
 import { chebyshevDistance } from '../utils/grid.js';
 
@@ -231,13 +231,10 @@ export function ascendFloor(
 }
 
 function withCurrentFloorPersisted(state: GameState): GameState {
-  const snapshot = snapshotActiveFloor(state, {
+  return withActiveFloorPersisted(state, {
     originalEnemyCount: state.run?.enemies.size,
     lastSimulatedTurn: state.turnNumber,
   });
-  if (snapshot === null) return state;
-
-  return withPersistedFloor(state, snapshot.floor.depth, snapshot);
 }
 
 function withEnteredFloorPersisted(

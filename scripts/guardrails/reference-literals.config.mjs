@@ -41,7 +41,11 @@ export default [
       'packages/game-core/src/abilities/effects',
       'packages/game-core/src/systems/enemy-abilities.ts',
       'packages/game-core/src/systems/burn-spread.ts',
+      'packages/game-core/src/systems/status-effects.ts',
+      'packages/game-core/src/systems/status-application.ts',
+      'packages/game-core/src/systems/mana.ts',
       'packages/game-core/src/engine/handlers/combat.ts',
+      'packages/game-core/src/engine/turn-scheduler.ts',
     ],
     allowedDeclarationRoots: [
       'packages/content/src/statuses',
@@ -58,7 +62,7 @@ export default [
       /\/testing\//,
     ],
     sourcePattern: /\bid:\s*['"](?<value>[a-z_]+)['"]/g,
-    implementationPattern: /\bstatusId\s*(?::|===)\s*['"](?<value>[a-z_]+)['"]/g,
+    implementationPattern: /\b(?:statusId\s*(?::|===)|id\s*[!=]==)\s*['"](?<value>[a-z_]+)['"]/g,
   },
   {
     name: 'enemy-template-refs',

@@ -193,10 +193,13 @@ export function DungeonCanvas({
     const store = useGameStore.getState();
     const selectedAbilityId = store.tileTargetMode.selectedAbilityId;
     if (store.tileTargetMode.active && selectedAbilityId) {
+      // Tile-target mode is only entered for tile-target abilities (AbilityView.tileTarget),
+      // which never target the player's own tile or an occupied tile.
       const isPlayerTile = grid.x === map.playerPosition.x && grid.y === map.playerPosition.y;
-      const isInvalidThunderStepTarget = selectedAbilityId === 'thunder_step'
-        && (isPlayerTile || cell.visibility !== 'visible' || map.entities.some(e => e.x === grid.x && e.y === grid.y));
-      if (isInvalidThunderStepTarget) return;
+      const isInvalidTileTarget = isPlayerTile
+        || cell.visibility !== 'visible'
+        || map.entities.some(e => e.x === grid.x && e.y === grid.y);
+      if (isInvalidTileTarget) return;
 
       store.sendCommand({
         type: 'USE_ABILITY',

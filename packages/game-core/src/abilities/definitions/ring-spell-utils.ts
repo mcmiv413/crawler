@@ -1,6 +1,8 @@
 import type { DamageType } from '@dungeon/contracts';
 import {
   STATUS_DEFINITIONS,
+  fire as fireSchool,
+  lightning as lightningSchool,
   type RingSpellDefinition,
   type StatusEffect as RingSpellStatusEffect,
 } from '@dungeon/content';
@@ -53,10 +55,10 @@ export function buildRingSpellStatusEffect(
 }
 
 function getRingSpellDamageType(spell: RingSpellDefinition): DamageType {
-  if (spell.schools.includes('fire') && !spell.schools.includes('lightning')) {
+  if (spell.schools.includes(fireSchool.id) && !spell.schools.includes(lightningSchool.id)) {
     return 'fire';
   }
-  if (spell.schools.includes('lightning')) {
+  if (spell.schools.includes(lightningSchool.id)) {
     return 'shock';
   }
   return 'arcane';

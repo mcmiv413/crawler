@@ -1,6 +1,8 @@
+import { describe, expect, it } from 'vitest';
 import { createTestGameState } from '@dungeon/core/testing';
 import type { FactionState, GameState } from '@dungeon/contracts';
 import { buildDeterministicRunSummary, buildDeterministicTownRumors } from './town-text.js';
+import { buildTownView } from './town-view-builder.js';
 
 // ---------------------------------------------------------------------------
 // Local stubs — avoids @dungeon/content runtime imports.
@@ -142,11 +144,21 @@ describe('deterministic town text', () => {
   it('summarizes the run from metrics, faction pressure, and town impact', () => {
     const state = buildFactionTownState();
 
-    const summary = buildDeterministicRunSummary(state, state.lastRunMetrics!, []);
+    const summary = buildDeterministicRunSummary(state, state.lastRunMetrics!);
 
     expect(summary).toContain('Avery retreated from floor 4');
     expect(summary).toContain('Goblin Warband');
     expect(summary).toContain('Town prosperity');
     expect(summary).toContain('corruption');
+  });
+
+  it('exposes presenter-built rumors and run summary through the town view', () => {
+    const state = buildFactionTownState();
+
+    const view = buildTownView(state);
+
+    expect(view.rumors).toEqual(buildDeterministicTownRumors(state));
+    expect(view.lastRunSummary).toBe(buildDeterministicRunSummary(state, state.lastRunMetrics!));
+    expect(view.rumors.length).toBeGreaterThan(0);
   });
 });
