@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import { useState } from 'react';
 import type { InventoryItemView, InventoryView, DismissibleNotice } from '@dungeon/presenter';
 import { btnStyle, compactBtnStyle, colors } from '../styles.js';
 import { EquipmentDoll } from './EquipmentDoll.js';
@@ -103,6 +103,7 @@ export function InventoryScreen({
           <EquipmentDoll
             equipped={inventory.equipped}
             onSlotClick={(item) => setSelectedItem(item)}
+            isMobile={isMobile}
           />
         </div>
       )}

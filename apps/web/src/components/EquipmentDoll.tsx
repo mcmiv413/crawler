@@ -1,11 +1,11 @@
-import React from 'react';
 import type { InventoryItemView, InventoryView } from '@dungeon/presenter';
 import { ItemSpriteIcon } from './ItemSpriteIcon.js';
-import { colors } from '../styles.js';
+import { colors, fontSize } from '../styles.js';
 
 interface EquipmentDollProps {
   equipped: InventoryView['equipped'];
   onSlotClick: (item: InventoryItemView) => void;
+  isMobile?: boolean;
 }
 
 function getItemStats(item: InventoryItemView): string {
@@ -49,12 +49,16 @@ const SLOT_ORDER: (keyof InventoryView['equipped'])[] = [
   'ring2',
 ];
 
-export function EquipmentDoll({ equipped, onSlotClick }: EquipmentDollProps) {
+export function EquipmentDoll({ equipped, onSlotClick, isMobile }: EquipmentDollProps) {
+  // Use 1 column on mobile widths below 390px, 2 columns for desktop and tablets
+  const useOneColumn = isMobile === true;
+  const columnCount = useOneColumn ? 1 : 2;
+
   return (
     <div
       style={{
         display: 'grid',
-        gridTemplateColumns: '1fr 1fr',
+        gridTemplateColumns: columnCount === 1 ? '1fr' : '1fr 1fr',
         gap: 8,
         marginBottom: 16,
         padding: 8,
@@ -81,14 +85,14 @@ export function EquipmentDoll({ equipped, onSlotClick }: EquipmentDollProps) {
             }}
             onClick={() => item && onSlotClick(item)}
           >
-            <div style={{ fontSize: 10, color: '#666', marginBottom: 2 }}>{label}</div>
+            <div style={{ fontSize: fontSize.micro, color: '#666', marginBottom: 2 }}>{label}</div>
             {item ? (
               <div style={{ display: 'flex', flexDirection: 'column', gap: 4 }}>
                 <div style={{ display: 'flex', gap: 4, alignItems: 'center' }}>
                   <ItemSpriteIcon spriteName={item.spriteName} size={24} />
                   <div
                     style={{
-                      fontSize: 11,
+                      fontSize: fontSize.bodySmall,
                       color: item.rarityColor,
                       fontWeight: 'bold',
                     }}
@@ -98,11 +102,11 @@ export function EquipmentDoll({ equipped, onSlotClick }: EquipmentDollProps) {
                 </div>
                 {(() => {
                   const stats = getItemStats(item);
-                  return stats ? <div style={{ fontSize: 9, color: colors.muted }}>{stats}</div> : null;
+                  return stats ? <div style={{ fontSize: fontSize.micro, color: colors.muted }}>{stats}</div> : null;
                 })()}
               </div>
             ) : (
-              <div style={{ fontSize: 10, color: '#555' }}>[empty]</div>
+              <div style={{ fontSize: fontSize.micro, color: '#555' }}>[empty]</div>
             )}
           </div>
         );
