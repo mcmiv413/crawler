@@ -7,6 +7,7 @@ import {
   compactBtnActiveStyle,
   compactBtnStyle,
   FONT_STACK,
+  fontSize,
 } from '../styles.js';
 import { ItemInspectModal } from './ItemInspectModal.js';
 import { ItemSpriteIcon } from './ItemSpriteIcon.js';
@@ -87,7 +88,7 @@ export function ShopPanel({ view, loading, sendCommand }: ShopPanelProps) {
   }
 
   const headerStyle: React.CSSProperties = {
-    fontSize: 13,
+    fontSize: fontSize.panelTitle,
     fontWeight: 600,
     letterSpacing: '0.08em',
     color: colors.gold,
@@ -99,7 +100,7 @@ export function ShopPanel({ view, loading, sendCommand }: ShopPanelProps) {
     marginTop: 4,
     marginBottom: 10,
     color: colors.gold,
-    fontSize: 11,
+    fontSize: fontSize.meta,
     fontFamily: FONT_STACK,
   };
 
@@ -137,7 +138,7 @@ export function ShopPanel({ view, loading, sendCommand }: ShopPanelProps) {
         </div>
 
         <SectionLabel label="Buy Items" marginTop={4} />
-        <div style={{ fontSize: 11 }}>
+        <div style={{ fontSize: fontSize.body }}>
           {buyItems.length === 0 ? (
             <div style={{ color: colors.muted }}>Nothing available.</div>
           ) : (
@@ -148,14 +149,15 @@ export function ShopPanel({ view, loading, sendCommand }: ShopPanelProps) {
                 <div
                   key={item.itemId}
                   style={{
-                    padding: '4px 0',
+                    padding: '6px 0',
                     paddingLeft: canAfford ? 6 : 0,
                     borderBottom: canAfford
                       ? `1px solid rgba(125,201,64,0.12)`
                       : `1px solid ${colors.border2}`,
                     display: 'flex',
                     justifyContent: 'space-between',
-                    alignItems: 'center',
+                    alignItems: 'flex-start',
+                    gap: 8,
                     cursor: 'pointer',
                     background: canAfford ? 'rgba(125,201,64,0.04)' : 'transparent',
                     boxShadow: canAfford ? 'inset 2px 0 0 rgba(125,201,64,0.35)' : 'none',
@@ -207,10 +209,11 @@ export function ShopPanel({ view, loading, sendCommand }: ShopPanelProps) {
                       flexDirection: 'column',
                       gap: 2,
                       marginRight: 8,
-                      minWidth: 100,
+                      minWidth: 'auto',
+                      textAlign: 'right',
                     }}
                   >
-                    <div style={{ color: colors.label, fontSize: 10, textAlign: 'right' }}>
+                    <div style={{ color: colors.label, fontSize: fontSize.micro, fontWeight: 600 }}>
                       {discounted ? (
                         <>
                           <span style={{ textDecoration: 'line-through', color: colors.muted }}>
@@ -222,11 +225,11 @@ export function ShopPanel({ view, loading, sendCommand }: ShopPanelProps) {
                         <span style={{ color: colors.gold }}>{item.price}g</span>
                       )}
                     </div>
-                    <div style={{ color: colors.muted, fontSize: 10, textAlign: 'right' }}>
+                    <div style={{ color: colors.muted, fontSize: fontSize.micro }}>
                       ×{item.stock}
                     </div>
                     {item.weaponData && (
-                      <div style={{ fontSize: 9, color: colors.steel }}>
+                      <div style={{ fontSize: fontSize.micro, color: colors.steel }}>
                         <div>
                           Dmg: {item.weaponData.damageMin && item.weaponData.damageMax
                             ? `${item.weaponData.damageMin}-${item.weaponData.damageMax}`
@@ -236,7 +239,7 @@ export function ShopPanel({ view, loading, sendCommand }: ShopPanelProps) {
                       </div>
                     )}
                     {item.armorData && (
-                      <div style={{ fontSize: 9, color: colors.teal }}>
+                      <div style={{ fontSize: fontSize.micro, color: colors.teal }}>
                         <div>Def: +{item.armorData.defense}</div>
                         {item.armorData.slot && <div>Slot: {item.armorData.slot}</div>}
                       </div>
@@ -256,7 +259,7 @@ export function ShopPanel({ view, loading, sendCommand }: ShopPanelProps) {
                       setToastKey((k) => k + 1);
                       setTimeout(() => setFlashItemId(null), 900);
                     }}
-                    style={{ ...btnStyle, fontSize: 9, padding: '2px 6px' }}
+                    style={{ ...btnStyle, fontSize: fontSize.micro, padding: '4px 8px', whiteSpace: 'nowrap' }}
                     disabled={loading || !canAfford}
                   >
                     Buy

@@ -1,6 +1,28 @@
 import type React from 'react';
 import { BTN_MIN_HEIGHT, MODAL_CARD_MAX_WIDTH, NAV_BTN_MIN_HEIGHT } from './config/ui-config.js';
 
+// ─── Typography Tokens ────────────────────────────────────────────────────
+// Semantic font sizes for mobile-first readable UI. Avoids 9px/10px on normal
+// gameplay text. Use these for new/changed mobile-visible UI.
+export const fontSize = {
+  pageTitle: 22,    // Full-screen overlays, intro text
+  panelTitle: 18,   // Panel headers, large section headers
+  sectionTitle: 16, // Section headers within panels
+  body: 15,         // Primary body text, action labels
+  bodySmall: 14,    // Secondary text, subheadings
+  meta: 13,         // Metadata, item stats, detail text
+  micro: 12,        // Labels, timestamps, compact UI
+} as const;
+
+// ─── Spacing Tokens ───────────────────────────────────────────────────────
+// Optional mobile spacing tokens for consistent gaps and padding.
+export const spacing = {
+  xs: 4,    // 4px gap
+  sm: 8,    // 8px gap
+  md: 12,   // 12px gap
+  lg: 16,   // 16px gap
+} as const;
+
 // ─── Font ──────────────────────────────────────────────────────────────────
 export const FONT_STACK = `'IBM Plex Mono', 'Courier New', monospace`;
 
