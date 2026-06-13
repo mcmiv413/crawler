@@ -77,7 +77,7 @@ export default {
       path: 'packages/game-core/src/systems/town.ts',
       reason: 'Refactor target (town action coordinator with validation, shop, rest, study, and enchantment flows) — needs split into discrete town transaction modules',
       auditReportNote: 'Correctness audit patch added rejection and gold-change observability; split is unrelated to this bugfix scope',
-      lines: 529,
+      lines: 514,
     },
     {
       path: 'packages/game-core/src/engine/turn-scheduler.ts',
