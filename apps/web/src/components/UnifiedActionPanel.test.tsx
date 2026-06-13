@@ -761,6 +761,7 @@ describe('UnifiedActionPanel', () => {
           abilities: [
             {
               id: 'dagger_set_trap',
+              trapInteraction: 'place',
               name: 'Set Trap',
               description: 'Place a trap.',
               ready: true,

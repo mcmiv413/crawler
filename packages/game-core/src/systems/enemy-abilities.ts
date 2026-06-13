@@ -6,6 +6,7 @@ import { resolveAttack } from './combat.js';
 import { applyStatusToPlayer, getEffectiveStat } from './status-effects.js';
 import { handlePlayerDeath } from './death.js';
 import { applyBlinkOnHit } from './enchantment-hooks.js';
+import { buildStatusAppliedEvent } from '../abilities/runtime/emit-events.js';
 
 /** Ability definition for an enemy */
 export interface EnemyAbilityDef {
@@ -251,15 +252,13 @@ export function resolveEnemyAbility(
         run: { ...newState.run!, enemies: enemiesWithStatus },
       };
 
-      events = [...events, {
-        type: 'STATUS_APPLIED',
+      events = [...events, buildStatusAppliedEvent({
         targetId: enemy.id,
         statusId: abilityDef.statusId,
         duration: abilityDef.statusDuration,
         sourceId: enemy.id,
-        timestamp: state.turnNumber,
         turnNumber: state.turnNumber,
-      }];
+      })];
     } else {
       // Apply status to the player (default behavior)
       const updatedPlayer = applyStatusToPlayer(
@@ -272,15 +271,13 @@ export function resolveEnemyAbility(
 
       newState = { ...newState, player: updatedPlayer };
 
-      events = [...events, {
-        type: 'STATUS_APPLIED',
+      events = [...events, buildStatusAppliedEvent({
         targetId: state.player.id,
         statusId: abilityDef.statusId,
         duration: abilityDef.statusDuration,
         sourceId: enemy.id,
-        timestamp: state.turnNumber,
         turnNumber: state.turnNumber,
-      }];
+      })];
     }
   }
 

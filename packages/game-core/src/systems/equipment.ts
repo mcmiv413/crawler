@@ -5,6 +5,7 @@ import type {
 } from '@dungeon/contracts';
 import type { DomainEvent } from '@dungeon/contracts';
 import { ENCHANTMENT_BY_ID, RING_SPELL_BY_ID, getImpliedBlueprints, getSchoolForRing, getSchoolSpells } from '@dungeon/content';
+import { buildBlueprintUnlockedEvent } from '../abilities/runtime/emit-events.js';
 
 const ARMOR_EQUIP_SLOTS: readonly (keyof Equipment)[] = ['chest', 'head', 'gloves', 'boots', 'ring1', 'ring2'];
 
@@ -262,13 +263,11 @@ function unlockBlueprints(
     },
   };
 
-  const events: DomainEvent[] = [{
-    type: 'BLUEPRINT_UNLOCKED',
+  const events: DomainEvent[] = [buildBlueprintUnlockedEvent({
     playerId: state.player.id,
     blueprintIds: newIds,
-    timestamp: state.turnNumber,
     turnNumber: state.turnNumber,
-  }];
+  })];
 
   return { state: newState, events };
 }

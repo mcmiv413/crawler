@@ -25,8 +25,10 @@ export function buildWorldModifiers(
   reservedEncounterSlots = 0,
 ): WorldModifiers {
   const extraEnemies = 0;
-  const preferredArchetypes = world.town.fear > FEAR_MODIFIERS.preferFastEnemiesAbove ? ['ambusher', 'fast_skirmisher'] : [];
-  const preferredDamageTypes = world.town.corruption > CORRUPTION_MODIFIERS.preferCorruptEnemiesAbove ? ['poison', 'corruption'] : [];
+  const preferredArchetypes: readonly string[] =
+    world.town.fear > FEAR_MODIFIERS.preferFastEnemiesAbove ? FEAR_MODIFIERS.preferredArchetypes : [];
+  const preferredDamageTypes: readonly string[] =
+    world.town.corruption > CORRUPTION_MODIFIERS.preferCorruptEnemiesAbove ? CORRUPTION_MODIFIERS.preferredDamageTypes : [];
 
   const factionWeightMultipliers = Object.fromEntries(
     world.factions.map(faction => [faction.id, getFactionSpawnWeightMultiplier(faction)]),

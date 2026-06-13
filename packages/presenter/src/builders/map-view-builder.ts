@@ -1,31 +1,11 @@
-import type { GameState, EnemyInstance, DamageType } from '@dungeon/contracts';
+import type { GameState } from '@dungeon/contracts';
 import { OBJECT_TEMPLATES, ENEMY_TEMPLATES, BIOMES, forest, mossCaverns, crystalCave, frozenDepths } from '@dungeon/content';
 import type { MapView, EntityView } from '../game-view.js';
+import { getEnemyColor } from './entity-colors.js';
 
 // Sprite names for map rendering - using left-facing variants for map consistency
 const STAIRS_UP_SPRITE = 'staircase up left';
 const STAIRS_DOWN_SPRITE = 'staircase down left';
-
-function getDamageTypeColor(damageType: DamageType): string {
-  switch (damageType) {
-    case 'fire': return '#ff4400';
-    case 'frost': return '#44aaff';
-    case 'poison': return '#44ff44';
-    case 'shock': return '#ffff00';
-    case 'corruption': return '#aa44ff';
-    case 'arcane': return '#dd44ff';
-    case 'shadow': return '#333366';
-    default: return '#ff4444';
-  }
-}
-
-function getEnemyColor(enemy: EnemyInstance): string {
-  // Prefer template color if set
-  if (enemy.color) return enemy.color;
-
-  const damageType = enemy.equipment?.weapon?.damageType ?? 'physical';
-  return getDamageTypeColor(damageType);
-}
 
 function computeDangerLevel(depth: number, playerLevel: number): 'safe' | 'moderate' | 'dangerous' | 'deadly' {
   const diff = depth - playerLevel;

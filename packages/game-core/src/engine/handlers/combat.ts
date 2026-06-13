@@ -3,14 +3,15 @@ import type {
 } from '@dungeon/contracts';
 import type { CommandResult } from './shared.js';
 import type { SeededRNG } from '../../utils/rng.js';
-import { COMBAT, STATUS_DEFAULTS, burn, daggerDisarm, daggerSetTrap, getWeaponDamageProfile, heatSurgeStatus } from '@dungeon/content';
+import { COMBAT, burn, daggerDisarm, daggerSetTrap, getWeaponDamageProfile, heatSurgeStatus } from '@dungeon/content';
 import { buildRegistry } from '../../abilities/registry.js';
 import { ALL_ABILITY_DEFINITIONS } from '../../abilities/definitions/index.js';
 import { updateRunMetrics } from './shared.js';
 import { advanceTurnAfterPlayerAction } from '../turn-advance-pipeline.js';
 import { executeAbility } from '../../abilities/runtime/execute-ability.js';
 import { resolveAttack } from '../../systems/combat.js';
-import { getEffectiveStat, applyStatusToEnemy } from '../../systems/status-effects.js';
+import { getEffectiveStat } from '../../systems/status-effects.js';
+import { applyPlayerStatusToEnemy } from '../../systems/status-application.js';
 import { applyDamageToEnemy } from '../../systems/damage.js';
 import { applyDefense, applyRangeAccuracyPenalty } from '../../utils/dice.js';
 import { setAbilityCooldown } from '../../systems/abilities.js';
@@ -21,10 +22,6 @@ import { chebyshevDistance } from '../../utils/grid.js';
 
 import { handleDisarmTrap } from './disarm-trap.js';
 import { handleSetTrap } from './set-trap.js';
-import {
-  getFireBurnDuration,
-  getFireBurnMagnitude,
-} from '../../systems/magic-xp.js';
 import { processEnemyKill } from '../enemy-death-pipeline.js';
 
 export const LEGACY_CONTENT_ABILITY_HANDLER_IDS = [daggerDisarm.id, daggerSetTrap.id] as const;
@@ -328,38 +325,19 @@ export function handleAttack(
     }
 
     if (killed === false) {
-      let statusEvents: DomainEvent[] = [];
+      // Weapon on-hit statuses share the ability path's duration/magnitude rules
+      // (fire mastery scaling for burn) via the central status-application helper.
       for (const statusId of result.statusesApplied) {
-        const defaults = STATUS_DEFAULTS[statusId];
-        const duration = 'defaultDuration' in defaults ? (defaults as { defaultDuration: number }).defaultDuration : 3;
-        updatedEnemy = applyStatusToEnemy(updatedEnemy, statusId, duration, 1, state.player.id);
-        statusEvents = [...statusEvents, {
-          type: 'STATUS_APPLIED',
-          targetId: targetEnemy.id,
-          statusId,
-          duration,
-          sourceId: state.player.id,
-          timestamp: newState.turnNumber,
-          turnNumber: newState.turnNumber,
-        }];
+        const onHit = applyPlayerStatusToEnemy(updatedEnemy, statusId, newState.player, newState.turnNumber);
+        updatedEnemy = onHit.enemy;
+        events = [...events, onHit.event];
       }
-      events = [...events, ...statusEvents];
 
       const heatSurgeActive = newState.player.statuses.some(status => status.id === heatSurgeStatus.id);
       if (heatSurgeActive === true) {
-        const burnDefaults = STATUS_DEFAULTS.burn;
-        const burnDuration = getFireBurnDuration(newState.player, burnDefaults.defaultDuration);
-        const burnMagnitude = getFireBurnMagnitude(newState.player);
-        updatedEnemy = applyStatusToEnemy(updatedEnemy, burn.id, burnDuration, burnMagnitude, state.player.id);
-        events = [...events, {
-          type: 'STATUS_APPLIED',
-          targetId: targetEnemy.id,
-          statusId: burn.id,
-          duration: burnDuration,
-          sourceId: state.player.id,
-          timestamp: newState.turnNumber,
-          turnNumber: newState.turnNumber,
-        }];
+        const surgeBurn = applyPlayerStatusToEnemy(updatedEnemy, burn.id, newState.player, newState.turnNumber);
+        updatedEnemy = surgeBurn.enemy;
+        events = [...events, surgeBurn.event];
       }
     }
 

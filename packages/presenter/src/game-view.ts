@@ -134,6 +134,8 @@ export interface AbilityView {
   readonly requiresDirection?: boolean;
   readonly isRanged?: boolean;
   readonly tileTarget?: boolean;  // Indicates ability requires visible-tile selection
+  /** Trap workflow this ability drives ('place' needs a trap item + direction; 'disarm' targets adjacent traps). */
+  readonly trapInteraction?: 'place' | 'disarm';
   readonly targetRange?: {
     readonly max: number;
     readonly min: number;

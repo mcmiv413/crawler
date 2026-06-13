@@ -1,4 +1,4 @@
-import type { GameState, EnemyInstance, PlayerDiedEvent, EquipmentDroppedEvent, EntityId } from '@dungeon/contracts';
+import type { GameState, PlayerDiedEvent, EquipmentDroppedEvent, EntityId } from '@dungeon/contracts';
 import type { GameView, QuestView, InspectableEntityView, DeathContext } from './game-view.js';
 import { ENEMY_TEMPLATES, STATUS_DEFINITIONS, OBJECT_TEMPLATES, DEATH_CONSEQUENCES } from '@dungeon/content';
 import { getEnemyCombatPreview } from '@dungeon/core';
@@ -6,18 +6,7 @@ import { getObjectiveText } from '@dungeon/core/systems/quest-progress.js';
 import { buildPlayerHud } from './builders/player-hud-builder.js';
 import { buildMapView } from './builders/map-view-builder.js';
 import { buildGameNotices, findLatestDismissibleNotice } from './builders/game-notice-builder.js';
-
-function getEnemyColor(enemy: EnemyInstance): string {
-  const damageType = enemy.equipment?.weapon?.damageType ?? 'physical';
-  switch (damageType) {
-    case 'fire': return '#ff4400';
-    case 'frost': return '#44aaff';
-    case 'poison': return '#44ff44';
-    case 'shock': return '#ffff00';
-    case 'corruption': return '#aa44ff';
-    default: return '#ff4444';
-  }
-}
+import { getEnemyColor } from './builders/entity-colors.js';
 import { buildAvailableActions } from './builders/actions-builder.js';
 import { buildTownView } from './builders/town-view-builder.js';
 import { buildInventoryView } from './builders/inventory-view-builder.js';

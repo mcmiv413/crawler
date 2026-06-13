@@ -5,7 +5,7 @@ import { randomizeShop } from '../state/world-state.js';
 import type { SeededRNG } from '../utils/rng.js';
 import { AMBIENT_PROFILES } from '@dungeon/content';
 import { preSimulateAmbientBehavior } from './ambient-behavior-engine.js';
-import { snapshotActiveFloor, withPersistedFloor } from '../state/floor-cache.js';
+import { withActiveFloorPersisted } from '../state/floor-cache.js';
 
 /** Check if the player can retreat (must be on stairs_up or entrance) */
 export function canRetreat(state: GameState): boolean {
@@ -54,12 +54,11 @@ export function executeRetreat(state: GameState, rng: SeededRNG): { state: GameS
 
   // Save the current floor to persistedFloorCache before clearing the run
   const currentFloorDepth = state.player.floor;
-  const currentFloorSnapshot = snapshotActiveFloor(state, {
+  const stateWithPersistedFloor = withActiveFloorPersisted(state, {
     enemies: simulatedEnemies,
     originalEnemyCount: state.run!.enemies.size,
     lastSimulatedTurn: state.turnNumber,
-  })!;
-  const stateWithPersistedFloor = withPersistedFloor(state, currentFloorDepth, currentFloorSnapshot);
+  });
 
   const finalRunMetrics = {
     ...(state.run!.runMetrics ?? EMPTY_RUN_METRICS),

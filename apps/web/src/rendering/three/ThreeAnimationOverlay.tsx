@@ -17,7 +17,7 @@ import type { ThreeRendererHandle } from './three-renderer-factory.js';
 import { getAnimationModule } from './three-animation-registry.js';
 import type { ThreeAnimationModule } from './three-animation-types.js';
 import type { ThreeOwnershipReport } from '../three-animation-ownership.js';
-import { areAllStatusPresentationsOwnedByThree, computeAnimationDispatchPolicy } from '../animation-dispatch-policy.js';
+import { computeAnimationDispatchPolicy } from '../animation-dispatch-policy.js';
 import { tileCenterWorld, worldToScreen } from './three-coordinate-utils.js';
 import { computeBumpScreenPosition } from './entities/three-entity-motion.js';
 import {
@@ -299,13 +299,6 @@ export function resolveHandledModuleAnimations(
 }
 
 
-
-export function areStatusPresentationsHandledByThree(
-  statusPresentations: readonly StatusPresentationView[],
-  handledAnimationIds: readonly AnimationId[],
-): boolean {
-  return areAllStatusPresentationsOwnedByThree(statusPresentations, handledAnimationIds);
-}
 
 export function getStatusPresentationEntityScale(
   statusPresentations: readonly StatusPresentationView[],

@@ -10,6 +10,7 @@ import { learnRingSpell } from './magic-xp.js';
 import { syncEquipmentGrantedAbilities } from './equipment.js';
 import { evaluateRingSpellStudy, getEquippedRingItemIds } from './ring-spell-availability.js';
 import { validateTownTransaction } from './town-validator.js';
+import { buildEnchantmentAppliedEvent, buildGoldChangedEvent, buildSpellUnlockedEvent } from '../abilities/runtime/emit-events.js';
 
 function buildTownActionRejectedEvent(
   state: GameState,
@@ -110,17 +111,15 @@ export function processEnchantArmor(
     newRegistry,
   );
 
-  const events: DomainEvent[] = [{
-    type: 'ENCHANTMENT_APPLIED',
+  const events: DomainEvent[] = [buildEnchantmentAppliedEvent({
     playerId: state.player.id,
     itemId,
     itemName: armorTemplate.name,
     enchantmentId,
     enchantmentName: enchDef.name,
     slot: equipSlot,
-    timestamp: state.turnNumber,
     turnNumber: state.turnNumber,
-  }];
+  })];
 
   return {
     state: {
@@ -183,22 +182,18 @@ function processStudySpell(
       ...state,
       player: updatedPlayer,
     },
-    events: [{
-      type: 'GOLD_CHANGED',
+    events: [buildGoldChangedEvent({
       playerId: state.player.id,
       amount: -evalResult.goldCost,
       newTotal: updatedPlayer.gold,
       reason: `Studied ${spell.name}`,
-      timestamp: state.turnNumber,
       turnNumber: state.turnNumber,
-    }, {
-      type: 'SPELL_UNLOCKED',
+    }), buildSpellUnlockedEvent({
       playerId: state.player.id,
       spellId: spellId!,
       spellName: spell.name,
-      timestamp: state.turnNumber,
       turnNumber: state.turnNumber,
-    }],
+    })],
   };
 }
 
@@ -255,27 +250,23 @@ function processRest(state: GameState): { state: GameState; events: DomainEvent[
           gold: state.player.gold + goldDelta,
         },
       },
-      events: [{
-        type: 'GOLD_CHANGED',
+      events: [buildGoldChangedEvent({
         playerId: state.player.id,
         amount: goldDelta,
         newTotal: state.player.gold + goldDelta,
         reason: 'Healing at town',
-        timestamp: state.turnNumber,
         turnNumber: state.turnNumber,
-      }],
+      })],
     };
   }
 
-  events = [...events, {
-    type: 'GOLD_CHANGED',
+  events = [...events, buildGoldChangedEvent({
     playerId: state.player.id,
     amount: -cost,
     newTotal: state.player.gold - cost,
     reason: 'Healing at town',
-    timestamp: state.turnNumber,
     turnNumber: state.turnNumber,
-  }];
+  })];
 
   return {
     state: {
@@ -376,15 +367,13 @@ function processShopBuy(
       ...result.state,
       world: { ...result.state.world, shop: newShop },
     },
-    events: [{
-      type: 'GOLD_CHANGED',
+    events: [buildGoldChangedEvent({
       playerId: state.player.id,
       amount: -price,
       newTotal: result.state.player.gold,
       reason: `Purchased ${template.name}`,
-      timestamp: state.turnNumber,
       turnNumber: state.turnNumber,
-    }, ...result.events],
+    }), ...result.events],
   };
 }
 
@@ -428,15 +417,13 @@ function processShopSell(
       ...resultState,
       world: { ...resultState.world, shop: newShop },
     },
-    events: [{
-      type: 'GOLD_CHANGED',
+    events: [buildGoldChangedEvent({
       playerId: state.player.id,
       amount: sellPrice,
       newTotal: resultState.player.gold,
       reason: `Sold ${template.name}`,
-      timestamp: state.turnNumber,
       turnNumber: state.turnNumber,
-    }],
+    })],
   };
 }
 
@@ -482,15 +469,13 @@ function processShopUndo(
         shop: newShop,
       },
     },
-    events: goldDelta === 0 ? [] : [{
-      type: 'GOLD_CHANGED',
+    events: goldDelta === 0 ? [] : [buildGoldChangedEvent({
       playerId: state.player.id,
       amount: goldDelta,
       newTotal: snapshot.playerGold,
       reason: 'Undid shop transaction',
-      timestamp: state.turnNumber,
       turnNumber: state.turnNumber,
-    }],
+    })],
   };
 }
 

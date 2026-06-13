@@ -16,7 +16,7 @@ import { processGameCommand } from './process-command.js';
 import {
   buildDeterministicRunSummary,
   buildDeterministicTownRumors,
-} from './town-text.js';
+} from '@dungeon/presenter';
 
 function createAiStub(): AiService {
   return {
@@ -122,7 +122,7 @@ describe('processGameCommand', () => {
     const repo = createRepoStub();
     const log = { warn: vi.fn() };
 
-    await processGameCommand({
+    const result = await processGameCommand({
       ai,
       command: { type: 'WAIT' },
       engine,
@@ -132,11 +132,16 @@ describe('processGameCommand', () => {
       state: initialState,
     });
 
+    // The server must not write display text into persisted state — the
+    // presenter derives town text from state at view time.
     const persistedState = vi.mocked(repo.commitTick).mock.calls[0]![2];
-    expect(persistedState.world.town.lastRunSummary).toBe(
-      buildDeterministicRunSummary(finalState, finalState.lastRunMetrics, events),
+    expect(persistedState.world.town.lastRunSummary).toBe(finalState.world.town.lastRunSummary);
+    expect(persistedState.world.town.rumors).toEqual(finalState.world.town.rumors);
+
+    expect(result.view.town?.lastRunSummary).toBe(
+      buildDeterministicRunSummary(finalState, finalState.lastRunMetrics),
     );
-    expect(persistedState.world.town.rumors).toEqual(buildDeterministicTownRumors(finalState));
+    expect(result.view.town?.rumors).toEqual(buildDeterministicTownRumors(finalState));
     expect(ai.generateRunSummary).not.toHaveBeenCalled();
     expect(ai.generateRumor).not.toHaveBeenCalled();
   });

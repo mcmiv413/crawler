@@ -152,6 +152,8 @@ export const MAP_GENERATION = {
   /** Max enemies per floor = baseDensity + perFloor * depth */
   enemyBaseDensity: 8,
   enemyPerFloor: 1,
+  /** Fraction of valid spawn positions that may hold an enemy */
+  enemySpawnPositionRatio: 0.15,
   /** Max items per floor */
   itemBaseDensity: 2,
   itemPerFloor: 1,
@@ -382,6 +384,8 @@ export const FACTION_CONFIG = {
 export const CORRUPTION_MODIFIERS = {
   /** Above this, prefer corrupted/poison enemy archetypes */
   preferCorruptEnemiesAbove: 50,
+  /** Damage types preferred when corruption exceeds the threshold */
+  preferredDamageTypes: ['poison', 'corruption'],
   /** Above this, enemies get a health multiplier */
   enemyHealthBonusAbove: 50,
   enemyHealthMultiplier: 1.1,
@@ -397,6 +401,8 @@ export const CORRUPTION_MODIFIERS = {
 export const FEAR_MODIFIERS = {
   /** Above this, prefer ambusher/fast_skirmisher archetypes */
   preferFastEnemiesAbove: 60,
+  /** Archetypes preferred when fear exceeds the threshold */
+  preferredArchetypes: ['ambusher', 'fast_skirmisher'],
 } as const;
 
 /** Max extra enemies that can be added by world modifiers */

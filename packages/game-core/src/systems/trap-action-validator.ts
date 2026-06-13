@@ -1,6 +1,7 @@
 import type { GameState, Direction, TrapItemTemplate, ObjectTemplate, AnyItemTemplate, ObjectInstance, EntityId } from '@dungeon/contracts';
 import { OBJECT_TEMPLATES, ITEM_BY_ID } from '@dungeon/content';
 import { moveInDirection } from '../utils/grid.js';
+import { HAZARD_DAMAGE_TYPE_MAP } from './hazard-damage.js';
 import { posKey } from '@dungeon/contracts';
 import {
   WRONG_PHASE,
@@ -285,7 +286,7 @@ export function validateSetTrapAction(
  * Check if a hazard type is disarmable.
  */
 function isDisarmableTrapType(hazardType: string): boolean {
-  return ['spike', 'fire', 'poison', 'frost', 'lightning'].includes(hazardType);
+  return hazardType in HAZARD_DAMAGE_TYPE_MAP;
 }
 
 /**

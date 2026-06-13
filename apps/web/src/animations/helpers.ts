@@ -4,38 +4,6 @@
  */
 
 /**
- * Draw a star burst: radiating lines from center, scaling with progress.
- */
-export function drawStarBurst(
-  ctx: CanvasRenderingContext2D,
-  x: number,
-  y: number,
-  radius: number,
-  points: number,
-  progress: number
-): void {
-  ctx.save();
-  ctx.translate(x, y);
-
-  const currentRadius = radius * progress;
-  ctx.strokeStyle = `rgba(255, 200, 0, ${1 - progress})`;
-  ctx.lineWidth = 2;
-
-  for (let i = 0; i < points; i++) {
-    const angle = (i / points) * Math.PI * 2;
-    const endX = Math.cos(angle) * currentRadius;
-    const endY = Math.sin(angle) * currentRadius;
-
-    ctx.beginPath();
-    ctx.moveTo(0, 0);
-    ctx.lineTo(endX, endY);
-    ctx.stroke();
-  }
-
-  ctx.restore();
-}
-
-/**
  * Draw a ring (circle outline) at the given position and radius.
  */
 export function drawRing(

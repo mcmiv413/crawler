@@ -3,6 +3,7 @@ import type { DomainEvent } from '@dungeon/contracts';
 import { ECONOMY, ITEM_BY_ID, ALL_ITEMS, getDropWeights } from '@dungeon/content';
 import type { SeededRNG } from '../utils/rng.js';
 import { addItemToInventory } from './inventory.js';
+import { buildGoldChangedEvent } from '../abilities/runtime/emit-events.js';
 
 /** Pick a rarity based on weighted [common, uncommon, rare, epic] */
 function weightedPickRarity(weights: [number, number, number, number], rng: SeededRNG): string {
@@ -90,15 +91,13 @@ export function processEnemyLoot(
         gold: currentState.player.gold + gold,
       },
     };
-    events = [...events, {
-      type: 'GOLD_CHANGED',
+    events = [...events, buildGoldChangedEvent({
       playerId: currentState.player.id,
       amount: gold,
       newTotal: currentState.player.gold,
       reason: `Looted from ${enemy.name}`,
-      timestamp: currentState.turnNumber,
       turnNumber: currentState.turnNumber,
-    }];
+    })];
   }
 
   // Item drop

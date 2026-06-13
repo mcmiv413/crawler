@@ -20,6 +20,3 @@ export function setQueueDraining(active: boolean): void {
   queueDraining = active;
 }
 
-export function isQueueDraining(): boolean {
-  return queueDraining;
-}

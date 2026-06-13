@@ -26,14 +26,19 @@ export function calculateHazardDamage(template: ObjectTemplate, targetMaxHealth:
   return Math.max(1, Math.floor(targetMaxHealth * percentage));
 }
 
+/**
+ * Single source of truth for hazard-type → damage-type mapping.
+ * Its keys also define the set of known (disarmable) trap hazard types.
+ */
+export const HAZARD_DAMAGE_TYPE_MAP: Readonly<Record<NonNullable<ObjectTemplate['hazardType']>, DamageType>> = {
+  spike: 'physical',
+  fire: 'fire',
+  poison: 'poison',
+  frost: 'frost',
+  lightning: 'shock',
+};
+
 /** Map hazard types to damage types for resistance calculations */
 export function hazardTypeToDamageType(hazardType: NonNullable<ObjectTemplate['hazardType']>): DamageType {
-  const map: Record<NonNullable<ObjectTemplate['hazardType']>, DamageType> = {
-    spike: 'physical',
-    fire: 'fire',
-    poison: 'poison',
-    frost: 'frost',
-    lightning: 'shock',
-  };
-  return map[hazardType];
+  return HAZARD_DAMAGE_TYPE_MAP[hazardType];
 }

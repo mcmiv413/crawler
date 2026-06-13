@@ -53,10 +53,11 @@ export function DungeonView({ map, vpTilesWidth, vpTilesHeight }: Props) {
       // Handle tile-target mode
       const selectedAbilityId = store.tileTargetMode.selectedAbilityId;
       if (store.tileTargetMode.active && selectedAbilityId) {
+        // Tile-target mode is only entered for tile-target abilities (AbilityView.tileTarget),
+        // which never target the player's own tile or an occupied tile.
         const isPlayerTile = x === map.playerPosition.x && y === map.playerPosition.y;
-        const isInvalidThunderStepTarget = selectedAbilityId === 'thunder_step'
-          && (isPlayerTile || entityMap.has(targetKey));
-        if (cell.visibility !== 'visible' || !cell.walkable || isInvalidThunderStepTarget) return;
+        const isInvalidTileTarget = isPlayerTile || entityMap.has(targetKey);
+        if (cell.visibility !== 'visible' || !cell.walkable || isInvalidTileTarget) return;
 
         store.sendCommand({
           type: 'USE_ABILITY',

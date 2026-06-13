@@ -39,7 +39,7 @@ export function populateFloor(
   const baseMax = MAP_GENERATION.enemyBaseDensity + MAP_GENERATION.enemyPerFloor * floor.depth;
   const maxEnemies = baseMax + (worldMods?.extraEnemies ?? 0);
   const reservedEncounterSlots = worldMods?.reservedEncounterSlots ?? 0;
-  const enemyCount = Math.max(0, Math.min(maxEnemies - reservedEncounterSlots, Math.floor(shuffled.length * 0.15)));
+  const enemyCount = Math.max(0, Math.min(maxEnemies - reservedEncounterSlots, Math.floor(shuffled.length * MAP_GENERATION.enemySpawnPositionRatio)));
   const enemies = new Map<string, EnemyInstance>();
 
   for (let i = 0; i < enemyCount && i < shuffled.length; i++) {

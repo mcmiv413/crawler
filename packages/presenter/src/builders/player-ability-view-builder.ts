@@ -1,5 +1,5 @@
 import type { GameState, WeaponType } from '@dungeon/contracts';
-import { ABILITY_DEFINITIONS } from '@dungeon/content';
+import { ABILITY_DEFINITIONS, daggerDisarm, daggerSetTrap } from '@dungeon/content';
 import type { AbilityView } from '../game-view.js';
 
 type AbilityDefinition = ReturnType<typeof ABILITY_DEFINITIONS.get>;
@@ -25,6 +25,16 @@ function isRangedAbility(definition: AbilityDefinition): boolean | undefined {
     || definition?.requiresWeaponTypes?.includes('ranged') === true
     ? true
     : undefined;
+}
+
+/**
+ * Trap workflow metadata so the web layer keys off view data instead of
+ * interpreting ability IDs (central-systems audit F7).
+ */
+function buildTrapInteraction(abilityId: string): AbilityView['trapInteraction'] {
+  if (abilityId === daggerSetTrap.id) return 'place';
+  if (abilityId === daggerDisarm.id) return 'disarm';
+  return undefined;
 }
 
 function buildTargetRange(definition: AbilityDefinition): AbilityView['targetRange'] {
@@ -62,6 +72,7 @@ function buildAbilityView(
     ...buildAbilityIdentity(definition, ability.id),
     ...buildAbilityAvailability(definition, ability, playerMana),
     ...buildAbilityUsage(definition, equippedWeaponType),
+    trapInteraction: buildTrapInteraction(ability.id),
   };
 }
 

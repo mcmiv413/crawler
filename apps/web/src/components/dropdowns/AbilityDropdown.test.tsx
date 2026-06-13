@@ -336,6 +336,7 @@ describe('AbilityDropdown', () => {
       const abilities: AbilityView[] = [
         {
           id: 'dagger_disarm',
+          trapInteraction: 'disarm',
           name: 'Disarm',
           description: 'Disarm a trap',
           ready: true,
@@ -374,6 +375,7 @@ describe('AbilityDropdown', () => {
       const abilities: AbilityView[] = [
         {
           id: 'dagger_disarm',
+          trapInteraction: 'disarm',
           name: 'Disarm',
           description: 'Disarm a trap',
           ready: true,
@@ -420,6 +422,7 @@ describe('AbilityDropdown', () => {
       const abilities: AbilityView[] = [
         {
           id: 'dagger_disarm',
+          trapInteraction: 'disarm',
           name: 'Disarm',
           description: 'Disarm a trap',
           ready: true,
@@ -453,6 +456,7 @@ describe('AbilityDropdown', () => {
       const abilities: AbilityView[] = [
         {
           id: 'dagger_set_trap',
+          trapInteraction: 'place',
           name: 'Set Trap',
           description: 'Place a trap',
           ready: true,
@@ -487,6 +491,7 @@ describe('AbilityDropdown', () => {
       const abilities: AbilityView[] = [
         {
           id: 'dagger_set_trap',
+          trapInteraction: 'place',
           name: 'Set Trap',
           description: 'Place a trap',
           ready: true,
@@ -523,6 +528,7 @@ describe('AbilityDropdown', () => {
       const abilities: AbilityView[] = [
         {
           id: 'dagger_set_trap',
+          trapInteraction: 'place',
           name: 'Set Trap',
           description: 'Place a trap',
           ready: true,
@@ -562,6 +568,7 @@ describe('AbilityDropdown', () => {
       const abilities: AbilityView[] = [
         {
           id: 'dagger_set_trap',
+          trapInteraction: 'place',
           name: 'Set Trap',
           description: 'Place a trap',
           ready: true,

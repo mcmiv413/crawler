@@ -2,6 +2,7 @@ import type { GameState, TownState } from '@dungeon/contracts';
 import { ENCHANTMENT_BY_ID, ITEM_BY_ID, TOWN_DESCRIPTIONS, getEnchantmentCost, isRarityBuyable, getRarityColor, getDamageBand, getWeaponDamageProfile } from '@dungeon/content';
 import type { EnchantmentBlueprintView, ShopItemView, RunSummaryStats, TownView, TownStudyableSpellView } from '../game-view.js';
 import { buildFactionPressureSummary, buildFactionView, buildOgreProgressView } from './faction-progress-builder.js';
+import { buildDeterministicRunSummary, buildDeterministicTownRumors } from './town-text.js';
 import {
   evaluateAllRingSpellStudy,
   getEquippedRingItemIds,
@@ -156,8 +157,12 @@ export function buildTownView(state: GameState): TownView {
     prosperity: state.world.town.prosperity,
     fear: state.world.town.fear,
     corruption: state.world.town.corruption,
-    rumors: state.world.town.rumors,
-    lastRunSummary: state.world.town.lastRunSummary,
+    // Display text is computed in the presenter (read model), not read from
+    // persisted state. The state fields remain only for save compatibility.
+    rumors: state.world.totalRuns > 0 ? buildDeterministicTownRumors(state) : state.world.town.rumors,
+    lastRunSummary: state.lastRunMetrics != null
+      ? buildDeterministicRunSummary(state, state.lastRunMetrics)
+      : state.world.town.lastRunSummary,
     atmosphereDescription: buildAtmosphereDescription(state.world.town),
     factions: state.world.factions.map(faction => buildFactionView(faction)),
     factionPressureSummary: buildFactionPressureSummary(state.world),

@@ -86,7 +86,6 @@ export function runAnimationContract(module: AnimationModule): void {
 
     it('draw function callable at progress 0', () => {
       const helpers = {
-        drawStarBurst: vi.fn(),
         drawRing: vi.fn(),
         drawParticleStream: vi.fn(),
         drawArrowAlong: vi.fn(),
@@ -102,7 +101,6 @@ export function runAnimationContract(module: AnimationModule): void {
 
     it('draw function callable at progress 0.5', () => {
       const helpers = {
-        drawStarBurst: vi.fn(),
         drawRing: vi.fn(),
         drawParticleStream: vi.fn(),
         drawArrowAlong: vi.fn(),
@@ -118,7 +116,6 @@ export function runAnimationContract(module: AnimationModule): void {
 
     it('draw function callable at progress 1', () => {
       const helpers = {
-        drawStarBurst: vi.fn(),
         drawRing: vi.fn(),
         drawParticleStream: vi.fn(),
         drawArrowAlong: vi.fn(),

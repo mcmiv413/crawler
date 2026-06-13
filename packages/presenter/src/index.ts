@@ -1,4 +1,5 @@
 export { buildGameView } from './game-view-builder.js';
+export { buildDeterministicRunSummary, buildDeterministicTownRumors } from './builders/town-text.js';
 export { formatEvent, formatEvents } from './event-formatter.js';
 export { buildCombatIndicators } from './combat-indicators.js';
 export { buildBumpAnimations } from './bump-animations.js';

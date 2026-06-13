@@ -1,5 +1,6 @@
 import type { DomainEvent, GameState } from '@dungeon/contracts';
-import { MAGIC } from '@dungeon/content';
+import { MAGIC, stun } from '@dungeon/content';
+import { buildManaChangedEvent } from '../abilities/runtime/emit-events.js';
 
 export function canAffordMana(mana: number, cost: number): boolean {
   return mana >= cost;
@@ -34,15 +35,13 @@ export function changeMana(
         mana: newMana,
       },
     },
-    events: [{
-      type: 'MANA_CHANGED',
+    events: [buildManaChangedEvent({
       playerId: state.player.id,
       amount: delta,
       newTotal: newMana,
       reason,
-      timestamp: state.turnNumber,
       turnNumber: state.turnNumber,
-    }],
+    })],
   };
 }
 
@@ -65,7 +64,7 @@ export function restorePlayerMana(
 export function regenerateManaForActiveTurn(
   state: GameState,
 ): { state: GameState; events: DomainEvent[] } {
-  const playerIsStunned = state.player.statuses.some(status => status.id === 'stun');
+  const playerIsStunned = state.player.statuses.some(status => status.id === stun.id);
   if (playerIsStunned === true) return { state, events: [] };
   return restorePlayerMana(state, MAGIC.manaRegenPerActiveTurn, 'Active turn');
 }
