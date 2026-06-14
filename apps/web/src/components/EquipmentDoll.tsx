@@ -87,14 +87,17 @@ export function EquipmentDoll({ equipped, onSlotClick, isMobile }: EquipmentDoll
           >
             <div style={{ fontSize: fontSize.micro, color: '#666', marginBottom: 2 }}>{label}</div>
             {item ? (
-              <div style={{ display: 'flex', flexDirection: 'column', gap: 4 }}>
-                <div style={{ display: 'flex', gap: 4, alignItems: 'center' }}>
+              <div style={{ display: 'flex', gap: 4, alignItems: 'center', justifyContent: 'space-between', width: '100%', minWidth: 0 }}>
+                <div style={{ display: 'flex', gap: 4, alignItems: 'center', minWidth: 0 }}>
                   <ItemSpriteIcon spriteName={item.spriteName} size={24} />
                   <div
                     style={{
                       fontSize: fontSize.bodySmall,
                       color: item.rarityColor,
                       fontWeight: 'bold',
+                      overflow: 'hidden',
+                      textOverflow: 'ellipsis',
+                      whiteSpace: 'nowrap',
                     }}
                   >
                     {item.name}
@@ -102,7 +105,7 @@ export function EquipmentDoll({ equipped, onSlotClick, isMobile }: EquipmentDoll
                 </div>
                 {(() => {
                   const stats = getItemStats(item);
-                  return stats ? <div style={{ fontSize: fontSize.micro, color: colors.muted }}>{stats}</div> : null;
+                  return stats ? <div style={{ fontSize: fontSize.micro, color: colors.muted, flexShrink: 0 }}>{stats}</div> : null;
                 })()}
               </div>
             ) : (

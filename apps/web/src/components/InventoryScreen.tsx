@@ -72,47 +72,13 @@ export function InventoryScreen({
       }}
     >
       {/* Header - always visible */}
-      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 20, flexShrink: 0 }}>
+      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 20, flexShrink: 0, gap: 12 }}>
         <div>
           <h1 style={{ margin: 0, fontSize: 18, color: '#cc8' }}>Inventory</h1>
           {gold !== undefined && <div style={{ color: '#cc8', fontSize: 11, marginTop: 4 }}>Gold: {gold}g</div>}
         </div>
-        <button
-          onClick={onClose}
-          style={{
-            ...btnStyle,
-            fontSize: 12,
-            padding: '6px 12px',
-            background: '#1a2a3a',
-            border: '1px solid #4a8',
-            color: '#8cf',
-            cursor: 'pointer',
-            borderRadius: 2,
-            whiteSpace: 'nowrap',
-            flexShrink: 0,
-          }}
-        >
-          Back to Game
-        </button>
-      </div>
-
-      {/* Equipment Section */}
-      {!bagExpanded && (
-        <div style={{ marginBottom: 24, flexShrink: 0 }}>
-          <h2 style={{ fontSize: 14, color: '#888', marginBottom: 8 }}>Equipment</h2>
-          <EquipmentDoll
-            equipped={inventory.equipped}
-            onSlotClick={(item) => setSelectedItem(item)}
-            isMobile={isMobile}
-          />
-        </div>
-      )}
-
-      {/* Bag Section - scrolls internally */}
-      {bagItems.length > 0 && (
-        <div style={{ flex: 1, minHeight: 0, display: 'flex', flexDirection: 'column', overflow: 'hidden' }}>
-          <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 8, marginBottom: 8, flexShrink: 0 }}>
-            <h2 style={{ fontSize: 14, color: '#888', margin: 0 }}>Bag</h2>
+        <div style={{ display: 'flex', gap: 8, alignItems: 'center', flexShrink: 0 }}>
+          {bagItems.length > 0 && (
             <button
               type="button"
               aria-expanded={bagExpanded}
@@ -125,12 +91,48 @@ export function InventoryScreen({
                 color: '#8cf',
                 whiteSpace: 'nowrap',
                 minHeight: 28,
+                fontSize: 12,
+                padding: '6px 12px',
               }}
               title={bagExpanded ? 'Collapse inventory list' : 'Expand inventory list'}
             >
-              {bagExpanded ? 'Collapse list' : 'Expand list'}
+              {bagExpanded ? 'Collapse' : 'Expand'}
             </button>
-          </div>
+          )}
+          <button
+            onClick={onClose}
+            style={{
+              ...btnStyle,
+              fontSize: 12,
+              padding: '6px 12px',
+              background: '#1a2a3a',
+              border: '1px solid #4a8',
+              color: '#8cf',
+              cursor: 'pointer',
+              borderRadius: 2,
+              whiteSpace: 'nowrap',
+              flexShrink: 0,
+            }}
+          >
+            Back to Game
+          </button>
+        </div>
+      </div>
+
+      {/* Equipment Section - hide when bagExpanded=true */}
+      <div style={{ marginBottom: 24, flexShrink: 0, display: bagExpanded ? 'none' : 'block' }}>
+        <h2 style={{ fontSize: 14, color: '#888', marginBottom: 8 }}>Equipment</h2>
+        <EquipmentDoll
+          equipped={inventory.equipped}
+          onSlotClick={(item) => setSelectedItem(item)}
+          isMobile={isMobile}
+        />
+      </div>
+
+      {/* Bag Section - always visible when items exist, but may be collapsed */}
+      {bagItems.length > 0 && (
+        <div style={{ flex: 1, minHeight: 0, display: bagExpanded ? 'flex' : 'none', flexDirection: 'column', overflow: 'hidden' }}>
+          <h2 style={{ fontSize: 14, color: '#888', margin: 0, marginBottom: 8, flexShrink: 0 }}>Bag</h2>
 
           {/* Filter/Sort Controls - always visible */}
           <div style={{ fontSize: 10, marginBottom: 8, display: 'flex', gap: 6, flexWrap: 'wrap', flexShrink: 0 }}>
@@ -181,6 +183,7 @@ export function InventoryScreen({
             {sorted.map((item, idx) => {
               const quantity = item.quantity;
               const isEquippable = item.itemClass !== 'consumable';
+              const stats = getItemStats(item);
               return (
                 <div
                   key={item.id}
@@ -192,58 +195,73 @@ export function InventoryScreen({
                     border: '1px solid #333',
                     background: '#1a1a1a',
                     display: 'flex',
+                    flexDirection: 'row',
                     alignItems: 'center',
                     gap: 8,
                     justifyContent: 'space-between',
                   }}
                 >
-                  {/* Clickable area for detail view */}
+                  {/* Clickable area for detail view - main info in compact row */}
                   <div
                     onClick={() => setSelectedItem(item)}
                     style={{
                       flex: 1,
                       display: 'flex',
                       alignItems: 'center',
-                      gap: 8,
+                      gap: 6,
                       cursor: 'pointer',
-                      flexWrap: 'wrap',
+                      minWidth: 0,
                     }}
                   >
-                    <span>{idx + 1}.</span>
+                    <span style={{ flexShrink: 0 }}>{idx + 1}.</span>
                     <ItemSpriteIcon spriteName={item.spriteName} size={16} />
-                    <span>
+                    <span style={{ overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
                       {item.name}
                       {quantity > 1 && <span style={{ color: '#8cf', fontSize: 10 }}> x{quantity}</span>}
                     </span>
-                    <span style={{ color: item.rarityColor, fontSize: 10 }}>
+                    <span style={{ color: item.rarityColor, fontSize: 10, flexShrink: 0 }}>
                       [{item.rarity}]
                     </span>
-                    {(() => {
-                      const stats = getItemStats(item);
-                      return stats ? <span style={{ color: colors.muted, fontSize: 10 }}>{stats}</span> : null;
-                    })()}
                   </div>
 
-                  {/* Quick equip button */}
-                  {isEquippable && (
-                    <button
-                      onClick={(e) => {
-                        e.stopPropagation();
-                        sendCommand({ type: 'EQUIP', itemId: item.stackEntityIds[0] ?? item.id });
-                      }}
-                      style={{
-                        ...compactBtnStyle,
-                        background: '#1a3a1a',
-                        border: '1px solid #4f4',
-                        color: '#4f4',
-                        whiteSpace: 'nowrap',
-                        padding: '2px 6px',
-                      }}
-                      title="Equip this item"
-                    >
-                      Equip
-                    </button>
-                  )}
+                  {/* Stats and equip button container - always horizontal for compact layout */}
+                  <div
+                    style={{
+                      display: 'flex',
+                      flexDirection: 'row',
+                      alignItems: 'center',
+                      gap: 8,
+                      flexShrink: 0,
+                    }}
+                  >
+                    {stats && (
+                      <span style={{ color: colors.muted, fontSize: 10, flexShrink: 0 }}>
+                        {stats}
+                      </span>
+                    )}
+
+                    {/* Quick equip button */}
+                    {isEquippable && (
+                      <button
+                        onClick={(e) => {
+                          e.stopPropagation();
+                          sendCommand({ type: 'EQUIP', itemId: item.stackEntityIds[0] ?? item.id });
+                        }}
+                        style={{
+                          ...compactBtnStyle,
+                          background: '#1a3a1a',
+                          border: '1px solid #4f4',
+                          color: '#4f4',
+                          whiteSpace: 'nowrap',
+                          padding: '2px 6px',
+                          flexShrink: 0,
+                        }}
+                        title="Equip this item"
+                      >
+                        Equip
+                      </button>
+                    )}
+                  </div>
                 </div>
               );
             })}

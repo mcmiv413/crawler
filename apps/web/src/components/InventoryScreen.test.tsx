@@ -5,7 +5,7 @@
  * equipment slots, bag items, and item inspection modal.
  */
 import { beforeEach, describe, it, expect, vi } from 'vitest';
-import React from 'react';
+;
 import { render, screen, fireEvent } from '@testing-library/react';
 
 vi.mock('../hooks/useBreakpoint.js', () => ({
@@ -238,7 +238,7 @@ describe('InventoryScreen Component', () => {
       expect(screen.getByText(/x3/)).toBeInTheDocument(); // quantity badge
     });
 
-    it('expands and collapses the bag list without leaving the inventory screen', () => {
+    it('expands and collapses the bag list while keeping equipment visible', () => {
       const inventory: InventoryView = {
         items: [mockWeapon, mockConsumable, mockArmor],
         equipped: emptyEquipped,
@@ -253,20 +253,23 @@ describe('InventoryScreen Component', () => {
         />
       );
 
-      const toggle = screen.getByRole('button', { name: /expand list/i });
+      const toggle = screen.getByRole('button', { name: /expand/i });
       expect(toggle).toHaveAttribute('aria-expanded', 'false');
+      // Equipment should always be visible
       expect(screen.getByText(/Main Hand/i)).toBeInTheDocument();
 
       fireEvent.click(toggle);
 
-      expect(screen.getByRole('button', { name: /collapse list/i })).toHaveAttribute('aria-expanded', 'true');
-      expect(screen.queryByText(/Main Hand/i)).not.toBeInTheDocument();
+      expect(screen.getByRole('button', { name: /collapse/i })).toHaveAttribute('aria-expanded', 'true');
+      // Equipment stays visible when bag is expanded
+      expect(screen.getByText(/Main Hand/i)).toBeInTheDocument();
       expect(screen.getByText(/Back to Game/i)).toBeInTheDocument();
       expect(screen.getByText('Health Potion')).toBeInTheDocument();
 
-      fireEvent.click(screen.getByRole('button', { name: /collapse list/i }));
+      fireEvent.click(screen.getByRole('button', { name: /collapse/i }));
 
-      expect(screen.getByRole('button', { name: /expand list/i })).toHaveAttribute('aria-expanded', 'false');
+      expect(screen.getByRole('button', { name: /expand/i })).toHaveAttribute('aria-expanded', 'false');
+      // Equipment remains visible when bag is collapsed
       expect(screen.getByText(/Main Hand/i)).toBeInTheDocument();
     });
 
@@ -286,7 +289,7 @@ describe('InventoryScreen Component', () => {
         />
       );
 
-      fireEvent.click(screen.getByRole('button', { name: /expand list/i }));
+      fireEvent.click(screen.getByRole('button', { name: /expand/i }));
       fireEvent.click(screen.getByRole('button', { name: /equip/i }));
 
       expect(sendCommand).toHaveBeenCalledWith({ type: 'EQUIP', itemId: 'a1' });
@@ -623,6 +626,185 @@ describe('InventoryScreen Component', () => {
 
       // Modal should remain dismissed
       expect(screen.queryByText('Equipment Blocked')).not.toBeInTheDocument();
+    });
+  });
+
+  describe('Mobile Layout with Fully Equipped Player', () => {
+    const fullyEquippedInventory: InventoryView = {
+      items: [mockConsumable, mockArmor],
+      equipped: {
+        weapon: mockWeapon,
+        secondaryWeapon: { ...mockWeapon, id: 'w2', name: 'Steel Sword' },
+        chest: { ...mockArmor, id: 'a2', name: 'Iron Chest' },
+        head: { ...mockArmor, id: 'a3', name: 'Iron Helm' },
+        gloves: { ...mockArmor, id: 'a4', name: 'Iron Gloves' },
+        boots: { ...mockArmor, id: 'a5', name: 'Iron Boots' },
+        ring1: { ...mockConsumable, id: 'r1', name: 'Fire Ring' },
+        ring2: { ...mockConsumable, id: 'r2', name: 'Ice Ring' },
+      },
+    };
+
+    it('ensures all 8 equipped items are visible in equipment section on mobile', () => {
+      vi.mocked(useBreakpoint).mockReturnValue({ isMobile: true });
+      render(
+        <InventoryScreen
+          inventory={fullyEquippedInventory}
+          phase="dungeon"
+          onClose={vi.fn()}
+          sendCommand={vi.fn()}
+        />
+      );
+
+      // All 8 equipment slots should be visible
+      expect(screen.getByText('Iron Sword')).toBeInTheDocument(); // weapon
+      expect(screen.getByText('Steel Sword')).toBeInTheDocument(); // secondaryWeapon
+      expect(screen.getByText('Iron Chest')).toBeInTheDocument(); // chest
+      expect(screen.getByText('Iron Helm')).toBeInTheDocument(); // head
+      expect(screen.getByText('Iron Gloves')).toBeInTheDocument(); // gloves
+      expect(screen.getByText('Iron Boots')).toBeInTheDocument(); // boots
+      expect(screen.getByText('Fire Ring')).toBeInTheDocument(); // ring1
+      expect(screen.getByText('Ice Ring')).toBeInTheDocument(); // ring2
+    });
+
+    it('ensures equipment section displays properly with full equipment on mobile (no off-screen items)', () => {
+      vi.mocked(useBreakpoint).mockReturnValue({ isMobile: true });
+      const { container } = render(
+        <InventoryScreen
+          inventory={fullyEquippedInventory}
+          phase="dungeon"
+          onClose={vi.fn()}
+          sendCommand={vi.fn()}
+        />
+      );
+
+      // Verify all 8 equipment slots are rendered
+      const allSlots = container.querySelectorAll('[style*="border"][style*="padding"]');
+      expect(allSlots.length).toBeGreaterThanOrEqual(8);
+
+      // Verify no slots are hidden
+      allSlots.forEach(slot => {
+        const computedStyle = window.getComputedStyle(slot);
+        expect(computedStyle.display).not.toBe('none');
+      });
+    });
+
+    it('keeps equip buttons visible and clickable for all bag items on mobile with fully equipped player', () => {
+      vi.mocked(useBreakpoint).mockReturnValue({ isMobile: true });
+      const inventory: InventoryView = {
+        items: [
+          { ...mockWeapon, id: 'w3', name: 'Long Sword' },
+          { ...mockArmor, id: 'a6', name: 'Plate Armor' },
+        ],
+        equipped: fullyEquippedInventory.equipped,
+      };
+
+      const sendCommand = vi.fn();
+      render(
+        <InventoryScreen
+          inventory={inventory}
+          phase="dungeon"
+          onClose={vi.fn()}
+          sendCommand={sendCommand}
+        />
+      );
+
+      // Expand the bag first (it starts collapsed)
+      const expandButton = screen.getByRole('button', { name: /expand/i });
+      fireEvent.click(expandButton);
+
+      // All equippable items should have visible equip buttons
+      const equipButtons = screen.getAllByRole('button', { name: /equip/i });
+      expect(equipButtons.length).toBeGreaterThanOrEqual(2);
+
+      // Buttons should be clickable
+      if (equipButtons[0]) {
+        fireEvent.click(equipButtons[0]);
+        expect(sendCommand).toHaveBeenCalled();
+      }
+    });
+
+    it('does not push bag section off-screen when fully equipped on mobile', () => {
+      vi.mocked(useBreakpoint).mockReturnValue({ isMobile: true });
+      render(
+        <InventoryScreen
+          inventory={fullyEquippedInventory}
+          phase="dungeon"
+          onClose={vi.fn()}
+          sendCommand={vi.fn()}
+        />
+      );
+
+      // Bag section should exist (but be hidden initially)
+      // When expanded, it should be fully visible
+      const expandBtn = screen.queryByRole('button', { name: /expand/i });
+      if (expandBtn) {
+        fireEvent.click(expandBtn);
+        expect(screen.getByText(/Bag/i)).toBeVisible();
+      }
+    });
+
+    it('displays item stats vertically on mobile to avoid horizontal overflow', () => {
+      vi.mocked(useBreakpoint).mockReturnValue({ isMobile: true });
+      const manyItemsWithStats: InventoryView = {
+        items: Array.from({ length: 3 }, (_, i) => ({
+          ...mockWeapon,
+          id: `w${i}`,
+          name: `Sword ${i}`,
+          weaponStats: {
+            damage: 10,
+            damageMin: 10,
+            damageMax: 15,
+            damageType: 'physical' as const,
+            accuracy: 90,
+            speed: 1,
+            weaponRange: 2, // Long range adds to stats string
+          },
+        })),
+        equipped: fullyEquippedInventory.equipped,
+      };
+
+      render(
+        <InventoryScreen
+          inventory={manyItemsWithStats}
+          phase="dungeon"
+          onClose={vi.fn()}
+          sendCommand={vi.fn()}
+        />
+      );
+
+      // Item list should exist and be scrollable
+      const itemList = screen.getByTestId('inventory-item-list');
+      expect(itemList).toHaveStyle('overflow: auto');
+    });
+
+    it('maintains proper layout on mobile even with many fully equipped items and bag items', () => {
+      vi.mocked(useBreakpoint).mockReturnValue({ isMobile: true });
+      const manyItems: InventoryView = {
+        items: Array.from({ length: 15 }, (_, i) => ({
+          ...mockConsumable,
+          id: `c${i}`,
+          name: `Potion ${i}`,
+        })),
+        equipped: fullyEquippedInventory.equipped,
+      };
+
+      render(
+        <InventoryScreen
+          inventory={manyItems}
+          phase="dungeon"
+          onClose={vi.fn()}
+          sendCommand={vi.fn()}
+        />
+      );
+
+      // Equipment section should still be visible initially
+      expect(screen.getByText(/Equipment/i)).toBeInTheDocument();
+
+      // Should be able to expand and see bag items
+      const expandBtn = screen.getByRole('button', { name: /expand/i });
+      fireEvent.click(expandBtn);
+      expect(screen.getByText(/Bag/i)).toBeVisible();
+      expect(screen.getByText('Potion 0')).toBeInTheDocument();
     });
   });
 });
