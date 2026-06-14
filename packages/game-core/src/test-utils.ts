@@ -38,6 +38,7 @@ export function createTestPlayer(overrides?: Partial<Player>): Player {
     maxMana: MAGIC.initialMana,
     ringMastery: {},
     learnedRingSpellIds: [],
+    knownRingSchools: [],
     ...overrides,
   };
 }

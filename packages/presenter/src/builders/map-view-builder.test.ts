@@ -29,6 +29,7 @@ function createTestGameState(playerPos = { x: 5, y: 5 }): GameState {
       maxMana: 20,
       ringMastery: {},
       learnedRingSpellIds: [],
+      knownRingSchools: [],
     },
     run: {
       runId: entityId('run1'),

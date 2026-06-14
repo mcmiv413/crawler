@@ -1,0 +1,50 @@
+{
+  "schemaVersion": 1,
+  "level": 10,
+  "experience": 4200,
+  "gold": 999,
+  "health": 120,
+  "maxHealth": 126,
+  "mana": 70,
+  "maxMana": 70,
+  "equippedWeaponId": "venom_blade",
+  "equippedArmorIds": {
+    "chest": "plate_armor",
+    "head": "warden_helm",
+    "gloves": "chain_gauntlets",
+    "boots": "steel_sabatons"
+  },
+  "activeEquipmentIds": {
+    "ring1": "fire_ring",
+    "ring2": "lightning_ring"
+  },
+  "inventoryItemIds": [
+    "health_potion",
+    "health_potion",
+    "health_potion",
+    "mana_potion",
+    "mana_potion",
+    "greater_health_potion",
+    "strength_elixir"
+  ],
+  "knownRingSchools": [
+    "fire",
+    "lightning"
+  ],
+  "ringMastery": {
+    "fire": {
+      "xp": 60
+    },
+    "lightning": {
+      "xp": 60
+    }
+  },
+  "learnedRingSpellIds": [
+    "ember",
+    "heat_surge",
+    "cinder_wake",
+    "bolt",
+    "rolling_thunder",
+    "stormfire"
+  ]
+}

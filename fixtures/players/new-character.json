@@ -1,0 +1,11 @@
+{
+  "schemaVersion": 1,
+  "level": 1,
+  "experience": 0,
+  "gold": 0,
+  "health": 36,
+  "maxHealth": 36,
+  "mana": 20,
+  "maxMana": 20,
+  "knownRingSchools": []
+}

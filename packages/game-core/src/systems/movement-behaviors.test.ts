@@ -125,6 +125,7 @@ describe('Movement Behaviors', () => {
           maxMana: 20,
           ringMastery: {},
           learnedRingSpellIds: [],
+          knownRingSchools: [],
         },
         run: null,
         world: {
