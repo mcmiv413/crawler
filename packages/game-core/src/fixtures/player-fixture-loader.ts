@@ -6,7 +6,7 @@
  * No randomness — fixture loading is fully deterministic.
  */
 
-import type { Player, Equipment, EntityId } from '@dungeon/contracts';
+import type { Player, Equipment, EntityId, AnyItemTemplate } from '@dungeon/contracts';
 import { entityId } from '@dungeon/contracts';
 import {
   BASE_PLAYER_STATS,
@@ -16,7 +16,7 @@ import {
   RING_SPELL_BY_ID,
   LEVEL_UP_GAINS,
 } from '@dungeon/content';
-import type { PlayerFixture, FixtureValidationError, FixtureValidationResult } from './player-fixture-types.js';
+import type { PlayerFixture, FixtureValidationError, FixtureValidationResult, FixtureLoadResult } from './player-fixture-types.js';
 
 /** Current supported fixture schema version. */
 export const FIXTURE_SCHEMA_VERSION = 1;
@@ -126,17 +126,42 @@ export function validatePlayerFixture(fixture: PlayerFixture): FixtureValidation
         field: 'equippedWeaponId',
         message: `Unknown item id "${fixture.equippedWeaponId}" in equippedWeaponId. Must exist in ITEM_BY_ID.`,
       }];
+    } else {
+      // Slot compatibility: weapon slot must hold a weapon
+      const template = ITEM_BY_ID.get(fixture.equippedWeaponId);
+      if (template !== undefined && template.itemClass !== 'weapon') {
+        errors = [...errors, {
+          field: 'equippedWeaponId',
+          message: `Item "${fixture.equippedWeaponId}" (itemClass="${template.itemClass}") is not a weapon and cannot be placed in the weapon slot.`,
+        }];
+      }
     }
   }
 
   // equippedArmorIds
   if (fixture.equippedArmorIds !== undefined) {
     for (const [slot, itemId] of Object.entries(fixture.equippedArmorIds)) {
-      if (itemId !== undefined && !ITEM_BY_ID.has(itemId)) {
-        errors = [...errors, {
-          field: `equippedArmorIds.${slot}`,
-          message: `Unknown item id "${itemId}" in equippedArmorIds.${slot}. Must exist in ITEM_BY_ID.`,
-        }];
+      if (itemId !== undefined) {
+        if (!ITEM_BY_ID.has(itemId)) {
+          errors = [...errors, {
+            field: `equippedArmorIds.${slot}`,
+            message: `Unknown item id "${itemId}" in equippedArmorIds.${slot}. Must exist in ITEM_BY_ID.`,
+          }];
+        } else {
+          // Slot compatibility: armor slots must hold armor items;
+          // secondaryWeapon slot accepts weapons as well
+          const template = ITEM_BY_ID.get(itemId);
+          if (template !== undefined) {
+            const isSecondaryWeapon = slot === 'secondaryWeapon';
+            const allowedClass = (isSecondaryWeapon === true) ? 'weapon' : 'armor';
+            if (template.itemClass !== allowedClass) {
+              errors = [...errors, {
+                field: `equippedArmorIds.${slot}`,
+                message: `Item "${itemId}" (itemClass="${template.itemClass}") is not ${(isSecondaryWeapon === true) ? 'a weapon' : 'an armor item'} and cannot be placed in the ${slot} slot.`,
+              }];
+            }
+          }
+        }
       }
     }
   }
@@ -144,11 +169,33 @@ export function validatePlayerFixture(fixture: PlayerFixture): FixtureValidation
   // activeEquipmentIds (ring slots)
   if (fixture.activeEquipmentIds !== undefined) {
     for (const [slot, itemId] of Object.entries(fixture.activeEquipmentIds)) {
-      if (itemId !== undefined && !ITEM_BY_ID.has(itemId)) {
-        errors = [...errors, {
-          field: `activeEquipmentIds.${slot}`,
-          message: `Unknown item id "${itemId}" in activeEquipmentIds.${slot}. Must exist in ITEM_BY_ID.`,
-        }];
+      if (itemId !== undefined) {
+        if (!ITEM_BY_ID.has(itemId)) {
+          errors = [...errors, {
+            field: `activeEquipmentIds.${slot}`,
+            message: `Unknown item id "${itemId}" in activeEquipmentIds.${slot}. Must exist in ITEM_BY_ID.`,
+          }];
+        } else {
+          // Slot compatibility: ring slots must hold armor items with armorSlot === 'ring'
+          const template = ITEM_BY_ID.get(itemId);
+          if (template !== undefined) {
+            if (template.itemClass !== 'armor') {
+              errors = [...errors, {
+                field: `activeEquipmentIds.${slot}`,
+                message: `Item "${itemId}" (itemClass="${template.itemClass}") is not an armor/ring item and cannot be placed in the ${slot} slot.`,
+              }];
+            } else {
+              // Verify it's actually a ring (armorSlot === 'ring')
+              const armorTemplate = template as { itemClass: 'armor'; armor: { slot: string } };
+              if ('armor' in armorTemplate && armorTemplate.armor.slot !== 'ring') {
+                errors = [...errors, {
+                  field: `activeEquipmentIds.${slot}`,
+                  message: `Item "${itemId}" (armorSlot="${armorTemplate.armor.slot}") is not a ring and cannot be placed in the ${slot} slot.`,
+                }];
+              }
+            }
+          }
+        }
       }
     }
   }
@@ -252,15 +299,17 @@ export function validatePlayerFixture(fixture: PlayerFixture): FixtureValidation
 // ─────────────────────────────────────────────────────────────────────────────
 
 /**
- * Load a PlayerFixture into a valid Player instance.
+ * Load a PlayerFixture into a FixtureLoadResult containing a valid Player
+ * and a pre-populated ItemRegistry.
  *
  * Validates the fixture first. Throws a FixtureLoadError if validation fails.
  * Loading is fully deterministic — no randomness is used.
  *
  * The resulting Player is indistinguishable from a player who reached the same
- * state through normal gameplay.
+ * state through normal gameplay. The returned itemRegistry must be merged into
+ * the GameState so that runtime systems can resolve item lookups.
  */
-export function loadPlayerFromFixture(fixture: PlayerFixture): Player {
+export function loadPlayerFromFixture(fixture: PlayerFixture): FixtureLoadResult {
   const validation = validatePlayerFixture(fixture);
   if (validation.isValid === false) {
     const messages = validation.errors.map(e => `  [${e.field}] ${e.message}`).join('\n');
@@ -270,7 +319,7 @@ export function loadPlayerFromFixture(fixture: PlayerFixture): Player {
     );
   }
 
-  return buildPlayer(fixture);
+  return buildPlayerResult(fixture);
 }
 
 /**
@@ -295,8 +344,8 @@ function computeMaxHealth(level: number): number {
   return BASE_PLAYER_STATS.maxHealth + LEVEL_UP_GAINS.maxHealth * Math.max(0, level - 1);
 }
 
-/** Build a Player from a validated fixture. */
-function buildPlayer(fixture: PlayerFixture): Player {
+/** Build a FixtureLoadResult (Player + ItemRegistry) from a validated fixture. */
+function buildPlayerResult(fixture: PlayerFixture): FixtureLoadResult {
   const level = fixture.level;
   const maxHealth = fixture.maxHealth ?? computeMaxHealth(level);
   const health = fixture.health ?? maxHealth;
@@ -326,37 +375,50 @@ function buildPlayer(fixture: PlayerFixture): Player {
     return entityId(`fixture_${prefix}_${idCounter++}`);
   }
 
+  // Item registry accumulator — maps EntityId → AnyItemTemplate
+  const mutableRegistryEntries: Array<[EntityId, AnyItemTemplate]> = [];
+
+  // Helper: assign an EntityId and register item template
+  function assignAndRegister(contentItemId: string, prefix: string): EntityId {
+    const eid = nextId(prefix);
+    const template = ITEM_BY_ID.get(contentItemId);
+    if (template !== undefined) {
+      mutableRegistryEntries.push([eid, template]);
+    }
+    return eid;
+  }
+
   // Build equipment slots
   const equipmentWeaponId = fixture.equippedWeaponId !== undefined
-    ? nextId('weapon')
+    ? assignAndRegister(fixture.equippedWeaponId, 'weapon')
     : null;
 
   const equipmentChestId = fixture.equippedArmorIds?.chest !== undefined
-    ? nextId('chest')
+    ? assignAndRegister(fixture.equippedArmorIds.chest, 'chest')
     : null;
 
   const equipmentHeadId = fixture.equippedArmorIds?.head !== undefined
-    ? nextId('head')
+    ? assignAndRegister(fixture.equippedArmorIds.head, 'head')
     : null;
 
   const equipmentGlovesId = fixture.equippedArmorIds?.gloves !== undefined
-    ? nextId('gloves')
+    ? assignAndRegister(fixture.equippedArmorIds.gloves, 'gloves')
     : null;
 
   const equipmentBootsId = fixture.equippedArmorIds?.boots !== undefined
-    ? nextId('boots')
+    ? assignAndRegister(fixture.equippedArmorIds.boots, 'boots')
     : null;
 
   const equipmentSecondaryWeaponId = fixture.equippedArmorIds?.secondaryWeapon !== undefined
-    ? nextId('secondary')
+    ? assignAndRegister(fixture.equippedArmorIds.secondaryWeapon, 'secondary')
     : null;
 
   const equipmentRing1Id = fixture.activeEquipmentIds?.ring1 !== undefined
-    ? nextId('ring1')
+    ? assignAndRegister(fixture.activeEquipmentIds.ring1, 'ring1')
     : null;
 
   const equipmentRing2Id = fixture.activeEquipmentIds?.ring2 !== undefined
-    ? nextId('ring2')
+    ? assignAndRegister(fixture.activeEquipmentIds.ring2, 'ring2')
     : null;
 
   const equipment: Equipment = {
@@ -370,10 +432,15 @@ function buildPlayer(fixture: PlayerFixture): Player {
     ring2: equipmentRing2Id,
   };
 
-  // Build inventory
-  const inventory: EntityId[] = (fixture.inventoryItemIds ?? []).map((_, idx) =>
-    entityId(`fixture_inv_${idx + 1}`)
-  );
+  // Build inventory with registered item templates
+  const inventory: EntityId[] = (fixture.inventoryItemIds ?? []).map((contentItemId, idx) => {
+    const eid = entityId(`fixture_inv_${idx + 1}`);
+    const template = ITEM_BY_ID.get(contentItemId);
+    if (template !== undefined) {
+      mutableRegistryEntries.push([eid, template]);
+    }
+    return eid;
+  });
 
   // Build ring mastery
   const ringMastery: Record<string, { readonly xp: number }> = {};
@@ -389,7 +456,7 @@ function buildPlayer(fixture: PlayerFixture): Player {
   // Build known ring schools
   const knownRingSchools: readonly string[] = fixture.knownRingSchools ?? [];
 
-  return {
+  const player: Player = {
     id: entityId('fixture_player'),
     name: 'Hero',
     level,
@@ -413,4 +480,8 @@ function buildPlayer(fixture: PlayerFixture): Player {
     learnedRingSpellIds,
     knownRingSchools,
   };
+
+  const itemRegistry = { items: new Map(mutableRegistryEntries) };
+
+  return { player, itemRegistry };
 }
