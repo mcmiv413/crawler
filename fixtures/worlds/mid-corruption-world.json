@@ -1,0 +1,15 @@
+{
+  "schemaVersion": 1,
+  "_comment": "Mid-game world: 3 runs in, goblin warband advanced, ogre has not yet emerged.",
+  "totalRuns": 3,
+  "deepestFloor": 6,
+  "highestRarityFound": "uncommon",
+  "factions": [
+    { "id": "goblin_warband", "power": 65, "disposition": -45 },
+    { "id": "beast_swarm",    "power": 55, "disposition": -25 },
+    { "id": "shadow_cult",    "power": 30, "disposition": -60 },
+    { "id": "undead_legion",  "power": 35, "disposition": -55 }
+  ],
+  "dungeonOgre": { "status": "sealed" },
+  "town": { "prosperity": 40, "fear": 35, "corruption": 20 }
+}

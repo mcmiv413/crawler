@@ -84,6 +84,7 @@ function makeState(overrides: Partial<GameState> = {}): GameState {
       maxMana: 20,
       ringMastery: {},
       learnedRingSpellIds: [],
+      knownRingSchools: [],
     },
     run: null,
     world: {
@@ -256,6 +257,7 @@ describe('buildGameView inventory sellPrice', () => {
         maxMana: 20,
         ringMastery: {},
         learnedRingSpellIds: [],
+        knownRingSchools: [],
       },
       world: {
         town: { prosperity: 50, fear: 20, corruption: 10, rumors: [], lastRunSummary: null },
@@ -314,6 +316,7 @@ describe('buildGameView inventory sellPrice', () => {
         maxMana: 20,
         ringMastery: {},
         learnedRingSpellIds: [],
+        knownRingSchools: [],
       },
       world: {
         town: { prosperity: 50, fear: 20, corruption: 10, rumors: [], lastRunSummary: null },
@@ -520,6 +523,7 @@ describe('buildGameView player abilities', () => {
         maxMana: 20,
         ringMastery: {},
         learnedRingSpellIds: [],
+        knownRingSchools: [],
       },
     });
     const view = buildGameView(state);

@@ -71,4 +71,5 @@ export interface Player {
   readonly maxMana: number;
   readonly ringMastery: RingMasteryState;
   readonly learnedRingSpellIds: readonly string[];
+  readonly knownRingSchools: readonly string[];
 }
