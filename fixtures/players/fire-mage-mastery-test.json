@@ -1,0 +1,40 @@
+{
+  "schemaVersion": 1,
+  "level": 7,
+  "experience": 1500,
+  "gold": 320,
+  "health": 100,
+  "maxHealth": 116,
+  "mana": 45,
+  "maxMana": 50,
+  "equippedWeaponId": "flame_dagger",
+  "equippedArmorIds": {
+    "chest": "ember_cloak",
+    "head": "leather_cap",
+    "gloves": "leather_gloves",
+    "boots": "leather_boots"
+  },
+  "activeEquipmentIds": {
+    "ring1": "fire_ring"
+  },
+  "inventoryItemIds": [
+    "health_potion",
+    "health_potion",
+    "mana_potion",
+    "mana_potion",
+    "mana_potion"
+  ],
+  "knownRingSchools": [
+    "fire"
+  ],
+  "ringMastery": {
+    "fire": {
+      "xp": 60
+    }
+  },
+  "learnedRingSpellIds": [
+    "ember",
+    "heat_surge",
+    "cinder_wake"
+  ]
+}

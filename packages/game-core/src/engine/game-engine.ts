@@ -47,6 +47,7 @@ export class GameEngine implements IGameEngine {
         maxMana: MAGIC.initialMana,
         ringMastery: {},
         learnedRingSpellIds: [],
+        knownRingSchools: [],
       },
       run: null,
       world: createInitialWorldState(rng),

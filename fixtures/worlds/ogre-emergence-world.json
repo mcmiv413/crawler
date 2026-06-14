@@ -1,0 +1,19 @@
+{
+  "schemaVersion": 1,
+  "_comment": "Late-game world: ogre has emerged, factions fully advanced, town under pressure.",
+  "totalRuns": 8,
+  "deepestFloor": 12,
+  "highestRarityFound": "rare",
+  "factions": [
+    { "id": "goblin_warband", "power": 85, "disposition": -60 },
+    { "id": "beast_swarm",    "power": 78, "disposition": -40 },
+    { "id": "shadow_cult",    "power": 70, "disposition": -80 },
+    { "id": "undead_legion",  "power": 62, "disposition": -70 }
+  ],
+  "dungeonOgre": {
+    "status": "emerged",
+    "emergedAfterRun": 6,
+    "emergedAtDepth": 8
+  },
+  "town": { "prosperity": 25, "fear": 70, "corruption": 55 }
+}
