@@ -14,6 +14,7 @@
  */
 
 import type { RingSchool } from '@dungeon/content';
+import type { Player, ItemRegistry } from '@dungeon/contracts';
 
 /**
  * Armor slots that can be specified in a fixture.
@@ -53,6 +54,19 @@ export interface FixtureValidationError {
 export interface FixtureValidationResult {
   readonly isValid: boolean;
   readonly errors: readonly FixtureValidationError[];
+}
+
+/**
+ * Result returned by loadPlayerFromFixture().
+ *
+ * Returns both the Player and an ItemRegistry pre-populated with every item
+ * template referenced by the fixture (equipped + inventory). Callers must
+ * merge this itemRegistry into the GameState so that runtime systems
+ * (combat preview, equipment validator, inventory) can resolve item lookups.
+ */
+export interface FixtureLoadResult {
+  readonly player: Player;
+  readonly itemRegistry: ItemRegistry;
 }
 
 /**

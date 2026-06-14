@@ -571,14 +571,14 @@ describe('Group 6: Integration — player + world fixture create a valid GameSta
   });
 
   it('a player + world fixture GameState serializes without error', () => {
-    const player = loadPlayerFromFixture({ schemaVersion: 1, level: 3, gold: 100 });
+    const { player } = loadPlayerFromFixture({ schemaVersion: 1, level: 3, gold: 100 });
     const world = loadWorldFromFixture(FULL_WORLD_FIXTURE);
     const state = createTestGameState({ player, world });
     expect(() => serializeState(state)).not.toThrow();
   });
 
   it('serialized combined fixture state produces valid JSON', () => {
-    const player = loadPlayerFromFixture({ schemaVersion: 1, level: 5, gold: 200 });
+    const { player } = loadPlayerFromFixture({ schemaVersion: 1, level: 5, gold: 200 });
     const world = loadWorldFromFixture(FULL_WORLD_FIXTURE);
     const state = createTestGameState({ player, world });
     const json = serializeState(state);
@@ -612,7 +612,7 @@ describe('Group 6: Integration — player + world fixture create a valid GameSta
   });
 
   it('player level from player fixture is preserved in combined GameState', () => {
-    const player = loadPlayerFromFixture({ schemaVersion: 1, level: 7 });
+    const { player } = loadPlayerFromFixture({ schemaVersion: 1, level: 7 });
     const world = loadWorldFromFixture(MINIMAL_WORLD_FIXTURE);
     const state = createTestGameState({ player, world });
     expect(state.player.level).toBe(7);
