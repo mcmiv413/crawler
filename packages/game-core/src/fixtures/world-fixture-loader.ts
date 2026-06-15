@@ -8,7 +8,7 @@
  */
 
 import type { WorldState, FactionState, DungeonOgreState } from '@dungeon/contracts';
-import { FACTION_DEFINITIONS, INITIAL_FACTIONS, INITIAL_DUNGEON_OGRE } from '@dungeon/content';
+import { ECONOMY, FACTION_DEFINITIONS, INITIAL_FACTIONS, INITIAL_DUNGEON_OGRE } from '@dungeon/content';
 import type {
   WorldFixture,
   WorldFixtureValidationError,
@@ -99,12 +99,46 @@ export function validateWorldFixture(fixture: WorldFixture): WorldFixtureValidat
 
   // dungeonOgre
   if (fixture.dungeonOgre !== undefined) {
-    const ogre = fixture.dungeonOgre;
-    if (!VALID_OGRE_STATUSES.has(ogre.status as 'sealed' | 'emerged' | 'slain')) {
+    // Widen to unknown so runtime null/type guards are not flagged as impossible by TypeScript.
+    // Callers may supply malformed JSON (null, wrong type) despite the declared type.
+    const ogre: unknown = fixture.dungeonOgre;
+
+    // Guard: dungeonOgre must be a non-null object — null and primitives are rejected here
+    if (ogre === null || typeof ogre !== 'object') {
       errors = [...errors, {
-        field: 'dungeonOgre.status',
-        message: `dungeonOgre.status must be 'sealed', 'emerged', or 'slain', got "${ogre.status}".`,
+        field: 'dungeonOgre',
+        message: `dungeonOgre must be an object when present, got ${ogre === null ? 'null' : typeof ogre}.`,
       }];
+    } else {
+      const ogreRaw = ogre as { status?: unknown; emergedAfterRun?: unknown; emergedAtDepth?: unknown };
+
+      // status — required and must be a valid value
+      if (!VALID_OGRE_STATUSES.has(ogreRaw.status as 'sealed' | 'emerged' | 'slain')) {
+        errors = [...errors, {
+          field: 'dungeonOgre.status',
+          message: `dungeonOgre.status must be 'sealed', 'emerged', or 'slain', got "${ogreRaw.status}".`,
+        }];
+      }
+
+      // emergedAfterRun — optional, but must be a finite number when present
+      if (ogreRaw.emergedAfterRun !== undefined) {
+        if (typeof ogreRaw.emergedAfterRun !== 'number' || !Number.isFinite(ogreRaw.emergedAfterRun)) {
+          errors = [...errors, {
+            field: 'dungeonOgre.emergedAfterRun',
+            message: `dungeonOgre.emergedAfterRun must be a number when present, got ${JSON.stringify(ogreRaw.emergedAfterRun)}.`,
+          }];
+        }
+      }
+
+      // emergedAtDepth — optional, but must be a finite number when present
+      if (ogreRaw.emergedAtDepth !== undefined) {
+        if (typeof ogreRaw.emergedAtDepth !== 'number' || !Number.isFinite(ogreRaw.emergedAtDepth)) {
+          errors = [...errors, {
+            field: 'dungeonOgre.emergedAtDepth',
+            message: `dungeonOgre.emergedAtDepth must be a number when present, got ${JSON.stringify(ogreRaw.emergedAtDepth)}.`,
+          }];
+        }
+      }
     }
   }
 
@@ -249,7 +283,7 @@ function buildWorld(fixture: WorldFixture): WorldState {
   return {
     town: buildTown(fixture),
     npcs: [],
-    shop: { items: [], buybackMultiplier: 0.4 },
+    shop: { items: [], buybackMultiplier: ECONOMY.buybackRate },
     eventHistory: [],
     totalRuns: fixture.totalRuns ?? 0,
     deepestFloor: fixture.deepestFloor ?? 0,
@@ -265,8 +299,8 @@ function buildTown(fixture: WorldFixture): WorldState['town'] {
   const overrides = fixture.town;
   return {
     prosperity: overrides?.prosperity ?? 50,
-    fear: overrides?.fear ?? 20,
-    corruption: overrides?.corruption ?? 10,
+    fear: overrides?.fear ?? 10,
+    corruption: overrides?.corruption ?? 0,
     rumors: [],
     lastRunSummary: null,
   };

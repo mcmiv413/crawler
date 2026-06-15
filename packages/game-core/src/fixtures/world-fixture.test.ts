@@ -635,3 +635,123 @@ describe('WORLD_FIXTURE_SCHEMA_VERSION constant', () => {
     expect(WORLD_FIXTURE_SCHEMA_VERSION).toBe(1);
   });
 });
+
+// =============================================================================
+// Group 7: dungeonOgre null/type safety — malformed object cases
+// =============================================================================
+
+describe('Group 7: dungeonOgre null/type safety — malformed cases return validation errors (never throw)', () => {
+  it('returns a validation error (not throw) when dungeonOgre is null', () => {
+    const fixture = {
+      schemaVersion: 1,
+      dungeonOgre: null,
+    } as unknown as WorldFixture;
+    let result: ReturnType<typeof validateWorldFixture> | undefined;
+    expect(() => {
+      result = validateWorldFixture(fixture);
+    }).not.toThrow();
+    expect(result!.isValid).toBe(false);
+    const error = result!.errors.find(e => e.field === 'dungeonOgre');
+    expect(error).toBeDefined();
+    expect(error!.message).toBeTruthy();
+  });
+
+  it('returns a validation error (not throw) when dungeonOgre is an empty object {}', () => {
+    const fixture = {
+      schemaVersion: 1,
+      dungeonOgre: {},
+    } as unknown as WorldFixture;
+    let result: ReturnType<typeof validateWorldFixture> | undefined;
+    expect(() => {
+      result = validateWorldFixture(fixture);
+    }).not.toThrow();
+    expect(result!.isValid).toBe(false);
+    const error = result!.errors.find(e => e.field === 'dungeonOgre.status');
+    expect(error).toBeDefined();
+  });
+
+  it('returns a validation error (not throw) when dungeonOgre.status is an invalid string', () => {
+    const fixture = {
+      schemaVersion: 1,
+      dungeonOgre: { status: 'invalid' },
+    } as unknown as WorldFixture;
+    let result: ReturnType<typeof validateWorldFixture> | undefined;
+    expect(() => {
+      result = validateWorldFixture(fixture);
+    }).not.toThrow();
+    expect(result!.isValid).toBe(false);
+    const error = result!.errors.find(e => e.field === 'dungeonOgre.status');
+    expect(error).toBeDefined();
+    expect(error!.message).toContain('invalid');
+  });
+
+  it('returns a validation error (not throw) when dungeonOgre.emergedAfterRun is a non-numeric string', () => {
+    const fixture = {
+      schemaVersion: 1,
+      dungeonOgre: { status: 'emerged', emergedAfterRun: 'five' },
+    } as unknown as WorldFixture;
+    let result: ReturnType<typeof validateWorldFixture> | undefined;
+    expect(() => {
+      result = validateWorldFixture(fixture);
+    }).not.toThrow();
+    expect(result!.isValid).toBe(false);
+    const error = result!.errors.find(e => e.field === 'dungeonOgre.emergedAfterRun');
+    expect(error).toBeDefined();
+    expect(error!.message).toBeTruthy();
+  });
+
+  it('returns a validation error (not throw) when dungeonOgre.emergedAtDepth is an object {}', () => {
+    const fixture = {
+      schemaVersion: 1,
+      dungeonOgre: { status: 'emerged', emergedAtDepth: {} },
+    } as unknown as WorldFixture;
+    let result: ReturnType<typeof validateWorldFixture> | undefined;
+    expect(() => {
+      result = validateWorldFixture(fixture);
+    }).not.toThrow();
+    expect(result!.isValid).toBe(false);
+    const error = result!.errors.find(e => e.field === 'dungeonOgre.emergedAtDepth');
+    expect(error).toBeDefined();
+    expect(error!.message).toBeTruthy();
+  });
+
+  it('dungeonOgre null error field is "dungeonOgre" (not a sub-field)', () => {
+    const fixture = {
+      schemaVersion: 1,
+      dungeonOgre: null,
+    } as unknown as WorldFixture;
+    const result = validateWorldFixture(fixture);
+    expect(result.errors.some(e => e.field === 'dungeonOgre')).toBe(true);
+  });
+
+  it('dungeonOgre {} error targets dungeonOgre.status specifically', () => {
+    const fixture = {
+      schemaVersion: 1,
+      dungeonOgre: {},
+    } as unknown as WorldFixture;
+    const result = validateWorldFixture(fixture);
+    expect(result.errors.some(e => e.field === 'dungeonOgre.status')).toBe(true);
+  });
+
+  it('all malformed dungeonOgre cases produce errors with non-empty field and message', () => {
+    const cases = [
+      { schemaVersion: 1, dungeonOgre: null },
+      { schemaVersion: 1, dungeonOgre: {} },
+      { schemaVersion: 1, dungeonOgre: { status: 'invalid' } },
+      { schemaVersion: 1, dungeonOgre: { status: 'emerged', emergedAfterRun: 'five' } },
+      { schemaVersion: 1, dungeonOgre: { status: 'emerged', emergedAtDepth: {} } },
+    ] as unknown as WorldFixture[];
+
+    for (const fixture of cases) {
+      const result = validateWorldFixture(fixture);
+      expect(result.isValid).toBe(false);
+      expect(result.errors.length).toBeGreaterThan(0);
+      for (const error of result.errors) {
+        expect(typeof error.field).toBe('string');
+        expect(error.field.length).toBeGreaterThan(0);
+        expect(typeof error.message).toBe('string');
+        expect(error.message.length).toBeGreaterThan(0);
+      }
+    }
+  });
+});

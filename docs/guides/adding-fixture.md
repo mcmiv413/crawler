@@ -20,15 +20,15 @@ Create a file under `fixtures/players/`:
   "gold": 500,
   "equippedWeaponId": "iron_sword",
   "equippedArmorIds": {
-    "chest": "leather_chest",
-    "head": "leather_helm"
+    "chest": "leather_vest",
+    "head": "leather_cap"
   },
   "inventoryItemIds": ["health_potion", "mana_potion"],
   "knownRingSchools": ["fire"],
   "ringMastery": {
     "fire": { "xp": 100 }
   },
-  "learnedRingSpellIds": ["fireball"]
+  "learnedRingSpellIds": ["ember"]
 }
 ```
 
@@ -38,7 +38,7 @@ Load it in tests:
 import { loadPlayerFromFixture } from '@dungeon/core/fixtures/player-fixture-loader.js';
 import newCharacterFixture from '../../../fixtures/players/new-character.json' assert { type: 'json' };
 
-const player = loadPlayerFromFixture(newCharacterFixture);
+const { player, itemRegistry } = loadPlayerFromFixture(newCharacterFixture);
 ```
 
 ## Schema Reference
@@ -59,7 +59,7 @@ const player = loadPlayerFromFixture(newCharacterFixture);
 
 ### Equipment
 
-- **equippedWeaponId** (string | null, optional) — Must exist in `ITEM_BY_ID`. Defaults to `null`.
+- **equippedWeaponId** (string, optional) — Item ID that must exist in `ITEM_BY_ID`. Omit to equip nothing. Defaults to unequipped.
 - **equippedArmorIds** (object, optional) — Armor slots: `chest`, `head`, `gloves`, `boots`, `secondaryWeapon`. Each must exist in `ITEM_BY_ID` or be `undefined`. Defaults to all `undefined`.
 - **activeEquipmentIds** (object, optional) — Ring slots: `ring1`, `ring2`. Each must exist in `ITEM_BY_ID` or be `undefined`. Defaults to all `undefined`.
 
@@ -124,9 +124,9 @@ import { loadPlayerFromFixture } from '@dungeon/core/fixtures/player-fixture-loa
 import firemageFixture from '../../../fixtures/players/fire-mage-mastery-test.json' assert { type: 'json' };
 
 describe('Ring Magic System', () => {
-  it('fire mage has learned fireball', () => {
-    const player = loadPlayerFromFixture(firemageFixture);
-    expect(player.learnedRingSpellIds).toContain('fireball');
+  it('fire mage has learned ember', () => {
+    const { player } = loadPlayerFromFixture(firemageFixture);
+    expect(player.learnedRingSpellIds).toContain('ember');
   });
 });
 ```
@@ -136,8 +136,8 @@ describe('Ring Magic System', () => {
 Test the full 6-hop chain (entry → state → event → presenter → UI):
 
 ```typescript
-// Fixture creates player
-const player = loadPlayerFromFixture(midgameFixture);
+// Fixture creates player and item registry
+const { player, itemRegistry } = loadPlayerFromFixture(midgameFixture);
 
 // Player triggers a command
 const result = gameEngine.submitCommand(state, { type: 'MOVE', ... });
@@ -189,8 +189,8 @@ No fixture schema changes needed unless the **Player interface itself changes**.
 **"health (50) cannot exceed maxHealth (40)"**  
 → Either lower `health` or raise `maxHealth`.
 
-**"learnedRingSpellIds is missing in type"** (TypeScript error)  
-→ Your fixture JSON is missing the `learnedRingSpellIds` array (even if empty).
+**"Unknown ring spell id '...'"** (validation error)  
+→ The spell ID doesn't exist in `RING_SPELL_BY_ID`. Valid spell IDs: `bolt`, `cinder_wake`, `ember`, `heat_surge`, `plasma_arc`, `rolling_thunder`, `stormfire`, `thunder_step`, `thunderstorm`. Note: `learnedRingSpellIds` is optional — omitting it entirely is valid.
 
 ## See Also
 

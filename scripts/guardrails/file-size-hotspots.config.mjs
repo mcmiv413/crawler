@@ -103,5 +103,11 @@ export default {
       auditReportNote: 'Guardrails infrastructure; Phase 2 adds 20 rejection codes (4 slices); Phase 3 adds combat observability (apply-attack.ts invalid target); Phase 4A adds movement-blocked protected path; KNOWN_PATTERNS registry updated with corrected line numbers; future split seam is separating KNOWN_PATTERNS into dedicated JSON config once taxonomy stabilizes',
       lines: 910,
     },
+    {
+      path: 'packages/game-core/src/fixtures/player-fixture-loader.ts',
+      reason: 'Fixture system validator — consolidates player deserialization and comprehensive validation logic (schema version, stats, equipment, inventory, ring mastery, ring spells, content ID checks, slot compatibility, duplicate detection)',
+      auditReportNote: 'Fixture hardening for PR #35 merge blockers: added null-safety checks and type validation for ringMastery (null, non-object, array checks) and comprehensive mastery entry validation (null entries, empty objects, non-numeric xp, NaN, Infinity, negative values); added explicit level field validation (must be positive integer when present); future split seam is extracting validation into discrete validators per fixture field',
+      lines: 528,
+    },
   ],
 };

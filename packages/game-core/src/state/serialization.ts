@@ -132,6 +132,7 @@ export function deserializeState(json: string): GameState {
     maxMana: playerObj.maxMana ?? MAGIC.initialMana,
     ringMastery: playerObj.ringMastery ?? {},
     learnedRingSpellIds: playerObj.learnedRingSpellIds ?? [],
+    knownRingSchools: playerObj.knownRingSchools ?? [],
     stats: playerStats,
   } as GameState['player']);
 
