@@ -1,0 +1,19 @@
+{
+  "schemaVersion": 1,
+  "name": "faction-leader-test",
+  "description": "A high-power goblin warband world. Faction-tagged enemies are scaled up by faction strength, reproducing faction-leader-tier encounters and world influence on combat.",
+  "player": { "ref": "high-level-everything" },
+  "world": { "ref": "ogre-emergence-world" },
+  "floor": 6,
+  "seed": 404,
+  "map": {
+    "width": 7,
+    "height": 1,
+    "playerStart": { "x": 0, "y": 0 },
+    "spawns": [{ "name": "champion", "position": { "x": 3, "y": 0 } }]
+  },
+  "enemies": [
+    { "templateId": "cave_rat", "position": { "x": 3, "y": 0 } }
+  ],
+  "tags": ["faction", "world", "late-game"]
+}

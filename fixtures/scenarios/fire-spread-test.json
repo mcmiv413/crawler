@@ -1,0 +1,19 @@
+{
+  "schemaVersion": 1,
+  "name": "fire-spread-test",
+  "description": "A fire-mage faces a goblin two tiles away in a corridor. Casting ember reproduces fire spell behavior: mana spend, burn application, and spell events.",
+  "player": { "ref": "fire-mage-mastery-test" },
+  "world": { "ref": "fresh-world" },
+  "floor": 1,
+  "seed": 202,
+  "map": {
+    "width": 6,
+    "height": 1,
+    "playerStart": { "x": 0, "y": 0 },
+    "spawns": [{ "name": "target", "position": { "x": 2, "y": 0 } }]
+  },
+  "enemies": [
+    { "templateId": "goblin_archer", "position": { "x": 2, "y": 0 } }
+  ],
+  "tags": ["spell", "fire", "ring-magic"]
+}
