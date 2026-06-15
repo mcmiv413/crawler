@@ -1,0 +1,19 @@
+{
+  "schemaVersion": 1,
+  "name": "enemy-death-test",
+  "description": "A wounded goblin stands one tile to the player's right. One attack should kill it, reproducing enemy death handling and the ENTITY_DIED pipeline.",
+  "player": { "ref": "midgame-warrior" },
+  "world": { "ref": "fresh-world" },
+  "floor": 1,
+  "seed": 101,
+  "map": {
+    "width": 6,
+    "height": 1,
+    "playerStart": { "x": 0, "y": 0 },
+    "spawns": [{ "name": "victim", "position": { "x": 1, "y": 0 } }]
+  },
+  "enemies": [
+    { "templateId": "goblin_archer", "position": { "x": 1, "y": 0 }, "health": 1 }
+  ],
+  "tags": ["combat", "death", "reproduction"]
+}

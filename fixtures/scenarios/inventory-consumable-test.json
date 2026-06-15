@@ -1,0 +1,19 @@
+{
+  "schemaVersion": 1,
+  "name": "inventory-consumable-test",
+  "description": "A health potion sits on the floor ahead. Collecting it and drinking it reproduces inventory + consumable behavior identical to a generated drop.",
+  "player": { "ref": "new-character" },
+  "world": { "ref": "fresh-world" },
+  "floor": 1,
+  "seed": 303,
+  "map": {
+    "width": 5,
+    "height": 1,
+    "playerStart": { "x": 0, "y": 0 },
+    "spawns": [{ "name": "loot", "position": { "x": 2, "y": 0 } }]
+  },
+  "loot": [
+    { "itemId": "health_potion", "position": { "x": 2, "y": 0 } }
+  ],
+  "tags": ["inventory", "consumable", "loot"]
+}

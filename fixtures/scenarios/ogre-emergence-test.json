@@ -1,0 +1,23 @@
+{
+  "schemaVersion": 1,
+  "name": "ogre-emergence-test",
+  "description": "A deep-floor encounter with the dungeon ogre in an emerged-ogre world. Reproduces late-game ogre combat against a fully-equipped hero.",
+  "player": { "ref": "high-level-everything" },
+  "world": { "ref": "ogre-emergence-world" },
+  "floor": 8,
+  "seed": 505,
+  "map": {
+    "width": 8,
+    "height": 3,
+    "playerStart": { "x": 0, "y": 1 },
+    "walls": [
+      { "x": 4, "y": 0 },
+      { "x": 4, "y": 2 }
+    ],
+    "spawns": [{ "name": "ogre", "position": { "x": 1, "y": 1 } }]
+  },
+  "enemies": [
+    { "templateId": "dungeon_ogre", "position": { "x": 1, "y": 1 } }
+  ],
+  "tags": ["boss", "ogre", "late-game"]
+}
