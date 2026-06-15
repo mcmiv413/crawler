@@ -12,3 +12,4 @@ export * from './rng.js';
 export * from './balance-config.js';
 export * from './schema-version.js';
 export * from './schema-validators.js';
+export * from './save-snapshot.js';
