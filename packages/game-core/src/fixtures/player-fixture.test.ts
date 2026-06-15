@@ -647,3 +647,193 @@ describe('Slot compatibility validation', () => {
     expect(error).toBeDefined();
   });
 });
+
+describe('Group 7: Hardened ringMastery validation — null and type safety', () => {
+  it('rejects ringMastery when it is null', () => {
+    const fixture: PlayerFixture = {
+      schemaVersion: 1,
+      level: 1,
+      ringMastery: null as any,
+    };
+    const result = validatePlayerFixture(fixture);
+    expect(result.isValid).toBe(false);
+    const error = result.errors.find(e => e.field === 'ringMastery');
+    expect(error?.message).toContain('must not be null');
+  });
+
+  it('rejects ringMastery when it is not an object', () => {
+    const fixture: PlayerFixture = {
+      schemaVersion: 1,
+      level: 1,
+      ringMastery: 'fire' as any,
+    };
+    const result = validatePlayerFixture(fixture);
+    expect(result.isValid).toBe(false);
+    const error = result.errors.find(e => e.field === 'ringMastery');
+    expect(error?.message).toContain('must be an object');
+  });
+
+  it('rejects ringMastery when it is an array', () => {
+    const fixture: PlayerFixture = {
+      schemaVersion: 1,
+      level: 1,
+      ringMastery: ['fire'] as any,
+    };
+    const result = validatePlayerFixture(fixture);
+    expect(result.isValid).toBe(false);
+    const error = result.errors.find(e => e.field === 'ringMastery');
+    expect(error?.message).toContain('must be an object');
+  });
+
+  it('rejects ringMastery.fire when it is null', () => {
+    const fixture: PlayerFixture = {
+      schemaVersion: 1,
+      level: 1,
+      ringMastery: {
+        fire: null as any,
+      },
+    };
+    const result = validatePlayerFixture(fixture);
+    expect(result.isValid).toBe(false);
+    const error = result.errors.find(e => e.field === 'ringMastery.fire');
+    expect(error?.message).toContain('must be { xp: <non-negative number> }');
+  });
+
+  it('rejects ringMastery.fire when it is an empty object', () => {
+    const fixture: PlayerFixture = {
+      schemaVersion: 1,
+      level: 1,
+      ringMastery: {
+        fire: {} as any,
+      },
+    };
+    const result = validatePlayerFixture(fixture);
+    expect(result.isValid).toBe(false);
+    const error = result.errors.find(e => e.field === 'ringMastery.fire');
+    expect(error?.message).toContain('must be { xp: <non-negative number> }');
+  });
+
+  it('rejects ringMastery.fire when xp is a string', () => {
+    const fixture: PlayerFixture = {
+      schemaVersion: 1,
+      level: 1,
+      ringMastery: {
+        fire: { xp: '100' } as any,
+      },
+    };
+    const result = validatePlayerFixture(fixture);
+    expect(result.isValid).toBe(false);
+    const error = result.errors.find(e => e.field === 'ringMastery.fire');
+    expect(error?.message).toContain('must be { xp: <non-negative number> }');
+  });
+
+  it('rejects ringMastery.fire when xp is NaN', () => {
+    const fixture: PlayerFixture = {
+      schemaVersion: 1,
+      level: 1,
+      ringMastery: {
+        fire: { xp: NaN } as any,
+      },
+    };
+    const result = validatePlayerFixture(fixture);
+    expect(result.isValid).toBe(false);
+    const error = result.errors.find(e => e.field === 'ringMastery.fire');
+    expect(error?.message).toContain('must be { xp: <non-negative number> }');
+  });
+
+  it('rejects ringMastery.fire when xp is Infinity', () => {
+    const fixture: PlayerFixture = {
+      schemaVersion: 1,
+      level: 1,
+      ringMastery: {
+        fire: { xp: Infinity } as any,
+      },
+    };
+    const result = validatePlayerFixture(fixture);
+    expect(result.isValid).toBe(false);
+    const error = result.errors.find(e => e.field === 'ringMastery.fire');
+    expect(error?.message).toContain('must be { xp: <non-negative number> }');
+  });
+
+  it('rejects ringMastery.fire when xp is negative', () => {
+    const fixture: PlayerFixture = {
+      schemaVersion: 1,
+      level: 1,
+      ringMastery: {
+        fire: { xp: -5 } as any,
+      },
+    };
+    const result = validatePlayerFixture(fixture);
+    expect(result.isValid).toBe(false);
+    const error = result.errors.find(e => e.field === 'ringMastery.fire');
+    expect(error?.message).toContain('must be { xp: <non-negative number> }');
+  });
+
+  it('accepts valid ringMastery with numeric xp', () => {
+    const fixture: PlayerFixture = {
+      schemaVersion: 1,
+      level: 1,
+      ringMastery: {
+        fire: { xp: 0 },
+        lightning: { xp: 100 },
+      },
+    };
+    const result = validatePlayerFixture(fixture);
+    expect(result.isValid).toBe(true);
+  });
+
+  it('accepts undefined ringMastery', () => {
+    const fixture: PlayerFixture = {
+      schemaVersion: 1,
+      level: 1,
+      ringMastery: undefined,
+    };
+    const result = validatePlayerFixture(fixture);
+    expect(result.isValid).toBe(true);
+  });
+
+  it('rejects ringMastery.fire when level is a non-numeric string and xp is absent', () => {
+    // Simulates malformed JSON: { fire: { level: "5" } } — no xp field, level is string
+    const fixture: PlayerFixture = {
+      schemaVersion: 1,
+      level: 1,
+      ringMastery: {
+        fire: { level: '5' } as any,
+      },
+    };
+    const result = validatePlayerFixture(fixture);
+    expect(result.isValid).toBe(false);
+    const error = result.errors.find(e => e.field === 'ringMastery.fire');
+    expect(error).toBeDefined();
+    expect(error?.message).toContain('must be { xp: <non-negative number> }');
+  });
+
+  it('rejects ringMastery.fire when level is a non-numeric string even when xp is valid', () => {
+    // Simulates malformed JSON: { fire: { xp: 50, level: "5" } } — level must be numeric if present
+    const fixture: PlayerFixture = {
+      schemaVersion: 1,
+      level: 1,
+      ringMastery: {
+        fire: { xp: 50, level: '5' } as any,
+      },
+    };
+    const result = validatePlayerFixture(fixture);
+    expect(result.isValid).toBe(false);
+    const error = result.errors.find(e => e.field === 'ringMastery.fire');
+    expect(error).toBeDefined();
+    expect(error?.message).toContain('level');
+  });
+
+  it('accepts ringMastery.fire with valid numeric level and xp', () => {
+    // level is an optional numeric field — valid when present as a number
+    const fixture: PlayerFixture = {
+      schemaVersion: 1,
+      level: 1,
+      ringMastery: {
+        fire: { xp: 50, level: 2 } as any,
+      },
+    };
+    const result = validatePlayerFixture(fixture);
+    expect(result.isValid).toBe(true);
+  });
+});

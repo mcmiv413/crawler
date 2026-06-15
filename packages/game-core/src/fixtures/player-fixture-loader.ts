@@ -119,12 +119,17 @@ export function validatePlayerFixture(fixture: PlayerFixture): FixtureValidation
     }
   }
 
-  // equippedWeaponId
-  if (fixture.equippedWeaponId !== undefined) {
+  // equippedWeaponId — type is string | undefined; null is explicitly invalid
+  if ((fixture.equippedWeaponId as unknown) === null) {
+    errors = [...errors, {
+      field: 'equippedWeaponId',
+      message: `equippedWeaponId must be a string or omitted (undefined), but got null. Use undefined to leave the weapon slot empty.`,
+    }];
+  } else if (fixture.equippedWeaponId !== undefined) {
     if (!ITEM_BY_ID.has(fixture.equippedWeaponId)) {
       errors = [...errors, {
         field: 'equippedWeaponId',
-        message: `Unknown item id "${fixture.equippedWeaponId}" in equippedWeaponId. Must exist in ITEM_BY_ID.`,
+        message: `Unknown item id \"${fixture.equippedWeaponId}\" in equippedWeaponId. Must exist in ITEM_BY_ID.`,
       }];
     } else {
       // Slot compatibility: weapon slot must hold a weapon
@@ -132,7 +137,7 @@ export function validatePlayerFixture(fixture: PlayerFixture): FixtureValidation
       if (template !== undefined && template.itemClass !== 'weapon') {
         errors = [...errors, {
           field: 'equippedWeaponId',
-          message: `Item "${fixture.equippedWeaponId}" (itemClass="${template.itemClass}") is not a weapon and cannot be placed in the weapon slot.`,
+          message: `Item \"${fixture.equippedWeaponId}\" (itemClass=\"${template.itemClass}\") is not a weapon and cannot be placed in the weapon slot.`,
         }];
       }
     }
@@ -145,7 +150,7 @@ export function validatePlayerFixture(fixture: PlayerFixture): FixtureValidation
         if (!ITEM_BY_ID.has(itemId)) {
           errors = [...errors, {
             field: `equippedArmorIds.${slot}`,
-            message: `Unknown item id "${itemId}" in equippedArmorIds.${slot}. Must exist in ITEM_BY_ID.`,
+            message: `Unknown item id \"${itemId}\" in equippedArmorIds.${slot}. Must exist in ITEM_BY_ID.`,
           }];
         } else {
           // Slot compatibility: armor slots must hold armor items;
@@ -157,7 +162,7 @@ export function validatePlayerFixture(fixture: PlayerFixture): FixtureValidation
             if (template.itemClass !== allowedClass) {
               errors = [...errors, {
                 field: `equippedArmorIds.${slot}`,
-                message: `Item "${itemId}" (itemClass="${template.itemClass}") is not ${(isSecondaryWeapon === true) ? 'a weapon' : 'an armor item'} and cannot be placed in the ${slot} slot.`,
+                message: `Item \"${itemId}\" (itemClass=\"${template.itemClass}\") is not ${(isSecondaryWeapon === true) ? 'a weapon' : 'an armor item'} and cannot be placed in the ${slot} slot.`,
               }];
             }
           }
@@ -173,7 +178,7 @@ export function validatePlayerFixture(fixture: PlayerFixture): FixtureValidation
         if (!ITEM_BY_ID.has(itemId)) {
           errors = [...errors, {
             field: `activeEquipmentIds.${slot}`,
-            message: `Unknown item id "${itemId}" in activeEquipmentIds.${slot}. Must exist in ITEM_BY_ID.`,
+            message: `Unknown item id \"${itemId}\" in activeEquipmentIds.${slot}. Must exist in ITEM_BY_ID.`,
           }];
         } else {
           // Slot compatibility: ring slots must hold armor items with armorSlot === 'ring'
@@ -182,7 +187,7 @@ export function validatePlayerFixture(fixture: PlayerFixture): FixtureValidation
             if (template.itemClass !== 'armor') {
               errors = [...errors, {
                 field: `activeEquipmentIds.${slot}`,
-                message: `Item "${itemId}" (itemClass="${template.itemClass}") is not an armor/ring item and cannot be placed in the ${slot} slot.`,
+                message: `Item \"${itemId}\" (itemClass=\"${template.itemClass}\") is not an armor/ring item and cannot be placed in the ${slot} slot.`,
               }];
             } else {
               // Verify it's actually a ring (armorSlot === 'ring')
@@ -190,7 +195,7 @@ export function validatePlayerFixture(fixture: PlayerFixture): FixtureValidation
               if ('armor' in armorTemplate && armorTemplate.armor.slot !== 'ring') {
                 errors = [...errors, {
                   field: `activeEquipmentIds.${slot}`,
-                  message: `Item "${itemId}" (armorSlot="${armorTemplate.armor.slot}") is not a ring and cannot be placed in the ${slot} slot.`,
+                  message: `Item \"${itemId}\" (armorSlot=\"${armorTemplate.armor.slot}\") is not a ring and cannot be placed in the ${slot} slot.`,
                 }];
               }
             }
@@ -207,7 +212,7 @@ export function validatePlayerFixture(fixture: PlayerFixture): FixtureValidation
       if (!ITEM_BY_ID.has(itemId)) {
         errors = [...errors, {
           field: `inventoryItemIds[${i}]`,
-          message: `Unknown item id "${itemId}" at inventoryItemIds[${i}]. Must exist in ITEM_BY_ID.`,
+          message: `Unknown item id \"${itemId}\" at inventoryItemIds[${i}]. Must exist in ITEM_BY_ID.`,
         }];
       }
     }
@@ -219,31 +224,66 @@ export function validatePlayerFixture(fixture: PlayerFixture): FixtureValidation
       if (!RING_SCHOOL_BY_ID.has(school)) {
         errors = [...errors, {
           field: 'knownRingSchools',
-          message: `Unknown ring school "${school}" in knownRingSchools. Valid schools: ${[...RING_SCHOOL_BY_ID.keys()].join(', ')}.`,
+          message: `Unknown ring school \"${school}\" in knownRingSchools. Valid schools: ${[...RING_SCHOOL_BY_ID.keys()].join(', ')}.`,
         }];
       }
     }
   }
 
-  // ringMastery
-  if (fixture.ringMastery !== undefined) {
-    for (const [school, mastery] of Object.entries(fixture.ringMastery)) {
-      if (!RING_SCHOOL_BY_ID.has(school)) {
-        errors = [...errors, {
-          field: `ringMastery.${school}`,
-          message: `Unknown ring school "${school}" in ringMastery. Valid schools: ${[...RING_SCHOOL_BY_ID.keys()].join(', ')}.`,
-        }];
-      }
-      if (
-        typeof mastery !== 'object'
-        || typeof (mastery as Record<string, unknown>).xp !== 'number'
-        || !Number.isFinite((mastery as Record<string, unknown>).xp as number)
-        || ((mastery as Record<string, unknown>).xp as number) < 0
-      ) {
-        errors = [...errors, {
-          field: `ringMastery.${school}`,
-          message: `ringMastery.${school} must be { xp: <non-negative number> }.`,
-        }];
+  // ringMastery: widen to unknown so all defensive null/type checks are genuinely
+  // necessary to TypeScript — fixture data may be malformed JSON at runtime.
+  const ringMasteryRaw: unknown = fixture.ringMastery;
+  if (ringMasteryRaw === null) {
+    errors = [...errors, {
+      field: 'ringMastery',
+      message: `ringMastery must not be null; use undefined to omit it.`,
+    }];
+  } else if (ringMasteryRaw !== undefined) {
+    // Validate that ringMastery is an object
+    if (typeof ringMasteryRaw !== 'object' || Array.isArray(ringMasteryRaw)) {
+      errors = [...errors, {
+        field: 'ringMastery',
+        message: `ringMastery must be an object or undefined, got ${typeof ringMasteryRaw}.`,
+      }];
+    } else {
+      for (const [school, mastery] of Object.entries(ringMasteryRaw as Record<string, unknown>)) {
+        if (!RING_SCHOOL_BY_ID.has(school)) {
+          errors = [...errors, {
+            field: `ringMastery.${school}`,
+            message: `Unknown ring school \"${school}\" in ringMastery. Valid schools: ${[...RING_SCHOOL_BY_ID.keys()].join(', ')}.`,
+          }];
+        }
+        // Validate mastery value: must be an object with numeric xp field
+        const masteryRecord = mastery !== null && typeof mastery === 'object' && !Array.isArray(mastery)
+          ? (mastery as Record<string, unknown>)
+          : null;
+        const xp: unknown = masteryRecord !== null ? masteryRecord['xp'] : undefined;
+        const xpIsInvalid = masteryRecord === null
+          || typeof xp !== 'number'
+          || !Number.isFinite(xp)
+          || xp < 0;
+        if (xpIsInvalid === true) {
+          errors = [...errors, {
+            field: `ringMastery.${school}`,
+            message: `ringMastery.${school} must be { xp: <non-negative number> }, got ${mastery === null ? 'null' : typeof mastery}.`,
+          }];
+        } else {
+          // Validate optional level field: must be a positive integer when present
+          // masteryRecord is guaranteed non-null here (xpIsInvalid is false implies masteryRecord !== null)
+          const levelValue: unknown = masteryRecord['level'];
+          if (levelValue !== undefined) {
+            const levelIsInvalid = typeof levelValue !== 'number'
+              || !Number.isFinite(levelValue)
+              || !Number.isInteger(levelValue)
+              || levelValue < 1;
+            if (levelIsInvalid === true) {
+              errors = [...errors, {
+                field: `ringMastery.${school}`,
+                message: `ringMastery.${school}.level must be a positive integer when present, got ${JSON.stringify(levelValue)}.`,
+              }];
+            }
+          }
+        }
       }
     }
   }
@@ -255,7 +295,7 @@ export function validatePlayerFixture(fixture: PlayerFixture): FixtureValidation
       if (!RING_SPELL_BY_ID.has(spellId)) {
         errors = [...errors, {
           field: `learnedRingSpellIds[${i}]`,
-          message: `Unknown ring spell id "${spellId}" at learnedRingSpellIds[${i}]. Must exist in RING_SPELL_BY_ID.`,
+          message: `Unknown ring spell id \"${spellId}\" at learnedRingSpellIds[${i}]. Must exist in RING_SPELL_BY_ID.`,
         }];
       }
     }
@@ -281,7 +321,7 @@ export function validatePlayerFixture(fixture: PlayerFixture): FixtureValidation
     if (seen.has(itemId)) {
       errors = [...errors, {
         field: 'equipment',
-        message: `Duplicate equipment item id "${itemId}" appears in multiple equipment slots.`,
+        message: `Duplicate equipment item id \"${itemId}\" appears in multiple equipment slots.`,
       }];
       break;
     }

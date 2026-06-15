@@ -134,9 +134,10 @@ export interface PlayerFixture {
 
   /**
    * Ring mastery XP per school. Keys must be valid RingSchool values.
-   * Values must be { xp: number } with xp ≥ 0.
+   * Values must be { xp: number; level?: number } with xp ≥ 0 and level ≥ 1 when provided.
+   * Both xp and level must be numeric — non-numeric values are rejected by the validator.
    */
-  readonly ringMastery?: Partial<Record<RingSchool, { readonly xp: number }>>;
+  readonly ringMastery?: Partial<Record<RingSchool, { readonly xp: number; readonly level?: number }>>;
 
   /**
    * Ring spell IDs the player has learned (e.g. "ember", "bolt").
