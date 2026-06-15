@@ -192,6 +192,89 @@ No fixture schema changes needed unless the **Player interface itself changes**.
 **"Unknown ring spell id '...'"** (validation error)  
 → The spell ID doesn't exist in `RING_SPELL_BY_ID`. Valid spell IDs: `bolt`, `cinder_wake`, `ember`, `heat_surge`, `plasma_arc`, `rolling_thunder`, `stormfire`, `thunder_step`, `thunderstorm`. Note: `learnedRingSpellIds` is optional — omitting it entirely is valid.
 
+## Scenario Fixtures (Phase 2)
+
+A **scenario fixture** composes a player fixture and a world fixture with an
+explicit dungeon map, enemy placements, and loot placements into a complete,
+playable `GameState` that can be loaded directly into the engine. It is the
+preferred mechanism for reproducing bugs and testing gameplay systems without
+manual progression.
+
+Scenario files live under `fixtures/scenarios/`. They reference player and
+world fixtures by name rather than duplicating their data.
+
+### Format
+
+```jsonc
+{
+  "schemaVersion": 1,
+  "name": "enemy-death-test",
+  "description": "One attack kills a wounded goblin.",
+  "player": { "ref": "midgame-warrior" },   // or { "inline": { ...PlayerFixture } }
+  "world": { "ref": "fresh-world" },          // or { "inline": { ...WorldFixture } }
+  "floor": 1,                                  // depth; drives enemy scaling (default 1)
+  "seed": 101,                                 // deterministic RNG seed (default 1)
+  "map": {
+    "width": 6,
+    "height": 1,
+    "playerStart": { "x": 0, "y": 0 },
+    "walls": [{ "x": 4, "y": 0 }],             // optional; non-walkable tiles
+    "floors": [],                              // optional; when present, all other cells become walls
+    "spawns": [{ "name": "victim", "position": { "x": 1, "y": 0 } }]
+  },
+  "enemies": [
+    { "templateId": "goblin_archer", "position": { "x": 1, "y": 0 }, "health": 1,
+      "level": 3, "statuses": ["burn"], "healthMultiplier": 1.5 }
+  ],
+  "loot": [{ "itemId": "health_potion", "position": { "x": 2, "y": 0 } }],
+  "interactables": [{ "templateId": "chest", "position": { "x": 3, "y": 0 } }],
+  "tags": ["combat", "reproduction"]
+}
+```
+
+All enemy/loot/interactable fields except `templateId`/`itemId` and `position`
+are optional.
+
+### Loading a scenario
+
+```ts
+import { loadScenario } from '@dungeon/core/fixtures/scenario-fixture-loader.js';
+
+const { state, loot } = loadScenario(scenario, {
+  resolvePlayerFixture: ref => readJson(`fixtures/players/${ref}.json`),
+  resolveWorldFixture: ref => readJson(`fixtures/worlds/${ref}.json`),
+});
+// state.phase === 'dungeon'; submit commands via GameEngine as usual.
+// loot[] lists resolved ground items; collect with addItemToInventory(state, template).
+```
+
+### Fidelity guarantees
+
+- Enemies are built through the same `createEnemyInstance` factory used by floor
+  population, so they scale and behave exactly like naturally spawned enemies.
+- Maps are fully explicit — no procedural generation, no randomness.
+- Loading is deterministic: entity IDs come from a stable counter, so the same
+  scenario produces an identical `GameState` every time.
+- Validation reuses `validatePlayerFixture` and `validateWorldFixture`; it never
+  adds scenario-specific exceptions to runtime systems. Invalid scenarios throw
+  `ScenarioLoadError` with explicit, field-specific messages before any state is
+  built.
+
+### Validation rejects
+
+Unknown player/world fixture refs · unknown enemy/item/object ids · out-of-bounds
+or wall coordinates · overlapping placements · enemies on the player start ·
+duplicate spawn names · invalid status ids · unsupported schema versions.
+
+### Adding a new example scenario
+
+1. Create `fixtures/scenarios/<name>.json` referencing existing player/world
+   fixtures and live content IDs.
+2. Add it to `EXAMPLE_NAMES` in
+   `tests/contracts/example-scenario-fixtures.contract.test.ts` and assert at
+   least one meaningful gameplay action (attack, cast, collect, etc.).
+3. Run `pnpm validate` to confirm the scenario loads and plays.
+
 ## See Also
 
 - [architecture.md](./architecture.md) — GameState structure and data flow
