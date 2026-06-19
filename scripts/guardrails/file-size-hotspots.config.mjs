@@ -109,5 +109,11 @@ export default {
       auditReportNote: 'Fixture hardening for PR #35 merge blockers: added null-safety checks and type validation for ringMastery (null, non-object, array checks) and comprehensive mastery entry validation (null entries, empty objects, non-numeric xp, NaN, Infinity, negative values); added explicit level field validation (must be positive integer when present); future split seam is extracting validation into discrete validators per fixture field',
       lines: 528,
     },
+    {
+      path: 'packages/game-core/src/fixtures/scenario-fixture-validation.ts',
+      reason: 'Scenario fixture validator — consolidates player/world resolution plus map, enemy, loot, interactable, and spawn placement validation against untrusted JSON',
+      auditReportNote: 'Fixture hardening for PR #36 review: resolveScenarioPlayer/resolveScenarioWorld now guard that inline fixtures and resolver return values are objects before downstream validation, returning structured errors instead of crashing; future split seam is extracting per-placement validators into discrete modules',
+      lines: 502,
+    },
   ],
 };

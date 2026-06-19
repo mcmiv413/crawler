@@ -116,16 +116,16 @@ describe('Example scenario library: executable gameplay', () => {
 
   it('faction-leader-test: high-power world scales the faction enemy', () => {
     const scenario = loadScenarioFile('faction-leader-test');
-    const ogreLoad = loadScenario(scenario, RESOLVERS);
+    const highPowerLoad = loadScenario(scenario, RESOLVERS);
     // Compare against the same scenario run in a fresh world.
     const freshScenario: ScenarioFixture = { ...scenario, world: { ref: 'fresh-world' } };
     const freshLoad = loadScenario(freshScenario, RESOLVERS);
-    const ogreHp = ogreLoad.state.run!.enemies.get('3,0')!.stats.maxHealth;
+    const highPowerHp = highPowerLoad.state.run!.enemies.get('3,0')!.stats.maxHealth;
     const freshHp = freshLoad.state.run!.enemies.get('3,0')!.stats.maxHealth;
     // Strict: the placed enemy is a goblin_warband member, so the high-power
     // world must scale its maxHealth above the same enemy in a fresh world.
-    expect(ogreHp).toBeGreaterThan(freshHp);
-    expect(ogreLoad.state.world.dungeonOgre.status).toBe('emerged');
+    expect(highPowerHp).toBeGreaterThan(freshHp);
+    expect(highPowerLoad.state.world.dungeonOgre.status).toBe('emerged');
   });
 
   it('ogre-emergence-test: the ogre is present and attackable', () => {

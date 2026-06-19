@@ -65,14 +65,23 @@ export function resolveScenarioPlayer(
     return { fixture: null, error: 'player must be an object specifying either inline or ref.' };
   }
   if (player.inline !== undefined) {
-    return { fixture: player.inline as PlayerFixture };
+    // Untrusted JSON: inline may be null or a primitive; guard so downstream
+    // validatePlayerFixture never receives a non-object and crashes.
+    if (!isObject(player.inline)) {
+      return { fixture: null, error: 'player.inline must be an object fixture.' };
+    }
+    return { fixture: player.inline as unknown as PlayerFixture };
   }
   if (player.ref !== undefined) {
     if (resolvers === undefined) {
       return { fixture: null, error: `player.ref "${String(player.ref)}" requires resolvers but none were supplied.` };
     }
     try {
-      return { fixture: resolvers.resolvePlayerFixture(player.ref as string) };
+      const resolved = resolvers.resolvePlayerFixture(player.ref as string) as unknown;
+      if (!isObject(resolved)) {
+        return { fixture: null, error: `player.ref "${String(player.ref)}" resolved to a non-object fixture.` };
+      }
+      return { fixture: resolved as unknown as PlayerFixture };
     } catch (err) {
       return { fixture: null, error: `Unknown player fixture reference "${String(player.ref)}": ${(err as Error).message}` };
     }
@@ -90,14 +99,23 @@ export function resolveScenarioWorld(
     return { fixture: null, error: 'world must be an object specifying either inline or ref.' };
   }
   if (world.inline !== undefined) {
-    return { fixture: world.inline as WorldFixture };
+    // Untrusted JSON: inline may be null or a primitive; guard so downstream
+    // validateWorldFixture never receives a non-object and crashes.
+    if (!isObject(world.inline)) {
+      return { fixture: null, error: 'world.inline must be an object fixture.' };
+    }
+    return { fixture: world.inline as unknown as WorldFixture };
   }
   if (world.ref !== undefined) {
     if (resolvers === undefined) {
       return { fixture: null, error: `world.ref "${String(world.ref)}" requires resolvers but none were supplied.` };
     }
     try {
-      return { fixture: resolvers.resolveWorldFixture(world.ref as string) };
+      const resolved = resolvers.resolveWorldFixture(world.ref as string) as unknown;
+      if (!isObject(resolved)) {
+        return { fixture: null, error: `world.ref "${String(world.ref)}" resolved to a non-object fixture.` };
+      }
+      return { fixture: resolved as unknown as WorldFixture };
     } catch (err) {
       return { fixture: null, error: `Unknown world fixture reference "${String(world.ref)}": ${(err as Error).message}` };
     }
