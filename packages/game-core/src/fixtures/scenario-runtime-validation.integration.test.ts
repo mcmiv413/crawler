@@ -261,10 +261,11 @@ describe('Group 4: Enemy Runtime Validation', () => {
     );
     const enemy = state.run!.enemies.get('1,0')!;
     const result = engine.submitCommand(state, { type: 'ATTACK', targetId: enemy.id });
-    const killed = result.events.some(e => e.type === 'ENTITY_DIED');
-    const stillHasFullHealth = result.state.run!.enemies.get('1,0')?.stats.health;
-    // Either the enemy died (event) or its health dropped from 1 (took damage).
-    expect(killed || stillHasFullHealth === undefined || stillHasFullHealth < 1).toBe(true);
+    // Prove the death pipeline ran: a matching ENTITY_DIED event must fire and
+    // the enemy must be removed from the run.
+    const killed = result.events.some(e => e.type === 'ENTITY_DIED' && e.entityId === enemy.id);
+    expect(killed).toBe(true);
+    expect(result.state.run!.enemies.get('1,0')).toBeUndefined();
   });
 
   it('a status override is present on the placed enemy', () => {

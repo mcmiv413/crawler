@@ -38,6 +38,7 @@ import { loadPlayerFromFixture } from './player-fixture-loader.js';
 import { loadWorldFromFixture } from './world-fixture-loader.js';
 import { createEnemyInstance } from '../generation/enemy-instantiation.js';
 import { applyStatusToEnemy } from '../systems/status-effects.js';
+import { computeFov } from '../systems/fov.js';
 import {
   validateScenarioFixture,
   resolveScenarioPlayer,
@@ -209,7 +210,11 @@ function buildFloor(map: ScenarioMapFixture, depth: number, seed: number): Dunge
       }
       cells.set(key, {
         tile: isWall === true ? WALL_TILE : FLOOR_TILE,
-        visibility: 'visible',
+        // Start hidden and reveal via computeFov below, matching the generated
+        // floor path (floor-transition-service.buildVisibleFloor). Initializing
+        // every cell as 'visible' would make the first in-game computeFov mark
+        // unseen tiles as 'remembered', diverging from natural play.
+        visibility: 'hidden',
       });
     }
   }
@@ -221,7 +226,7 @@ function buildFloor(map: ScenarioMapFixture, depth: number, seed: number): Dunge
     ? exitCandidate
     : { ...map.playerStart };
 
-  return {
+  const floor: DungeonFloor = {
     width: map.width,
     height: map.height,
     depth,
@@ -231,6 +236,9 @@ function buildFloor(map: ScenarioMapFixture, depth: number, seed: number): Dunge
     exit,
     seed,
   };
+
+  // Reveal the player's starting field of view exactly as the engine does.
+  return { ...floor, cells: computeFov(floor, map.playerStart) };
 }
 
 /**
