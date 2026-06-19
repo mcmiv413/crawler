@@ -39,21 +39,42 @@ export const SCENARIO_FIXTURE_SCHEMA_VERSION = 1;
  * falling back to a named reference via the supplied resolvers.
  * Returns null when the reference cannot be resolved.
  */
+// ─────────────────────────────────────────────────────────────────────────────
+// Runtime shape guards (scenario fixtures arrive as untrusted JSON)
+// ─────────────────────────────────────────────────────────────────────────────
+
+function isObject(value: unknown): value is Record<string, unknown> {
+  return typeof value === 'object' && value !== null && !Array.isArray(value);
+}
+
+function isPositionLike(value: unknown): value is Position {
+  return isObject(value) && typeof value.x === 'number' && typeof value.y === 'number';
+}
+
+function isSpawnLike(value: unknown): value is { readonly name: string; readonly position: Position } {
+  return isObject(value) && typeof value.name === 'string' && isPositionLike(value.position);
+}
+
 export function resolveScenarioPlayer(
   scenario: ScenarioFixture,
   resolvers: ScenarioResolvers | undefined,
 ): { fixture: PlayerFixture | null; error?: string } {
-  if (scenario.player.inline !== undefined) {
-    return { fixture: scenario.player.inline };
+  // Untrusted JSON: player may be missing or a non-object at runtime.
+  const player = scenario.player as unknown;
+  if (!isObject(player)) {
+    return { fixture: null, error: 'player must be an object specifying either inline or ref.' };
   }
-  if (scenario.player.ref !== undefined) {
+  if (player.inline !== undefined) {
+    return { fixture: player.inline as PlayerFixture };
+  }
+  if (player.ref !== undefined) {
     if (resolvers === undefined) {
-      return { fixture: null, error: `player.ref "${scenario.player.ref}" requires resolvers but none were supplied.` };
+      return { fixture: null, error: `player.ref "${String(player.ref)}" requires resolvers but none were supplied.` };
     }
     try {
-      return { fixture: resolvers.resolvePlayerFixture(scenario.player.ref) };
+      return { fixture: resolvers.resolvePlayerFixture(player.ref as string) };
     } catch (err) {
-      return { fixture: null, error: `Unknown player fixture reference "${scenario.player.ref}": ${(err as Error).message}` };
+      return { fixture: null, error: `Unknown player fixture reference "${String(player.ref)}": ${(err as Error).message}` };
     }
   }
   return { fixture: null, error: 'player must specify either inline or ref.' };
@@ -63,17 +84,22 @@ export function resolveScenarioWorld(
   scenario: ScenarioFixture,
   resolvers: ScenarioResolvers | undefined,
 ): { fixture: WorldFixture | null; error?: string } {
-  if (scenario.world.inline !== undefined) {
-    return { fixture: scenario.world.inline };
+  // Untrusted JSON: world may be missing or a non-object at runtime.
+  const world = scenario.world as unknown;
+  if (!isObject(world)) {
+    return { fixture: null, error: 'world must be an object specifying either inline or ref.' };
   }
-  if (scenario.world.ref !== undefined) {
+  if (world.inline !== undefined) {
+    return { fixture: world.inline as WorldFixture };
+  }
+  if (world.ref !== undefined) {
     if (resolvers === undefined) {
-      return { fixture: null, error: `world.ref "${scenario.world.ref}" requires resolvers but none were supplied.` };
+      return { fixture: null, error: `world.ref "${String(world.ref)}" requires resolvers but none were supplied.` };
     }
     try {
-      return { fixture: resolvers.resolveWorldFixture(scenario.world.ref) };
+      return { fixture: resolvers.resolveWorldFixture(world.ref as string) };
     } catch (err) {
-      return { fixture: null, error: `Unknown world fixture reference "${scenario.world.ref}": ${(err as Error).message}` };
+      return { fixture: null, error: `Unknown world fixture reference "${String(world.ref)}": ${(err as Error).message}` };
     }
   }
   return { fixture: null, error: 'world must specify either inline or ref.' };
@@ -164,75 +190,99 @@ function validateMapAndPlacements(
   worldFactions: readonly FactionState[],
   add: AddError,
 ): void {
-  // Cast through unknown: scenario fixtures arrive as untrusted JSON, so the
-  // statically-required map/playerStart may be missing at runtime.
-  const map = scenario.map as ScenarioFixture['map'] | undefined;
-  if (map === undefined) {
+  // Scenario fixtures arrive as untrusted JSON: validate runtime shapes before
+  // dereferencing so malformed input produces field errors instead of throwing.
+  const map = scenario.map as unknown;
+  if (!isObject(map)) {
     add('map', 'map is required.');
     return;
   }
 
-  if (!Number.isInteger(map.width) || map.width < 1) {
-    add('map.width', `map.width must be an integer ≥ 1, got ${map.width}.`);
+  if (!Number.isInteger(map.width) || (map.width as number) < 1) {
+    add('map.width', `map.width must be an integer ≥ 1, got ${JSON.stringify(map.width)}.`);
   }
-  if (!Number.isInteger(map.height) || map.height < 1) {
-    add('map.height', `map.height must be an integer ≥ 1, got ${map.height}.`);
+  if (!Number.isInteger(map.height) || (map.height as number) < 1) {
+    add('map.height', `map.height must be an integer ≥ 1, got ${JSON.stringify(map.height)}.`);
   }
+  const width = map.width as number;
+  const height = map.height as number;
 
   const inBounds = (p: Position): boolean =>
     Number.isInteger(p.x) && Number.isInteger(p.y)
-    && p.x >= 0 && p.x < map.width && p.y >= 0 && p.y < map.height;
+    && p.x >= 0 && p.x < width && p.y >= 0 && p.y < height;
 
-  const wallSet = new Set<string>((map.walls ?? []).map(posKey));
+  // Normalize array-valued fields: a present-but-non-array field is a shape
+  // error; individual malformed entries are reported in their own loop below.
+  const rawWalls = map.walls;
+  const rawFloors = map.floors;
+  const rawSpawns = map.spawns;
+  if (rawWalls !== undefined && !Array.isArray(rawWalls)) add('map.walls', 'map.walls must be an array of { x, y } coordinates.');
+  if (rawFloors !== undefined && !Array.isArray(rawFloors)) add('map.floors', 'map.floors must be an array of { x, y } coordinates.');
+  if (rawSpawns !== undefined && !Array.isArray(rawSpawns)) add('map.spawns', 'map.spawns must be an array of { name, position } objects.');
+  const walls: readonly unknown[] = Array.isArray(rawWalls) ? rawWalls : [];
+  const floors: readonly unknown[] = Array.isArray(rawFloors) ? rawFloors : [];
+  const spawns: readonly unknown[] = Array.isArray(rawSpawns) ? rawSpawns : [];
+
+  const wallSet = new Set<string>(walls.filter(isPositionLike).map(posKey));
   const occupied = new Map<string, string>();
 
-  // When an explicit floor list is provided, only those cells (plus the player
-  // start and named spawns) are walkable; everything else is a wall.
-  const explicitFloors = map.floors !== undefined
+  const playerStart = map.playerStart;
+  const playerStartValid = isPositionLike(playerStart) && inBounds(playerStart);
+
+  // When an explicit floor list is provided, only those cells (plus a valid
+  // player start and named spawns) are walkable; everything else is a wall.
+  const explicitFloors = rawFloors !== undefined
     ? new Set<string>([
-        ...map.floors.map(posKey),
-        posKey(map.playerStart),
-        ...(map.spawns ?? []).map(s => posKey(s.position)),
+        ...floors.filter(isPositionLike).map(posKey),
+        ...(playerStartValid === true ? [posKey(playerStart)] : []),
+        ...spawns.filter(isSpawnLike).map(s => posKey(s.position)),
       ])
     : null;
   const isWalkable = (p: Position): boolean =>
     !wallSet.has(posKey(p)) && (explicitFloors === null || explicitFloors.has(posKey(p)));
 
-  // playerStart (untrusted JSON: may be missing at runtime)
-  const playerStart = map.playerStart as Position | undefined;
-  if (playerStart === undefined || !inBounds(playerStart)) {
-    add('map.playerStart', `map.playerStart must be an in-bounds coordinate within [0,${map.width}) × [0,${map.height}), got ${JSON.stringify(map.playerStart)}.`);
-  } else if (wallSet.has(posKey(map.playerStart))) {
-    add('map.playerStart', `map.playerStart ${posKey(map.playerStart)} cannot be on a wall.`);
+  // playerStart (untrusted JSON: may be missing/malformed at runtime)
+  if (!isPositionLike(playerStart) || !inBounds(playerStart)) {
+    add('map.playerStart', `map.playerStart must be an in-bounds coordinate within [0,${width}) × [0,${height}), got ${JSON.stringify(map.playerStart)}.`);
+  } else if (wallSet.has(posKey(playerStart))) {
+    add('map.playerStart', `map.playerStart ${posKey(playerStart)} cannot be on a wall.`);
   } else {
-    occupied.set(posKey(map.playerStart), 'playerStart');
+    occupied.set(posKey(playerStart), 'playerStart');
   }
 
-  if (map.walls !== undefined) {
-    for (let i = 0; i < map.walls.length; i++) {
-      if (!inBounds(map.walls[i]!)) add(`map.walls[${i}]`, `wall coordinate ${JSON.stringify(map.walls[i])} is out of bounds.`);
+  for (let i = 0; i < walls.length; i++) {
+    const wall = walls[i];
+    if (!isPositionLike(wall)) {
+      add(`map.walls[${i}]`, `wall coordinate ${JSON.stringify(wall)} must be a { x, y } object.`);
+    } else if (!inBounds(wall)) {
+      add(`map.walls[${i}]`, `wall coordinate ${JSON.stringify(wall)} is out of bounds.`);
     }
   }
 
-  if (map.floors !== undefined) {
-    for (let i = 0; i < map.floors.length; i++) {
-      if (!inBounds(map.floors[i]!)) add(`map.floors[${i}]`, `floor coordinate ${JSON.stringify(map.floors[i])} is out of bounds.`);
+  for (let i = 0; i < floors.length; i++) {
+    const floor = floors[i];
+    if (!isPositionLike(floor)) {
+      add(`map.floors[${i}]`, `floor coordinate ${JSON.stringify(floor)} must be a { x, y } object.`);
+    } else if (!inBounds(floor)) {
+      add(`map.floors[${i}]`, `floor coordinate ${JSON.stringify(floor)} is out of bounds.`);
     }
   }
 
-  if (map.spawns !== undefined) {
-    const seenNames = new Set<string>();
-    for (let i = 0; i < map.spawns.length; i++) {
-      const spawn = map.spawns[i]!;
-      if (seenNames.has(spawn.name)) {
-        add(`map.spawns[${i}].name`, `Duplicate spawn name "${spawn.name}". Spawn names must be unique.`);
-      }
-      seenNames.add(spawn.name);
-      if (!inBounds(spawn.position)) {
-        add(`map.spawns[${i}].position`, `spawn "${spawn.name}" position ${JSON.stringify(spawn.position)} is out of bounds.`);
-      } else if (wallSet.has(posKey(spawn.position))) {
-        add(`map.spawns[${i}].position`, `spawn "${spawn.name}" cannot be placed on a wall.`);
-      }
+  const seenNames = new Set<string>();
+  for (let i = 0; i < spawns.length; i++) {
+    const spawn = spawns[i];
+    if (!isSpawnLike(spawn)) {
+      add(`map.spawns[${i}]`, `spawn must be a { name, position } object, got ${JSON.stringify(spawn)}.`);
+      continue;
+    }
+    if (seenNames.has(spawn.name)) {
+      add(`map.spawns[${i}].name`, `Duplicate spawn name "${spawn.name}". Spawn names must be unique.`);
+    }
+    seenNames.add(spawn.name);
+    if (!inBounds(spawn.position)) {
+      add(`map.spawns[${i}].position`, `spawn "${spawn.name}" position ${JSON.stringify(spawn.position)} is out of bounds.`);
+    } else if (wallSet.has(posKey(spawn.position))) {
+      add(`map.spawns[${i}].position`, `spawn "${spawn.name}" cannot be placed on a wall.`);
     }
   }
 

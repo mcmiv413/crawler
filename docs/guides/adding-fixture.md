@@ -219,7 +219,7 @@ world fixtures by name rather than duplicating their data.
     "height": 1,
     "playerStart": { "x": 0, "y": 0 },
     "walls": [{ "x": 4, "y": 0 }],             // optional; non-walkable tiles
-    "floors": [],                              // optional; when present, all other cells become walls
+    // "floors": [{ "x": 2, "y": 0 }, { "x": 3, "y": 0 }], // optional; when present ONLY listed cells (plus playerStart/spawns) are walkable — every other cell becomes a wall. Omit to keep the whole map walkable.
     "spawns": [{ "name": "victim", "position": { "x": 1, "y": 0 } }]
   },
   "enemies": [
@@ -238,7 +238,9 @@ are optional.
 ### Loading a scenario
 
 ```ts
-import { loadScenario } from '@dungeon/core/fixtures/scenario-fixture-loader.js';
+// loadScenario is internal to @dungeon/core (no fixtures/* package export);
+// import it by repo-local path, as the contract tests do.
+import { loadScenario } from '../../packages/game-core/src/fixtures/scenario-fixture-loader.js';
 
 const { state, loot } = loadScenario(scenario, {
   resolvePlayerFixture: ref => readJson(`fixtures/players/${ref}.json`),

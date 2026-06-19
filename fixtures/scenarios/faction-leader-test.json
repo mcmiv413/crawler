@@ -13,7 +13,7 @@
     "spawns": [{ "name": "champion", "position": { "x": 3, "y": 0 } }]
   },
   "enemies": [
-    { "templateId": "cave_rat", "position": { "x": 3, "y": 0 } }
+    { "templateId": "goblin_warlord", "position": { "x": 3, "y": 0 } }
   ],
   "tags": ["faction", "world", "late-game"]
 }
