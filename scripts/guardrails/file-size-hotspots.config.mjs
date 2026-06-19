@@ -112,8 +112,8 @@ export default {
     {
       path: 'packages/game-core/src/fixtures/scenario-fixture-validation.ts',
       reason: 'Scenario fixture validator — consolidates player/world resolution plus map, enemy, loot, interactable, and spawn placement validation against untrusted JSON',
-      auditReportNote: 'Fixture hardening for PR #36 review: resolveScenarioPlayer/resolveScenarioWorld now guard that inline fixtures and resolver return values are objects before downstream validation, returning structured errors instead of crashing; future split seam is extracting per-placement validators into discrete modules',
-      lines: 502,
+      auditReportNote: 'Fixture hardening for PR #36 review: resolveScenarioPlayer/resolveScenarioWorld now guard that ref is a non-empty string and that inline fixtures and resolver return values are objects before downstream validation; validateMapAndPlacements bails out on invalid width/height and only treats array map.floors as explicit floors; future split seam is extracting per-placement validators into discrete modules',
+      lines: 525,
     },
   ],
 };
