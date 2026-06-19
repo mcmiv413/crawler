@@ -400,14 +400,17 @@ describe('Group 7: Spell Runtime Validation', () => {
   it('casting ember at the enemy executes real gameplay (events + mana cost)', () => {
     const { state } = loadScenario(spellScenario());
     const enemy = state.run!.enemies.get('2,0')!;
-    const manaBefore = state.player.mana;
     const result = engine.submitCommand(state, {
       type: 'USE_ABILITY',
       abilityId: 'ember',
       targetId: enemy.id,
     });
     expect(result.events.length).toBeGreaterThan(0);
-    expect(result.state.player.mana).toBeLessThanOrEqual(manaBefore);
+    // Comparing final mana to the starting value is brittle: per-turn regen can
+    // offset (or exceed) the spend. Require a negative MANA_CHANGED to prove the
+    // cast actually deducted mana.
+    const spentMana = result.events.some(e => e.type === 'MANA_CHANGED' && e.amount < 0);
+    expect(spentMana).toBe(true);
   });
 });
 
