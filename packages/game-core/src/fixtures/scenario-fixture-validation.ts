@@ -73,17 +73,23 @@ export function resolveScenarioPlayer(
     return { fixture: player.inline as unknown as PlayerFixture };
   }
   if (player.ref !== undefined) {
+    // Untrusted JSON: ref may be a number/object; validate before resolving so
+    // the resolver only ever sees a real reference string.
+    if (typeof player.ref !== 'string' || player.ref.length === 0) {
+      return { fixture: null, error: `player.ref must be a non-empty string, got ${JSON.stringify(player.ref)}.` };
+    }
+    const ref = player.ref;
     if (resolvers === undefined) {
-      return { fixture: null, error: `player.ref "${String(player.ref)}" requires resolvers but none were supplied.` };
+      return { fixture: null, error: `player.ref "${ref}" requires resolvers but none were supplied.` };
     }
     try {
-      const resolved = resolvers.resolvePlayerFixture(player.ref as string) as unknown;
+      const resolved = resolvers.resolvePlayerFixture(ref) as unknown;
       if (!isObject(resolved)) {
-        return { fixture: null, error: `player.ref "${String(player.ref)}" resolved to a non-object fixture.` };
+        return { fixture: null, error: `player.ref "${ref}" resolved to a non-object fixture.` };
       }
       return { fixture: resolved as unknown as PlayerFixture };
     } catch (err) {
-      return { fixture: null, error: `Unknown player fixture reference "${String(player.ref)}": ${(err as Error).message}` };
+      return { fixture: null, error: `Unknown player fixture reference "${ref}": ${(err as Error).message}` };
     }
   }
   return { fixture: null, error: 'player must specify either inline or ref.' };
@@ -107,17 +113,23 @@ export function resolveScenarioWorld(
     return { fixture: world.inline as unknown as WorldFixture };
   }
   if (world.ref !== undefined) {
+    // Untrusted JSON: ref may be a number/object; validate before resolving so
+    // the resolver only ever sees a real reference string.
+    if (typeof world.ref !== 'string' || world.ref.length === 0) {
+      return { fixture: null, error: `world.ref must be a non-empty string, got ${JSON.stringify(world.ref)}.` };
+    }
+    const ref = world.ref;
     if (resolvers === undefined) {
-      return { fixture: null, error: `world.ref "${String(world.ref)}" requires resolvers but none were supplied.` };
+      return { fixture: null, error: `world.ref "${ref}" requires resolvers but none were supplied.` };
     }
     try {
-      const resolved = resolvers.resolveWorldFixture(world.ref as string) as unknown;
+      const resolved = resolvers.resolveWorldFixture(ref) as unknown;
       if (!isObject(resolved)) {
-        return { fixture: null, error: `world.ref "${String(world.ref)}" resolved to a non-object fixture.` };
+        return { fixture: null, error: `world.ref "${ref}" resolved to a non-object fixture.` };
       }
       return { fixture: resolved as unknown as WorldFixture };
     } catch (err) {
-      return { fixture: null, error: `Unknown world fixture reference "${String(world.ref)}": ${(err as Error).message}` };
+      return { fixture: null, error: `Unknown world fixture reference "${ref}": ${(err as Error).message}` };
     }
   }
   return { fixture: null, error: 'world must specify either inline or ref.' };
@@ -137,16 +149,18 @@ export function validateScenarioFixture(
   scenario: ScenarioFixture,
   resolvers?: ScenarioResolvers,
 ): ScenarioValidationResult {
-  let errors: ScenarioValidationError[] = [];
+  // Mutable accumulator: validators push as they find problems. Exposed as a
+  // readonly array on the result so callers cannot mutate it.
+  const mutableErrors: ScenarioValidationError[] = [];
   const add = (field: string, message: string): void => {
-    errors = [...errors, { field, message }];
+    mutableErrors.push({ field, message });
   };
 
   validateMeta(scenario, add);
   validateComposedFixtures(scenario, resolvers, add);
   validateMapAndPlacements(scenario, resolveWorldFactions(scenario, resolvers), add);
 
-  return { isValid: errors.length === 0, errors };
+  return { isValid: mutableErrors.length === 0, errors: mutableErrors };
 }
 
 type AddError = (field: string, message: string) => void;
@@ -216,11 +230,18 @@ function validateMapAndPlacements(
     return;
   }
 
-  if (!Number.isInteger(map.width) || (map.width as number) < 1) {
+  const widthValid = Number.isInteger(map.width) && (map.width as number) >= 1;
+  const heightValid = Number.isInteger(map.height) && (map.height as number) >= 1;
+  if (widthValid === false) {
     add('map.width', `map.width must be an integer ≥ 1, got ${JSON.stringify(map.width)}.`);
   }
-  if (!Number.isInteger(map.height) || (map.height as number) < 1) {
+  if (heightValid === false) {
     add('map.height', `map.height must be an integer ≥ 1, got ${JSON.stringify(map.height)}.`);
+  }
+  // Bail out before using width/height: continuing with invalid dimensions
+  // produces confusing bounds messages and cascades into placement errors.
+  if (widthValid === false || heightValid === false) {
+    return;
   }
   const width = map.width as number;
   const height = map.height as number;
@@ -249,7 +270,9 @@ function validateMapAndPlacements(
 
   // When an explicit floor list is provided, only those cells (plus a valid
   // player start and named spawns) are walkable; everything else is a wall.
-  const explicitFloors = rawFloors !== undefined
+  // Only an actual array enables explicit-floor mode; a non-array map.floors is
+  // a shape error (reported above) and must not silently make every cell a wall.
+  const explicitFloors = Array.isArray(rawFloors)
     ? new Set<string>([
         ...floors.filter(isPositionLike).map(posKey),
         ...(playerStartValid === true ? [posKey(playerStart)] : []),

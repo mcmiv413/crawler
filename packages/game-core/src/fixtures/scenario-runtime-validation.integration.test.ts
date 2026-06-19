@@ -160,7 +160,9 @@ describe('Group 2: Behavioral Equivalence', () => {
     const scenarioPreview = getPlayerOffensePreview(state);
     const naturalPreview = getPlayerOffensePreview(equipped.state);
 
-    // Same weapon + same level → identical damage band contribution.
+    // Same weapon → identical weapon damage band width. createNewGame() always
+    // makes a level-1 player, so this compares the weapon's band width, which is
+    // independent of the player's attack stat/level (see getPlayerOffensePreview).
     expect(scenarioPreview.totalDamageMin).toBeGreaterThan(0);
     expect(naturalPreview.totalDamageMin).toBeGreaterThan(0);
     const scenarioBand = scenarioPreview.totalDamageMax - scenarioPreview.totalDamageMin;
