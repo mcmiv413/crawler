@@ -38,6 +38,7 @@ import { loadPlayerFromFixture } from './player-fixture-loader.js';
 import { loadWorldFromFixture } from './world-fixture-loader.js';
 import { createEnemyInstance } from '../generation/enemy-instantiation.js';
 import { applyStatusToEnemy } from '../systems/status-effects.js';
+import { syncEquipmentGrantedAbilities } from '../systems/equipment.js';
 import { computeFov } from '../systems/fov.js';
 import {
   validateScenarioFixture,
@@ -130,9 +131,15 @@ function buildScenarioState(
   const { player: loadedPlayer, itemRegistry: playerRegistry } = loadPlayerFromFixture(playerFixture);
   const world = loadWorldFromFixture(worldFixture);
 
+  // Grant abilities from equipped items (rings, ability-granting enchantments)
+  // so a scenario-loaded player can actually use its learned ring spells, just
+  // like natural gameplay where equipping a ring syncs granted abilities. Without
+  // this, casts are rejected as ABILITY_NOT_UNLOCKED despite learnedRingSpellIds.
+  const equippedPlayer = syncEquipmentGrantedAbilities(loadedPlayer, playerRegistry.items);
+
   // Position the player at the map start and onto the floor.
   const player = {
-    ...loadedPlayer,
+    ...equippedPlayer,
     position: { ...scenario.map.playerStart },
     floor: floorNumber,
   };
@@ -276,7 +283,9 @@ function buildEnemies(
         const sid = statusId as StatusId;
         const defaults = (STATUS_DEFAULTS as Record<string, { defaultDuration?: number }>)[sid];
         const duration = defaults?.defaultDuration ?? 3;
-        enemy = applyStatusToEnemy(enemy, sid, duration, 0, null);
+        // Magnitude 0 leaves magnitude-driven statuses (strength, arcane_charge,
+        // burn scaling) inert; normal gameplay applies magnitude >= 1, so match it.
+        enemy = applyStatusToEnemy(enemy, sid, duration, 1, null);
       }
     }
 
