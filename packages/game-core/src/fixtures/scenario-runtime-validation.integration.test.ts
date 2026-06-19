@@ -417,7 +417,10 @@ describe('Group 8: Scenario Isolation', () => {
   it('mutating one loaded state does not affect a second independent load', () => {
     const a = loadScenario(combatScenario());
     const b = loadScenario(combatScenario());
-    engine.submitCommand(a.state, { type: 'MOVE', direction: 'E' });
+    // submitCommand is pure: capture the returned state and prove the move
+    // actually advanced a's player so this is a real isolation check.
+    const movedA = engine.submitCommand(a.state, { type: 'MOVE', direction: 'E' });
+    expect(movedA.state.player.position).toEqual({ x: 1, y: 0 });
     // b is untouched: its player is still at the start.
     expect(b.state.player.position).toEqual({ x: 0, y: 0 });
   });
@@ -463,6 +466,16 @@ describe('Group 9: Invalid Scenario Validation', () => {
       'world',
       RESOLVERS,
     );
+  });
+
+  it('rejects a non-object player.inline without crashing', () => {
+    const scenario = { ...combatScenario(), player: { inline: null } } as unknown as ScenarioFixture;
+    expectInvalid(scenario, 'player');
+  });
+
+  it('rejects a non-object world.inline without crashing', () => {
+    const scenario = { ...combatScenario(), world: { inline: null } } as unknown as ScenarioFixture;
+    expectInvalid(scenario, 'world');
   });
 
   it('rejects an unknown enemy template id', () => {
