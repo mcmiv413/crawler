@@ -304,17 +304,33 @@ function validateEnemyPlacements(
   occupied: Map<string, string>,
   add: AddError,
 ): void {
-  if (scenario.enemies === undefined) return;
-  for (let i = 0; i < scenario.enemies.length; i++) {
-    const placement = scenario.enemies[i]!;
+  // Scenario fixtures arrive as untrusted JSON: validate runtime shapes before
+  // dereferencing so malformed input produces field errors instead of throwing.
+  const rawEnemies = scenario.enemies as unknown;
+  if (rawEnemies === undefined) return;
+  if (!Array.isArray(rawEnemies)) {
+    add('enemies', 'enemies must be an array of placement objects.');
+    return;
+  }
+  for (let i = 0; i < rawEnemies.length; i++) {
     const field = `enemies[${i}]`;
-    const templateExists = ENEMY_TEMPLATES.has(placement.templateId);
+    const placement = rawEnemies[i] as NonNullable<ScenarioFixture['enemies']>[number];
+    if (!isObject(placement)) {
+      add(field, `enemy placement must be a { templateId, position } object, got ${JSON.stringify(rawEnemies[i])}.`);
+      continue;
+    }
 
-    if (templateExists === false) {
+    const templateExists = typeof placement.templateId === 'string' && ENEMY_TEMPLATES.has(placement.templateId);
+    if (typeof placement.templateId !== 'string') {
+      add(`${field}.templateId`, `enemy templateId must be a string, got ${JSON.stringify(placement.templateId)}.`);
+    } else if (templateExists === false) {
       add(`${field}.templateId`, `Unknown enemy template id "${placement.templateId}". Must exist in ENEMY_TEMPLATES.`);
     }
 
-    if (!inBounds(placement.position)) {
+    const positionValid = isPositionLike(placement.position);
+    if (positionValid === false) {
+      add(`${field}.position`, `enemy position must be a { x, y } object, got ${JSON.stringify(placement.position)}.`);
+    } else if (!inBounds(placement.position)) {
       add(`${field}.position`, `enemy position ${JSON.stringify(placement.position)} is out of bounds.`);
     } else {
       const key = posKey(placement.position);
@@ -339,9 +355,13 @@ function validateEnemyPlacements(
       add(`${field}.healthMultiplier`, `enemy healthMultiplier must be a positive number, got ${placement.healthMultiplier}.`);
     }
     if (placement.statuses !== undefined) {
-      for (const statusId of placement.statuses) {
-        if (!STATUS_DEFINITIONS.has(statusId)) {
-          add(`${field}.statuses`, `Unknown status id "${statusId}". Valid: ${[...STATUS_DEFINITIONS.keys()].join(', ')}.`);
+      if (!Array.isArray(placement.statuses)) {
+        add(`${field}.statuses`, `enemy statuses must be an array of status ids, got ${JSON.stringify(placement.statuses)}.`);
+      } else {
+        for (const statusId of placement.statuses) {
+          if (typeof statusId !== 'string' || !STATUS_DEFINITIONS.has(statusId)) {
+            add(`${field}.statuses`, `Unknown status id ${JSON.stringify(statusId)}. Valid: ${[...STATUS_DEFINITIONS.keys()].join(', ')}.`);
+          }
         }
       }
     }
@@ -354,7 +374,7 @@ function validateEnemyPlacements(
       || (Number.isFinite(placement.healthMultiplier) && placement.healthMultiplier > 0);
     const healthIsValid = placement.health !== undefined && Number.isFinite(placement.health) && placement.health > 0;
 
-    if (templateExists && healthIsValid && levelIsValid && healthMultiplierIsValid) {
+    if (templateExists && positionValid && healthIsValid && levelIsValid && healthMultiplierIsValid) {
       const template = ENEMY_TEMPLATES.get(placement.templateId)!;
       const depth = placement.level ?? defaultDepth;
       const scaled = createEnemyInstance(template, { ...placement.position }, depth, {
@@ -376,14 +396,29 @@ function validateLootPlacements(
   occupied: Map<string, string>,
   add: AddError,
 ): void {
-  if (scenario.loot === undefined) return;
-  for (let i = 0; i < scenario.loot.length; i++) {
-    const placement = scenario.loot[i]!;
+  // Scenario fixtures arrive as untrusted JSON: validate runtime shapes before
+  // dereferencing so malformed input produces field errors instead of throwing.
+  const rawLoot = scenario.loot as unknown;
+  if (rawLoot === undefined) return;
+  if (!Array.isArray(rawLoot)) {
+    add('loot', 'loot must be an array of placement objects.');
+    return;
+  }
+  for (let i = 0; i < rawLoot.length; i++) {
     const field = `loot[${i}]`;
-    if (!ITEM_BY_ID.has(placement.itemId)) {
+    const placement = rawLoot[i] as NonNullable<ScenarioFixture['loot']>[number];
+    if (!isObject(placement)) {
+      add(field, `loot placement must be a { itemId, position } object, got ${JSON.stringify(rawLoot[i])}.`);
+      continue;
+    }
+    if (typeof placement.itemId !== 'string') {
+      add(`${field}.itemId`, `loot itemId must be a string, got ${JSON.stringify(placement.itemId)}.`);
+    } else if (!ITEM_BY_ID.has(placement.itemId)) {
       add(`${field}.itemId`, `Unknown item id "${placement.itemId}". Must exist in ITEM_BY_ID.`);
     }
-    if (!inBounds(placement.position)) {
+    if (!isPositionLike(placement.position)) {
+      add(`${field}.position`, `loot position must be a { x, y } object, got ${JSON.stringify(placement.position)}.`);
+    } else if (!inBounds(placement.position)) {
       add(`${field}.position`, `loot position ${JSON.stringify(placement.position)} is out of bounds.`);
     } else {
       const key = posKey(placement.position);
@@ -407,14 +442,29 @@ function validateInteractablePlacements(
   occupied: Map<string, string>,
   add: AddError,
 ): void {
-  if (scenario.interactables === undefined) return;
-  for (let i = 0; i < scenario.interactables.length; i++) {
-    const placement = scenario.interactables[i]!;
+  // Scenario fixtures arrive as untrusted JSON: validate runtime shapes before
+  // dereferencing so malformed input produces field errors instead of throwing.
+  const rawInteractables = scenario.interactables as unknown;
+  if (rawInteractables === undefined) return;
+  if (!Array.isArray(rawInteractables)) {
+    add('interactables', 'interactables must be an array of placement objects.');
+    return;
+  }
+  for (let i = 0; i < rawInteractables.length; i++) {
     const field = `interactables[${i}]`;
-    if (!OBJECT_TEMPLATES.has(placement.templateId)) {
+    const placement = rawInteractables[i] as NonNullable<ScenarioFixture['interactables']>[number];
+    if (!isObject(placement)) {
+      add(field, `interactable placement must be a { templateId, position } object, got ${JSON.stringify(rawInteractables[i])}.`);
+      continue;
+    }
+    if (typeof placement.templateId !== 'string') {
+      add(`${field}.templateId`, `interactable templateId must be a string, got ${JSON.stringify(placement.templateId)}.`);
+    } else if (!OBJECT_TEMPLATES.has(placement.templateId)) {
       add(`${field}.templateId`, `Unknown object template id "${placement.templateId}". Must exist in OBJECT_TEMPLATES.`);
     }
-    if (!inBounds(placement.position)) {
+    if (!isPositionLike(placement.position)) {
+      add(`${field}.position`, `interactable position must be a { x, y } object, got ${JSON.stringify(placement.position)}.`);
+    } else if (!inBounds(placement.position)) {
       add(`${field}.position`, `interactable position ${JSON.stringify(placement.position)} is out of bounds.`);
     } else {
       const key = posKey(placement.position);

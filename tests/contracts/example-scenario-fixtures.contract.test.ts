@@ -77,9 +77,11 @@ describe('Example scenario library: executable gameplay', () => {
     const enemy = state.run!.enemies.get('1,0')!;
     expect(enemy.stats.health).toBe(1);
     const result = engine.submitCommand(state, { type: 'ATTACK', targetId: enemy.id });
-    const died = result.events.some(e => e.type === 'ENTITY_DIED');
-    const survivor = result.state.run!.enemies.get('1,0');
-    expect(died || survivor === undefined).toBe(true);
+    // The death pipeline must actually run: a matching ENTITY_DIED event must
+    // fire and the enemy must be removed from the run.
+    const died = result.events.some(e => e.type === 'ENTITY_DIED' && e.entityId === enemy.id);
+    expect(died).toBe(true);
+    expect(result.state.run!.enemies.get('1,0')).toBeUndefined();
   });
 
   it('fire-spread-test: casting ember spends mana and emits events', () => {
