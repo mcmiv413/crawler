@@ -120,7 +120,9 @@ describe('Example scenario library: executable gameplay', () => {
     const freshLoad = loadScenario(freshScenario, RESOLVERS);
     const ogreHp = ogreLoad.state.run!.enemies.get('3,0')!.stats.maxHealth;
     const freshHp = freshLoad.state.run!.enemies.get('3,0')!.stats.maxHealth;
-    expect(ogreHp).toBeGreaterThanOrEqual(freshHp);
+    // Strict: the placed enemy is a goblin_warband member, so the high-power
+    // world must scale its maxHealth above the same enemy in a fresh world.
+    expect(ogreHp).toBeGreaterThan(freshHp);
     expect(ogreLoad.state.world.dungeonOgre.status).toBe('emerged');
   });
 

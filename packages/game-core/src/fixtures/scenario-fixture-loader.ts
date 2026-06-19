@@ -119,6 +119,9 @@ function buildScenarioState(
 ): ScenarioLoadResult {
   const floorNumber = scenario.floor ?? 1;
   const seed = scenario.seed ?? 1;
+  // Derive IDs from name + seed so distinct scenarios loaded without an
+  // explicit seed (which defaults to 1) do not collide on runId/gameId.
+  const idToken = `${scenario.name.toLowerCase().replace(/[^a-z0-9]+/g, '_').replace(/^_+|_+$/g, '')}_${seed}`;
 
   // Compose player + world from existing loaders (no duplicated logic).
   const playerFixture = resolveScenarioPlayer(scenario, resolvers).fixture!;
@@ -153,7 +156,7 @@ function buildScenarioState(
   }
 
   const run: RunState = {
-    runId: entityId(`scenario_run_${seed}`),
+    runId: entityId(`scenario_run_${idToken}`),
     floor,
     enemies,
     objects,
@@ -166,7 +169,7 @@ function buildScenarioState(
   };
 
   const state: GameState = {
-    gameId: entityId(`scenario_${seed}`),
+    gameId: entityId(`scenario_${idToken}`),
     phase: 'dungeon',
     player,
     run,

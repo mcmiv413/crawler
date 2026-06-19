@@ -91,8 +91,8 @@ export interface ScenarioEnemyPlacement {
   readonly health?: number;
 
   /**
-   * Optional status effect ids to apply on spawn (e.g. "burning").
-   * Each must exist in STATUS_EFFECTS.
+   * Optional status effect ids to apply on spawn (e.g. "burn").
+   * Each must exist in STATUS_DEFINITIONS.
    */
   readonly statuses?: readonly string[];
 
