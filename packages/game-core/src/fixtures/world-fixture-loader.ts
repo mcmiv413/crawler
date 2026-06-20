@@ -262,6 +262,15 @@ export function loadWorldFromFixture(fixture: WorldFixture): WorldState {
 }
 
 /**
+ * Build a WorldState from a fixture that has already passed validateWorldFixture().
+ * Use this only on validation paths that need the resolved world without paying
+ * for duplicate validation.
+ */
+export function loadWorldFromValidatedFixture(fixture: WorldFixture): WorldState {
+  return buildWorld(fixture);
+}
+
+/**
  * Error thrown when a fixture fails validation during loading.
  */
 export class WorldFixtureLoadError extends Error {

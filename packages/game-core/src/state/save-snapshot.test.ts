@@ -455,11 +455,16 @@ describe('SaveSnapshot validation and migration', () => {
     expectInvalidSnapshot(unknownSpell, /player\.learnedRingSpellIds/);
   });
 
-  it('Test Group 10: exposes migration entry points for version 1 and fails future versions cleanly', () => {
+  it('Test Group 10: exposes migration entry points for version 1 and validates future versions before migration', () => {
     const snapshot = exportSaveSnapshot(createTestGameStateInCombat());
 
     expect(snapshot.schemaVersion).toBe(1);
     expect(migrateSaveSnapshot(snapshot)).toEqual(snapshot);
-    expect(() => migrateSaveSnapshot({ ...snapshot, schemaVersion: 999 })).toThrow(/schemaVersion/i);
+
+    const futureSnapshot = { ...snapshot, schemaVersion: 999 };
+    const validation = validateSaveSnapshot(futureSnapshot);
+    expect(validation.isValid).toBe(false);
+    expect(validation.errors.map(error => error.field)).toContain('schemaVersion');
+    expect(() => loadSaveSnapshot(futureSnapshot)).toThrow(/schemaVersion/i);
   });
 });

@@ -14,7 +14,7 @@ import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest';
 import { renderHook, act, waitFor } from '@testing-library/react';
 import type { GameView, CombatLogEntry } from '@dungeon/presenter';
 import { buildGameView } from '@dungeon/presenter';
-import { emitQueueDrained, setQueueDraining } from '../animation-runtime/animation-queue-bus.js';
+import { emitQueueDrained } from '../animation-runtime/animation-queue-bus.js';
 import { useGameStore } from './game-store.js';
 import * as sessionPersistence from './session-persistence.js';
 
@@ -155,7 +155,6 @@ describe('useGameStore (Zustand)', () => {
 
   afterEach(() => {
     vi.clearAllMocks();
-    setQueueDraining(false);
     globalThis.__DUNGEON_BEAT_SCHEDULER_OVERRIDE__ = undefined;
   });
 
@@ -331,7 +330,6 @@ describe('useGameStore (Zustand)', () => {
       expect(result.current.loading).toBe(false);
 
       act(() => {
-        setQueueDraining(false);
         emitQueueDrained();
       });
 
@@ -397,7 +395,6 @@ describe('useGameStore (Zustand)', () => {
       expect(result.current.loading).toBe(false);
 
       act(() => {
-        setQueueDraining(false);
         emitQueueDrained();
       });
 

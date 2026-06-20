@@ -70,6 +70,7 @@ export function validateGameState(state: GameState): ValidationResult {
  */
 export function validatePlayer(player: Player): ValidationError[] {
   const mutableErrors: ValidationError[] = [];
+  const playerRecord = player as unknown as Record<string, unknown>;
 
   if (typeof player.id !== 'string' || player.id === '') {
     mutableErrors.push({ path: 'id', message: 'player id is required and must be non-empty' });
@@ -83,30 +84,37 @@ export function validatePlayer(player: Player): ValidationError[] {
     mutableErrors.push({ path: 'experience', message: 'experience must be non-negative' });
   }
 
-  // player.stats is required by type
-  if (typeof player.stats.maxHealth !== 'number' || player.stats.maxHealth <= 0) {
-    mutableErrors.push({ path: 'stats.maxHealth', message: 'maxHealth must be positive' });
+  const stats = playerRecord['stats'];
+  if (!isRecord(stats)) {
+    mutableErrors.push({ path: 'stats', message: 'player stats are required' });
+  } else {
+    if (typeof stats['maxHealth'] !== 'number' || stats['maxHealth'] <= 0) {
+      mutableErrors.push({ path: 'stats.maxHealth', message: 'maxHealth must be positive' });
+    }
+
+    if (typeof stats['health'] !== 'number' || stats['health'] < 0) {
+      mutableErrors.push({ path: 'stats.health', message: 'health must be non-negative' });
+    }
+
+    if (
+      typeof stats['health'] === 'number'
+      && typeof stats['maxHealth'] === 'number'
+      && stats['health'] > stats['maxHealth']
+    ) {
+      mutableErrors.push({ path: 'stats.health', message: 'health cannot exceed maxHealth' });
+    }
+
+    if (typeof stats['attack'] !== 'number' || stats['attack'] < 0) {
+      mutableErrors.push({ path: 'stats.attack', message: 'attack must be non-negative' });
+    }
+
+    if (typeof stats['defense'] !== 'number' || stats['defense'] < 0) {
+      mutableErrors.push({ path: 'stats.defense', message: 'defense must be non-negative' });
+    }
   }
 
-  if (typeof player.stats.health !== 'number' || player.stats.health < 0) {
-    mutableErrors.push({ path: 'stats.health', message: 'health must be non-negative' });
-  }
-
-  if (player.stats.health > player.stats.maxHealth) {
-    mutableErrors.push({ path: 'stats.health', message: 'health cannot exceed maxHealth' });
-  }
-
-  if (typeof player.stats.attack !== 'number' || player.stats.attack < 0) {
-    mutableErrors.push({ path: 'stats.attack', message: 'attack must be non-negative' });
-  }
-
-  if (typeof player.stats.defense !== 'number' || player.stats.defense < 0) {
-    mutableErrors.push({ path: 'stats.defense', message: 'defense must be non-negative' });
-  }
-
-  // player.position is required by type
-  // eslint-disable-next-line @typescript-eslint/no-unnecessary-condition, @typescript-eslint/strict-boolean-expressions
-  if (!player.position || typeof player.position.x !== 'number' || typeof player.position.y !== 'number') {
+  const position = playerRecord['position'];
+  if (!isRecord(position) || typeof position['x'] !== 'number' || typeof position['y'] !== 'number') {
     mutableErrors.push({ path: 'position', message: 'position is required and must have valid x and y coordinates' });
   }
 
@@ -122,22 +130,47 @@ export function validatePlayer(player: Player): ValidationError[] {
     mutableErrors.push({ path: 'maxMana', message: 'maxMana must be finite and non-negative' });
   }
 
-  for (const spellId of player.learnedRingSpellIds) {
-    if (!RING_SPELL_BY_ID.has(spellId)) {
-      mutableErrors.push({ path: `learnedRingSpellIds.${spellId}`, message: 'learned ring spell id must exist in content' });
+  const learnedRingSpellIds = playerRecord['learnedRingSpellIds'];
+  if (!Array.isArray(learnedRingSpellIds)) {
+    mutableErrors.push({ path: 'learnedRingSpellIds', message: 'learned ring spell ids must be an array' });
+  } else {
+    for (const spellId of learnedRingSpellIds) {
+      if (typeof spellId !== 'string' || !RING_SPELL_BY_ID.has(spellId)) {
+        mutableErrors.push({ path: `learnedRingSpellIds.${String(spellId)}`, message: 'learned ring spell id must exist in content' });
+      }
     }
   }
 
-  for (const ability of player.abilities) {
-    if (!ABILITY_IDS.has(ability.id)) {
-      mutableErrors.push({ path: `abilities.${ability.id}`, message: 'ability id must exist in game-core definitions' });
-    }
-    if (typeof ability.cooldownRemaining !== 'number' || !Number.isFinite(ability.cooldownRemaining) || ability.cooldownRemaining < 0) {
-      mutableErrors.push({ path: `abilities.${ability.id}.cooldownRemaining`, message: 'ability cooldown must be finite and non-negative' });
+  const abilities = playerRecord['abilities'];
+  if (!Array.isArray(abilities)) {
+    mutableErrors.push({ path: 'abilities', message: 'abilities must be an array' });
+  } else {
+    for (const ability of abilities) {
+      if (!isRecord(ability) || typeof ability['id'] !== 'string') {
+        mutableErrors.push({ path: 'abilities', message: 'ability entries must be objects with string ids' });
+        continue;
+      }
+      const abilityId = ability['id'];
+      if (!ABILITY_IDS.has(abilityId)) {
+        mutableErrors.push({ path: `abilities.${abilityId}`, message: 'ability id must exist in game-core definitions' });
+      }
+      if (
+        typeof ability['cooldownRemaining'] !== 'number'
+        || !Number.isFinite(ability['cooldownRemaining'])
+        || ability['cooldownRemaining'] < 0
+      ) {
+        mutableErrors.push({ path: `abilities.${abilityId}.cooldownRemaining`, message: 'ability cooldown must be finite and non-negative' });
+      }
     }
   }
 
-  for (const [school, mastery] of Object.entries(player.ringMastery as Record<string, unknown>)) {
+  const ringMastery = playerRecord['ringMastery'];
+  if (!isRecord(ringMastery)) {
+    mutableErrors.push({ path: 'ringMastery', message: 'ring mastery must be an object' });
+    return mutableErrors;
+  }
+
+  for (const [school, mastery] of Object.entries(ringMastery)) {
     if (typeof mastery !== 'object' || mastery === null) {
       mutableErrors.push({ path: `ringMastery.${school}`, message: 'ring mastery entries must be exactly { xp: finite non-negative number }' });
       continue;
@@ -157,6 +190,10 @@ export function validatePlayer(player: Player): ValidationError[] {
   }
 
   return mutableErrors;
+}
+
+function isRecord(value: unknown): value is Record<string, unknown> {
+  return typeof value === 'object' && value !== null && !Array.isArray(value);
 }
 
 function validateInventoryReferences(state: GameState): ValidationError[] {

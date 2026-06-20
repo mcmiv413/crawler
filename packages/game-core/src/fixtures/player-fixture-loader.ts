@@ -9,13 +9,12 @@
 import type { Player, Equipment, EntityId, AnyItemTemplate } from '@dungeon/contracts';
 import { entityId } from '@dungeon/contracts';
 import {
-  BASE_PLAYER_STATS,
   ITEM_BY_ID,
   MAGIC,
   RING_SCHOOL_BY_ID,
   RING_SPELL_BY_ID,
-  LEVEL_UP_GAINS,
 } from '@dungeon/content';
+import { getBasePlayerStatsForLevel } from '../systems/progression.js';
 import type { PlayerFixture, FixtureValidationError, FixtureValidationResult, FixtureLoadResult } from './player-fixture-types.js';
 
 /** Current supported fixture schema version. */
@@ -72,7 +71,7 @@ export function validatePlayerFixture(fixture: PlayerFixture): FixtureValidation
   }
 
   // health / maxHealth cross-validation
-  const effectiveMaxHealth = fixture.maxHealth ?? computeMaxHealth(fixture.level);
+  const effectiveMaxHealth = fixture.maxHealth ?? getBasePlayerStatsForLevel(fixture.level).maxHealth;
   if (fixture.maxHealth !== undefined) {
     if (typeof fixture.maxHealth !== 'number' || fixture.maxHealth <= 0 || !Number.isFinite(fixture.maxHealth)) {
       errors = [...errors, {
@@ -379,29 +378,20 @@ export class FixtureLoadError extends Error {
 // Internal construction helpers
 // ─────────────────────────────────────────────────────────────────────────────
 
-/** Compute max health for a given level using base stats + level-up gains. */
-function computeMaxHealth(level: number): number {
-  return BASE_PLAYER_STATS.maxHealth + LEVEL_UP_GAINS.maxHealth * Math.max(0, level - 1);
-}
-
 /** Build a FixtureLoadResult (Player + ItemRegistry) from a validated fixture. */
 function buildPlayerResult(fixture: PlayerFixture): FixtureLoadResult {
   const level = fixture.level;
-  const maxHealth = fixture.maxHealth ?? computeMaxHealth(level);
+  const levelStats = getBasePlayerStatsForLevel(level);
+  const maxHealth = fixture.maxHealth ?? levelStats.maxHealth;
   const health = fixture.health ?? maxHealth;
   const maxMana = fixture.maxMana ?? MAGIC.initialMana;
   const mana = fixture.mana ?? maxMana;
 
   // Compute base stats incorporating level-up gains
   const baseStats = {
-    ...BASE_PLAYER_STATS,
+    ...levelStats,
     maxHealth,
     health,
-    attack: BASE_PLAYER_STATS.attack + LEVEL_UP_GAINS.attack * (level - 1),
-    defense: BASE_PLAYER_STATS.defense + LEVEL_UP_GAINS.defense * (level - 1),
-    accuracy: BASE_PLAYER_STATS.accuracy + LEVEL_UP_GAINS.accuracy * (level - 1),
-    evasion: BASE_PLAYER_STATS.evasion + LEVEL_UP_GAINS.evasion * (level - 1),
-    speed: BASE_PLAYER_STATS.speed,
   };
 
   // stats === baseStats for fixture-loaded players (no equipment bonuses yet;

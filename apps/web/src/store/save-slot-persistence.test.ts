@@ -132,6 +132,18 @@ describe('save slot persistence', () => {
     expect(() => loadSnapshotFromSlot(storage, 'slot-1')).toThrow(/slot-1/);
   });
 
+  it('throws on incomplete occupied metadata instead of reporting the slot empty', () => {
+    const keys = getSaveSlotStorageKeys('slot-1');
+    storage.setItem(keys.metadata, JSON.stringify({
+      slotId: 'slot-1',
+      isEmpty: false,
+      saveTimestamp: 123,
+      currentFloor: 6,
+    }));
+
+    expect(() => listSaveSlotMetadata(storage)).toThrow(/slot-1.*corrupted metadata/);
+  });
+
   it('rejects writes outside the three supported slots and clears slots atomically', () => {
     const snapshot = makeSnapshot({ level: 2, floor: 2, turnNumber: 22 });
 
