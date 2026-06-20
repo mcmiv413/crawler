@@ -1,17 +1,22 @@
-import type { GameState, StoredFloor, RunState, EntityId, AnyItemTemplate, MapCell, EnemyInstance, DungeonFloor, ObjectInstance } from '@dungeon/contracts';
+import type {
+  AnyItemTemplate,
+  DungeonFloor,
+  EnemyInstance,
+  EntityId,
+  GameState,
+  MapCell,
+  ObjectInstance,
+  RunState,
+  SaveSnapshotStoredFloor,
+  SerializedDungeonFloor,
+  StoredFloor,
+} from '@dungeon/contracts';
 import { CURRENT_SCHEMA_VERSION, validateSchemaVersion, EMPTY_WEAPON_MASTERY } from '@dungeon/contracts';
 import { BASE_PLAYER_STATS, MAGIC } from '@dungeon/content';
 import { recalculateMagicMana } from '../systems/magic-xp.js';
 
-/** Plain-object (JSON) form of a StoredFloor (Maps become Record). */
-interface StoredFloorJson {
-  floor: Record<string, unknown> & { cells: Record<string, unknown> };
-  enemies: Record<string, unknown>;
-  objects: Record<string, unknown>;
-  playerPosition: StoredFloor['playerPosition'];
-  originalEnemyCount?: number;
-  lastSimulatedTurn?: number;
-}
+/** Plain-object (JSON) form of a StoredFloor (Maps become Records). */
+type StoredFloorJson = SaveSnapshotStoredFloor;
 
 /** Plain-object (JSON) form of a RunState (Maps become Records). */
 interface RunStateJson {
@@ -26,34 +31,48 @@ interface RunStateJson {
 /**
  * Converts a StoredFloor (with Maps) to a plain-object representation for JSON.
  */
-function serializeStoredFloor(sf: StoredFloor): unknown {
+export function serializeStoredFloor(sf: StoredFloor): SaveSnapshotStoredFloor {
   return {
-    floor: {
-      ...sf.floor,
-      cells: Object.fromEntries(sf.floor.cells),
-    },
-    enemies: Object.fromEntries(sf.enemies),
-    objects: Object.fromEntries(sf.objects),
-    playerPosition: sf.playerPosition,
-    originalEnemyCount: sf.originalEnemyCount,
-    lastSimulatedTurn: sf.lastSimulatedTurn,
+    floor: serializeDungeonFloor(sf.floor),
+    enemies: mapToSortedRecord(sf.enemies, cloneJson),
+    objects: mapToSortedRecord(sf.objects, cloneJson),
+    playerPosition: cloneJson(sf.playerPosition),
+    ...(sf.originalEnemyCount !== undefined ? { originalEnemyCount: sf.originalEnemyCount } : {}),
+    ...(sf.lastSimulatedTurn !== undefined ? { lastSimulatedTurn: sf.lastSimulatedTurn } : {}),
   };
 }
 
 /**
  * Reconstructs a StoredFloor from its plain-object JSON representation.
  */
-function deserializeStoredFloor(raw: StoredFloorJson): StoredFloor {
+export function deserializeStoredFloor(raw: StoredFloorJson): StoredFloor {
   return {
-    floor: {
-      ...raw.floor,
-      cells: new Map(Object.entries(raw.floor.cells)) as ReadonlyMap<string, MapCell>,
-    } as DungeonFloor,
+    floor: deserializeDungeonFloor(raw.floor),
     enemies: new Map(Object.entries(raw.enemies)) as ReadonlyMap<string, EnemyInstance>,
     objects: new Map(Object.entries(raw.objects)) as ReadonlyMap<string, ObjectInstance>,
-    playerPosition: raw.playerPosition,
-    originalEnemyCount: raw.originalEnemyCount,
-    lastSimulatedTurn: raw.lastSimulatedTurn,
+    playerPosition: cloneJson(raw.playerPosition),
+    ...(raw.originalEnemyCount !== undefined ? { originalEnemyCount: raw.originalEnemyCount } : {}),
+    ...(raw.lastSimulatedTurn !== undefined ? { lastSimulatedTurn: raw.lastSimulatedTurn } : {}),
+  };
+}
+
+export function serializeDungeonFloor(floor: DungeonFloor): SerializedDungeonFloor {
+  return {
+    width: floor.width,
+    height: floor.height,
+    depth: floor.depth,
+    biomeId: floor.biomeId,
+    cells: mapToSortedRecord(floor.cells, cloneJson),
+    entrance: cloneJson(floor.entrance),
+    exit: cloneJson(floor.exit),
+    seed: floor.seed,
+  };
+}
+
+export function deserializeDungeonFloor(floor: SerializedDungeonFloor): DungeonFloor {
+  return {
+    ...cloneJson(floor),
+    cells: new Map(Object.entries(floor.cells)) as ReadonlyMap<string, MapCell>,
   };
 }
 
@@ -268,4 +287,20 @@ function deserializeRun(raw: RunStateJson): RunState {
     enemies: new Map(Object.entries(raw.enemies)) as ReadonlyMap<string, EnemyInstance>,
     objects: new Map(Object.entries(raw.objects)) as ReadonlyMap<string, ObjectInstance>,
   } as unknown as RunState;
+}
+
+export function mapToSortedRecord<T, U>(
+  map: ReadonlyMap<string | number, T>,
+  convert: (value: T) => U,
+): Record<string, U> {
+  const mutableEntries = [...map.entries()];
+  return Object.fromEntries(
+    mutableEntries
+      .sort(([left], [right]) => String(left).localeCompare(String(right)))
+      .map(([key, value]) => [String(key), convert(value)]),
+  );
+}
+
+export function cloneJson<T>(value: T): T {
+  return JSON.parse(JSON.stringify(value)) as T;
 }

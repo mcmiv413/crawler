@@ -17,7 +17,7 @@
  *   9 - Invalid Scenario Validation
  */
 
-import { describe, it, expect } from 'vitest';
+import { describe, it, expect, vi } from 'vitest';
 import { ITEM_BY_ID } from '@dungeon/content';
 import { GameEngine } from '../engine/game-engine.js';
 import { getPlayerOffensePreview } from '../combat-preview.js';
@@ -471,6 +471,23 @@ describe('Group 9: Invalid Scenario Validation', () => {
       'world',
       RESOLVERS,
     );
+  });
+
+  it('resolves a referenced world fixture once during validation', () => {
+    const resolveWorldFixture = vi.fn((ref: string): WorldFixture => {
+      if (ref === 'fresh') return FRESH_WORLD;
+      throw new Error(`unknown world ref ${ref}`);
+    });
+    const validation = validateScenarioFixture(
+      { ...combatScenario(), player: { ref: 'warrior' }, world: { ref: 'fresh' } },
+      {
+        resolvePlayerFixture: RESOLVERS.resolvePlayerFixture,
+        resolveWorldFixture,
+      },
+    );
+
+    expect(validation.isValid).toBe(true);
+    expect(resolveWorldFixture).toHaveBeenCalledTimes(1);
   });
 
   it('rejects a non-object player.inline without crashing', () => {

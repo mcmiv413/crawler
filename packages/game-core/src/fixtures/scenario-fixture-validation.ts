@@ -6,7 +6,7 @@
  * rules, and never adds scenario-specific exceptions to runtime systems.
  */
 
-import type { FactionState, Position } from '@dungeon/contracts';
+import type { FactionState, Position, WorldState } from '@dungeon/contracts';
 import { entityId, posKey } from '@dungeon/contracts';
 import {
   ENEMY_TEMPLATES,
@@ -16,7 +16,7 @@ import {
 } from '@dungeon/content';
 
 import { validatePlayerFixture } from './player-fixture-loader.js';
-import { loadWorldFromFixture, validateWorldFixture } from './world-fixture-loader.js';
+import { loadWorldFromValidatedFixture, validateWorldFixture } from './world-fixture-loader.js';
 import { createEnemyInstance } from '../generation/enemy-instantiation.js';
 import type {
   ScenarioFixture,
@@ -157,13 +157,17 @@ export function validateScenarioFixture(
   };
 
   validateMeta(scenario, add);
-  validateComposedFixtures(scenario, resolvers, add);
-  validateMapAndPlacements(scenario, resolveWorldFactions(scenario, resolvers), add);
+  const composedFixtures = validateComposedFixtures(scenario, resolvers, add);
+  validateMapAndPlacements(scenario, resolveWorldFactions(composedFixtures.world), add);
 
   return { isValid: mutableErrors.length === 0, errors: mutableErrors };
 }
 
 type AddError = (field: string, message: string) => void;
+
+interface ValidatedComposedFixtures {
+  readonly world: WorldState | null;
+}
 
 function validateMeta(scenario: ScenarioFixture, add: AddError): void {
   if (scenario.schemaVersion !== SCENARIO_FIXTURE_SCHEMA_VERSION) {
@@ -184,7 +188,9 @@ function validateComposedFixtures(
   scenario: ScenarioFixture,
   resolvers: ScenarioResolvers | undefined,
   add: AddError,
-): void {
+): ValidatedComposedFixtures {
+  let world: WorldState | null = null;
+
   const playerResolution = resolveScenarioPlayer(scenario, resolvers);
   if (playerResolution.fixture === null) {
     add('player', playerResolution.error ?? 'player fixture could not be resolved.');
@@ -202,19 +208,18 @@ function validateComposedFixtures(
     const worldValidation = validateWorldFixture(worldResolution.fixture);
     if (worldValidation.isValid === false) {
       for (const e of worldValidation.errors) add(`world.${e.field}`, e.message);
+    } else {
+      world = loadWorldFromValidatedFixture(worldResolution.fixture);
     }
   }
+
+  return { world };
 }
 
 function resolveWorldFactions(
-  scenario: ScenarioFixture,
-  resolvers: ScenarioResolvers | undefined,
+  world: WorldState | null,
 ): readonly FactionState[] {
-  const worldResolution = resolveScenarioWorld(scenario, resolvers);
-  if (worldResolution.fixture === null) return [];
-  const worldValidation = validateWorldFixture(worldResolution.fixture);
-  if (worldValidation.isValid === false) return [];
-  return loadWorldFromFixture(worldResolution.fixture).factions;
+  return world?.factions ?? [];
 }
 
 function validateMapAndPlacements(

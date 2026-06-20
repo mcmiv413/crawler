@@ -2,7 +2,6 @@ import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import { act, renderHook } from '@testing-library/react';
 import { type AnimatedEvent, type MoveAnimationEntry } from '@dungeon/presenter';
 import * as runtimeEmitters from '../animation-runtime/emitters.js';
-import { setQueueDraining } from '../animation-runtime/animation-queue-bus.js';
 import { useAnimationOrchestrator } from '../animation-runtime/useAnimationOrchestrator.js';
 
 vi.mock('../animation-runtime/emitters.js', () => ({
@@ -96,7 +95,6 @@ describe('useAnimationOrchestrator', () => {
     vi.useFakeTimers();
     vi.clearAllMocks();
     setBeatSchedulerFlag('false');
-    setQueueDraining(false);
     vi.stubGlobal(
       'requestAnimationFrame',
       ((cb: FrameRequestCallback) => setTimeout(() => cb(Date.now()), 16)) as unknown as typeof requestAnimationFrame,
@@ -112,7 +110,6 @@ describe('useAnimationOrchestrator', () => {
     vi.useRealTimers();
     vi.unstubAllGlobals();
     globalThis.__DUNGEON_BEAT_SCHEDULER_OVERRIDE__ = undefined;
-    setQueueDraining(false);
   });
 
   it('uses the legacy timeout scheduler when the beat flag is off', async () => {

@@ -9,13 +9,12 @@
 import type { Player, Equipment, EntityId, AnyItemTemplate } from '@dungeon/contracts';
 import { entityId } from '@dungeon/contracts';
 import {
-  BASE_PLAYER_STATS,
   ITEM_BY_ID,
   MAGIC,
   RING_SCHOOL_BY_ID,
   RING_SPELL_BY_ID,
-  LEVEL_UP_GAINS,
 } from '@dungeon/content';
+import { getBasePlayerStatsForLevel } from '../systems/progression.js';
 import type { PlayerFixture, FixtureValidationError, FixtureValidationResult, FixtureLoadResult } from './player-fixture-types.js';
 
 /** Current supported fixture schema version. */
@@ -33,65 +32,65 @@ export const FIXTURE_SCHEMA_VERSION = 1;
  * Never silently succeeds — every invalid fixture produces at least one error.
  */
 export function validatePlayerFixture(fixture: PlayerFixture): FixtureValidationResult {
-  let errors: FixtureValidationError[] = [];
+  const mutableErrors: FixtureValidationError[] = [];
 
   // schemaVersion
   if (fixture.schemaVersion !== FIXTURE_SCHEMA_VERSION) {
-    errors = [...errors, {
+    mutableErrors.push({
       field: 'schemaVersion',
       message: `Unsupported fixture schemaVersion ${fixture.schemaVersion}. Expected ${FIXTURE_SCHEMA_VERSION}.`,
-    }];
+    });
   }
 
   // level
   if (typeof fixture.level !== 'number' || fixture.level < 1 || !Number.isInteger(fixture.level)) {
-    errors = [...errors, {
+    mutableErrors.push({
       field: 'level',
       message: `level must be an integer ≥ 1, got ${fixture.level}.`,
-    }];
+    });
   }
 
   // experience
   if (fixture.experience !== undefined) {
     if (typeof fixture.experience !== 'number' || fixture.experience < 0 || !Number.isFinite(fixture.experience)) {
-      errors = [...errors, {
+      mutableErrors.push({
         field: 'experience',
         message: `experience must be a non-negative number, got ${fixture.experience}.`,
-      }];
+      });
     }
   }
 
   // gold
   if (fixture.gold !== undefined) {
     if (typeof fixture.gold !== 'number' || fixture.gold < 0 || !Number.isFinite(fixture.gold)) {
-      errors = [...errors, {
+      mutableErrors.push({
         field: 'gold',
         message: `gold must be a non-negative number, got ${fixture.gold}.`,
-      }];
+      });
     }
   }
 
   // health / maxHealth cross-validation
-  const effectiveMaxHealth = fixture.maxHealth ?? computeMaxHealth(fixture.level);
+  const effectiveMaxHealth = fixture.maxHealth ?? getBasePlayerStatsForLevel(fixture.level).maxHealth;
   if (fixture.maxHealth !== undefined) {
     if (typeof fixture.maxHealth !== 'number' || fixture.maxHealth <= 0 || !Number.isFinite(fixture.maxHealth)) {
-      errors = [...errors, {
+      mutableErrors.push({
         field: 'maxHealth',
         message: `maxHealth must be a positive finite number, got ${fixture.maxHealth}.`,
-      }];
+      });
     }
   }
   if (fixture.health !== undefined) {
     if (typeof fixture.health !== 'number' || fixture.health < 0 || !Number.isFinite(fixture.health)) {
-      errors = [...errors, {
+      mutableErrors.push({
         field: 'health',
         message: `health must be a non-negative finite number, got ${fixture.health}.`,
-      }];
+      });
     } else if (fixture.health > effectiveMaxHealth) {
-      errors = [...errors, {
+      mutableErrors.push({
         field: 'health',
         message: `health (${fixture.health}) cannot exceed maxHealth (${effectiveMaxHealth}).`,
-      }];
+      });
     }
   }
 
@@ -99,46 +98,46 @@ export function validatePlayerFixture(fixture: PlayerFixture): FixtureValidation
   const effectiveMaxMana = fixture.maxMana ?? MAGIC.initialMana;
   if (fixture.maxMana !== undefined) {
     if (typeof fixture.maxMana !== 'number' || fixture.maxMana < 0 || !Number.isFinite(fixture.maxMana)) {
-      errors = [...errors, {
+      mutableErrors.push({
         field: 'maxMana',
         message: `maxMana must be a non-negative finite number, got ${fixture.maxMana}.`,
-      }];
+      });
     }
   }
   if (fixture.mana !== undefined) {
     if (typeof fixture.mana !== 'number' || fixture.mana < 0 || !Number.isFinite(fixture.mana)) {
-      errors = [...errors, {
+      mutableErrors.push({
         field: 'mana',
         message: `mana must be a non-negative finite number, got ${fixture.mana}.`,
-      }];
+      });
     } else if (fixture.mana > effectiveMaxMana) {
-      errors = [...errors, {
+      mutableErrors.push({
         field: 'mana',
         message: `mana (${fixture.mana}) cannot exceed maxMana (${effectiveMaxMana}).`,
-      }];
+      });
     }
   }
 
   // equippedWeaponId — type is string | undefined; null is explicitly invalid
   if ((fixture.equippedWeaponId as unknown) === null) {
-    errors = [...errors, {
+    mutableErrors.push({
       field: 'equippedWeaponId',
       message: `equippedWeaponId must be a string or omitted (undefined), but got null. Use undefined to leave the weapon slot empty.`,
-    }];
+    });
   } else if (fixture.equippedWeaponId !== undefined) {
     if (!ITEM_BY_ID.has(fixture.equippedWeaponId)) {
-      errors = [...errors, {
+      mutableErrors.push({
         field: 'equippedWeaponId',
         message: `Unknown item id \"${fixture.equippedWeaponId}\" in equippedWeaponId. Must exist in ITEM_BY_ID.`,
-      }];
+      });
     } else {
       // Slot compatibility: weapon slot must hold a weapon
       const template = ITEM_BY_ID.get(fixture.equippedWeaponId);
       if (template !== undefined && template.itemClass !== 'weapon') {
-        errors = [...errors, {
+        mutableErrors.push({
           field: 'equippedWeaponId',
           message: `Item \"${fixture.equippedWeaponId}\" (itemClass=\"${template.itemClass}\") is not a weapon and cannot be placed in the weapon slot.`,
-        }];
+        });
       }
     }
   }
@@ -148,10 +147,10 @@ export function validatePlayerFixture(fixture: PlayerFixture): FixtureValidation
     for (const [slot, itemId] of Object.entries(fixture.equippedArmorIds)) {
       if (itemId !== undefined) {
         if (!ITEM_BY_ID.has(itemId)) {
-          errors = [...errors, {
+          mutableErrors.push({
             field: `equippedArmorIds.${slot}`,
             message: `Unknown item id \"${itemId}\" in equippedArmorIds.${slot}. Must exist in ITEM_BY_ID.`,
-          }];
+          });
         } else {
           // Slot compatibility: armor slots must hold armor items;
           // secondaryWeapon slot accepts weapons as well
@@ -160,10 +159,10 @@ export function validatePlayerFixture(fixture: PlayerFixture): FixtureValidation
             const isSecondaryWeapon = slot === 'secondaryWeapon';
             const allowedClass = (isSecondaryWeapon === true) ? 'weapon' : 'armor';
             if (template.itemClass !== allowedClass) {
-              errors = [...errors, {
+              mutableErrors.push({
                 field: `equippedArmorIds.${slot}`,
                 message: `Item \"${itemId}\" (itemClass=\"${template.itemClass}\") is not ${(isSecondaryWeapon === true) ? 'a weapon' : 'an armor item'} and cannot be placed in the ${slot} slot.`,
-              }];
+              });
             }
           }
         }
@@ -176,27 +175,27 @@ export function validatePlayerFixture(fixture: PlayerFixture): FixtureValidation
     for (const [slot, itemId] of Object.entries(fixture.activeEquipmentIds)) {
       if (itemId !== undefined) {
         if (!ITEM_BY_ID.has(itemId)) {
-          errors = [...errors, {
+          mutableErrors.push({
             field: `activeEquipmentIds.${slot}`,
             message: `Unknown item id \"${itemId}\" in activeEquipmentIds.${slot}. Must exist in ITEM_BY_ID.`,
-          }];
+          });
         } else {
           // Slot compatibility: ring slots must hold armor items with armorSlot === 'ring'
           const template = ITEM_BY_ID.get(itemId);
           if (template !== undefined) {
             if (template.itemClass !== 'armor') {
-              errors = [...errors, {
+              mutableErrors.push({
                 field: `activeEquipmentIds.${slot}`,
                 message: `Item \"${itemId}\" (itemClass=\"${template.itemClass}\") is not an armor/ring item and cannot be placed in the ${slot} slot.`,
-              }];
+              });
             } else {
               // Verify it's actually a ring (armorSlot === 'ring')
               const armorTemplate = template as { itemClass: 'armor'; armor: { slot: string } };
               if ('armor' in armorTemplate && armorTemplate.armor.slot !== 'ring') {
-                errors = [...errors, {
+                mutableErrors.push({
                   field: `activeEquipmentIds.${slot}`,
                   message: `Item \"${itemId}\" (armorSlot=\"${armorTemplate.armor.slot}\") is not a ring and cannot be placed in the ${slot} slot.`,
-                }];
+                });
               }
             }
           }
@@ -210,10 +209,10 @@ export function validatePlayerFixture(fixture: PlayerFixture): FixtureValidation
     for (let i = 0; i < fixture.inventoryItemIds.length; i++) {
       const itemId = fixture.inventoryItemIds[i]!;
       if (!ITEM_BY_ID.has(itemId)) {
-        errors = [...errors, {
+        mutableErrors.push({
           field: `inventoryItemIds[${i}]`,
           message: `Unknown item id \"${itemId}\" at inventoryItemIds[${i}]. Must exist in ITEM_BY_ID.`,
-        }];
+        });
       }
     }
   }
@@ -222,10 +221,10 @@ export function validatePlayerFixture(fixture: PlayerFixture): FixtureValidation
   if (fixture.knownRingSchools !== undefined) {
     for (const school of fixture.knownRingSchools) {
       if (!RING_SCHOOL_BY_ID.has(school)) {
-        errors = [...errors, {
+        mutableErrors.push({
           field: 'knownRingSchools',
           message: `Unknown ring school \"${school}\" in knownRingSchools. Valid schools: ${[...RING_SCHOOL_BY_ID.keys()].join(', ')}.`,
-        }];
+        });
       }
     }
   }
@@ -234,24 +233,24 @@ export function validatePlayerFixture(fixture: PlayerFixture): FixtureValidation
   // necessary to TypeScript — fixture data may be malformed JSON at runtime.
   const ringMasteryRaw: unknown = fixture.ringMastery;
   if (ringMasteryRaw === null) {
-    errors = [...errors, {
+    mutableErrors.push({
       field: 'ringMastery',
       message: `ringMastery must not be null; use undefined to omit it.`,
-    }];
+    });
   } else if (ringMasteryRaw !== undefined) {
     // Validate that ringMastery is an object
     if (typeof ringMasteryRaw !== 'object' || Array.isArray(ringMasteryRaw)) {
-      errors = [...errors, {
+      mutableErrors.push({
         field: 'ringMastery',
         message: `ringMastery must be an object or undefined, got ${typeof ringMasteryRaw}.`,
-      }];
+      });
     } else {
       for (const [school, mastery] of Object.entries(ringMasteryRaw as Record<string, unknown>)) {
         if (!RING_SCHOOL_BY_ID.has(school)) {
-          errors = [...errors, {
+          mutableErrors.push({
             field: `ringMastery.${school}`,
             message: `Unknown ring school \"${school}\" in ringMastery. Valid schools: ${[...RING_SCHOOL_BY_ID.keys()].join(', ')}.`,
-          }];
+          });
         }
         // Validate mastery value: must be an object with numeric xp field
         const masteryRecord = mastery !== null && typeof mastery === 'object' && !Array.isArray(mastery)
@@ -263,10 +262,10 @@ export function validatePlayerFixture(fixture: PlayerFixture): FixtureValidation
           || !Number.isFinite(xp)
           || xp < 0;
         if (xpIsInvalid === true) {
-          errors = [...errors, {
+          mutableErrors.push({
             field: `ringMastery.${school}`,
             message: `ringMastery.${school} must be { xp: <non-negative number> }, got ${mastery === null ? 'null' : typeof mastery}.`,
-          }];
+          });
         } else {
           // Validate optional level field: must be a positive integer when present
           // masteryRecord is guaranteed non-null here (xpIsInvalid is false implies masteryRecord !== null)
@@ -277,10 +276,10 @@ export function validatePlayerFixture(fixture: PlayerFixture): FixtureValidation
               || !Number.isInteger(levelValue)
               || levelValue < 1;
             if (levelIsInvalid === true) {
-              errors = [...errors, {
+              mutableErrors.push({
                 field: `ringMastery.${school}`,
                 message: `ringMastery.${school}.level must be a positive integer when present, got ${JSON.stringify(levelValue)}.`,
-              }];
+              });
             }
           }
         }
@@ -293,10 +292,10 @@ export function validatePlayerFixture(fixture: PlayerFixture): FixtureValidation
     for (let i = 0; i < fixture.learnedRingSpellIds.length; i++) {
       const spellId = fixture.learnedRingSpellIds[i]!;
       if (!RING_SPELL_BY_ID.has(spellId)) {
-        errors = [...errors, {
+        mutableErrors.push({
           field: `learnedRingSpellIds[${i}]`,
           message: `Unknown ring spell id \"${spellId}\" at learnedRingSpellIds[${i}]. Must exist in RING_SPELL_BY_ID.`,
-        }];
+        });
       }
     }
   }
@@ -319,18 +318,18 @@ export function validatePlayerFixture(fixture: PlayerFixture): FixtureValidation
   const seen = new Set<string>();
   for (const itemId of equippedItemIds) {
     if (seen.has(itemId)) {
-      errors = [...errors, {
+      mutableErrors.push({
         field: 'equipment',
         message: `Duplicate equipment item id \"${itemId}\" appears in multiple equipment slots.`,
-      }];
+      });
       break;
     }
     seen.add(itemId);
   }
 
   return {
-    isValid: errors.length === 0,
-    errors,
+    isValid: mutableErrors.length === 0,
+    errors: mutableErrors,
   };
 }
 
@@ -379,29 +378,20 @@ export class FixtureLoadError extends Error {
 // Internal construction helpers
 // ─────────────────────────────────────────────────────────────────────────────
 
-/** Compute max health for a given level using base stats + level-up gains. */
-function computeMaxHealth(level: number): number {
-  return BASE_PLAYER_STATS.maxHealth + LEVEL_UP_GAINS.maxHealth * Math.max(0, level - 1);
-}
-
 /** Build a FixtureLoadResult (Player + ItemRegistry) from a validated fixture. */
 function buildPlayerResult(fixture: PlayerFixture): FixtureLoadResult {
   const level = fixture.level;
-  const maxHealth = fixture.maxHealth ?? computeMaxHealth(level);
+  const levelStats = getBasePlayerStatsForLevel(level);
+  const maxHealth = fixture.maxHealth ?? levelStats.maxHealth;
   const health = fixture.health ?? maxHealth;
   const maxMana = fixture.maxMana ?? MAGIC.initialMana;
   const mana = fixture.mana ?? maxMana;
 
   // Compute base stats incorporating level-up gains
   const baseStats = {
-    ...BASE_PLAYER_STATS,
+    ...levelStats,
     maxHealth,
     health,
-    attack: BASE_PLAYER_STATS.attack + LEVEL_UP_GAINS.attack * (level - 1),
-    defense: BASE_PLAYER_STATS.defense + LEVEL_UP_GAINS.defense * (level - 1),
-    accuracy: BASE_PLAYER_STATS.accuracy + LEVEL_UP_GAINS.accuracy * (level - 1),
-    evasion: BASE_PLAYER_STATS.evasion + LEVEL_UP_GAINS.evasion * (level - 1),
-    speed: BASE_PLAYER_STATS.speed,
   };
 
   // stats === baseStats for fixture-loaded players (no equipment bonuses yet;

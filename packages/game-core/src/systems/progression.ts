@@ -1,12 +1,50 @@
-import type { GameState } from '@dungeon/contracts';
+import type { GameState, PlayerStats } from '@dungeon/contracts';
 import type { DomainEvent } from '@dungeon/contracts';
-import { XP_TABLE, LEVEL_UP_GAINS, ABILITY_UNLOCK_BY_LEVEL } from '@dungeon/content';
+import { XP_TABLE, LEVEL_UP_GAINS, ABILITY_UNLOCK_BY_LEVEL, BASE_PLAYER_STATS } from '@dungeon/content';
 import { grantAbility } from './abilities.js';
+
+export interface PlayerLevelStatGains {
+  readonly maxHealth: number;
+  readonly attack: number;
+  readonly defense: number;
+  readonly accuracy: number;
+  readonly evasion: number;
+}
 
 export interface LevelUpResult {
   readonly state: GameState;
   readonly events: readonly DomainEvent[];
   readonly levelsGained: number;
+}
+
+export function getPlayerLevelUpGains(_level: number): PlayerLevelStatGains {
+  return {
+    maxHealth: LEVEL_UP_GAINS.maxHealth,
+    attack: LEVEL_UP_GAINS.attack,
+    defense: LEVEL_UP_GAINS.defense,
+    accuracy: LEVEL_UP_GAINS.accuracy,
+    evasion: LEVEL_UP_GAINS.evasion,
+  };
+}
+
+export function getBasePlayerStatsForLevel(level: number): PlayerStats {
+  const normalizedLevel = Number.isInteger(level) && level > 0 ? level : 1;
+  let stats: PlayerStats = { ...BASE_PLAYER_STATS };
+
+  for (let currentLevel = 2; currentLevel <= normalizedLevel; currentLevel++) {
+    const gains = getPlayerLevelUpGains(currentLevel);
+    stats = {
+      ...stats,
+      maxHealth: stats.maxHealth + gains.maxHealth,
+      health: stats.health + gains.maxHealth,
+      attack: stats.attack + gains.attack,
+      defense: stats.defense + gains.defense,
+      accuracy: stats.accuracy + gains.accuracy,
+      evasion: stats.evasion + gains.evasion,
+    };
+  }
+
+  return stats;
 }
 
 /** Check if player has enough XP to level up (possibly multiple times) */
@@ -22,13 +60,7 @@ export function checkLevelUp(state: GameState): LevelUpResult {
     const newLevel = player.level + 1;
     levelsGained++;
 
-    const gains = {
-      maxHealth: LEVEL_UP_GAINS.maxHealth,
-      attack: LEVEL_UP_GAINS.attack,
-      defense: LEVEL_UP_GAINS.defense,
-      accuracy: LEVEL_UP_GAINS.accuracy,
-      evasion: LEVEL_UP_GAINS.evasion,
-    };
+    const gains = getPlayerLevelUpGains(newLevel);
 
     player = {
       ...player,

@@ -16,6 +16,6 @@
     "tsBuildInfoFile": "./dist/.tsbuildinfo-tests",
     "types": ["node", "vitest/globals"]
   },
-  "include": ["src/**/*.ts", "src/**/*.tsx"],
+  "include": ["src/**/*.ts", "src/**/*.tsx", "vitest.setup.ts"],
   "exclude": ["node_modules", "dist"]
 }

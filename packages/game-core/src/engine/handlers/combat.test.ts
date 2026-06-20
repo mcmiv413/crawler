@@ -276,16 +276,47 @@ describe('handleAttack integration', () => {
     expect(appliedBurn?.magnitude).toBe(expectedMagnitude);
   });
 
-  it('does not apply on-hit statuses after lethal attack damage', () => {
+  it('emits on-hit status events after lethal attack damage without keeping the dead enemy', () => {
     const { state, enemyId } = makeGuaranteedStatusWeaponState();
 
     const result = handleAttack(state, enemyId, new SeededRNG(1));
 
+    expect(result.events).toContainEqual(expect.objectContaining({
+      type: 'STATUS_APPLIED',
+      targetId: enemyId,
+      statusId: 'burn',
+      sourceId: state.player.id,
+    }));
     expect(result.events.some(event =>
-      event.type === 'STATUS_APPLIED' && event.targetId === enemyId
+      event.type === 'ENTITY_DIED' && event.entityId === enemyId
+    )).toBe(true);
+    expect([...(result.state.run?.enemies.values() ?? [])].some(enemy => enemy.id === enemyId)).toBe(false);
+  });
+
+  it('does not emit heat-surge burn events after lethal attack damage', () => {
+    const { state, enemyId } = makeLethalAttackState();
+    const stateWithHeatSurge: GameState = {
+      ...state,
+      player: {
+        ...state.player,
+        statuses: [
+          ...state.player.statuses,
+          { id: 'heat_surge', turnsRemaining: 3, magnitude: 0, sourceId: state.player.id },
+        ],
+      },
+    };
+
+    const result = handleAttack(stateWithHeatSurge, enemyId, new SeededRNG(1));
+
+    expect(result.events.some(event =>
+      event.type === 'STATUS_APPLIED'
+        && event.targetId === enemyId
+        && event.statusId === 'burn'
+        && event.sourceId === state.player.id
     )).toBe(false);
     expect(result.events.some(event =>
       event.type === 'ENTITY_DIED' && event.entityId === enemyId
     )).toBe(true);
+    expect([...(result.state.run?.enemies.values() ?? [])].some(enemy => enemy.id === enemyId)).toBe(false);
   });
 });
