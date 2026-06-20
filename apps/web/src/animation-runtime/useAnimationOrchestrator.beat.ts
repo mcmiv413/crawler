@@ -3,7 +3,7 @@ import type {
   AnimatedEvent,
 } from '@dungeon/presenter';
 import { getAnimatedEventBatchSettleMs } from '@dungeon/presenter';
-import { emitQueueDrained, setQueueDraining } from './animation-queue-bus.js';
+import { emitQueueDrained } from './animation-queue-bus.js';
 import { onHitStopTriggered } from '../hooks/useHitStop.js';
 import { dispatchAnimatedEvent } from './dispatchAnimatedEvent.js';
 
@@ -64,7 +64,6 @@ export function useBeatAnimationOrchestrator(
     }
 
     currentBatchRef.current = null;
-    setQueueDraining(false);
     emitQueueDrained();
   }, []);
 
@@ -132,7 +131,6 @@ export function useBeatAnimationOrchestrator(
       queuedBatchesRef.current = [];
       pauseRemainingMsRef.current = 0;
       lastAcceptedBatchIdRef.current = null;
-      setQueueDraining(false);
       return;
     }
 
@@ -150,7 +148,6 @@ export function useBeatAnimationOrchestrator(
       queuedBatchesRef.current = [];
       pauseRemainingMsRef.current = 0;
       lastAcceptedBatchIdRef.current = null;
-      setQueueDraining(false);
     };
   }, [enabled]);
 
@@ -168,7 +165,6 @@ export function useBeatAnimationOrchestrator(
     const batch = createQueuedBatch(animatedEvents);
     if (currentBatchRef.current === null) {
       currentBatchRef.current = batch;
-      setQueueDraining(true);
       ensureLoopRunning();
       return;
     }

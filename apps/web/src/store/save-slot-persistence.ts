@@ -71,23 +71,32 @@ export function listSaveSlotMetadata(storage: Storage): SaveSlotMetadata[] {
       return { slotId, isEmpty: true };
     }
 
+    let parsed: unknown;
     try {
-      const parsed = JSON.parse(raw) as Partial<SaveSlotMetadata>;
-      if (parsed.isEmpty === false && hasCompleteMetadata(parsed)) {
-        return {
-          slotId,
-          isEmpty: false,
-          saveTimestamp: parsed.saveTimestamp,
-          characterLevel: parsed.characterLevel,
-          currentFloor: parsed.currentFloor,
-          ...(parsed.displayName !== undefined ? { displayName: parsed.displayName } : {}),
-        };
-      }
-    } catch {
-      return { slotId, isEmpty: true };
+      parsed = JSON.parse(raw) as unknown;
+    } catch (error) {
+      throw new Error(
+        `Save slot ${slotId} has corrupted metadata: ${error instanceof Error ? error.message : 'invalid JSON'}`,
+      );
     }
 
-    return { slotId, isEmpty: true };
+    if (!isRecord(parsed)) {
+      throw new Error(`Save slot ${slotId} has corrupted metadata`);
+    }
+    if (parsed.isEmpty === true) {
+      return { slotId, isEmpty: true };
+    }
+    if (parsed.isEmpty !== false || !hasCompleteMetadata(parsed)) {
+      throw new Error(`Save slot ${slotId} has corrupted metadata`);
+    }
+    return {
+      slotId,
+      isEmpty: false,
+      saveTimestamp: parsed.saveTimestamp,
+      characterLevel: parsed.characterLevel,
+      currentFloor: parsed.currentFloor,
+      ...(parsed.displayName !== undefined ? { displayName: parsed.displayName } : {}),
+    };
   });
 }
 
@@ -104,11 +113,21 @@ function assertValidSlotId(slotId: SaveSlotId): void {
 }
 
 function hasCompleteMetadata(
-  value: Partial<SaveSlotMetadata>,
-): value is SaveSlotMetadata & { readonly isEmpty: false } {
+  value: Record<string, unknown>,
+): value is {
+  readonly isEmpty: false;
+  readonly saveTimestamp: number;
+  readonly characterLevel: number;
+  readonly currentFloor: number;
+  readonly displayName?: string;
+} {
   return value.isEmpty === false
     && typeof value.saveTimestamp === 'number'
     && typeof value.characterLevel === 'number'
     && typeof value.currentFloor === 'number'
     && (value.displayName === undefined || typeof value.displayName === 'string');
+}
+
+function isRecord(value: unknown): value is Record<string, unknown> {
+  return typeof value === 'object' && value !== null && !Array.isArray(value);
 }

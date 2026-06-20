@@ -1,5 +1,6 @@
 import type {
   GamePhase,
+  Player,
   SaveSnapshot,
   SaveSnapshotValidationError,
   SaveSnapshotValidationResult,
@@ -13,8 +14,8 @@ import {
   ITEM_BY_ID,
   OBJECT_TEMPLATES,
   RING_SCHOOL_BY_ID,
-  RING_SPELL_BY_ID,
 } from '@dungeon/content';
+import { validatePlayer as validateCorePlayer } from './validators.js';
 
 const VALID_PHASES = new Set<GamePhase>(['town', 'dungeon', 'combat', 'game_over']);
 
@@ -43,7 +44,7 @@ export function validateSaveSnapshot(snapshot: unknown): SaveSnapshotValidationR
   validateMetadata(snapshot['metadata'], mutableErrors);
   validatePrimitiveFields(snapshot, mutableErrors);
   validateItemRegistry(snapshot['itemRegistry'], mutableErrors);
-  validatePlayer(snapshot['player'], snapshot['itemRegistry'], mutableErrors);
+  validateSnapshotPlayer(snapshot['player'], snapshot['itemRegistry'], mutableErrors);
   validateWorld(snapshot['world'], mutableErrors);
   validateRunAndFloor(snapshot, mutableErrors);
   validateObjects(snapshot['objects'], mutableErrors);
@@ -60,13 +61,7 @@ export function migrateSaveSnapshot(snapshot: unknown): SaveSnapshot {
     throw new SaveSnapshotLoadError([{ field: 'snapshot', message: 'snapshot must be an object' }]);
   }
 
-  if (snapshot['schemaVersion'] !== SAVE_SNAPSHOT_SCHEMA_VERSION) {
-    throw new SaveSnapshotLoadError([{
-      field: 'schemaVersion',
-      message: `Unsupported save snapshot schemaVersion ${String(snapshot['schemaVersion'])}. Expected ${SAVE_SNAPSHOT_SCHEMA_VERSION}.`,
-    }]);
-  }
-
+  // Callers must call validateSaveSnapshot before migrateSaveSnapshot.
   return snapshot as unknown as SaveSnapshot;
 }
 
@@ -171,7 +166,7 @@ function validateItemRegistry(
   }
 }
 
-function validatePlayer(
+function validateSnapshotPlayer(
   player: unknown,
   itemRegistry: unknown,
   mutableErrors: SaveSnapshotValidationError[],
@@ -182,7 +177,9 @@ function validatePlayer(
   }
 
   const registryItems = getRegistryItems(itemRegistry);
-  pushPositiveIntegerError(player['level'], 'player.level', mutableErrors);
+  for (const error of validateCorePlayer(player as unknown as Player)) {
+    mutableErrors.push({ field: `player.${error.path}`, message: error.message });
+  }
   pushFiniteNumberError(player['floor'], 'player.floor', mutableErrors);
 
   const inventory = player['inventory'];
@@ -212,24 +209,7 @@ function validatePlayer(
     mutableErrors.push({ field: 'player.equipment', message: 'player.equipment must be an object' });
   }
 
-  validateKnownSpellIds(player, mutableErrors);
   validateKnownRingSchools(player, mutableErrors);
-}
-
-function validateKnownSpellIds(
-  player: Record<string, unknown>,
-  mutableErrors: SaveSnapshotValidationError[],
-): void {
-  if (!Array.isArray(player['learnedRingSpellIds'])) return;
-
-  for (const spellId of player['learnedRingSpellIds']) {
-    if (typeof spellId !== 'string' || !RING_SPELL_BY_ID.has(spellId)) {
-      mutableErrors.push({
-        field: `player.learnedRingSpellIds.${String(spellId)}`,
-        message: 'learned ring spell id must exist in content',
-      });
-    }
-  }
 }
 
 function validateKnownRingSchools(

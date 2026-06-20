@@ -9,11 +9,14 @@ import type {
   RunState,
   SaveSnapshot,
   SaveSnapshotRun,
-  SaveSnapshotStoredFloor,
   SerializedDungeonFloor,
   StoredFloor,
 } from '@dungeon/contracts';
 import { SAVE_SNAPSHOT_SCHEMA_VERSION } from '@dungeon/contracts';
+import {
+  deserializeStoredFloor,
+  serializeStoredFloor,
+} from './serialization.js';
 import {
   migrateSaveSnapshot,
   SaveSnapshotLoadError,
@@ -112,17 +115,6 @@ function serializeRunMetadata(run: RunState): SaveSnapshotRun {
   };
 }
 
-function serializeStoredFloor(storedFloor: StoredFloor): SaveSnapshotStoredFloor {
-  return {
-    floor: serializeFloor(storedFloor.floor),
-    enemies: mapToSortedRecord(storedFloor.enemies, cloneJson),
-    objects: mapToSortedRecord(storedFloor.objects, cloneJson),
-    playerPosition: cloneJson(storedFloor.playerPosition),
-    ...(storedFloor.originalEnemyCount !== undefined ? { originalEnemyCount: storedFloor.originalEnemyCount } : {}),
-    ...(storedFloor.lastSimulatedTurn !== undefined ? { lastSimulatedTurn: storedFloor.lastSimulatedTurn } : {}),
-  };
-}
-
 function serializeFloor(floor: DungeonFloor): SerializedDungeonFloor {
   return {
     width: floor.width,
@@ -151,17 +143,6 @@ function deserializeRun(
     isActive: run.isActive,
     ...(run.runMetrics !== undefined ? { runMetrics: cloneJson(run.runMetrics) } : {}),
     speedAccumulators: cloneJson(run.speedAccumulators),
-  };
-}
-
-function deserializeStoredFloor(storedFloor: SaveSnapshotStoredFloor): StoredFloor {
-  return {
-    floor: deserializeFloor(storedFloor.floor),
-    enemies: new Map(Object.entries(storedFloor.enemies)) as ReadonlyMap<string, EnemyInstance>,
-    objects: new Map(Object.entries(storedFloor.objects)) as ReadonlyMap<string, ObjectInstance>,
-    playerPosition: cloneJson(storedFloor.playerPosition),
-    ...(storedFloor.originalEnemyCount !== undefined ? { originalEnemyCount: storedFloor.originalEnemyCount } : {}),
-    ...(storedFloor.lastSimulatedTurn !== undefined ? { lastSimulatedTurn: storedFloor.lastSimulatedTurn } : {}),
   };
 }
 
