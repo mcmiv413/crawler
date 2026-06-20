@@ -127,7 +127,7 @@ export function executeAbility(
     } else if (targets.length > 0) {
       // Target-based effects
       for (const { key: targetKey, enemy } of targets) {
-        if (newContext.state.run?.enemies.has(targetKey) === false) {
+        if (newContext.state.run?.enemies.has(targetKey) !== true) {
           continue;
         }
         const effectResult = applyEffect(newContext, effect, targetKey, lastAttackHit);

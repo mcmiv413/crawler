@@ -861,7 +861,7 @@ describe('SaveSnapshot validation and migration', () => {
 
     const unknownSpell = jsonClone(valid);
     unknownSpell.player!.learnedRingSpellIds = ['missing_spell'];
-    expectInvalidSnapshot(unknownSpell, /player\.learnedRingSpellIds\[0\]/);
+    expectInvalidSnapshot(unknownSpell, /player\.learnedRingSpellIds\.missing_spell/);
 
     const invalidWeaponMastery = jsonClone(valid);
     invalidWeaponMastery.weaponMastery = {

@@ -333,7 +333,7 @@ export function handleAttack(
     }
 
     const heatSurgeActive = newState.player.statuses.some(status => status.id === heatSurgeStatus.id);
-    if (heatSurgeActive === true) {
+    if (heatSurgeActive === true && killed === false) {
       const surgeBurn = applyPlayerStatusToEnemy(updatedEnemy, burn.id, newState.player, newState.turnNumber);
       updatedEnemy = surgeBurn.enemy;
       events = [...events, surgeBurn.event];

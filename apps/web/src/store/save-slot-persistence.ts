@@ -1,7 +1,6 @@
-import {
-  SAVE_SNAPSHOT_SCHEMA_VERSION,
-  type SaveSnapshot,
-  type SaveSnapshotMetadata,
+import type {
+  SaveSnapshot,
+  SaveSnapshotMetadata,
 } from '@dungeon/contracts';
 
 export const SAVE_SLOT_IDS = ['slot-1', 'slot-2', 'slot-3'] as const;
@@ -67,12 +66,6 @@ export function loadSnapshotFromSlot(
     );
   }
 
-  if (!isRecord(parsed) || parsed.schemaVersion !== SAVE_SNAPSHOT_SCHEMA_VERSION) {
-    const schemaVersion = isRecord(parsed) ? parsed.schemaVersion : undefined;
-    throw new Error(
-      `Save slot ${slotId} has schema version ${String(schemaVersion)}, expected ${SAVE_SNAPSHOT_SCHEMA_VERSION}`,
-    );
-  }
   return parsed as unknown as SaveSnapshot;
 }
 
@@ -115,15 +108,11 @@ export function listSaveSlotMetadata(storage: Storage): SaveSlotMetadata[] {
 
 export function clearSaveSlot(storage: Storage, slotId: SaveSlotId): void {
   const keys = getSaveSlotStorageKeys(slotId);
-  storage.setItem(
-    keys.metadata,
-    JSON.stringify({ slotId, isEmpty: true } satisfies SaveSlotMetadata),
-  );
   storage.removeItem(keys.snapshot);
   try {
     storage.removeItem(keys.metadata);
   } catch {
-    // The tombstone already marks the slot empty if metadata removal fails.
+    // Best-effort cleanup: the snapshot removal is the source of truth for load.
   }
 }
 

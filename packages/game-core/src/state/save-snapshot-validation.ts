@@ -24,9 +24,16 @@ const REQUIRED_WEAPON_MASTERY_KEYS = ['blade', 'bludgeon', 'axe', 'ranged', 'dag
 export class SaveSnapshotLoadError extends Error {
   readonly validationErrors: readonly SaveSnapshotValidationError[];
 
-  constructor(mutableErrors: readonly SaveSnapshotValidationError[]) {
+  constructor(mutableErrors: readonly SaveSnapshotValidationError[]);
+  constructor(message: string, mutableErrors: readonly SaveSnapshotValidationError[]);
+  constructor(
+    messageOrErrors: string | readonly SaveSnapshotValidationError[],
+    maybeErrors?: readonly SaveSnapshotValidationError[],
+  ) {
+    const message = typeof messageOrErrors === 'string' ? messageOrErrors : 'Invalid save snapshot';
+    const mutableErrors = typeof messageOrErrors === 'string' ? maybeErrors ?? [] : messageOrErrors;
     const details = mutableErrors.map(error => `${error.field}: ${error.message}`).join('\n');
-    super(`Invalid save snapshot:\n${details}`);
+    super(`${message}:\n${details}`);
     this.name = 'SaveSnapshotLoadError';
     this.validationErrors = mutableErrors;
   }
@@ -196,18 +203,16 @@ function validateSnapshotPlayer(
     return;
   }
 
-  const registryItems = getRegistryItems(itemRegistry);
-  const registryItemRecords = getRegistryItemRecords(itemRegistry);
+  const registryItemMap = getRegistryItemMap(itemRegistry);
   for (const error of validateCorePlayer(player as unknown as Player)) {
     mutableErrors.push({ field: `player.${error.path}`, message: error.message });
   }
   pushFiniteNumberError(player['floor'], 'player.floor', mutableErrors);
-  validateLearnedRingSpellIds(player['learnedRingSpellIds'], mutableErrors);
 
   const inventory = player['inventory'];
   if (Array.isArray(inventory)) {
     for (const [index, itemEntityId] of inventory.entries()) {
-      if (typeof itemEntityId !== 'string' || !registryItems.has(itemEntityId)) {
+      if (typeof itemEntityId !== 'string' || !registryItemMap.has(itemEntityId)) {
         const field = `player.inventory[${index}]`;
         mutableErrors.push({ field, message: `${field} references unknown item entity id ${String(itemEntityId)}` });
       }
@@ -218,7 +223,7 @@ function validateSnapshotPlayer(
 
   if (isRecord(player['equipment'])) {
     for (const [slot, itemEntityId] of Object.entries(player['equipment'])) {
-      if (itemEntityId !== null && (typeof itemEntityId !== 'string' || !registryItems.has(itemEntityId))) {
+      if (itemEntityId !== null && (typeof itemEntityId !== 'string' || !registryItemMap.has(itemEntityId))) {
         mutableErrors.push({
           field: `player.equipment.${slot}`,
           message: 'equipment item entity id must exist in itemRegistry',
@@ -227,7 +232,7 @@ function validateSnapshotPlayer(
       }
 
       if (typeof itemEntityId === 'string') {
-        const item = registryItemRecords.get(itemEntityId);
+        const item = registryItemMap.get(itemEntityId);
         if (item !== undefined) {
           validateEquipmentSlotCompatibility(slot, itemEntityId, item, mutableErrors);
         }
@@ -240,7 +245,7 @@ function validateSnapshotPlayer(
   validateKnownRingSchools(player, mutableErrors);
 }
 
-function validateLearnedRingSpellIds(
+export function validateLearnedRingSpellIds(
   learnedRingSpellIds: unknown,
   mutableErrors: SaveSnapshotValidationError[],
 ): void {
@@ -562,14 +567,7 @@ function validatePersistedFloorCache(
   }
 }
 
-function getRegistryItems(itemRegistry: unknown): Set<string> {
-  if (!isRecord(itemRegistry) || !isRecord(itemRegistry['items'])) {
-    return new Set();
-  }
-  return new Set(Object.keys(itemRegistry['items']));
-}
-
-function getRegistryItemRecords(itemRegistry: unknown): Map<string, Record<string, unknown>> {
+function getRegistryItemMap(itemRegistry: unknown): Map<string, Record<string, unknown>> {
   const items = new Map<string, Record<string, unknown>>();
   if (!isRecord(itemRegistry) || !isRecord(itemRegistry['items'])) {
     return items;
