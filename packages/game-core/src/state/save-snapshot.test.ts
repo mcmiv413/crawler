@@ -6,7 +6,8 @@ import type {
   EntityId,
   GameCommand,
   GameState,
-  SaveSnapshot,
+  ObjectInstance,
+  StoredFloor,
   WeaponTemplate,
   ArmorTemplate,
 } from '@dungeon/contracts';
@@ -16,6 +17,7 @@ import {
   createTestGameState,
   createTestGameStateInCombat,
   createTestGameStateWithAbility,
+  createTestEnemy,
   createTestRunState,
   createWaitCommand,
 } from '../test-utils.js';
@@ -24,6 +26,7 @@ import {
   loadSaveSnapshot,
   migrateSaveSnapshot,
   SAVE_SNAPSHOT_SCHEMA_VERSION,
+  SaveSnapshotLoadError,
   validateSaveSnapshot,
 } from './save-snapshot.js';
 
@@ -65,6 +68,42 @@ const TEST_RING: ArmorTemplate = {
   },
 };
 
+const TEST_CHEST_ARMOR: ArmorTemplate = {
+  itemId: 'plate_armor',
+  name: 'Snapshot Test Plate',
+  description: 'A local fixture chest armor for save snapshot tests.',
+  itemClass: 'armor',
+  rarity: 'common',
+  value: 1,
+  stackable: false,
+  maxStack: 1,
+  armor: {
+    defense: 2,
+    evasionPenalty: 0,
+    slot: 'chest',
+    enchantmentSlots: 0,
+    enchantments: [],
+  },
+};
+
+const TEST_BOOTS_ARMOR: ArmorTemplate = {
+  itemId: 'leather_boots',
+  name: 'Snapshot Test Boots',
+  description: 'A local fixture boots armor for save snapshot tests.',
+  itemClass: 'armor',
+  rarity: 'common',
+  value: 1,
+  stackable: false,
+  maxStack: 1,
+  armor: {
+    defense: 1,
+    evasionPenalty: 0,
+    slot: 'boots',
+    enchantmentSlots: 0,
+    enchantments: [],
+  },
+};
+
 const TEST_POTION: ConsumableTemplate = {
   itemId: 'health_potion',
   name: 'Snapshot Test Potion',
@@ -90,7 +129,9 @@ type MutableSnapshot = Record<string, unknown> & {
   run?: Record<string, unknown> | null;
   floor?: { cells?: Record<string, unknown> } | null;
   enemies?: Record<string, EnemyInstance>;
+  objects?: Record<string, ObjectInstance>;
   itemRegistry?: { items?: Record<string, AnyItemTemplate> };
+  weaponMastery?: Record<string, unknown>;
 };
 
 function jsonClone<T>(value: T): T {
@@ -181,6 +222,146 @@ function firstEnemy(state: GameState): EnemyInstance {
 
 function mutableSnapshot(state: GameState): MutableSnapshot {
   return jsonClone(exportSaveSnapshot(state)) as unknown as MutableSnapshot;
+}
+
+type EntryOrder = 'forward' | 'reverse';
+
+function orderedEntries<K, V>(
+  entries: readonly (readonly [K, V])[],
+  order: EntryOrder,
+): [K, V][] {
+  const mutableEntries = entries.map(([key, value]) => [key, value] as [K, V]);
+  return order === 'forward' ? mutableEntries : mutableEntries.reverse();
+}
+
+function createSnapshotObject(
+  id: EntityId,
+  position: { readonly x: number; readonly y: number },
+  isExhausted: boolean,
+): ObjectInstance {
+  return {
+    id,
+    templateId: 'healing_fountain',
+    position,
+    isExhausted,
+  };
+}
+
+function createStoredFloorFromRun(
+  run: NonNullable<GameState['run']>,
+  playerPosition: GameState['player']['position'],
+  depth: number,
+): StoredFloor {
+  return {
+    floor: {
+      ...run.floor,
+      depth,
+    },
+    enemies: run.enemies,
+    objects: run.objects,
+    playerPosition,
+    originalEnemyCount: run.enemies.size,
+    lastSimulatedTurn: run.turnCount,
+  };
+}
+
+function createRepresentativeSaveState(order: EntryOrder = 'forward'): GameState {
+  const base = createTestGameStateInCombat();
+  const weaponEntityId = entityId('snapshot_weapon_entity');
+  const ringEntityId = entityId('snapshot_ring_entity');
+  const potionEntityId = entityId('snapshot_potion_entity');
+
+  const enemyA = createTestEnemy({
+    id: entityId('snapshot_enemy_a'),
+    position: { x: 1, y: 0 },
+  });
+  const enemyB = createTestEnemy({
+    id: entityId('snapshot_enemy_b'),
+    position: { x: 0, y: 1 },
+  });
+  const enemyEntries = [
+    ['1,0', enemyA],
+    ['0,1', enemyB],
+  ] as const;
+  const objectEntries = [
+    ['1,1', createSnapshotObject(entityId('snapshot_fountain_a'), { x: 1, y: 1 }, true)],
+    ['0,1', createSnapshotObject(entityId('snapshot_fountain_b'), { x: 0, y: 1 }, false)],
+  ] as const;
+  const speedEntries = [
+    [enemyB.id, 4],
+    [enemyA.id, 2],
+  ] as const;
+  const itemEntries: readonly (readonly [EntityId, AnyItemTemplate])[] = [
+    [potionEntityId, TEST_POTION],
+    [ringEntityId, TEST_RING],
+    [weaponEntityId, TEST_WEAPON],
+  ];
+
+  const run = {
+    ...base.run!,
+    enemies: new Map(orderedEntries(enemyEntries, order)),
+    objects: new Map(orderedEntries(objectEntries, order)),
+    turnCount: 9,
+    speedAccumulators: Object.fromEntries(orderedEntries(speedEntries, order)),
+  };
+  const player = {
+    ...base.player,
+    level: 5,
+    experience: 450,
+    gold: 321,
+    floor: 1,
+    position: { x: 0, y: 0 },
+    equipment: {
+      ...base.player.equipment,
+      weapon: weaponEntityId,
+      ring1: ringEntityId,
+    },
+    inventory: [potionEntityId],
+    knownRingSchools: ['fire'],
+    learnedRingSpellIds: ['ember'],
+    ringMastery: { fire: { xp: 80 } },
+    mana: 5,
+    maxMana: 10,
+  };
+  const cachedFloorA = createStoredFloorFromRun(run, player.position, 2);
+  const cachedFloorB = createStoredFloorFromRun(run, player.position, 7);
+
+  return {
+    ...base,
+    player,
+    run,
+    world: {
+      ...base.world,
+      totalRuns: 2,
+      deepestFloor: 3,
+    },
+    itemRegistry: {
+      items: new Map(orderedEntries(itemEntries, order)),
+    },
+    turnNumber: 88,
+    persistedFloorCache: new Map(orderedEntries([
+      [7, cachedFloorB],
+      [2, cachedFloorA],
+    ] as const, order)),
+    weaponMastery: {
+      blade: 17,
+      bludgeon: 3,
+      axe: 4,
+      ranged: 5,
+      dagger: 6,
+    },
+  };
+}
+
+function expectRecordKeysSorted(record: Readonly<Record<string, unknown>>): void {
+  const keys = Object.keys(record);
+  expect(keys).toEqual([...keys].sort((left, right) => left.localeCompare(right)));
+}
+
+function validationErrorText(snapshot: unknown): string {
+  const validation = validateSaveSnapshot(snapshot);
+  expect(validation.isValid).toBe(false);
+  return validation.errors.map(error => `${error.field}: ${error.message}`).join('\n');
 }
 
 function expectInvalidSnapshot(snapshot: unknown, fieldPattern: RegExp): void {
@@ -389,6 +570,28 @@ describe('SaveSnapshot round trips', () => {
     expect(state.player.inventory).toEqual(inventoryBefore);
     expect(state.itemRegistry.items.size).toBe(itemRegistrySizeBefore);
   });
+
+  it('export-load-export stabilization', () => {
+    const state = createRepresentativeSaveState();
+
+    const snapshot1 = exportSaveSnapshot(state);
+    const restored = loadSaveSnapshot(jsonClone(snapshot1));
+    const snapshot2 = exportSaveSnapshot(restored);
+
+    expect(snapshot2).toEqual(snapshot1);
+  });
+
+  it('normalizes hostile insertion order for registries, maps, speed accumulators, and cached floors', () => {
+    const forwardSnapshot = exportSaveSnapshot(createRepresentativeSaveState('forward'));
+    const reverseSnapshot = exportSaveSnapshot(createRepresentativeSaveState('reverse'));
+
+    expect(reverseSnapshot).toEqual(forwardSnapshot);
+    expectRecordKeysSorted(forwardSnapshot.itemRegistry.items);
+    expectRecordKeysSorted(forwardSnapshot.enemies);
+    expectRecordKeysSorted(forwardSnapshot.objects);
+    expectRecordKeysSorted(forwardSnapshot.run!.speedAccumulators);
+    expectRecordKeysSorted(forwardSnapshot.persistedFloorCache ?? {});
+  });
 });
 
 describe('SaveSnapshot validation and migration', () => {
@@ -452,7 +655,137 @@ describe('SaveSnapshot validation and migration', () => {
 
     const unknownSpell = jsonClone(valid);
     unknownSpell.player!.learnedRingSpellIds = ['missing_spell'];
-    expectInvalidSnapshot(unknownSpell, /player\.learnedRingSpellIds/);
+    expectInvalidSnapshot(unknownSpell, /player\.learnedRingSpellIds\[0\]/);
+
+    const invalidWeaponMastery = jsonClone(valid);
+    invalidWeaponMastery.weaponMastery = {
+      blade: 'not-a-number',
+      bludgeon: 0,
+      ranged: 0,
+      dagger: 0,
+    };
+    const masteryErrors = validationErrorText(invalidWeaponMastery);
+    expect(masteryErrors).toMatch(/player\.weaponMastery\.blade/);
+    expect(masteryErrors).toMatch(/player\.weaponMastery\.axe/);
+
+    const invalidSpeedAccumulator = jsonClone(valid);
+    invalidSpeedAccumulator.run!.speedAccumulators = {
+      snapshot_enemy_b: 0,
+      snapshot_enemy_a: 'fast',
+    };
+    expectInvalidSnapshot(invalidSpeedAccumulator, /run\.speedAccumulators\[snapshot_enemy_a\]/);
+
+    const invalidObjectFields = jsonClone(valid);
+    invalidObjectFields.objects = {
+      '1,1': {
+        id: entityId('invalid_object'),
+        templateId: 'healing_fountain',
+        position: { x: 'bad', y: 1 },
+        isExhausted: 'yes',
+      } as unknown as ObjectInstance,
+    };
+    const objectErrors = validationErrorText(invalidObjectFields);
+    expect(objectErrors).toMatch(/objects\[1,1\]\.position\.x/);
+    expect(objectErrors).toMatch(/objects\[1,1\]\.isExhausted/);
+  });
+
+  it('rejects incompatible equipment slot item types before loading', () => {
+    const cases: Array<{
+      readonly slot: 'weapon' | 'secondaryWeapon' | 'chest' | 'head' | 'gloves' | 'boots' | 'ring1' | 'ring2';
+      readonly entityId: EntityId;
+      readonly template: AnyItemTemplate;
+      readonly errorPattern: RegExp;
+    }> = [
+      {
+        slot: 'weapon',
+        entityId: entityId('snapshot_bad_weapon_potion'),
+        template: TEST_POTION,
+        errorPattern: /equipment\.weapon: item "snapshot_bad_weapon_potion" is not a valid weapon \(got consumable\)/,
+      },
+      {
+        slot: 'weapon',
+        entityId: entityId('snapshot_bad_weapon_armor'),
+        template: TEST_CHEST_ARMOR,
+        errorPattern: /equipment\.weapon: item "snapshot_bad_weapon_armor" is not a valid weapon \(got armor:chest\)/,
+      },
+      {
+        slot: 'ring1',
+        entityId: entityId('snapshot_bad_ring_weapon'),
+        template: TEST_WEAPON,
+        errorPattern: /equipment\.ring1: item "snapshot_bad_ring_weapon" is not valid for ring1 slot \(got weapon\)/,
+      },
+      {
+        slot: 'chest',
+        entityId: entityId('snapshot_bad_chest_weapon'),
+        template: TEST_WEAPON,
+        errorPattern: /equipment\.chest: item "snapshot_bad_chest_weapon" is not valid for chest slot \(got weapon\)/,
+      },
+      {
+        slot: 'weapon',
+        entityId: entityId('snapshot_bad_weapon_ring'),
+        template: TEST_RING,
+        errorPattern: /equipment\.weapon: item "snapshot_bad_weapon_ring" is not a valid weapon \(got armor:ring\)/,
+      },
+      {
+        slot: 'boots',
+        entityId: entityId('snapshot_bad_boots_chest'),
+        template: TEST_CHEST_ARMOR,
+        errorPattern: /equipment\.boots: item "snapshot_bad_boots_chest" is not valid for boots slot \(got armor:chest\)/,
+      },
+      {
+        slot: 'chest',
+        entityId: entityId('snapshot_bad_chest_boots'),
+        template: TEST_BOOTS_ARMOR,
+        errorPattern: /equipment\.chest: item "snapshot_bad_chest_boots" is not valid for chest slot \(got armor:boots\)/,
+      },
+    ];
+
+    for (const { slot, entityId: equippedEntityId, template, errorPattern } of cases) {
+      const snapshot = mutableSnapshot(createTestGameState());
+      snapshot.itemRegistry = { items: { [equippedEntityId]: template } };
+      snapshot.player!.equipment = {
+        ...snapshot.player!.equipment,
+        [slot]: equippedEntityId,
+      };
+
+      const validationText = validationErrorText(snapshot);
+      expect(validationText).toMatch(errorPattern);
+      expect(() => loadSaveSnapshot(snapshot)).toThrow(errorPattern);
+    }
+  });
+
+  it('rejects invalid snapshots before restore without returning partial state', () => {
+    const snapshot = mutableSnapshot(createRepresentativeSaveState());
+    snapshot.floor = null;
+    snapshot.enemies = {
+      '9,9': {
+        ...Object.values(snapshot.enemies ?? {})[0]!,
+        templateId: 'missing_enemy_template',
+        position: { x: 9, y: 9 },
+      },
+    };
+    snapshot.itemRegistry = {
+      items: {
+        corrupt_item_entity: {
+          ...TEST_POTION,
+          itemId: 'missing_item_template',
+        },
+      },
+    };
+
+    let restored: GameState | undefined;
+    try {
+      restored = loadSaveSnapshot(snapshot);
+      throw new Error('Expected loadSaveSnapshot to reject the invalid snapshot');
+    } catch (error) {
+      expect(error).toBeInstanceOf(SaveSnapshotLoadError);
+      const message = error instanceof Error ? error.message : String(error);
+      expect(message).toMatch(/floor/);
+      expect(message).toMatch(/enemies\.9,9\.templateId/);
+      expect(message).toMatch(/itemRegistry\.items\.corrupt_item_entity\.itemId/);
+    }
+
+    expect(restored).toBeUndefined();
   });
 
   it('Test Group 10: exposes migration entry points for version 1 and validates future versions before migration', () => {
