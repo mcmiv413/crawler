@@ -5,8 +5,7 @@
  * equipment slots, bag items, and item inspection modal.
  */
 import { beforeEach, describe, it, expect, vi } from 'vitest';
-;
-import { render, screen, fireEvent } from '@testing-library/react';
+import { render, screen, fireEvent, waitFor } from '@testing-library/react';
 
 vi.mock('../hooks/useBreakpoint.js', () => ({
   useBreakpoint: vi.fn(() => ({ isMobile: false })),
@@ -302,6 +301,43 @@ describe('InventoryScreen Component', () => {
       fireEvent.click(screen.getByRole('button', { name: /equip/i }));
 
       expect(sendCommand).toHaveBeenCalledWith({ type: 'EQUIP', itemId: 'a1' });
+    });
+
+    it('returns to equipment view when the expanded bag becomes empty', async () => {
+      const inventory: InventoryView = {
+        items: [mockArmor],
+        equipped: emptyEquipped,
+      };
+
+      const { rerender } = render(
+        <InventoryScreen
+          inventory={inventory}
+          phase="dungeon"
+          onClose={vi.fn()}
+          sendCommand={vi.fn()}
+        />
+      );
+
+      fireEvent.click(screen.getByRole('button', { name: /expand/i }));
+      expect(screen.getByText(/Bag/i)).toBeInTheDocument();
+
+      rerender(
+        <InventoryScreen
+          inventory={{
+            items: [mockArmor],
+            equipped: { ...emptyEquipped, chest: mockArmor },
+          }}
+          phase="dungeon"
+          onClose={vi.fn()}
+          sendCommand={vi.fn()}
+        />
+      );
+
+      await waitFor(() => {
+        expect(screen.getByText(/Equipment/i)).toBeInTheDocument();
+      });
+      expect(screen.queryByRole('button', { name: /collapse/i })).not.toBeInTheDocument();
+      expect(screen.getByText('Leather Chest')).toBeInTheDocument();
     });
   });
 

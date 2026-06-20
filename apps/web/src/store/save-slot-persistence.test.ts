@@ -1,5 +1,5 @@
 import { beforeEach, describe, expect, it } from 'vitest';
-import type { SaveSnapshot } from '@dungeon/contracts';
+import { SAVE_SNAPSHOT_SCHEMA_VERSION, type SaveSnapshot } from '@dungeon/contracts';
 import {
   clearSaveSlot,
   getSaveSlotStorageKeys,
@@ -38,6 +38,19 @@ class MemoryStorage implements Storage {
   }
 }
 
+class MetadataRemoveFailureStorage extends MemoryStorage {
+  constructor(private readonly metadataKey: string) {
+    super();
+  }
+
+  override removeItem(key: string): void {
+    if (key === this.metadataKey) {
+      throw new Error('metadata remove failed');
+    }
+    super.removeItem(key);
+  }
+}
+
 function makeSnapshot(options: {
   readonly level: number;
   readonly floor: number;
@@ -45,7 +58,7 @@ function makeSnapshot(options: {
   readonly displayName?: string;
 }): SaveSnapshot {
   return {
-    schemaVersion: 1,
+    schemaVersion: SAVE_SNAPSHOT_SCHEMA_VERSION,
     metadata: {
       saveTimestamp: options.turnNumber,
       characterLevel: options.level,
@@ -132,6 +145,28 @@ describe('save slot persistence', () => {
     expect(() => loadSnapshotFromSlot(storage, 'slot-1')).toThrow(/slot-1/);
   });
 
+  it('rejects snapshots with unsupported or missing schema versions', () => {
+    const keys = getSaveSlotStorageKeys('slot-1');
+    storage.setItem(keys.snapshot, JSON.stringify({
+      ...makeSnapshot({ level: 1, floor: 1, turnNumber: 11 }),
+      schemaVersion: SAVE_SNAPSHOT_SCHEMA_VERSION + 1,
+    }));
+
+    expect(() => loadSnapshotFromSlot(storage, 'slot-1')).toThrow(
+      `Save slot slot-1 has schema version ${SAVE_SNAPSHOT_SCHEMA_VERSION + 1}, expected ${SAVE_SNAPSHOT_SCHEMA_VERSION}`,
+    );
+
+    const missingVersion: Record<string, unknown> = {
+      ...makeSnapshot({ level: 1, floor: 1, turnNumber: 11 }),
+    };
+    delete missingVersion['schemaVersion'];
+    storage.setItem(keys.snapshot, JSON.stringify(missingVersion));
+
+    expect(() => loadSnapshotFromSlot(storage, 'slot-1')).toThrow(
+      `Save slot slot-1 has schema version undefined, expected ${SAVE_SNAPSHOT_SCHEMA_VERSION}`,
+    );
+  });
+
   it('throws on incomplete occupied metadata instead of reporting the slot empty', () => {
     const keys = getSaveSlotStorageKeys('slot-1');
     storage.setItem(keys.metadata, JSON.stringify({
@@ -159,6 +194,25 @@ describe('save slot persistence', () => {
     clearSaveSlot(storage, 'slot-1');
 
     expect(loadSnapshotFromSlot(storage, 'slot-1')).toBeNull();
+    expect(listSaveSlotMetadata(storage).find(slot => slot.slotId === 'slot-1')).toEqual({
+      slotId: 'slot-1',
+      isEmpty: true,
+    });
+  });
+
+  it('leaves an empty-slot tombstone if final metadata removal fails while clearing', () => {
+    const keys = getSaveSlotStorageKeys('slot-1');
+    storage = new MetadataRemoveFailureStorage(keys.metadata);
+    const snapshot = makeSnapshot({ level: 2, floor: 2, turnNumber: 22 });
+    saveSnapshotToSlot(storage, 'slot-1', snapshot);
+
+    expect(() => clearSaveSlot(storage, 'slot-1')).not.toThrow();
+
+    expect(loadSnapshotFromSlot(storage, 'slot-1')).toBeNull();
+    expect(JSON.parse(storage.getItem(keys.metadata) ?? '{}')).toEqual({
+      slotId: 'slot-1',
+      isEmpty: true,
+    });
     expect(listSaveSlotMetadata(storage).find(slot => slot.slotId === 'slot-1')).toEqual({
       slotId: 'slot-1',
       isEmpty: true,

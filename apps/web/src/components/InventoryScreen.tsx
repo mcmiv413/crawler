@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useEffect, useState } from 'react';
 import type { InventoryItemView, InventoryView, DismissibleNotice } from '@dungeon/presenter';
 import { btnStyle, compactBtnStyle, colors } from '../styles.js';
 import { EquipmentDoll } from './EquipmentDoll.js';
@@ -47,6 +47,12 @@ export function InventoryScreen({
   );
 
   const bagItems = inventory.items.filter((item) => !equippedIds.has(item.id));
+
+  useEffect(() => {
+    if (bagExpanded && bagItems.length === 0) {
+      setBagExpanded(false);
+    }
+  }, [bagExpanded, bagItems.length]);
 
   // Use inventory filter hook for bag items
   const { filtered: sorted, filter, setFilter, sortBy, setSortBy } = useInventoryFilter(bagItems);
