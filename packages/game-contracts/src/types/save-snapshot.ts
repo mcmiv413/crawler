@@ -48,6 +48,10 @@ export interface SaveSnapshotItemRegistry {
   readonly items: Readonly<Record<string, AnyItemTemplate>>;
 }
 
+// Scenario fixtures are authored setup states.
+// Save snapshots are captured runtime states.
+// Save snapshots preserve runtime entity ids, item registry, run state, and floor state.
+// Future GameState refactors may require explicit snapshot migrations.
 export interface SaveSnapshot {
   readonly schemaVersion: typeof SAVE_SNAPSHOT_SCHEMA_VERSION;
   readonly metadata: SaveSnapshotMetadata;

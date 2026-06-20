@@ -13,11 +13,13 @@ import {
   ENEMY_TEMPLATES,
   ITEM_BY_ID,
   OBJECT_TEMPLATES,
+  RING_SPELL_BY_ID,
   RING_SCHOOL_BY_ID,
 } from '@dungeon/content';
 import { validatePlayer as validateCorePlayer } from './validators.js';
 
 const VALID_PHASES = new Set<GamePhase>(['town', 'dungeon', 'combat', 'game_over']);
+const REQUIRED_WEAPON_MASTERY_KEYS = ['blade', 'bludgeon', 'axe', 'ranged', 'dagger'] as const;
 
 export class SaveSnapshotLoadError extends Error {
   readonly validationErrors: readonly SaveSnapshotValidationError[];
@@ -61,7 +63,10 @@ export function migrateSaveSnapshot(snapshot: unknown): SaveSnapshot {
     throw new SaveSnapshotLoadError([{ field: 'snapshot', message: 'snapshot must be an object' }]);
   }
 
-  // Callers must call validateSaveSnapshot before migrateSaveSnapshot.
+  // Version 1 has no migrations; this is a no-op pass-through today.
+  // Future versions should add explicit per-version migration steps here.
+  // loadSaveSnapshot must validate the migrated/current snapshot before restore.
+  // Unsupported future versions must fail cleanly rather than pass through.
   return snapshot as unknown as SaveSnapshot;
 }
 
@@ -136,8 +141,24 @@ function validatePrimitiveFields(
   if (!Array.isArray(snapshot['activeQuests'])) {
     mutableErrors.push({ field: 'activeQuests', message: 'activeQuests must be an array' });
   }
-  if (!isRecord(snapshot['weaponMastery'])) {
+  validateWeaponMastery(snapshot['weaponMastery'], mutableErrors);
+}
+
+function validateWeaponMastery(
+  weaponMastery: unknown,
+  mutableErrors: SaveSnapshotValidationError[],
+): void {
+  if (!isRecord(weaponMastery)) {
     mutableErrors.push({ field: 'weaponMastery', message: 'weaponMastery must be an object' });
+    return;
+  }
+
+  for (const key of REQUIRED_WEAPON_MASTERY_KEYS) {
+    const value = weaponMastery[key];
+    if (typeof value !== 'number' || !Number.isFinite(value) || value < 0) {
+      const field = `player.weaponMastery.${key}`;
+      mutableErrors.push({ field, message: `${field} must be a finite non-negative number` });
+    }
   }
 }
 
@@ -177,10 +198,12 @@ function validateSnapshotPlayer(
   }
 
   const registryItems = getRegistryItems(itemRegistry);
+  const registryItemRecords = getRegistryItemRecords(itemRegistry);
   for (const error of validateCorePlayer(player as unknown as Player)) {
     mutableErrors.push({ field: `player.${error.path}`, message: error.message });
   }
   pushFiniteNumberError(player['floor'], 'player.floor', mutableErrors);
+  validateLearnedRingSpellIds(player['learnedRingSpellIds'], mutableErrors);
 
   const inventory = player['inventory'];
   if (Array.isArray(inventory)) {
@@ -203,6 +226,14 @@ function validateSnapshotPlayer(
           field: `player.equipment.${slot}`,
           message: 'equipment item entity id must exist in itemRegistry',
         });
+        continue;
+      }
+
+      if (typeof itemEntityId === 'string') {
+        const item = registryItemRecords.get(itemEntityId);
+        if (item !== undefined) {
+          validateEquipmentSlotCompatibility(slot, itemEntityId, item, mutableErrors);
+        }
       }
     }
   } else {
@@ -210,6 +241,77 @@ function validateSnapshotPlayer(
   }
 
   validateKnownRingSchools(player, mutableErrors);
+}
+
+function validateLearnedRingSpellIds(
+  learnedRingSpellIds: unknown,
+  mutableErrors: SaveSnapshotValidationError[],
+): void {
+  if (!Array.isArray(learnedRingSpellIds)) {
+    mutableErrors.push({
+      field: 'player.learnedRingSpellIds',
+      message: 'player.learnedRingSpellIds must be an array',
+    });
+    return;
+  }
+
+  learnedRingSpellIds.forEach((spellId, index) => {
+    if (typeof spellId !== 'string' || !RING_SPELL_BY_ID.has(spellId)) {
+      mutableErrors.push({
+        field: `player.learnedRingSpellIds[${index}]`,
+        message: `player.learnedRingSpellIds[${index}] must exist in RING_SPELL_BY_ID`,
+      });
+    }
+  });
+}
+
+function validateEquipmentSlotCompatibility(
+  slot: string,
+  itemEntityId: string,
+  item: Record<string, unknown>,
+  mutableErrors: SaveSnapshotValidationError[],
+): void {
+  if (slot === 'weapon' || slot === 'secondaryWeapon') {
+    if (item['itemClass'] !== 'weapon') {
+      mutableErrors.push({
+        field: `equipment.${slot}`,
+        message: `item "${itemEntityId}" is not a valid weapon (got ${describeItemKind(item)})`,
+      });
+    }
+    return;
+  }
+
+  const expectedArmorSlot = getExpectedArmorSlot(slot);
+  if (expectedArmorSlot === null) {
+    return;
+  }
+
+  const armor = item['armor'];
+  if (item['itemClass'] !== 'armor' || !isRecord(armor) || armor['slot'] !== expectedArmorSlot) {
+    mutableErrors.push({
+      field: `equipment.${slot}`,
+      message: `item "${itemEntityId}" is not valid for ${slot} slot (got ${describeItemKind(item)})`,
+    });
+  }
+}
+
+function getExpectedArmorSlot(slot: string): string | null {
+  if (slot === 'ring1' || slot === 'ring2') return 'ring';
+  if (slot === 'chest' || slot === 'head' || slot === 'gloves' || slot === 'boots') return slot;
+  return null;
+}
+
+function describeItemKind(item: Record<string, unknown>): string {
+  const itemClass = item['itemClass'];
+  if (itemClass === 'armor') {
+    const armor = item['armor'];
+    if (isRecord(armor) && typeof armor['slot'] === 'string' && armor['slot'].length > 0) {
+      return `armor:${armor['slot']}`;
+    }
+    return 'armor';
+  }
+
+  return typeof itemClass === 'string' && itemClass.length > 0 ? itemClass : 'unknown';
 }
 
 function validateKnownRingSchools(
@@ -288,10 +390,18 @@ function validateRunAndFloor(
   }
   if (!isRecord(run['speedAccumulators'])) {
     mutableErrors.push({ field: 'run.speedAccumulators', message: 'speedAccumulators must be an object' });
+  } else {
+    for (const [key, value] of Object.entries(run['speedAccumulators'])) {
+      const field = `run.speedAccumulators[${key}]`;
+      if (typeof value !== 'number' || !Number.isFinite(value)) {
+        mutableErrors.push({ field, message: `${field} must be a finite number` });
+      }
+    }
   }
 
   if (!isRecord(floor)) {
     mutableErrors.push({ field: 'floor', message: 'floor must be an object for active runs' });
+    validateEnemies(enemies, { cells: {} }, snapshot['player'], mutableErrors);
     return;
   }
 
@@ -394,7 +504,7 @@ function validateObjects(
 
   for (const [key, object] of Object.entries(objects)) {
     if (!isRecord(object)) {
-      mutableErrors.push({ field: `objects.${key}`, message: 'object must be an object' });
+      mutableErrors.push({ field: `objects[${key}]`, message: 'object must be an object' });
       continue;
     }
     const templateId = object['templateId'];
@@ -403,6 +513,26 @@ function validateObjects(
         field: `objects.${key}.templateId`,
         message: `object template id ${String(templateId)} must exist in OBJECT_TEMPLATES`,
       });
+    }
+    validateObjectPosition(key, object['position'], mutableErrors);
+    if (typeof object['isExhausted'] !== 'boolean') {
+      const field = `objects[${key}].isExhausted`;
+      mutableErrors.push({ field, message: `${field} must be a boolean` });
+    }
+  }
+}
+
+function validateObjectPosition(
+  key: string,
+  position: unknown,
+  mutableErrors: SaveSnapshotValidationError[],
+): void {
+  const positionRecord = isRecord(position) ? position : null;
+  for (const axis of ['x', 'y'] as const) {
+    const value = positionRecord?.[axis];
+    if (typeof value !== 'number' || !Number.isFinite(value)) {
+      const field = `objects[${key}].position.${axis}`;
+      mutableErrors.push({ field, message: `${field} must be a number` });
     }
   }
 }
@@ -437,6 +567,20 @@ function getRegistryItems(itemRegistry: unknown): Set<string> {
     return new Set();
   }
   return new Set(Object.keys(itemRegistry['items']));
+}
+
+function getRegistryItemRecords(itemRegistry: unknown): Map<string, Record<string, unknown>> {
+  const items = new Map<string, Record<string, unknown>>();
+  if (!isRecord(itemRegistry) || !isRecord(itemRegistry['items'])) {
+    return items;
+  }
+
+  for (const [entityId, item] of Object.entries(itemRegistry['items'])) {
+    if (isRecord(item)) {
+      items.set(entityId, item);
+    }
+  }
+  return items;
 }
 
 function isRecord(value: unknown): value is Record<string, unknown> {
