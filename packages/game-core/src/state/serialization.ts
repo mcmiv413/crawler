@@ -56,7 +56,7 @@ export function deserializeStoredFloor(raw: StoredFloorJson): StoredFloor {
   };
 }
 
-function serializeDungeonFloor(floor: DungeonFloor): SerializedDungeonFloor {
+export function serializeDungeonFloor(floor: DungeonFloor): SerializedDungeonFloor {
   return {
     width: floor.width,
     height: floor.height,
@@ -69,7 +69,7 @@ function serializeDungeonFloor(floor: DungeonFloor): SerializedDungeonFloor {
   };
 }
 
-function deserializeDungeonFloor(floor: SerializedDungeonFloor): DungeonFloor {
+export function deserializeDungeonFloor(floor: SerializedDungeonFloor): DungeonFloor {
   return {
     ...cloneJson(floor),
     cells: new Map(Object.entries(floor.cells)) as ReadonlyMap<string, MapCell>,
@@ -289,7 +289,7 @@ function deserializeRun(raw: RunStateJson): RunState {
   } as unknown as RunState;
 }
 
-function mapToSortedRecord<T, U>(
+export function mapToSortedRecord<T, U>(
   map: ReadonlyMap<string | number, T>,
   convert: (value: T) => U,
 ): Record<string, U> {
@@ -301,6 +301,6 @@ function mapToSortedRecord<T, U>(
   );
 }
 
-function cloneJson<T>(value: T): T {
+export function cloneJson<T>(value: T): T {
   return JSON.parse(JSON.stringify(value)) as T;
 }

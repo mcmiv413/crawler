@@ -1,10 +1,8 @@
 import type {
   AnyItemTemplate,
-  DungeonFloor,
   EnemyInstance,
   EntityId,
   GameState,
-  MapCell,
   ObjectInstance,
   RunState,
   SaveSnapshot,
@@ -14,7 +12,11 @@ import type {
 } from '@dungeon/contracts';
 import { SAVE_SNAPSHOT_SCHEMA_VERSION } from '@dungeon/contracts';
 import {
+  cloneJson,
+  deserializeDungeonFloor,
   deserializeStoredFloor,
+  mapToSortedRecord,
+  serializeDungeonFloor,
   serializeStoredFloor,
 } from './serialization.js';
 import {
@@ -46,7 +48,7 @@ export function exportSaveSnapshot(state: GameState): SaveSnapshot {
     player: cloneJson(state.player),
     world: cloneJson(state.world),
     run: activeRun !== null ? serializeRunMetadata(activeRun) : null,
-    floor: activeRun !== null ? serializeFloor(activeRun.floor) : null,
+    floor: activeRun !== null ? serializeDungeonFloor(activeRun.floor) : null,
     enemies: activeRun !== null ? mapToSortedRecord(activeRun.enemies, cloneJson) : {},
     objects: activeRun !== null ? mapToSortedRecord(activeRun.objects, cloneJson) : {},
     itemRegistry: {
@@ -71,7 +73,12 @@ export function loadSaveSnapshot(snapshot: unknown): GameState {
     throw new SaveSnapshotLoadError(validation.errors);
   }
 
-  const migrated = migrateSaveSnapshot(snapshot);
+  const migrated = migrateSaveSnapshot(snapshot as SaveSnapshot);
+  const postMigrationResult = validateSaveSnapshot(migrated);
+  if (postMigrationResult.isValid === false) {
+    throw new SaveSnapshotLoadError('Migrated snapshot failed validation', postMigrationResult.errors);
+  }
+
   const run = migrated.run !== null
     ? deserializeRun(migrated.run, migrated.floor!, migrated.enemies, migrated.objects)
     : null;
@@ -115,19 +122,6 @@ function serializeRunMetadata(run: RunState): SaveSnapshotRun {
   };
 }
 
-function serializeFloor(floor: DungeonFloor): SerializedDungeonFloor {
-  return {
-    width: floor.width,
-    height: floor.height,
-    depth: floor.depth,
-    biomeId: floor.biomeId,
-    cells: mapToSortedRecord(floor.cells, cloneJson),
-    entrance: cloneJson(floor.entrance),
-    exit: cloneJson(floor.exit),
-    seed: floor.seed,
-  };
-}
-
 function deserializeRun(
   run: SaveSnapshotRun,
   floor: SerializedDungeonFloor,
@@ -136,7 +130,7 @@ function deserializeRun(
 ): RunState {
   return {
     runId: run.runId,
-    floor: deserializeFloor(floor),
+    floor: deserializeDungeonFloor(floor),
     enemies: new Map(Object.entries(enemies)) as ReadonlyMap<string, EnemyInstance>,
     objects: new Map(Object.entries(objects)) as ReadonlyMap<string, ObjectInstance>,
     turnCount: run.turnCount,
@@ -146,32 +140,9 @@ function deserializeRun(
   };
 }
 
-function deserializeFloor(floor: SerializedDungeonFloor): DungeonFloor {
-  return {
-    ...cloneJson(floor),
-    cells: new Map(Object.entries(floor.cells)) as ReadonlyMap<string, MapCell>,
-  };
-}
-
-function mapToSortedRecord<T, U>(
-  map: ReadonlyMap<string | number, T>,
-  convert: (value: T) => U,
-): Record<string, U> {
-  const mutableEntries = [...map.entries()];
-  return Object.fromEntries(
-    mutableEntries
-      .sort(([left], [right]) => String(left).localeCompare(String(right)))
-      .map(([key, value]) => [String(key), convert(value)]),
-  );
-}
-
 function sortRecord<T>(record: Readonly<Record<string, T>>): Record<string, T> {
   const mutableEntries = Object.entries(record);
   return Object.fromEntries(
     mutableEntries.sort(([left], [right]) => left.localeCompare(right)),
   );
-}
-
-function cloneJson<T>(value: T): T {
-  return JSON.parse(JSON.stringify(value)) as T;
 }

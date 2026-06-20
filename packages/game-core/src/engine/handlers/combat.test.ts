@@ -293,7 +293,7 @@ describe('handleAttack integration', () => {
     expect([...(result.state.run?.enemies.values() ?? [])].some(enemy => enemy.id === enemyId)).toBe(false);
   });
 
-  it('emits heat-surge burn events after lethal attack damage without keeping the dead enemy', () => {
+  it('does not emit heat-surge burn events after lethal attack damage', () => {
     const { state, enemyId } = makeLethalAttackState();
     const stateWithHeatSurge: GameState = {
       ...state,
@@ -308,12 +308,12 @@ describe('handleAttack integration', () => {
 
     const result = handleAttack(stateWithHeatSurge, enemyId, new SeededRNG(1));
 
-    expect(result.events).toContainEqual(expect.objectContaining({
-      type: 'STATUS_APPLIED',
-      targetId: enemyId,
-      statusId: 'burn',
-      sourceId: state.player.id,
-    }));
+    expect(result.events.some(event =>
+      event.type === 'STATUS_APPLIED'
+        && event.targetId === enemyId
+        && event.statusId === 'burn'
+        && event.sourceId === state.player.id
+    )).toBe(false);
     expect(result.events.some(event =>
       event.type === 'ENTITY_DIED' && event.entityId === enemyId
     )).toBe(true);

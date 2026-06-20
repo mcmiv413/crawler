@@ -38,16 +38,17 @@ class MemoryStorage implements Storage {
   }
 }
 
-class MetadataRemoveFailureStorage extends MemoryStorage {
-  constructor(private readonly metadataKey: string) {
-    super();
-  }
+class RecordingStorage extends MemoryStorage {
+  readonly operations: string[] = [];
 
   override removeItem(key: string): void {
-    if (key === this.metadataKey) {
-      throw new Error('metadata remove failed');
-    }
+    this.operations.push(`remove:${key}`);
     super.removeItem(key);
+  }
+
+  override setItem(key: string, value: string): void {
+    this.operations.push(`set:${key}`);
+    super.setItem(key, value);
   }
 }
 
@@ -145,16 +146,15 @@ describe('save slot persistence', () => {
     expect(() => loadSnapshotFromSlot(storage, 'slot-1')).toThrow(/slot-1/);
   });
 
-  it('rejects snapshots with unsupported or missing schema versions', () => {
+  it('returns snapshots with unsupported or missing schema versions for downstream validation', () => {
     const keys = getSaveSlotStorageKeys('slot-1');
-    storage.setItem(keys.snapshot, JSON.stringify({
+    const unsupportedVersion = {
       ...makeSnapshot({ level: 1, floor: 1, turnNumber: 11 }),
       schemaVersion: SAVE_SNAPSHOT_SCHEMA_VERSION + 1,
-    }));
+    };
+    storage.setItem(keys.snapshot, JSON.stringify(unsupportedVersion));
 
-    expect(() => loadSnapshotFromSlot(storage, 'slot-1')).toThrow(
-      `Save slot slot-1 has schema version ${SAVE_SNAPSHOT_SCHEMA_VERSION + 1}, expected ${SAVE_SNAPSHOT_SCHEMA_VERSION}`,
-    );
+    expect(loadSnapshotFromSlot(storage, 'slot-1')).toEqual(unsupportedVersion);
 
     const missingVersion: Record<string, unknown> = {
       ...makeSnapshot({ level: 1, floor: 1, turnNumber: 11 }),
@@ -162,9 +162,7 @@ describe('save slot persistence', () => {
     delete missingVersion['schemaVersion'];
     storage.setItem(keys.snapshot, JSON.stringify(missingVersion));
 
-    expect(() => loadSnapshotFromSlot(storage, 'slot-1')).toThrow(
-      `Save slot slot-1 has schema version undefined, expected ${SAVE_SNAPSHOT_SCHEMA_VERSION}`,
-    );
+    expect(loadSnapshotFromSlot(storage, 'slot-1')).toEqual(missingVersion);
   });
 
   it('throws on incomplete occupied metadata instead of reporting the slot empty', () => {
@@ -200,22 +198,25 @@ describe('save slot persistence', () => {
     });
   });
 
-  it('leaves an empty-slot tombstone if final metadata removal fails while clearing', () => {
+  it('removes snapshot and metadata without writing a tombstone while clearing', () => {
     const keys = getSaveSlotStorageKeys('slot-1');
-    storage = new MetadataRemoveFailureStorage(keys.metadata);
+    const recordingStorage = new RecordingStorage();
+    storage = recordingStorage;
     const snapshot = makeSnapshot({ level: 2, floor: 2, turnNumber: 22 });
     saveSnapshotToSlot(storage, 'slot-1', snapshot);
+    recordingStorage.operations.length = 0;
 
     expect(() => clearSaveSlot(storage, 'slot-1')).not.toThrow();
 
     expect(loadSnapshotFromSlot(storage, 'slot-1')).toBeNull();
-    expect(JSON.parse(storage.getItem(keys.metadata) ?? '{}')).toEqual({
-      slotId: 'slot-1',
-      isEmpty: true,
-    });
+    expect(storage.getItem(keys.metadata)).toBeNull();
     expect(listSaveSlotMetadata(storage).find(slot => slot.slotId === 'slot-1')).toEqual({
       slotId: 'slot-1',
       isEmpty: true,
     });
+    expect(recordingStorage.operations).toEqual([
+      `remove:${keys.snapshot}`,
+      `remove:${keys.metadata}`,
+    ]);
   });
 });
