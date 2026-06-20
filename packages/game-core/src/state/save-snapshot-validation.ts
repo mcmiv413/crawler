@@ -49,7 +49,7 @@ export function validateSaveSnapshot(snapshot: unknown): SaveSnapshotValidationR
   validateSnapshotPlayer(snapshot['player'], snapshot['itemRegistry'], mutableErrors);
   validateWorld(snapshot['world'], mutableErrors);
   validateRunAndFloor(snapshot, mutableErrors);
-  validateObjects(snapshot['objects'], mutableErrors);
+  validateObjects(snapshot['objects'], snapshot['floor'], mutableErrors);
   validatePersistedFloorCache(snapshot['persistedFloorCache'], mutableErrors);
 
   return {
@@ -143,7 +143,6 @@ function validatePrimitiveFields(
   }
   validateWeaponMastery(snapshot['weaponMastery'], mutableErrors);
 }
-
 function validateWeaponMastery(
   weaponMastery: unknown,
   mutableErrors: SaveSnapshotValidationError[],
@@ -156,7 +155,7 @@ function validateWeaponMastery(
   for (const key of REQUIRED_WEAPON_MASTERY_KEYS) {
     const value = weaponMastery[key];
     if (typeof value !== 'number' || !Number.isFinite(value) || value < 0) {
-      const field = `player.weaponMastery.${key}`;
+      const field = `weaponMastery.${key}`;
       mutableErrors.push({ field, message: `${field} must be a finite non-negative number` });
     }
   }
@@ -207,12 +206,10 @@ function validateSnapshotPlayer(
 
   const inventory = player['inventory'];
   if (Array.isArray(inventory)) {
-    for (const itemEntityId of inventory) {
+    for (const [index, itemEntityId] of inventory.entries()) {
       if (typeof itemEntityId !== 'string' || !registryItems.has(itemEntityId)) {
-        mutableErrors.push({
-          field: `player.inventory.${String(itemEntityId)}`,
-          message: 'inventory item entity id must exist in itemRegistry',
-        });
+        const field = `player.inventory[${index}]`;
+        mutableErrors.push({ field, message: `${field} references unknown item entity id ${String(itemEntityId)}` });
       }
     }
   } else {
@@ -274,7 +271,7 @@ function validateEquipmentSlotCompatibility(
   if (slot === 'weapon' || slot === 'secondaryWeapon') {
     if (item['itemClass'] !== 'weapon') {
       mutableErrors.push({
-        field: `equipment.${slot}`,
+        field: `player.equipment.${slot}`,
         message: `item "${itemEntityId}" is not a valid weapon (got ${describeItemKind(item)})`,
       });
     }
@@ -289,7 +286,7 @@ function validateEquipmentSlotCompatibility(
   const armor = item['armor'];
   if (item['itemClass'] !== 'armor' || !isRecord(armor) || armor['slot'] !== expectedArmorSlot) {
     mutableErrors.push({
-      field: `equipment.${slot}`,
+      field: `player.equipment.${slot}`,
       message: `item "${itemEntityId}" is not valid for ${slot} slot (got ${describeItemKind(item)})`,
     });
   }
@@ -319,12 +316,10 @@ function validateKnownRingSchools(
   mutableErrors: SaveSnapshotValidationError[],
 ): void {
   if (Array.isArray(player['knownRingSchools'])) {
-    for (const school of player['knownRingSchools']) {
+    for (const [index, school] of player['knownRingSchools'].entries()) {
       if (typeof school !== 'string' || !RING_SCHOOL_BY_ID.has(school)) {
-        mutableErrors.push({
-          field: `player.knownRingSchools.${String(school)}`,
-          message: 'known ring school must exist in content',
-        });
+        const field = `player.knownRingSchools[${index}]`;
+        mutableErrors.push({ field, message: `${field} references unknown ring school ${String(school)}` });
       }
     }
   }
@@ -462,46 +457,43 @@ function validateEnemy(
   mutableErrors: SaveSnapshotValidationError[],
 ): void {
   if (!isRecord(enemy)) {
-    mutableErrors.push({ field: `enemies.${key}`, message: 'enemy must be an object' });
+    mutableErrors.push({ field: `enemies[${key}]`, message: 'enemy must be an object' });
     return;
   }
 
   const templateId = enemy['templateId'];
   if (typeof templateId !== 'string' || !ENEMY_TEMPLATES.has(templateId)) {
     mutableErrors.push({
-      field: `enemies.${key}.templateId`,
+      field: `enemies[${key}].templateId`,
       message: `enemy template id ${String(templateId)} must exist in ENEMY_TEMPLATES`,
     });
   }
   if (!isPosition(enemy['position'])) {
-    mutableErrors.push({ field: `enemies.${key}.position`, message: 'enemy position must be a position' });
+    mutableErrors.push({ field: `enemies[${key}].position`, message: 'enemy position must be a position' });
     return;
   }
 
   const expectedKey = posKey(enemy['position']);
   if (expectedKey !== key) {
     mutableErrors.push({
-      field: `enemies.${key}.position`,
+      field: `enemies[${key}].position`,
       message: `enemy map key must match enemy position ${expectedKey}`,
     });
   }
   if (!Object.prototype.hasOwnProperty.call(cells, expectedKey)) {
     mutableErrors.push({
-      field: `enemies.${key}.position`,
+      field: `enemies[${key}].position`,
       message: 'enemy position must reference an existing floor cell',
     });
   }
 }
 
-function validateObjects(
-  objects: unknown,
-  mutableErrors: SaveSnapshotValidationError[],
-): void {
+function validateObjects(objects: unknown, floor: unknown, mutableErrors: SaveSnapshotValidationError[]): void {
   if (!isRecord(objects)) {
     mutableErrors.push({ field: 'objects', message: 'objects must be an object' });
     return;
   }
-
+  const cells = isRecord(floor) && isRecord(floor['cells']) ? floor['cells'] : {};
   for (const [key, object] of Object.entries(objects)) {
     if (!isRecord(object)) {
       mutableErrors.push({ field: `objects[${key}]`, message: 'object must be an object' });
@@ -510,11 +502,19 @@ function validateObjects(
     const templateId = object['templateId'];
     if (typeof templateId !== 'string' || !OBJECT_TEMPLATES.has(templateId)) {
       mutableErrors.push({
-        field: `objects.${key}.templateId`,
+        field: `objects[${key}].templateId`,
         message: `object template id ${String(templateId)} must exist in OBJECT_TEMPLATES`,
       });
     }
     validateObjectPosition(key, object['position'], mutableErrors);
+    if (isPosition(object['position'])) {
+      const expectedKey = posKey(object['position']);
+      if (expectedKey !== key) {
+        mutableErrors.push({ field: `objects[${key}].position`, message: `object map key must match object position ${expectedKey}` });
+      } else if (!Object.prototype.hasOwnProperty.call(cells, key)) {
+        mutableErrors.push({ field: `objects[${key}].position`, message: 'object position must reference an existing floor cell' });
+      }
+    }
     if (typeof object['isExhausted'] !== 'boolean') {
       const field = `objects[${key}].isExhausted`;
       mutableErrors.push({ field, message: `${field} must be a boolean` });

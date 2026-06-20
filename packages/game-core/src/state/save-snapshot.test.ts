@@ -124,6 +124,7 @@ type MutableSnapshot = Record<string, unknown> & {
     inventory?: EntityId[];
     equipment?: Record<string, EntityId | null>;
     learnedRingSpellIds?: string[];
+    knownRingSchools?: string[];
   };
   world?: Record<string, unknown>;
   run?: Record<string, unknown> | null;
@@ -370,6 +371,211 @@ function expectInvalidSnapshot(snapshot: unknown, fieldPattern: RegExp): void {
   expect(validation.errors.map(error => error.field).join('\n')).toMatch(fieldPattern);
   expect(() => loadSaveSnapshot(snapshot)).toThrow(fieldPattern);
 }
+
+function validationErrors(snapshot: unknown) {
+  const validation = validateSaveSnapshot(snapshot);
+  expect(validation.isValid).toBe(false);
+  return validation.errors;
+}
+
+function validationFields(snapshot: unknown): string[] {
+  return validateSaveSnapshot(snapshot).errors.map(error => error.field);
+}
+
+function expectValidationField(snapshot: unknown, expectedField: string) {
+  const errors = validationErrors(snapshot);
+  const error = errors.find(candidate => candidate.field === expectedField);
+  expect(error, errors.map(candidate => `${candidate.field}: ${candidate.message}`).join('\n')).toBeDefined();
+  return error!;
+}
+
+function addFloorCell(snapshot: MutableSnapshot, key: string): void {
+  if (snapshot.floor === undefined || snapshot.floor === null) {
+    throw new Error('Expected snapshot floor to exist');
+  }
+  snapshot.floor.cells = {
+    ...snapshot.floor.cells,
+    [key]: snapshot.floor.cells?.[key] ?? snapshot.floor.cells?.['0,0'] ?? {},
+  };
+}
+
+function removeFloorCell(snapshot: MutableSnapshot, key: string): void {
+  if (snapshot.floor === undefined || snapshot.floor === null || snapshot.floor.cells === undefined) {
+    throw new Error('Expected snapshot floor cells to exist');
+  }
+  delete snapshot.floor.cells[key];
+}
+
+describe('SaveSnapshot validation path consistency', () => {
+  it('uses root weaponMastery paths', () => {
+    const missingBlade = mutableSnapshot(createTestGameStateInCombat());
+    delete missingBlade.weaponMastery!.blade;
+    expectValidationField(missingBlade, 'weaponMastery.blade');
+    expect(validationFields(missingBlade)).not.toContain('player.weaponMastery.blade');
+
+    const invalidBludgeon = mutableSnapshot(createTestGameStateInCombat());
+    invalidBludgeon.weaponMastery!.bludgeon = 'bad';
+    expectValidationField(invalidBludgeon, 'weaponMastery.bludgeon');
+    expect(validationFields(invalidBludgeon)).not.toContain('player.weaponMastery.bludgeon');
+
+    const negativeAxe = mutableSnapshot(createTestGameStateInCombat());
+    negativeAxe.weaponMastery!.axe = -1;
+    expectValidationField(negativeAxe, 'weaponMastery.axe');
+    expect(validationFields(negativeAxe)).not.toContain('player.weaponMastery.axe');
+  });
+
+  it('uses player equipment paths for missing and incompatible equipment', () => {
+    const missingWeapon = mutableSnapshot(createTestGameState());
+    missingWeapon.player!.equipment = {
+      ...missingWeapon.player!.equipment,
+      weapon: entityId('missing_weapon_entity'),
+    };
+    expectValidationField(missingWeapon, 'player.equipment.weapon');
+
+    const armorInWeaponSlot = mutableSnapshot(createTestGameState());
+    armorInWeaponSlot.itemRegistry = {
+      items: { snapshot_bad_weapon_armor: TEST_CHEST_ARMOR },
+    };
+    armorInWeaponSlot.player!.equipment = {
+      ...armorInWeaponSlot.player!.equipment,
+      weapon: entityId('snapshot_bad_weapon_armor'),
+    };
+    expectValidationField(armorInWeaponSlot, 'player.equipment.weapon');
+    expect(validationFields(armorInWeaponSlot)).not.toContain('equipment.weapon');
+
+    const weaponInChestSlot = mutableSnapshot(createTestGameState());
+    weaponInChestSlot.itemRegistry = {
+      items: { snapshot_bad_chest_weapon: TEST_WEAPON },
+    };
+    weaponInChestSlot.player!.equipment = {
+      ...weaponInChestSlot.player!.equipment,
+      chest: entityId('snapshot_bad_chest_weapon'),
+    };
+    expectValidationField(weaponInChestSlot, 'player.equipment.chest');
+    expect(validationFields(weaponInChestSlot)).not.toContain('equipment.chest');
+  });
+
+  it('uses bracket paths for object fields', () => {
+    const invalidTemplateId = mutableSnapshot(createTestGameStateInCombat());
+    invalidTemplateId.objects = {
+      '1,1': {
+        ...createSnapshotObject(entityId('invalid_template_object'), { x: 1, y: 1 }, false),
+        templateId: 'missing_object_template',
+      },
+    };
+    expectValidationField(invalidTemplateId, 'objects[1,1].templateId');
+    expect(validationFields(invalidTemplateId)).not.toContain('objects.1,1.templateId');
+
+    const invalidPositionX = mutableSnapshot(createTestGameStateInCombat());
+    invalidPositionX.objects = {
+      '1,1': {
+        id: entityId('invalid_position_object'),
+        templateId: 'healing_fountain',
+        position: { x: 'bad', y: 1 },
+        isExhausted: false,
+      } as unknown as ObjectInstance,
+    };
+    expectValidationField(invalidPositionX, 'objects[1,1].position.x');
+
+    const invalidIsExhausted = mutableSnapshot(createTestGameStateInCombat());
+    invalidIsExhausted.objects = {
+      '1,1': {
+        ...createSnapshotObject(entityId('invalid_exhausted_object'), { x: 1, y: 1 }, false),
+        isExhausted: 'bad',
+      } as unknown as ObjectInstance,
+    };
+    expectValidationField(invalidIsExhausted, 'objects[1,1].isExhausted');
+  });
+
+  it('uses bracket paths for enemy fields', () => {
+    const baseEnemy = Object.values(mutableSnapshot(createTestGameStateInCombat()).enemies ?? {})[0]!;
+
+    const invalidTemplateId = mutableSnapshot(createTestGameStateInCombat());
+    invalidTemplateId.enemies = {
+      '4,5': {
+        ...baseEnemy,
+        templateId: 'missing_enemy_template',
+        position: { x: 4, y: 5 },
+      },
+    };
+    expectValidationField(invalidTemplateId, 'enemies[4,5].templateId');
+    expect(validationFields(invalidTemplateId)).not.toContain('enemies.4,5.templateId');
+
+    const nonObjectEnemy = mutableSnapshot(createTestGameStateInCombat());
+    nonObjectEnemy.enemies = {
+      '4,5': 'bad' as unknown as EnemyInstance,
+    };
+    expectValidationField(nonObjectEnemy, 'enemies[4,5]');
+    expect(validationFields(nonObjectEnemy)).not.toContain('enemies.4,5');
+
+    const invalidPosition = mutableSnapshot(createTestGameStateInCombat());
+    invalidPosition.enemies = {
+      '4,5': {
+        ...baseEnemy,
+        position: { x: 'bad', y: 5 },
+      } as unknown as EnemyInstance,
+    };
+    expectValidationField(invalidPosition, 'enemies[4,5].position');
+    expect(validationFields(invalidPosition)).not.toContain('enemies.4,5.position');
+  });
+
+  it('uses inventory index paths and includes the bad entity id in the message', () => {
+    const snapshot = mutableSnapshot(createTestGameStateInCombat());
+    const badEntityId = entityId('missing_inventory_entity');
+    snapshot.player!.inventory = [badEntityId];
+
+    const error = expectValidationField(snapshot, 'player.inventory[0]');
+    expect(error.message).toContain(badEntityId);
+    expect(validationFields(snapshot)).not.toContain(`player.inventory.${badEntityId}`);
+  });
+
+  it('uses knownRingSchools index paths and includes the invalid school in the message', () => {
+    const snapshot = mutableSnapshot(createTestGameStateInCombat());
+    snapshot.player!.knownRingSchools = ['missing_school'];
+
+    const error = expectValidationField(snapshot, 'player.knownRingSchools[0]');
+    expect(error.message).toContain('missing_school');
+    expect(validationFields(snapshot)).not.toContain('player.knownRingSchools.missing_school');
+  });
+
+  it('validates object key-position consistency', () => {
+    const mismatched = mutableSnapshot(createTestGameStateInCombat());
+    mismatched.objects = {
+      '1,1': createSnapshotObject(entityId('mismatched_object'), { x: 20, y: 20 }, false),
+    };
+    const error = expectValidationField(mismatched, 'objects[1,1].position');
+    expect(error.message).toContain('20,20');
+
+    const matched = mutableSnapshot(createTestGameStateInCombat());
+    addFloorCell(matched, '1,1');
+    matched.objects = {
+      '1,1': createSnapshotObject(entityId('matched_object'), { x: 1, y: 1 }, false),
+    };
+    const validation = validateSaveSnapshot(matched);
+    expect(validation.errors.map(error => error.message)).not.toContain('object map key must match object position 1,1');
+  });
+
+  it('validates object floor membership', () => {
+    const missingFloorCell = mutableSnapshot(createTestGameStateInCombat());
+    removeFloorCell(missingFloorCell, '1,1');
+    missingFloorCell.objects = {
+      '1,1': createSnapshotObject(entityId('missing_floor_cell_object'), { x: 1, y: 1 }, false),
+    };
+    const error = expectValidationField(missingFloorCell, 'objects[1,1].position');
+    expect(error.message).toBe('object position must reference an existing floor cell');
+
+    const existingFloorCell = mutableSnapshot(createTestGameStateInCombat());
+    addFloorCell(existingFloorCell, '1,1');
+    existingFloorCell.objects = {
+      '1,1': createSnapshotObject(entityId('existing_floor_cell_object'), { x: 1, y: 1 }, false),
+    };
+    const validation = validateSaveSnapshot(existingFloorCell);
+    expect(validation.errors).not.toContainEqual({
+      field: 'objects[1,1].position',
+      message: 'object position must reference an existing floor cell',
+    });
+  });
+});
 
 describe('SaveSnapshot round trips', () => {
   it('Test Group 1: restores a new game into a playable equivalent state', () => {
@@ -640,14 +846,14 @@ describe('SaveSnapshot validation and migration', () => {
       ...invalidEnemy.enemies![enemyKey]!,
       templateId: 'missing_enemy_template',
     };
-    expectInvalidSnapshot(invalidEnemy, /enemies\..*\.templateId/);
+    expectInvalidSnapshot(invalidEnemy, /enemies\[.*\]\.templateId/);
 
     const corruptEntityRelationship = jsonClone(valid);
     const enemy = Object.values(corruptEntityRelationship.enemies ?? {})[0]!;
     corruptEntityRelationship.enemies = {
       '9,9': enemy,
     };
-    expectInvalidSnapshot(corruptEntityRelationship, /enemies\.9,9\.position/);
+    expectInvalidSnapshot(corruptEntityRelationship, /enemies\[9,9\]\.position/);
 
     const invalidFloor = jsonClone(valid);
     invalidFloor.floor = { ...invalidFloor.floor, cells: {} };
@@ -665,8 +871,8 @@ describe('SaveSnapshot validation and migration', () => {
       dagger: 0,
     };
     const masteryErrors = validationErrorText(invalidWeaponMastery);
-    expect(masteryErrors).toMatch(/player\.weaponMastery\.blade/);
-    expect(masteryErrors).toMatch(/player\.weaponMastery\.axe/);
+    expect(masteryErrors).toMatch(/weaponMastery\.blade/);
+    expect(masteryErrors).toMatch(/weaponMastery\.axe/);
 
     const invalidSpeedAccumulator = jsonClone(valid);
     invalidSpeedAccumulator.run!.speedAccumulators = {
@@ -700,43 +906,43 @@ describe('SaveSnapshot validation and migration', () => {
         slot: 'weapon',
         entityId: entityId('snapshot_bad_weapon_potion'),
         template: TEST_POTION,
-        errorPattern: /equipment\.weapon: item "snapshot_bad_weapon_potion" is not a valid weapon \(got consumable\)/,
+        errorPattern: /player\.equipment\.weapon: item "snapshot_bad_weapon_potion" is not a valid weapon \(got consumable\)/,
       },
       {
         slot: 'weapon',
         entityId: entityId('snapshot_bad_weapon_armor'),
         template: TEST_CHEST_ARMOR,
-        errorPattern: /equipment\.weapon: item "snapshot_bad_weapon_armor" is not a valid weapon \(got armor:chest\)/,
+        errorPattern: /player\.equipment\.weapon: item "snapshot_bad_weapon_armor" is not a valid weapon \(got armor:chest\)/,
       },
       {
         slot: 'ring1',
         entityId: entityId('snapshot_bad_ring_weapon'),
         template: TEST_WEAPON,
-        errorPattern: /equipment\.ring1: item "snapshot_bad_ring_weapon" is not valid for ring1 slot \(got weapon\)/,
+        errorPattern: /player\.equipment\.ring1: item "snapshot_bad_ring_weapon" is not valid for ring1 slot \(got weapon\)/,
       },
       {
         slot: 'chest',
         entityId: entityId('snapshot_bad_chest_weapon'),
         template: TEST_WEAPON,
-        errorPattern: /equipment\.chest: item "snapshot_bad_chest_weapon" is not valid for chest slot \(got weapon\)/,
+        errorPattern: /player\.equipment\.chest: item "snapshot_bad_chest_weapon" is not valid for chest slot \(got weapon\)/,
       },
       {
         slot: 'weapon',
         entityId: entityId('snapshot_bad_weapon_ring'),
         template: TEST_RING,
-        errorPattern: /equipment\.weapon: item "snapshot_bad_weapon_ring" is not a valid weapon \(got armor:ring\)/,
+        errorPattern: /player\.equipment\.weapon: item "snapshot_bad_weapon_ring" is not a valid weapon \(got armor:ring\)/,
       },
       {
         slot: 'boots',
         entityId: entityId('snapshot_bad_boots_chest'),
         template: TEST_CHEST_ARMOR,
-        errorPattern: /equipment\.boots: item "snapshot_bad_boots_chest" is not valid for boots slot \(got armor:chest\)/,
+        errorPattern: /player\.equipment\.boots: item "snapshot_bad_boots_chest" is not valid for boots slot \(got armor:chest\)/,
       },
       {
         slot: 'chest',
         entityId: entityId('snapshot_bad_chest_boots'),
         template: TEST_BOOTS_ARMOR,
-        errorPattern: /equipment\.chest: item "snapshot_bad_chest_boots" is not valid for chest slot \(got armor:boots\)/,
+        errorPattern: /player\.equipment\.chest: item "snapshot_bad_chest_boots" is not valid for chest slot \(got armor:boots\)/,
       },
     ];
 
@@ -781,7 +987,7 @@ describe('SaveSnapshot validation and migration', () => {
       expect(error).toBeInstanceOf(SaveSnapshotLoadError);
       const message = error instanceof Error ? error.message : String(error);
       expect(message).toMatch(/floor/);
-      expect(message).toMatch(/enemies\.9,9\.templateId/);
+      expect(message).toMatch(/enemies\[9,9\]\.templateId/);
       expect(message).toMatch(/itemRegistry\.items\.corrupt_item_entity\.itemId/);
     }
 
