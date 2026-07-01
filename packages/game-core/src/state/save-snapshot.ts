@@ -143,6 +143,6 @@ function deserializeRun(
 function sortRecord<T>(record: Readonly<Record<string, T>>): Record<string, T> {
   const mutableEntries = Object.entries(record);
   return Object.fromEntries(
-    mutableEntries.sort(([left], [right]) => left.localeCompare(right)),
+    mutableEntries.sort(([left], [right]) => left < right ? -1 : left > right ? 1 : 0),
   );
 }

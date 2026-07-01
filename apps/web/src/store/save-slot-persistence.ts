@@ -74,6 +74,9 @@ export function listSaveSlotMetadata(storage: Storage): SaveSlotMetadata[] {
     const keys = getSaveSlotStorageKeys(slotId);
     const raw = storage.getItem(keys.metadata);
     if (raw === null) {
+      if (storage.getItem(keys.snapshot) !== null) {
+        throw new Error(`Save slot ${slotId} has corrupted metadata: snapshot exists but metadata is missing`);
+      }
       return { slotId, isEmpty: true };
     }
 

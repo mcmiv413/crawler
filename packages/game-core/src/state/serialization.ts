@@ -296,7 +296,11 @@ export function mapToSortedRecord<T, U>(
   const mutableEntries = [...map.entries()];
   return Object.fromEntries(
     mutableEntries
-      .sort(([left], [right]) => String(left).localeCompare(String(right)))
+      .sort(([left], [right]) => {
+        const l = String(left);
+        const r = String(right);
+        return l < r ? -1 : l > r ? 1 : 0;
+      })
       .map(([key, value]) => [String(key), convert(value)]),
   );
 }
