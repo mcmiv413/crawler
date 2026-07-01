@@ -1,5 +1,5 @@
 import { beforeEach, describe, expect, it } from 'vitest';
-import { SAVE_SNAPSHOT_SCHEMA_VERSION, type SaveSnapshot } from '@dungeon/contracts';
+import { SAVE_SNAPSHOT_SCHEMA_VERSION } from '@dungeon/contracts';
 import {
   clearSaveSlot,
   getSaveSlotStorageKeys,
@@ -57,7 +57,7 @@ function makeSnapshot(options: {
   readonly floor: number;
   readonly turnNumber: number;
   readonly displayName?: string;
-}): SaveSnapshot {
+}) {
   return {
     schemaVersion: SAVE_SNAPSHOT_SCHEMA_VERSION,
     metadata: {
@@ -89,7 +89,7 @@ function makeSnapshot(options: {
       ranged: 0,
       dagger: 0,
     },
-  } as unknown as SaveSnapshot;
+  };
 }
 
 describe('save slot persistence', () => {
@@ -121,7 +121,7 @@ describe('save slot persistence', () => {
     }));
 
     expect(loadSnapshotFromSlot(storage, 'slot-1')).toEqual(first);
-    expect(loadSnapshotFromSlot(storage, 'slot-2')?.metadata.characterLevel).toBe(6);
+    expect(loadSnapshotFromSlot(storage, 'slot-2')).toMatchObject({ metadata: { characterLevel: 6 } });
     expect(loadSnapshotFromSlot(storage, 'slot-3')).toEqual(third);
   });
 
