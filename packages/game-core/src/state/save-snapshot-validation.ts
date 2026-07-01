@@ -13,7 +13,6 @@ import {
   ENEMY_TEMPLATES,
   ITEM_BY_ID,
   OBJECT_TEMPLATES,
-  RING_SPELL_BY_ID,
   RING_SCHOOL_BY_ID,
 } from '@dungeon/content';
 import { validatePlayer as validateCorePlayer } from './validators.js';
@@ -245,27 +244,6 @@ function validateSnapshotPlayer(
   validateKnownRingSchools(player, mutableErrors);
 }
 
-export function validateLearnedRingSpellIds(
-  learnedRingSpellIds: unknown,
-  mutableErrors: SaveSnapshotValidationError[],
-): void {
-  if (!Array.isArray(learnedRingSpellIds)) {
-    mutableErrors.push({
-      field: 'player.learnedRingSpellIds',
-      message: 'player.learnedRingSpellIds must be an array',
-    });
-    return;
-  }
-
-  learnedRingSpellIds.forEach((spellId, index) => {
-    if (typeof spellId !== 'string' || !RING_SPELL_BY_ID.has(spellId)) {
-      mutableErrors.push({
-        field: `player.learnedRingSpellIds[${index}]`,
-        message: `player.learnedRingSpellIds[${index}] must exist in RING_SPELL_BY_ID`,
-      });
-    }
-  });
-}
 
 function validateEquipmentSlotCompatibility(
   slot: string,
@@ -377,6 +355,9 @@ function validateRunAndFloor(
   if (run === null) {
     if (floor !== null) {
       mutableErrors.push({ field: 'floor', message: 'floor must be null when run is null' });
+    }
+    if (!isRecord(enemies)) {
+      mutableErrors.push({ field: 'enemies', message: 'enemies must be an object' });
     }
     return;
   }
@@ -555,15 +536,29 @@ function validatePersistedFloorCache(
   }
 
   for (const [depth, storedFloor] of Object.entries(persistedFloorCache)) {
+    const depthNum = Number(depth);
+    if (!Number.isInteger(depthNum) || depthNum < 1) {
+      mutableErrors.push({ field: 'persistedFloorCache', message: `depth key "${depth}" must be a positive integer` });
+      continue;
+    }
     if (!isRecord(storedFloor)) {
-      mutableErrors.push({ field: `persistedFloorCache.${depth}`, message: 'stored floor must be an object' });
+      mutableErrors.push({ field: `persistedFloorCache[${depth}]`, message: 'stored floor must be an object' });
       continue;
     }
     if (!isRecord(storedFloor['floor'])) {
-      mutableErrors.push({ field: `persistedFloorCache.${depth}.floor`, message: 'stored floor must include floor data' });
+      mutableErrors.push({ field: `persistedFloorCache[${depth}].floor`, message: 'stored floor must include floor data' });
       continue;
     }
-    validateFloor(storedFloor['floor'], `persistedFloorCache.${depth}.floor`, mutableErrors);
+    validateFloor(storedFloor['floor'], `persistedFloorCache[${depth}].floor`, mutableErrors);
+    if (!isRecord(storedFloor['enemies'])) {
+      mutableErrors.push({ field: `persistedFloorCache[${depth}].enemies`, message: 'stored floor enemies must be an object' });
+    }
+    if (!isRecord(storedFloor['objects'])) {
+      mutableErrors.push({ field: `persistedFloorCache[${depth}].objects`, message: 'stored floor objects must be an object' });
+    }
+    if (!isPosition(storedFloor['playerPosition'])) {
+      mutableErrors.push({ field: `persistedFloorCache[${depth}].playerPosition`, message: 'stored floor playerPosition must be a valid position' });
+    }
   }
 }
 

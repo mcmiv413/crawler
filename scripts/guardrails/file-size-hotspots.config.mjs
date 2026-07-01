@@ -117,9 +117,8 @@ export default {
     },
     {
       path: 'packages/game-core/src/state/save-snapshot-validation.ts',
-      reason: 'Save snapshot boundary validator — centralizes schema, registry, equipment slot, and runtime map checks before restore',
-      auditReportNote: 'PR #37 save snapshot hardening adds field-specific validation for weapon mastery, speed accumulators, object fields, learned ring spells, and equipment slot compatibility; future split seam is extracting per-field validators after migration versions grow',
-      lines: 615,
+      reason: 'Save snapshot validation: each field type in SaveSnapshot requires explicit per-field validation (enemies, persistedFloorCache depth keys, storedFloor sub-fields, equipment slot compatibility, ring spell IDs). Shrink seam is splitting into domain-specific sub-validators once the ring migration and floor-cache redesign settle.',
+      lines: 610,
     },
   ],
 };
