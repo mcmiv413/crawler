@@ -29,11 +29,13 @@ export function getPlayerLevelUpGains(_level: number): PlayerLevelStatGains {
 
 export function getBasePlayerStatsForLevel(level: number): PlayerStats {
   const normalizedLevel = Number.isInteger(level) && level > 0 ? level : 1;
-  let stats: PlayerStats = { ...BASE_PLAYER_STATS };
-
-  for (let currentLevel = 2; currentLevel <= normalizedLevel; currentLevel++) {
+  const levelsToApply = Array.from(
+    { length: Math.max(0, normalizedLevel - 1) },
+    (_, i) => i + 2,
+  );
+  return levelsToApply.reduce<PlayerStats>((stats, currentLevel) => {
     const gains = getPlayerLevelUpGains(currentLevel);
-    stats = {
+    return {
       ...stats,
       maxHealth: stats.maxHealth + gains.maxHealth,
       health: stats.health + gains.maxHealth,
@@ -42,9 +44,7 @@ export function getBasePlayerStatsForLevel(level: number): PlayerStats {
       accuracy: stats.accuracy + gains.accuracy,
       evasion: stats.evasion + gains.evasion,
     };
-  }
-
-  return stats;
+  }, { ...BASE_PLAYER_STATS });
 }
 
 /** Check if player has enough XP to level up (possibly multiple times) */

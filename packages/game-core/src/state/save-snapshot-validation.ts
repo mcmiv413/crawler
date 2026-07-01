@@ -520,7 +520,7 @@ function validateObjectPosition(
     const value = positionRecord?.[axis];
     if (typeof value !== 'number' || !Number.isFinite(value)) {
       const field = `objects[${key}].position.${axis}`;
-      mutableErrors.push({ field, message: `${field} must be a number` });
+      mutableErrors.push({ field, message: `${field} must be a finite number` });
     }
   }
 }
@@ -558,6 +558,13 @@ function validatePersistedFloorCache(
       continue;
     }
     validateFloor(storedFloor['floor'], `persistedFloorCache[${depth}].floor`, mutableErrors);
+    const floorData = storedFloor['floor'] as Record<string, unknown>;
+    if (typeof floorData['depth'] === 'number' && floorData['depth'] !== depthNum) {
+      mutableErrors.push({
+        field: `persistedFloorCache[${depth}].depth`,
+        message: `floor.depth ${floorData['depth']} does not match cache key ${depthNum}`,
+      });
+    }
     if (!isRecord(storedFloor['enemies'])) {
       mutableErrors.push({ field: `persistedFloorCache[${depth}].enemies`, message: 'stored floor enemies must be an object' });
     }

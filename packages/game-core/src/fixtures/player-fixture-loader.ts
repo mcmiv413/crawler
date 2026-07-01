@@ -301,20 +301,15 @@ export function validatePlayerFixture(fixture: PlayerFixture): FixtureValidation
   }
 
   // Duplicate equipment detection: collect all specified item IDs across equipment slots
-  let equippedItemIds: string[] = [];
-  if (fixture.equippedWeaponId !== undefined) {
-    equippedItemIds = [...equippedItemIds, fixture.equippedWeaponId];
-  }
-  if (fixture.equippedArmorIds !== undefined) {
-    for (const itemId of Object.values(fixture.equippedArmorIds)) {
-      if (itemId !== undefined) equippedItemIds = [...equippedItemIds, itemId];
-    }
-  }
-  if (fixture.activeEquipmentIds !== undefined) {
-    for (const itemId of Object.values(fixture.activeEquipmentIds)) {
-      if (itemId !== undefined) equippedItemIds = [...equippedItemIds, itemId];
-    }
-  }
+  const equippedItemIds: string[] = [
+    ...(fixture.equippedWeaponId !== undefined ? [fixture.equippedWeaponId] : []),
+    ...(fixture.equippedArmorIds !== undefined
+      ? Object.values(fixture.equippedArmorIds).filter((id): id is string => id !== undefined)
+      : []),
+    ...(fixture.activeEquipmentIds !== undefined
+      ? Object.values(fixture.activeEquipmentIds).filter((id): id is string => id !== undefined)
+      : []),
+  ];
   const seen = new Set<string>();
   for (const itemId of equippedItemIds) {
     if (seen.has(itemId)) {

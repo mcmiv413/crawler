@@ -98,6 +98,20 @@ export function listSaveSlotMetadata(storage: Storage): SaveSlotMetadata[] {
     if (parsed.isEmpty !== false || !hasCompleteMetadata(parsed)) {
       throw new Error(`Save slot ${slotId} has corrupted metadata`);
     }
+
+    // Snapshot presence is the authoritative signal for whether a slot is loadable.
+    // If metadata claims the slot is occupied but the snapshot is missing (e.g., after a
+    // partial clearSaveSlot failure), treat the slot as empty and best-effort remove
+    // the stale metadata to prevent a non-loadable ghost save from appearing in the UI.
+    if (storage.getItem(keys.snapshot) === null) {
+      try {
+        storage.removeItem(keys.metadata);
+      } catch {
+        // best-effort: ignore removal failures
+      }
+      return { slotId, isEmpty: true };
+    }
+
     return {
       slotId,
       isEmpty: false,

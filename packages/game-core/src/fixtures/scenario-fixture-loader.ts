@@ -211,10 +211,7 @@ function buildFloor(map: ScenarioMapFixture, depth: number, seed: number): Dunge
   for (let y = 0; y < map.height; y++) {
     for (let x = 0; x < map.width; x++) {
       const key = posKey({ x, y });
-      let isWall = wallSet.has(key);
-      if (explicitFloors !== null && !explicitFloors.has(key)) {
-        isWall = true;
-      }
+      const isWall = wallSet.has(key) || (explicitFloors !== null && !explicitFloors.has(key));
       cells.set(key, {
         tile: isWall === true ? WALL_TILE : FLOOR_TILE,
         // Start hidden and reveal via computeFov below, matching the generated
