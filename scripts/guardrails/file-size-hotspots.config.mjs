@@ -107,18 +107,18 @@ export default {
       path: 'packages/game-core/src/fixtures/player-fixture-loader.ts',
       reason: 'Fixture system validator — consolidates player deserialization and comprehensive validation logic (schema version, stats, equipment, inventory, ring mastery, ring spells, content ID checks, slot compatibility, duplicate detection)',
       auditReportNote: 'Fixture hardening for PR #35 merge blockers: added null-safety checks and type validation for ringMastery (null, non-object, array checks) and comprehensive mastery entry validation (null entries, empty objects, non-numeric xp, NaN, Infinity, negative values); added explicit level field validation (must be positive integer when present); future split seam is extracting validation into discrete validators per fixture field',
-      lines: 518,
+      lines: 513,
     },
     {
       path: 'packages/game-core/src/fixtures/scenario-fixture-validation.ts',
       reason: 'Scenario fixture validator — consolidates player/world resolution plus map, enemy, loot, interactable, and spawn placement validation against untrusted JSON',
       auditReportNote: 'Fixture hardening for PR #36 review: resolveScenarioPlayer/resolveScenarioWorld now guard that ref is a non-empty string and that inline fixtures and resolver return values are objects before downstream validation; validateMapAndPlacements bails out on invalid width/height and only treats array map.floors as explicit floors; future split seam is extracting per-placement validators into discrete modules',
-      lines: 530,
+      lines: 534,
     },
     {
       path: 'packages/game-core/src/state/save-snapshot-validation.ts',
       reason: 'Save snapshot validation: each field type in SaveSnapshot requires explicit per-field validation (enemies, persistedFloorCache depth keys, storedFloor sub-fields, equipment slot compatibility, ring spell IDs). Shrink seam is splitting into domain-specific sub-validators once the ring migration and floor-cache redesign settle.',
-      lines: 618,
+      lines: 625,
     },
   ],
 };

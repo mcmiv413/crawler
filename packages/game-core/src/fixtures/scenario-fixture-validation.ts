@@ -184,13 +184,27 @@ function validateMeta(scenario: ScenarioFixture, add: AddError): void {
   }
 }
 
+function resolveValidatedWorld(
+  worldResolution: { fixture: WorldFixture | null; error?: string },
+  add: AddError,
+): WorldState | null {
+  if (worldResolution.fixture === null) {
+    add('world', worldResolution.error ?? 'world fixture could not be resolved.');
+    return null;
+  }
+  const worldValidation = validateWorldFixture(worldResolution.fixture);
+  if (worldValidation.isValid === false) {
+    for (const e of worldValidation.errors) add(`world.${e.field}`, e.message);
+    return null;
+  }
+  return loadWorldFromValidatedFixture(worldResolution.fixture);
+}
+
 function validateComposedFixtures(
   scenario: ScenarioFixture,
   resolvers: ScenarioResolvers | undefined,
   add: AddError,
 ): ValidatedComposedFixtures {
-  let world: WorldState | null = null;
-
   const playerResolution = resolveScenarioPlayer(scenario, resolvers);
   if (playerResolution.fixture === null) {
     add('player', playerResolution.error ?? 'player fixture could not be resolved.');
@@ -201,17 +215,7 @@ function validateComposedFixtures(
     }
   }
 
-  const worldResolution = resolveScenarioWorld(scenario, resolvers);
-  if (worldResolution.fixture === null) {
-    add('world', worldResolution.error ?? 'world fixture could not be resolved.');
-  } else {
-    const worldValidation = validateWorldFixture(worldResolution.fixture);
-    if (worldValidation.isValid === false) {
-      for (const e of worldValidation.errors) add(`world.${e.field}`, e.message);
-    } else {
-      world = loadWorldFromValidatedFixture(worldResolution.fixture);
-    }
-  }
+  const world = resolveValidatedWorld(resolveScenarioWorld(scenario, resolvers), add);
 
   return { world };
 }
