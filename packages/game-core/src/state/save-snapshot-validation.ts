@@ -305,6 +305,8 @@ function validateKnownRingSchools(
         mutableErrors.push({ field, message: `${field} references unknown ring school ${String(school)}` });
       }
     }
+  } else if (player['knownRingSchools'] !== undefined) {
+    mutableErrors.push({ field: 'player.knownRingSchools', message: 'player.knownRingSchools must be an array' });
   }
 
   if (isRecord(player['ringMastery'])) {
@@ -535,12 +537,18 @@ function validatePersistedFloorCache(
     return;
   }
 
+  const seenDepths = new Set<number>();
   for (const [depth, storedFloor] of Object.entries(persistedFloorCache)) {
     const depthNum = Number(depth);
     if (!Number.isInteger(depthNum) || depthNum < 1) {
       mutableErrors.push({ field: 'persistedFloorCache', message: `depth key "${depth}" must be a positive integer` });
       continue;
     }
+    if (seenDepths.has(depthNum)) {
+      mutableErrors.push({ field: 'persistedFloorCache', message: `duplicate normalized depth key ${depthNum} (from "${depth}")` });
+      continue;
+    }
+    seenDepths.add(depthNum);
     if (!isRecord(storedFloor)) {
       mutableErrors.push({ field: `persistedFloorCache[${depth}]`, message: 'stored floor must be an object' });
       continue;

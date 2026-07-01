@@ -1,7 +1,4 @@
-import type {
-  SaveSnapshot,
-  SaveSnapshotMetadata,
-} from '@dungeon/contracts';
+import type { SaveSnapshotMetadata } from '@dungeon/contracts';
 
 export const SAVE_SLOT_IDS = ['slot-1', 'slot-2', 'slot-3'] as const;
 
@@ -36,7 +33,7 @@ export function getSaveSlotStorageKeys(slotId: SaveSlotId): SaveSlotStorageKeys 
 export function saveSnapshotToSlot(
   storage: Storage,
   slotId: SaveSlotId,
-  snapshot: SaveSnapshot,
+  snapshot: { readonly metadata: SaveSnapshotMetadata },
 ): void {
   const keys = getSaveSlotStorageKeys(slotId);
   storage.setItem(keys.snapshot, JSON.stringify(snapshot));
@@ -50,7 +47,7 @@ export function saveSnapshotToSlot(
 export function loadSnapshotFromSlot(
   storage: Storage,
   slotId: SaveSlotId,
-): SaveSnapshot | null {
+): unknown | null {
   const keys = getSaveSlotStorageKeys(slotId);
   const raw = storage.getItem(keys.snapshot);
   if (raw === null) {
@@ -66,7 +63,7 @@ export function loadSnapshotFromSlot(
     );
   }
 
-  return parsed as unknown as SaveSnapshot;
+  return parsed;
 }
 
 export function listSaveSlotMetadata(storage: Storage): SaveSlotMetadata[] {
@@ -91,6 +88,9 @@ export function listSaveSlotMetadata(storage: Storage): SaveSlotMetadata[] {
 
     if (!isRecord(parsed)) {
       throw new Error(`Save slot ${slotId} has corrupted metadata`);
+    }
+    if (typeof parsed.slotId === 'string' && parsed.slotId !== slotId) {
+      throw new Error(`Save slot ${slotId} has corrupted metadata: slotId mismatch (found ${parsed.slotId})`);
     }
     if (parsed.isEmpty === true) {
       return { slotId, isEmpty: true };

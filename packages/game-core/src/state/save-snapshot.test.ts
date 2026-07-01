@@ -119,6 +119,15 @@ const TEST_POTION: ConsumableTemplate = {
   },
 };
 
+// Specific narrow types for invalid test fixtures — no unknown involved.
+type InvalidPositionEnemy = Omit<EnemyInstance, 'position'> & { position: { x: string; y: number } };
+type InvalidPositionObject = Omit<ObjectInstance, 'position'> & { position: { x: string; y: number } };
+type InvalidExhaustedObject = Omit<ObjectInstance, 'isExhausted'> & { isExhausted: string };
+type InvalidPositionAndExhaustedObject = Omit<ObjectInstance, 'position' | 'isExhausted'> & {
+  position: { x: string; y: number };
+  isExhausted: string;
+};
+
 type MutableSnapshot = Record<string, unknown> & {
   player?: {
     inventory?: EntityId[];
@@ -129,8 +138,8 @@ type MutableSnapshot = Record<string, unknown> & {
   world?: Record<string, unknown>;
   run?: Record<string, unknown> | null;
   floor?: { cells?: Record<string, unknown> } | null;
-  enemies?: Record<string, EnemyInstance>;
-  objects?: Record<string, ObjectInstance>;
+  enemies?: Record<string, EnemyInstance | string | InvalidPositionEnemy>;
+  objects?: Record<string, ObjectInstance | InvalidPositionObject | InvalidExhaustedObject | InvalidPositionAndExhaustedObject>;
   itemRegistry?: { items?: Record<string, AnyItemTemplate> };
   weaponMastery?: Record<string, unknown>;
 };
@@ -466,29 +475,27 @@ describe('SaveSnapshot validation path consistency', () => {
     expectValidationField(invalidTemplateId, 'objects[1,1].templateId');
     expect(validationFields(invalidTemplateId)).not.toContain('objects.1,1.templateId');
 
-    const invalidPositionX = mutableSnapshot(createTestGameStateInCombat());
-    invalidPositionX.objects = {
-      '1,1': {
-        id: entityId('invalid_position_object'),
-        templateId: 'healing_fountain',
-        position: { x: 'bad', y: 1 },
-        isExhausted: false,
-      } as unknown as ObjectInstance,
+    const invalidPosXObject: InvalidPositionObject = {
+      id: entityId('invalid_position_object'),
+      templateId: 'healing_fountain',
+      position: { x: 'bad', y: 1 },
+      isExhausted: false,
     };
+    const invalidPositionX = mutableSnapshot(createTestGameStateInCombat());
+    invalidPositionX.objects = { '1,1': invalidPosXObject };
     expectValidationField(invalidPositionX, 'objects[1,1].position.x');
 
-    const invalidIsExhausted = mutableSnapshot(createTestGameStateInCombat());
-    invalidIsExhausted.objects = {
-      '1,1': {
-        ...createSnapshotObject(entityId('invalid_exhausted_object'), { x: 1, y: 1 }, false),
-        isExhausted: 'bad',
-      } as unknown as ObjectInstance,
+    const invalidIsExhaustedObject: InvalidExhaustedObject = {
+      ...createSnapshotObject(entityId('invalid_exhausted_object'), { x: 1, y: 1 }, false),
+      isExhausted: 'bad',
     };
+    const invalidIsExhausted = mutableSnapshot(createTestGameStateInCombat());
+    invalidIsExhausted.objects = { '1,1': invalidIsExhaustedObject };
     expectValidationField(invalidIsExhausted, 'objects[1,1].isExhausted');
   });
 
   it('uses bracket paths for enemy fields', () => {
-    const baseEnemy = Object.values(mutableSnapshot(createTestGameStateInCombat()).enemies ?? {})[0]!;
+    const baseEnemy = Object.values(mutableSnapshot(createTestGameStateInCombat()).enemies ?? {})[0]! as EnemyInstance;
 
     const invalidTemplateId = mutableSnapshot(createTestGameStateInCombat());
     invalidTemplateId.enemies = {
@@ -503,17 +510,18 @@ describe('SaveSnapshot validation path consistency', () => {
 
     const nonObjectEnemy = mutableSnapshot(createTestGameStateInCombat());
     nonObjectEnemy.enemies = {
-      '4,5': 'bad' as unknown as EnemyInstance,
+      '4,5': 'bad',
     };
     expectValidationField(nonObjectEnemy, 'enemies[4,5]');
     expect(validationFields(nonObjectEnemy)).not.toContain('enemies.4,5');
 
+    const invalidPositionEnemy: InvalidPositionEnemy = {
+      ...baseEnemy,
+      position: { x: 'bad', y: 5 },
+    };
     const invalidPosition = mutableSnapshot(createTestGameStateInCombat());
     invalidPosition.enemies = {
-      '4,5': {
-        ...baseEnemy,
-        position: { x: 'bad', y: 5 },
-      } as unknown as EnemyInstance,
+      '4,5': invalidPositionEnemy,
     };
     expectValidationField(invalidPosition, 'enemies[4,5].position');
     expect(validationFields(invalidPosition)).not.toContain('enemies.4,5.position');
@@ -843,7 +851,7 @@ describe('SaveSnapshot validation and migration', () => {
     const invalidEnemy = jsonClone(valid);
     const enemyKey = Object.keys(invalidEnemy.enemies ?? {})[0]!;
     invalidEnemy.enemies![enemyKey] = {
-      ...invalidEnemy.enemies![enemyKey]!,
+      ...(invalidEnemy.enemies![enemyKey] as EnemyInstance),
       templateId: 'missing_enemy_template',
     };
     expectInvalidSnapshot(invalidEnemy, /enemies\[.*\]\.templateId/);
@@ -882,14 +890,13 @@ describe('SaveSnapshot validation and migration', () => {
     expectInvalidSnapshot(invalidSpeedAccumulator, /run\.speedAccumulators\[snapshot_enemy_a\]/);
 
     const invalidObjectFields = jsonClone(valid);
-    invalidObjectFields.objects = {
-      '1,1': {
-        id: entityId('invalid_object'),
-        templateId: 'healing_fountain',
-        position: { x: 'bad', y: 1 },
-        isExhausted: 'yes',
-      } as unknown as ObjectInstance,
+    const invalidObjField: InvalidPositionAndExhaustedObject = {
+      id: entityId('invalid_object'),
+      templateId: 'healing_fountain',
+      position: { x: 'bad', y: 1 },
+      isExhausted: 'yes',
     };
+    invalidObjectFields.objects = { '1,1': invalidObjField };
     const objectErrors = validationErrorText(invalidObjectFields);
     expect(objectErrors).toMatch(/objects\[1,1\]\.position\.x/);
     expect(objectErrors).toMatch(/objects\[1,1\]\.isExhausted/);
@@ -965,7 +972,7 @@ describe('SaveSnapshot validation and migration', () => {
     snapshot.floor = null;
     snapshot.enemies = {
       '9,9': {
-        ...Object.values(snapshot.enemies ?? {})[0]!,
+        ...(Object.values(snapshot.enemies ?? {})[0] as EnemyInstance),
         templateId: 'missing_enemy_template',
         position: { x: 9, y: 9 },
       },
