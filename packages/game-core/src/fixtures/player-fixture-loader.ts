@@ -9,13 +9,12 @@
 import type { Player, Equipment, EntityId, AnyItemTemplate } from '@dungeon/contracts';
 import { entityId } from '@dungeon/contracts';
 import {
-  BASE_PLAYER_STATS,
   ITEM_BY_ID,
   MAGIC,
   RING_SCHOOL_BY_ID,
   RING_SPELL_BY_ID,
-  LEVEL_UP_GAINS,
 } from '@dungeon/content';
+import { getBasePlayerStatsForLevel } from '../systems/progression.js';
 import type { PlayerFixture, FixtureValidationError, FixtureValidationResult, FixtureLoadResult } from './player-fixture-types.js';
 
 /** Current supported fixture schema version. */
@@ -33,227 +32,212 @@ export const FIXTURE_SCHEMA_VERSION = 1;
  * Never silently succeeds — every invalid fixture produces at least one error.
  */
 export function validatePlayerFixture(fixture: PlayerFixture): FixtureValidationResult {
-  let errors: FixtureValidationError[] = [];
-
-  // schemaVersion
-  if (fixture.schemaVersion !== FIXTURE_SCHEMA_VERSION) {
-    errors = [...errors, {
-      field: 'schemaVersion',
-      message: `Unsupported fixture schemaVersion ${fixture.schemaVersion}. Expected ${FIXTURE_SCHEMA_VERSION}.`,
-    }];
-  }
-
-  // level
-  if (typeof fixture.level !== 'number' || fixture.level < 1 || !Number.isInteger(fixture.level)) {
-    errors = [...errors, {
-      field: 'level',
-      message: `level must be an integer ≥ 1, got ${fixture.level}.`,
-    }];
-  }
-
-  // experience
-  if (fixture.experience !== undefined) {
-    if (typeof fixture.experience !== 'number' || fixture.experience < 0 || !Number.isFinite(fixture.experience)) {
-      errors = [...errors, {
-        field: 'experience',
-        message: `experience must be a non-negative number, got ${fixture.experience}.`,
-      }];
-    }
-  }
-
-  // gold
-  if (fixture.gold !== undefined) {
-    if (typeof fixture.gold !== 'number' || fixture.gold < 0 || !Number.isFinite(fixture.gold)) {
-      errors = [...errors, {
-        field: 'gold',
-        message: `gold must be a non-negative number, got ${fixture.gold}.`,
-      }];
-    }
-  }
-
-  // health / maxHealth cross-validation
-  const effectiveMaxHealth = fixture.maxHealth ?? computeMaxHealth(fixture.level);
-  if (fixture.maxHealth !== undefined) {
-    if (typeof fixture.maxHealth !== 'number' || fixture.maxHealth <= 0 || !Number.isFinite(fixture.maxHealth)) {
-      errors = [...errors, {
-        field: 'maxHealth',
-        message: `maxHealth must be a positive finite number, got ${fixture.maxHealth}.`,
-      }];
-    }
-  }
-  if (fixture.health !== undefined) {
-    if (typeof fixture.health !== 'number' || fixture.health < 0 || !Number.isFinite(fixture.health)) {
-      errors = [...errors, {
-        field: 'health',
-        message: `health must be a non-negative finite number, got ${fixture.health}.`,
-      }];
-    } else if (fixture.health > effectiveMaxHealth) {
-      errors = [...errors, {
-        field: 'health',
-        message: `health (${fixture.health}) cannot exceed maxHealth (${effectiveMaxHealth}).`,
-      }];
-    }
-  }
-
-  // mana / maxMana cross-validation
+  const effectiveMaxHealth = fixture.maxHealth ?? getBasePlayerStatsForLevel(fixture.level).maxHealth;
   const effectiveMaxMana = fixture.maxMana ?? MAGIC.initialMana;
-  if (fixture.maxMana !== undefined) {
-    if (typeof fixture.maxMana !== 'number' || fixture.maxMana < 0 || !Number.isFinite(fixture.maxMana)) {
-      errors = [...errors, {
-        field: 'maxMana',
-        message: `maxMana must be a non-negative finite number, got ${fixture.maxMana}.`,
-      }];
-    }
-  }
-  if (fixture.mana !== undefined) {
-    if (typeof fixture.mana !== 'number' || fixture.mana < 0 || !Number.isFinite(fixture.mana)) {
-      errors = [...errors, {
-        field: 'mana',
-        message: `mana must be a non-negative finite number, got ${fixture.mana}.`,
-      }];
-    } else if (fixture.mana > effectiveMaxMana) {
-      errors = [...errors, {
-        field: 'mana',
-        message: `mana (${fixture.mana}) cannot exceed maxMana (${effectiveMaxMana}).`,
-      }];
-    }
-  }
 
-  // equippedWeaponId — type is string | undefined; null is explicitly invalid
-  if ((fixture.equippedWeaponId as unknown) === null) {
-    errors = [...errors, {
-      field: 'equippedWeaponId',
-      message: `equippedWeaponId must be a string or omitted (undefined), but got null. Use undefined to leave the weapon slot empty.`,
-    }];
-  } else if (fixture.equippedWeaponId !== undefined) {
-    if (!ITEM_BY_ID.has(fixture.equippedWeaponId)) {
-      errors = [...errors, {
-        field: 'equippedWeaponId',
-        message: `Unknown item id \"${fixture.equippedWeaponId}\" in equippedWeaponId. Must exist in ITEM_BY_ID.`,
-      }];
-    } else {
-      // Slot compatibility: weapon slot must hold a weapon
-      const template = ITEM_BY_ID.get(fixture.equippedWeaponId);
-      if (template !== undefined && template.itemClass !== 'weapon') {
-        errors = [...errors, {
+  const errors: FixtureValidationError[] = [
+    // schemaVersion
+    ...(fixture.schemaVersion !== FIXTURE_SCHEMA_VERSION
+      ? [{
+          field: 'schemaVersion',
+          message: `Unsupported fixture schemaVersion ${fixture.schemaVersion}. Expected ${FIXTURE_SCHEMA_VERSION}.`,
+        }]
+      : []),
+
+    // level
+    ...(typeof fixture.level !== 'number' || fixture.level < 1 || !Number.isInteger(fixture.level)
+      ? [{
+          field: 'level',
+          message: `level must be an integer ≥ 1, got ${fixture.level}.`,
+        }]
+      : []),
+
+    // experience
+    ...(fixture.experience !== undefined && (typeof fixture.experience !== 'number' || fixture.experience < 0 || !Number.isFinite(fixture.experience))
+      ? [{
+          field: 'experience',
+          message: `experience must be a non-negative number, got ${fixture.experience}.`,
+        }]
+      : []),
+
+    // gold
+    ...(fixture.gold !== undefined && (typeof fixture.gold !== 'number' || fixture.gold < 0 || !Number.isFinite(fixture.gold))
+      ? [{
+          field: 'gold',
+          message: `gold must be a non-negative number, got ${fixture.gold}.`,
+        }]
+      : []),
+
+    // maxHealth
+    ...(fixture.maxHealth !== undefined && (typeof fixture.maxHealth !== 'number' || fixture.maxHealth <= 0 || !Number.isFinite(fixture.maxHealth))
+      ? [{
+          field: 'maxHealth',
+          message: `maxHealth must be a positive finite number, got ${fixture.maxHealth}.`,
+        }]
+      : []),
+
+    // health
+    ...(fixture.health !== undefined
+      ? (typeof fixture.health !== 'number' || fixture.health < 0 || !Number.isFinite(fixture.health)
+          ? [{
+              field: 'health',
+              message: `health must be a non-negative finite number, got ${fixture.health}.`,
+            }]
+          : fixture.health > effectiveMaxHealth
+            ? [{
+                field: 'health',
+                message: `health (${fixture.health}) cannot exceed maxHealth (${effectiveMaxHealth}).`,
+              }]
+            : [])
+      : []),
+
+    // maxMana
+    ...(fixture.maxMana !== undefined && (typeof fixture.maxMana !== 'number' || fixture.maxMana < 0 || !Number.isFinite(fixture.maxMana))
+      ? [{
+          field: 'maxMana',
+          message: `maxMana must be a non-negative finite number, got ${fixture.maxMana}.`,
+        }]
+      : []),
+
+    // mana
+    ...(fixture.mana !== undefined
+      ? (typeof fixture.mana !== 'number' || fixture.mana < 0 || !Number.isFinite(fixture.mana)
+          ? [{
+              field: 'mana',
+              message: `mana must be a non-negative finite number, got ${fixture.mana}.`,
+            }]
+          : fixture.mana > effectiveMaxMana
+            ? [{
+                field: 'mana',
+                message: `mana (${fixture.mana}) cannot exceed maxMana (${effectiveMaxMana}).`,
+              }]
+            : [])
+      : []),
+
+    // equippedWeaponId — type is string | undefined; null is explicitly invalid
+    ...((): FixtureValidationError[] => {
+      if ((fixture.equippedWeaponId as unknown) === null) {
+        return [{
           field: 'equippedWeaponId',
-          message: `Item \"${fixture.equippedWeaponId}\" (itemClass=\"${template.itemClass}\") is not a weapon and cannot be placed in the weapon slot.`,
+          message: `equippedWeaponId must be a string or omitted (undefined), but got null. Use undefined to leave the weapon slot empty.`,
         }];
       }
-    }
-  }
+      if (fixture.equippedWeaponId === undefined) return [];
+      if (!ITEM_BY_ID.has(fixture.equippedWeaponId)) {
+        return [{
+          field: 'equippedWeaponId',
+          message: `Unknown item id \"${fixture.equippedWeaponId}\" in equippedWeaponId. Must exist in ITEM_BY_ID.`,
+        }];
+      }
+      const template = ITEM_BY_ID.get(fixture.equippedWeaponId);
+      return template !== undefined && template.itemClass !== 'weapon'
+        ? [{
+            field: 'equippedWeaponId',
+            message: `Item \"${fixture.equippedWeaponId}\" (itemClass=\"${template.itemClass}\") is not a weapon and cannot be placed in the weapon slot.`,
+          }]
+        : [];
+    })(),
 
-  // equippedArmorIds
-  if (fixture.equippedArmorIds !== undefined) {
-    for (const [slot, itemId] of Object.entries(fixture.equippedArmorIds)) {
-      if (itemId !== undefined) {
-        if (!ITEM_BY_ID.has(itemId)) {
-          errors = [...errors, {
-            field: `equippedArmorIds.${slot}`,
-            message: `Unknown item id \"${itemId}\" in equippedArmorIds.${slot}. Must exist in ITEM_BY_ID.`,
-          }];
-        } else {
-          // Slot compatibility: armor slots must hold armor items;
-          // secondaryWeapon slot accepts weapons as well
+    // equippedArmorIds
+    ...(fixture.equippedArmorIds !== undefined
+      ? Object.entries(fixture.equippedArmorIds).flatMap(([slot, itemId]) => {
+          if (itemId === undefined) return [];
+          if (!ITEM_BY_ID.has(itemId)) {
+            return [{
+              field: `equippedArmorIds.${slot}`,
+              message: `Unknown item id \"${itemId}\" in equippedArmorIds.${slot}. Must exist in ITEM_BY_ID.`,
+            }];
+          }
           const template = ITEM_BY_ID.get(itemId);
           if (template !== undefined) {
             const isSecondaryWeapon = slot === 'secondaryWeapon';
             const allowedClass = (isSecondaryWeapon === true) ? 'weapon' : 'armor';
             if (template.itemClass !== allowedClass) {
-              errors = [...errors, {
+              return [{
                 field: `equippedArmorIds.${slot}`,
                 message: `Item \"${itemId}\" (itemClass=\"${template.itemClass}\") is not ${(isSecondaryWeapon === true) ? 'a weapon' : 'an armor item'} and cannot be placed in the ${slot} slot.`,
               }];
             }
           }
-        }
-      }
-    }
-  }
+          return [];
+        })
+      : []),
 
-  // activeEquipmentIds (ring slots)
-  if (fixture.activeEquipmentIds !== undefined) {
-    for (const [slot, itemId] of Object.entries(fixture.activeEquipmentIds)) {
-      if (itemId !== undefined) {
-        if (!ITEM_BY_ID.has(itemId)) {
-          errors = [...errors, {
-            field: `activeEquipmentIds.${slot}`,
-            message: `Unknown item id \"${itemId}\" in activeEquipmentIds.${slot}. Must exist in ITEM_BY_ID.`,
-          }];
-        } else {
-          // Slot compatibility: ring slots must hold armor items with armorSlot === 'ring'
+    // activeEquipmentIds (ring slots)
+    ...(fixture.activeEquipmentIds !== undefined
+      ? Object.entries(fixture.activeEquipmentIds).flatMap(([slot, itemId]) => {
+          if (itemId === undefined) return [];
+          if (!ITEM_BY_ID.has(itemId)) {
+            return [{
+              field: `activeEquipmentIds.${slot}`,
+              message: `Unknown item id \"${itemId}\" in activeEquipmentIds.${slot}. Must exist in ITEM_BY_ID.`,
+            }];
+          }
           const template = ITEM_BY_ID.get(itemId);
           if (template !== undefined) {
             if (template.itemClass !== 'armor') {
-              errors = [...errors, {
+              return [{
                 field: `activeEquipmentIds.${slot}`,
                 message: `Item \"${itemId}\" (itemClass=\"${template.itemClass}\") is not an armor/ring item and cannot be placed in the ${slot} slot.`,
               }];
-            } else {
-              // Verify it's actually a ring (armorSlot === 'ring')
-              const armorTemplate = template as { itemClass: 'armor'; armor: { slot: string } };
-              if ('armor' in armorTemplate && armorTemplate.armor.slot !== 'ring') {
-                errors = [...errors, {
-                  field: `activeEquipmentIds.${slot}`,
-                  message: `Item \"${itemId}\" (armorSlot=\"${armorTemplate.armor.slot}\") is not a ring and cannot be placed in the ${slot} slot.`,
-                }];
-              }
+            }
+            // Verify it's actually a ring (armorSlot === 'ring')
+            const armorTemplate = template as { itemClass: 'armor'; armor: { slot: string } };
+            if ('armor' in armorTemplate && armorTemplate.armor.slot !== 'ring') {
+              return [{
+                field: `activeEquipmentIds.${slot}`,
+                message: `Item \"${itemId}\" (armorSlot=\"${armorTemplate.armor.slot}\") is not a ring and cannot be placed in the ${slot} slot.`,
+              }];
             }
           }
-        }
-      }
-    }
-  }
+          return [];
+        })
+      : []),
 
-  // inventoryItemIds
-  if (fixture.inventoryItemIds !== undefined) {
-    for (let i = 0; i < fixture.inventoryItemIds.length; i++) {
-      const itemId = fixture.inventoryItemIds[i]!;
-      if (!ITEM_BY_ID.has(itemId)) {
-        errors = [...errors, {
-          field: `inventoryItemIds[${i}]`,
-          message: `Unknown item id \"${itemId}\" at inventoryItemIds[${i}]. Must exist in ITEM_BY_ID.`,
+    // inventoryItemIds
+    ...(fixture.inventoryItemIds ?? []).flatMap((itemId, i) =>
+      !ITEM_BY_ID.has(itemId)
+        ? [{
+            field: `inventoryItemIds[${i}]`,
+            message: `Unknown item id \"${itemId}\" at inventoryItemIds[${i}]. Must exist in ITEM_BY_ID.`,
+          }]
+        : []
+    ),
+
+    // knownRingSchools
+    ...(fixture.knownRingSchools ?? []).flatMap(school =>
+      !RING_SCHOOL_BY_ID.has(school)
+        ? [{
+            field: 'knownRingSchools',
+            message: `Unknown ring school \"${school}\" in knownRingSchools. Valid schools: ${[...RING_SCHOOL_BY_ID.keys()].join(', ')}.`,
+          }]
+        : []
+    ),
+
+    // ringMastery: widen to unknown so all defensive null/type checks are genuinely
+    // necessary to TypeScript — fixture data may be malformed JSON at runtime.
+    ...((): FixtureValidationError[] => {
+      const ringMasteryRaw: unknown = fixture.ringMastery;
+      if (ringMasteryRaw === null) {
+        return [{
+          field: 'ringMastery',
+          message: `ringMastery must not be null; use undefined to omit it.`,
         }];
       }
-    }
-  }
-
-  // knownRingSchools
-  if (fixture.knownRingSchools !== undefined) {
-    for (const school of fixture.knownRingSchools) {
-      if (!RING_SCHOOL_BY_ID.has(school)) {
-        errors = [...errors, {
-          field: 'knownRingSchools',
-          message: `Unknown ring school \"${school}\" in knownRingSchools. Valid schools: ${[...RING_SCHOOL_BY_ID.keys()].join(', ')}.`,
+      if (ringMasteryRaw === undefined) return [];
+      if (typeof ringMasteryRaw !== 'object' || Array.isArray(ringMasteryRaw)) {
+        return [{
+          field: 'ringMastery',
+          message: `ringMastery must be an object or undefined, got ${typeof ringMasteryRaw}.`,
         }];
       }
-    }
-  }
-
-  // ringMastery: widen to unknown so all defensive null/type checks are genuinely
-  // necessary to TypeScript — fixture data may be malformed JSON at runtime.
-  const ringMasteryRaw: unknown = fixture.ringMastery;
-  if (ringMasteryRaw === null) {
-    errors = [...errors, {
-      field: 'ringMastery',
-      message: `ringMastery must not be null; use undefined to omit it.`,
-    }];
-  } else if (ringMasteryRaw !== undefined) {
-    // Validate that ringMastery is an object
-    if (typeof ringMasteryRaw !== 'object' || Array.isArray(ringMasteryRaw)) {
-      errors = [...errors, {
-        field: 'ringMastery',
-        message: `ringMastery must be an object or undefined, got ${typeof ringMasteryRaw}.`,
-      }];
-    } else {
-      for (const [school, mastery] of Object.entries(ringMasteryRaw as Record<string, unknown>)) {
-        if (!RING_SCHOOL_BY_ID.has(school)) {
-          errors = [...errors, {
-            field: `ringMastery.${school}`,
-            message: `Unknown ring school \"${school}\" in ringMastery. Valid schools: ${[...RING_SCHOOL_BY_ID.keys()].join(', ')}.`,
-          }];
-        }
-        // Validate mastery value: must be an object with numeric xp field
+      return Object.entries(ringMasteryRaw as Record<string, unknown>).flatMap(([school, mastery]) => {
+        const schoolErrors: FixtureValidationError[] = !RING_SCHOOL_BY_ID.has(school)
+          ? [{
+              field: `ringMastery.${school}`,
+              message: `Unknown ring school \"${school}\" in ringMastery. Valid schools: ${[...RING_SCHOOL_BY_ID.keys()].join(', ')}.`,
+            }]
+          : [];
         const masteryRecord = mastery !== null && typeof mastery === 'object' && !Array.isArray(mastery)
           ? (mastery as Record<string, unknown>)
           : null;
@@ -263,70 +247,69 @@ export function validatePlayerFixture(fixture: PlayerFixture): FixtureValidation
           || !Number.isFinite(xp)
           || xp < 0;
         if (xpIsInvalid === true) {
-          errors = [...errors, {
-            field: `ringMastery.${school}`,
-            message: `ringMastery.${school} must be { xp: <non-negative number> }, got ${mastery === null ? 'null' : typeof mastery}.`,
-          }];
-        } else {
-          // Validate optional level field: must be a positive integer when present
-          // masteryRecord is guaranteed non-null here (xpIsInvalid is false implies masteryRecord !== null)
-          const levelValue: unknown = masteryRecord['level'];
-          if (levelValue !== undefined) {
-            const levelIsInvalid = typeof levelValue !== 'number'
-              || !Number.isFinite(levelValue)
-              || !Number.isInteger(levelValue)
-              || levelValue < 1;
-            if (levelIsInvalid === true) {
-              errors = [...errors, {
+          return [
+            ...schoolErrors,
+            {
+              field: `ringMastery.${school}`,
+              message: `ringMastery.${school} must be { xp: <non-negative number> }, got ${mastery === null ? 'null' : typeof mastery}.`,
+            },
+          ];
+        }
+        // masteryRecord is guaranteed non-null here (xpIsInvalid is false implies masteryRecord !== null)
+        const levelValue: unknown = masteryRecord['level'];
+        if (levelValue !== undefined) {
+          const levelIsInvalid = typeof levelValue !== 'number'
+            || !Number.isFinite(levelValue)
+            || !Number.isInteger(levelValue)
+            || levelValue < 1;
+          if (levelIsInvalid === true) {
+            return [
+              ...schoolErrors,
+              {
                 field: `ringMastery.${school}`,
                 message: `ringMastery.${school}.level must be a positive integer when present, got ${JSON.stringify(levelValue)}.`,
-              }];
-            }
+              },
+            ];
           }
         }
-      }
-    }
-  }
+        return schoolErrors;
+      });
+    })(),
 
-  // learnedRingSpellIds
-  if (fixture.learnedRingSpellIds !== undefined) {
-    for (let i = 0; i < fixture.learnedRingSpellIds.length; i++) {
-      const spellId = fixture.learnedRingSpellIds[i]!;
-      if (!RING_SPELL_BY_ID.has(spellId)) {
-        errors = [...errors, {
-          field: `learnedRingSpellIds[${i}]`,
-          message: `Unknown ring spell id \"${spellId}\" at learnedRingSpellIds[${i}]. Must exist in RING_SPELL_BY_ID.`,
-        }];
-      }
-    }
-  }
+    // learnedRingSpellIds
+    ...(fixture.learnedRingSpellIds ?? []).flatMap((spellId, i) =>
+      !RING_SPELL_BY_ID.has(spellId)
+        ? [{
+            field: `learnedRingSpellIds[${i}]`,
+            message: `Unknown ring spell id \"${spellId}\" at learnedRingSpellIds[${i}]. Must exist in RING_SPELL_BY_ID.`,
+          }]
+        : []
+    ),
 
-  // Duplicate equipment detection: collect all specified item IDs across equipment slots
-  let equippedItemIds: string[] = [];
-  if (fixture.equippedWeaponId !== undefined) {
-    equippedItemIds = [...equippedItemIds, fixture.equippedWeaponId];
-  }
-  if (fixture.equippedArmorIds !== undefined) {
-    for (const itemId of Object.values(fixture.equippedArmorIds)) {
-      if (itemId !== undefined) equippedItemIds = [...equippedItemIds, itemId];
-    }
-  }
-  if (fixture.activeEquipmentIds !== undefined) {
-    for (const itemId of Object.values(fixture.activeEquipmentIds)) {
-      if (itemId !== undefined) equippedItemIds = [...equippedItemIds, itemId];
-    }
-  }
-  const seen = new Set<string>();
-  for (const itemId of equippedItemIds) {
-    if (seen.has(itemId)) {
-      errors = [...errors, {
-        field: 'equipment',
-        message: `Duplicate equipment item id \"${itemId}\" appears in multiple equipment slots.`,
-      }];
-      break;
-    }
-    seen.add(itemId);
-  }
+    // Duplicate equipment detection: collect all specified item IDs across equipment slots
+    ...((): FixtureValidationError[] => {
+      const equippedItemIds: string[] = [
+        ...(fixture.equippedWeaponId !== undefined ? [fixture.equippedWeaponId] : []),
+        ...(fixture.equippedArmorIds !== undefined
+          ? Object.values(fixture.equippedArmorIds).filter((id): id is string => id !== undefined)
+          : []),
+        ...(fixture.activeEquipmentIds !== undefined
+          ? Object.values(fixture.activeEquipmentIds).filter((id): id is string => id !== undefined)
+          : []),
+      ];
+      const seen = new Set<string>();
+      for (const itemId of equippedItemIds) {
+        if (seen.has(itemId)) {
+          return [{
+            field: 'equipment',
+            message: `Duplicate equipment item id \"${itemId}\" appears in multiple equipment slots.`,
+          }];
+        }
+        seen.add(itemId);
+      }
+      return [];
+    })(),
+  ];
 
   return {
     isValid: errors.length === 0,
@@ -379,29 +362,20 @@ export class FixtureLoadError extends Error {
 // Internal construction helpers
 // ─────────────────────────────────────────────────────────────────────────────
 
-/** Compute max health for a given level using base stats + level-up gains. */
-function computeMaxHealth(level: number): number {
-  return BASE_PLAYER_STATS.maxHealth + LEVEL_UP_GAINS.maxHealth * Math.max(0, level - 1);
-}
-
 /** Build a FixtureLoadResult (Player + ItemRegistry) from a validated fixture. */
 function buildPlayerResult(fixture: PlayerFixture): FixtureLoadResult {
   const level = fixture.level;
-  const maxHealth = fixture.maxHealth ?? computeMaxHealth(level);
+  const levelStats = getBasePlayerStatsForLevel(level);
+  const maxHealth = fixture.maxHealth ?? levelStats.maxHealth;
   const health = fixture.health ?? maxHealth;
   const maxMana = fixture.maxMana ?? MAGIC.initialMana;
   const mana = fixture.mana ?? maxMana;
 
   // Compute base stats incorporating level-up gains
   const baseStats = {
-    ...BASE_PLAYER_STATS,
+    ...levelStats,
     maxHealth,
     health,
-    attack: BASE_PLAYER_STATS.attack + LEVEL_UP_GAINS.attack * (level - 1),
-    defense: BASE_PLAYER_STATS.defense + LEVEL_UP_GAINS.defense * (level - 1),
-    accuracy: BASE_PLAYER_STATS.accuracy + LEVEL_UP_GAINS.accuracy * (level - 1),
-    evasion: BASE_PLAYER_STATS.evasion + LEVEL_UP_GAINS.evasion * (level - 1),
-    speed: BASE_PLAYER_STATS.speed,
   };
 
   // stats === baseStats for fixture-loaded players (no equipment bonuses yet;
@@ -415,72 +389,64 @@ function buildPlayerResult(fixture: PlayerFixture): FixtureLoadResult {
     return entityId(`fixture_${prefix}_${idCounter++}`);
   }
 
-  // Item registry accumulator — maps EntityId → AnyItemTemplate
-  const mutableRegistryEntries: Array<[EntityId, AnyItemTemplate]> = [];
-
-  // Helper: assign an EntityId and register item template
-  function assignAndRegister(contentItemId: string, prefix: string): EntityId {
+  // Helper: assign an EntityId and return both the id and the registry entry (if item exists)
+  function assignEntry(contentItemId: string, prefix: string): { eid: EntityId; entry: [EntityId, AnyItemTemplate] | undefined } {
     const eid = nextId(prefix);
     const template = ITEM_BY_ID.get(contentItemId);
-    if (template !== undefined) {
-      mutableRegistryEntries.push([eid, template]);
-    }
-    return eid;
+    return { eid, entry: template !== undefined ? [eid, template] : undefined };
   }
 
-  // Build equipment slots
-  const equipmentWeaponId = fixture.equippedWeaponId !== undefined
-    ? assignAndRegister(fixture.equippedWeaponId, 'weapon')
-    : null;
+  // Build equipment slots — each returns { eid, entry? }
+  const weaponResult = fixture.equippedWeaponId !== undefined
+    ? assignEntry(fixture.equippedWeaponId, 'weapon') : null;
 
-  const equipmentChestId = fixture.equippedArmorIds?.chest !== undefined
-    ? assignAndRegister(fixture.equippedArmorIds.chest, 'chest')
-    : null;
+  const chestResult = fixture.equippedArmorIds?.chest !== undefined
+    ? assignEntry(fixture.equippedArmorIds.chest, 'chest') : null;
 
-  const equipmentHeadId = fixture.equippedArmorIds?.head !== undefined
-    ? assignAndRegister(fixture.equippedArmorIds.head, 'head')
-    : null;
+  const headResult = fixture.equippedArmorIds?.head !== undefined
+    ? assignEntry(fixture.equippedArmorIds.head, 'head') : null;
 
-  const equipmentGlovesId = fixture.equippedArmorIds?.gloves !== undefined
-    ? assignAndRegister(fixture.equippedArmorIds.gloves, 'gloves')
-    : null;
+  const glovesResult = fixture.equippedArmorIds?.gloves !== undefined
+    ? assignEntry(fixture.equippedArmorIds.gloves, 'gloves') : null;
 
-  const equipmentBootsId = fixture.equippedArmorIds?.boots !== undefined
-    ? assignAndRegister(fixture.equippedArmorIds.boots, 'boots')
-    : null;
+  const bootsResult = fixture.equippedArmorIds?.boots !== undefined
+    ? assignEntry(fixture.equippedArmorIds.boots, 'boots') : null;
 
-  const equipmentSecondaryWeaponId = fixture.equippedArmorIds?.secondaryWeapon !== undefined
-    ? assignAndRegister(fixture.equippedArmorIds.secondaryWeapon, 'secondary')
-    : null;
+  const secondaryWeaponResult = fixture.equippedArmorIds?.secondaryWeapon !== undefined
+    ? assignEntry(fixture.equippedArmorIds.secondaryWeapon, 'secondary') : null;
 
-  const equipmentRing1Id = fixture.activeEquipmentIds?.ring1 !== undefined
-    ? assignAndRegister(fixture.activeEquipmentIds.ring1, 'ring1')
-    : null;
+  const ring1Result = fixture.activeEquipmentIds?.ring1 !== undefined
+    ? assignEntry(fixture.activeEquipmentIds.ring1, 'ring1') : null;
 
-  const equipmentRing2Id = fixture.activeEquipmentIds?.ring2 !== undefined
-    ? assignAndRegister(fixture.activeEquipmentIds.ring2, 'ring2')
-    : null;
+  const ring2Result = fixture.activeEquipmentIds?.ring2 !== undefined
+    ? assignEntry(fixture.activeEquipmentIds.ring2, 'ring2') : null;
 
   const equipment: Equipment = {
-    weapon: equipmentWeaponId,
-    secondaryWeapon: equipmentSecondaryWeaponId,
-    chest: equipmentChestId,
-    head: equipmentHeadId,
-    gloves: equipmentGlovesId,
-    boots: equipmentBootsId,
-    ring1: equipmentRing1Id,
-    ring2: equipmentRing2Id,
+    weapon: weaponResult?.eid ?? null,
+    secondaryWeapon: secondaryWeaponResult?.eid ?? null,
+    chest: chestResult?.eid ?? null,
+    head: headResult?.eid ?? null,
+    gloves: glovesResult?.eid ?? null,
+    boots: bootsResult?.eid ?? null,
+    ring1: ring1Result?.eid ?? null,
+    ring2: ring2Result?.eid ?? null,
   };
 
-  // Build inventory with registered item templates
-  const inventory: EntityId[] = (fixture.inventoryItemIds ?? []).map((contentItemId, idx) => {
+  // Build inventory — map returns { eid, entry? } per item, then split into ids and registry entries
+  const inventoryResults = (fixture.inventoryItemIds ?? []).map((contentItemId, idx) => {
     const eid = entityId(`fixture_inv_${idx + 1}`);
     const template = ITEM_BY_ID.get(contentItemId);
-    if (template !== undefined) {
-      mutableRegistryEntries.push([eid, template]);
-    }
-    return eid;
+    return { eid, entry: template !== undefined ? [eid, template] as [EntityId, AnyItemTemplate] : undefined };
   });
+
+  const inventory: EntityId[] = inventoryResults.map(r => r.eid);
+
+  // Collect all registry entries functionally from equipment slots and inventory
+  const registryEntries: Array<[EntityId, AnyItemTemplate]> = [
+    ...[weaponResult, chestResult, headResult, glovesResult, bootsResult, secondaryWeaponResult, ring1Result, ring2Result]
+      .flatMap(r => r?.entry != null ? [r.entry] : []),
+    ...inventoryResults.flatMap(r => r.entry != null ? [r.entry] : []),
+  ];
 
   // Build ring mastery
   const ringMastery: Record<string, { readonly xp: number }> = {};
@@ -521,7 +487,7 @@ function buildPlayerResult(fixture: PlayerFixture): FixtureLoadResult {
     knownRingSchools,
   };
 
-  const itemRegistry = { items: new Map(mutableRegistryEntries) };
+  const itemRegistry = { items: new Map(registryEntries) };
 
   return { player, itemRegistry };
 }

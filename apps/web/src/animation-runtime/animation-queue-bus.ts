@@ -1,7 +1,6 @@
 type QueueListener = () => void;
 
 const drainListeners = new Set<QueueListener>();
-let queueDraining = false;
 
 export function onQueueDrained(cb: QueueListener): () => void {
   drainListeners.add(cb);
@@ -15,8 +14,3 @@ export function emitQueueDrained(): void {
     listener();
   }
 }
-
-export function setQueueDraining(active: boolean): void {
-  queueDraining = active;
-}
-

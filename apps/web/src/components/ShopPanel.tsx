@@ -53,7 +53,7 @@ function FilterGroup<T extends string>({
   );
 }
 
-export function ShopPanel({ view, loading, sendCommand }: ShopPanelProps) {
+export function ShopPanel({ view, loading, sendCommand, isMobile = false }: ShopPanelProps) {
   const [mode, setMode] = useState<'buy' | 'sell'>('buy');
   const [selectedItem, setSelectedItem] = useState<ShopItemView | InventoryItemView | null>(null);
   const [buyFilter, setBuyFilter] = useState<InventoryFilterType>('all');
@@ -149,15 +149,23 @@ export function ShopPanel({ view, loading, sendCommand }: ShopPanelProps) {
                 <div
                   key={item.itemId}
                   style={{
-                    padding: '6px 0',
-                    paddingLeft: canAfford ? 6 : 0,
-                    borderBottom: canAfford
-                      ? `1px solid rgba(125,201,64,0.12)`
-                      : `1px solid ${colors.border2}`,
+                    padding: isMobile ? 8 : '6px 0',
+                    paddingLeft: isMobile ? 8 : (canAfford ? 6 : 0),
+                    border: isMobile
+                      ? `1px solid ${canAfford ? 'rgba(125,201,64,0.2)' : colors.border2}`
+                      : undefined,
+                    borderBottom: isMobile
+                      ? undefined
+                      : (canAfford
+                          ? `1px solid rgba(125,201,64,0.12)`
+                          : `1px solid ${colors.border2}`),
+                    borderRadius: isMobile ? 4 : undefined,
+                    marginBottom: isMobile ? 8 : 0,
                     display: 'flex',
+                    flexDirection: isMobile ? 'column' : 'row',
                     justifyContent: 'space-between',
-                    alignItems: 'flex-start',
-                    gap: 8,
+                    alignItems: isMobile ? 'stretch' : 'flex-start',
+                    gap: isMobile ? 6 : 8,
                     cursor: 'pointer',
                     background: canAfford ? 'rgba(125,201,64,0.04)' : 'transparent',
                     boxShadow: canAfford ? 'inset 2px 0 0 rgba(125,201,64,0.35)' : 'none',
@@ -198,7 +206,17 @@ export function ShopPanel({ view, loading, sendCommand }: ShopPanelProps) {
                       </span>
                     </div>
                   )}
-                  <div style={{ flex: 1, display: 'flex', alignItems: 'center', gap: 6 }}>
+                  <div
+                    style={{
+                      flex: 1,
+                      display: 'flex',
+                      alignItems: 'center',
+                      gap: 6,
+                      flexWrap: isMobile ? 'wrap' : 'nowrap',
+                      minWidth: 0,
+                      fontSize: isMobile ? fontSize.body : undefined,
+                    }}
+                  >
                     <ItemSpriteIcon spriteName={item.spriteName} size={16} />
                     <span style={{ color: item.rarityColor, marginRight: 4 }}>[{item.rarity}]</span>
                     {item.name}
@@ -206,11 +224,13 @@ export function ShopPanel({ view, loading, sendCommand }: ShopPanelProps) {
                   <div
                     style={{
                       display: 'flex',
-                      flexDirection: 'column',
-                      gap: 2,
-                      marginRight: 8,
+                      flexDirection: isMobile ? 'row' : 'column',
+                      flexWrap: isMobile ? 'wrap' : 'nowrap',
+                      alignItems: isMobile ? 'center' : 'flex-end',
+                      gap: isMobile ? 8 : 2,
+                      marginRight: isMobile ? 0 : 8,
                       minWidth: 'auto',
-                      textAlign: 'right',
+                      textAlign: isMobile ? 'left' : 'right',
                     }}
                   >
                     <div style={{ color: colors.label, fontSize: fontSize.micro, fontWeight: 600 }}>
@@ -259,7 +279,13 @@ export function ShopPanel({ view, loading, sendCommand }: ShopPanelProps) {
                       setToastKey((k) => k + 1);
                       setTimeout(() => setFlashItemId(null), 900);
                     }}
-                    style={{ ...btnStyle, fontSize: fontSize.micro, padding: '4px 8px', whiteSpace: 'nowrap' }}
+                    style={{
+                      ...btnStyle,
+                      fontSize: fontSize.micro,
+                      padding: isMobile ? '6px 10px' : '4px 8px',
+                      whiteSpace: 'nowrap',
+                      alignSelf: isMobile ? 'flex-start' : undefined,
+                    }}
                     disabled={loading || !canAfford}
                   >
                     Buy
@@ -334,7 +360,7 @@ export function ShopPanel({ view, loading, sendCommand }: ShopPanelProps) {
       )}
 
       <SectionLabel label="Sell Items" marginTop={4} />
-      <div style={{ fontSize: 11 }}>
+      <div style={{ fontSize: isMobile ? fontSize.body : 11 }}>
         {filtered.length === 0 ? (
           <div style={{ color: colors.muted }}>No items to sell.</div>
         ) : (
@@ -342,13 +368,17 @@ export function ShopPanel({ view, loading, sendCommand }: ShopPanelProps) {
             <div
               key={item.id}
               style={{
-                padding: '4px 0',
-                borderBottom: `1px solid ${colors.border2}`,
+                padding: isMobile ? 8 : '4px 0',
+                border: isMobile ? `1px solid ${colors.border2}` : undefined,
+                borderBottom: isMobile ? undefined : `1px solid ${colors.border2}`,
+                borderRadius: isMobile ? 4 : undefined,
+                marginBottom: isMobile ? 8 : 0,
                 display: 'flex',
+                flexDirection: isMobile ? 'column' : 'row',
                 justifyContent: 'space-between',
-                alignItems: 'center',
+                alignItems: isMobile ? 'stretch' : 'center',
                 cursor: 'pointer',
-                gap: 4,
+                gap: isMobile ? 6 : 4,
               }}
               onClick={() => setSelectedItem(item)}
             >
@@ -360,7 +390,7 @@ export function ShopPanel({ view, loading, sendCommand }: ShopPanelProps) {
                   <span style={{ color: colors.muted, marginLeft: 4 }}>×{item.quantity}</span>
                 )}
               </div>
-              <div style={{ marginRight: 8, color: colors.gold, fontSize: 10 }}>{item.sellPrice}g</div>
+              <div style={{ marginRight: isMobile ? 0 : 8, color: colors.gold, fontSize: isMobile ? fontSize.micro : 10 }}>{item.sellPrice}g</div>
               <button
                 onClick={(e) => {
                   e.stopPropagation();
@@ -370,7 +400,12 @@ export function ShopPanel({ view, loading, sendCommand }: ShopPanelProps) {
                     targetId: item.id,
                   });
                 }}
-                style={{ ...btnStyle, fontSize: 9, padding: '2px 6px' }}
+                style={{
+                  ...btnStyle,
+                  fontSize: isMobile ? fontSize.micro : 9,
+                  padding: isMobile ? '6px 10px' : '2px 6px',
+                  alignSelf: isMobile ? 'flex-start' : undefined,
+                }}
                 disabled={loading}
               >
                 Sell

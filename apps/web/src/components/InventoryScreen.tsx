@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useEffect, useState } from 'react';
 import type { InventoryItemView, InventoryView, DismissibleNotice } from '@dungeon/presenter';
 import { btnStyle, compactBtnStyle, colors } from '../styles.js';
 import { EquipmentDoll } from './EquipmentDoll.js';
@@ -47,6 +47,12 @@ export function InventoryScreen({
   );
 
   const bagItems = inventory.items.filter((item) => !equippedIds.has(item.id));
+
+  useEffect(() => {
+    if (bagExpanded && bagItems.length === 0) {
+      setBagExpanded(false);
+    }
+  }, [bagExpanded, bagItems.length]);
 
   // Use inventory filter hook for bag items
   const { filtered: sorted, filter, setFilter, sortBy, setSortBy } = useInventoryFilter(bagItems);
@@ -119,19 +125,19 @@ export function InventoryScreen({
         </div>
       </div>
 
-      {/* Equipment Section - hide when bagExpanded=true */}
-      <div style={{ marginBottom: 24, flexShrink: 0, display: bagExpanded ? 'none' : 'block' }}>
-        <h2 style={{ fontSize: 14, color: '#888', marginBottom: 8 }}>Equipment</h2>
-        <EquipmentDoll
-          equipped={inventory.equipped}
-          onSlotClick={(item) => setSelectedItem(item)}
-          isMobile={isMobile}
-        />
-      </div>
+      {!bagExpanded && (
+        <div style={{ marginBottom: 24, flexShrink: 0 }}>
+          <h2 style={{ fontSize: 14, color: '#888', marginBottom: 8 }}>Equipment</h2>
+          <EquipmentDoll
+            equipped={inventory.equipped}
+            onSlotClick={(item) => setSelectedItem(item)}
+            isMobile={isMobile}
+          />
+        </div>
+      )}
 
-      {/* Bag Section - always visible when items exist, but may be collapsed */}
-      {bagItems.length > 0 && (
-        <div style={{ flex: 1, minHeight: 0, display: bagExpanded ? 'flex' : 'none', flexDirection: 'column', overflow: 'hidden' }}>
+      {bagExpanded && bagItems.length > 0 && (
+        <div style={{ flex: 1, minHeight: 0, display: 'flex', flexDirection: 'column', overflow: 'hidden' }}>
           <h2 style={{ fontSize: 14, color: '#888', margin: 0, marginBottom: 8, flexShrink: 0 }}>Bag</h2>
 
           {/* Filter/Sort Controls - always visible */}

@@ -5,8 +5,7 @@
  * equipment slots, bag items, and item inspection modal.
  */
 import { beforeEach, describe, it, expect, vi } from 'vitest';
-;
-import { render, screen, fireEvent } from '@testing-library/react';
+import { render, screen, fireEvent, waitFor } from '@testing-library/react';
 
 vi.mock('../hooks/useBreakpoint.js', () => ({
   useBreakpoint: vi.fn(() => ({ isMobile: false })),
@@ -193,6 +192,8 @@ describe('InventoryScreen Component', () => {
         />
       );
 
+      fireEvent.click(screen.getByRole('button', { name: /expand/i }));
+
       expect(screen.getByText(/Bag/i)).toBeInTheDocument();
       // Equipped item should not appear in bag
       // Unequipped items should appear
@@ -215,9 +216,13 @@ describe('InventoryScreen Component', () => {
         />
       );
 
-      // Bag items should appear but not in equipment grid
-      const consumables = screen.queryAllByText('Health Potion');
-      expect(consumables.length).toBeGreaterThan(0);
+      // Bag items are unmounted while the equipment section is visible.
+      expect(screen.queryByText('Health Potion')).not.toBeInTheDocument();
+
+      fireEvent.click(screen.getByRole('button', { name: /expand/i }));
+
+      expect(screen.getByText('Health Potion')).toBeInTheDocument();
+      expect(screen.queryByText(/Main Hand/i)).not.toBeInTheDocument();
     });
 
     it('shows item quantities for stacked items', () => {
@@ -235,10 +240,12 @@ describe('InventoryScreen Component', () => {
         />
       );
 
+      fireEvent.click(screen.getByRole('button', { name: /expand/i }));
+
       expect(screen.getByText(/x3/)).toBeInTheDocument(); // quantity badge
     });
 
-    it('expands and collapses the bag list while keeping equipment visible', () => {
+    it('expands and collapses the bag list while unmounting hidden sections', () => {
       const inventory: InventoryView = {
         items: [mockWeapon, mockConsumable, mockArmor],
         equipped: emptyEquipped,
@@ -261,15 +268,16 @@ describe('InventoryScreen Component', () => {
       fireEvent.click(toggle);
 
       expect(screen.getByRole('button', { name: /collapse/i })).toHaveAttribute('aria-expanded', 'true');
-      // Equipment stays visible when bag is expanded
-      expect(screen.getByText(/Main Hand/i)).toBeInTheDocument();
+      // Equipment is unmounted while bag is expanded.
+      expect(screen.queryByText(/Main Hand/i)).not.toBeInTheDocument();
       expect(screen.getByText(/Back to Game/i)).toBeInTheDocument();
       expect(screen.getByText('Health Potion')).toBeInTheDocument();
 
       fireEvent.click(screen.getByRole('button', { name: /collapse/i }));
 
       expect(screen.getByRole('button', { name: /expand/i })).toHaveAttribute('aria-expanded', 'false');
-      // Equipment remains visible when bag is collapsed
+      expect(screen.queryByText('Health Potion')).not.toBeInTheDocument();
+      // Equipment returns when bag is collapsed.
       expect(screen.getByText(/Main Hand/i)).toBeInTheDocument();
     });
 
@@ -294,6 +302,43 @@ describe('InventoryScreen Component', () => {
 
       expect(sendCommand).toHaveBeenCalledWith({ type: 'EQUIP', itemId: 'a1' });
     });
+
+    it('returns to equipment view when the expanded bag becomes empty', async () => {
+      const inventory: InventoryView = {
+        items: [mockArmor],
+        equipped: emptyEquipped,
+      };
+
+      const { rerender } = render(
+        <InventoryScreen
+          inventory={inventory}
+          phase="dungeon"
+          onClose={vi.fn()}
+          sendCommand={vi.fn()}
+        />
+      );
+
+      fireEvent.click(screen.getByRole('button', { name: /expand/i }));
+      expect(screen.getByText(/Bag/i)).toBeInTheDocument();
+
+      rerender(
+        <InventoryScreen
+          inventory={{
+            items: [mockArmor],
+            equipped: { ...emptyEquipped, chest: mockArmor },
+          }}
+          phase="dungeon"
+          onClose={vi.fn()}
+          sendCommand={vi.fn()}
+        />
+      );
+
+      await waitFor(() => {
+        expect(screen.getByText(/Equipment/i)).toBeInTheDocument();
+      });
+      expect(screen.queryByRole('button', { name: /collapse/i })).not.toBeInTheDocument();
+      expect(screen.getByText('Leather Chest')).toBeInTheDocument();
+    });
   });
 
   describe('Item Inspection', () => {
@@ -311,6 +356,8 @@ describe('InventoryScreen Component', () => {
           sendCommand={vi.fn()}
         />
       );
+
+      fireEvent.click(screen.getByRole('button', { name: /expand/i }));
 
       const itemButton = screen.getByText('Health Potion');
       fireEvent.click(itemButton);
@@ -335,6 +382,7 @@ describe('InventoryScreen Component', () => {
       );
 
       // Click to open modal
+      fireEvent.click(screen.getByRole('button', { name: /expand/i }));
       const itemButton = screen.getByText('Health Potion');
       fireEvent.click(itemButton);
       expect(screen.getByText(/Restores health/i)).toBeInTheDocument();
@@ -415,6 +463,7 @@ describe('InventoryScreen Component', () => {
       );
 
       // Clicking an item opens modal with inspect details
+      fireEvent.click(screen.getByRole('button', { name: /expand/i }));
       const itemButton = screen.getByText('Health Potion');
       fireEvent.click(itemButton);
       // Modal should render with item description
@@ -438,6 +487,8 @@ describe('InventoryScreen Component', () => {
           sendCommand={vi.fn()}
         />
       );
+
+      fireEvent.click(screen.getByRole('button', { name: /expand/i }));
 
       expect(screen.getByTestId('inventory-item-list')).toHaveStyle(
         `padding-bottom: ${TAB_BAR_HEIGHT}px`,
@@ -771,6 +822,8 @@ describe('InventoryScreen Component', () => {
           sendCommand={vi.fn()}
         />
       );
+
+      fireEvent.click(screen.getByRole('button', { name: /expand/i }));
 
       // Item list should exist and be scrollable
       const itemList = screen.getByTestId('inventory-item-list');

@@ -6,7 +6,7 @@
  * rules, and never adds scenario-specific exceptions to runtime systems.
  */
 
-import type { FactionState, Position } from '@dungeon/contracts';
+import type { FactionState, Position, WorldState } from '@dungeon/contracts';
 import { entityId, posKey } from '@dungeon/contracts';
 import {
   ENEMY_TEMPLATES,
@@ -16,7 +16,7 @@ import {
 } from '@dungeon/content';
 
 import { validatePlayerFixture } from './player-fixture-loader.js';
-import { loadWorldFromFixture, validateWorldFixture } from './world-fixture-loader.js';
+import { loadWorldFromValidatedFixture, validateWorldFixture } from './world-fixture-loader.js';
 import { createEnemyInstance } from '../generation/enemy-instantiation.js';
 import type {
   ScenarioFixture,
@@ -149,21 +149,23 @@ export function validateScenarioFixture(
   scenario: ScenarioFixture,
   resolvers?: ScenarioResolvers,
 ): ScenarioValidationResult {
-  // Mutable accumulator: validators push as they find problems. Exposed as a
-  // readonly array on the result so callers cannot mutate it.
-  const mutableErrors: ScenarioValidationError[] = [];
+  let errors: ScenarioValidationError[] = [];
   const add = (field: string, message: string): void => {
-    mutableErrors.push({ field, message });
+    errors = [...errors, { field, message }];
   };
 
   validateMeta(scenario, add);
-  validateComposedFixtures(scenario, resolvers, add);
-  validateMapAndPlacements(scenario, resolveWorldFactions(scenario, resolvers), add);
+  const composedFixtures = validateComposedFixtures(scenario, resolvers, add);
+  validateMapAndPlacements(scenario, resolveWorldFactions(composedFixtures.world), add);
 
-  return { isValid: mutableErrors.length === 0, errors: mutableErrors };
+  return { isValid: errors.length === 0, errors };
 }
 
 type AddError = (field: string, message: string) => void;
+
+interface ValidatedComposedFixtures {
+  readonly world: WorldState | null;
+}
 
 function validateMeta(scenario: ScenarioFixture, add: AddError): void {
   if (scenario.schemaVersion !== SCENARIO_FIXTURE_SCHEMA_VERSION) {
@@ -180,11 +182,27 @@ function validateMeta(scenario: ScenarioFixture, add: AddError): void {
   }
 }
 
+function resolveValidatedWorld(
+  worldResolution: { fixture: WorldFixture | null; error?: string },
+  add: AddError,
+): WorldState | null {
+  if (worldResolution.fixture === null) {
+    add('world', worldResolution.error ?? 'world fixture could not be resolved.');
+    return null;
+  }
+  const worldValidation = validateWorldFixture(worldResolution.fixture);
+  if (worldValidation.isValid === false) {
+    for (const e of worldValidation.errors) add(`world.${e.field}`, e.message);
+    return null;
+  }
+  return loadWorldFromValidatedFixture(worldResolution.fixture);
+}
+
 function validateComposedFixtures(
   scenario: ScenarioFixture,
   resolvers: ScenarioResolvers | undefined,
   add: AddError,
-): void {
+): ValidatedComposedFixtures {
   const playerResolution = resolveScenarioPlayer(scenario, resolvers);
   if (playerResolution.fixture === null) {
     add('player', playerResolution.error ?? 'player fixture could not be resolved.');
@@ -195,26 +213,15 @@ function validateComposedFixtures(
     }
   }
 
-  const worldResolution = resolveScenarioWorld(scenario, resolvers);
-  if (worldResolution.fixture === null) {
-    add('world', worldResolution.error ?? 'world fixture could not be resolved.');
-  } else {
-    const worldValidation = validateWorldFixture(worldResolution.fixture);
-    if (worldValidation.isValid === false) {
-      for (const e of worldValidation.errors) add(`world.${e.field}`, e.message);
-    }
-  }
+  const world = resolveValidatedWorld(resolveScenarioWorld(scenario, resolvers), add);
+
+  return { world };
 }
 
 function resolveWorldFactions(
-  scenario: ScenarioFixture,
-  resolvers: ScenarioResolvers | undefined,
+  world: WorldState | null,
 ): readonly FactionState[] {
-  const worldResolution = resolveScenarioWorld(scenario, resolvers);
-  if (worldResolution.fixture === null) return [];
-  const worldValidation = validateWorldFixture(worldResolution.fixture);
-  if (worldValidation.isValid === false) return [];
-  return loadWorldFromFixture(worldResolution.fixture).factions;
+  return world?.factions ?? [];
 }
 
 function validateMapAndPlacements(

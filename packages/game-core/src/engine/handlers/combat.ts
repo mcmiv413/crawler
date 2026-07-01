@@ -324,21 +324,19 @@ export function handleAttack(
       updatedEnemy = targetEnemy;  // Fallback if enemy not found
     }
 
-    if (killed === false) {
-      // Weapon on-hit statuses share the ability path's duration/magnitude rules
-      // (fire mastery scaling for burn) via the central status-application helper.
-      for (const statusId of result.statusesApplied) {
-        const onHit = applyPlayerStatusToEnemy(updatedEnemy, statusId, newState.player, newState.turnNumber);
-        updatedEnemy = onHit.enemy;
-        events = [...events, onHit.event];
-      }
+    // Weapon on-hit statuses share the ability path's duration/magnitude rules
+    // (fire mastery scaling for burn) via the central status-application helper.
+    for (const statusId of result.statusesApplied) {
+      const onHit = applyPlayerStatusToEnemy(updatedEnemy, statusId, newState.player, newState.turnNumber);
+      updatedEnemy = onHit.enemy;
+      events = [...events, onHit.event];
+    }
 
-      const heatSurgeActive = newState.player.statuses.some(status => status.id === heatSurgeStatus.id);
-      if (heatSurgeActive === true) {
-        const surgeBurn = applyPlayerStatusToEnemy(updatedEnemy, burn.id, newState.player, newState.turnNumber);
-        updatedEnemy = surgeBurn.enemy;
-        events = [...events, surgeBurn.event];
-      }
+    const heatSurgeActive = newState.player.statuses.some(status => status.id === heatSurgeStatus.id);
+    if (heatSurgeActive === true && killed === false) {
+      const surgeBurn = applyPlayerStatusToEnemy(updatedEnemy, burn.id, newState.player, newState.turnNumber);
+      updatedEnemy = surgeBurn.enemy;
+      events = [...events, surgeBurn.event];
     }
 
     if (killed === true) {

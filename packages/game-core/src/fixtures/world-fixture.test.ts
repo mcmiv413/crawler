@@ -14,7 +14,9 @@
 
 import { describe, it, expect } from 'vitest';
 import { serializeState } from '../state/serialization.js';
+import { createInitialWorldState } from '../state/world-state.js';
 import { createTestGameState } from '../test-utils.js';
+import { SeededRNG } from '../utils/rng.js';
 import {
   validateWorldFixture,
   loadWorldFromFixture,
@@ -28,6 +30,10 @@ import type { WorldFixture, FixtureFactionOverride } from './world-fixture-types
 const MINIMAL_WORLD_FIXTURE: WorldFixture = {
   schemaVersion: 1,
 };
+
+function runtimeWorld() {
+  return createInitialWorldState(new SeededRNG(42));
+}
 
 // ─── Fixture with custom factions ────────────────────────────────────────────
 
@@ -108,19 +114,19 @@ describe('Group 1: Minimal world fixture creates valid WorldState with defaults'
     expect(world.dungeonOgre.id).toBe('dungeon_ogre');
   });
 
-  it('default town prosperity is 50', () => {
+  it('default town prosperity matches runtime default', () => {
     const world = loadWorldFromFixture(MINIMAL_WORLD_FIXTURE);
-    expect(world.town.prosperity).toBe(50);
+    expect(world.town.prosperity).toBe(runtimeWorld().town.prosperity);
   });
 
-  it('default town fear is 20', () => {
+  it('default town fear matches runtime default', () => {
     const world = loadWorldFromFixture(MINIMAL_WORLD_FIXTURE);
-    expect(world.town.fear).toBe(20);
+    expect(world.town.fear).toBe(runtimeWorld().town.fear);
   });
 
-  it('default town corruption is 10', () => {
+  it('default town corruption matches runtime default', () => {
     const world = loadWorldFromFixture(MINIMAL_WORLD_FIXTURE);
-    expect(world.town.corruption).toBe(10);
+    expect(world.town.corruption).toBe(runtimeWorld().town.corruption);
   });
 
   it('default totalRuns is 0', () => {
