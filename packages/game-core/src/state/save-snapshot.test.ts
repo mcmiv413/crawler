@@ -240,8 +240,8 @@ function orderedEntries<K, V>(
   entries: readonly (readonly [K, V])[],
   order: EntryOrder,
 ): [K, V][] {
-  const mutableEntries = entries.map(([key, value]) => [key, value] as [K, V]);
-  return order === 'forward' ? mutableEntries : mutableEntries.reverse();
+  const entriesCopy = entries.map(([key, value]) => [key, value] as [K, V]);
+  return order === 'forward' ? entriesCopy : [...entriesCopy].reverse();
 }
 
 function createSnapshotObject(

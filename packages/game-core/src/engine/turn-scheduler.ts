@@ -193,18 +193,16 @@ export function processEnemyTurns(
 
   // Tick enemy statuses at end of round
   if (currentState.run !== null) {
-    const mutableStatusEvents: DomainEvent[] = [];
     const enemiesToTick = Array.from(currentState.run.enemies.values());
     for (const enemy of enemiesToTick) {
       const statusResult = tickEnemyStatuses(currentState, enemy, currentState.turnNumber, rng);
       currentState = statusResult.state;
-      mutableStatusEvents.push(...statusResult.events);
+      allEvents = [...allEvents, ...statusResult.events];
 
       if (currentState.run === null) {
         break;
       }
     }
-    allEvents = [...allEvents, ...mutableStatusEvents];
   }
 
   // Tick enemy ability cooldowns

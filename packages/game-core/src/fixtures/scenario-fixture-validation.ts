@@ -149,18 +149,16 @@ export function validateScenarioFixture(
   scenario: ScenarioFixture,
   resolvers?: ScenarioResolvers,
 ): ScenarioValidationResult {
-  // Mutable accumulator: validators push as they find problems. Exposed as a
-  // readonly array on the result so callers cannot mutate it.
-  const mutableErrors: ScenarioValidationError[] = [];
+  let errors: ScenarioValidationError[] = [];
   const add = (field: string, message: string): void => {
-    mutableErrors.push({ field, message });
+    errors = [...errors, { field, message }];
   };
 
   validateMeta(scenario, add);
   const composedFixtures = validateComposedFixtures(scenario, resolvers, add);
   validateMapAndPlacements(scenario, resolveWorldFactions(composedFixtures.world), add);
 
-  return { isValid: mutableErrors.length === 0, errors: mutableErrors };
+  return { isValid: errors.length === 0, errors };
 }
 
 type AddError = (field: string, message: string) => void;
