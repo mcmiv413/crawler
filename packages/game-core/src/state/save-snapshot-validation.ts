@@ -348,7 +348,11 @@ function validateRunAndFloor(
   if (run === null) {
     return [
       ...(floor !== null ? [{ field: 'floor', message: 'floor must be null when run is null' }] : []),
-      ...(!isRecord(enemies) ? [{ field: 'enemies', message: 'enemies must be an object' }] : []),
+      ...(!isRecord(enemies)
+        ? [{ field: 'enemies', message: 'enemies must be an object' }]
+        : Object.keys(enemies).length > 0
+          ? [{ field: 'enemies', message: 'enemies must be empty when run is null' }]
+          : []),
     ];
   }
 

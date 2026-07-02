@@ -149,73 +149,67 @@ export function validateScenarioFixture(
   scenario: ScenarioFixture,
   resolvers?: ScenarioResolvers,
 ): ScenarioValidationResult {
-  let errors: ScenarioValidationError[] = [];
-  const add = (field: string, message: string): void => {
-    errors = [...errors, { field, message }];
-  };
-
-  validateMeta(scenario, add);
-  const composedFixtures = validateComposedFixtures(scenario, resolvers, add);
-  validateMapAndPlacements(scenario, resolveWorldFactions(composedFixtures.world), add);
-
+  const metaErrors = validateMeta(scenario);
+  const { world, errors: composedErrors } = validateComposedFixtures(scenario, resolvers);
+  const placementErrors = validateMapAndPlacements(scenario, resolveWorldFactions(world));
+  const errors = [...metaErrors, ...composedErrors, ...placementErrors];
   return { isValid: errors.length === 0, errors };
 }
 
-type AddError = (field: string, message: string) => void;
-
-interface ValidatedComposedFixtures {
-  readonly world: WorldState | null;
-}
-
-function validateMeta(scenario: ScenarioFixture, add: AddError): void {
-  if (scenario.schemaVersion !== SCENARIO_FIXTURE_SCHEMA_VERSION) {
-    add('schemaVersion', `Unsupported scenario schemaVersion ${scenario.schemaVersion}. Expected ${SCENARIO_FIXTURE_SCHEMA_VERSION}.`);
-  }
-  if (typeof scenario.name !== 'string' || scenario.name.trim().length === 0) {
-    add('name', 'name must be a non-empty string.');
-  }
-  if (scenario.floor !== undefined && (!Number.isInteger(scenario.floor) || scenario.floor < 1)) {
-    add('floor', `floor must be an integer ≥ 1, got ${scenario.floor}.`);
-  }
-  if (scenario.seed !== undefined && (!Number.isFinite(scenario.seed) || !Number.isInteger(scenario.seed))) {
-    add('seed', `seed must be an integer, got ${scenario.seed}.`);
-  }
+function validateMeta(scenario: ScenarioFixture): ScenarioValidationError[] {
+  return [
+    ...(scenario.schemaVersion !== SCENARIO_FIXTURE_SCHEMA_VERSION
+      ? [{ field: 'schemaVersion', message: `Unsupported scenario schemaVersion ${scenario.schemaVersion}. Expected ${SCENARIO_FIXTURE_SCHEMA_VERSION}.` }]
+      : []),
+    ...(typeof scenario.name !== 'string' || scenario.name.trim().length === 0
+      ? [{ field: 'name', message: 'name must be a non-empty string.' }]
+      : []),
+    ...(scenario.floor !== undefined && (!Number.isInteger(scenario.floor) || scenario.floor < 1)
+      ? [{ field: 'floor', message: `floor must be an integer ≥ 1, got ${scenario.floor}.` }]
+      : []),
+    ...(scenario.seed !== undefined && (!Number.isFinite(scenario.seed) || !Number.isInteger(scenario.seed))
+      ? [{ field: 'seed', message: `seed must be an integer, got ${scenario.seed}.` }]
+      : []),
+  ];
 }
 
 function resolveValidatedWorld(
   worldResolution: { fixture: WorldFixture | null; error?: string },
-  add: AddError,
-): WorldState | null {
+): { world: WorldState | null; errors: ScenarioValidationError[] } {
   if (worldResolution.fixture === null) {
-    add('world', worldResolution.error ?? 'world fixture could not be resolved.');
-    return null;
+    return {
+      world: null,
+      errors: [{ field: 'world', message: worldResolution.error ?? 'world fixture could not be resolved.' }],
+    };
   }
   const worldValidation = validateWorldFixture(worldResolution.fixture);
   if (worldValidation.isValid === false) {
-    for (const e of worldValidation.errors) add(`world.${e.field}`, e.message);
-    return null;
+    return {
+      world: null,
+      errors: worldValidation.errors.map(e => ({ field: `world.${e.field}`, message: e.message })),
+    };
   }
-  return loadWorldFromValidatedFixture(worldResolution.fixture);
+  return { world: loadWorldFromValidatedFixture(worldResolution.fixture), errors: [] };
 }
 
 function validateComposedFixtures(
   scenario: ScenarioFixture,
   resolvers: ScenarioResolvers | undefined,
-  add: AddError,
-): ValidatedComposedFixtures {
+): { world: WorldState | null; errors: ScenarioValidationError[] } {
   const playerResolution = resolveScenarioPlayer(scenario, resolvers);
+  let playerErrors: ScenarioValidationError[];
   if (playerResolution.fixture === null) {
-    add('player', playerResolution.error ?? 'player fixture could not be resolved.');
+    playerErrors = [{ field: 'player', message: playerResolution.error ?? 'player fixture could not be resolved.' }];
   } else {
     const playerValidation = validatePlayerFixture(playerResolution.fixture);
-    if (playerValidation.isValid === false) {
-      for (const e of playerValidation.errors) add(`player.${e.field}`, e.message);
-    }
+    playerErrors = playerValidation.isValid === false
+      ? playerValidation.errors.map(e => ({ field: `player.${e.field}`, message: e.message }))
+      : [];
   }
 
-  const world = resolveValidatedWorld(resolveScenarioWorld(scenario, resolvers), add);
+  const { world, errors: worldErrors } = resolveValidatedWorld(resolveScenarioWorld(scenario, resolvers));
 
-  return { world };
+  return { world, errors: [...playerErrors, ...worldErrors] };
 }
 
 function resolveWorldFactions(
@@ -227,28 +221,24 @@ function resolveWorldFactions(
 function validateMapAndPlacements(
   scenario: ScenarioFixture,
   worldFactions: readonly FactionState[],
-  add: AddError,
-): void {
+): ScenarioValidationError[] {
   // Scenario fixtures arrive as untrusted JSON: validate runtime shapes before
   // dereferencing so malformed input produces field errors instead of throwing.
   const map = scenario.map as unknown;
   if (!isObject(map)) {
-    add('map', 'map is required.');
-    return;
+    return [{ field: 'map', message: 'map is required.' }];
   }
 
   const widthValid = Number.isInteger(map.width) && (map.width as number) >= 1;
   const heightValid = Number.isInteger(map.height) && (map.height as number) >= 1;
-  if (widthValid === false) {
-    add('map.width', `map.width must be an integer ≥ 1, got ${JSON.stringify(map.width)}.`);
-  }
-  if (heightValid === false) {
-    add('map.height', `map.height must be an integer ≥ 1, got ${JSON.stringify(map.height)}.`);
-  }
+  const dimErrors: ScenarioValidationError[] = [
+    ...(widthValid === false ? [{ field: 'map.width', message: `map.width must be an integer ≥ 1, got ${JSON.stringify(map.width)}.` }] : []),
+    ...(heightValid === false ? [{ field: 'map.height', message: `map.height must be an integer ≥ 1, got ${JSON.stringify(map.height)}.` }] : []),
+  ];
   // Bail out before using width/height: continuing with invalid dimensions
   // produces confusing bounds messages and cascades into placement errors.
   if (widthValid === false || heightValid === false) {
-    return;
+    return dimErrors;
   }
   const width = map.width as number;
   const height = map.height as number;
@@ -262,9 +252,11 @@ function validateMapAndPlacements(
   const rawWalls = map.walls;
   const rawFloors = map.floors;
   const rawSpawns = map.spawns;
-  if (rawWalls !== undefined && !Array.isArray(rawWalls)) add('map.walls', 'map.walls must be an array of { x, y } coordinates.');
-  if (rawFloors !== undefined && !Array.isArray(rawFloors)) add('map.floors', 'map.floors must be an array of { x, y } coordinates.');
-  if (rawSpawns !== undefined && !Array.isArray(rawSpawns)) add('map.spawns', 'map.spawns must be an array of { name, position } objects.');
+  const arrayErrors: ScenarioValidationError[] = [
+    ...(rawWalls !== undefined && !Array.isArray(rawWalls) ? [{ field: 'map.walls', message: 'map.walls must be an array of { x, y } coordinates.' }] : []),
+    ...(rawFloors !== undefined && !Array.isArray(rawFloors) ? [{ field: 'map.floors', message: 'map.floors must be an array of { x, y } coordinates.' }] : []),
+    ...(rawSpawns !== undefined && !Array.isArray(rawSpawns) ? [{ field: 'map.spawns', message: 'map.spawns must be an array of { name, position } objects.' }] : []),
+  ];
   const walls: readonly unknown[] = Array.isArray(rawWalls) ? rawWalls : [];
   const floors: readonly unknown[] = Array.isArray(rawFloors) ? rawFloors : [];
   const spawns: readonly unknown[] = Array.isArray(rawSpawns) ? rawSpawns : [];
@@ -290,53 +282,53 @@ function validateMapAndPlacements(
     !wallSet.has(posKey(p)) && (explicitFloors === null || explicitFloors.has(posKey(p)));
 
   // playerStart (untrusted JSON: may be missing/malformed at runtime)
+  let playerStartErrors: ScenarioValidationError[];
   if (!isPositionLike(playerStart) || !inBounds(playerStart)) {
-    add('map.playerStart', `map.playerStart must be an in-bounds coordinate within [0,${width}) × [0,${height}), got ${JSON.stringify(map.playerStart)}.`);
+    playerStartErrors = [{ field: 'map.playerStart', message: `map.playerStart must be an in-bounds coordinate within [0,${width}) × [0,${height}), got ${JSON.stringify(map.playerStart)}.` }];
   } else if (wallSet.has(posKey(playerStart))) {
-    add('map.playerStart', `map.playerStart ${posKey(playerStart)} cannot be on a wall.`);
+    playerStartErrors = [{ field: 'map.playerStart', message: `map.playerStart ${posKey(playerStart)} cannot be on a wall.` }];
   } else {
     occupied.set(posKey(playerStart), 'playerStart');
+    playerStartErrors = [];
   }
 
-  for (let i = 0; i < walls.length; i++) {
-    const wall = walls[i];
-    if (!isPositionLike(wall)) {
-      add(`map.walls[${i}]`, `wall coordinate ${JSON.stringify(wall)} must be a { x, y } object.`);
-    } else if (!inBounds(wall)) {
-      add(`map.walls[${i}]`, `wall coordinate ${JSON.stringify(wall)} is out of bounds.`);
-    }
-  }
+  const wallErrors = walls.flatMap((wall, i) => {
+    if (!isPositionLike(wall)) return [{ field: `map.walls[${i}]`, message: `wall coordinate ${JSON.stringify(wall)} must be a { x, y } object.` }];
+    if (!inBounds(wall)) return [{ field: `map.walls[${i}]`, message: `wall coordinate ${JSON.stringify(wall)} is out of bounds.` }];
+    return [] as ScenarioValidationError[];
+  });
 
-  for (let i = 0; i < floors.length; i++) {
-    const floor = floors[i];
-    if (!isPositionLike(floor)) {
-      add(`map.floors[${i}]`, `floor coordinate ${JSON.stringify(floor)} must be a { x, y } object.`);
-    } else if (!inBounds(floor)) {
-      add(`map.floors[${i}]`, `floor coordinate ${JSON.stringify(floor)} is out of bounds.`);
-    }
-  }
+  const floorErrors = floors.flatMap((floor, i) => {
+    if (!isPositionLike(floor)) return [{ field: `map.floors[${i}]`, message: `floor coordinate ${JSON.stringify(floor)} must be a { x, y } object.` }];
+    if (!inBounds(floor)) return [{ field: `map.floors[${i}]`, message: `floor coordinate ${JSON.stringify(floor)} is out of bounds.` }];
+    return [] as ScenarioValidationError[];
+  });
 
   const seenNames = new Set<string>();
-  for (let i = 0; i < spawns.length; i++) {
-    const spawn = spawns[i];
-    if (!isSpawnLike(spawn)) {
-      add(`map.spawns[${i}]`, `spawn must be a { name, position } object, got ${JSON.stringify(spawn)}.`);
-      continue;
-    }
-    if (seenNames.has(spawn.name)) {
-      add(`map.spawns[${i}].name`, `Duplicate spawn name "${spawn.name}". Spawn names must be unique.`);
-    }
+  const spawnErrors = spawns.flatMap((spawn, i) => {
+    if (!isSpawnLike(spawn)) return [{ field: `map.spawns[${i}]`, message: `spawn must be a { name, position } object, got ${JSON.stringify(spawn)}.` }];
+    const nameErrors: ScenarioValidationError[] = seenNames.has(spawn.name)
+      ? [{ field: `map.spawns[${i}].name`, message: `Duplicate spawn name "${spawn.name}". Spawn names must be unique.` }]
+      : [];
     seenNames.add(spawn.name);
-    if (!inBounds(spawn.position)) {
-      add(`map.spawns[${i}].position`, `spawn "${spawn.name}" position ${JSON.stringify(spawn.position)} is out of bounds.`);
-    } else if (wallSet.has(posKey(spawn.position))) {
-      add(`map.spawns[${i}].position`, `spawn "${spawn.name}" cannot be placed on a wall.`);
-    }
-  }
+    const posErrors: ScenarioValidationError[] = !inBounds(spawn.position)
+      ? [{ field: `map.spawns[${i}].position`, message: `spawn "${spawn.name}" position ${JSON.stringify(spawn.position)} is out of bounds.` }]
+      : wallSet.has(posKey(spawn.position))
+      ? [{ field: `map.spawns[${i}].position`, message: `spawn "${spawn.name}" cannot be placed on a wall.` }]
+      : [];
+    return [...nameErrors, ...posErrors];
+  });
 
-  validateEnemyPlacements(scenario, floorNumber(scenario), worldFactions, inBounds, isWalkable, occupied, add);
-  validateLootPlacements(scenario, inBounds, isWalkable, occupied, add);
-  validateInteractablePlacements(scenario, inBounds, isWalkable, occupied, add);
+  return [
+    ...arrayErrors,
+    ...playerStartErrors,
+    ...wallErrors,
+    ...floorErrors,
+    ...spawnErrors,
+    ...validateEnemyPlacements(scenario, floorNumber(scenario), worldFactions, inBounds, isWalkable, occupied),
+    ...validateLootPlacements(scenario, inBounds, isWalkable, occupied),
+    ...validateInteractablePlacements(scenario, inBounds, isWalkable, occupied),
+  ];
 }
 
 function floorNumber(scenario: ScenarioFixture): number {
@@ -350,69 +342,70 @@ function validateEnemyPlacements(
   inBounds: (p: Position) => boolean,
   isWalkable: (p: Position) => boolean,
   occupied: Map<string, string>,
-  add: AddError,
-): void {
+): ScenarioValidationError[] {
   // Scenario fixtures arrive as untrusted JSON: validate runtime shapes before
   // dereferencing so malformed input produces field errors instead of throwing.
   const rawEnemies = scenario.enemies as unknown;
-  if (rawEnemies === undefined) return;
+  if (rawEnemies === undefined) return [];
   if (!Array.isArray(rawEnemies)) {
-    add('enemies', 'enemies must be an array of placement objects.');
-    return;
+    return [{ field: 'enemies', message: 'enemies must be an array of placement objects.' }];
   }
-  for (let i = 0; i < rawEnemies.length; i++) {
+  return rawEnemies.flatMap((rawPlacement, i) => {
     const field = `enemies[${i}]`;
-    const placement = rawEnemies[i] as NonNullable<ScenarioFixture['enemies']>[number];
+    const placement = rawPlacement as NonNullable<ScenarioFixture['enemies']>[number];
     if (!isObject(placement)) {
-      add(field, `enemy placement must be a { templateId, position } object, got ${JSON.stringify(rawEnemies[i])}.`);
-      continue;
+      return [{ field, message: `enemy placement must be a { templateId, position } object, got ${JSON.stringify(rawPlacement)}.` }];
     }
 
     const templateExists = typeof placement.templateId === 'string' && ENEMY_TEMPLATES.has(placement.templateId);
-    if (typeof placement.templateId !== 'string') {
-      add(`${field}.templateId`, `enemy templateId must be a string, got ${JSON.stringify(placement.templateId)}.`);
-    } else if (templateExists === false) {
-      add(`${field}.templateId`, `Unknown enemy template id "${placement.templateId}". Must exist in ENEMY_TEMPLATES.`);
-    }
+    const templateIdErrors: ScenarioValidationError[] = typeof placement.templateId !== 'string'
+      ? [{ field: `${field}.templateId`, message: `enemy templateId must be a string, got ${JSON.stringify(placement.templateId)}.` }]
+      : templateExists === false
+      ? [{ field: `${field}.templateId`, message: `Unknown enemy template id "${placement.templateId}". Must exist in ENEMY_TEMPLATES.` }]
+      : [];
 
     const positionValid = isPositionLike(placement.position);
+    let positionErrors: ScenarioValidationError[];
     if (positionValid === false) {
-      add(`${field}.position`, `enemy position must be a { x, y } object, got ${JSON.stringify(placement.position)}.`);
+      positionErrors = [{ field: `${field}.position`, message: `enemy position must be a { x, y } object, got ${JSON.stringify(placement.position)}.` }];
     } else if (!inBounds(placement.position)) {
-      add(`${field}.position`, `enemy position ${JSON.stringify(placement.position)} is out of bounds.`);
+      positionErrors = [{ field: `${field}.position`, message: `enemy position ${JSON.stringify(placement.position)} is out of bounds.` }];
     } else {
       const key = posKey(placement.position);
-      if (!isWalkable(placement.position)) {
-        add(`${field}.position`, `enemy cannot be placed on a non-walkable cell at ${key}.`);
-      }
+      const walkableError: ScenarioValidationError[] = !isWalkable(placement.position)
+        ? [{ field: `${field}.position`, message: `enemy cannot be placed on a non-walkable cell at ${key}.` }]
+        : [];
       const existing = occupied.get(key);
-      if (existing !== undefined) {
-        add(`${field}.position`, `enemy overlaps an existing placement (${existing}) at ${key}.`);
-      } else {
+      const overlapError: ScenarioValidationError[] = existing !== undefined
+        ? [{ field: `${field}.position`, message: `enemy overlaps an existing placement (${existing}) at ${key}.` }]
+        : [];
+      if (existing === undefined) {
         occupied.set(key, `enemies[${i}]`);
       }
+      positionErrors = [...walkableError, ...overlapError];
     }
 
-    if (placement.level !== undefined && (!Number.isInteger(placement.level) || placement.level < 1)) {
-      add(`${field}.level`, `enemy level override must be an integer ≥ 1, got ${placement.level}.`);
-    }
-    if (placement.health !== undefined && (!Number.isFinite(placement.health) || placement.health <= 0)) {
-      add(`${field}.health`, `enemy health override must be a positive number, got ${placement.health}.`);
-    }
-    if (placement.healthMultiplier !== undefined && (!Number.isFinite(placement.healthMultiplier) || placement.healthMultiplier <= 0)) {
-      add(`${field}.healthMultiplier`, `enemy healthMultiplier must be a positive number, got ${placement.healthMultiplier}.`);
-    }
-    if (placement.statuses !== undefined) {
-      if (!Array.isArray(placement.statuses)) {
-        add(`${field}.statuses`, `enemy statuses must be an array of status ids, got ${JSON.stringify(placement.statuses)}.`);
-      } else {
-        for (const statusId of placement.statuses) {
-          if (typeof statusId !== 'string' || !STATUS_DEFINITIONS.has(statusId)) {
-            add(`${field}.statuses`, `Unknown status id ${JSON.stringify(statusId)}. Valid: ${[...STATUS_DEFINITIONS.keys()].join(', ')}.`);
-          }
-        }
-      }
-    }
+    const levelErrors: ScenarioValidationError[] = placement.level !== undefined && (!Number.isInteger(placement.level) || placement.level < 1)
+      ? [{ field: `${field}.level`, message: `enemy level override must be an integer ≥ 1, got ${placement.level}.` }]
+      : [];
+
+    const healthErrors: ScenarioValidationError[] = placement.health !== undefined && (!Number.isFinite(placement.health) || placement.health <= 0)
+      ? [{ field: `${field}.health`, message: `enemy health override must be a positive number, got ${placement.health}.` }]
+      : [];
+
+    const healthMultiplierErrors: ScenarioValidationError[] = placement.healthMultiplier !== undefined && (!Number.isFinite(placement.healthMultiplier) || placement.healthMultiplier <= 0)
+      ? [{ field: `${field}.healthMultiplier`, message: `enemy healthMultiplier must be a positive number, got ${placement.healthMultiplier}.` }]
+      : [];
+
+    const statusErrors: ScenarioValidationError[] = placement.statuses !== undefined
+      ? !Array.isArray(placement.statuses)
+        ? [{ field: `${field}.statuses`, message: `enemy statuses must be an array of status ids, got ${JSON.stringify(placement.statuses)}.` }]
+        : placement.statuses.flatMap(statusId =>
+            typeof statusId !== 'string' || !STATUS_DEFINITIONS.has(statusId)
+              ? [{ field: `${field}.statuses`, message: `Unknown status id ${JSON.stringify(statusId)}. Valid: ${[...STATUS_DEFINITIONS.keys()].join(', ')}.` }]
+              : [] as ScenarioValidationError[]
+          )
+      : [];
 
     // Health override must not exceed the scaled maxHealth the runtime factory
     // would produce. Compute it with the same factory to avoid duplicating
@@ -422,19 +415,32 @@ function validateEnemyPlacements(
       || (Number.isFinite(placement.healthMultiplier) && placement.healthMultiplier > 0);
     const healthIsValid = placement.health !== undefined && Number.isFinite(placement.health) && placement.health > 0;
 
-    if (templateExists && positionValid && healthIsValid && levelIsValid && healthMultiplierIsValid) {
-      const template = ENEMY_TEMPLATES.get(placement.templateId)!;
-      const depth = placement.level ?? defaultDepth;
-      const scaled = createEnemyInstance(template, { ...placement.position }, depth, {
-        id: entityId('scenario_validate_probe'),
-        factions: worldFactions,
-        ...(placement.healthMultiplier !== undefined ? { enemyHealthMultiplier: placement.healthMultiplier } : {}),
-      });
-      if (placement.health > scaled.stats.maxHealth) {
-        add(`${field}.health`, `enemy health override (${placement.health}) cannot exceed scaled maxHealth (${scaled.stats.maxHealth}).`);
+    const healthCapErrors: ScenarioValidationError[] = ((): ScenarioValidationError[] => {
+      if (templateExists && positionValid && healthIsValid && levelIsValid && healthMultiplierIsValid) {
+        const template = ENEMY_TEMPLATES.get(placement.templateId)!;
+        const depth = placement.level ?? defaultDepth;
+        const scaled = createEnemyInstance(template, { ...placement.position }, depth, {
+          id: entityId('scenario_validate_probe'),
+          factions: worldFactions,
+          ...(placement.healthMultiplier !== undefined ? { enemyHealthMultiplier: placement.healthMultiplier } : {}),
+        });
+        if (placement.health > scaled.stats.maxHealth) {
+          return [{ field: `${field}.health`, message: `enemy health override (${placement.health}) cannot exceed scaled maxHealth (${scaled.stats.maxHealth}).` }];
+        }
       }
-    }
-  }
+      return [];
+    })();
+
+    return [
+      ...templateIdErrors,
+      ...positionErrors,
+      ...levelErrors,
+      ...healthErrors,
+      ...healthMultiplierErrors,
+      ...statusErrors,
+      ...healthCapErrors,
+    ];
+  });
 }
 
 function validateLootPlacements(
@@ -442,45 +448,48 @@ function validateLootPlacements(
   inBounds: (p: Position) => boolean,
   isWalkable: (p: Position) => boolean,
   occupied: Map<string, string>,
-  add: AddError,
-): void {
+): ScenarioValidationError[] {
   // Scenario fixtures arrive as untrusted JSON: validate runtime shapes before
   // dereferencing so malformed input produces field errors instead of throwing.
   const rawLoot = scenario.loot as unknown;
-  if (rawLoot === undefined) return;
+  if (rawLoot === undefined) return [];
   if (!Array.isArray(rawLoot)) {
-    add('loot', 'loot must be an array of placement objects.');
-    return;
+    return [{ field: 'loot', message: 'loot must be an array of placement objects.' }];
   }
-  for (let i = 0; i < rawLoot.length; i++) {
+  return rawLoot.flatMap((rawPlacement, i) => {
     const field = `loot[${i}]`;
-    const placement = rawLoot[i] as NonNullable<ScenarioFixture['loot']>[number];
+    const placement = rawPlacement as NonNullable<ScenarioFixture['loot']>[number];
     if (!isObject(placement)) {
-      add(field, `loot placement must be a { itemId, position } object, got ${JSON.stringify(rawLoot[i])}.`);
-      continue;
+      return [{ field, message: `loot placement must be a { itemId, position } object, got ${JSON.stringify(rawPlacement)}.` }];
     }
-    if (typeof placement.itemId !== 'string') {
-      add(`${field}.itemId`, `loot itemId must be a string, got ${JSON.stringify(placement.itemId)}.`);
-    } else if (!ITEM_BY_ID.has(placement.itemId)) {
-      add(`${field}.itemId`, `Unknown item id "${placement.itemId}". Must exist in ITEM_BY_ID.`);
-    }
+    const itemIdErrors: ScenarioValidationError[] = typeof placement.itemId !== 'string'
+      ? [{ field: `${field}.itemId`, message: `loot itemId must be a string, got ${JSON.stringify(placement.itemId)}.` }]
+      : !ITEM_BY_ID.has(placement.itemId)
+      ? [{ field: `${field}.itemId`, message: `Unknown item id "${placement.itemId}". Must exist in ITEM_BY_ID.` }]
+      : [];
+
+    let positionErrors: ScenarioValidationError[];
     if (!isPositionLike(placement.position)) {
-      add(`${field}.position`, `loot position must be a { x, y } object, got ${JSON.stringify(placement.position)}.`);
+      positionErrors = [{ field: `${field}.position`, message: `loot position must be a { x, y } object, got ${JSON.stringify(placement.position)}.` }];
     } else if (!inBounds(placement.position)) {
-      add(`${field}.position`, `loot position ${JSON.stringify(placement.position)} is out of bounds.`);
+      positionErrors = [{ field: `${field}.position`, message: `loot position ${JSON.stringify(placement.position)} is out of bounds.` }];
     } else {
       const key = posKey(placement.position);
-      if (!isWalkable(placement.position)) {
-        add(`${field}.position`, `loot cannot be placed on a non-walkable cell at ${key}.`);
-      }
+      const walkableError: ScenarioValidationError[] = !isWalkable(placement.position)
+        ? [{ field: `${field}.position`, message: `loot cannot be placed on a non-walkable cell at ${key}.` }]
+        : [];
       const existing = occupied.get(key);
-      if (existing !== undefined) {
-        add(`${field}.position`, `loot overlaps an existing placement (${existing}) at ${key}.`);
-      } else {
+      const overlapError: ScenarioValidationError[] = existing !== undefined
+        ? [{ field: `${field}.position`, message: `loot overlaps an existing placement (${existing}) at ${key}.` }]
+        : [];
+      if (existing === undefined) {
         occupied.set(key, `loot[${i}]`);
       }
+      positionErrors = [...walkableError, ...overlapError];
     }
-  }
+
+    return [...itemIdErrors, ...positionErrors];
+  });
 }
 
 function validateInteractablePlacements(
@@ -488,44 +497,47 @@ function validateInteractablePlacements(
   inBounds: (p: Position) => boolean,
   isWalkable: (p: Position) => boolean,
   occupied: Map<string, string>,
-  add: AddError,
-): void {
+): ScenarioValidationError[] {
   // Scenario fixtures arrive as untrusted JSON: validate runtime shapes before
   // dereferencing so malformed input produces field errors instead of throwing.
   const rawInteractables = scenario.interactables as unknown;
-  if (rawInteractables === undefined) return;
+  if (rawInteractables === undefined) return [];
   if (!Array.isArray(rawInteractables)) {
-    add('interactables', 'interactables must be an array of placement objects.');
-    return;
+    return [{ field: 'interactables', message: 'interactables must be an array of placement objects.' }];
   }
-  for (let i = 0; i < rawInteractables.length; i++) {
+  return rawInteractables.flatMap((rawPlacement, i) => {
     const field = `interactables[${i}]`;
-    const placement = rawInteractables[i] as NonNullable<ScenarioFixture['interactables']>[number];
+    const placement = rawPlacement as NonNullable<ScenarioFixture['interactables']>[number];
     if (!isObject(placement)) {
-      add(field, `interactable placement must be a { templateId, position } object, got ${JSON.stringify(rawInteractables[i])}.`);
-      continue;
+      return [{ field, message: `interactable placement must be a { templateId, position } object, got ${JSON.stringify(rawPlacement)}.` }];
     }
-    if (typeof placement.templateId !== 'string') {
-      add(`${field}.templateId`, `interactable templateId must be a string, got ${JSON.stringify(placement.templateId)}.`);
-    } else if (!OBJECT_TEMPLATES.has(placement.templateId)) {
-      add(`${field}.templateId`, `Unknown object template id "${placement.templateId}". Must exist in OBJECT_TEMPLATES.`);
-    }
+    const templateIdErrors: ScenarioValidationError[] = typeof placement.templateId !== 'string'
+      ? [{ field: `${field}.templateId`, message: `interactable templateId must be a string, got ${JSON.stringify(placement.templateId)}.` }]
+      : !OBJECT_TEMPLATES.has(placement.templateId)
+      ? [{ field: `${field}.templateId`, message: `Unknown object template id "${placement.templateId}". Must exist in OBJECT_TEMPLATES.` }]
+      : [];
+
+    let positionErrors: ScenarioValidationError[];
     if (!isPositionLike(placement.position)) {
-      add(`${field}.position`, `interactable position must be a { x, y } object, got ${JSON.stringify(placement.position)}.`);
+      positionErrors = [{ field: `${field}.position`, message: `interactable position must be a { x, y } object, got ${JSON.stringify(placement.position)}.` }];
     } else if (!inBounds(placement.position)) {
-      add(`${field}.position`, `interactable position ${JSON.stringify(placement.position)} is out of bounds.`);
+      positionErrors = [{ field: `${field}.position`, message: `interactable position ${JSON.stringify(placement.position)} is out of bounds.` }];
     } else {
       const key = posKey(placement.position);
       if (!isWalkable(placement.position)) {
-        add(`${field}.position`, `interactable cannot be placed on a non-walkable cell at ${key}.`);
+        positionErrors = [{ field: `${field}.position`, message: `interactable cannot be placed on a non-walkable cell at ${key}.` }];
       } else {
         const existing = occupied.get(key);
-        if (existing !== undefined) {
-          add(`${field}.position`, `interactable overlaps an existing placement (${existing}) at ${key}.`);
-        } else {
+        const overlapError: ScenarioValidationError[] = existing !== undefined
+          ? [{ field: `${field}.position`, message: `interactable overlaps an existing placement (${existing}) at ${key}.` }]
+          : [];
+        if (existing === undefined) {
           occupied.set(key, `interactables[${i}]`);
         }
+        positionErrors = overlapError;
       }
     }
-  }
+
+    return [...templateIdErrors, ...positionErrors];
+  });
 }
