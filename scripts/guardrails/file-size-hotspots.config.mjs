@@ -107,12 +107,12 @@ export default {
       path: 'packages/game-core/src/fixtures/scenario-fixture-validation.ts',
       reason: 'Scenario fixture validator — consolidates player/world resolution plus map, enemy, loot, interactable, and spawn placement validation against untrusted JSON',
       auditReportNote: 'Fixture hardening for PR #36 review: resolveScenarioPlayer/resolveScenarioWorld now guard that ref is a non-empty string and that inline fixtures and resolver return values are objects before downstream validation; validateMapAndPlacements bails out on invalid width/height and only treats array map.floors as explicit floors; future split seam is extracting per-placement validators into discrete modules',
-      lines: 532,
+      lines: 544,
     },
     {
       path: 'packages/game-core/src/state/save-snapshot-validation.ts',
       reason: 'Save snapshot validation: each field type in SaveSnapshot requires explicit per-field validation (enemies, persistedFloorCache depth keys, storedFloor sub-fields, equipment slot compatibility, ring spell IDs). Shrink seam is splitting into domain-specific sub-validators once the ring migration and floor-cache redesign settle.',
-      lines: 617,
+      lines: 621,
     },
   ],
 };

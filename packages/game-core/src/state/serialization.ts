@@ -48,8 +48,8 @@ export function serializeStoredFloor(sf: StoredFloor): SaveSnapshotStoredFloor {
 export function deserializeStoredFloor(raw: StoredFloorJson): StoredFloor {
   return {
     floor: deserializeDungeonFloor(raw.floor),
-    enemies: new Map(Object.entries(raw.enemies)) as ReadonlyMap<string, EnemyInstance>,
-    objects: new Map(Object.entries(raw.objects)) as ReadonlyMap<string, ObjectInstance>,
+    enemies: new Map(Object.entries(raw.enemies).map(([k, v]) => [k, cloneJson(v)])) as ReadonlyMap<string, EnemyInstance>,
+    objects: new Map(Object.entries(raw.objects).map(([k, v]) => [k, cloneJson(v)])) as ReadonlyMap<string, ObjectInstance>,
     playerPosition: cloneJson(raw.playerPosition),
     ...(raw.originalEnemyCount !== undefined ? { originalEnemyCount: raw.originalEnemyCount } : {}),
     ...(raw.lastSimulatedTurn !== undefined ? { lastSimulatedTurn: raw.lastSimulatedTurn } : {}),
@@ -284,8 +284,8 @@ function deserializeRun(raw: RunStateJson): RunState {
       ...raw.floor,
       cells: new Map(Object.entries(raw.floor.cells)) as ReadonlyMap<string, MapCell>,
     },
-    enemies: new Map(Object.entries(raw.enemies)) as ReadonlyMap<string, EnemyInstance>,
-    objects: new Map(Object.entries(raw.objects)) as ReadonlyMap<string, ObjectInstance>,
+    enemies: new Map(Object.entries(raw.enemies).map(([k, v]) => [k, cloneJson(v)])) as ReadonlyMap<string, EnemyInstance>,
+    objects: new Map(Object.entries(raw.objects).map(([k, v]) => [k, cloneJson(v)])) as ReadonlyMap<string, ObjectInstance>,
   } as unknown as RunState;
 }
 

@@ -90,7 +90,7 @@ export function loadSaveSnapshot(snapshot: unknown): GameState {
     run,
     world: cloneJson(migrated.world),
     itemRegistry: {
-      items: new Map(Object.entries(migrated.itemRegistry.items)) as unknown as ReadonlyMap<EntityId, AnyItemTemplate>,
+      items: new Map(Object.entries(migrated.itemRegistry.items).map(([k, v]) => [k, cloneJson(v)])) as unknown as ReadonlyMap<EntityId, AnyItemTemplate>,
     },
     seed: migrated.seed,
     turnNumber: migrated.turnNumber,
@@ -131,8 +131,8 @@ function deserializeRun(
   return {
     runId: run.runId,
     floor: deserializeDungeonFloor(floor),
-    enemies: new Map(Object.entries(enemies)) as ReadonlyMap<string, EnemyInstance>,
-    objects: new Map(Object.entries(objects)) as ReadonlyMap<string, ObjectInstance>,
+    enemies: new Map(Object.entries(enemies).map(([k, v]) => [k, cloneJson(v)])) as ReadonlyMap<string, EnemyInstance>,
+    objects: new Map(Object.entries(objects).map(([k, v]) => [k, cloneJson(v)])) as ReadonlyMap<string, ObjectInstance>,
     turnCount: run.turnCount,
     isActive: run.isActive,
     ...(run.runMetrics !== undefined ? { runMetrics: cloneJson(run.runMetrics) } : {}),
