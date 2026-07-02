@@ -139,80 +139,140 @@ export function validatePlayerFixture(fixture: PlayerFixture): FixtureValidation
     })(),
 
     // equippedArmorIds
-    ...(fixture.equippedArmorIds !== undefined
-      ? Object.entries(fixture.equippedArmorIds).flatMap(([slot, itemId]) => {
-          if (itemId === undefined) return [];
-          if (!ITEM_BY_ID.has(itemId)) {
+    ...((): FixtureValidationError[] => {
+      const raw: unknown = fixture.equippedArmorIds;
+      if (raw === undefined) return [];
+      if (raw === null || typeof raw !== 'object' || Array.isArray(raw)) {
+        return [{
+          field: 'equippedArmorIds',
+          message: `equippedArmorIds must be a plain object or omitted, got ${raw === null ? 'null' : typeof raw}.`,
+        }];
+      }
+      return Object.entries(raw as Record<string, unknown>).flatMap(([slot, itemId]) => {
+        if (itemId === undefined) return [];
+        if (typeof itemId !== 'string') {
+          return [{
+            field: `equippedArmorIds.${slot}`,
+            message: `equippedArmorIds.${slot} must be a string item id or undefined, got ${itemId === null ? 'null' : typeof itemId}.`,
+          }];
+        }
+        if (!ITEM_BY_ID.has(itemId)) {
+          return [{
+            field: `equippedArmorIds.${slot}`,
+            message: `Unknown item id \"${itemId}\" in equippedArmorIds.${slot}. Must exist in ITEM_BY_ID.`,
+          }];
+        }
+        const template = ITEM_BY_ID.get(itemId);
+        if (template !== undefined) {
+          const isSecondaryWeapon = slot === 'secondaryWeapon';
+          const allowedClass = (isSecondaryWeapon === true) ? 'weapon' : 'armor';
+          if (template.itemClass !== allowedClass) {
             return [{
               field: `equippedArmorIds.${slot}`,
-              message: `Unknown item id \"${itemId}\" in equippedArmorIds.${slot}. Must exist in ITEM_BY_ID.`,
+              message: `Item \"${itemId}\" (itemClass=\"${template.itemClass}\") is not ${(isSecondaryWeapon === true) ? 'a weapon' : 'an armor item'} and cannot be placed in the ${slot} slot.`,
             }];
           }
-          const template = ITEM_BY_ID.get(itemId);
-          if (template !== undefined) {
-            const isSecondaryWeapon = slot === 'secondaryWeapon';
-            const allowedClass = (isSecondaryWeapon === true) ? 'weapon' : 'armor';
-            if (template.itemClass !== allowedClass) {
-              return [{
-                field: `equippedArmorIds.${slot}`,
-                message: `Item \"${itemId}\" (itemClass=\"${template.itemClass}\") is not ${(isSecondaryWeapon === true) ? 'a weapon' : 'an armor item'} and cannot be placed in the ${slot} slot.`,
-              }];
-            }
-          }
-          return [];
-        })
-      : []),
+        }
+        return [];
+      });
+    })(),
 
     // activeEquipmentIds (ring slots)
-    ...(fixture.activeEquipmentIds !== undefined
-      ? Object.entries(fixture.activeEquipmentIds).flatMap(([slot, itemId]) => {
-          if (itemId === undefined) return [];
-          if (!ITEM_BY_ID.has(itemId)) {
+    ...((): FixtureValidationError[] => {
+      const raw: unknown = fixture.activeEquipmentIds;
+      if (raw === undefined) return [];
+      if (raw === null || typeof raw !== 'object' || Array.isArray(raw)) {
+        return [{
+          field: 'activeEquipmentIds',
+          message: `activeEquipmentIds must be a plain object or omitted, got ${raw === null ? 'null' : typeof raw}.`,
+        }];
+      }
+      return Object.entries(raw as Record<string, unknown>).flatMap(([slot, itemId]) => {
+        if (itemId === undefined) return [];
+        if (typeof itemId !== 'string') {
+          return [{
+            field: `activeEquipmentIds.${slot}`,
+            message: `activeEquipmentIds.${slot} must be a string item id or undefined, got ${itemId === null ? 'null' : typeof itemId}.`,
+          }];
+        }
+        if (!ITEM_BY_ID.has(itemId)) {
+          return [{
+            field: `activeEquipmentIds.${slot}`,
+            message: `Unknown item id \"${itemId}\" in activeEquipmentIds.${slot}. Must exist in ITEM_BY_ID.`,
+          }];
+        }
+        const template = ITEM_BY_ID.get(itemId);
+        if (template !== undefined) {
+          if (template.itemClass !== 'armor') {
             return [{
               field: `activeEquipmentIds.${slot}`,
-              message: `Unknown item id \"${itemId}\" in activeEquipmentIds.${slot}. Must exist in ITEM_BY_ID.`,
+              message: `Item \"${itemId}\" (itemClass=\"${template.itemClass}\") is not an armor/ring item and cannot be placed in the ${slot} slot.`,
             }];
           }
-          const template = ITEM_BY_ID.get(itemId);
-          if (template !== undefined) {
-            if (template.itemClass !== 'armor') {
-              return [{
-                field: `activeEquipmentIds.${slot}`,
-                message: `Item \"${itemId}\" (itemClass=\"${template.itemClass}\") is not an armor/ring item and cannot be placed in the ${slot} slot.`,
-              }];
-            }
-            // Verify it's actually a ring (armorSlot === 'ring')
-            const armorTemplate = template as { itemClass: 'armor'; armor: { slot: string } };
-            if ('armor' in armorTemplate && armorTemplate.armor.slot !== 'ring') {
-              return [{
-                field: `activeEquipmentIds.${slot}`,
-                message: `Item \"${itemId}\" (armorSlot=\"${armorTemplate.armor.slot}\") is not a ring and cannot be placed in the ${slot} slot.`,
-              }];
-            }
+          // Verify it's actually a ring (armorSlot === 'ring')
+          const armorTemplate = template as { itemClass: 'armor'; armor: { slot: string } };
+          if ('armor' in armorTemplate && armorTemplate.armor.slot !== 'ring') {
+            return [{
+              field: `activeEquipmentIds.${slot}`,
+              message: `Item \"${itemId}\" (armorSlot=\"${armorTemplate.armor.slot}\") is not a ring and cannot be placed in the ${slot} slot.`,
+            }];
           }
-          return [];
-        })
-      : []),
+        }
+        return [];
+      });
+    })(),
 
     // inventoryItemIds
-    ...(fixture.inventoryItemIds ?? []).flatMap((itemId, i) =>
-      !ITEM_BY_ID.has(itemId)
-        ? [{
+    ...((): FixtureValidationError[] => {
+      const raw: unknown = fixture.inventoryItemIds;
+      if (raw === undefined || raw === null) return [];
+      if (!Array.isArray(raw)) {
+        return [{
+          field: 'inventoryItemIds',
+          message: `inventoryItemIds must be an array or omitted, got ${typeof raw}.`,
+        }];
+      }
+      return raw.flatMap((itemId: unknown, i: number) => {
+        if (typeof itemId !== 'string') {
+          return [{
             field: `inventoryItemIds[${i}]`,
-            message: `Unknown item id \"${itemId}\" at inventoryItemIds[${i}]. Must exist in ITEM_BY_ID.`,
-          }]
-        : []
-    ),
+            message: `inventoryItemIds[${i}] must be a string, got ${itemId === null ? 'null' : typeof itemId}.`,
+          }];
+        }
+        return !ITEM_BY_ID.has(itemId)
+          ? [{
+              field: `inventoryItemIds[${i}]`,
+              message: `Unknown item id \"${itemId}\" at inventoryItemIds[${i}]. Must exist in ITEM_BY_ID.`,
+            }]
+          : [];
+      });
+    })(),
 
     // knownRingSchools
-    ...(fixture.knownRingSchools ?? []).flatMap(school =>
-      !RING_SCHOOL_BY_ID.has(school)
-        ? [{
+    ...((): FixtureValidationError[] => {
+      const raw: unknown = fixture.knownRingSchools;
+      if (raw === undefined || raw === null) return [];
+      if (!Array.isArray(raw)) {
+        return [{
+          field: 'knownRingSchools',
+          message: `knownRingSchools must be an array or omitted, got ${typeof raw}.`,
+        }];
+      }
+      return raw.flatMap((school: unknown) => {
+        if (typeof school !== 'string') {
+          return [{
             field: 'knownRingSchools',
-            message: `Unknown ring school \"${school}\" in knownRingSchools. Valid schools: ${[...RING_SCHOOL_BY_ID.keys()].join(', ')}.`,
-          }]
-        : []
-    ),
+            message: `knownRingSchools entries must be strings, got ${school === null ? 'null' : typeof school}.`,
+          }];
+        }
+        return !RING_SCHOOL_BY_ID.has(school)
+          ? [{
+              field: 'knownRingSchools',
+              message: `Unknown ring school \"${school}\" in knownRingSchools. Valid schools: ${[...RING_SCHOOL_BY_ID.keys()].join(', ')}.`,
+            }]
+          : [];
+      });
+    })(),
 
     // ringMastery: widen to unknown so all defensive null/type checks are genuinely
     // necessary to TypeScript — fixture data may be malformed JSON at runtime.
@@ -277,24 +337,42 @@ export function validatePlayerFixture(fixture: PlayerFixture): FixtureValidation
     })(),
 
     // learnedRingSpellIds
-    ...(fixture.learnedRingSpellIds ?? []).flatMap((spellId, i) =>
-      !RING_SPELL_BY_ID.has(spellId)
-        ? [{
+    ...((): FixtureValidationError[] => {
+      const raw: unknown = fixture.learnedRingSpellIds;
+      if (raw === undefined || raw === null) return [];
+      if (!Array.isArray(raw)) {
+        return [{
+          field: 'learnedRingSpellIds',
+          message: `learnedRingSpellIds must be an array or omitted, got ${typeof raw}.`,
+        }];
+      }
+      return raw.flatMap((spellId: unknown, i: number) => {
+        if (typeof spellId !== 'string') {
+          return [{
             field: `learnedRingSpellIds[${i}]`,
-            message: `Unknown ring spell id \"${spellId}\" at learnedRingSpellIds[${i}]. Must exist in RING_SPELL_BY_ID.`,
-          }]
-        : []
-    ),
+            message: `learnedRingSpellIds[${i}] must be a string, got ${spellId === null ? 'null' : typeof spellId}.`,
+          }];
+        }
+        return !RING_SPELL_BY_ID.has(spellId)
+          ? [{
+              field: `learnedRingSpellIds[${i}]`,
+              message: `Unknown ring spell id \"${spellId}\" at learnedRingSpellIds[${i}]. Must exist in RING_SPELL_BY_ID.`,
+            }]
+          : [];
+      });
+    })(),
 
     // Duplicate equipment detection: collect all specified item IDs across equipment slots
     ...((): FixtureValidationError[] => {
+      const armorRaw: unknown = fixture.equippedArmorIds;
+      const activeRaw: unknown = fixture.activeEquipmentIds;
       const equippedItemIds: string[] = [
         ...(fixture.equippedWeaponId !== undefined ? [fixture.equippedWeaponId] : []),
-        ...(fixture.equippedArmorIds !== undefined
-          ? Object.values(fixture.equippedArmorIds).filter((id): id is string => id !== undefined)
+        ...(armorRaw !== undefined && armorRaw !== null && typeof armorRaw === 'object' && !Array.isArray(armorRaw)
+          ? Object.values(armorRaw as Record<string, unknown>).filter((id): id is string => typeof id === 'string')
           : []),
-        ...(fixture.activeEquipmentIds !== undefined
-          ? Object.values(fixture.activeEquipmentIds).filter((id): id is string => id !== undefined)
+        ...(activeRaw !== undefined && activeRaw !== null && typeof activeRaw === 'object' && !Array.isArray(activeRaw)
+          ? Object.values(activeRaw as Record<string, unknown>).filter((id): id is string => typeof id === 'string')
           : []),
       ];
       const seen = new Set<string>();

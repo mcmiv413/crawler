@@ -340,6 +340,7 @@ function validateRunAndFloor(
   const run = snapshot['run'];
   const floor = snapshot['floor'];
   const enemies = snapshot['enemies'];
+  const objects = snapshot['objects'];
 
   if (run !== null && !isRecord(run)) {
     return [{ field: 'run', message: 'run must be an object or null' }];
@@ -352,6 +353,11 @@ function validateRunAndFloor(
         ? [{ field: 'enemies', message: 'enemies must be an object' }]
         : Object.keys(enemies).length > 0
           ? [{ field: 'enemies', message: 'enemies must be empty when run is null' }]
+          : []),
+      ...(!isRecord(objects)
+        ? [{ field: 'objects', message: 'objects must be an object' }]
+        : Object.keys(objects).length > 0
+          ? [{ field: 'objects', message: 'objects must be empty when run is null' }]
           : []),
     ];
   }
@@ -559,7 +565,7 @@ function validatePersistedFloorCache(
       ...(!isPosition(storedFloor['playerPosition'])
         ? [{ field: `persistedFloorCache[${depth}].playerPosition`, message: 'stored floor playerPosition must be a valid position' }]
         : []),
-      ...(isPosition(storedFloor['playerPosition']) && isRecord(floorData['cells']) && !(`${storedFloor['playerPosition'].x},${storedFloor['playerPosition'].y}` in floorData['cells'])
+      ...(isPosition(storedFloor['playerPosition']) && isRecord(floorData['cells']) && !Object.prototype.hasOwnProperty.call(floorData['cells'], `${storedFloor['playerPosition'].x},${storedFloor['playerPosition'].y}`)
         ? [{ field: `persistedFloorCache[${depth}].playerPosition`, message: `playerPosition (${storedFloor['playerPosition'].x},${storedFloor['playerPosition'].y}) does not reference an existing floor cell` }]
         : []),
       ...(storedFloor['originalEnemyCount'] !== undefined &&

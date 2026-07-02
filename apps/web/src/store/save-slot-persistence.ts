@@ -89,7 +89,10 @@ export function listSaveSlotMetadata(storage: Storage): SaveSlotMetadata[] {
     if (!isRecord(parsed)) {
       throw new Error(`Save slot ${slotId} has corrupted metadata`);
     }
-    if (typeof parsed.slotId === 'string' && parsed.slotId !== slotId) {
+    if (typeof parsed.slotId !== 'string') {
+      throw new Error(`Save slot ${slotId} has corrupted metadata: slotId is missing or invalid`);
+    }
+    if (parsed.slotId !== slotId) {
       throw new Error(`Save slot ${slotId} has corrupted metadata: slotId mismatch (found ${parsed.slotId})`);
     }
     if (parsed.isEmpty === true) {
