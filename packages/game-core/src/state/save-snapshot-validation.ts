@@ -548,12 +548,14 @@ function validatePersistedFloorCache(
       ...(typeof floorData['depth'] === 'number' && floorData['depth'] !== depthNum
         ? [{ field: `persistedFloorCache[${depth}].floor.depth`, message: `floor.depth ${floorData['depth']} does not match cache key ${depthNum}` }]
         : []),
-      ...(!isRecord(storedFloor['enemies'])
-        ? [{ field: `persistedFloorCache[${depth}].enemies`, message: 'stored floor enemies must be an object' }]
-        : []),
-      ...(!isRecord(storedFloor['objects'])
-        ? [{ field: `persistedFloorCache[${depth}].objects`, message: 'stored floor objects must be an object' }]
-        : []),
+      ...(isRecord(storedFloor['enemies'])
+        ? validateEnemies(storedFloor['enemies'], floorData, null)
+            .map(e => ({ ...e, field: `persistedFloorCache[${depth}].${e.field}` }))
+        : [{ field: `persistedFloorCache[${depth}].enemies`, message: 'stored floor enemies must be an object' }]),
+      ...(isRecord(storedFloor['objects'])
+        ? validateObjects(storedFloor['objects'], storedFloor['floor'])
+            .map(e => ({ ...e, field: `persistedFloorCache[${depth}].${e.field}` }))
+        : [{ field: `persistedFloorCache[${depth}].objects`, message: 'stored floor objects must be an object' }]),
       ...(!isPosition(storedFloor['playerPosition'])
         ? [{ field: `persistedFloorCache[${depth}].playerPosition`, message: 'stored floor playerPosition must be a valid position' }]
         : []),
