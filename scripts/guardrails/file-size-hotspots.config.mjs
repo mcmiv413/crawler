@@ -112,7 +112,7 @@ export default {
     {
       path: 'packages/game-core/src/state/save-snapshot-validation.ts',
       reason: 'Save snapshot validation: each field type in SaveSnapshot requires explicit per-field validation (enemies, persistedFloorCache depth keys, storedFloor sub-fields, equipment slot compatibility, ring spell IDs). Shrink seam is splitting into domain-specific sub-validators once the ring migration and floor-cache redesign settle.',
-      lines: 621,
+      lines: 623,
     },
   ],
 };

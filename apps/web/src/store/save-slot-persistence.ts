@@ -157,9 +157,9 @@ function hasCompleteMetadata(
   readonly displayName?: string;
 } {
   return value.isEmpty === false
-    && typeof value.saveTimestamp === 'number'
-    && typeof value.characterLevel === 'number'
-    && typeof value.currentFloor === 'number'
+    && Number.isFinite(value.saveTimestamp)
+    && typeof value.characterLevel === 'number' && Number.isInteger(value.characterLevel) && value.characterLevel >= 1
+    && Number.isFinite(value.currentFloor)
     && (value.displayName === undefined || typeof value.displayName === 'string');
 }
 
