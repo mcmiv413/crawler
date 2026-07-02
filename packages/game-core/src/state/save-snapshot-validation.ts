@@ -546,7 +546,7 @@ function validatePersistedFloorCache(
     return [
       ...validateFloor(storedFloor['floor'], `persistedFloorCache[${depth}].floor`),
       ...(typeof floorData['depth'] === 'number' && floorData['depth'] !== depthNum
-        ? [{ field: `persistedFloorCache[${depth}].depth`, message: `floor.depth ${floorData['depth']} does not match cache key ${depthNum}` }]
+        ? [{ field: `persistedFloorCache[${depth}].floor.depth`, message: `floor.depth ${floorData['depth']} does not match cache key ${depthNum}` }]
         : []),
       ...(!isRecord(storedFloor['enemies'])
         ? [{ field: `persistedFloorCache[${depth}].enemies`, message: 'stored floor enemies must be an object' }]
