@@ -559,6 +559,9 @@ function validatePersistedFloorCache(
       ...(!isPosition(storedFloor['playerPosition'])
         ? [{ field: `persistedFloorCache[${depth}].playerPosition`, message: 'stored floor playerPosition must be a valid position' }]
         : []),
+      ...(isPosition(storedFloor['playerPosition']) && isRecord(floorData['cells']) && !(`${storedFloor['playerPosition'].x},${storedFloor['playerPosition'].y}` in floorData['cells'])
+        ? [{ field: `persistedFloorCache[${depth}].playerPosition`, message: `playerPosition (${storedFloor['playerPosition'].x},${storedFloor['playerPosition'].y}) does not reference an existing floor cell` }]
+        : []),
       ...(storedFloor['originalEnemyCount'] !== undefined &&
         (typeof storedFloor['originalEnemyCount'] !== 'number' ||
           !Number.isInteger(storedFloor['originalEnemyCount']) ||
