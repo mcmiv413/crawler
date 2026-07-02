@@ -72,7 +72,7 @@ export function serializeDungeonFloor(floor: DungeonFloor): SerializedDungeonFlo
 export function deserializeDungeonFloor(floor: SerializedDungeonFloor): DungeonFloor {
   return {
     ...cloneJson(floor),
-    cells: new Map(Object.entries(floor.cells)) as ReadonlyMap<string, MapCell>,
+    cells: new Map(Object.entries(floor.cells).map(([k, v]) => [k, cloneJson(v)])) as ReadonlyMap<string, MapCell>,
   };
 }
 
