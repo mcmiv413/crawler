@@ -125,7 +125,7 @@ export function InventoryScreen({
         </div>
       </div>
 
-      {!bagExpanded && (
+      {(!bagExpanded || bagItems.length === 0) && (
         <div style={{ marginBottom: 24, flexShrink: 0 }}>
           <h2 style={{ fontSize: 14, color: '#888', marginBottom: 8 }}>Equipment</h2>
           <EquipmentDoll

@@ -70,10 +70,18 @@ export function migrateSaveSnapshot(snapshot: unknown): SaveSnapshot {
     throw new SaveSnapshotLoadError([{ field: 'snapshot', message: 'snapshot must be an object' }]);
   }
 
+  // Guard against unsupported schema versions: unknown or future versions must fail
+  // cleanly rather than be silently cast to SaveSnapshot.
+  if (snapshot['schemaVersion'] !== SAVE_SNAPSHOT_SCHEMA_VERSION) {
+    throw new SaveSnapshotLoadError([{
+      field: 'schemaVersion',
+      message: `Unsupported save snapshot schemaVersion ${String(snapshot['schemaVersion'])}. Expected ${SAVE_SNAPSHOT_SCHEMA_VERSION}.`,
+    }]);
+  }
+
   // Version 1 has no migrations; this is a no-op pass-through today.
   // Future versions should add explicit per-version migration steps here.
   // loadSaveSnapshot must validate the migrated/current snapshot before restore.
-  // Unsupported future versions must fail cleanly rather than pass through.
   return snapshot as unknown as SaveSnapshot;
 }
 
@@ -387,6 +395,7 @@ function validateFloor(
     ...pushPositiveIntegerError(floor['width'], `${fieldPrefix}.width`),
     ...pushPositiveIntegerError(floor['height'], `${fieldPrefix}.height`),
     ...pushPositiveIntegerError(floor['depth'], `${fieldPrefix}.depth`),
+    ...pushFiniteNumberError(floor['seed'], `${fieldPrefix}.seed`),
     ...(typeof floor['biomeId'] !== 'string' || floor['biomeId'].length === 0
       ? [{ field: `${fieldPrefix}.biomeId`, message: 'biomeId must be a non-empty string' }]
       : []),
@@ -543,6 +552,18 @@ function validatePersistedFloorCache(
         : []),
       ...(!isPosition(storedFloor['playerPosition'])
         ? [{ field: `persistedFloorCache[${depth}].playerPosition`, message: 'stored floor playerPosition must be a valid position' }]
+        : []),
+      ...(storedFloor['originalEnemyCount'] !== undefined &&
+        (typeof storedFloor['originalEnemyCount'] !== 'number' ||
+          !Number.isInteger(storedFloor['originalEnemyCount']) ||
+          storedFloor['originalEnemyCount'] < 0)
+        ? [{ field: `persistedFloorCache[${depth}].originalEnemyCount`, message: 'originalEnemyCount must be a non-negative integer when present' }]
+        : []),
+      ...(storedFloor['lastSimulatedTurn'] !== undefined &&
+        (typeof storedFloor['lastSimulatedTurn'] !== 'number' ||
+          !Number.isInteger(storedFloor['lastSimulatedTurn']) ||
+          storedFloor['lastSimulatedTurn'] < 0)
+        ? [{ field: `persistedFloorCache[${depth}].lastSimulatedTurn`, message: 'lastSimulatedTurn must be a non-negative integer when present' }]
         : []),
     ];
   });

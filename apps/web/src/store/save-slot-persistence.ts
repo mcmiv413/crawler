@@ -93,6 +93,14 @@ export function listSaveSlotMetadata(storage: Storage): SaveSlotMetadata[] {
       throw new Error(`Save slot ${slotId} has corrupted metadata: slotId mismatch (found ${parsed.slotId})`);
     }
     if (parsed.isEmpty === true) {
+      // Symmetric to the ghost-save check below: if metadata claims empty but a
+      // snapshot blob is still present, the slot is corrupted rather than truly
+      // empty — surface the inconsistency instead of silently hiding the save.
+      if (storage.getItem(keys.snapshot) !== null) {
+        throw new Error(
+          `Save slot ${slotId} has corrupted metadata: metadata claims empty but snapshot exists`,
+        );
+      }
       return { slotId, isEmpty: true };
     }
     if (parsed.isEmpty !== false || !hasCompleteMetadata(parsed)) {

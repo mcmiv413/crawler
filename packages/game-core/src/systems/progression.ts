@@ -28,7 +28,12 @@ export function getPlayerLevelUpGains(_level: number): PlayerLevelStatGains {
 }
 
 export function getBasePlayerStatsForLevel(level: number): PlayerStats {
-  const normalizedLevel = Number.isInteger(level) && level > 0 ? level : 1;
+  // Clamp to the game's reachable level cap so a corrupted/hostile fixture
+  // with a huge integer level cannot cause a multi-billion-iteration loop.
+  const normalizedLevel = Math.min(
+    Number.isInteger(level) && level > 0 ? level : 1,
+    XP_TABLE.length - 1,
+  );
   const levelsToApply = Array.from(
     { length: Math.max(0, normalizedLevel - 1) },
     (_, i) => i + 2,
