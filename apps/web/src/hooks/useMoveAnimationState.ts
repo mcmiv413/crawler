@@ -110,7 +110,6 @@ export function useMoveAnimationState(): UseMoveAnimationStateReturn {
   const continuationByEntityRef = useRef(new Map<string, boolean>());
 
   useEffect(() => {
-    const timers = timersRef.current;
     const handleMoveAnimationEntry = (entry: MoveAnimationEntry) => {
       const now = Date.now();
       const id = `move-${nextIdRef.current++}`;
@@ -151,7 +150,7 @@ export function useMoveAnimationState(): UseMoveAnimationStateReturn {
         setAnimations((prev) => prev.filter((a) => a.id !== id));
       }, entry.durationMs);
 
-      timers.push(timer);
+      timersRef.current = [...timersRef.current, timer];
     };
 
     const unsubscribeMoveAnimation = subscribeMoveAnimation(handleMoveAnimationEntry);
@@ -192,7 +191,8 @@ export function useMoveAnimationState(): UseMoveAnimationStateReturn {
       window.removeEventListener('move-animation', handleMoveAnimation);
       window.removeEventListener(WALK_CONTINUATION_EVENT, handleWalkContinuation);
       unsubscribeMoveAnimation();
-      timers.forEach((t) => clearTimeout(t));
+      timersRef.current.forEach((timer) => clearTimeout(timer));
+      timersRef.current = [];
     };
   }, []);
 

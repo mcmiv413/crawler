@@ -55,7 +55,7 @@ export function sortInventoryItems<T extends FilterableItem>(
   items: readonly T[],
   sortBy: InventorySortType,
 ): T[] {
-  return [...items].sort((a, b) => {
+  const compareItems = (a: T, b: T): number => {
     if (sortBy === 'name') {
       return a.name.localeCompare(b.name);
     }
@@ -64,7 +64,20 @@ export function sortInventoryItems<T extends FilterableItem>(
     const rarityB = RARITY_ORDER[b.rarity] ?? -1;
     const rarityDelta = rarityB - rarityA;
     return rarityDelta === 0 ? a.name.localeCompare(b.name) : rarityDelta;
-  });
+  };
+
+  return items.reduce<T[]>((sortedItems, item) => {
+    const insertionIndex = sortedItems.findIndex(
+      (sortedItem) => compareItems(item, sortedItem) < 0,
+    );
+    return insertionIndex === -1
+      ? [...sortedItems, item]
+      : [
+          ...sortedItems.slice(0, insertionIndex),
+          item,
+          ...sortedItems.slice(insertionIndex),
+        ];
+  }, []);
 }
 
 export function useInventoryFilter(items: readonly InventoryItemView[]): {

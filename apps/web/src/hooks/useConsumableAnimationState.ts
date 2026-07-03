@@ -25,7 +25,6 @@ export function useConsumableAnimationState(): UseConsumableAnimationStateReturn
   const timersRef = useRef<ReturnType<typeof setTimeout>[]>([]);
 
   useEffect(() => {
-    const timers = timersRef.current;
     const handleConsumableAnimation = (event: Event) => {
       const customEvent = event as CustomEvent<ConsumableAnimationEntry>;
       const entry = customEvent.detail;
@@ -45,14 +44,14 @@ export function useConsumableAnimationState(): UseConsumableAnimationStateReturn
         setAnimations((prev) => prev.filter((a) => a.id !== animation.id));
       }, entry.durationMs);
 
-      timers.push(timer);
+      timersRef.current = [...timersRef.current, timer];
     };
 
     window.addEventListener('consumable-animation', handleConsumableAnimation);
     return () => {
       window.removeEventListener('consumable-animation', handleConsumableAnimation);
-      timers.forEach((t) => clearTimeout(t));
-      timers.length = 0;
+      timersRef.current.forEach((timer) => clearTimeout(timer));
+      timersRef.current = [];
     };
   }, []);
 

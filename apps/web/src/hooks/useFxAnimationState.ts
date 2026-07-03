@@ -23,7 +23,6 @@ export function useFxAnimationState(): UseFxAnimationStateReturn {
   const timersRef = useRef<ReturnType<typeof setTimeout>[]>([]);
 
   useEffect(() => {
-    const timers = timersRef.current;
     const handleAbilityAnimation = (event: Event) => {
       const customEvent = event as CustomEvent<AbilityAnimationEntry>;
       const data = customEvent.detail;
@@ -43,14 +42,14 @@ export function useFxAnimationState(): UseFxAnimationStateReturn {
         setAnimations((prev) => prev.filter((a) => a.id !== animation.id));
       }, animation.durationMs + 50);
 
-      timers.push(timer);
+      timersRef.current = [...timersRef.current, timer];
     };
 
     window.addEventListener('ability-animation', handleAbilityAnimation);
     return () => {
       window.removeEventListener('ability-animation', handleAbilityAnimation);
-      timers.forEach((t) => clearTimeout(t));
-      timers.length = 0;
+      timersRef.current.forEach((timer) => clearTimeout(timer));
+      timersRef.current = [];
       if (rafRef.current) {
         cancelAnimationFrame(rafRef.current);
       }
