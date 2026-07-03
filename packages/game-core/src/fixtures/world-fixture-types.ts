@@ -1,3 +1,5 @@
+import type { FixtureValidationIssue, FixtureValidationResultFor } from './fixture-validation.js';
+
 /**
  * WorldFixture — schema type for world fixture files.
  *
@@ -73,20 +75,12 @@ export interface FixtureTownState {
  * Fixture validation error — identifies the offending field and describes
  * the problem clearly enough for a developer to fix the fixture file.
  */
-export interface WorldFixtureValidationError {
-  /** Dot-path to the offending field, e.g. "factions[0].power", "dungeonOgre.status" */
-  readonly field: string;
-  /** Human-readable description identifying the bad value and why it is invalid */
-  readonly message: string;
-}
+export type WorldFixtureValidationError = FixtureValidationIssue;
 
 /**
  * Result returned by validateWorldFixture().
  */
-export interface WorldFixtureValidationResult {
-  readonly isValid: boolean;
-  readonly errors: readonly WorldFixtureValidationError[];
-}
+export type WorldFixtureValidationResult = FixtureValidationResultFor<WorldFixtureValidationError>;
 
 /**
  * WorldFixture schema version 1.

@@ -77,7 +77,13 @@ function expectedRootLayer(relativePath) {
   return null;
 }
 
+function isRootSuiteSupportFile(relativePath) {
+  return relativePath.startsWith('tests/contracts/helpers/');
+}
+
 function isIncludedByExpectedRootRunner(relativePath, layer) {
+  if (isRootSuiteSupportFile(relativePath)) return true;
+
   if (layer === 'contract') {
     return relativePath.endsWith('.contract.test.ts') || relativePath.endsWith('.contract.test.tsx');
   }

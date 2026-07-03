@@ -107,18 +107,18 @@ export default {
       path: 'packages/game-core/src/fixtures/scenario-fixture-validation.ts',
       reason: 'Scenario fixture validator — consolidates player/world resolution plus map, enemy, loot, interactable, and spawn placement validation against untrusted JSON',
       auditReportNote: 'Fixture hardening for PR #36 review: resolveScenarioPlayer/resolveScenarioWorld now guard that ref is a non-empty string and that inline fixtures and resolver return values are objects before downstream validation; validateMapAndPlacements bails out on invalid width/height and only treats array map.floors as explicit floors; future split seam is extracting per-placement validators into discrete modules',
-      lines: 544,
+      lines: 638,
     },
     {
       path: 'packages/game-core/src/fixtures/player-fixture-loader.ts',
       reason: 'Player fixture loader: each field in the player fixture requires explicit unknown-safe validation (equippedArmorIds, activeEquipmentIds, inventoryItemIds, knownRingSchools, learnedRingSpellIds) to avoid throwing on malformed JSON. Shrink seam is extracting per-field validators into discrete modules.',
       auditReportNote: 'PR #37 review hardening: guarded Object.entries/Object.values calls and Array.isArray checks to prevent validator throws on non-object/non-array malformed fixture fields',
-      lines: 572,
+      lines: 568,
     },
     {
       path: 'packages/game-core/src/state/save-snapshot-validation.ts',
       reason: 'Save snapshot validation: each field type in SaveSnapshot requires explicit per-field validation (enemies, persistedFloorCache depth keys, storedFloor sub-fields, equipment slot compatibility, ring spell IDs). Shrink seam is splitting into domain-specific sub-validators once the ring migration and floor-cache redesign settle.',
-      lines: 632,
+      lines: 695,
     },
   ],
 };

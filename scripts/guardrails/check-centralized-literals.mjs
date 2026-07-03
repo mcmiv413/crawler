@@ -20,6 +20,32 @@ function isAllowedFile(relativePath, configEntry) {
     matchesAnyRegex(normalized, configEntry.allowedFilePatterns ?? []);
 }
 
+function findPatternMatches(pattern, source) {
+  pattern.lastIndex = 0;
+  if (!pattern.global) {
+    const match = pattern.exec(source);
+    return match ? [match] : [];
+  }
+
+  const matches = [];
+  let match;
+  while ((match = pattern.exec(source)) !== null) {
+    matches.push(match);
+    if (match[0] === '') {
+      pattern.lastIndex += 1;
+    }
+  }
+  return matches;
+}
+
+function formatLiteralFailure(relativePath, lineNumber, configEntry, literal) {
+  if (literal.failureMessage) {
+    return `${relativePath}:${lineNumber} ${literal.failureMessage}`;
+  }
+
+  return `${relativePath}:${lineNumber} duplicates ${configEntry.name}; import ${literal.exportName} from ${configEntry.ownerModule}`;
+}
+
 export function checkCentralizedLiterals(options = {}) {
   const rootDir = resolveRoot(options.rootDir);
   const config = options.config ?? defaultConfig;
@@ -37,12 +63,16 @@ export function checkCentralizedLiterals(options = {}) {
 
       for (const literal of configEntry.literals) {
         for (const pattern of literal.patterns) {
-          pattern.lastIndex = 0;
-          const match = pattern.exec(stripped);
-          if (!match) continue;
-          failures.push(
-            `${relativePath}:${lineNumberAt(stripped, match.index)} duplicates ${configEntry.name}; import ${literal.exportName} from ${configEntry.ownerModule}`,
-          );
+          for (const match of findPatternMatches(pattern, stripped)) {
+            failures.push(
+              formatLiteralFailure(
+                relativePath,
+                lineNumberAt(stripped, match.index),
+                configEntry,
+                literal,
+              ),
+            );
+          }
         }
       }
     }

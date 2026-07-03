@@ -7,18 +7,8 @@
  */
 
 import { describe, it, expect } from 'vitest';
-import { readFileSync } from 'node:fs';
-import { join } from 'node:path';
 import { validateWorldFixture, loadWorldFromFixture } from './world-fixture-loader.js';
-import type { WorldFixture } from './world-fixture-types.js';
-
-const WORLDS_DIR = join(process.cwd(), 'fixtures/worlds');
-
-function loadWorldFixtureFile(name: string): WorldFixture {
-  const filePath = join(WORLDS_DIR, `${name}.json`);
-  const raw = readFileSync(filePath, 'utf-8');
-  return JSON.parse(raw) as WorldFixture;
-}
+import { loadWorldFixtureFile } from './fixture-file-loader.test-helper.js';
 
 // ─── fresh-world ─────────────────────────────────────────────────────────────
 

@@ -15,6 +15,7 @@
 
 import type { RingSchool } from '@dungeon/content';
 import type { Player, ItemRegistry } from '@dungeon/contracts';
+import type { FixtureValidationIssue, FixtureValidationResultFor } from './fixture-validation.js';
 
 /**
  * Armor slots that can be specified in a fixture.
@@ -41,20 +42,12 @@ export interface FixtureActiveEquipment {
  * Fixture validation error — identifies the offending field and describes the
  * problem clearly enough for a developer to fix the fixture file.
  */
-export interface FixtureValidationError {
-  /** Dot-path to the offending field, e.g. "gold", "inventoryItemIds[0]" */
-  readonly field: string;
-  /** Human-readable description identifying the bad value and why it is invalid */
-  readonly message: string;
-}
+export type FixtureValidationError = FixtureValidationIssue;
 
 /**
  * Result returned by validatePlayerFixture().
  */
-export interface FixtureValidationResult {
-  readonly isValid: boolean;
-  readonly errors: readonly FixtureValidationError[];
-}
+export type FixtureValidationResult = FixtureValidationResultFor<FixtureValidationError>;
 
 /**
  * Result returned by loadPlayerFromFixture().

@@ -16,9 +16,21 @@ import {
   RING_SCHOOL_BY_ID,
 } from '@dungeon/content';
 import { validatePlayer as validateCorePlayer } from './validators.js';
+import { getEquipSlotRule } from './equipment-slot-rules.js';
+import {
+  isFiniteNumber,
+  isNonNegativeInteger,
+  isPosition,
+  isPositiveInteger,
+  isRecord,
+  validateContentRef,
+} from './validation-guards.js';
 
 const VALID_PHASES = new Set<GamePhase>(['town', 'dungeon', 'combat', 'game_over']);
 const REQUIRED_WEAPON_MASTERY_KEYS = ['blade', 'bludgeon', 'axe', 'ranged', 'dagger'] as const;
+const MIGRATIONS: Record<number, (snapshot: Record<string, unknown>) => Record<string, unknown>> = {
+  [SAVE_SNAPSHOT_SCHEMA_VERSION]: snapshot => snapshot,
+};
 
 export class SaveSnapshotLoadError extends Error {
   readonly validationErrors: readonly SaveSnapshotValidationError[];
@@ -70,19 +82,18 @@ export function migrateSaveSnapshot(snapshot: unknown): SaveSnapshot {
     throw new SaveSnapshotLoadError([{ field: 'snapshot', message: 'snapshot must be an object' }]);
   }
 
-  // Guard against unsupported schema versions: unknown or future versions must fail
-  // cleanly rather than be silently cast to SaveSnapshot.
-  if (snapshot['schemaVersion'] !== SAVE_SNAPSHOT_SCHEMA_VERSION) {
-    throw new SaveSnapshotLoadError([{
-      field: 'schemaVersion',
-      message: `Unsupported save snapshot schemaVersion ${String(snapshot['schemaVersion'])}. Expected ${SAVE_SNAPSHOT_SCHEMA_VERSION}.`,
-    }]);
+  const schemaErrors = validateSchemaVersionField(snapshot);
+  if (schemaErrors.length > 0) {
+    throw new SaveSnapshotLoadError(schemaErrors);
   }
 
-  // Version 1 has no migrations; this is a no-op pass-through today.
-  // Future versions should add explicit per-version migration steps here.
-  // loadSaveSnapshot must validate the migrated/current snapshot before restore.
-  return snapshot as unknown as SaveSnapshot;
+  const mutableMigrationVersions = Object.keys(MIGRATIONS).map(Number);
+  mutableMigrationVersions.sort((left, right) => left - right);
+
+  return mutableMigrationVersions.reduce<Record<string, unknown>>(
+    (current, version) => MIGRATIONS[version]?.(current) ?? current,
+    snapshot,
+  ) as unknown as SaveSnapshot;
 }
 
 function validateRequiredRoots(
@@ -164,11 +175,7 @@ function validateWeaponMastery(
 
   return REQUIRED_WEAPON_MASTERY_KEYS.flatMap(key => {
     const value = weaponMastery[key];
-    if (typeof value !== 'number' || !Number.isFinite(value) || value < 0) {
-      const field = `weaponMastery.${key}`;
-      return [{ field, message: `${field} must be a finite non-negative number` }];
-    }
-    return [];
+    return pushNonNegativeNumberError(value, `weaponMastery.${key}`);
   });
 }
 
@@ -184,14 +191,13 @@ function validateItemRegistry(
       return [{ field: `itemRegistry.items.${entityId}`, message: 'registered item must be an object' }];
     }
 
-    const itemId = item['itemId'];
-    if (typeof itemId !== 'string' || !ITEM_BY_ID.has(itemId)) {
-      return [{
-        field: `itemRegistry.items.${entityId}.itemId`,
-        message: `registered item id ${String(itemId)} must exist in ITEM_BY_ID`,
-      }];
-    }
-    return [];
+    return validateContentRef<string, SaveSnapshotValidationError>(
+      `itemRegistry.items.${entityId}.itemId`,
+      item['itemId'],
+      ITEM_BY_ID,
+      'ITEM_BY_ID',
+      value => `registered item id ${String(value)} must exist in ITEM_BY_ID`,
+    );
   });
 }
 
@@ -210,9 +216,13 @@ function validateSnapshotPlayer(
 
   const inventoryErrors: SaveSnapshotValidationError[] = Array.isArray(player['inventory'])
     ? (player['inventory'] as unknown[]).flatMap((itemEntityId, index) =>
-        typeof itemEntityId !== 'string' || !registryItemMap.has(itemEntityId)
-          ? [{ field: `player.inventory[${index}]`, message: `player.inventory[${index}] references unknown item entity id ${String(itemEntityId)}` }]
-          : [],
+        validateContentRef<string, SaveSnapshotValidationError>(
+          `player.inventory[${index}]`,
+          itemEntityId,
+          registryItemMap,
+          'itemRegistry',
+          value => `player.inventory[${index}] references unknown item entity id ${String(value)}`,
+        ),
       )
     : [{ field: 'player.inventory', message: 'player.inventory must be an array' }];
 
@@ -246,7 +256,12 @@ function validateEquipmentSlotCompatibility(
   itemEntityId: string,
   item: Record<string, unknown>,
 ): SaveSnapshotValidationError[] {
-  if (slot === 'weapon' || slot === 'secondaryWeapon') {
+  const rule = getEquipSlotRule(slot);
+  if (rule === undefined) {
+    return [];
+  }
+
+  if (rule.itemClass === 'weapon') {
     if (item['itemClass'] !== 'weapon') {
       return [{
         field: `player.equipment.${slot}`,
@@ -256,25 +271,14 @@ function validateEquipmentSlotCompatibility(
     return [];
   }
 
-  const expectedArmorSlot = getExpectedArmorSlot(slot);
-  if (expectedArmorSlot === null) {
-    return [];
-  }
-
   const armor = item['armor'];
-  if (item['itemClass'] !== 'armor' || !isRecord(armor) || armor['slot'] !== expectedArmorSlot) {
+  if (item['itemClass'] !== 'armor' || !isRecord(armor) || armor['slot'] !== rule.armorSlot) {
     return [{
       field: `player.equipment.${slot}`,
       message: `item "${itemEntityId}" is not valid for ${slot} slot (got ${describeItemKind(item)})`,
     }];
   }
   return [];
-}
-
-function getExpectedArmorSlot(slot: string): string | null {
-  if (slot === 'ring1' || slot === 'ring2') return 'ring';
-  if (slot === 'chest' || slot === 'head' || slot === 'gloves' || slot === 'boots') return slot;
-  return null;
 }
 
 function describeItemKind(item: Record<string, unknown>): string {
@@ -295,9 +299,13 @@ function validateKnownRingSchools(
 ): SaveSnapshotValidationError[] {
   const knownSchoolErrors: SaveSnapshotValidationError[] = Array.isArray(player['knownRingSchools'])
     ? (player['knownRingSchools'] as unknown[]).flatMap((school, index) =>
-        typeof school !== 'string' || !RING_SCHOOL_BY_ID.has(school)
-          ? [{ field: `player.knownRingSchools[${index}]`, message: `player.knownRingSchools[${index}] references unknown ring school ${String(school)}` }]
-          : [],
+        validateContentRef(
+          `player.knownRingSchools[${index}]`,
+          school,
+          RING_SCHOOL_BY_ID,
+          'RING_SCHOOL_BY_ID',
+          value => `player.knownRingSchools[${index}] references unknown ring school ${String(value)}`,
+        ),
       )
     : player['knownRingSchools'] !== undefined
       ? [{ field: 'player.knownRingSchools', message: 'player.knownRingSchools must be an array' }]
@@ -305,9 +313,13 @@ function validateKnownRingSchools(
 
   const ringMasteryErrors: SaveSnapshotValidationError[] = isRecord(player['ringMastery'])
     ? Object.keys(player['ringMastery']).flatMap(school =>
-        !RING_SCHOOL_BY_ID.has(school)
-          ? [{ field: `player.ringMastery.${school}`, message: 'ring mastery school must exist in content' }]
-          : [],
+        validateContentRef(
+          `player.ringMastery.${school}`,
+          school,
+          RING_SCHOOL_BY_ID,
+          'RING_SCHOOL_BY_ID',
+          () => 'ring mastery school must exist in content',
+        ),
       )
     : [];
 
@@ -365,7 +377,7 @@ function validateRunAndFloor(
   const speedAccumulatorErrors: SaveSnapshotValidationError[] = isRecord(run['speedAccumulators'])
     ? Object.entries(run['speedAccumulators']).flatMap(([key, value]) => {
         const field = `run.speedAccumulators[${key}]`;
-        return typeof value !== 'number' || !Number.isFinite(value)
+        return !isFiniteNumber(value)
           ? [{ field, message: `${field} must be a finite number` }]
           : [];
       })
@@ -451,10 +463,13 @@ function validateEnemy(
     return [{ field: `enemies[${key}]`, message: 'enemy must be an object' }];
   }
 
-  const templateId = enemy['templateId'];
-  const templateErrors: SaveSnapshotValidationError[] = typeof templateId !== 'string' || !ENEMY_TEMPLATES.has(templateId)
-    ? [{ field: `enemies[${key}].templateId`, message: `enemy template id ${String(templateId)} must exist in ENEMY_TEMPLATES` }]
-    : [];
+  const templateErrors = validateContentRef<string, SaveSnapshotValidationError>(
+    `enemies[${key}].templateId`,
+    enemy['templateId'],
+    ENEMY_TEMPLATES,
+    'ENEMY_TEMPLATES',
+    value => `enemy template id ${String(value)} must exist in ENEMY_TEMPLATES`,
+  );
 
   if (!isPosition(enemy['position'])) {
     return [...templateErrors, { field: `enemies[${key}].position`, message: 'enemy position must be a position' }];
@@ -481,18 +496,21 @@ function validateObjects(objects: unknown, floor: unknown): SaveSnapshotValidati
     if (!isRecord(object)) {
       return [{ field: `objects[${key}]`, message: 'object must be an object' }];
     }
-    const templateId = object['templateId'];
-    const templateErrors: SaveSnapshotValidationError[] = typeof templateId !== 'string' || !OBJECT_TEMPLATES.has(templateId)
-      ? [{ field: `objects[${key}].templateId`, message: `object template id ${String(templateId)} must exist in OBJECT_TEMPLATES` }]
-      : [];
+    const templateErrors = validateContentRef<string, SaveSnapshotValidationError>(
+      `objects[${key}].templateId`,
+      object['templateId'],
+      OBJECT_TEMPLATES,
+      'OBJECT_TEMPLATES',
+      value => `object template id ${String(value)} must exist in OBJECT_TEMPLATES`,
+    );
 
-    const positionMatchErrors: SaveSnapshotValidationError[] = isPosition(object['position'])
+    const positionErrors: SaveSnapshotValidationError[] = isPosition(object['position'])
       ? posKey(object['position']) !== key
         ? [{ field: `objects[${key}].position`, message: `object map key must match object position ${posKey(object['position'])}` }]
         : !Object.prototype.hasOwnProperty.call(cells, key)
           ? [{ field: `objects[${key}].position`, message: 'object position must reference an existing floor cell' }]
           : []
-      : [];
+      : [{ field: `objects[${key}].position`, message: 'object position must be a position' }];
 
     const exhaustedErrors: SaveSnapshotValidationError[] = typeof object['isExhausted'] !== 'boolean'
       ? [{ field: `objects[${key}].isExhausted`, message: `objects[${key}].isExhausted must be a boolean` }]
@@ -500,25 +518,9 @@ function validateObjects(objects: unknown, floor: unknown): SaveSnapshotValidati
 
     return [
       ...templateErrors,
-      ...validateObjectPosition(key, object['position']),
-      ...positionMatchErrors,
+      ...positionErrors,
       ...exhaustedErrors,
     ];
-  });
-}
-
-function validateObjectPosition(
-  key: string,
-  position: unknown,
-): SaveSnapshotValidationError[] {
-  const positionRecord = isRecord(position) ? position : null;
-  return (['x', 'y'] as const).flatMap(axis => {
-    const value = positionRecord?.[axis];
-    if (typeof value !== 'number' || !Number.isFinite(value)) {
-      const field = `objects[${key}].position.${axis}`;
-      return [{ field, message: `${field} must be a finite number` }];
-    }
-    return [];
   });
 }
 
@@ -534,54 +536,103 @@ function validatePersistedFloorCache(
 
   const seenDepths = new Set<number>();
   return Object.entries(persistedFloorCache).flatMap(([depth, storedFloor]): SaveSnapshotValidationError[] => {
-    const depthNum = Number(depth);
-    if (!Number.isInteger(depthNum) || depthNum < 1) {
-      return [{ field: 'persistedFloorCache', message: `depth key "${depth}" must be a positive integer` }];
-    }
-    if (seenDepths.has(depthNum)) {
-      return [{ field: 'persistedFloorCache', message: `duplicate normalized depth key ${depthNum} (from "${depth}")` }];
-    }
-    seenDepths.add(depthNum);
-    if (!isRecord(storedFloor)) {
-      return [{ field: `persistedFloorCache[${depth}]`, message: 'stored floor must be an object' }];
-    }
-    if (!isRecord(storedFloor['floor'])) {
-      return [{ field: `persistedFloorCache[${depth}].floor`, message: 'stored floor must include floor data' }];
-    }
-    const floorData = storedFloor['floor'] as Record<string, unknown>;
-    return [
-      ...validateFloor(storedFloor['floor'], `persistedFloorCache[${depth}].floor`),
-      ...(typeof floorData['depth'] === 'number' && floorData['depth'] !== depthNum
-        ? [{ field: `persistedFloorCache[${depth}].floor.depth`, message: `floor.depth ${floorData['depth']} does not match cache key ${depthNum}` }]
-        : []),
-      ...(isRecord(storedFloor['enemies'])
-        ? validateEnemies(storedFloor['enemies'], floorData, null)
-            .map(e => ({ ...e, field: `persistedFloorCache[${depth}].${e.field}` }))
-        : [{ field: `persistedFloorCache[${depth}].enemies`, message: 'stored floor enemies must be an object' }]),
-      ...(isRecord(storedFloor['objects'])
-        ? validateObjects(storedFloor['objects'], storedFloor['floor'])
-            .map(e => ({ ...e, field: `persistedFloorCache[${depth}].${e.field}` }))
-        : [{ field: `persistedFloorCache[${depth}].objects`, message: 'stored floor objects must be an object' }]),
-      ...(!isPosition(storedFloor['playerPosition'])
-        ? [{ field: `persistedFloorCache[${depth}].playerPosition`, message: 'stored floor playerPosition must be a valid position' }]
-        : []),
-      ...(isPosition(storedFloor['playerPosition']) && isRecord(floorData['cells']) && !Object.prototype.hasOwnProperty.call(floorData['cells'], `${storedFloor['playerPosition'].x},${storedFloor['playerPosition'].y}`)
-        ? [{ field: `persistedFloorCache[${depth}].playerPosition`, message: `playerPosition (${storedFloor['playerPosition'].x},${storedFloor['playerPosition'].y}) does not reference an existing floor cell` }]
-        : []),
-      ...(storedFloor['originalEnemyCount'] !== undefined &&
-        (typeof storedFloor['originalEnemyCount'] !== 'number' ||
-          !Number.isInteger(storedFloor['originalEnemyCount']) ||
-          storedFloor['originalEnemyCount'] < 0)
-        ? [{ field: `persistedFloorCache[${depth}].originalEnemyCount`, message: 'originalEnemyCount must be a non-negative integer when present' }]
-        : []),
-      ...(storedFloor['lastSimulatedTurn'] !== undefined &&
-        (typeof storedFloor['lastSimulatedTurn'] !== 'number' ||
-          !Number.isInteger(storedFloor['lastSimulatedTurn']) ||
-          storedFloor['lastSimulatedTurn'] < 0)
-        ? [{ field: `persistedFloorCache[${depth}].lastSimulatedTurn`, message: 'lastSimulatedTurn must be a non-negative integer when present' }]
-        : []),
-    ];
+    const depthResult = validateCacheDepthKey(depth, seenDepths);
+    return depthResult.errors.length > 0
+      ? depthResult.errors
+      : validateStoredFloorEntry(depth, depthResult.depthNum, storedFloor);
   });
+}
+
+function validateCacheDepthKey(
+  depth: string,
+  seenDepths: Set<number>,
+): { depthNum: number; errors: SaveSnapshotValidationError[] } {
+  const depthNum = Number(depth);
+  if (!isPositiveInteger(depthNum)) {
+    return {
+      depthNum,
+      errors: [{ field: 'persistedFloorCache', message: `depth key "${depth}" must be a positive integer` }],
+    };
+  }
+  if (seenDepths.has(depthNum)) {
+    return {
+      depthNum,
+      errors: [{ field: 'persistedFloorCache', message: `duplicate normalized depth key ${depthNum} (from "${depth}")` }],
+    };
+  }
+  seenDepths.add(depthNum);
+  return { depthNum, errors: [] };
+}
+
+function validateStoredFloorEntry(
+  depth: string,
+  depthNum: number,
+  storedFloor: unknown,
+): SaveSnapshotValidationError[] {
+  if (!isRecord(storedFloor)) {
+    return [{ field: `persistedFloorCache[${depth}]`, message: 'stored floor must be an object' }];
+  }
+  if (!isRecord(storedFloor['floor'])) {
+    return [{ field: `persistedFloorCache[${depth}].floor`, message: 'stored floor must include floor data' }];
+  }
+
+  const floorData = storedFloor['floor'];
+  return [
+    ...validateFloor(floorData, `persistedFloorCache[${depth}].floor`),
+    ...(typeof floorData['depth'] === 'number' && floorData['depth'] !== depthNum
+      ? [{ field: `persistedFloorCache[${depth}].floor.depth`, message: `floor.depth ${floorData['depth']} does not match cache key ${depthNum}` }]
+      : []),
+    ...validateStoredFloorEnemies(depth, storedFloor, floorData),
+    ...validateStoredFloorObjects(depth, storedFloor),
+    ...validateStoredFloorPlayerPosition(depth, storedFloor, floorData),
+    ...pushNonNegativeIntegerError(
+      storedFloor['originalEnemyCount'],
+      `persistedFloorCache[${depth}].originalEnemyCount`,
+      'originalEnemyCount must be a non-negative integer when present',
+      true,
+    ),
+    ...pushNonNegativeIntegerError(
+      storedFloor['lastSimulatedTurn'],
+      `persistedFloorCache[${depth}].lastSimulatedTurn`,
+      'lastSimulatedTurn must be a non-negative integer when present',
+      true,
+    ),
+  ];
+}
+
+function validateStoredFloorEnemies(
+  depth: string,
+  storedFloor: Record<string, unknown>,
+  floorData: Record<string, unknown>,
+): SaveSnapshotValidationError[] {
+  return isRecord(storedFloor['enemies'])
+    ? validateEnemies(storedFloor['enemies'], floorData, null)
+        .map(e => ({ ...e, field: `persistedFloorCache[${depth}].${e.field}` }))
+    : [{ field: `persistedFloorCache[${depth}].enemies`, message: 'stored floor enemies must be an object' }];
+}
+
+function validateStoredFloorObjects(
+  depth: string,
+  storedFloor: Record<string, unknown>,
+): SaveSnapshotValidationError[] {
+  return isRecord(storedFloor['objects'])
+    ? validateObjects(storedFloor['objects'], storedFloor['floor'])
+        .map(e => ({ ...e, field: `persistedFloorCache[${depth}].${e.field}` }))
+    : [{ field: `persistedFloorCache[${depth}].objects`, message: 'stored floor objects must be an object' }];
+}
+
+function validateStoredFloorPlayerPosition(
+  depth: string,
+  storedFloor: Record<string, unknown>,
+  floorData: Record<string, unknown>,
+): SaveSnapshotValidationError[] {
+  const playerPosition = storedFloor['playerPosition'];
+  if (!isPosition(playerPosition)) {
+    return [{ field: `persistedFloorCache[${depth}].playerPosition`, message: 'stored floor playerPosition must be a valid position' }];
+  }
+  return isRecord(floorData['cells']) && !Object.prototype.hasOwnProperty.call(floorData['cells'], posKey(playerPosition))
+    ? [{ field: `persistedFloorCache[${depth}].playerPosition`, message: `playerPosition (${playerPosition.x},${playerPosition.y}) does not reference an existing floor cell` }]
+    : [];
 }
 
 function getRegistryItemMap(itemRegistry: unknown): Map<string, Record<string, unknown>> {
@@ -598,24 +649,22 @@ function getRegistryItemMap(itemRegistry: unknown): Map<string, Record<string, u
   return items;
 }
 
-function isRecord(value: unknown): value is Record<string, unknown> {
-  return typeof value === 'object' && value !== null && !Array.isArray(value);
-}
-
-function isPosition(value: unknown): value is { readonly x: number; readonly y: number } {
-  return isRecord(value)
-    && typeof value['x'] === 'number'
-    && Number.isFinite(value['x'])
-    && typeof value['y'] === 'number'
-    && Number.isFinite(value['y']);
-}
-
 function pushFiniteNumberError(
   value: unknown,
   field: string,
 ): SaveSnapshotValidationError[] {
-  if (typeof value !== 'number' || !Number.isFinite(value)) {
+  if (!isFiniteNumber(value)) {
     return [{ field, message: `${field} must be a finite number` }];
+  }
+  return [];
+}
+
+function pushNonNegativeNumberError(
+  value: unknown,
+  field: string,
+): SaveSnapshotValidationError[] {
+  if (!isFiniteNumber(value) || value < 0) {
+    return [{ field, message: `${field} must be a finite non-negative number` }];
   }
   return [];
 }
@@ -624,8 +673,22 @@ function pushPositiveIntegerError(
   value: unknown,
   field: string,
 ): SaveSnapshotValidationError[] {
-  if (typeof value !== 'number' || !Number.isInteger(value) || value < 1) {
+  if (!isPositiveInteger(value)) {
     return [{ field, message: `${field} must be an integer >= 1` }];
   }
   return [];
+}
+
+function pushNonNegativeIntegerError(
+  value: unknown,
+  field: string,
+  message: string,
+  optional = false,
+): SaveSnapshotValidationError[] {
+  if (optional === true && value === undefined) {
+    return [];
+  }
+  return isNonNegativeInteger(value)
+    ? []
+    : [{ field, message }];
 }

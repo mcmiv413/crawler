@@ -14,6 +14,13 @@ import type {
   WorldFixtureValidationError,
   WorldFixtureValidationResult,
 } from './world-fixture-types.js';
+import {
+  isFiniteNumber,
+  isNonNegativeInteger,
+  validateContentRef,
+  validateNumberInRange,
+} from '../state/validation-guards.js';
+import { BaseFixtureLoadError, formatValidationErrors } from './fixture-validation.js';
 
 /** Current supported world fixture schema version. */
 export const WORLD_FIXTURE_SCHEMA_VERSION = 1;
@@ -36,14 +43,14 @@ const VALID_OGRE_STATUSES = new Set(['sealed', 'emerged', 'slain'] as const);
  * Never silently succeeds — every invalid fixture produces at least one error.
  */
 export function validateWorldFixture(fixture: WorldFixture): WorldFixtureValidationResult {
-  let errors: WorldFixtureValidationError[] = [];
+  const mutableErrors: WorldFixtureValidationError[] = [];
 
   // schemaVersion
   if (fixture.schemaVersion !== WORLD_FIXTURE_SCHEMA_VERSION) {
-    errors = [...errors, {
+    mutableErrors.push({
       field: 'schemaVersion',
       message: `Unsupported world fixture schemaVersion ${fixture.schemaVersion}. Expected ${WORLD_FIXTURE_SCHEMA_VERSION}.`,
-    }];
+    });
   }
 
   // factions
@@ -53,47 +60,27 @@ export function validateWorldFixture(fixture: WorldFixture): WorldFixtureValidat
       const override = fixture.factions[i]!;
 
       // Validate faction ID exists in content
-      if (!FACTION_DEFINITIONS.has(override.id)) {
-        errors = [...errors, {
-          field: `factions[${i}].id`,
-          message: `Unknown faction id "${override.id}" at factions[${i}]. Must be one of: ${[...FACTION_DEFINITIONS.keys()].join(', ')}.`,
-        }];
-      }
+      mutableErrors.push(...validateContentRef<string, WorldFixtureValidationError>(
+        `factions[${i}].id`,
+        override.id,
+        FACTION_DEFINITIONS,
+        'FACTION_DEFINITIONS',
+        value => `Unknown faction id "${String(value)}" at factions[${i}]. Must be one of: ${[...FACTION_DEFINITIONS.keys()].join(', ')}.`,
+      ));
 
       // Detect duplicate faction IDs
       if (seenIds.has(override.id)) {
-        errors = [...errors, {
+        mutableErrors.push({
           field: `factions[${i}].id`,
           message: `Duplicate faction id "${override.id}" at factions[${i}]. Each faction may only appear once.`,
-        }];
+        });
       }
       seenIds.add(override.id);
 
-      // Validate power range 0–100
-      if (
-        typeof override.power !== 'number'
-        || !Number.isFinite(override.power)
-        || override.power < 0
-        || override.power > 100
-      ) {
-        errors = [...errors, {
-          field: `factions[${i}].power`,
-          message: `factions[${i}].power must be a number between 0 and 100, got ${override.power}.`,
-        }];
-      }
-
-      // Validate disposition range -100 to 100
-      if (
-        typeof override.disposition !== 'number'
-        || !Number.isFinite(override.disposition)
-        || override.disposition < -100
-        || override.disposition > 100
-      ) {
-        errors = [...errors, {
-          field: `factions[${i}].disposition`,
-          message: `factions[${i}].disposition must be a number between -100 and 100, got ${override.disposition}.`,
-        }];
-      }
+      mutableErrors.push(
+        ...validateFixtureRange(`factions[${i}].power`, override.power, 0, 100),
+        ...validateFixtureRange(`factions[${i}].disposition`, override.disposition, -100, 100),
+      );
     }
   }
 
@@ -105,38 +92,38 @@ export function validateWorldFixture(fixture: WorldFixture): WorldFixtureValidat
 
     // Guard: dungeonOgre must be a non-null object — null and primitives are rejected here
     if (ogre === null || typeof ogre !== 'object') {
-      errors = [...errors, {
+      mutableErrors.push({
         field: 'dungeonOgre',
         message: `dungeonOgre must be an object when present, got ${ogre === null ? 'null' : typeof ogre}.`,
-      }];
+      });
     } else {
       const ogreRaw = ogre as { status?: unknown; emergedAfterRun?: unknown; emergedAtDepth?: unknown };
 
       // status — required and must be a valid value
       if (!VALID_OGRE_STATUSES.has(ogreRaw.status as 'sealed' | 'emerged' | 'slain')) {
-        errors = [...errors, {
+        mutableErrors.push({
           field: 'dungeonOgre.status',
           message: `dungeonOgre.status must be 'sealed', 'emerged', or 'slain', got "${ogreRaw.status}".`,
-        }];
+        });
       }
 
       // emergedAfterRun — optional, but must be a finite number when present
       if (ogreRaw.emergedAfterRun !== undefined) {
-        if (typeof ogreRaw.emergedAfterRun !== 'number' || !Number.isFinite(ogreRaw.emergedAfterRun)) {
-          errors = [...errors, {
+        if (!isFiniteNumber(ogreRaw.emergedAfterRun)) {
+          mutableErrors.push({
             field: 'dungeonOgre.emergedAfterRun',
             message: `dungeonOgre.emergedAfterRun must be a number when present, got ${JSON.stringify(ogreRaw.emergedAfterRun)}.`,
-          }];
+          });
         }
       }
 
       // emergedAtDepth — optional, but must be a finite number when present
       if (ogreRaw.emergedAtDepth !== undefined) {
-        if (typeof ogreRaw.emergedAtDepth !== 'number' || !Number.isFinite(ogreRaw.emergedAtDepth)) {
-          errors = [...errors, {
+        if (!isFiniteNumber(ogreRaw.emergedAtDepth)) {
+          mutableErrors.push({
             field: 'dungeonOgre.emergedAtDepth',
             message: `dungeonOgre.emergedAtDepth must be a number when present, got ${JSON.stringify(ogreRaw.emergedAtDepth)}.`,
-          }];
+          });
         }
       }
     }
@@ -145,94 +132,67 @@ export function validateWorldFixture(fixture: WorldFixture): WorldFixtureValidat
   // town
   if (fixture.town !== undefined) {
     const town = fixture.town;
-
-    if (town.prosperity !== undefined) {
-      if (
-        typeof town.prosperity !== 'number'
-        || !Number.isFinite(town.prosperity)
-        || town.prosperity < 0
-        || town.prosperity > 100
-      ) {
-        errors = [...errors, {
-          field: 'town.prosperity',
-          message: `town.prosperity must be a number between 0 and 100, got ${town.prosperity}.`,
-        }];
-      }
-    }
-
-    if (town.fear !== undefined) {
-      if (
-        typeof town.fear !== 'number'
-        || !Number.isFinite(town.fear)
-        || town.fear < 0
-        || town.fear > 100
-      ) {
-        errors = [...errors, {
-          field: 'town.fear',
-          message: `town.fear must be a number between 0 and 100, got ${town.fear}.`,
-        }];
-      }
-    }
-
-    if (town.corruption !== undefined) {
-      if (
-        typeof town.corruption !== 'number'
-        || !Number.isFinite(town.corruption)
-        || town.corruption < 0
-        || town.corruption > 100
-      ) {
-        errors = [...errors, {
-          field: 'town.corruption',
-          message: `town.corruption must be a number between 0 and 100, got ${town.corruption}.`,
-        }];
+    for (const { field, value } of [
+      { field: 'town.prosperity', value: town.prosperity },
+      { field: 'town.fear', value: town.fear },
+      { field: 'town.corruption', value: town.corruption },
+    ] as const) {
+      if (value !== undefined) {
+        mutableErrors.push(...validateFixtureRange(field, value, 0, 100));
       }
     }
   }
 
   // totalRuns
   if (fixture.totalRuns !== undefined) {
-    if (
-      typeof fixture.totalRuns !== 'number'
-      || !Number.isFinite(fixture.totalRuns)
-      || fixture.totalRuns < 0
-      || !Number.isInteger(fixture.totalRuns)
-    ) {
-      errors = [...errors, {
+    if (!isNonNegativeInteger(fixture.totalRuns)) {
+      mutableErrors.push({
         field: 'totalRuns',
         message: `totalRuns must be a non-negative integer, got ${fixture.totalRuns}.`,
-      }];
+      });
     }
   }
 
   // deepestFloor
   if (fixture.deepestFloor !== undefined) {
-    if (
-      typeof fixture.deepestFloor !== 'number'
-      || !Number.isFinite(fixture.deepestFloor)
-      || fixture.deepestFloor < 0
-      || !Number.isInteger(fixture.deepestFloor)
-    ) {
-      errors = [...errors, {
+    if (!isNonNegativeInteger(fixture.deepestFloor)) {
+      mutableErrors.push({
         field: 'deepestFloor',
         message: `deepestFloor must be a non-negative integer, got ${fixture.deepestFloor}.`,
-      }];
+      });
     }
   }
 
   // highestRarityFound
   if (fixture.highestRarityFound !== undefined) {
     if (!VALID_RARITIES.has(fixture.highestRarityFound as 'common' | 'uncommon' | 'rare' | 'epic' | 'legendary')) {
-      errors = [...errors, {
+      mutableErrors.push({
         field: 'highestRarityFound',
         message: `highestRarityFound must be one of ${[...VALID_RARITIES].join(', ')}, got "${fixture.highestRarityFound}".`,
-      }];
+      });
     }
   }
 
   return {
-    isValid: errors.length === 0,
-    errors,
+    isValid: mutableErrors.length === 0,
+    errors: mutableErrors,
   };
+}
+
+function validateFixtureRange(
+  field: string,
+  value: unknown,
+  min: number,
+  max: number,
+): WorldFixtureValidationError[] {
+  return validateNumberInRange<WorldFixtureValidationError>(
+    field,
+    value,
+    min,
+    max,
+    (rangeField, rangeValue, rangeMin, rangeMax) =>
+      `${rangeField} must be a number between ${rangeMin} and ${rangeMax}, got ${String(rangeValue)}.`,
+  );
 }
 
 // ─────────────────────────────────────────────────────────────────────────────
@@ -251,9 +211,8 @@ export function validateWorldFixture(fixture: WorldFixture): WorldFixtureValidat
 export function loadWorldFromFixture(fixture: WorldFixture): WorldState {
   const validation = validateWorldFixture(fixture);
   if (validation.isValid === false) {
-    const messages = validation.errors.map(e => `  [${e.field}] ${e.message}`).join('\n');
     throw new WorldFixtureLoadError(
-      `Invalid world fixture — ${validation.errors.length} error(s):\n${messages}`,
+      `Invalid world fixture — ${validation.errors.length} error(s):\n${formatValidationErrors(validation.errors)}`,
       validation.errors,
     );
   }
@@ -273,13 +232,9 @@ export function loadWorldFromValidatedFixture(fixture: WorldFixture): WorldState
 /**
  * Error thrown when a fixture fails validation during loading.
  */
-export class WorldFixtureLoadError extends Error {
-  readonly validationErrors: readonly WorldFixtureValidationError[];
-
+export class WorldFixtureLoadError extends BaseFixtureLoadError<WorldFixtureValidationError> {
   constructor(message: string, validationErrors: readonly WorldFixtureValidationError[]) {
-    super(message);
-    this.name = 'WorldFixtureLoadError';
-    this.validationErrors = validationErrors;
+    super('WorldFixtureLoadError', message, validationErrors);
   }
 }
 

@@ -5,7 +5,6 @@ import { tmpdir } from 'node:os';
 import { dirname, join } from 'node:path';
 import { checkCentralizedLiterals } from '../../scripts/guardrails/check-centralized-literals.mjs';
 import { checkDocPaths } from '../../scripts/guardrails/check-doc-paths.mjs';
-import { checkEventLiterals } from '../../scripts/guardrails/check-event-literals.mjs';
 import { checkFileSizeHotspots } from '../../scripts/guardrails/check-file-size-hotspots.mjs';
 import { checkOptionalImportBoundaries } from '../../scripts/guardrails/check-optional-import-boundaries.mjs';
 import { checkReferenceLiterals } from '../../scripts/guardrails/check-reference-literals.mjs';
@@ -56,6 +55,15 @@ describe('guardrail pattern checks', () => {
     const rootDir = makeTempRoot('guardrail-topology-valid');
     initRepo(rootDir);
     writeFixture(rootDir, 'tests/integration/guardrail.integration.test.ts', 'import { it } from "vitest";\nit("runs", () => {});\n');
+    commitAll(rootDir);
+
+    expect(checkTestTopology({ rootDir })).toEqual([]);
+  });
+
+  it('allows tracked contract helper modules', () => {
+    const rootDir = makeTempRoot('guardrail-topology-contract-helper');
+    initRepo(rootDir);
+    writeFixture(rootDir, 'tests/contracts/helpers/fixture-loaders.ts', 'export const fixture = true;\n');
     commitAll(rootDir);
 
     expect(checkTestTopology({ rootDir })).toEqual([]);
@@ -219,11 +227,15 @@ describe('guardrail pattern checks', () => {
     const rootDir = makeTempRoot('guardrail-event-literal-bad');
     const config = [{
       name: 'domain-event-factories',
-      factoryModule: 'src/emit-events.ts',
+      ownerModule: 'src/emit-events.ts',
       protectedSurfaces: ['src'],
       allowedFiles: ['src/emit-events.ts'],
       allowedFilePatterns: [/\.test\.[tj]sx?$/],
-      eventTypes: ['STATUS_APPLIED'],
+      literals: [{
+        exportName: 'STATUS_APPLIED',
+        patterns: [/\btype:\s*['"]STATUS_APPLIED['"]/g],
+        failureMessage: 'builds STATUS_APPLIED inline; use the domain-event-factories factory in src/emit-events.ts',
+      }],
     }];
     writeFixture(
       rootDir,
@@ -231,7 +243,7 @@ describe('guardrail pattern checks', () => {
       "export const event = { type: 'STATUS_APPLIED', targetId: 'enemy', duration: 3 };\n",
     );
 
-    const failures = checkEventLiterals({ rootDir, config }).join('\n');
+    const failures = checkCentralizedLiterals({ rootDir, config }).join('\n');
 
     expect(failures).toContain('src/handler.ts');
     expect(failures).toContain('builds STATUS_APPLIED inline');
@@ -241,11 +253,15 @@ describe('guardrail pattern checks', () => {
     const rootDir = makeTempRoot('guardrail-event-literal-valid');
     const config = [{
       name: 'domain-event-factories',
-      factoryModule: 'src/emit-events.ts',
+      ownerModule: 'src/emit-events.ts',
       protectedSurfaces: ['src'],
       allowedFiles: ['src/emit-events.ts'],
       allowedFilePatterns: [/\.test\.[tj]sx?$/],
-      eventTypes: ['STATUS_APPLIED'],
+      literals: [{
+        exportName: 'STATUS_APPLIED',
+        patterns: [/\btype:\s*['"]STATUS_APPLIED['"]/g],
+        failureMessage: 'builds STATUS_APPLIED inline; use the domain-event-factories factory in src/emit-events.ts',
+      }],
     }];
     writeFixture(
       rootDir,
@@ -263,7 +279,7 @@ describe('guardrail pattern checks', () => {
       "import { buildStatusAppliedEvent } from './emit-events.js';\nexport const event = buildStatusAppliedEvent();\n",
     );
 
-    expect(checkEventLiterals({ rootDir, config })).toEqual([]);
+    expect(checkCentralizedLiterals({ rootDir, config })).toEqual([]);
   });
 
   it('fails when content relationship code copies an enemy template literal', () => {

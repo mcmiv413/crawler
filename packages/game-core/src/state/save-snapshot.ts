@@ -74,9 +74,11 @@ export function loadSaveSnapshot(snapshot: unknown): GameState {
   }
 
   const migrated = migrateSaveSnapshot(snapshot as SaveSnapshot);
-  const postMigrationResult = validateSaveSnapshot(migrated);
-  if (postMigrationResult.isValid === false) {
-    throw new SaveSnapshotLoadError('Migrated snapshot failed validation', postMigrationResult.errors);
+  if (migrated !== snapshot) {
+    const postMigrationResult = validateSaveSnapshot(migrated);
+    if (postMigrationResult.isValid === false) {
+      throw new SaveSnapshotLoadError('Migrated snapshot failed validation', postMigrationResult.errors);
+    }
   }
 
   const run = migrated.run !== null
@@ -118,7 +120,7 @@ function serializeRunMetadata(run: RunState): SaveSnapshotRun {
     turnCount: run.turnCount,
     isActive: run.isActive,
     ...(run.runMetrics !== undefined ? { runMetrics: cloneJson(run.runMetrics) } : {}),
-    speedAccumulators: sortRecord(run.speedAccumulators),
+    speedAccumulators: mapToSortedRecord(new Map(Object.entries(run.speedAccumulators)), value => value),
   };
 }
 
@@ -138,11 +140,4 @@ function deserializeRun(
     ...(run.runMetrics !== undefined ? { runMetrics: cloneJson(run.runMetrics) } : {}),
     speedAccumulators: cloneJson(run.speedAccumulators),
   };
-}
-
-function sortRecord<T>(record: Readonly<Record<string, T>>): Record<string, T> {
-  const mutableEntries = Object.entries(record);
-  return Object.fromEntries(
-    mutableEntries.sort(([left], [right]) => left < right ? -1 : left > right ? 1 : 0),
-  );
 }

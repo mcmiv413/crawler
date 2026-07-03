@@ -10,19 +10,8 @@
  */
 
 import { describe, it, expect } from 'vitest';
-import { readFileSync } from 'node:fs';
-import { join } from 'node:path';
 import { validatePlayerFixture, loadPlayerFromFixture } from './player-fixture-loader.js';
-import type { PlayerFixture } from './player-fixture-types.js';
-
-// process.cwd() is the repo root when tests are run from the workspace root
-const FIXTURES_DIR = join(process.cwd(), 'fixtures/players');
-
-function loadFixtureFile(name: string): PlayerFixture {
-  const filePath = join(FIXTURES_DIR, `${name}.json`);
-  const raw = readFileSync(filePath, 'utf-8');
-  return JSON.parse(raw) as PlayerFixture;
-}
+import { loadPlayerFixtureFile as loadFixtureFile } from './fixture-file-loader.test-helper.js';
 
 // ─── new-character ───────────────────────────────────────────────────────────
 

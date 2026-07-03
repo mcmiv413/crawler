@@ -1,3 +1,22 @@
+const domainEventFactoryModule = 'packages/game-core/src/abilities/runtime/emit-events.ts';
+
+const factoryOwnedEventTypes = [
+  'STATUS_APPLIED',
+  'GOLD_CHANGED',
+  'MANA_CHANGED',
+  'SPELL_UNLOCKED',
+  'ENCHANTMENT_APPLIED',
+  'BLUEPRINT_UNLOCKED',
+];
+
+const factoryOwnedEventLiterals = factoryOwnedEventTypes.map((eventType) => ({
+  exportName: eventType,
+  patterns: [
+    new RegExp(`\\btype:\\s*['"]${eventType}['"]`, 'g'),
+  ],
+  failureMessage: `builds ${eventType} inline; use the domain-event-factories factory in ${domainEventFactoryModule}`,
+}));
+
 export default [
   {
     name: 'web-map-viewport-minimums',
@@ -96,6 +115,22 @@ export default [
         ],
       },
     ],
+  },
+  {
+    name: 'domain-event-factories',
+    ownerModule: domainEventFactoryModule,
+    protectedSurfaces: [
+      'packages/game-core/src',
+    ],
+    allowedFiles: [
+      domainEventFactoryModule,
+    ],
+    allowedFilePatterns: [
+      /\.test\.[tj]sx?$/,
+      /\.property\.test\.ts$/,
+      /\/testing\//,
+    ],
+    literals: factoryOwnedEventLiterals,
   },
   {
     name: 'combat-hit-chance-clamps',
