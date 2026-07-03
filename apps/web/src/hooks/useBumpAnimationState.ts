@@ -29,7 +29,6 @@ export function useBumpAnimationState(duration?: number): UseBumpAnimationStateR
   const fallbackDurationMs = duration ?? LEGACY_BUMP_DURATION_MS;
 
   useEffect(() => {
-    const timers = timersRef.current;
     const handleBumpAnimation = (event: Event) => {
       const customEvent = event as CustomEvent<LegacyBumpAnimationEntry>;
       const now = Date.now();
@@ -51,13 +50,14 @@ export function useBumpAnimationState(duration?: number): UseBumpAnimationStateR
         setAnimations((prev) => prev.filter((a) => a.id !== animation.id));
       }, animation.durationMs);
 
-      timers.push(timer);
+      timersRef.current = [...timersRef.current, timer];
     };
 
     window.addEventListener('bump-animation', handleBumpAnimation);
     return () => {
       window.removeEventListener('bump-animation', handleBumpAnimation);
-      timers.forEach((t) => clearTimeout(t));
+      timersRef.current.forEach((timer) => clearTimeout(timer));
+      timersRef.current = [];
       if (rafRef.current) {
         cancelAnimationFrame(rafRef.current);
       }

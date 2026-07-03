@@ -30,8 +30,6 @@ export function useCombatIndicatorState(
       return;
     }
 
-    const timeouts = timeoutsRef.current;
-
     const handleAddLabel = (event: Event) => {
       const { x, y, text, type } = (event as CustomEvent<CombatIndicatorEventDetail>).detail;
       const label: FloatingCombatIndicator = {
@@ -49,14 +47,14 @@ export function useCombatIndicatorState(
         setLabels((prev) => prev.filter((entry) => entry.id !== label.id));
       }, fadeOutDuration);
 
-      timeouts.push(timeout);
+      timeoutsRef.current = [...timeoutsRef.current, timeout];
     };
 
     window.addEventListener('combat-indicator', handleAddLabel);
     return () => {
       window.removeEventListener('combat-indicator', handleAddLabel);
-      timeouts.forEach((timeout) => clearTimeout(timeout));
-      timeouts.length = 0;
+      timeoutsRef.current.forEach((timeout) => clearTimeout(timeout));
+      timeoutsRef.current = [];
     };
   }, [enabled, fadeOutDuration]);
 
