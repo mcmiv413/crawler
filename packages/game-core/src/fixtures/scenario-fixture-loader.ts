@@ -34,17 +34,16 @@ import {
 } from '@dungeon/contracts';
 import { ENEMY_TEMPLATES, STATUS_DEFAULTS } from '@dungeon/content';
 
-import { loadPlayerFromFixture } from './player-fixture-loader.js';
-import { loadWorldFromFixture } from './world-fixture-loader.js';
+import { loadPlayerFromValidatedFixture } from './player-fixture-loader.js';
 import { createEnemyInstance } from '../generation/enemy-instantiation.js';
 import { applyStatusToEnemy } from '../systems/status-effects.js';
 import { syncEquipmentGrantedAbilities } from '../systems/equipment.js';
 import { computeFov } from '../systems/fov.js';
 import {
-  validateScenarioFixture,
-  resolveScenarioPlayer,
-  resolveScenarioWorld,
+  validateScenarioFixtureForLoad,
+  type ScenarioValidationLoadContext,
 } from './scenario-fixture-validation.js';
+import { BaseFixtureLoadError, formatValidationErrors } from './fixture-validation.js';
 import type {
   ScenarioFixture,
   ScenarioMapFixture,
@@ -78,13 +77,9 @@ const WALL_TILE: Tile = {
 /**
  * Error thrown when a scenario fails validation during loading.
  */
-export class ScenarioLoadError extends Error {
-  readonly validationErrors: readonly ScenarioValidationError[];
-
+export class ScenarioLoadError extends BaseFixtureLoadError<ScenarioValidationError> {
   constructor(message: string, validationErrors: readonly ScenarioValidationError[]) {
-    super(message);
-    this.name = 'ScenarioLoadError';
-    this.validationErrors = validationErrors;
+    super('ScenarioLoadError', message, validationErrors);
   }
 }
 
@@ -99,16 +94,15 @@ export function loadScenario(
   scenario: ScenarioFixture,
   resolvers?: ScenarioResolvers,
 ): ScenarioLoadResult {
-  const validation = validateScenarioFixture(scenario, resolvers);
+  const validation = validateScenarioFixtureForLoad(scenario, resolvers);
   if (validation.isValid === false) {
-    const messages = validation.errors.map(e => `  [${e.field}] ${e.message}`).join('\n');
     throw new ScenarioLoadError(
-      `Invalid scenario fixture "${scenario.name}" — ${validation.errors.length} error(s):\n${messages}`,
+      `Invalid scenario fixture "${scenario.name}" — ${validation.errors.length} error(s):\n${formatValidationErrors(validation.errors)}`,
       validation.errors,
     );
   }
 
-  return buildScenarioState(scenario, resolvers);
+  return buildScenarioState(scenario, validation);
 }
 
 // ─────────────────────────────────────────────────────────────────────────────
@@ -117,7 +111,7 @@ export function loadScenario(
 
 function buildScenarioState(
   scenario: ScenarioFixture,
-  resolvers: ScenarioResolvers | undefined,
+  context: ScenarioValidationLoadContext,
 ): ScenarioLoadResult {
   const floorNumber = scenario.floor ?? 1;
   const seed = scenario.seed ?? 1;
@@ -125,11 +119,8 @@ function buildScenarioState(
   // explicit seed (which defaults to 1) do not collide on runId/gameId.
   const idToken = `${scenario.name.toLowerCase().replace(/[^a-z0-9]+/g, '_').replace(/^_+|_+$/g, '')}_${seed}`;
 
-  // Compose player + world from existing loaders (no duplicated logic).
-  const playerFixture = resolveScenarioPlayer(scenario, resolvers).fixture!;
-  const worldFixture = resolveScenarioWorld(scenario, resolvers).fixture!;
-  const { player: loadedPlayer, itemRegistry: playerRegistry } = loadPlayerFromFixture(playerFixture);
-  const world = loadWorldFromFixture(worldFixture);
+  const { player: loadedPlayer, itemRegistry: playerRegistry } = loadPlayerFromValidatedFixture(context.playerFixture!);
+  const world = context.world!;
 
   // Grant abilities from equipped items (rings, ability-granting enchantments)
   // so a scenario-loaded player can actually use its learned ring spells, just
@@ -145,7 +136,7 @@ function buildScenarioState(
   };
 
   const floor = buildFloor(scenario.map, floorNumber, seed);
-  const enemies = buildEnemies(scenario, floorNumber, world.factions);
+  const enemies = buildEnemies(scenario, floorNumber, world.factions, context.enemyInstances);
   const objects = buildObjects(scenario);
 
   // Item registry carries the player's items. Loot is reported separately for
@@ -253,6 +244,7 @@ function buildEnemies(
   scenario: ScenarioFixture,
   floorNumber: number,
   factions: ReadonlyArray<FactionState>,
+  prebuiltEnemies: ReadonlyMap<number, EnemyInstance>,
 ): Map<string, EnemyInstance> {
   const enemies = new Map<string, EnemyInstance>();
   const placements = scenario.enemies ?? [];
@@ -262,7 +254,7 @@ function buildEnemies(
     const template = ENEMY_TEMPLATES.get(placement.templateId)!;
     const depth = placement.level ?? floorNumber;
 
-    let enemy = createEnemyInstance(template, { ...placement.position }, depth, {
+    let enemy = prebuiltEnemies.get(i) ?? createEnemyInstance(template, { ...placement.position }, depth, {
       id: entityId(`scenario_enemy_${i + 1}`),
       factions: [...factions],
       ...(placement.healthMultiplier !== undefined ? { enemyHealthMultiplier: placement.healthMultiplier } : {}),

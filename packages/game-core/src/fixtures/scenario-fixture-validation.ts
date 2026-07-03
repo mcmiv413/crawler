@@ -6,7 +6,7 @@
  * rules, and never adds scenario-specific exceptions to runtime systems.
  */
 
-import type { FactionState, Position, WorldState } from '@dungeon/contracts';
+import type { EnemyInstance, FactionState, Position, WorldState } from '@dungeon/contracts';
 import { entityId, posKey } from '@dungeon/contracts';
 import {
   ENEMY_TEMPLATES,
@@ -18,6 +18,13 @@ import {
 import { validatePlayerFixture } from './player-fixture-loader.js';
 import { loadWorldFromValidatedFixture, validateWorldFixture } from './world-fixture-loader.js';
 import { createEnemyInstance } from '../generation/enemy-instantiation.js';
+import {
+  isFiniteNumber,
+  isPosition,
+  isPositiveInteger,
+  isRecord,
+  validateContentRef,
+} from '../state/validation-guards.js';
 import type {
   ScenarioFixture,
   ScenarioResolvers,
@@ -29,6 +36,13 @@ import type { WorldFixture } from './world-fixture-types.js';
 
 /** Current supported scenario fixture schema version. */
 export const SCENARIO_FIXTURE_SCHEMA_VERSION = 1;
+
+export interface ScenarioValidationLoadContext extends ScenarioValidationResult {
+  readonly playerFixture: PlayerFixture | null;
+  readonly worldFixture: WorldFixture | null;
+  readonly world: WorldState | null;
+  readonly enemyInstances: ReadonlyMap<number, EnemyInstance>;
+}
 
 // ─────────────────────────────────────────────────────────────────────────────
 // Reference resolution
@@ -43,16 +57,8 @@ export const SCENARIO_FIXTURE_SCHEMA_VERSION = 1;
 // Runtime shape guards (scenario fixtures arrive as untrusted JSON)
 // ─────────────────────────────────────────────────────────────────────────────
 
-function isObject(value: unknown): value is Record<string, unknown> {
-  return typeof value === 'object' && value !== null && !Array.isArray(value);
-}
-
-function isPositionLike(value: unknown): value is Position {
-  return isObject(value) && typeof value.x === 'number' && typeof value.y === 'number';
-}
-
 function isSpawnLike(value: unknown): value is { readonly name: string; readonly position: Position } {
-  return isObject(value) && typeof value.name === 'string' && isPositionLike(value.position);
+  return isRecord(value) && typeof value.name === 'string' && isPosition(value.position);
 }
 
 export function resolveScenarioPlayer(
@@ -61,13 +67,13 @@ export function resolveScenarioPlayer(
 ): { fixture: PlayerFixture | null; error?: string } {
   // Untrusted JSON: player may be missing or a non-object at runtime.
   const player = scenario.player as unknown;
-  if (!isObject(player)) {
+  if (!isRecord(player)) {
     return { fixture: null, error: 'player must be an object specifying either inline or ref.' };
   }
   if (player.inline !== undefined) {
     // Untrusted JSON: inline may be null or a primitive; guard so downstream
     // validatePlayerFixture never receives a non-object and crashes.
-    if (!isObject(player.inline)) {
+    if (!isRecord(player.inline)) {
       return { fixture: null, error: 'player.inline must be an object fixture.' };
     }
     return { fixture: player.inline as unknown as PlayerFixture };
@@ -84,7 +90,7 @@ export function resolveScenarioPlayer(
     }
     try {
       const resolved = resolvers.resolvePlayerFixture(ref) as unknown;
-      if (!isObject(resolved)) {
+      if (!isRecord(resolved)) {
         return { fixture: null, error: `player.ref "${ref}" resolved to a non-object fixture.` };
       }
       return { fixture: resolved as unknown as PlayerFixture };
@@ -101,13 +107,13 @@ export function resolveScenarioWorld(
 ): { fixture: WorldFixture | null; error?: string } {
   // Untrusted JSON: world may be missing or a non-object at runtime.
   const world = scenario.world as unknown;
-  if (!isObject(world)) {
+  if (!isRecord(world)) {
     return { fixture: null, error: 'world must be an object specifying either inline or ref.' };
   }
   if (world.inline !== undefined) {
     // Untrusted JSON: inline may be null or a primitive; guard so downstream
     // validateWorldFixture never receives a non-object and crashes.
-    if (!isObject(world.inline)) {
+    if (!isRecord(world.inline)) {
       return { fixture: null, error: 'world.inline must be an object fixture.' };
     }
     return { fixture: world.inline as unknown as WorldFixture };
@@ -124,7 +130,7 @@ export function resolveScenarioWorld(
     }
     try {
       const resolved = resolvers.resolveWorldFixture(ref) as unknown;
-      if (!isObject(resolved)) {
+      if (!isRecord(resolved)) {
         return { fixture: null, error: `world.ref "${ref}" resolved to a non-object fixture.` };
       }
       return { fixture: resolved as unknown as WorldFixture };
@@ -149,11 +155,31 @@ export function validateScenarioFixture(
   scenario: ScenarioFixture,
   resolvers?: ScenarioResolvers,
 ): ScenarioValidationResult {
+  const { isValid, errors } = validateScenarioFixtureForLoad(scenario, resolvers);
+  return { isValid, errors };
+}
+
+export function validateScenarioFixtureForLoad(
+  scenario: ScenarioFixture,
+  resolvers?: ScenarioResolvers,
+): ScenarioValidationLoadContext {
   const metaErrors = validateMeta(scenario);
-  const { world, errors: composedErrors } = validateComposedFixtures(scenario, resolvers);
-  const placementErrors = validateMapAndPlacements(scenario, resolveWorldFactions(world));
+  const {
+    playerFixture,
+    worldFixture,
+    world,
+    errors: composedErrors,
+  } = validateComposedFixtures(scenario, resolvers);
+  const { errors: placementErrors, enemyInstances } = validateMapAndPlacements(scenario, resolveWorldFactions(world));
   const errors = [...metaErrors, ...composedErrors, ...placementErrors];
-  return { isValid: errors.length === 0, errors };
+  return {
+    isValid: errors.length === 0,
+    errors,
+    playerFixture,
+    worldFixture,
+    world,
+    enemyInstances,
+  };
 }
 
 function validateMeta(scenario: ScenarioFixture): ScenarioValidationError[] {
@@ -164,10 +190,10 @@ function validateMeta(scenario: ScenarioFixture): ScenarioValidationError[] {
     ...(typeof scenario.name !== 'string' || scenario.name.trim().length === 0
       ? [{ field: 'name', message: 'name must be a non-empty string.' }]
       : []),
-    ...(scenario.floor !== undefined && (!Number.isInteger(scenario.floor) || scenario.floor < 1)
+    ...(scenario.floor !== undefined && !isPositiveInteger(scenario.floor)
       ? [{ field: 'floor', message: `floor must be an integer ≥ 1, got ${scenario.floor}.` }]
       : []),
-    ...(scenario.seed !== undefined && (!Number.isFinite(scenario.seed) || !Number.isInteger(scenario.seed))
+    ...(scenario.seed !== undefined && (!isFiniteNumber(scenario.seed) || !Number.isInteger(scenario.seed))
       ? [{ field: 'seed', message: `seed must be an integer, got ${scenario.seed}.` }]
       : []),
   ];
@@ -175,9 +201,10 @@ function validateMeta(scenario: ScenarioFixture): ScenarioValidationError[] {
 
 function resolveValidatedWorld(
   worldResolution: { fixture: WorldFixture | null; error?: string },
-): { world: WorldState | null; errors: ScenarioValidationError[] } {
+): { fixture: WorldFixture | null; world: WorldState | null; errors: ScenarioValidationError[] } {
   if (worldResolution.fixture === null) {
     return {
+      fixture: null,
       world: null,
       errors: [{ field: 'world', message: worldResolution.error ?? 'world fixture could not be resolved.' }],
     };
@@ -185,31 +212,59 @@ function resolveValidatedWorld(
   const worldValidation = validateWorldFixture(worldResolution.fixture);
   if (worldValidation.isValid === false) {
     return {
+      fixture: worldResolution.fixture,
       world: null,
       errors: worldValidation.errors.map(e => ({ field: `world.${e.field}`, message: e.message })),
     };
   }
-  return { world: loadWorldFromValidatedFixture(worldResolution.fixture), errors: [] };
+  return {
+    fixture: worldResolution.fixture,
+    world: loadWorldFromValidatedFixture(worldResolution.fixture),
+    errors: [],
+  };
+}
+
+function resolveValidatedPlayer(
+  playerResolution: { fixture: PlayerFixture | null; error?: string },
+): { fixture: PlayerFixture | null; errors: ScenarioValidationError[] } {
+  if (playerResolution.fixture === null) {
+    return {
+      fixture: null,
+      errors: [{ field: 'player', message: playerResolution.error ?? 'player fixture could not be resolved.' }],
+    };
+  }
+
+  const playerValidation = validatePlayerFixture(playerResolution.fixture);
+  return {
+    fixture: playerResolution.fixture,
+    errors: playerValidation.isValid === false
+      ? playerValidation.errors.map(e => ({ field: `player.${e.field}`, message: e.message }))
+      : [],
+  };
 }
 
 function validateComposedFixtures(
   scenario: ScenarioFixture,
   resolvers: ScenarioResolvers | undefined,
-): { world: WorldState | null; errors: ScenarioValidationError[] } {
-  const playerResolution = resolveScenarioPlayer(scenario, resolvers);
-  let playerErrors: ScenarioValidationError[];
-  if (playerResolution.fixture === null) {
-    playerErrors = [{ field: 'player', message: playerResolution.error ?? 'player fixture could not be resolved.' }];
-  } else {
-    const playerValidation = validatePlayerFixture(playerResolution.fixture);
-    playerErrors = playerValidation.isValid === false
-      ? playerValidation.errors.map(e => ({ field: `player.${e.field}`, message: e.message }))
-      : [];
-  }
+): {
+  playerFixture: PlayerFixture | null;
+  worldFixture: WorldFixture | null;
+  world: WorldState | null;
+  errors: ScenarioValidationError[];
+} {
+  const { fixture: playerFixture, errors: playerErrors } = resolveValidatedPlayer(resolveScenarioPlayer(scenario, resolvers));
+  const {
+    fixture: worldFixture,
+    world,
+    errors: worldErrors,
+  } = resolveValidatedWorld(resolveScenarioWorld(scenario, resolvers));
 
-  const { world, errors: worldErrors } = resolveValidatedWorld(resolveScenarioWorld(scenario, resolvers));
-
-  return { world, errors: [...playerErrors, ...worldErrors] };
+  return {
+    playerFixture,
+    worldFixture,
+    world,
+    errors: [...playerErrors, ...worldErrors],
+  };
 }
 
 function resolveWorldFactions(
@@ -221,16 +276,16 @@ function resolveWorldFactions(
 function validateMapAndPlacements(
   scenario: ScenarioFixture,
   worldFactions: readonly FactionState[],
-): ScenarioValidationError[] {
+): { errors: ScenarioValidationError[]; enemyInstances: ReadonlyMap<number, EnemyInstance> } {
   // Scenario fixtures arrive as untrusted JSON: validate runtime shapes before
   // dereferencing so malformed input produces field errors instead of throwing.
   const map = scenario.map as unknown;
-  if (!isObject(map)) {
-    return [{ field: 'map', message: 'map is required.' }];
+  if (!isRecord(map)) {
+    return { errors: [{ field: 'map', message: 'map is required.' }], enemyInstances: new Map() };
   }
 
-  const widthValid = Number.isInteger(map.width) && (map.width as number) >= 1;
-  const heightValid = Number.isInteger(map.height) && (map.height as number) >= 1;
+  const widthValid = isPositiveInteger(map.width);
+  const heightValid = isPositiveInteger(map.height);
   const dimErrors: ScenarioValidationError[] = [
     ...(widthValid === false ? [{ field: 'map.width', message: `map.width must be an integer ≥ 1, got ${JSON.stringify(map.width)}.` }] : []),
     ...(heightValid === false ? [{ field: 'map.height', message: `map.height must be an integer ≥ 1, got ${JSON.stringify(map.height)}.` }] : []),
@@ -238,7 +293,7 @@ function validateMapAndPlacements(
   // Bail out before using width/height: continuing with invalid dimensions
   // produces confusing bounds messages and cascades into placement errors.
   if (widthValid === false || heightValid === false) {
-    return dimErrors;
+    return { errors: dimErrors, enemyInstances: new Map() };
   }
   const width = map.width as number;
   const height = map.height as number;
@@ -261,11 +316,11 @@ function validateMapAndPlacements(
   const floors: readonly unknown[] = Array.isArray(rawFloors) ? rawFloors : [];
   const spawns: readonly unknown[] = Array.isArray(rawSpawns) ? rawSpawns : [];
 
-  const wallSet = new Set<string>(walls.filter(isPositionLike).map(posKey));
+  const wallSet = new Set<string>(walls.filter(isPosition).map(posKey));
   const occupied = new Map<string, string>();
 
   const playerStart = map.playerStart;
-  const playerStartValid = isPositionLike(playerStart) && inBounds(playerStart);
+  const playerStartValid = isPosition(playerStart) && inBounds(playerStart);
 
   // When an explicit floor list is provided, only those cells (plus a valid
   // player start and named spawns) are walkable; everything else is a wall.
@@ -273,7 +328,7 @@ function validateMapAndPlacements(
   // a shape error (reported above) and must not silently make every cell a wall.
   const explicitFloors = Array.isArray(rawFloors)
     ? new Set<string>([
-        ...floors.filter(isPositionLike).map(posKey),
+        ...floors.filter(isPosition).map(posKey),
         ...(playerStartValid === true ? [posKey(playerStart)] : []),
         ...spawns.filter(isSpawnLike).map(s => posKey(s.position)),
       ])
@@ -283,7 +338,7 @@ function validateMapAndPlacements(
 
   // playerStart (untrusted JSON: may be missing/malformed at runtime)
   let playerStartErrors: ScenarioValidationError[];
-  if (!isPositionLike(playerStart) || !inBounds(playerStart)) {
+  if (!isPosition(playerStart) || !inBounds(playerStart)) {
     playerStartErrors = [{ field: 'map.playerStart', message: `map.playerStart must be an in-bounds coordinate within [0,${width}) × [0,${height}), got ${JSON.stringify(map.playerStart)}.` }];
   } else if (wallSet.has(posKey(playerStart))) {
     playerStartErrors = [{ field: 'map.playerStart', message: `map.playerStart ${posKey(playerStart)} cannot be on a wall.` }];
@@ -293,13 +348,13 @@ function validateMapAndPlacements(
   }
 
   const wallErrors = walls.flatMap((wall, i) => {
-    if (!isPositionLike(wall)) return [{ field: `map.walls[${i}]`, message: `wall coordinate ${JSON.stringify(wall)} must be a { x, y } object.` }];
+    if (!isPosition(wall)) return [{ field: `map.walls[${i}]`, message: `wall coordinate ${JSON.stringify(wall)} must be a { x, y } object.` }];
     if (!inBounds(wall)) return [{ field: `map.walls[${i}]`, message: `wall coordinate ${JSON.stringify(wall)} is out of bounds.` }];
     return [] as ScenarioValidationError[];
   });
 
   const floorErrors = floors.flatMap((floor, i) => {
-    if (!isPositionLike(floor)) return [{ field: `map.floors[${i}]`, message: `floor coordinate ${JSON.stringify(floor)} must be a { x, y } object.` }];
+    if (!isPosition(floor)) return [{ field: `map.floors[${i}]`, message: `floor coordinate ${JSON.stringify(floor)} must be a { x, y } object.` }];
     if (!inBounds(floor)) return [{ field: `map.floors[${i}]`, message: `floor coordinate ${JSON.stringify(floor)} is out of bounds.` }];
     return [] as ScenarioValidationError[];
   });
@@ -319,16 +374,28 @@ function validateMapAndPlacements(
     return [...nameErrors, ...posErrors];
   });
 
-  return [
-    ...arrayErrors,
-    ...playerStartErrors,
-    ...wallErrors,
-    ...floorErrors,
-    ...spawnErrors,
-    ...validateEnemyPlacements(scenario, floorNumber(scenario), worldFactions, inBounds, isWalkable, occupied),
-    ...validateLootPlacements(scenario, inBounds, isWalkable, occupied),
-    ...validateInteractablePlacements(scenario, inBounds, isWalkable, occupied),
-  ];
+  const { errors: enemyErrors, enemyInstances } = validateEnemyPlacements(
+    scenario,
+    floorNumber(scenario),
+    worldFactions,
+    inBounds,
+    isWalkable,
+    occupied,
+  );
+
+  return {
+    enemyInstances,
+    errors: [
+      ...arrayErrors,
+      ...playerStartErrors,
+      ...wallErrors,
+      ...floorErrors,
+      ...spawnErrors,
+      ...enemyErrors,
+      ...validateLootPlacements(scenario, inBounds, isWalkable, occupied),
+      ...validateInteractablePlacements(scenario, inBounds, isWalkable, occupied),
+    ],
+  };
 }
 
 function floorNumber(scenario: ScenarioFixture): number {
@@ -342,29 +409,38 @@ function validateEnemyPlacements(
   inBounds: (p: Position) => boolean,
   isWalkable: (p: Position) => boolean,
   occupied: Map<string, string>,
-): ScenarioValidationError[] {
+): { errors: ScenarioValidationError[]; enemyInstances: ReadonlyMap<number, EnemyInstance> } {
   // Scenario fixtures arrive as untrusted JSON: validate runtime shapes before
   // dereferencing so malformed input produces field errors instead of throwing.
   const rawEnemies = scenario.enemies as unknown;
-  if (rawEnemies === undefined) return [];
+  if (rawEnemies === undefined) return { errors: [], enemyInstances: new Map() };
   if (!Array.isArray(rawEnemies)) {
-    return [{ field: 'enemies', message: 'enemies must be an array of placement objects.' }];
+    return {
+      errors: [{ field: 'enemies', message: 'enemies must be an array of placement objects.' }],
+      enemyInstances: new Map(),
+    };
   }
-  return rawEnemies.flatMap((rawPlacement, i) => {
+  const enemyInstances = new Map<number, EnemyInstance>();
+  const errors = rawEnemies.flatMap((rawPlacement, i) => {
     const field = `enemies[${i}]`;
     const placement = rawPlacement as NonNullable<ScenarioFixture['enemies']>[number];
-    if (!isObject(placement)) {
+    if (!isRecord(placement)) {
       return [{ field, message: `enemy placement must be a { templateId, position } object, got ${JSON.stringify(rawPlacement)}.` }];
     }
 
-    const templateExists = typeof placement.templateId === 'string' && ENEMY_TEMPLATES.has(placement.templateId);
-    const templateIdErrors: ScenarioValidationError[] = typeof placement.templateId !== 'string'
-      ? [{ field: `${field}.templateId`, message: `enemy templateId must be a string, got ${JSON.stringify(placement.templateId)}.` }]
-      : templateExists === false
-      ? [{ field: `${field}.templateId`, message: `Unknown enemy template id "${placement.templateId}". Must exist in ENEMY_TEMPLATES.` }]
-      : [];
+    const templateIdErrors = validateContentRef<string, ScenarioValidationError>(
+      `${field}.templateId`,
+      placement.templateId,
+      ENEMY_TEMPLATES,
+      'ENEMY_TEMPLATES',
+      {
+        invalidType: value => `enemy templateId must be a string, got ${JSON.stringify(value)}.`,
+        missing: value => `Unknown enemy template id "${value}". Must exist in ENEMY_TEMPLATES.`,
+      },
+    );
+    const templateExists = templateIdErrors.length === 0;
 
-    const positionValid = isPositionLike(placement.position);
+    const positionValid = isPosition(placement.position);
     let positionErrors: ScenarioValidationError[];
     if (positionValid === false) {
       positionErrors = [{ field: `${field}.position`, message: `enemy position must be a { x, y } object, got ${JSON.stringify(placement.position)}.` }];
@@ -385,15 +461,15 @@ function validateEnemyPlacements(
       positionErrors = [...walkableError, ...overlapError];
     }
 
-    const levelErrors: ScenarioValidationError[] = placement.level !== undefined && (!Number.isInteger(placement.level) || placement.level < 1)
+    const levelErrors: ScenarioValidationError[] = placement.level !== undefined && !isPositiveInteger(placement.level)
       ? [{ field: `${field}.level`, message: `enemy level override must be an integer ≥ 1, got ${placement.level}.` }]
       : [];
 
-    const healthErrors: ScenarioValidationError[] = placement.health !== undefined && (!Number.isFinite(placement.health) || placement.health <= 0)
+    const healthErrors: ScenarioValidationError[] = placement.health !== undefined && (!isFiniteNumber(placement.health) || placement.health <= 0)
       ? [{ field: `${field}.health`, message: `enemy health override must be a positive number, got ${placement.health}.` }]
       : [];
 
-    const healthMultiplierErrors: ScenarioValidationError[] = placement.healthMultiplier !== undefined && (!Number.isFinite(placement.healthMultiplier) || placement.healthMultiplier <= 0)
+    const healthMultiplierErrors: ScenarioValidationError[] = placement.healthMultiplier !== undefined && (!isFiniteNumber(placement.healthMultiplier) || placement.healthMultiplier <= 0)
       ? [{ field: `${field}.healthMultiplier`, message: `enemy healthMultiplier must be a positive number, got ${placement.healthMultiplier}.` }]
       : [];
 
@@ -401,35 +477,41 @@ function validateEnemyPlacements(
       ? !Array.isArray(placement.statuses)
         ? [{ field: `${field}.statuses`, message: `enemy statuses must be an array of status ids, got ${JSON.stringify(placement.statuses)}.` }]
         : placement.statuses.flatMap(statusId =>
-            typeof statusId !== 'string' || !STATUS_DEFINITIONS.has(statusId)
-              ? [{ field: `${field}.statuses`, message: `Unknown status id ${JSON.stringify(statusId)}. Valid: ${[...STATUS_DEFINITIONS.keys()].join(', ')}.` }]
-              : [] as ScenarioValidationError[]
+            validateContentRef<string, ScenarioValidationError>(
+              `${field}.statuses`,
+              statusId,
+              STATUS_DEFINITIONS,
+              'STATUS_DEFINITIONS',
+              value => `Unknown status id ${JSON.stringify(value)}. Valid: ${[...STATUS_DEFINITIONS.keys()].join(', ')}.`,
+            )
           )
       : [];
 
-    // Health override must not exceed the scaled maxHealth the runtime factory
-    // would produce. Compute it with the same factory to avoid duplicating
-    // scaling math.
-    const levelIsValid = placement.level === undefined || (Number.isInteger(placement.level) && placement.level >= 1);
+    const levelIsValid = placement.level === undefined || isPositiveInteger(placement.level);
     const healthMultiplierIsValid = placement.healthMultiplier === undefined
-      || (Number.isFinite(placement.healthMultiplier) && placement.healthMultiplier > 0);
-    const healthIsValid = placement.health !== undefined && Number.isFinite(placement.health) && placement.health > 0;
+      || (isFiniteNumber(placement.healthMultiplier) && placement.healthMultiplier > 0);
+    const healthIsValid = placement.health !== undefined && isFiniteNumber(placement.health) && placement.health > 0;
 
-    const healthCapErrors: ScenarioValidationError[] = ((): ScenarioValidationError[] => {
-      if (templateExists && positionValid && healthIsValid && levelIsValid && healthMultiplierIsValid) {
+    const baseEnemy: EnemyInstance | null = ((): EnemyInstance | null => {
+      if (templateExists && positionValid && levelIsValid && healthMultiplierIsValid) {
         const template = ENEMY_TEMPLATES.get(placement.templateId)!;
         const depth = placement.level ?? defaultDepth;
-        const scaled = createEnemyInstance(template, { ...placement.position }, depth, {
-          id: entityId('scenario_validate_probe'),
-          factions: worldFactions,
+        return createEnemyInstance(template, { ...placement.position }, depth, {
+          id: entityId(`scenario_enemy_${i + 1}`),
+          factions: [...worldFactions],
           ...(placement.healthMultiplier !== undefined ? { enemyHealthMultiplier: placement.healthMultiplier } : {}),
         });
-        if (placement.health > scaled.stats.maxHealth) {
-          return [{ field: `${field}.health`, message: `enemy health override (${placement.health}) cannot exceed scaled maxHealth (${scaled.stats.maxHealth}).` }];
-        }
       }
-      return [];
+      return null;
     })();
+
+    if (baseEnemy !== null) {
+      enemyInstances.set(i, baseEnemy);
+    }
+
+    const healthCapErrors: ScenarioValidationError[] = baseEnemy !== null && healthIsValid && placement.health > baseEnemy.stats.maxHealth
+      ? [{ field: `${field}.health`, message: `enemy health override (${placement.health}) cannot exceed scaled maxHealth (${baseEnemy.stats.maxHealth}).` }]
+      : [];
 
     return [
       ...templateIdErrors,
@@ -441,6 +523,8 @@ function validateEnemyPlacements(
       ...healthCapErrors,
     ];
   });
+
+  return { errors, enemyInstances };
 }
 
 function validateLootPlacements(
@@ -459,17 +543,22 @@ function validateLootPlacements(
   return rawLoot.flatMap((rawPlacement, i) => {
     const field = `loot[${i}]`;
     const placement = rawPlacement as NonNullable<ScenarioFixture['loot']>[number];
-    if (!isObject(placement)) {
+    if (!isRecord(placement)) {
       return [{ field, message: `loot placement must be a { itemId, position } object, got ${JSON.stringify(rawPlacement)}.` }];
     }
-    const itemIdErrors: ScenarioValidationError[] = typeof placement.itemId !== 'string'
-      ? [{ field: `${field}.itemId`, message: `loot itemId must be a string, got ${JSON.stringify(placement.itemId)}.` }]
-      : !ITEM_BY_ID.has(placement.itemId)
-      ? [{ field: `${field}.itemId`, message: `Unknown item id "${placement.itemId}". Must exist in ITEM_BY_ID.` }]
-      : [];
+    const itemIdErrors = validateContentRef<string, ScenarioValidationError>(
+      `${field}.itemId`,
+      placement.itemId,
+      ITEM_BY_ID,
+      'ITEM_BY_ID',
+      {
+        invalidType: value => `loot itemId must be a string, got ${JSON.stringify(value)}.`,
+        missing: value => `Unknown item id "${value}". Must exist in ITEM_BY_ID.`,
+      },
+    );
 
     let positionErrors: ScenarioValidationError[];
-    if (!isPositionLike(placement.position)) {
+    if (!isPosition(placement.position)) {
       positionErrors = [{ field: `${field}.position`, message: `loot position must be a { x, y } object, got ${JSON.stringify(placement.position)}.` }];
     } else if (!inBounds(placement.position)) {
       positionErrors = [{ field: `${field}.position`, message: `loot position ${JSON.stringify(placement.position)} is out of bounds.` }];
@@ -508,17 +597,22 @@ function validateInteractablePlacements(
   return rawInteractables.flatMap((rawPlacement, i) => {
     const field = `interactables[${i}]`;
     const placement = rawPlacement as NonNullable<ScenarioFixture['interactables']>[number];
-    if (!isObject(placement)) {
+    if (!isRecord(placement)) {
       return [{ field, message: `interactable placement must be a { templateId, position } object, got ${JSON.stringify(rawPlacement)}.` }];
     }
-    const templateIdErrors: ScenarioValidationError[] = typeof placement.templateId !== 'string'
-      ? [{ field: `${field}.templateId`, message: `interactable templateId must be a string, got ${JSON.stringify(placement.templateId)}.` }]
-      : !OBJECT_TEMPLATES.has(placement.templateId)
-      ? [{ field: `${field}.templateId`, message: `Unknown object template id "${placement.templateId}". Must exist in OBJECT_TEMPLATES.` }]
-      : [];
+    const templateIdErrors = validateContentRef<string, ScenarioValidationError>(
+      `${field}.templateId`,
+      placement.templateId,
+      OBJECT_TEMPLATES,
+      'OBJECT_TEMPLATES',
+      {
+        invalidType: value => `interactable templateId must be a string, got ${JSON.stringify(value)}.`,
+        missing: value => `Unknown object template id "${value}". Must exist in OBJECT_TEMPLATES.`,
+      },
+    );
 
     let positionErrors: ScenarioValidationError[];
-    if (!isPositionLike(placement.position)) {
+    if (!isPosition(placement.position)) {
       positionErrors = [{ field: `${field}.position`, message: `interactable position must be a { x, y } object, got ${JSON.stringify(placement.position)}.` }];
     } else if (!inBounds(placement.position)) {
       positionErrors = [{ field: `${field}.position`, message: `interactable position ${JSON.stringify(placement.position)} is out of bounds.` }];

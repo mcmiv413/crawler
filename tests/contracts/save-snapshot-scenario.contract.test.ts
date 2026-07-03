@@ -1,41 +1,16 @@
 import { describe, expect, it } from 'vitest';
-import { readFileSync } from 'node:fs';
-import { join } from 'node:path';
 import type { GameCommand, GameState } from '@dungeon/contracts';
 import { ITEM_BY_ID } from '@dungeon/content';
 import { GameEngine } from '../../packages/game-core/src/engine/game-engine.js';
 import { loadScenario } from '../../packages/game-core/src/fixtures/scenario-fixture-loader.js';
-import type {
-  ScenarioFixture,
-  ScenarioResolvers,
-} from '../../packages/game-core/src/fixtures/scenario-fixture-types.js';
-import type { PlayerFixture } from '../../packages/game-core/src/fixtures/player-fixture-types.js';
-import type { WorldFixture } from '../../packages/game-core/src/fixtures/world-fixture-types.js';
 import { addItemToInventory } from '../../packages/game-core/src/systems/inventory.js';
 import {
   exportSaveSnapshot,
   loadSaveSnapshot,
 } from '../../packages/game-core/src/state/save-snapshot.js';
-
-const ROOT = process.cwd();
-const SCENARIOS_DIR = join(ROOT, 'fixtures/scenarios');
-const PLAYERS_DIR = join(ROOT, 'fixtures/players');
-const WORLDS_DIR = join(ROOT, 'fixtures/worlds');
+import { RESOLVERS, loadScenarioFile } from './helpers/fixture-loaders.js';
 
 const engine = new GameEngine();
-
-function readJson<T>(path: string): T {
-  return JSON.parse(readFileSync(path, 'utf-8')) as T;
-}
-
-const RESOLVERS: ScenarioResolvers = {
-  resolvePlayerFixture: ref => readJson<PlayerFixture>(join(PLAYERS_DIR, `${ref}.json`)),
-  resolveWorldFixture: ref => readJson<WorldFixture>(join(WORLDS_DIR, `${ref}.json`)),
-};
-
-function loadScenarioFile(name: string): ScenarioFixture {
-  return readJson<ScenarioFixture>(join(SCENARIOS_DIR, `${name}.json`));
-}
 
 function saveRestore(state: GameState): GameState {
   return loadSaveSnapshot(JSON.parse(JSON.stringify(exportSaveSnapshot(state))));

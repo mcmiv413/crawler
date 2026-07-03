@@ -19,6 +19,7 @@
 import type { Position, GameState } from '@dungeon/contracts';
 import type { PlayerFixture } from './player-fixture-types.js';
 import type { WorldFixture } from './world-fixture-types.js';
+import type { FixtureValidationIssue, FixtureValidationResultFor } from './fixture-validation.js';
 
 /**
  * Map fixture — a fully explicit, deterministic dungeon floor.
@@ -132,18 +133,10 @@ export interface ScenarioInteractablePlacement {
  * Validation error — identifies the offending field and describes the problem
  * clearly enough for a developer to fix the scenario file.
  */
-export interface ScenarioValidationError {
-  /** Dot-path to the offending field, e.g. "enemies[0].position". */
-  readonly field: string;
-  /** Human-readable description identifying the bad value and why it is invalid. */
-  readonly message: string;
-}
+export type ScenarioValidationError = FixtureValidationIssue;
 
 /** Result returned by validateScenarioFixture(). */
-export interface ScenarioValidationResult {
-  readonly isValid: boolean;
-  readonly errors: readonly ScenarioValidationError[];
-}
+export type ScenarioValidationResult = FixtureValidationResultFor<ScenarioValidationError>;
 
 /**
  * How a scenario references its player and world fixtures.

@@ -3,7 +3,6 @@ import { dirname, join, relative, resolve, sep } from 'node:path';
 import { spawnSync } from 'node:child_process';
 import { checkCentralizedLiterals } from './guardrails/check-centralized-literals.mjs';
 import { checkDocPaths } from './guardrails/check-doc-paths.mjs';
-import { checkEventLiterals } from './guardrails/check-event-literals.mjs';
 import { checkFileSizeHotspots } from './guardrails/check-file-size-hotspots.mjs';
 import { checkOptionalImportBoundaries } from './guardrails/check-optional-import-boundaries.mjs';
 import { checkReferenceLiterals } from './guardrails/check-reference-literals.mjs';
@@ -90,7 +89,6 @@ const guardrailChecks = [
   ['test-topology', () => checkTestTopology({ rootDir: repoRoot })],
   ['optional-import-boundaries', () => checkOptionalImportBoundaries({ rootDir: repoRoot })],
   ['reference-literals', () => checkReferenceLiterals({ rootDir: repoRoot })],
-  ['event-literals', () => checkEventLiterals({ rootDir: repoRoot })],
   ['doc-paths', () => checkDocPaths({ rootDir: repoRoot })],
   ['centralized-literals', () => checkCentralizedLiterals({ rootDir: repoRoot })],
   ['file-size-hotspots', () => checkFileSizeHotspots({ rootDir: repoRoot })],

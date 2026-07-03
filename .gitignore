@@ -64,6 +64,7 @@ scripts/sync-*.mjs
 !tests/contracts/
 tests/contracts/*
 !tests/contracts/*.contract.test.ts
+!tests/contracts/helpers/
 !tests/integration/
 tests/integration/*
 !tests/integration/*.integration.test.ts

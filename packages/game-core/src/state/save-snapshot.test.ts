@@ -483,7 +483,7 @@ describe('SaveSnapshot validation path consistency', () => {
     };
     const invalidPositionX = mutableSnapshot(createTestGameStateInCombat());
     invalidPositionX.objects = { '1,1': invalidPosXObject };
-    expectValidationField(invalidPositionX, 'objects[1,1].position.x');
+    expectValidationField(invalidPositionX, 'objects[1,1].position');
 
     const invalidIsExhaustedObject: InvalidExhaustedObject = {
       ...createSnapshotObject(entityId('invalid_exhausted_object'), { x: 1, y: 1 }, false),
@@ -898,7 +898,7 @@ describe('SaveSnapshot validation and migration', () => {
     };
     invalidObjectFields.objects = { '1,1': invalidObjField };
     const objectErrors = validationErrorText(invalidObjectFields);
-    expect(objectErrors).toMatch(/objects\[1,1\]\.position\.x/);
+    expect(objectErrors).toMatch(/objects\[1,1\]\.position/);
     expect(objectErrors).toMatch(/objects\[1,1\]\.isExhausted/);
   });
 

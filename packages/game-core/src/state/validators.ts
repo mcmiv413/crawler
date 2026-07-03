@@ -2,6 +2,7 @@ import type { GameState, RunState, Player, EnemyInstance, WorldState } from '@du
 import { posKey } from '@dungeon/contracts';
 import { RING_SPELL_BY_ID } from '@dungeon/content';
 import { ALL_ABILITY_DEFINITIONS } from '../abilities/definitions/index.js';
+import { isFiniteNumber, isRecord, validateContentRef } from './validation-guards.js';
 
 const ABILITY_IDS = new Set(ALL_ABILITY_DEFINITIONS.map(definition => definition.id));
 
@@ -122,11 +123,11 @@ export function validatePlayer(player: Player): ValidationError[] {
     mutableErrors.push({ path: 'gold', message: 'gold must be non-negative' });
   }
 
-  if (typeof player.mana !== 'number' || !Number.isFinite(player.mana) || player.mana < 0) {
+  if (!isFiniteNumber(player.mana) || player.mana < 0) {
     mutableErrors.push({ path: 'mana', message: 'mana must be finite and non-negative' });
   }
 
-  if (typeof player.maxMana !== 'number' || !Number.isFinite(player.maxMana) || player.maxMana < 0) {
+  if (!isFiniteNumber(player.maxMana) || player.maxMana < 0) {
     mutableErrors.push({ path: 'maxMana', message: 'maxMana must be finite and non-negative' });
   }
 
@@ -135,9 +136,13 @@ export function validatePlayer(player: Player): ValidationError[] {
     mutableErrors.push({ path: 'learnedRingSpellIds', message: 'learned ring spell ids must be an array' });
   } else {
     for (const spellId of learnedRingSpellIds) {
-      if (typeof spellId !== 'string' || !RING_SPELL_BY_ID.has(spellId)) {
-        mutableErrors.push({ path: `learnedRingSpellIds.${String(spellId)}`, message: 'learned ring spell id must exist in content' });
-      }
+      mutableErrors.push(...validateContentRef(
+        `learnedRingSpellIds.${String(spellId)}`,
+        spellId,
+        RING_SPELL_BY_ID,
+        'RING_SPELL_BY_ID',
+        () => 'learned ring spell id must exist in content',
+      ).map(error => ({ path: error.field, message: error.message })));
     }
   }
 
@@ -155,8 +160,7 @@ export function validatePlayer(player: Player): ValidationError[] {
         mutableErrors.push({ path: `abilities.${abilityId}`, message: 'ability id must exist in game-core definitions' });
       }
       if (
-        typeof ability['cooldownRemaining'] !== 'number'
-        || !Number.isFinite(ability['cooldownRemaining'])
+        !isFiniteNumber(ability['cooldownRemaining'])
         || ability['cooldownRemaining'] < 0
       ) {
         mutableErrors.push({ path: `abilities.${abilityId}.cooldownRemaining`, message: 'ability cooldown must be finite and non-negative' });
@@ -181,8 +185,7 @@ export function validatePlayer(player: Player): ValidationError[] {
     if (
       keys.length !== 1
       || keys[0] !== 'xp'
-      || typeof masteryRecord.xp !== 'number'
-      || !Number.isFinite(masteryRecord.xp)
+      || !isFiniteNumber(masteryRecord.xp)
       || masteryRecord.xp < 0
     ) {
       mutableErrors.push({ path: `ringMastery.${school}`, message: 'ring mastery entries must be exactly { xp: finite non-negative number }' });
@@ -190,10 +193,6 @@ export function validatePlayer(player: Player): ValidationError[] {
   }
 
   return mutableErrors;
-}
-
-function isRecord(value: unknown): value is Record<string, unknown> {
-  return typeof value === 'object' && value !== null && !Array.isArray(value);
 }
 
 function validateInventoryReferences(state: GameState): ValidationError[] {
