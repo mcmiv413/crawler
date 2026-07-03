@@ -94,11 +94,9 @@ export class ScenarioPage {
     };
 
     await page.addInitScript(({ key, value }) => {
-      if (window.sessionStorage.getItem(key) === null) {
-        window.sessionStorage.clear();
-        window.localStorage.clear();
-        window.sessionStorage.setItem(key, value);
-      }
+      window.sessionStorage.clear();
+      window.localStorage.clear();
+      window.sessionStorage.setItem(key, value);
     }, { key: SESSION_STORAGE_KEY, value: JSON.stringify(session) });
 
     await page.goto('/', { waitUntil: 'domcontentloaded' });

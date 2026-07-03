@@ -1,7 +1,7 @@
 {
   "schemaVersion": 1,
-  "name": "inventory-consumable-test",
-  "description": "A wounded warrior starts beside a treasure chest. Opening the persisted object awards real loot, and the carried potion exercises inventory consumption.",
+  "name": "inventory-chest-test",
+  "description": "Chest interaction awards loot, and the wounded warrior's carried health potion can be consumed.",
   "player": { "ref": "midgame-warrior" },
   "world": { "ref": "fresh-world" },
   "floor": 1,
