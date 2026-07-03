@@ -1,8 +1,8 @@
 {
   "schemaVersion": 1,
   "name": "inventory-consumable-test",
-  "description": "A health potion sits on the floor ahead. Collecting it and drinking it reproduces inventory + consumable behavior identical to a generated drop.",
-  "player": { "ref": "new-character" },
+  "description": "A wounded warrior starts beside a treasure chest. Opening the persisted object awards real loot, and the carried potion exercises inventory consumption.",
+  "player": { "ref": "midgame-warrior" },
   "world": { "ref": "fresh-world" },
   "floor": 1,
   "seed": 303,
@@ -10,10 +10,10 @@
     "width": 5,
     "height": 1,
     "playerStart": { "x": 0, "y": 0 },
-    "spawns": [{ "name": "loot", "position": { "x": 2, "y": 0 } }]
+    "spawns": [{ "name": "chest", "position": { "x": 1, "y": 0 } }]
   },
-  "loot": [
-    { "itemId": "health_potion", "position": { "x": 2, "y": 0 } }
+  "interactables": [
+    { "templateId": "chest", "position": { "x": 1, "y": 0 } }
   ],
-  "tags": ["inventory", "consumable", "loot"]
+  "tags": ["inventory", "consumable", "chest", "loot"]
 }

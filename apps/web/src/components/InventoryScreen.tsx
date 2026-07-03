@@ -66,6 +66,7 @@ export function InventoryScreen({
 
   return (
     <div
+      data-testid="inventory-screen"
       style={{
         display: 'flex',
         flexDirection: 'column',

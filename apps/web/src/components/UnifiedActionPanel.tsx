@@ -249,7 +249,7 @@ export function UnifiedActionPanel({
   };
 
   return (
-    <div className={styles.panel}>
+    <div className={styles.panel} data-testid="action-area">
       <div className={styles.grid}>
         {ACTION_ORDER.map((actionType) => (
           <ActionButton
