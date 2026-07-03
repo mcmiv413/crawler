@@ -247,9 +247,8 @@ export function useWalkController(): void {
       event.preventDefault();
 
       if (!heldDirectionsRef.current.has(event.key)) {
-        const mutableHeldKeyOrder = heldKeyOrderRef.current.filter((key) => key !== event.key);
-        mutableHeldKeyOrder.push(event.key);
-        heldKeyOrderRef.current = mutableHeldKeyOrder;
+        const filtered = heldKeyOrderRef.current.filter((key) => key !== event.key);
+        heldKeyOrderRef.current = [...filtered, event.key];
       }
       heldDirectionsRef.current.set(event.key, direction);
 

@@ -24,13 +24,15 @@ export interface Issue {
   description: string;
 }
 
+interface Findings {
+  readonly issues: Issue[];
+  readonly suggestions: string[];
+}
+
 /**
  * Analyze test file code and validate layer alignment.
  */
 export function analyzeTestFile(code: string, proposedLayer: string): TestAnalysisResult {
-  const mutableIssues: Issue[] = [];
-  const mutableSuggestions: string[] = [];
-
   // Parse imports
   const imports = parseImports(code);
   const usesLiveConfig = imports.some((i) => i.from === '@dungeon/content' && i.typeOnly !== true);
@@ -42,68 +44,38 @@ export function analyzeTestFile(code: string, proposedLayer: string): TestAnalys
   const createsFullGameState = /new GameState|createGameState|GameEngine/.test(code);
   const hasFormatEvent = /formatEvent|combatLog|gameView/i.test(code);
   const hasEventAssertion = /expectEventEmitted|eventType|\.events\./.test(code);
-  void code; // Mark as used
 
   // Layer-specific validation
-  if (proposedLayer === 'unit' || proposedLayer === 'property') {
-    validateUnitLayer(code, imports, hasConfigValueAssertion, hasUnseededRandom, mutableIssues, mutableSuggestions);
-    if (proposedLayer === 'property') {
-      validatePropertyLayer(code, mutableSuggestions);
-    }
-  } else if (proposedLayer === 'contract') {
-    validateContractLayer(code, usesLiveConfig, hasConfigValueAssertion, mutableIssues, mutableSuggestions);
-  } else if (proposedLayer === 'integration') {
-    validateIntegrationLayer(
-      code,
-      createsFullGameState,
-      hasEventAssertion,
-      hasFormatEvent,
-      mutableIssues,
-      mutableSuggestions,
-    );
-  } else if (proposedLayer === 'balance') {
-    validateBalanceLayer(code, hasUnseededRandom, hasConfigValueAssertion, mutableIssues, mutableSuggestions);
-  } else if (proposedLayer === 'e2e') {
-    validateE2eLayer(code, mutableSuggestions);
-  }
-
-  // General anti-patterns (all layers)
-  if (hasUnseededRandom && usesSeededRng !== true) {
-    mutableIssues.push({
-      severity: 'error',
-      code: 'UNSEEDED_RNG',
-      description: 'Test uses Math.random() or unseeded randomness. Use SeededRng for reproducibility.',
-    });
-    mutableSuggestions.push('Replace Math.random() with SeededRng');
-  }
-
-  if (hasConfigValueAssertion && proposedLayer !== 'contract') {
-    mutableIssues.push({
-      severity: 'warning',
-      code: 'VALUE_ASSERTION',
-      description: 'Test asserts exact config values. Consider testing behavior instead.',
-    });
-    mutableSuggestions.push('Replace value assertions with behavior assertions (e.g., damage > 0)');
-  }
-
-  if (usesLiveConfig === true && (proposedLayer === 'unit' || proposedLayer === 'property')) {
-    mutableIssues.push({
-      severity: 'error',
-      code: 'LIVE_CONTENT_IMPORT_IN_ISOLATED_TEST',
-      description: 'Unit/property test imports @dungeon/content directly. Use fixtures and builders instead.',
-    });
-    mutableSuggestions.push('Use test fixtures or builders instead of live config');
-  }
+  const layerFindings = validateProposedLayer({
+    code,
+    proposedLayer,
+    imports,
+    usesLiveConfig,
+    hasConfigValueAssertion,
+    hasUnseededRandom,
+    createsFullGameState,
+    hasFormatEvent,
+    hasEventAssertion,
+  });
+  const generalFindings = validateGeneralPatterns(
+    proposedLayer,
+    hasUnseededRandom,
+    usesSeededRng,
+    hasConfigValueAssertion,
+    usesLiveConfig,
+  );
+  const issues = [...layerFindings.issues, ...generalFindings.issues];
+  const suggestions = [...layerFindings.suggestions, ...generalFindings.suggestions];
 
   const validLayers = ['unit', 'property', 'contract', 'integration', 'balance', 'e2e'] as const;
   return {
     layer: (validLayers.includes(proposedLayer as (typeof validLayers)[number])
       ? proposedLayer
       : 'unit') as (typeof validLayers)[number],
-    issues: mutableIssues,
-    suggestions: mutableSuggestions,
-    validated: mutableIssues.filter((i) => i.severity === 'error').length === 0,
-    confidence: calculateConfidence(mutableIssues, code),
+    issues,
+    suggestions,
+    validated: issues.filter((i) => i.severity === 'error').length === 0,
+    confidence: calculateConfidence(issues, code),
   };
 }
 
@@ -111,141 +83,219 @@ export function analyzeTestFile(code: string, proposedLayer: string): TestAnalys
 // Layer-Specific Validators
 // ============================================================================
 
-function validateUnitLayer(
-  code: string,
-  imports: ImportDecl[],
-  hasValueAssertions: boolean,
-  hasUnseededRng: boolean,
-  mutableIssues: Issue[],
-  mutableSuggestions: string[],
-): void {
-  void hasValueAssertions; // Mark as used in comments
-  void hasUnseededRng;
-  void code;
-  // Unit tests should NOT create full game state
-  if (/GameEngine|new GameState|createGameState\(/.test(code)) {
-    mutableIssues.push({
-      severity: 'warning',
-      code: 'UNIT_TEST_TOO_LARGE',
-      description: 'Unit test appears to use GameEngine or full GameState. Consider breaking into smaller tests.',
-    });
-    mutableSuggestions.push(
-      'Use focused unit tests for single functions; move integration flows to integration tests',
+function validateProposedLayer(input: {
+  readonly code: string;
+  readonly proposedLayer: string;
+  readonly imports: ImportDecl[];
+  readonly usesLiveConfig: boolean;
+  readonly hasConfigValueAssertion: boolean;
+  readonly hasUnseededRandom: boolean;
+  readonly createsFullGameState: boolean;
+  readonly hasFormatEvent: boolean;
+  readonly hasEventAssertion: boolean;
+}): Findings {
+  if (input.proposedLayer === 'unit' || input.proposedLayer === 'property') {
+    return combineFindings(
+      validateUnitLayer(input.code, input.imports),
+      input.proposedLayer === 'property' ? validatePropertyLayer(input.code) : noFindings(),
     );
   }
 
-  // Unit tests should use builders/fixtures
-  const hasBuilder = imports.some((i) => i.name.includes('Builder'));
-  if (hasBuilder !== true && /new.*\(.*\{/.test(code)) {
-    mutableSuggestions.push('Consider using builders (PlayerBuilder, EnemyBuilder) for object construction');
+  if (input.proposedLayer === 'contract') {
+    return validateContractLayer(input.code, input.usesLiveConfig, input.hasConfigValueAssertion);
   }
+
+  if (input.proposedLayer === 'integration') {
+    return validateIntegrationLayer(
+      input.createsFullGameState,
+      input.hasEventAssertion,
+      input.hasFormatEvent,
+    );
+  }
+
+  if (input.proposedLayer === 'balance') {
+    return validateBalanceLayer(input.code, input.hasUnseededRandom, input.hasConfigValueAssertion);
+  }
+
+  if (input.proposedLayer === 'e2e') {
+    return validateE2eLayer(input.code);
+  }
+
+  return noFindings();
+}
+
+function validateGeneralPatterns(
+  proposedLayer: string,
+  hasUnseededRandom: boolean,
+  usesSeededRng: boolean,
+  hasConfigValueAssertion: boolean,
+  usesLiveConfig: boolean,
+): Findings {
+  return {
+    issues: [
+      ...(hasUnseededRandom && usesSeededRng !== true ? [{
+        severity: 'error',
+        code: 'UNSEEDED_RNG',
+        description: 'Test uses Math.random() or unseeded randomness. Use SeededRng for reproducibility.',
+      } satisfies Issue] : []),
+      ...(hasConfigValueAssertion && proposedLayer !== 'contract' ? [{
+        severity: 'warning',
+        code: 'VALUE_ASSERTION',
+        description: 'Test asserts exact config values. Consider testing behavior instead.',
+      } satisfies Issue] : []),
+      ...(usesLiveConfig === true && (proposedLayer === 'unit' || proposedLayer === 'property') ? [{
+        severity: 'error',
+        code: 'LIVE_CONTENT_IMPORT_IN_ISOLATED_TEST',
+        description: 'Unit/property test imports @dungeon/content directly. Use fixtures and builders instead.',
+      } satisfies Issue] : []),
+    ],
+    suggestions: [
+      ...(hasUnseededRandom && usesSeededRng !== true ? ['Replace Math.random() with SeededRng'] : []),
+      ...(hasConfigValueAssertion && proposedLayer !== 'contract'
+        ? ['Replace value assertions with behavior assertions (e.g., damage > 0)']
+        : []),
+      ...(usesLiveConfig === true && (proposedLayer === 'unit' || proposedLayer === 'property')
+        ? ['Use test fixtures or builders instead of live config']
+        : []),
+    ],
+  };
+}
+
+function validateUnitLayer(
+  code: string,
+  imports: ImportDecl[],
+): Findings {
+  const usesGameEngineOrFullState = /GameEngine|new GameState|createGameState\(/.test(code);
+  const hasBuilder = imports.some((i) => i.name.includes('Builder'));
+
+  return {
+    issues: [
+      ...(usesGameEngineOrFullState === true ? [{
+        severity: 'warning',
+        code: 'UNIT_TEST_TOO_LARGE',
+        description: 'Unit test appears to use GameEngine or full GameState. Consider breaking into smaller tests.',
+      } satisfies Issue] : []),
+    ],
+    suggestions: [
+      ...(usesGameEngineOrFullState === true
+        ? ['Use focused unit tests for single functions; move integration flows to integration tests']
+        : []),
+      ...(hasBuilder !== true && /new.*\(.*\{/.test(code)
+        ? ['Consider using builders (PlayerBuilder, EnemyBuilder) for object construction']
+        : []),
+    ],
+  };
 }
 
 function validateContractLayer(
   code: string,
   usesLiveConfig: boolean,
   hasValueAssertions: boolean,
-  mutableIssues: Issue[],
-  mutableSuggestions: string[],
-): void {
-  // Contract tests SHOULD use live config
-  if (usesLiveConfig !== true) {
-    mutableSuggestions.push('Contract tests should validate live config. Consider importing @dungeon/content');
-  }
-
-  // Contract tests should NOT use randomness
-  if (/random|rng|Math\.random/.test(code)) {
-    mutableIssues.push({
-      severity: 'warning',
-      code: 'CONTRACT_TEST_RANDOMNESS',
-      description: 'Contract tests should be deterministic. Avoid randomness.',
-    });
-  }
-
-  // Contract tests should focus on structure, not values
-  if (hasValueAssertions === true && /===|\===|toBe\(\d+\)/.test(code)) {
-    mutableSuggestions.push(
-      'Contract tests should validate schema and relationships, not exact values. Use toMatchObject() instead.',
-    );
-  }
+): Findings {
+  return {
+    issues: [
+      ...(/random|rng|Math\.random/.test(code) ? [{
+        severity: 'warning',
+        code: 'CONTRACT_TEST_RANDOMNESS',
+        description: 'Contract tests should be deterministic. Avoid randomness.',
+      } satisfies Issue] : []),
+    ],
+    suggestions: [
+      ...(usesLiveConfig !== true
+        ? ['Contract tests should validate live config. Consider importing @dungeon/content']
+        : []),
+      ...(hasValueAssertions === true && /===|\===|toBe\(\d+\)/.test(code)
+        ? ['Contract tests should validate schema and relationships, not exact values. Use toMatchObject() instead.']
+        : []),
+    ],
+  };
 }
 
 function validatePropertyLayer(
   code: string,
-  mutableSuggestions: string[],
-): void {
-  if (/fc\.property|test\.prop|fast-check/.test(code) !== true) {
-    mutableSuggestions.push(
-      'Property tests should exercise invariants over generated inputs (for example, fast-check fc.property).',
-    );
-  }
+): Findings {
+  return {
+    issues: [],
+    suggestions: [
+      ...(/fc\.property|test\.prop|fast-check/.test(code) !== true
+        ? ['Property tests should exercise invariants over generated inputs (for example, fast-check fc.property).']
+        : []),
+    ],
+  };
 }
 
 function validateIntegrationLayer(
-  code: string,
   usesFullState: boolean,
   hasEventAssertions: boolean,
   hasFormatEvent: boolean,
-  mutableIssues: Issue[],
-  mutableSuggestions: string[],
-): void {
-  void code; // Mark as used in comments
-  void mutableIssues;
-  // Integration tests SHOULD use full state
-  if (usesFullState !== true) {
-    mutableSuggestions.push('Integration tests should use full GameState and GameEngine for realistic flows');
-  }
-
-  // Integration tests SHOULD verify events
-  if (hasEventAssertions !== true) {
-    mutableSuggestions.push('Integration tests should verify events are emitted (use assertFeatureChain)');
-  }
-
-  // Integration tests should verify view output
-  if (hasFormatEvent !== true) {
-    mutableSuggestions.push('Integration tests should verify presenter output (buildGameView, formatEvent)');
-  }
+): Findings {
+  return {
+    issues: [],
+    suggestions: [
+      ...(usesFullState !== true
+        ? ['Integration tests should use full GameState and GameEngine for realistic flows']
+        : []),
+      ...(hasEventAssertions !== true
+        ? ['Integration tests should verify events are emitted (use assertFeatureChain)']
+        : []),
+      ...(hasFormatEvent !== true
+        ? ['Integration tests should verify presenter output (buildGameView, formatEvent)']
+        : []),
+    ],
+  };
 }
 
 function validateBalanceLayer(
   code: string,
   hasUnseededRng: boolean,
   hasValueAssertions: boolean,
-  mutableIssues: Issue[],
-  mutableSuggestions: string[],
-): void {
-  // Balance tests SHOULD use seeded RNG
-  if (hasUnseededRng === true && !/SeededRng|fixedSeed|seed:/.test(code)) {
-    mutableIssues.push({
-      severity: 'error',
-      code: 'BALANCE_TEST_UNSEEDED',
-      description: 'Balance test uses unseeded randomness. Results will not be reproducible.',
-    });
-  }
-
-  // Balance tests should NOT assert exact values
-  if (hasValueAssertions === true && /toBe\(\d+\)/.test(code)) {
-    mutableIssues.push({
-      severity: 'warning',
-      code: 'BALANCE_TEST_EXACT_VALUE',
-      description: 'Balance test asserts exact value. Use ranges (e.g., toBeGreaterThan, toBeWithin).',
-    });
-    mutableSuggestions.push('Replace exact value assertions with range or distribution assertions');
-  }
-
-  // Balance tests should assert distributions/ranges
-  if (/ > | < | Between | Range | Distribution /.test(code) !== true) {
-    mutableSuggestions.push('Balance tests should assert ranges or distributions (e.g., between 40-60)');
-  }
+): Findings {
+  return {
+    issues: [
+      ...(hasUnseededRng === true && !/SeededRng|fixedSeed|seed:/.test(code) ? [{
+        severity: 'error',
+        code: 'BALANCE_TEST_UNSEEDED',
+        description: 'Balance test uses unseeded randomness. Results will not be reproducible.',
+      } satisfies Issue] : []),
+      ...(hasValueAssertions === true && /toBe\(\d+\)/.test(code) ? [{
+        severity: 'warning',
+        code: 'BALANCE_TEST_EXACT_VALUE',
+        description: 'Balance test asserts exact value. Use ranges (e.g., toBeGreaterThan, toBeWithin).',
+      } satisfies Issue] : []),
+    ],
+    suggestions: [
+      ...(hasValueAssertions === true && /toBe\(\d+\)/.test(code)
+        ? ['Replace exact value assertions with range or distribution assertions']
+        : []),
+      ...(/ > | < | Between | Range | Distribution /.test(code) !== true
+        ? ['Balance tests should assert ranges or distributions (e.g., between 40-60)']
+        : []),
+    ],
+  };
 }
 
 function validateE2eLayer(
   code: string,
-  mutableSuggestions: string[],
-): void {
-  if (/@playwright\/test/.test(code) !== true) {
-    mutableSuggestions.push('E2E tests should use Playwright and verify browser-visible behavior.');
-  }
+): Findings {
+  return {
+    issues: [],
+    suggestions: [
+      ...(/@playwright\/test/.test(code) !== true
+        ? ['E2E tests should use Playwright and verify browser-visible behavior.']
+        : []),
+    ],
+  };
+}
+
+function noFindings(): Findings {
+  return { issues: [], suggestions: [] };
+}
+
+function combineFindings(...findings: readonly Findings[]): Findings {
+  return {
+    issues: findings.flatMap(finding => finding.issues),
+    suggestions: findings.flatMap(finding => finding.suggestions),
+  };
 }
 
 // ============================================================================
@@ -259,29 +309,23 @@ interface ImportDecl {
 }
 
 function parseImports(code: string): ImportDecl[] {
-  const mutableImports: ImportDecl[] = [];
   const importRegex = /import\s+(type\s+)?(?:(?:\{([^}]+)\})|(?:\*\s+as\s+(\w+))|(\w+)(?:\s*,\s*\{([^}]+)\})?)\s+from\s+['\"]([^'\"]+)['\"]/g;
 
-  let match;
-  while ((match = importRegex.exec(code))) {
+  return [...code.matchAll(importRegex)].flatMap((match) => {
     const typeOnly = match[1] !== undefined;
     const namedImports = match[2] ?? match[5];
     const namespaceImport = match[3];
     const defaultImport = match[4];
+    const from = match[6] ?? '';
     const names = [
       ...(defaultImport !== undefined ? [defaultImport] : []),
       ...(namespaceImport !== undefined ? [namespaceImport] : []),
       ...((namedImports ?? '') !== '' ? (namedImports ?? '').split(',').map((n) => n.trim()) : []),
     ];
-    const from = match[6] ?? '';
-    names.forEach((name) => {
-      if (name !== '' && from !== '') {
-        mutableImports.push({ name: name.replace(/\s+as\s+\w+$/, ''), from, typeOnly });
-      }
-    });
-  }
-
-  return mutableImports;
+    return names
+      .filter((name) => name !== '' && from !== '')
+      .map((name) => ({ name: name.replace(/\s+as\s+\w+$/, ''), from, typeOnly }));
+  });
 }
 
 function calculateConfidence(issues: Issue[], code: string): number {

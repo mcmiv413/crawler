@@ -4,16 +4,10 @@ import type { DismissibleNotice, GameNotice } from '../game-view.js';
 
 export function buildGameNotices(state: GameState): readonly GameNotice[] {
   const activeQuestIds = new Set(state.activeQuests.map(quest => quest.id));
-  const mutableNotices: GameNotice[] = [];
 
-  state.world.eventHistory.forEach(event => {
-    const notice = buildGameNotice(event, activeQuestIds);
-    if (notice !== undefined) {
-      mutableNotices.push(notice);
-    }
-  });
-
-  return mutableNotices;
+  return state.world.eventHistory
+    .map(event => buildGameNotice(event, activeQuestIds))
+    .filter((notice): notice is GameNotice => notice !== undefined);
 }
 
 export function findLatestDismissibleNotice(

@@ -22,10 +22,10 @@ export function useConsumableAnimationState(): UseConsumableAnimationStateReturn
   const [animations, setAnimations] = useState<ActiveConsumableAnimation[]>([]);
   const rafRef = useRef<number | undefined>(undefined);
   const nextIdRef = useRef(0);
-  const mutableTimersRef = useRef<ReturnType<typeof setTimeout>[]>([]);
+  const timersRef = useRef<ReturnType<typeof setTimeout>[]>([]);
 
   useEffect(() => {
-    const mutableTimers = mutableTimersRef.current;
+    const timers = timersRef.current;
     const handleConsumableAnimation = (event: Event) => {
       const customEvent = event as CustomEvent<ConsumableAnimationEntry>;
       const entry = customEvent.detail;
@@ -45,36 +45,45 @@ export function useConsumableAnimationState(): UseConsumableAnimationStateReturn
         setAnimations((prev) => prev.filter((a) => a.id !== animation.id));
       }, entry.durationMs);
 
-      mutableTimers.push(timer);
+      timers.push(timer);
     };
 
     window.addEventListener('consumable-animation', handleConsumableAnimation);
     return () => {
       window.removeEventListener('consumable-animation', handleConsumableAnimation);
-      mutableTimers.forEach((t) => clearTimeout(t));
-      mutableTimers.length = 0;
+      timers.forEach((t) => clearTimeout(t));
+      timers.length = 0;
     };
   }, []);
 
   // Drive progress 0→1 on every animation frame
   useEffect(() => {
+    if (animations.length === 0) {
+      return;
+    }
+
     const tick = () => {
+      rafRef.current = undefined;
       const now = Date.now();
       setAnimations((prev) =>
-        prev.map((anim) => {
-          const elapsed = now - anim.startTime;
-          const progress = Math.min(elapsed / anim.durationMs, 1);
-          return { ...anim, progress };
-        }),
+        prev.length === 0
+          ? prev
+          : prev.map((anim) => {
+              const elapsed = now - anim.startTime;
+              const progress = Math.min(elapsed / anim.durationMs, 1);
+              return { ...anim, progress };
+            }),
       );
-      rafRef.current = requestAnimationFrame(tick);
     };
 
     rafRef.current = requestAnimationFrame(tick);
     return () => {
-      if (rafRef.current !== undefined) cancelAnimationFrame(rafRef.current);
+      if (rafRef.current !== undefined) {
+        cancelAnimationFrame(rafRef.current);
+        rafRef.current = undefined;
+      }
     };
-  }, []);
+  }, [animations]);
 
   return { animations };
 }

@@ -132,12 +132,12 @@ export function getCameraOffsetForPlayerMove(
 function getAbilityRetentionPositions(
   animation: AbilityAnimationEntry,
 ): readonly { readonly x: number; readonly y: number }[] {
-  const mutablePositions = animation.targetPos === undefined
+  const positions = animation.targetPos === undefined
     ? [...animation.blastPositions]
     : [animation.targetPos, ...animation.blastPositions];
   const seen = new Set<string>();
 
-  return mutablePositions.filter((position) => {
+  return positions.filter((position) => {
     const key = positionKey(position);
     if (seen.has(key)) return false;
     seen.add(key);
@@ -214,17 +214,16 @@ function deriveDisplayMap(
     return map;
   }
 
-  const mutableEntities = map.entities.filter((entity) => !retainedEntitiesById.has(entity.id));
-  for (const previousEntity of retainedBatch.sourceMap.entities) {
-    const retainedEntity = retainedEntitiesById.get(previousEntity.id);
-    if (retainedEntity !== undefined) {
-      mutableEntities.push(retainedEntity);
-    }
-  }
+  const entities = [
+    ...map.entities.filter((entity) => !retainedEntitiesById.has(entity.id)),
+    ...retainedBatch.sourceMap.entities
+      .map((previousEntity) => retainedEntitiesById.get(previousEntity.id))
+      .filter((entity): entity is EntityView => entity !== undefined),
+  ];
 
   return {
     ...map,
-    entities: mutableEntities,
+    entities,
   };
 }
 

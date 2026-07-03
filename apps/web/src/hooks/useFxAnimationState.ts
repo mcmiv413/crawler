@@ -20,10 +20,10 @@ export function useFxAnimationState(): UseFxAnimationStateReturn {
   const [animations, setAnimations] = useState<ActiveFxAnimation[]>([]);
   const rafRef = useRef<number | undefined>(undefined);
   const nextIdRef = useRef(0);
-  const mutableTimersRef = useRef<ReturnType<typeof setTimeout>[]>([]);
+  const timersRef = useRef<ReturnType<typeof setTimeout>[]>([]);
 
   useEffect(() => {
-    const mutableTimers = mutableTimersRef.current;
+    const timers = timersRef.current;
     const handleAbilityAnimation = (event: Event) => {
       const customEvent = event as CustomEvent<AbilityAnimationEntry>;
       const data = customEvent.detail;
@@ -43,14 +43,14 @@ export function useFxAnimationState(): UseFxAnimationStateReturn {
         setAnimations((prev) => prev.filter((a) => a.id !== animation.id));
       }, animation.durationMs + 50);
 
-      mutableTimers.push(timer);
+      timers.push(timer);
     };
 
     window.addEventListener('ability-animation', handleAbilityAnimation);
     return () => {
       window.removeEventListener('ability-animation', handleAbilityAnimation);
-      mutableTimers.forEach((t) => clearTimeout(t));
-      mutableTimers.length = 0;
+      timers.forEach((t) => clearTimeout(t));
+      timers.length = 0;
       if (rafRef.current) {
         cancelAnimationFrame(rafRef.current);
       }
@@ -59,21 +59,26 @@ export function useFxAnimationState(): UseFxAnimationStateReturn {
 
   // Update progress values on every frame
   useEffect(() => {
-    const updateProgress = () => {
-      setAnimations((prev) =>
-        prev
-          .map((anim) => {
-            const elapsed = Date.now() - anim.startTime;
-            if (elapsed < 0) {
-              return { ...anim, progress: 0 };
-            }
-            const progress = Math.min(elapsed / anim.durationMs, 1);
-            return { ...anim, progress };
-          })
-          .filter((anim) => anim.progress < 1),
-      );
+    if (animations.length === 0) {
+      return;
+    }
 
-      rafRef.current = requestAnimationFrame(updateProgress);
+    const updateProgress = () => {
+      rafRef.current = undefined;
+      setAnimations((prev) =>
+        prev.length === 0
+          ? prev
+          : prev
+            .map((anim) => {
+              const elapsed = Date.now() - anim.startTime;
+              if (elapsed < 0) {
+                return { ...anim, progress: 0 };
+              }
+              const progress = Math.min(elapsed / anim.durationMs, 1);
+              return { ...anim, progress };
+            })
+            .filter((anim) => anim.progress < 1),
+      );
     };
 
     rafRef.current = requestAnimationFrame(updateProgress);
@@ -81,9 +86,10 @@ export function useFxAnimationState(): UseFxAnimationStateReturn {
     return () => {
       if (rafRef.current) {
         cancelAnimationFrame(rafRef.current);
+        rafRef.current = undefined;
       }
     };
-  }, []);
+  }, [animations]);
 
   return { animations };
 }

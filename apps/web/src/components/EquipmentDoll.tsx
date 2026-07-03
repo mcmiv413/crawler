@@ -1,30 +1,12 @@
 import type { InventoryItemView, InventoryView } from '@dungeon/presenter';
 import { ItemSpriteIcon } from './ItemSpriteIcon.js';
 import { colors, fontSize } from '../styles.js';
+import { getItemStats } from '../utils/item-stats.js';
 
 interface EquipmentDollProps {
   equipped: InventoryView['equipped'];
   onSlotClick: (item: InventoryItemView) => void;
   isMobile?: boolean;
-}
-
-function getItemStats(item: InventoryItemView): string {
-  let text = '';
-  if (item.weaponStats) {
-    const ws = item.weaponStats;
-    const dmg = `${ws.damageMin}–${ws.damageMax}`;
-    text += `${dmg} ${ws.damageType} dmg`;
-    if (ws.weaponRange && ws.weaponRange > 1) {
-      text += ` | range: ${ws.weaponRange}`;
-    }
-  }
-  if (item.armorStats) {
-    text += `${item.armorStats.defense} def`;
-    if (item.armorStats.evasionPenalty) {
-      text += ` | eva penalty: -${item.armorStats.evasionPenalty}`;
-    }
-  }
-  return text;
 }
 
 const SLOT_LABELS: Record<keyof InventoryView['equipped'], string> = {

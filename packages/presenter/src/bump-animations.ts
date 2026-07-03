@@ -17,47 +17,40 @@ function getPos(id: EntityId, state: GameState): { x: number; y: number } | null
   return null;
 }
 
-function addAnimation(
-  mutableAnimations: BumpAnimationEntry[],
+function buildAnimation(
   attackerId: EntityId,
   defenderId: EntityId,
   attackerPos: { x: number; y: number },
   defenderPos: { x: number; y: number },
-): void {
-  mutableAnimations.push({
+): BumpAnimationEntry {
+  return {
     attackerId,
     defenderId,
     attackerPos,
     defenderPos,
-  });
+  };
 }
 
 function handleAttackPerformed(
   event: Extract<DomainEvent, { type: 'ATTACK_PERFORMED' }>,
   state: GameState,
-  mutableAnimations: BumpAnimationEntry[],
-): void {
+): readonly BumpAnimationEntry[] {
   const attackerPos = getPos(event.attackerId, state);
   const defenderPos = getPos(event.defenderId, state);
-  if (!attackerPos || !defenderPos) return;
+  if (!attackerPos || !defenderPos) return [];
 
-  addAnimation(
-    mutableAnimations,
-    event.attackerId,
-    event.defenderId,
-    attackerPos,
-    defenderPos,
-  );
+  return [buildAnimation(event.attackerId, event.defenderId, attackerPos, defenderPos)];
 }
 
 function processEvent(
   event: DomainEvent,
   state: GameState,
-  mutableAnimations: BumpAnimationEntry[],
-): void {
+): readonly BumpAnimationEntry[] {
   switch (event.type) {
     case 'ATTACK_PERFORMED':
-      return handleAttackPerformed(event, state, mutableAnimations);
+      return handleAttackPerformed(event, state);
+    default:
+      return [];
   }
 }
 
@@ -67,11 +60,5 @@ export function buildBumpAnimations(
 ): readonly BumpAnimationEntry[] {
   if (state.run == null) return [];
 
-  const mutableAnimations: BumpAnimationEntry[] = [];
-
-  for (const event of events) {
-    processEvent(event, state, mutableAnimations);
-  }
-
-  return mutableAnimations;
+  return events.flatMap((event) => processEvent(event, state));
 }

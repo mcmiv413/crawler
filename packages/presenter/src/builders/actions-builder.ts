@@ -1,26 +1,11 @@
 import type { GameState, WeaponTemplate, WeaponType } from '@dungeon/contracts';
 import { posKey } from '@dungeon/contracts';
 import { ABILITY_DEFINITIONS, OBJECT_TEMPLATES } from '@dungeon/content';
+import { canRetreat } from '@dungeon/core';
 import type { AvailableAction } from '../game-view.js';
 import { chebyshevDistance } from '../utils.js';
 
 type PlayerAbilityState = NonNullable<GameState['player']['abilities']>[number];
-
-/**
- * Helper to check if player can retreat (without importing from game-core to avoid circular dep).
- */
-function canRetreat(state: GameState): boolean {
-  if (state.run === null || state.phase !== 'dungeon') return false;
-
-  const playerKey = posKey(state.player.position);
-  const cell = state.run.floor.cells.get(playerKey);
-  if (cell === undefined) return false;
-
-  return cell.tile.type === 'stairs_up' || (
-    state.player.position.x === state.run.floor.entrance.x
-    && state.player.position.y === state.run.floor.entrance.y
-  );
-}
 
 function getEquippedWeaponType(state: GameState): WeaponType | null {
   if (state.player.equipment.weapon === null) return null;

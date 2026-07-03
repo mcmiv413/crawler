@@ -34,46 +34,50 @@ export function spreadBurnFromDeadEnemy(
     if (chebyshevDistance(enemy.position, deadPos) > spreadRadius) continue;
     if (rng.chance(MAGIC.burnSpreadChancePct) === false) continue;
 
-    // Apply burn to nearby enemy
-    const mutableStatuses = [...enemy.statuses];
-    const existingBurn = mutableStatuses.find(s => s.id === burn.id);
-    if (existingBurn === undefined) {
-      const burnStatus = {
-        id: burn.id,
-        turnsRemaining: burnDuration,
-        magnitude: burnMagnitude,
-        sourceId: state.player.id,
-      };
-      mutableStatuses.push(burnStatus);
-      events = [...events, buildStatusAppliedEvent({
+    const existingBurn = enemy.statuses.find(s => s.id === burn.id);
+    const burnStatus = {
+      id: burn.id,
+      turnsRemaining: burnDuration,
+      magnitude: burnMagnitude,
+      sourceId: state.player.id,
+    };
+    const statusesAfterBurn = [
+      ...enemy.statuses,
+      ...(existingBurn === undefined ? [burnStatus] : []),
+    ];
+    const shouldApplyPanic = canFireMasteryPanicOnSpread(state.player) === true
+      && rng.chance(MAGIC.panicOnBurnSpreadChancePct) === true;
+    const existingPanic = statusesAfterBurn.find(s => s.id === panic.id);
+    const panicStatus = {
+      id: panic.id,
+      turnsRemaining: STATUS_DEFAULTS.panic.defaultDuration,
+      magnitude: 1,
+      sourceId: state.player.id,
+    };
+    const statuses = [
+      ...statusesAfterBurn,
+      ...(shouldApplyPanic === true && existingPanic === undefined ? [panicStatus] : []),
+    ];
+
+    events = [
+      ...events,
+      ...(existingBurn === undefined ? [buildStatusAppliedEvent({
         targetId: enemy.id,
         statusId: burn.id,
         duration: burnDuration,
         sourceId: state.player.id,
         turnNumber: state.turnNumber,
-      })];
-    }
-
-    if (canFireMasteryPanicOnSpread(state.player) === true && rng.chance(MAGIC.panicOnBurnSpreadChancePct) === true) {
-      const existingPanic = mutableStatuses.find(s => s.id === panic.id);
-      if (existingPanic === undefined) {
-        mutableStatuses.push({
-          id: panic.id,
-          turnsRemaining: STATUS_DEFAULTS.panic.defaultDuration,
-          magnitude: 1,
-          sourceId: state.player.id,
-        });
-        events = [...events, buildStatusAppliedEvent({
+      })] : []),
+      ...(shouldApplyPanic === true && existingPanic === undefined ? [buildStatusAppliedEvent({
           targetId: enemy.id,
           statusId: panic.id,
           duration: STATUS_DEFAULTS.panic.defaultDuration,
           sourceId: state.player.id,
           turnNumber: state.turnNumber,
-        })];
-      }
-    }
+      })] : []),
+    ];
 
-    updatedEnemies.set(key, { ...enemy, statuses: mutableStatuses });
+    updatedEnemies.set(key, { ...enemy, statuses });
   }
 
   return { enemies: updatedEnemies, events };

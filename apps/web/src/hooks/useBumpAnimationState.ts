@@ -25,11 +25,11 @@ export function useBumpAnimationState(duration?: number): UseBumpAnimationStateR
   const [animations, setAnimations] = useState<ActiveBumpAnimation[]>([]);
   const rafRef = useRef<number | undefined>(undefined);
   const nextIdRef = useRef(0);
-  const mutableTimersRef = useRef<ReturnType<typeof setTimeout>[]>([]);
+  const timersRef = useRef<ReturnType<typeof setTimeout>[]>([]);
   const fallbackDurationMs = duration ?? LEGACY_BUMP_DURATION_MS;
 
   useEffect(() => {
-    const mutableTimers = mutableTimersRef.current;
+    const timers = timersRef.current;
     const handleBumpAnimation = (event: Event) => {
       const customEvent = event as CustomEvent<LegacyBumpAnimationEntry>;
       const now = Date.now();
@@ -51,13 +51,13 @@ export function useBumpAnimationState(duration?: number): UseBumpAnimationStateR
         setAnimations((prev) => prev.filter((a) => a.id !== animation.id));
       }, animation.durationMs);
 
-      mutableTimers.push(timer);
+      timers.push(timer);
     };
 
     window.addEventListener('bump-animation', handleBumpAnimation);
     return () => {
       window.removeEventListener('bump-animation', handleBumpAnimation);
-      mutableTimers.forEach((t) => clearTimeout(t));
+      timers.forEach((t) => clearTimeout(t));
       if (rafRef.current) {
         cancelAnimationFrame(rafRef.current);
       }
@@ -66,16 +66,21 @@ export function useBumpAnimationState(duration?: number): UseBumpAnimationStateR
 
   // Update progress values on every frame
   useEffect(() => {
-    const updateProgress = () => {
-      setAnimations((prev) =>
-        prev.map((anim) => {
-          const elapsed = Date.now() - anim.startTime;
-          const progress = Math.min(elapsed / anim.durationMs, 1);
-          return { ...anim, progress };
-        })
-      );
+    if (animations.length === 0) {
+      return;
+    }
 
-      rafRef.current = requestAnimationFrame(updateProgress);
+    const updateProgress = () => {
+      rafRef.current = undefined;
+      setAnimations((prev) =>
+        prev.length === 0
+          ? prev
+          : prev.map((anim) => {
+              const elapsed = Date.now() - anim.startTime;
+              const progress = Math.min(elapsed / anim.durationMs, 1);
+              return { ...anim, progress };
+            })
+      );
     };
 
     rafRef.current = requestAnimationFrame(updateProgress);
@@ -83,9 +88,10 @@ export function useBumpAnimationState(duration?: number): UseBumpAnimationStateR
     return () => {
       if (rafRef.current) {
         cancelAnimationFrame(rafRef.current);
+        rafRef.current = undefined;
       }
     };
-  }, []);
+  }, [animations]);
 
   return { animations };
 }

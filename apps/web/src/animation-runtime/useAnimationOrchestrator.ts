@@ -98,24 +98,24 @@ function useLegacyAnimationOrchestrator(
   enabled: boolean,
 ): void {
   const previousRef = useRef<readonly AnimatedEvent[]>([]);
-  const mutableTimeoutsRef = useRef<ReturnType<typeof setTimeout>[]>([]);
+  const timeoutsRef = useRef<ReturnType<typeof setTimeout>[]>([]);
 
   useEffect(() => {
     const previous = previousRef.current;
-    const mutableTimeouts = mutableTimeoutsRef.current;
+    const timeouts = timeoutsRef.current;
 
-    for (const timeout of mutableTimeouts) {
+    for (const timeout of timeouts) {
       clearTimeout(timeout);
     }
-    mutableTimeouts.length = 0;
+    timeouts.length = 0;
 
     if (!enabled) {
       previousRef.current = [];
       return () => {
-        for (const timeout of mutableTimeouts) {
+        for (const timeout of timeouts) {
           clearTimeout(timeout);
         }
-        mutableTimeouts.length = 0;
+        timeouts.length = 0;
       };
     }
 
@@ -134,17 +134,17 @@ function useLegacyAnimationOrchestrator(
           dispatchAnimatedEvent(animEvent);
         }, animEvent.delayMs);
 
-        mutableTimeouts.push(timeout);
+        timeouts.push(timeout);
       }
     }
 
     previousRef.current = animatedEvents;
 
     return () => {
-      for (const timeout of mutableTimeouts) {
+      for (const timeout of timeouts) {
         clearTimeout(timeout);
       }
-      mutableTimeouts.length = 0;
+      timeouts.length = 0;
     };
   }, [animatedEvents, enabled]);
 }

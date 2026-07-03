@@ -1,4 +1,5 @@
 import type { DomainEvent, EnemyInstance, EntityId, GameState } from '@dungeon/contracts';
+import { sortedCopy } from '@dungeon/contracts';
 import { ABILITY_DEFINITIONS, ANIMATION_REF_BY_ID, animationRefs } from '@dungeon/content';
 import type { AnimationId } from '@dungeon/content';
 import { ALL_ABILITY_DEFINITIONS } from '@dungeon/core';
@@ -268,15 +269,15 @@ function collectPrimaryActorIds(
     }
   }
 
-  const mutableOrderedActorIds: EntityId[] = [];
-  if (actorIds.delete(state.player.id)) {
-    mutableOrderedActorIds.push(state.player.id);
-  }
+  const enemyActorIds = sortedCopy(
+    [...actorIds].filter((actorId) => actorId !== state.player.id),
+    (a: EntityId, b: EntityId) => getEntitySpeed(b, state) - getEntitySpeed(a, state),
+  );
 
-  const mutableEnemyActorIds = Array.from(actorIds);
-  mutableEnemyActorIds.sort((a: EntityId, b: EntityId) => getEntitySpeed(b, state) - getEntitySpeed(a, state));
-  mutableOrderedActorIds.push(...mutableEnemyActorIds);
-  return mutableOrderedActorIds;
+  return [
+    ...(actorIds.has(state.player.id) ? [state.player.id] : []),
+    ...enemyActorIds,
+  ];
 }
 
 function buildMoveAction(
@@ -362,26 +363,23 @@ function resolveAbilityDamagePositions(
   state: GameState,
   targetSnapshotLookup: AbilityTargetSnapshotLookup,
 ): readonly { readonly pos: { readonly x: number; readonly y: number }; readonly damage: number }[] {
-  const mutableDamagePositions: Array<{ pos: { x: number; y: number }; damage: number }> = [];
-
   if (event.damageByTarget) {
-    for (const [targetId, damage] of event.damageByTarget.entries()) {
-      const position = resolveAbilityTargetPosition(targetId, state, targetSnapshotLookup);
-      if (position !== null) {
-        mutableDamagePositions.push({ pos: position, damage });
-      }
-    }
-    return mutableDamagePositions;
+    return Array.from(event.damageByTarget.entries())
+      .map(([targetId, damage]) => {
+        const position = resolveAbilityTargetPosition(targetId, state, targetSnapshotLookup);
+        return position === null ? null : { pos: position, damage };
+      })
+      .filter((damagePosition): damagePosition is { readonly pos: { readonly x: number; readonly y: number }; readonly damage: number } => {
+        return damagePosition !== null;
+      });
   }
 
   if (event.targetId !== undefined && event.damage !== undefined && event.damage > 0) {
     const targetPos = resolveAbilityTargetPosition(event.targetId, state, targetSnapshotLookup);
-    if (targetPos !== null) {
-      mutableDamagePositions.push({ pos: targetPos, damage: event.damage });
-    }
+    return targetPos === null ? [] : [{ pos: targetPos, damage: event.damage }];
   }
 
-  return mutableDamagePositions;
+  return [];
 }
 
 function resolveAbilityImpactTargetIds(
@@ -437,26 +435,26 @@ function buildAbilityAction(
 
   const impactFrameMs = animRef.impactFrameMs;
   const hitStopMs = getAnimationRefHitStopMs(animRef);
-  const mutableEvents: PendingAnimatedEvent[] = [{
-    type: 'ability',
-    beatRelativeDelayMs: 0,
-    data: {
-      abilityId: event.abilityId,
-      animationId: animRef.id,
-      selfTargeted: coreAbilityDef?.targeting.selector.kind === 'self',
-      playerPos,
-      targetPos: targetPos ?? undefined,
-      blastPositions,
-      targetHpFraction,
-      durationMs: animRef.durationMs,
-      impactFrameMs,
-      suppressActorBump: getSuppressActorBump(animRef),
-    } satisfies AbilityAnimationEntry,
-  }];
-
-  for (const { pos, damage } of damagePositions) {
-    mutableEvents.push({
-      type: 'damage',
+  const defenderHitDurationMs = hitStopMs ?? animRef.recoveryMs;
+  const events: PendingAnimatedEvent[] = [
+    {
+      type: 'ability',
+      beatRelativeDelayMs: 0,
+      data: {
+        abilityId: event.abilityId,
+        animationId: animRef.id,
+        selfTargeted: coreAbilityDef?.targeting.selector.kind === 'self',
+        playerPos,
+        targetPos: targetPos ?? undefined,
+        blastPositions,
+        targetHpFraction,
+        durationMs: animRef.durationMs,
+        impactFrameMs,
+        suppressActorBump: getSuppressActorBump(animRef),
+      } satisfies AbilityAnimationEntry,
+    },
+    ...damagePositions.map(({ pos, damage }) => ({
+      type: 'damage' as const,
       beatRelativeDelayMs: impactFrameMs,
       data: {
         text: `-${damage}`,
@@ -464,34 +462,31 @@ function buildAbilityAction(
         x: pos.x,
         y: pos.y,
       } satisfies CombatIndicatorEntry,
-    });
-  }
-
-  if (hitStopMs !== undefined && impactTargetIds.length > 0) {
-    mutableEvents.push({
-      type: 'hit-stop',
-      beatRelativeDelayMs: impactFrameMs,
-      data: {
-        durationMs: hitStopMs,
-      } satisfies HitStopEntry,
-    });
-  }
-
-  if (hasImpactFlash(animRef)) {
-    const defenderHitDurationMs = hitStopMs ?? animRef.recoveryMs;
-    for (const targetId of impactTargetIds) {
-      const impactPosition = resolveAbilityTargetPosition(targetId, state, targetSnapshotLookup);
-      mutableEvents.push({
-        type: 'defender-hit',
-        beatRelativeDelayMs: impactFrameMs,
-        data: {
-          entityId: targetId,
-          durationMs: defenderHitDurationMs,
-          ...(impactPosition !== null ? { position: impactPosition } : {}),
-        } satisfies DefenderHitEntry,
-      });
-    }
-  }
+    })),
+    ...(hitStopMs !== undefined && impactTargetIds.length > 0
+      ? [{
+          type: 'hit-stop' as const,
+          beatRelativeDelayMs: impactFrameMs,
+          data: {
+            durationMs: hitStopMs,
+          } satisfies HitStopEntry,
+        }]
+      : []),
+    ...(hasImpactFlash(animRef)
+      ? impactTargetIds.map((targetId) => {
+          const impactPosition = resolveAbilityTargetPosition(targetId, state, targetSnapshotLookup);
+          return {
+            type: 'defender-hit' as const,
+            beatRelativeDelayMs: impactFrameMs,
+            data: {
+              entityId: targetId,
+              durationMs: defenderHitDurationMs,
+              ...(impactPosition !== null ? { position: impactPosition } : {}),
+            } satisfies DefenderHitEntry,
+          };
+        })
+      : []),
+  ];
 
   return {
     settleMs: getBeatSettleMs({
@@ -500,7 +495,7 @@ function buildAbilityAction(
       recoveryMs: animRef.recoveryMs,
       hitStopMs,
     }),
-    events: mutableEvents,
+    events,
   };
 }
 

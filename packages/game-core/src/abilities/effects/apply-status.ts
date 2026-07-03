@@ -61,19 +61,19 @@ export function applyStatus(
 
   const statusedEnemy = applyStatusToEnemy(target, statusId, duration, magnitude, context.player.id);
 
-  const mutableEvents = [...events];
   const currentRun = newState.run;
   const newEnemies = new Map(currentRun.enemies);
   newEnemies.set(targetKey, statusedEnemy);
   newState = { ...newState, run: { ...currentRun, enemies: newEnemies } };
 
-  mutableEvents.push(buildStatusAppliedEvent({
-    targetId: target.id,
-    statusId,
-    duration,
-    sourceId: context.player.id,
-    turnNumber: context.state.turnNumber,
-  }));
-
-  return { state: newState, events: mutableEvents };
+  return {
+    state: newState,
+    events: [...events, buildStatusAppliedEvent({
+      targetId: target.id,
+      statusId,
+      duration,
+      sourceId: context.player.id,
+      turnNumber: context.state.turnNumber,
+    })],
+  };
 }

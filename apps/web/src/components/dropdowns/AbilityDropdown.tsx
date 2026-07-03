@@ -123,14 +123,10 @@ export function AbilityDropdown({
   };
 
   const validTrapPlacementDirections = useMemo(() => {
-    const mutableDirections = new Set<Direction>();
     const placements = getValidTrapPlacementDirections(playerPosition, mapObjects, enemies, mapCells);
-
-    for (const placement of placements) {
-      mutableDirections.add(calculateDirection(playerX, playerY, placement.x, placement.y));
-    }
-
-    return mutableDirections;
+    return new Set(
+      placements.map((placement) => calculateDirection(playerX, playerY, placement.x, placement.y)),
+    );
   }, [enemies, mapCells, mapObjects, playerPosition, playerX, playerY]);
 
   const resetSelection = () => {

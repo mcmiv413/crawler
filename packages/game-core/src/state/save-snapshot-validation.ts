@@ -8,6 +8,7 @@ import type {
 import {
   posKey,
   SAVE_SNAPSHOT_SCHEMA_VERSION,
+  sortedCopy,
 } from '@dungeon/contracts';
 import {
   ENEMY_TEMPLATES,
@@ -87,10 +88,12 @@ export function migrateSaveSnapshot(snapshot: unknown): SaveSnapshot {
     throw new SaveSnapshotLoadError(schemaErrors);
   }
 
-  const mutableMigrationVersions = Object.keys(MIGRATIONS).map(Number);
-  mutableMigrationVersions.sort((left, right) => left - right);
+  const migrationVersions = sortedCopy(
+    Object.keys(MIGRATIONS).map(Number),
+    (left, right) => left - right,
+  );
 
-  return mutableMigrationVersions.reduce<Record<string, unknown>>(
+  return migrationVersions.reduce<Record<string, unknown>>(
     (current, version) => MIGRATIONS[version]?.(current) ?? current,
     snapshot,
   ) as unknown as SaveSnapshot;

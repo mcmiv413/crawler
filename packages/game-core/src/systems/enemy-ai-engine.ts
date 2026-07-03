@@ -4,6 +4,7 @@ import type {
   EntityId,
   ArchetypeDefinition,
 } from '@dungeon/contracts';
+import { sortedCopy } from '@dungeon/contracts';
 import type { SeededRNG } from '../utils/rng.js';
 import { chebyshevDistance } from '../utils/grid.js';
 import type { EnemyAction } from './enemy-ai.js';
@@ -36,33 +37,32 @@ export function scoreEnemyActions(
   // Generate feasible actions (move, attack, ability, wait)
   const feasible = generateFeasibleActions(enemy, gameState, archetypeDef);
 
-  // Score each candidate
-  const mutableCandidates: DecisionCandidate[] = [];
-  for (const action of feasible) {
-    const scores: Record<string, number> = {};
-    let totalScore = 0;
+  const scored = feasible
+    .map((action): DecisionCandidate => {
+      const scores: Record<string, number> = {};
+      let totalScore = 0;
 
-    // Apply action selection rules (condition-based weights)
-    for (const rule of archetypeDef.actionSelection) {
-      if (evaluateCondition(rule.condition, enemy, gameState)) {
-        if (rule.actions.includes(action.type)) {
-          totalScore += rule.weight;
-          scores[`action_${action.type}`] = rule.weight;
+      // Apply action selection rules (condition-based weights)
+      for (const rule of archetypeDef.actionSelection) {
+        if (evaluateCondition(rule.condition, enemy, gameState)) {
+          if (rule.actions.includes(action.type)) {
+            totalScore += rule.weight;
+            scores[`action_${action.type}`] = rule.weight;
+          }
         }
       }
-    }
 
-    mutableCandidates.push({
-      action,
-      scores,
-      totalScore,
-      reasoning: buildReasoning(action, scores, totalScore),
+      return {
+        action,
+        scores,
+        totalScore,
+        reasoning: buildReasoning(action, scores, totalScore),
+      };
     });
-  }
+  const candidates = sortedCopy(scored, (a, b) => b.totalScore - a.totalScore);
 
   // Sort by score descending, pick best
-  mutableCandidates.sort((a, b) => b.totalScore - a.totalScore);
-  const chosen = mutableCandidates[0] ?? {
+  const chosen = candidates[0] ?? {
     action: { type: 'wait', enemyId: enemy.id },
     scores: {},
     totalScore: 0,
@@ -72,7 +72,7 @@ export function scoreEnemyActions(
   return {
     enemyId: enemy.id,
     turn: gameState.run?.turnCount ?? 0,
-    candidates: mutableCandidates,
+    candidates,
     chosen,
   };
 }
@@ -87,76 +87,96 @@ function generateFeasibleActions(
   const playerPos = gameState.player.position;
   const dist = chebyshevDistance(enemy.position, playerPos);
   const floor = gameState.run.floor;
-  const mutableActions: EnemyAction[] = [];
 
   // Move actions: behavior-based if assigned, otherwise approach or retreat
-  if (enemy.movementBehaviorId !== undefined) {
-    // Use behavior-based movement
-    const behaviorMoveTarget = decideMovementByBehavior(enemy, gameState);
-    if (behaviorMoveTarget !== null) {
-      mutableActions.push({
-        type: 'move',
-        enemyId: enemy.id,
-        targetPosition: behaviorMoveTarget,
-      });
-    }
-  } else {
-    // Default approach/retreat logic
-    if (dist > 1) {
-      // Approach: move one step closer
-      const dx = Math.sign(playerPos.x - enemy.position.x);
-      const dy = Math.sign(playerPos.y - enemy.position.y);
-      const nextPos = { x: enemy.position.x + dx, y: enemy.position.y + dy };
-      const nextKey = `${nextPos.x},${nextPos.y}`;
-      const nextCell = floor.cells.get(nextKey);
-      if (nextCell !== undefined && nextCell.tile.walkable === true) {
-        mutableActions.push({
-          type: 'move',
-          enemyId: enemy.id,
-          targetPosition: nextPos,
-        });
+  const moveActions = enemy.movementBehaviorId !== undefined
+    ? ((): EnemyAction[] => {
+      // Use behavior-based movement
+      const behaviorMoveTarget = decideMovementByBehavior(enemy, gameState);
+      return [
+        behaviorMoveTarget !== null
+          ? {
+              type: 'move',
+              enemyId: enemy.id,
+              targetPosition: behaviorMoveTarget,
+            } satisfies EnemyAction
+          : undefined,
+      ].filter(isDefined);
+    })()
+    : ((): EnemyAction[] => {
+      // Default approach/retreat logic
+      if (dist > 1) {
+        // Approach: move one step closer
+        const dx = Math.sign(playerPos.x - enemy.position.x);
+        const dy = Math.sign(playerPos.y - enemy.position.y);
+        const nextPos = { x: enemy.position.x + dx, y: enemy.position.y + dy };
+        const nextKey = `${nextPos.x},${nextPos.y}`;
+        const nextCell = floor.cells.get(nextKey);
+        return [
+          nextCell !== undefined && nextCell.tile.walkable === true
+            ? {
+                type: 'move',
+                enemyId: enemy.id,
+                targetPosition: nextPos,
+              } satisfies EnemyAction
+            : undefined,
+        ].filter(isDefined);
       }
-    } else if (dist === 1) {
-      // Adjacent: also try retreat moves (move away from player)
-      const dx = Math.sign(enemy.position.x - playerPos.x);
-      const dy = Math.sign(enemy.position.y - playerPos.y);
-      const retreatPos = { x: enemy.position.x + dx, y: enemy.position.y + dy };
-      const retreatKey = `${retreatPos.x},${retreatPos.y}`;
-      const retreatCell = floor.cells.get(retreatKey);
-      if (retreatCell !== undefined && retreatCell.tile.walkable === true) {
-        mutableActions.push({
-          type: 'move',
-          enemyId: enemy.id,
-          targetPosition: retreatPos,
-        });
+
+      if (dist === 1) {
+        // Adjacent: also try retreat moves (move away from player)
+        const dx = Math.sign(enemy.position.x - playerPos.x);
+        const dy = Math.sign(enemy.position.y - playerPos.y);
+        const retreatPos = { x: enemy.position.x + dx, y: enemy.position.y + dy };
+        const retreatKey = `${retreatPos.x},${retreatPos.y}`;
+        const retreatCell = floor.cells.get(retreatKey);
+        return [
+          retreatCell !== undefined && retreatCell.tile.walkable === true
+            ? {
+                type: 'move',
+                enemyId: enemy.id,
+                targetPosition: retreatPos,
+              } satisfies EnemyAction
+            : undefined,
+        ].filter(isDefined);
       }
-    }
-  }
+
+      return [];
+    })();
 
   // Attack if within weapon range (melee or ranged)
   const weaponRange = enemy.equipment.weapon.weaponRange;
-  if (dist <= weaponRange) {
-    mutableActions.push({ type: 'attack', enemyId: enemy.id });
-  }
+  const attackActions = [
+    dist <= weaponRange
+      ? { type: 'attack', enemyId: enemy.id } satisfies EnemyAction
+      : undefined,
+  ].filter(isDefined);
 
   // Abilities from archetype preferences
-  if (enemy.abilities !== undefined && enemy.abilities.length > 0) {
-    for (const abilityId of enemy.abilities) {
+  const abilityActions = (enemy.abilities ?? [])
+    .map((abilityId): EnemyAction | undefined => {
       const cooldown = enemy.abilityCooldowns?.[abilityId] ?? 0;
-      if (cooldown === 0) {
-        mutableActions.push({
+      return cooldown === 0
+        ? {
           type: 'ability',
           enemyId: enemy.id,
           abilityId,
-        });
-      }
-    }
-  }
+        }
+        : undefined;
+    })
+    .filter(isDefined);
 
   // Wait (always feasible)
-  mutableActions.push({ type: 'wait', enemyId: enemy.id });
+  return [
+    ...moveActions,
+    ...attackActions,
+    ...abilityActions,
+    { type: 'wait', enemyId: enemy.id },
+  ];
+}
 
-  return mutableActions;
+function isDefined<T>(value: T | undefined): value is T {
+  return value !== undefined;
 }
 
 /**
