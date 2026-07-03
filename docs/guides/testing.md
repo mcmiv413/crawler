@@ -384,6 +384,12 @@ test('player can complete a basic encounter', async ({ page }) => {
 });
 ```
 
+#### Scenario-driven browser tests
+
+Use an authored fixture with `ScenarioPage.load(page, scenarioName, layoutPreset)` when the behavior requires a real browser: canvas rendering, responsive layout, session restore, keyboard or pointer interaction, or player-visible UI feedback. The helper restores the fixture through the server and initializes the browser session before the app boots, so tests do not need to create a game, explore a generated map, or search for content.
+
+Keep engine behavior in Vitest contract or integration tests. Fixture validity, command results, state transitions, save/load equivalence, and presenter output are deterministic non-browser concerns. Playwright complements those tests; it does not replace them.
+
 ## AI Assistant Rules
 
 When asking an AI assistant to write or modify tests, require it to:

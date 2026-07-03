@@ -1,6 +1,6 @@
 import { defineConfig, devices } from '@playwright/test';
+import { E2E_API_BASE } from './tests/e2e/support/api-base.js';
 
-const DEFAULT_API_BASE = 'http://localhost:3000/api';
 const DEFAULT_APP_BASE = 'http://localhost:8180/';
 
 function resolveUrl(envName: 'E2E_API_BASE' | 'E2E_APP_BASE', fallback: string): URL {
@@ -15,7 +15,7 @@ function resolvePort(url: URL): number {
   return url.protocol === 'https:' ? 443 : 80;
 }
 
-const apiBaseUrl = resolveUrl('E2E_API_BASE', DEFAULT_API_BASE);
+const apiBaseUrl = new URL(E2E_API_BASE);
 const appBaseUrl = resolveUrl('E2E_APP_BASE', DEFAULT_APP_BASE);
 const apiPort = resolvePort(apiBaseUrl);
 const appPort = resolvePort(appBaseUrl);

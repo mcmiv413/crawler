@@ -1,7 +1,6 @@
 import { expect } from '@playwright/test';
 import type { Page } from '@playwright/test';
-
-const API_BASE = 'http://127.0.0.1:3000';
+import { E2E_API_BASE } from '../support/api-base.js';
 
 export interface SeedCommandResult {
   readonly serializedState: string;
@@ -51,7 +50,7 @@ async function sendSeedCommand(
   sessionToken: string,
   command: Record<string, unknown>,
 ): Promise<SeedCommandResult | undefined> {
-  const response = await page.request.post(`${API_BASE}/api/games/${gameId}/commands`, {
+  const response = await page.request.post(`${E2E_API_BASE}/games/${gameId}/commands`, {
     headers: { 'X-Dungeon-Session': sessionToken },
     data: command,
   });
@@ -97,7 +96,7 @@ async function stepTowardTarget(
  */
 export async function seedAttackReadyDungeon(page: Page, playerName: string): Promise<void> {
   for (let seed = 1; seed <= 60; seed += 1) {
-    const createdResponse = await page.request.post(`${API_BASE}/api/games`, {
+    const createdResponse = await page.request.post(`${E2E_API_BASE}/games`, {
       data: { seed, playerName },
     });
     expect(createdResponse.ok()).toBe(true);

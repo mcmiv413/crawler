@@ -33,6 +33,7 @@ export function MobileNav({ openScreens, onScreenChange, phase, onNewGame }: Mob
 
   return (
     <div
+      data-testid="mobile-nav"
       style={{
         display: 'flex',
         flexShrink: 0,
@@ -47,6 +48,8 @@ export function MobileNav({ openScreens, onScreenChange, phase, onNewGame }: Mob
         return (
           <button
             key={tab.id}
+            aria-label={tab.label}
+            data-testid={`mobile-nav-${tab.id}`}
             onClick={() => onScreenChange(tab.id)}
             style={{
               ...navBtnStyle,

@@ -2,6 +2,14 @@ import { test, expect } from '@playwright/test';
 import type { Page } from '@playwright/test';
 
 import { seedAttackReadyDungeon } from './helpers/seeded-dungeon.js';
+import {
+  expectActionAreaReachable,
+  expectCombatLogReachable,
+  expectDungeonCanvasVisible,
+  expectMobileNavVisibleWhenExpected,
+  expectNoDocumentOverflow,
+} from './support/layout.js';
+import { ScenarioPage } from './support/scenario-page.js';
 
 /**
  * Combat indicators E2E test
@@ -231,4 +239,121 @@ test.describe('Combat Indicators', () => {
     // Indicator should still exist at mid-fade
     expect(midFadeCount).toBeGreaterThan(0);
   });
+});
+
+function scenarioActionButton(page: Page, label: string) {
+  return page.getByRole('button', { name: new RegExp(`^${label}:`, 'u') });
+}
+
+function scenarioCombatLog(page: Page) {
+  return page.locator(
+    '[data-testid="combat-log"]:visible, [data-testid="combat-log-entries"]:visible',
+  );
+}
+
+test('scenario enemy-death-test: desktop attack produces visible death feedback', async ({ page }) => {
+  await ScenarioPage.load(page, 'enemy-death-test', 'desktop-default');
+
+  await expectDungeonCanvasVisible(page);
+  const enemy = page.locator('[data-testid^="enemy-"]');
+  await expect(enemy).toBeVisible();
+  await expect(scenarioActionButton(page, 'Attack')).toBeEnabled();
+
+  await scenarioActionButton(page, 'Attack').click();
+
+  await expect(scenarioCombatLog(page)).toContainText(/defeated/iu);
+  await expect(enemy).toHaveCount(0);
+});
+
+test('scenario enemy-death-test: ios-primary keeps attack controls reachable', async ({ page }) => {
+  await ScenarioPage.load(page, 'enemy-death-test', 'ios-primary');
+
+  await expectNoDocumentOverflow(page, 'ios-primary');
+  await expectDungeonCanvasVisible(page);
+  await expectMobileNavVisibleWhenExpected(page, 'ios-primary');
+  await expectActionAreaReachable(page);
+
+  await scenarioActionButton(page, 'Attack').click();
+
+  await expectCombatLogReachable(page);
+  await expect(scenarioCombatLog(page)).toContainText(/defeated|hit for|damage/iu);
+});
+
+test('scenario inventory-consumable-test: ios-min inventory screen remains reachable', async ({ page }) => {
+  await ScenarioPage.load(page, 'inventory-consumable-test', 'ios-min');
+
+  await expectNoDocumentOverflow(page, 'ios-min');
+  await expectMobileNavVisibleWhenExpected(page, 'ios-min');
+
+  const interactResponsePromise = page.waitForResponse(response =>
+    response.request().method() === 'POST'
+    && response.url().includes('/commands')
+    && response.request().postData()?.includes('"type":"INTERACT"') === true,
+  );
+  await scenarioActionButton(page, 'Interact').click();
+  await page.getByRole('button', { name: /Treasure Chest/iu }).click();
+  const interactResponse = await interactResponsePromise;
+  expect(interactResponse.ok()).toBe(true);
+  const interactResult = await interactResponse.json() as {
+    readonly events: readonly {
+      readonly type: string;
+      readonly itemName?: string;
+      readonly gotLoot?: boolean;
+    }[];
+  };
+  expect(interactResult.events).toContainEqual(expect.objectContaining({
+    type: 'OBJECT_INTERACTED',
+    gotLoot: true,
+  }));
+  const lootEvent = interactResult.events.find(event => event.type === 'LOOT_ACQUIRED');
+  expect(lootEvent?.itemName).toBeTruthy();
+
+  await page.getByTestId('mobile-nav-inventory').click();
+
+  const inventoryScreen = page.getByTestId('inventory-screen');
+  await expect(inventoryScreen).toBeVisible();
+  await expect(inventoryScreen.getByRole('heading', { name: 'Inventory' })).toBeVisible();
+  await expect(inventoryScreen.getByRole('button', { name: 'Back to Game' })).toBeEnabled();
+  await inventoryScreen.getByTestId('inventory-bag-toggle').click();
+  await expect(inventoryScreen.getByTestId('inventory-item-list')).toContainText(lootEvent!.itemName!);
+});
+
+test('scenario fire-spread-test: desktop ember cast produces visible combat feedback', async ({ page }) => {
+  await ScenarioPage.load(page, 'fire-spread-test', 'desktop-default');
+
+  await expectDungeonCanvasVisible(page);
+  await expect(scenarioActionButton(page, 'Ability')).toBeEnabled();
+  await scenarioActionButton(page, 'Ability').click();
+  await page.getByRole('button', { name: /Ember/iu }).click();
+
+  await expect(scenarioCombatLog(page)).toContainText(/Ember|Used .* mana|damage/iu);
+});
+
+test('scenario inventory-consumable-test: reload restores scenario session and continues play', async ({ page }) => {
+  const scenario = await ScenarioPage.load(page, 'inventory-consumable-test', 'desktop-default');
+  const canvas = page.getByTestId('dungeon-canvas');
+  const storedGameId = await page.evaluate(() => {
+    const raw = window.sessionStorage.getItem('dungeon-session');
+    return raw === null ? null : (JSON.parse(raw) as { gameId?: string }).gameId ?? null;
+  });
+  expect(storedGameId).toBe(scenario.session.gameId);
+
+  await page.reload({ waitUntil: 'domcontentloaded' });
+
+  await expect(page.getByTestId('dungeon-view')).toBeVisible();
+  await expectDungeonCanvasVisible(page);
+  const reloadedGameId = await page.evaluate(() => {
+    const raw = window.sessionStorage.getItem('dungeon-session');
+    return raw === null ? null : (JSON.parse(raw) as { gameId?: string }).gameId ?? null;
+  });
+  expect(reloadedGameId).toBe(storedGameId);
+
+  const beforeMove = (await canvas.screenshot()).toString('base64');
+  const commandResponse = page.waitForResponse(response =>
+    response.request().method() === 'POST'
+    && response.url().includes(`/games/${scenario.session.gameId}/commands`),
+  );
+  await page.keyboard.press('ArrowRight');
+  expect((await commandResponse).ok()).toBe(true);
+  await expect.poll(async () => (await canvas.screenshot()).toString('base64')).not.toBe(beforeMove);
 });

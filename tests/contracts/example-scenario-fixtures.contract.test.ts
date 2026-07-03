@@ -10,9 +10,7 @@
  */
 
 import { describe, it, expect } from 'vitest';
-import { ITEM_BY_ID } from '@dungeon/content';
 import { GameEngine } from '../../packages/game-core/src/engine/game-engine.js';
-import { addItemToInventory } from '../../packages/game-core/src/systems/inventory.js';
 import {
   loadScenario,
   validateScenarioFixture,
@@ -24,6 +22,7 @@ const EXAMPLE_NAMES = [
   'enemy-death-test',
   'fire-spread-test',
   'inventory-consumable-test',
+  'full-feature-e2e-test',
   'faction-leader-test',
   'ogre-emergence-test',
 ];
@@ -79,18 +78,24 @@ describe('Example scenario library: executable gameplay', () => {
 
   it('inventory-consumable-test: placed potion is collected and healed with', () => {
     const { state, loot } = loadScenario(loadScenarioFile('inventory-consumable-test'), RESOLVERS);
-    expect(loot).toHaveLength(1);
-    const template = ITEM_BY_ID.get(loot[0]!.itemId)!;
-    const collected = addItemToInventory(state, template);
-    expect(collected.state.player.inventory.length).toBe(state.player.inventory.length + 1);
+    expect(loot).toEqual([]);
 
-    const wounded = {
-      ...collected.state,
-      player: { ...collected.state.player, stats: { ...collected.state.player.stats, health: 1 } },
-    };
-    const potionId = wounded.player.inventory[wounded.player.inventory.length - 1]!;
-    const used = engine.submitCommand(wounded, { type: 'USE_ITEM', itemId: potionId });
-    expect(used.state.player.stats.health).toBeGreaterThan(1);
+    const opened = engine.submitCommand(state, {
+      type: 'INTERACT',
+      targetPosition: { x: 1, y: 0 },
+    });
+    expect(opened.events).toContainEqual(expect.objectContaining({
+      type: 'OBJECT_INTERACTED',
+      gotLoot: true,
+    }));
+    expect(opened.state.player.inventory.length).toBeGreaterThan(state.player.inventory.length);
+
+    const potionId = opened.state.player.inventory.find(itemId =>
+      opened.state.itemRegistry.items.get(itemId)?.itemId === 'health_potion'
+    );
+    expect(potionId).toBeDefined();
+    const used = engine.submitCommand(opened.state, { type: 'USE_ITEM', itemId: potionId! });
+    expect(used.state.player.stats.health).toBeGreaterThan(opened.state.player.stats.health);
   });
 
   it('faction-leader-test: high-power world scales the faction enemy', () => {

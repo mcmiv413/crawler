@@ -2,6 +2,7 @@ import { expect, test } from '@playwright/test';
 import type { Locator, Page, Request } from '@playwright/test';
 import { CELL_SIZE } from '../../apps/web/src/config/ui-config.js';
 import { STEP_WALK_BOUNDARY_PROGRESS } from '../../apps/web/src/animations/move-style-profiles.js';
+import { E2E_API_BASE } from './support/api-base.js';
 
 interface DungeonMapSnapshot {
   readonly playerPosition: { readonly x: number; readonly y: number };
@@ -76,7 +77,7 @@ async function startDungeonRun(page: Page): Promise<void> {
 }
 
 async function startSeededDungeonRun(page: Page, seed: number): Promise<DungeonMapSnapshot> {
-  const seededSession = await page.request.post('http://127.0.0.1:3000/api/games', {
+  const seededSession = await page.request.post(`${E2E_API_BASE}/games`, {
     data: { seed, playerName: 'Playwright AutoWalk' },
   });
   expect(seededSession.ok()).toBe(true);
