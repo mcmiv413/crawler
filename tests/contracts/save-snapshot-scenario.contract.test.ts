@@ -24,7 +24,7 @@ function expectCommandEquivalent(state: GameState, command: GameCommand): void {
 
 describe('SaveSnapshot scenario compatibility', () => {
   it('Test Group 12: restores scenario-derived gameplay after turns and continues equivalently', () => {
-    const { state } = loadScenario(loadScenarioFile('inventory-consumable-test'), RESOLVERS);
+    const { state } = loadScenario(loadScenarioFile('inventory-chest-test'), RESOLVERS);
     const afterChest = engine.submitCommand(state, {
       type: 'INTERACT',
       targetPosition: { x: 1, y: 0 },
@@ -33,7 +33,7 @@ describe('SaveSnapshot scenario compatibility', () => {
       afterChest.itemRegistry.items.get(itemId)?.itemId === 'health_potion'
     );
     if (potionEntityId === undefined) {
-      throw new Error('inventory-consumable-test must provide a carried health potion');
+      throw new Error('inventory-chest-test must provide a carried health potion');
     }
     const afterUse = engine.submitCommand(afterChest, { type: 'USE_ITEM', itemId: potionEntityId }).state;
 

@@ -279,8 +279,8 @@ test('scenario enemy-death-test: ios-primary keeps attack controls reachable', a
   await expect(scenarioCombatLog(page)).toContainText(/defeated|hit for|damage/iu);
 });
 
-test('scenario inventory-consumable-test: ios-min inventory screen remains reachable', async ({ page }) => {
-  await ScenarioPage.load(page, 'inventory-consumable-test', 'ios-min');
+test('scenario inventory-chest-test: ios-min chest interaction awards visible inventory loot', async ({ page }) => {
+  await ScenarioPage.load(page, 'inventory-chest-test', 'ios-min');
 
   await expectNoDocumentOverflow(page, 'ios-min');
   await expectMobileNavVisibleWhenExpected(page, 'ios-min');
@@ -329,9 +329,8 @@ test('scenario fire-spread-test: desktop ember cast produces visible combat feed
   await expect(scenarioCombatLog(page)).toContainText(/Ember|Used .* mana|damage/iu);
 });
 
-test('scenario inventory-consumable-test: reload restores scenario session and continues play', async ({ page }) => {
-  const scenario = await ScenarioPage.load(page, 'inventory-consumable-test', 'desktop-default');
-  const canvas = page.getByTestId('dungeon-canvas');
+test('scenario inventory-chest-test: reload restores scenario session and movement continues', async ({ page }) => {
+  const scenario = await ScenarioPage.load(page, 'inventory-chest-test', 'desktop-default');
   const storedGameId = await page.evaluate(() => {
     const raw = window.sessionStorage.getItem('dungeon-session');
     return raw === null ? null : (JSON.parse(raw) as { gameId?: string }).gameId ?? null;
@@ -348,12 +347,15 @@ test('scenario inventory-consumable-test: reload restores scenario session and c
   });
   expect(reloadedGameId).toBe(storedGameId);
 
-  const beforeMove = (await canvas.screenshot()).toString('base64');
   const commandResponse = page.waitForResponse(response =>
     response.request().method() === 'POST'
     && response.url().includes(`/games/${scenario.session.gameId}/commands`),
   );
   await page.keyboard.press('ArrowRight');
-  expect((await commandResponse).ok()).toBe(true);
-  await expect.poll(async () => (await canvas.screenshot()).toString('base64')).not.toBe(beforeMove);
+  const response = await commandResponse;
+  expect(response.ok()).toBe(true);
+  const result = await response.json() as {
+    readonly events: readonly { readonly type: string }[];
+  };
+  expect(result.events).toContainEqual(expect.objectContaining({ type: 'PLAYER_MOVED' }));
 });

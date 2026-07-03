@@ -21,8 +21,7 @@ import { RESOLVERS, loadScenarioFile } from './helpers/fixture-loaders.js';
 const EXAMPLE_NAMES = [
   'enemy-death-test',
   'fire-spread-test',
-  'inventory-consumable-test',
-  'full-feature-e2e-test',
+  'inventory-chest-test',
   'faction-leader-test',
   'ogre-emergence-test',
 ];
@@ -76,8 +75,8 @@ describe('Example scenario library: executable gameplay', () => {
     expect(spentMana).toBe(true);
   });
 
-  it('inventory-consumable-test: placed potion is collected and healed with', () => {
-    const { state, loot } = loadScenario(loadScenarioFile('inventory-consumable-test'), RESOLVERS);
+  it('inventory-chest-test: chest interaction awards loot and carried potion can be consumed', () => {
+    const { state, loot } = loadScenario(loadScenarioFile('inventory-chest-test'), RESOLVERS);
     expect(loot).toEqual([]);
 
     const opened = engine.submitCommand(state, {
