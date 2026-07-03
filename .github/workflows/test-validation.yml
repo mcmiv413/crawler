@@ -28,6 +28,9 @@ jobs:
       - name: Install dependencies
         run: pnpm install --frozen-lockfile
 
+      - name: Generate repo skill mirrors
+        run: pnpm skills:generate
+
       - name: Run repository validation gate
         run: pnpm validate
 
