@@ -126,11 +126,10 @@ export function buildInventoryView(state: GameState): InventoryView {
   const stacked = [...stackedGroupItems, ...unstakedItems];
 
   // Sort: equipped first, preserve relative order within groups
-  // mutableSorted exists to separate the mutation from the pure function logic
-  // (the rule requires renaming variables with mutable operations to 'mutable' prefix)
-  const mutableSorted = stacked.slice();
-  mutableSorted.sort((a, b) => (b.isEquipped ? 1 : 0) - (a.isEquipped ? 1 : 0));
-  const sorted = mutableSorted;
+  const sorted = [
+    ...stacked.filter(item => item.isEquipped),
+    ...stacked.filter(item => !item.isEquipped),
+  ];
 
   const toEquipView = (id: EntityId | null) => id ? toView(id, true) : null;
 

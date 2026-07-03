@@ -1,4 +1,5 @@
 import type { GameState, PlayerDiedEvent, EquipmentDroppedEvent, EntityId } from '@dungeon/contracts';
+import { sortedCopy } from '@dungeon/contracts';
 import type { GameView, QuestView, InspectableEntityView, DeathContext } from './game-view.js';
 import { ENEMY_TEMPLATES, STATUS_DEFINITIONS, OBJECT_TEMPLATES, DEATH_CONSEQUENCES } from '@dungeon/content';
 import { getEnemyCombatPreview } from '@dungeon/core';
@@ -16,85 +17,81 @@ function buildInspectableEntities(state: GameState): readonly InspectableEntityV
   if (!state.run) return [];
 
   const floor = state.run.floor;
-  const seenObjectKeys = new Set<string>();
   const playerX = state.player.position.x;
   const playerY = state.player.position.y;
 
-  const mutableEntities: InspectableEntityView[] = [];
+  const enemyEntries = Array.from(state.run.enemies);
+  const visibleEnemies = enemyEntries
+    .map(([, enemy]) => enemy)
+    .filter((enemy) => floor.cells.get(`${enemy.position.x},${enemy.position.y}`)?.visibility === 'visible');
+  const visibleEnemyEntries = enemyEntries
+    .filter(([key]) => floor.cells.get(key)?.visibility === 'visible');
 
-  // Count visible enemies by templateId to determine when to show colors
-  const visibleEnemies = Array.from(state.run.enemies.values()).filter(
-    (e) => floor.cells.get(`${e.position.x},${e.position.y}`)?.visibility === 'visible'
-  );
-  const templateIdCounts = new Map<string, number>();
-  for (const enemy of visibleEnemies) {
-    templateIdCounts.set(enemy.templateId, (templateIdCounts.get(enemy.templateId) ?? 0) + 1);
-  }
+  const templateIdCounts = visibleEnemies.reduce((counts, enemy) => {
+    counts.set(enemy.templateId, (counts.get(enemy.templateId) ?? 0) + 1);
+    return counts;
+  }, new Map<string, number>());
 
   // Build visible enemies — no deduplication, include instanceColor when 2+ of same type visible
   // Map enemy IDs to their position keys for use in sorting
-  const enemyIdToPositionKey = new Map<EntityId, string>();
-  for (const [key, enemy] of state.run.enemies) {
-    if (floor.cells.get(key)?.visibility === 'visible') {
-      enemyIdToPositionKey.set(enemy.id, key);
-    }
-  }
+  const enemyIdToPositionKey = new Map<EntityId, string>(
+    visibleEnemyEntries.map(([key, enemy]) => [enemy.id, key]),
+  );
 
-  for (const [key, enemy] of state.run.enemies) {
-    if (floor.cells.get(key)?.visibility !== 'visible') continue;
+  const enemyViews = visibleEnemyEntries
+    .map(([, enemy]): InspectableEntityView | null => {
+      const template = ENEMY_TEMPLATES.get(enemy.templateId);
+      if (!template) return null;
 
-    const template = ENEMY_TEMPLATES.get(enemy.templateId);
-    if (!template) continue;
+      // Only show instanceColor if there are 2+ of this templateId visible
+      const showInstanceColor = templateIdCounts.get(enemy.templateId) ?? 0 >= 2;
 
-    // Only show instanceColor if there are 2+ of this templateId visible
-    const showInstanceColor = templateIdCounts.get(enemy.templateId) ?? 0 >= 2;
+      const preview = getEnemyCombatPreview(state, enemy);
 
-    const preview = getEnemyCombatPreview(state, enemy);
-
-    mutableEntities.push({
-      id: enemy.id,
-      name: enemy.name,
-      description: template.description,
-      ascii: enemy.ascii,
-      color: getEnemyColor(enemy),
-      entityType: 'enemy',
-      templateId: enemy.templateId,
-      health: enemy.stats.health,
-      maxHealth: enemy.stats.maxHealth,
-      attack: enemy.stats.attack,
-      defense: enemy.stats.defense,
-      speed: enemy.stats.speed,
-      tier: template.tier,
-      archetype: template.archetype,
-      isFasterThanPlayer: preview.isFasterThanPlayer,
-      affinities: template.affinities && Object.keys(template.affinities).length > 0 ? template.affinities : undefined,
-      statuses: enemy.statuses.map(s => STATUS_DEFINITIONS.get(s.id)?.name ?? s.id),
-      threatRating: preview.threatRating,
-      instanceColor: showInstanceColor ? enemy.instanceColor : undefined,
-      playerHitChance: preview.playerHitChance,
-      enemyHitChance: preview.enemyHitChance,
-    });
-  }
+      return {
+        id: enemy.id,
+        name: enemy.name,
+        description: template.description,
+        ascii: enemy.ascii,
+        color: getEnemyColor(enemy),
+        entityType: 'enemy',
+        templateId: enemy.templateId,
+        health: enemy.stats.health,
+        maxHealth: enemy.stats.maxHealth,
+        attack: enemy.stats.attack,
+        defense: enemy.stats.defense,
+        speed: enemy.stats.speed,
+        tier: template.tier,
+        archetype: template.archetype,
+        isFasterThanPlayer: preview.isFasterThanPlayer,
+        affinities: template.affinities && Object.keys(template.affinities).length > 0 ? template.affinities : undefined,
+        statuses: enemy.statuses.map(s => STATUS_DEFINITIONS.get(s.id)?.name ?? s.id),
+        threatRating: preview.threatRating,
+        instanceColor: showInstanceColor ? enemy.instanceColor : undefined,
+        playerHitChance: preview.playerHitChance,
+        enemyHitChance: preview.enemyHitChance,
+      };
+    })
+    .filter((entity): entity is InspectableEntityView => entity !== null);
 
   // Build visible objects — deduplicate by location
-  for (const [key, obj] of state.run.objects ?? new Map()) {
-    if (floor.cells.get(key)?.visibility !== 'visible') continue;
-    if (seenObjectKeys.has(key)) continue;
-    seenObjectKeys.add(key);
+  const objectViews = Array.from(state.run.objects ?? new Map())
+    .filter(([key]) => floor.cells.get(key)?.visibility === 'visible')
+    .map(([, obj]): InspectableEntityView | null => {
+      const template = OBJECT_TEMPLATES.get(obj.templateId);
+      if (!template) return null;
 
-    const template = OBJECT_TEMPLATES.get(obj.templateId);
-    if (!template) continue;
-
-    mutableEntities.push({
-      id: obj.id,
-      name: template.name,
-      description: template.description,
-      ascii: template.ascii,
-      color: template.color,
-      entityType: 'object',
-      templateId: obj.templateId,
-    });
-  }
+      return {
+        id: obj.id,
+        name: template.name,
+        description: template.description,
+        ascii: template.ascii,
+        color: template.color,
+        entityType: 'object',
+        templateId: obj.templateId,
+      };
+    })
+    .filter((entity): entity is InspectableEntityView => entity !== null);
 
   // Sort: enemies first (by distance from player), then objects
   const sortComparator = (a: InspectableEntityView, b: InspectableEntityView): number => {
@@ -120,8 +117,8 @@ function buildInspectableEntities(state: GameState): readonly InspectableEntityV
     return 0;
   };
 
-  mutableEntities.sort(sortComparator);
-  return mutableEntities;
+  const sortedEntities = sortedCopy([...enemyViews, ...objectViews], sortComparator);
+  return sortedEntities;
 }
 
 function buildDeathContext(state: GameState): DeathContext | null {

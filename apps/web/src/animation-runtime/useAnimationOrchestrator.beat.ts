@@ -17,8 +17,7 @@ interface QueuedBatch {
 }
 
 function createQueuedBatch(animatedEvents: readonly AnimatedEvent[]): QueuedBatch {
-  const mutableSortedEvents = [...animatedEvents];
-  mutableSortedEvents.sort((a, b) => {
+  const sortedEvents = [...animatedEvents].sort((a, b) => {
     if (a.delayMs !== b.delayMs) {
       return a.delayMs - b.delayMs;
     }
@@ -27,7 +26,7 @@ function createQueuedBatch(animatedEvents: readonly AnimatedEvent[]): QueuedBatc
 
   return {
     batchId: animatedEvents[0]!.batchId,
-    events: mutableSortedEvents,
+    events: sortedEvents,
     settleMs: getAnimatedEventBatchSettleMs(animatedEvents),
     nextEventIndex: 0,
     logicalElapsedMs: 0,

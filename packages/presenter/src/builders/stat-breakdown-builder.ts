@@ -7,51 +7,45 @@ function collectWeaponBonuses(statName: string, weapon: unknown): StatBonusSourc
 
   const w = (weapon as { name: string; weapon: { damage: number; accuracy: number; speed: number } }).weapon;
   const spriteName = 'spriteName' in weapon ? (weapon as { spriteName?: string }).spriteName : undefined;
-  const mutableBonuses: StatBonusSource[] = [];
 
   // NOTE: weapon damage is NOT a bonus to attack stat; it's a separate damage range
   // The stat breakdown for attack shows only the flat attack bonus, weapon damage is shown separately
-  if (statName === 'accuracy' && w.accuracy !== 0) {
-    mutableBonuses.push({ source: `${(weapon as { name: string }).name} accuracy`, amount: w.accuracy, spriteName });
-  }
-  if (statName === 'speed' && w.speed !== 0) {
-    mutableBonuses.push({ source: `${(weapon as { name: string }).name} speed`, amount: w.speed, spriteName });
-  }
-
-  return mutableBonuses;
+  return [
+    ...(statName === 'accuracy' && w.accuracy !== 0
+      ? [{ source: `${(weapon as { name: string }).name} accuracy`, amount: w.accuracy, spriteName }]
+      : []),
+    ...(statName === 'speed' && w.speed !== 0
+      ? [{ source: `${(weapon as { name: string }).name} speed`, amount: w.speed, spriteName }]
+      : []),
+  ];
 }
 
 function collectArmorBonuses(state: GameState, statName: string, armorSlots: readonly string[]): StatBonusSource[] {
-  const mutableBonuses: StatBonusSource[] = [];
-
-  for (const slot of armorSlots) {
+  return armorSlots.flatMap((slot) => {
     const itemId = state.player.equipment[slot as keyof typeof state.player.equipment] as unknown;
-    if (!itemId || typeof itemId !== 'string') continue;
+    if (!itemId || typeof itemId !== 'string') return [];
 
     const armor = state.itemRegistry.items.get(itemId as never);
-    if (!armor || !('armor' in armor)) continue;
+    if (!armor || !('armor' in armor)) return [];
 
     const a = (armor as { name: string; armor: { defense: number; resistance?: Record<string, number> } }).armor;
     const spriteName = 'spriteName' in armor ? (armor as { spriteName?: string }).spriteName : undefined;
 
-    if (statName === 'defense' && a.defense > 0) {
-      mutableBonuses.push({ source: `${(armor as { name: string }).name}`, amount: a.defense, spriteName });
-    }
-
-    if (a.resistance) {
-      for (const [damageType, resistance] of Object.entries(a.resistance)) {
-        if (resistance !== 0) {
-          mutableBonuses.push({
-            source: `${(armor as { name: string }).name} vs ${damageType}`,
-            amount: resistance,
-            spriteName,
-          });
-        }
-      }
-    }
-  }
-
-  return mutableBonuses;
+    return [
+      ...(statName === 'defense' && a.defense > 0
+        ? [{ source: `${(armor as { name: string }).name}`, amount: a.defense, spriteName }]
+        : []),
+      ...(a.resistance
+        ? Object.entries(a.resistance)
+            .filter(([, resistance]) => resistance !== 0)
+            .map(([damageType, resistance]) => ({
+              source: `${(armor as { name: string }).name} vs ${damageType}`,
+              amount: resistance,
+              spriteName,
+            }))
+        : []),
+    ];
+  });
 }
 
 const statDescriptions: Record<string, string> = {

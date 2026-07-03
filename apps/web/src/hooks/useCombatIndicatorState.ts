@@ -30,7 +30,7 @@ export function useCombatIndicatorState(
       return;
     }
 
-    const mutableTimeouts = timeoutsRef.current;
+    const timeouts = timeoutsRef.current;
 
     const handleAddLabel = (event: Event) => {
       const { x, y, text, type } = (event as CustomEvent<CombatIndicatorEventDetail>).detail;
@@ -49,14 +49,14 @@ export function useCombatIndicatorState(
         setLabels((prev) => prev.filter((entry) => entry.id !== label.id));
       }, fadeOutDuration);
 
-      mutableTimeouts.push(timeout);
+      timeouts.push(timeout);
     };
 
     window.addEventListener('combat-indicator', handleAddLabel);
     return () => {
       window.removeEventListener('combat-indicator', handleAddLabel);
-      mutableTimeouts.forEach((timeout) => clearTimeout(timeout));
-      mutableTimeouts.length = 0;
+      timeouts.forEach((timeout) => clearTimeout(timeout));
+      timeouts.length = 0;
     };
   }, [enabled, fadeOutDuration]);
 

@@ -106,11 +106,11 @@ if (import.meta.hot) {
 export function useMoveAnimationState(): UseMoveAnimationStateReturn {
   const [animations, setAnimations] = useState<ActiveMoveAnimation[]>([]);
   const nextIdRef = useRef(0);
-  const mutableTimersRef = useRef<ReturnType<typeof setTimeout>[]>([]);
+  const timersRef = useRef<ReturnType<typeof setTimeout>[]>([]);
   const continuationByEntityRef = useRef(new Map<string, boolean>());
 
   useEffect(() => {
-    const mutableTimers = mutableTimersRef.current;
+    const timers = timersRef.current;
     const handleMoveAnimationEntry = (entry: MoveAnimationEntry) => {
       const now = Date.now();
       const id = `move-${nextIdRef.current++}`;
@@ -151,7 +151,7 @@ export function useMoveAnimationState(): UseMoveAnimationStateReturn {
         setAnimations((prev) => prev.filter((a) => a.id !== id));
       }, entry.durationMs);
 
-      mutableTimers.push(timer);
+      timers.push(timer);
     };
 
     const unsubscribeMoveAnimation = subscribeMoveAnimation(handleMoveAnimationEntry);
@@ -192,7 +192,7 @@ export function useMoveAnimationState(): UseMoveAnimationStateReturn {
       window.removeEventListener('move-animation', handleMoveAnimation);
       window.removeEventListener(WALK_CONTINUATION_EVENT, handleWalkContinuation);
       unsubscribeMoveAnimation();
-      mutableTimers.forEach((t) => clearTimeout(t));
+      timers.forEach((t) => clearTimeout(t));
     };
   }, []);
 

@@ -117,8 +117,7 @@ export class SqliteRepository implements IGameRepository {
         'SELECT event_json FROM events WHERE game_id = ? ORDER BY id DESC LIMIT ?',
       )
       .all(gameId, limit) as { event_json: string }[];
-    const mutableRows = [...rows];
-    return mutableRows.reverse().map((r) => JSON.parse(r.event_json));
+    return [...rows].reverse().map((r) => JSON.parse(r.event_json));
   }
 
   recordRunMetrics(metrics: RunMetrics, gameId?: string): void {

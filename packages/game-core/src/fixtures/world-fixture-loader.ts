@@ -31,6 +31,13 @@ const VALID_RARITIES = new Set(['common', 'uncommon', 'rare', 'epic', 'legendary
 /** Valid dungeon ogre statuses. */
 const VALID_OGRE_STATUSES = new Set(['sealed', 'emerged', 'slain'] as const);
 
+function fixtureErrorIf(
+  condition: boolean,
+  error: WorldFixtureValidationError,
+): WorldFixtureValidationError[] {
+  return condition === true ? [error] : [];
+}
+
 // ─────────────────────────────────────────────────────────────────────────────
 // Validation
 // ─────────────────────────────────────────────────────────────────────────────
@@ -43,140 +50,147 @@ const VALID_OGRE_STATUSES = new Set(['sealed', 'emerged', 'slain'] as const);
  * Never silently succeeds — every invalid fixture produces at least one error.
  */
 export function validateWorldFixture(fixture: WorldFixture): WorldFixtureValidationResult {
-  const mutableErrors: WorldFixtureValidationError[] = [];
-
-  // schemaVersion
-  if (fixture.schemaVersion !== WORLD_FIXTURE_SCHEMA_VERSION) {
-    mutableErrors.push({
-      field: 'schemaVersion',
-      message: `Unsupported world fixture schemaVersion ${fixture.schemaVersion}. Expected ${WORLD_FIXTURE_SCHEMA_VERSION}.`,
-    });
-  }
-
-  // factions
-  if (fixture.factions !== undefined) {
-    const seenIds = new Set<string>();
-    for (let i = 0; i < fixture.factions.length; i++) {
-      const override = fixture.factions[i]!;
-
-      // Validate faction ID exists in content
-      mutableErrors.push(...validateContentRef<string, WorldFixtureValidationError>(
-        `factions[${i}].id`,
-        override.id,
-        FACTION_DEFINITIONS,
-        'FACTION_DEFINITIONS',
-        value => `Unknown faction id "${String(value)}" at factions[${i}]. Must be one of: ${[...FACTION_DEFINITIONS.keys()].join(', ')}.`,
-      ));
-
-      // Detect duplicate faction IDs
-      if (seenIds.has(override.id)) {
-        mutableErrors.push({
-          field: `factions[${i}].id`,
-          message: `Duplicate faction id "${override.id}" at factions[${i}]. Each faction may only appear once.`,
-        });
-      }
-      seenIds.add(override.id);
-
-      mutableErrors.push(
-        ...validateFixtureRange(`factions[${i}].power`, override.power, 0, 100),
-        ...validateFixtureRange(`factions[${i}].disposition`, override.disposition, -100, 100),
-      );
-    }
-  }
-
-  // dungeonOgre
-  if (fixture.dungeonOgre !== undefined) {
-    // Widen to unknown so runtime null/type guards are not flagged as impossible by TypeScript.
-    // Callers may supply malformed JSON (null, wrong type) despite the declared type.
-    const ogre: unknown = fixture.dungeonOgre;
-
-    // Guard: dungeonOgre must be a non-null object — null and primitives are rejected here
-    if (ogre === null || typeof ogre !== 'object') {
-      mutableErrors.push({
-        field: 'dungeonOgre',
-        message: `dungeonOgre must be an object when present, got ${ogre === null ? 'null' : typeof ogre}.`,
-      });
-    } else {
-      const ogreRaw = ogre as { status?: unknown; emergedAfterRun?: unknown; emergedAtDepth?: unknown };
-
-      // status — required and must be a valid value
-      if (!VALID_OGRE_STATUSES.has(ogreRaw.status as 'sealed' | 'emerged' | 'slain')) {
-        mutableErrors.push({
-          field: 'dungeonOgre.status',
-          message: `dungeonOgre.status must be 'sealed', 'emerged', or 'slain', got "${ogreRaw.status}".`,
-        });
-      }
-
-      // emergedAfterRun — optional, but must be a finite number when present
-      if (ogreRaw.emergedAfterRun !== undefined) {
-        if (!isFiniteNumber(ogreRaw.emergedAfterRun)) {
-          mutableErrors.push({
-            field: 'dungeonOgre.emergedAfterRun',
-            message: `dungeonOgre.emergedAfterRun must be a number when present, got ${JSON.stringify(ogreRaw.emergedAfterRun)}.`,
-          });
-        }
-      }
-
-      // emergedAtDepth — optional, but must be a finite number when present
-      if (ogreRaw.emergedAtDepth !== undefined) {
-        if (!isFiniteNumber(ogreRaw.emergedAtDepth)) {
-          mutableErrors.push({
-            field: 'dungeonOgre.emergedAtDepth',
-            message: `dungeonOgre.emergedAtDepth must be a number when present, got ${JSON.stringify(ogreRaw.emergedAtDepth)}.`,
-          });
-        }
-      }
-    }
-  }
-
-  // town
-  if (fixture.town !== undefined) {
-    const town = fixture.town;
-    for (const { field, value } of [
-      { field: 'town.prosperity', value: town.prosperity },
-      { field: 'town.fear', value: town.fear },
-      { field: 'town.corruption', value: town.corruption },
-    ] as const) {
-      if (value !== undefined) {
-        mutableErrors.push(...validateFixtureRange(field, value, 0, 100));
-      }
-    }
-  }
-
-  // totalRuns
-  if (fixture.totalRuns !== undefined) {
-    if (!isNonNegativeInteger(fixture.totalRuns)) {
-      mutableErrors.push({
-        field: 'totalRuns',
-        message: `totalRuns must be a non-negative integer, got ${fixture.totalRuns}.`,
-      });
-    }
-  }
-
-  // deepestFloor
-  if (fixture.deepestFloor !== undefined) {
-    if (!isNonNegativeInteger(fixture.deepestFloor)) {
-      mutableErrors.push({
-        field: 'deepestFloor',
-        message: `deepestFloor must be a non-negative integer, got ${fixture.deepestFloor}.`,
-      });
-    }
-  }
-
-  // highestRarityFound
-  if (fixture.highestRarityFound !== undefined) {
-    if (!VALID_RARITIES.has(fixture.highestRarityFound as 'common' | 'uncommon' | 'rare' | 'epic' | 'legendary')) {
-      mutableErrors.push({
-        field: 'highestRarityFound',
-        message: `highestRarityFound must be one of ${[...VALID_RARITIES].join(', ')}, got "${fixture.highestRarityFound}".`,
-      });
-    }
-  }
+  const errors = [
+    ...fixtureErrorIf(
+      fixture.schemaVersion !== WORLD_FIXTURE_SCHEMA_VERSION,
+      {
+        field: 'schemaVersion',
+        message: `Unsupported world fixture schemaVersion ${fixture.schemaVersion}. Expected ${WORLD_FIXTURE_SCHEMA_VERSION}.`,
+      },
+    ),
+    ...validateFixtureFactions(fixture.factions),
+    ...validateFixtureDungeonOgre(fixture.dungeonOgre),
+    ...validateFixtureTown(fixture.town),
+    ...validateOptionalFixtureInteger('totalRuns', fixture.totalRuns),
+    ...validateOptionalFixtureInteger('deepestFloor', fixture.deepestFloor),
+    ...validateHighestRarityFound(fixture.highestRarityFound),
+  ];
 
   return {
-    isValid: mutableErrors.length === 0,
-    errors: mutableErrors,
+    isValid: errors.length === 0,
+    errors,
   };
+}
+
+function validateFixtureFactions(
+  factions: WorldFixture['factions'],
+): WorldFixtureValidationError[] {
+  if (factions === undefined) {
+    return [];
+  }
+
+  return factions.flatMap((override, index, overrides) => [
+    ...validateContentRef<string, WorldFixtureValidationError>(
+      `factions[${index}].id`,
+      override.id,
+      FACTION_DEFINITIONS,
+      'FACTION_DEFINITIONS',
+      value => `Unknown faction id "${String(value)}" at factions[${index}]. Must be one of: ${[...FACTION_DEFINITIONS.keys()].join(', ')}.`,
+    ),
+    ...fixtureErrorIf(
+      overrides.findIndex(candidate => candidate.id === override.id) !== index,
+      {
+        field: `factions[${index}].id`,
+        message: `Duplicate faction id "${override.id}" at factions[${index}]. Each faction may only appear once.`,
+      },
+    ),
+    ...validateFixtureRange(`factions[${index}].power`, override.power, 0, 100),
+    ...validateFixtureRange(`factions[${index}].disposition`, override.disposition, -100, 100),
+  ]);
+}
+
+function validateFixtureDungeonOgre(
+  dungeonOgre: WorldFixture['dungeonOgre'],
+): WorldFixtureValidationError[] {
+  if (dungeonOgre === undefined) {
+    return [];
+  }
+
+  const ogre: unknown = dungeonOgre;
+  if (ogre === null || typeof ogre !== 'object') {
+    return [{
+      field: 'dungeonOgre',
+      message: `dungeonOgre must be an object when present, got ${ogre === null ? 'null' : typeof ogre}.`,
+    }];
+  }
+
+  const ogreRaw = ogre as { status?: unknown; emergedAfterRun?: unknown; emergedAtDepth?: unknown };
+  return [
+    ...fixtureErrorIf(
+      !VALID_OGRE_STATUSES.has(ogreRaw.status as 'sealed' | 'emerged' | 'slain'),
+      {
+        field: 'dungeonOgre.status',
+        message: `dungeonOgre.status must be 'sealed', 'emerged', or 'slain', got "${ogreRaw.status}".`,
+      },
+    ),
+    ...(ogreRaw.emergedAfterRun !== undefined
+      ? fixtureErrorIf(
+          !isFiniteNumber(ogreRaw.emergedAfterRun),
+          {
+            field: 'dungeonOgre.emergedAfterRun',
+            message: `dungeonOgre.emergedAfterRun must be a number when present, got ${JSON.stringify(ogreRaw.emergedAfterRun)}.`,
+          },
+        )
+      : []),
+    ...(ogreRaw.emergedAtDepth !== undefined
+      ? fixtureErrorIf(
+          !isFiniteNumber(ogreRaw.emergedAtDepth),
+          {
+            field: 'dungeonOgre.emergedAtDepth',
+            message: `dungeonOgre.emergedAtDepth must be a number when present, got ${JSON.stringify(ogreRaw.emergedAtDepth)}.`,
+          },
+        )
+      : []),
+  ];
+}
+
+function validateFixtureTown(
+  town: WorldFixture['town'],
+): WorldFixtureValidationError[] {
+  if (town === undefined) {
+    return [];
+  }
+
+  return [
+    { field: 'town.prosperity', value: town.prosperity },
+    { field: 'town.fear', value: town.fear },
+    { field: 'town.corruption', value: town.corruption },
+  ].flatMap(({ field, value }) =>
+    value !== undefined ? validateFixtureRange(field, value, 0, 100) : [],
+  );
+}
+
+function validateOptionalFixtureInteger(
+  field: 'totalRuns' | 'deepestFloor',
+  value: unknown,
+): WorldFixtureValidationError[] {
+  if (value === undefined) {
+    return [];
+  }
+
+  return fixtureErrorIf(
+    !isNonNegativeInteger(value),
+    {
+      field,
+      message: `${field} must be a non-negative integer, got ${value}.`,
+    },
+  );
+}
+
+function validateHighestRarityFound(
+  highestRarityFound: WorldFixture['highestRarityFound'],
+): WorldFixtureValidationError[] {
+  if (highestRarityFound === undefined) {
+    return [];
+  }
+
+  return fixtureErrorIf(
+    !VALID_RARITIES.has(highestRarityFound as 'common' | 'uncommon' | 'rare' | 'epic' | 'legendary'),
+    {
+      field: 'highestRarityFound',
+      message: `highestRarityFound must be one of ${[...VALID_RARITIES].join(', ')}, got "${highestRarityFound}".`,
+    },
+  );
 }
 
 function validateFixtureRange(

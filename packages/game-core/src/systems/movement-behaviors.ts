@@ -1,5 +1,5 @@
 import type { Position, GameState, EnemyInstance } from '@dungeon/contracts';
-import { posKey } from '@dungeon/contracts';
+import { posKey, sortedCopy } from '@dungeon/contracts';
 import { chebyshevDistance } from '../utils/grid.js';
 import { isWalkable } from './movement.js';
 
@@ -92,20 +92,14 @@ export function getWalkableNeighbors(
 ): Position[] {
   if (state.run === null) return [];
 
-  const mutableNeighbors: Position[] = [];
-
-  for (let dx = -1; dx <= 1; dx++) {
-    for (let dy = -1; dy <= 1; dy++) {
-      if (dx === 0 && dy === 0) continue;
+  const offsets = [-1, 0, 1] as const;
+  return offsets.flatMap(dx =>
+    offsets.flatMap((dy) => {
+      if (dx === 0 && dy === 0) return [];
       const nextPos = { x: position.x + dx, y: position.y + dy };
-      const walkable = isWalkable(state, nextPos);
-      if (walkable !== false) {
-        mutableNeighbors.push(nextPos);
-      }
-    }
-  }
-
-  return mutableNeighbors;
+      return isWalkable(state, nextPos) !== false ? [nextPos] : [];
+    }),
+  );
 }
 
 /**
@@ -145,9 +139,8 @@ export function scoreTilesForBehavior(
   if (scores.length === 0) return availableTiles[0] ?? null;
 
   // Sort by score descending and pick highest
-  const mutableScores = [...scores];
-  mutableScores.sort((a, b) => b.score - a.score);
-  return mutableScores[0]?.tile ?? null;
+  const sortedScores = sortedCopy(scores, (a, b) => b.score - a.score);
+  return sortedScores[0]?.tile ?? null;
 }
 
 /**

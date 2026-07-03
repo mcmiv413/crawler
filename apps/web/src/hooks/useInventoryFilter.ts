@@ -55,8 +55,7 @@ export function sortInventoryItems<T extends FilterableItem>(
   items: readonly T[],
   sortBy: InventorySortType,
 ): T[] {
-  const mutableItems = [...items];
-  return mutableItems.sort((a, b) => {
+  return [...items].sort((a, b) => {
     if (sortBy === 'name') {
       return a.name.localeCompare(b.name);
     }

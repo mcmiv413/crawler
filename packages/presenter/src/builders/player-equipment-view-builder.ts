@@ -61,12 +61,13 @@ export function getEquippedWeaponType(state: GameState): WeaponType | null {
 
 export function buildEquippedItems(state: GameState): EquippedItemView[] {
   const { equipment } = state.player;
-  const mutableEquippedItems: EquippedItemView[] = [];
 
-  if (equipment.weapon !== null) {
-    const weapon = state.itemRegistry.items.get(equipment.weapon);
-    if (isWeaponTemplate(weapon)) {
-      mutableEquippedItems.push({
+  const weapon = equipment.weapon === null
+    ? null
+    : state.itemRegistry.items.get(equipment.weapon);
+
+  const weaponItems = equipment.weapon !== null && isWeaponTemplate(weapon)
+    ? [{
         slot: 'weapon',
         itemId: equipment.weapon as string,
         name: weapon.name,
@@ -75,22 +76,21 @@ export function buildEquippedItems(state: GameState): EquippedItemView[] {
         baseBonus: weapon.weapon.damage,
         enchantments: [],
         spriteName: weapon.spriteName,
-      });
-    }
-  }
+      }]
+    : [];
 
-  for (const slot of ARMOR_SLOTS) {
+  const armorItems = ARMOR_SLOTS.flatMap((slot) => {
     const itemId = equipment[slot];
     if (itemId === null) {
-      continue;
+      return [];
     }
 
     const armor = state.itemRegistry.items.get(itemId);
     if (!isArmorTemplate(armor)) {
-      continue;
+      return [];
     }
 
-    mutableEquippedItems.push({
+    return [{
       slot,
       itemId: itemId as string,
       name: armor.name,
@@ -99,8 +99,8 @@ export function buildEquippedItems(state: GameState): EquippedItemView[] {
       baseBonus: armor.armor.defense,
       enchantments: buildEnchantmentViews(armor),
       spriteName: armor.spriteName,
-    });
-  }
+    }];
+  });
 
-  return mutableEquippedItems;
+  return [...weaponItems, ...armorItems];
 }

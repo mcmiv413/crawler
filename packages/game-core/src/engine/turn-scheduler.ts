@@ -1,5 +1,5 @@
 import type { GameState, EnemyInstance } from '@dungeon/contracts';
-import { posKey } from '@dungeon/contracts';
+import { posKey, sortedCopy } from '@dungeon/contracts';
 import type { DomainEvent } from '@dungeon/contracts';
 import { decideEnemyAction, type EnemyAction } from '../systems/enemy-ai.js';
 import { decideAmbientAction } from '../systems/ambient-behavior-engine.js';
@@ -43,10 +43,10 @@ export function processEnemyTurns(
   }
 
   // Sort enemies by speed (fastest first)
-  const mutableEnemiesBySpeed = [...currentState.run!.enemies.values()]
-    .filter(e => e.stats.health > 0);
-  mutableEnemiesBySpeed.sort((a, b) => b.stats.speed - a.stats.speed);
-  const enemies = mutableEnemiesBySpeed;
+  const enemies = sortedCopy(
+    [...currentState.run!.enemies.values()].filter(e => e.stats.health > 0),
+    (a, b) => b.stats.speed - a.stats.speed,
+  );
 
   for (const enemy of enemies) {
     // Inner loop: enemy may act multiple times if speed is high enough

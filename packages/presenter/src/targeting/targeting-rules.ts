@@ -94,27 +94,19 @@ export function getValidDisarmableTraps(
   playerPos: Position,
   objects: readonly EntityView[],
 ): EntityView[] {
-  const mutableValidTraps: EntityView[] = [];
-
-  for (const obj of objects) {
+  return objects.filter((obj) => {
     if (obj.type !== 'object') {
-      continue;
+      return false;
     }
 
     const isDisarmableTrap = (obj as TrapEntityView).isDisarmableTrap === true;
     if (isDisarmableTrap !== true) {
-      continue;
+      return false;
     }
 
     const position = { x: obj.x, y: obj.y };
-    if (chebyshevDistance(playerPos, position) !== 1) {
-      continue;
-    }
-
-    mutableValidTraps.push(obj);
-  }
-
-  return mutableValidTraps;
+    return chebyshevDistance(playerPos, position) === 1;
+  });
 }
 
 /**
@@ -127,50 +119,29 @@ export function getValidTrapPlacementDirections(
   enemies: readonly EntityView[],
   cells?: readonly WalkableCell[],
 ): Array<{ readonly x: number; readonly y: number }> {
-  const mutableDirections: Array<{ readonly x: number; readonly y: number }> = [];
-  const occupiedPositions = new Set<string>();
+  const occupiedPositions = new Set([
+    ...enemies
+      .filter((enemy) => enemy.type === 'enemy')
+      .map((enemy) => `${enemy.x},${enemy.y}`),
+    ...objects
+      .filter((obj) => obj.type === 'object')
+      .map((obj) => `${obj.x},${obj.y}`),
+  ]);
 
-  for (const enemy of enemies) {
-    if (enemy.type === 'enemy') {
-      occupiedPositions.add(`${enemy.x},${enemy.y}`);
-    }
-  }
+  const walkablePositions = new Set(
+    (cells ?? [])
+      .filter((cell) => cell.walkable === true)
+      .map((cell) => `${cell.x},${cell.y}`),
+  );
 
-  for (const obj of objects) {
-    if (obj.type === 'object') {
-      occupiedPositions.add(`${obj.x},${obj.y}`);
-    }
-  }
-
-  const walkablePositions = new Set<string>();
-  if (cells !== undefined) {
-    for (const cell of cells) {
-      if (cell.walkable === true) {
-        walkablePositions.add(`${cell.x},${cell.y}`);
-      }
-    }
-  }
-
-  for (let dx = -1; dx <= 1; dx += 1) {
-    for (let dy = -1; dy <= 1; dy += 1) {
-      if (dx === 0 && dy === 0) {
-        continue;
-      }
-
-      const position = { x: playerPos.x + dx, y: playerPos.y + dy };
+  return [-1, 0, 1].flatMap((dx) => {
+    return [-1, 0, 1].map((dy) => ({ dx, dy }));
+  })
+    .filter(({ dx, dy }) => dx !== 0 || dy !== 0)
+    .map(({ dx, dy }) => ({ x: playerPos.x + dx, y: playerPos.y + dy }))
+    .filter((position) => {
       const key = `${position.x},${position.y}`;
-
-      if (walkablePositions.size > 0 && !walkablePositions.has(key)) {
-        continue;
-      }
-
-      if (occupiedPositions.has(key)) {
-        continue;
-      }
-
-      mutableDirections.push(position);
-    }
-  }
-
-  return mutableDirections;
+      return (walkablePositions.size === 0 || walkablePositions.has(key))
+        && !occupiedPositions.has(key);
+    });
 }

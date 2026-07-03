@@ -11,7 +11,7 @@ import type {
   SerializedDungeonFloor,
   StoredFloor,
 } from '@dungeon/contracts';
-import { CURRENT_SCHEMA_VERSION, validateSchemaVersion, EMPTY_WEAPON_MASTERY } from '@dungeon/contracts';
+import { CURRENT_SCHEMA_VERSION, validateSchemaVersion, EMPTY_WEAPON_MASTERY, sortedCopy } from '@dungeon/contracts';
 import { BASE_PLAYER_STATS, MAGIC } from '@dungeon/content';
 import { recalculateMagicMana } from '../systems/magic-xp.js';
 
@@ -294,15 +294,13 @@ export function mapToSortedRecord<T, U>(
   map: ReadonlyMap<string | number, T>,
   convert: (value: T) => U,
 ): Record<string, U> {
-  const mutableEntries = [...map.entries()];
+  const sortedEntries = sortedCopy(map.entries(), ([left], [right]) => {
+    const l = String(left);
+    const r = String(right);
+    return l < r ? -1 : l > r ? 1 : 0;
+  });
   return Object.fromEntries(
-    mutableEntries
-      .sort(([left], [right]) => {
-        const l = String(left);
-        const r = String(right);
-        return l < r ? -1 : l > r ? 1 : 0;
-      })
-      .map(([key, value]) => [String(key), convert(value)]),
+    sortedEntries.map(([key, value]) => [String(key), convert(value)]),
   );
 }
 

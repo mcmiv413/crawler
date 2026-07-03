@@ -86,14 +86,9 @@ function resolveSelector(
     }
 
     case 'all_visible_enemies': {
-      const mutableTargets: Array<{ enemy: EnemyInstance; key: string }> = [];
-      for (const [key, enemy] of context.run.enemies) {
-        const cell = context.run.floor.cells.get(key);
-        if (cell?.visibility === 'visible') {
-          mutableTargets.push({ enemy, key });
-        }
-      }
-      return mutableTargets;
+      return Array.from(context.run.enemies)
+        .filter(([key]) => context.run!.floor.cells.get(key)?.visibility === 'visible')
+        .map(([key, enemy]) => ({ enemy, key }));
     }
 
     case 'line_from_player': {
@@ -119,29 +114,22 @@ function resolveSelector(
     }
 
     case 'target_plus_adjacent_enemies': {
-      const mutableTargets: Array<{ enemy: EnemyInstance; key: string }> = [];
-
-      // Add primary target first
       if (context.target !== undefined) {
-        mutableTargets.push({ enemy: context.target.instance, key: context.target.key });
-
-        // Add adjacent enemies
         const tx = context.target.instance.position.x;
         const ty = context.target.instance.position.y;
-        for (const [key, enemy] of context.run.enemies) {
-          if (enemy.id === context.target.instance.id) continue;
+        const adjacentTargets = Array.from(context.run.enemies)
+          .filter(([, enemy]) => enemy.id !== context.target!.instance.id)
+          .filter(([key, enemy]) => {
           const dx = Math.abs(enemy.position.x - tx);
           const dy = Math.abs(enemy.position.y - ty);
-          if (dx <= 1 && dy <= 1) {
-            const cell = context.run.floor.cells.get(key);
-            if (cell?.visibility === 'visible') {
-              mutableTargets.push({ enemy, key });
-            }
-          }
-        }
+            return dx <= 1 && dy <= 1 && context.run!.floor.cells.get(key)?.visibility === 'visible';
+          })
+          .map(([key, enemy]) => ({ enemy, key }));
+
+        return [{ enemy: context.target.instance, key: context.target.key }, ...adjacentTargets];
       }
 
-      return mutableTargets;
+      return [];
     }
 
     case 'custom':

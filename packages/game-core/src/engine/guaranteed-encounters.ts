@@ -132,10 +132,15 @@ function findGuaranteedEncounterPosition(
     return null;
   }
 
-  const mutableCandidates = [...candidates];
-  mutableCandidates.sort((left, right) =>
-    chebyshevDistance(right, floor.entrance) - chebyshevDistance(left, floor.entrance));
-  return mutableCandidates[0] ?? null;
+  return candidates.reduce<Position | null>((furthest, candidate) => {
+    if (furthest === null) {
+      return candidate;
+    }
+
+    return chebyshevDistance(candidate, floor.entrance) > chebyshevDistance(furthest, floor.entrance)
+      ? candidate
+      : furthest;
+  }, null);
 }
 
 function removeOccupantAtPosition(enemies: Map<string, EnemyInstance>, position: Position): void {

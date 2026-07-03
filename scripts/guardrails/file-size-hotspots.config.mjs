@@ -41,7 +41,7 @@ export default {
       path: 'packages/presenter/src/animation-sequence.ts',
       reason: 'Specialized event scheduling helpers — split by event family if behavior keeps growing',
       auditReportNote: 'Large but specialized',
-      lines: 864,
+      lines: 859,
     },
     {
       path: 'apps/web/src/rendering/three/ThreeAnimationOverlay.tsx',
@@ -118,7 +118,7 @@ export default {
     {
       path: 'packages/game-core/src/state/save-snapshot-validation.ts',
       reason: 'Save snapshot validation: each field type in SaveSnapshot requires explicit per-field validation (enemies, persistedFloorCache depth keys, storedFloor sub-fields, equipment slot compatibility, ring spell IDs). Shrink seam is splitting into domain-specific sub-validators once the ring migration and floor-cache redesign settle.',
-      lines: 695,
+      lines: 698,
     },
   ],
 };

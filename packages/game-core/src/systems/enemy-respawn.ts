@@ -147,8 +147,6 @@ export function respawnEnemiesOnPersistedFloor(
   const enemiesKilled = originalEnemyCount - currentEnemies.size;
   const eligibleRespawns = Math.min(respawnsWorth, enemiesKilled, maxRespawns - (currentEnemies.size - (originalEnemyCount - enemiesKilled)));
 
-  let newEnemies = new Map(currentEnemies);
-
   // Find walkable spawn tiles not in current FOV (simulate from entrance)
   const visibleCells = computeFov(floor, floor.entrance);
   const playerFov = new Set<string>(
@@ -160,7 +158,7 @@ export function respawnEnemiesOnPersistedFloor(
       if (cell.tile.walkable !== true) return false;
       const [x, y] = key.split(',').map(Number);
       if (x === undefined || y === undefined) return false;
-      if (newEnemies.has(key)) return false;
+      if (currentEnemies.has(key)) return false;
       if (playerFov.has(key)) return false;
       // Spawn away from entrance
       if (chebyshevDistance({ x, y }, floor.entrance) < 5) return false;
@@ -171,25 +169,34 @@ export function respawnEnemiesOnPersistedFloor(
       return { x: x!, y: y! };
     });
 
-  // Spawn respawned enemies
-  let mutableCandidateSpawns = [...candidateSpawns];
-  for (let i = 0; i < eligibleRespawns && mutableCandidateSpawns.length > 0; i++) {
-    const spawnIdx = rng.int(0, mutableCandidateSpawns.length - 1);
-    const spawnPos = mutableCandidateSpawns[spawnIdx]!;
-    mutableCandidateSpawns = mutableCandidateSpawns.filter((_, idx) => idx !== spawnIdx);
+  const respawnResult = Array.from({ length: Math.max(0, eligibleRespawns) }).reduce<{
+    readonly enemies: Map<string, EnemyInstance>;
+    readonly candidateSpawns: readonly { x: number; y: number }[];
+  }>((current) => {
+    if (current.candidateSpawns.length === 0) {
+      return current;
+    }
+
+    const spawnIdx = rng.int(0, current.candidateSpawns.length - 1);
+    const spawnPos = current.candidateSpawns[spawnIdx]!;
+    const remainingCandidateSpawns = current.candidateSpawns.filter((_, idx) => idx !== spawnIdx);
 
     // Pick enemy template from biome (no bosses)
     let template: EnemyTemplate | null = pickEnemy(biome, rng);
     while (template && template.archetype === 'boss') {
       template = pickEnemy(biome, rng);
     }
-    if (template === null) continue;
+    if (template === null) {
+      return { enemies: current.enemies, candidateSpawns: remainingCandidateSpawns };
+    }
 
     const newEnemy = createEnemyInstance(template, spawnPos, depth, { factions });
-    newEnemies.set(posKey(spawnPos), newEnemy);
-  }
+    const enemies = new Map(current.enemies);
+    enemies.set(posKey(spawnPos), newEnemy);
+    return { enemies, candidateSpawns: remainingCandidateSpawns };
+  }, { enemies: new Map(currentEnemies), candidateSpawns });
 
-  return newEnemies;
+  return respawnResult.enemies;
 }
 
 /**
