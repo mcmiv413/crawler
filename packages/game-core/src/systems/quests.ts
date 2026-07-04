@@ -9,23 +9,24 @@ export function completeFloorDepthQuests(
   state: GameState,
   newDepth: number,
 ): { state: GameState; events: DomainEvent[] } {
-  return state.activeQuests.reduce<{ state: GameState; events: DomainEvent[] }>((current, quest) => {
+  let currentState = state;
+  const mutableEvents: DomainEvent[] = [];
+
+  for (const quest of state.activeQuests) {
     if (quest.status === 'active' && quest.objective.type === 'reach_floor') {
       const targetDepth = quest.objective.targetCount ?? 0;
       if (newDepth === targetDepth) {
-        const result = evaluateQuestProgress(quest, current.state);
-        return {
-          state: {
-            ...current.state,
-            activeQuests: current.state.activeQuests.map(q =>
-              q.id === quest.id ? result.quest : q,
-            ),
-          },
-          events: [...current.events, ...result.events],
+        const result = evaluateQuestProgress(quest, currentState);
+        currentState = {
+          ...currentState,
+          activeQuests: currentState.activeQuests.map(q =>
+            q.id === quest.id ? result.quest : q,
+          ),
         };
+        mutableEvents.push(...result.events);
       }
     }
+  }
 
-    return current;
-  }, { state, events: [] });
+  return { state: currentState, events: mutableEvents };
 }

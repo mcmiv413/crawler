@@ -27,6 +27,7 @@ export function useBumpAnimationState(duration?: number): UseBumpAnimationStateR
   const nextIdRef = useRef(0);
   const timersRef = useRef<ReturnType<typeof setTimeout>[]>([]);
   const fallbackDurationMs = duration ?? LEGACY_BUMP_DURATION_MS;
+  const hasActiveAnimations = animations.length > 0;
 
   useEffect(() => {
     const handleBumpAnimation = (event: Event) => {
@@ -58,15 +59,12 @@ export function useBumpAnimationState(duration?: number): UseBumpAnimationStateR
       window.removeEventListener('bump-animation', handleBumpAnimation);
       timersRef.current.forEach((timer) => clearTimeout(timer));
       timersRef.current = [];
-      if (rafRef.current) {
-        cancelAnimationFrame(rafRef.current);
-      }
     };
   }, [fallbackDurationMs]);
 
   // Update progress values on every frame
   useEffect(() => {
-    if (animations.length === 0) {
+    if (hasActiveAnimations === false) {
       return;
     }
 
@@ -81,17 +79,18 @@ export function useBumpAnimationState(duration?: number): UseBumpAnimationStateR
               return { ...anim, progress };
             })
       );
+      rafRef.current = requestAnimationFrame(updateProgress);
     };
 
     rafRef.current = requestAnimationFrame(updateProgress);
 
     return () => {
-      if (rafRef.current) {
+      if (rafRef.current !== undefined) {
         cancelAnimationFrame(rafRef.current);
         rafRef.current = undefined;
       }
     };
-  }, [animations]);
+  }, [hasActiveAnimations]);
 
   return { animations };
 }

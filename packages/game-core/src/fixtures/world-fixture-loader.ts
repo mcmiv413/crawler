@@ -79,24 +79,31 @@ function validateFixtureFactions(
     return [];
   }
 
-  return factions.flatMap((override, index, overrides) => [
-    ...validateContentRef<string, WorldFixtureValidationError>(
-      `factions[${index}].id`,
-      override.id,
-      FACTION_DEFINITIONS,
-      'FACTION_DEFINITIONS',
-      value => `Unknown faction id "${String(value)}" at factions[${index}]. Must be one of: ${[...FACTION_DEFINITIONS.keys()].join(', ')}.`,
-    ),
-    ...fixtureErrorIf(
-      overrides.findIndex(candidate => candidate.id === override.id) !== index,
-      {
-        field: `factions[${index}].id`,
-        message: `Duplicate faction id "${override.id}" at factions[${index}]. Each faction may only appear once.`,
-      },
-    ),
-    ...validateFixtureRange(`factions[${index}].power`, override.power, 0, 100),
-    ...validateFixtureRange(`factions[${index}].disposition`, override.disposition, -100, 100),
-  ]);
+  const mutableSeenFactionIds = new Set<string>();
+
+  return factions.flatMap((override, index) => {
+    const isDuplicate = mutableSeenFactionIds.has(override.id);
+    mutableSeenFactionIds.add(override.id);
+
+    return [
+      ...validateContentRef<string, WorldFixtureValidationError>(
+        `factions[${index}].id`,
+        override.id,
+        FACTION_DEFINITIONS,
+        'FACTION_DEFINITIONS',
+        value => `Unknown faction id "${String(value)}" at factions[${index}]. Must be one of: ${[...FACTION_DEFINITIONS.keys()].join(', ')}.`,
+      ),
+      ...fixtureErrorIf(
+        isDuplicate,
+        {
+          field: `factions[${index}].id`,
+          message: `Duplicate faction id "${override.id}" at factions[${index}]. Each faction may only appear once.`,
+        },
+      ),
+      ...validateFixtureRange(`factions[${index}].power`, override.power, 0, 100),
+      ...validateFixtureRange(`factions[${index}].disposition`, override.disposition, -100, 100),
+    ];
+  });
 }
 
 function validateFixtureDungeonOgre(

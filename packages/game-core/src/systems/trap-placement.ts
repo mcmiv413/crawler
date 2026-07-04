@@ -15,6 +15,9 @@ export function getValidTrapPlacementDirections(
   const playerPos = state.player.position;
   const floor = run.floor;
   const directions: Array<'N' | 'S' | 'E' | 'W' | 'NE' | 'NW' | 'SE' | 'SW'> = ['N', 'S', 'E', 'W', 'NE', 'NW', 'SE', 'SW'];
+  const occupiedEnemyPositions = new Set(
+    Array.from(run.enemies.values(), enemy => `${enemy.position.x},${enemy.position.y}`),
+  );
 
   return directions
     .map(direction => moveInDirection(playerPos, direction))
@@ -24,9 +27,5 @@ export function getValidTrapPlacementDirections(
       return cell !== undefined && cell.tile.walkable === true;
     })
     .filter(position => !run.objects.has(`${position.x},${position.y}`))
-    .filter(position =>
-      !Array.from(run.enemies.values()).some(enemy =>
-        enemy.position.x === position.x && enemy.position.y === position.y,
-      ),
-    );
+    .filter(position => !occupiedEnemyPositions.has(`${position.x},${position.y}`));
 }

@@ -23,6 +23,7 @@ export function useConsumableAnimationState(): UseConsumableAnimationStateReturn
   const rafRef = useRef<number | undefined>(undefined);
   const nextIdRef = useRef(0);
   const timersRef = useRef<ReturnType<typeof setTimeout>[]>([]);
+  const hasActiveAnimations = animations.length > 0;
 
   useEffect(() => {
     const handleConsumableAnimation = (event: Event) => {
@@ -57,7 +58,7 @@ export function useConsumableAnimationState(): UseConsumableAnimationStateReturn
 
   // Drive progress 0→1 on every animation frame
   useEffect(() => {
-    if (animations.length === 0) {
+    if (hasActiveAnimations === false) {
       return;
     }
 
@@ -73,6 +74,7 @@ export function useConsumableAnimationState(): UseConsumableAnimationStateReturn
               return { ...anim, progress };
             }),
       );
+      rafRef.current = requestAnimationFrame(tick);
     };
 
     rafRef.current = requestAnimationFrame(tick);
@@ -82,7 +84,7 @@ export function useConsumableAnimationState(): UseConsumableAnimationStateReturn
         rafRef.current = undefined;
       }
     };
-  }, [animations]);
+  }, [hasActiveAnimations]);
 
   return { animations };
 }
