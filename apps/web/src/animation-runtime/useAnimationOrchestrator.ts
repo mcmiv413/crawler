@@ -102,20 +102,20 @@ function useLegacyAnimationOrchestrator(
 
   useEffect(() => {
     const previous = previousRef.current;
-    const timeouts = timeoutsRef.current;
+    const mutableTimeouts = timeoutsRef.current;
 
-    for (const timeout of timeouts) {
+    for (const timeout of mutableTimeouts) {
       clearTimeout(timeout);
     }
-    timeouts.length = 0;
+    mutableTimeouts.length = 0;
 
     if (!enabled) {
       previousRef.current = [];
       return () => {
-        for (const timeout of timeouts) {
+        for (const timeout of mutableTimeouts) {
           clearTimeout(timeout);
         }
-        timeouts.length = 0;
+        mutableTimeouts.length = 0;
       };
     }
 
@@ -134,17 +134,17 @@ function useLegacyAnimationOrchestrator(
           dispatchAnimatedEvent(animEvent);
         }, animEvent.delayMs);
 
-        timeouts.push(timeout);
+        mutableTimeouts.push(timeout);
       }
     }
 
     previousRef.current = animatedEvents;
 
     return () => {
-      for (const timeout of timeouts) {
+      for (const timeout of mutableTimeouts) {
         clearTimeout(timeout);
       }
-      timeouts.length = 0;
+      mutableTimeouts.length = 0;
     };
   }, [animatedEvents, enabled]);
 }
