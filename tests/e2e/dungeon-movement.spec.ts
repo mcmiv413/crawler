@@ -93,8 +93,11 @@ async function startSeededDungeonRun(page: Page, seed: number): Promise<DungeonM
       return;
     }
 
-    const body = response.request().postData() ?? '';
-    if (body.includes('"type":"TOWN_ACTION"') === false || body.includes('"action":"enter_dungeon"') === false) {
+    const body = response.request().postDataJSON() as {
+      readonly type?: unknown;
+      readonly action?: unknown;
+    } | null | undefined;
+    if (body?.type !== 'TOWN_ACTION' || body.action !== 'enter_dungeon') {
       return;
     }
 
@@ -206,30 +209,31 @@ function isMoveCommand(request: Request): boolean {
     return false;
   }
 
-  return request.postData()?.includes('"type":"MOVE"') ?? false;
+  const body = request.postDataJSON() as { readonly type?: unknown } | null | undefined;
+  return body?.type === 'MOVE';
 }
 
 test('movement keeps accepting turn inputs while move animations settle', async ({ page }) => {
-  const movePayloads: string[] = [];
+  const movePayloads: unknown[] = [];
   page.on('request', (request) => {
     if (isMoveCommand(request)) {
-      movePayloads.push(request.postData() ?? '');
+      movePayloads.push(request.postDataJSON());
     }
   });
 
   await startDungeonRun(page);
 
   await page.keyboard.press('ArrowUp');
-  await page.waitForTimeout(220);
+  await page.waitForTimeout(220); // audit-allow-waitForTimeout: animation timing assertion
   await page.keyboard.press('ArrowRight');
-  await page.waitForTimeout(220);
+  await page.waitForTimeout(220); // audit-allow-waitForTimeout: animation timing assertion
   await page.keyboard.press('ArrowDown');
 
   await expect.poll(() => movePayloads.length).toBe(3);
   expect(movePayloads).toEqual([
-    '{"type":"MOVE","direction":"N"}',
-    '{"type":"MOVE","direction":"E"}',
-    '{"type":"MOVE","direction":"S"}',
+    { type: 'MOVE', direction: 'N' },
+    { type: 'MOVE', direction: 'E' },
+    { type: 'MOVE', direction: 'S' },
   ]);
 });
 
@@ -519,7 +523,7 @@ test('four-tile click auto-walk stays visually continuous on canvas', async ({ p
     let lastCount = 0;
     let stagnantIterations = 0;
     for (let index = 0; index < 60; index += 1) {
-      await page.waitForTimeout(50);
+      await page.waitForTimeout(50); // audit-allow-waitForTimeout: animation timing assertion
       samples.push(await sampleCanvasFrame(canvas));
       moveCount = await page.evaluate(
         () => (window as Window & { __movementProbe: MovementProbe }).__movementProbe.moveRequests.length,
@@ -541,7 +545,7 @@ test('four-tile click auto-walk stays visually continuous on canvas', async ({ p
     }
 
     for (let index = 0; index < 4; index += 1) {
-      await page.waitForTimeout(50);
+      await page.waitForTimeout(50); // audit-allow-waitForTimeout: animation timing assertion
       samples.push(await sampleCanvasFrame(canvas));
     }
 

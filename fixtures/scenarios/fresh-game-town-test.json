@@ -1,0 +1,15 @@
+{
+  "schemaVersion": 1,
+  "name": "fresh-game-town-test",
+  "description": "A new character and fresh world used to restore a deterministic town session before quest assignment and dungeon entry.",
+  "player": { "ref": "new-character" },
+  "world": { "ref": "fresh-world" },
+  "floor": 1,
+  "seed": 404,
+  "map": {
+    "width": 3,
+    "height": 1,
+    "playerStart": { "x": 0, "y": 0 }
+  },
+  "tags": ["e2e", "town", "quest", "new-game"]
+}

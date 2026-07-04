@@ -24,6 +24,8 @@ const EXAMPLE_NAMES = [
   'inventory-chest-test',
   'faction-leader-test',
   'ogre-emergence-test',
+  'fresh-game-town-test',
+  'full-feature-e2e-test',
 ];
 
 const engine = new GameEngine();
