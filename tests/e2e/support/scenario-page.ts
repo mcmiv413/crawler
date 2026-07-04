@@ -1,5 +1,5 @@
 import { expect } from '@playwright/test';
-import type { Page } from '@playwright/test';
+import type { Locator, Page, Response } from '@playwright/test';
 import type { GameState } from '@dungeon/contracts';
 
 import { loadScenario } from '../../../packages/game-core/src/fixtures/scenario-fixture-loader.js';
@@ -20,6 +20,21 @@ interface RestoredScenarioSession {
 
 export interface ScenarioLoadOptions {
   readonly prepareState?: (state: GameState) => GameState;
+  readonly expectedPhase?: 'dungeon' | 'town';
+}
+
+export interface ScenarioCommandEvent {
+  readonly type: string;
+  readonly [key: string]: unknown;
+}
+
+export interface ScenarioCommandResponse {
+  readonly events: readonly ScenarioCommandEvent[];
+  readonly view?: unknown;
+}
+
+function escapeRegExp(value: string): string {
+  return value.replace(/[.*+?^${}()|[\]\\]/gu, '\\$&');
 }
 
 function requireSessionField(
@@ -101,9 +116,36 @@ export class ScenarioPage {
     }, { key: SESSION_STORAGE_KEY, value: JSON.stringify(session) });
 
     await page.goto('/', { waitUntil: 'domcontentloaded' });
-    await expect(page.getByTestId('dungeon-view')).toBeVisible({ timeout: 10_000 });
-    await expect(page.getByTestId('dungeon-canvas')).toBeVisible({ timeout: 10_000 });
+    const expectedPhase = options.expectedPhase ?? 'dungeon';
+    await expect(page.getByTestId(`${expectedPhase}-view`)).toBeVisible({ timeout: 10_000 });
+    if (expectedPhase === 'dungeon') {
+      await expect(page.getByTestId('dungeon-canvas')).toBeVisible({ timeout: 10_000 });
+    }
 
     return new ScenarioPage(page, scenarioName, layout, session);
+  }
+
+  actionButton(label: string): Locator {
+    return this.page.getByRole('button', {
+      name: new RegExp(`^${escapeRegExp(label)}:`, 'u'),
+    });
+  }
+
+  waitForCommand(type: string): Promise<Response> {
+    return this.page.waitForResponse(response => {
+      if (response.request().method() !== 'POST' || !response.url().includes('/commands')) {
+        return false;
+      }
+
+      const body = response.request().postDataJSON() as { readonly type?: unknown } | null | undefined;
+      return body?.type === type;
+    });
+  }
+
+  async commandJson(response: Response, expectedType: string): Promise<ScenarioCommandResponse> {
+    expect(response.ok()).toBe(true);
+    const requestBody = response.request().postDataJSON() as { readonly type?: unknown } | null | undefined;
+    expect(requestBody?.type).toBe(expectedType);
+    return response.json() as Promise<ScenarioCommandResponse>;
   }
 }

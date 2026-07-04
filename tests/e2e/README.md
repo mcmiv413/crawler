@@ -1,177 +1,46 @@
-# E2E Test Suite - RPG Game Loop Tests
+# Browser E2E confidence suite
 
-## Overview
-This directory contains comprehensive end-to-end tests for the RPG dungeon crawler game using Playwright.
+Playwright E2E tests cover behavior that requires a real browser: user interactions, session restore, responsive layout, canvas or WebGL rendering, and visible feedback after commands. Logic that can be proven without a browser belongs in the unit, property, contract, integration, or balance layers.
 
-## Test Structure
+## Test doctrine
 
-### File: `game-loop.spec.ts` (750 lines)
+- Use `ScenarioPage.load` with a deterministic fixture from `fixtures/scenarios/` for gameplay states. Do not explore randomly or depend on generated encounters.
+- Assert both the structured command request/response and the resulting visible UI state. Parse request bodies with `postDataJSON()` or `JSON.parse`; never match raw `postData()` substrings.
+- Use Playwright auto-waiting assertions such as `toBeVisible`, `toContainText`, and `expect.poll` instead of fixed delays. A `waitForTimeout` is allowed only when elapsed time is the behavior under test and the line carries the audit allowlist comment.
+- Required controls are required. Do not catch failures or conditionally skip the rest of a test when a button, panel, enemy, or item is unavailable.
+- Avoid broad body-text checks and assertions that only prove the page did not crash. A “game stayed alive” test is appropriate only for a named crash regression with a specific trigger and outcome.
+- Keep smoke coverage small. One smoke test should prove one critical startup path, not replay a full game.
 
-#### Page Object Model: `GamePage`
-Central class for all UI interactions with methods for:
-- Game navigation (`navigateToGame`, `startNewGame`)
-- Player state (`getPlayerStats`)
-- Movement (`movePlayer` with 8 directions)
-- Combat (`attackNearestEnemy`, `getVisibleEnemies`)
-- Inventory (`openInventory`, `pickUpItem`, `equipItem`)
-- UI panels (`getCombatLog`)
+`ScenarioPage` restores an isolated server session, installs it in browser session storage, applies a named layout preset, and waits for the expected phase. Its `actionButton`, `waitForCommand`, and `commandJson` helpers provide escaped action labels and structured command assertions.
 
-#### Test Organization (7 Suites, 20 Tests)
+## Naming and tags
 
-```
-Game Initialization & Setup (3 tests)
-├── Game UI displays on startup
-├── Player stats show correctly
-└── Controls ready at startup
+- `@smoke` in the test title: tiny startup checks run by the smoke script.
+- `scenario` in the test title or filename: deterministic scenario-driven gameplay.
+- `layout` in the title: responsive reachability or overflow coverage.
+- `renderer` in the title: canvas/WebGL rendering behavior, including intentional visual comparisons.
 
-Movement & Exploration (3 tests)
-├── Single direction movement
-├── All 8-directional movement
-└── FOV/visibility updates
+These terms are grep contracts. Keep them in test titles when adding matching coverage.
 
-Combat Flow (3 tests)
-├── Attack execution
-├── Combat log display
-└── Enemy health updates
-
-Item Management (3 tests)
-├── Inventory display
-├── Item pickup
-└── Inventory updates
-
-Status Effects & Debuffs (3 tests)
-├── Status effect display
-├── Status icons in UI
-└── Effect duration/removal
-
-Combat Indicators (3 tests)
-├── Floating damage indicators when the player attacks
-├── Floating damage indicators when the player takes damage
-└── Indicator fade-out timing
-
-Complete Game Loop Journey (2 tests)
-├── Full session integration
-└── State persistence across panels
-```
-
-## Running Tests
+## Commands
 
 ```bash
-# All tests
-npm run test:e2e
-
-# UI mode (interactive)
-npm run test:e2e:ui
-
-# Specific suite
-npx playwright test --grep "Combat Flow"
-
-# Single test
-npx playwright test -g "should attack"
-
-# List all tests
-npx playwright test --list tests/e2e/game-loop.spec.ts
-
-# Debug mode
-npx playwright test --debug
-
-# With headed browser
-npx playwright test --headed
+pnpm test:e2e:smoke     # titles containing @smoke
+pnpm test:e2e:scenario  # titles containing scenario
+pnpm test:e2e:full      # complete Playwright suite
+pnpm test:e2e:ui        # Playwright UI mode
+pnpm audit:tests         # test-layer and anti-pattern audit
 ```
 
-## Test Design Patterns
+The Playwright app defaults to `http://localhost:8180/`. The API base is resolved through `E2E_API_BASE`; both servers are started by `playwright.config.ts` unless a reusable API server is already running.
 
-### Resilient Element Selection
-Uses multiple selector strategies:
-- `data-testid` attributes for reliability
-- CSS classes as fallbacks
-- Text content matching for robustness
+## Adding coverage
 
-### Explicit Waits
-- Wait for element visibility (not hard-coded timeouts)
-- Use `locator.waitFor()` with configurable timeouts
-- Race conditions handled for phase transitions
+1. Choose the narrowest test layer first; use E2E only for browser-only confidence.
+2. Add or reuse a deterministic scenario fixture and load it with `ScenarioPage.load`.
+3. Trigger one user-visible behavior through the real UI.
+4. Capture the matching command by parsed request type, assert its response events, and assert the specific visible result.
+5. Use a layout preset when viewport behavior is part of the contract.
+6. Run the focused grep script, then the repository validation gates.
 
-### Graceful Error Handling
-- Optional UI elements handled with try-catch
-- Directions that aren't available skip gracefully
-- Tests remain stable even if some features unavailable
-
-### Complete User Journeys
-Each test represents a full user journey from start to finish, not individual features.
-
-## Debugging
-
-### Generate Screenshots on Failure
-Tests have built-in `takeScreenshot()` method for debugging.
-
-### View Test Report
-```bash
-npm run test:e2e
-# Open playwright-report/index.html
-```
-
-### Verbose Logging
-```bash
-DEBUG=pw:api npx playwright test
-```
-
-### Step-by-Step Execution
-```bash
-npx playwright test --debug
-# Use debugger controls in Playwright Inspector
-```
-
-## Best Practices
-
-1. **Test Independence**: Each test is completely independent
-2. **Descriptive Names**: Test names describe what users do, not technical implementation
-3. **Explicit Waits**: Always wait for UI elements, never hard-code timeouts
-4. **Single Journey**: Each test covers one complete user journey
-5. **UI Verification**: Tests check what users see, not just backend state
-6. **Resilient Selectors**: Use data-testid primarily, with fallbacks
-7. **Error Recovery**: Handle optional UI gracefully
-
-## Configuration
-
-See `playwright.config.ts` for:
-- Base URL: `http://localhost:8080`
-- Servers: Automatically started (@dungeon/server, @dungeon/web)
-- Reporter: HTML report generation
-- Retries: 2x in CI, 0x locally
-- Timeout: 30 seconds per test
-
-## Maintenance
-
-### Adding New Tests
-1. Add to appropriate test.describe() block
-2. Use GamePage methods for interactions
-3. Follow naming convention: "should [user action] [expected result]"
-4. Include meaningful assertions
-
-### Updating Selectors
-Update selectors in the GamePage class methods for centralized maintenance.
-
-### Debugging Failed Tests
-1. Check HTML report: `playwright-report/index.html`
-2. View screenshots/traces for failures
-3. Run with `--debug` flag for step debugging
-4. Check browser console for errors
-
-## Test Statistics
-
-- **Total Tests**: 20
-- **Lines of Code**: 750
-- **Page Object Methods**: 15+
-- **User Journeys**: 7
-- **Critical Paths**: 6+
-
-## Coverage Summary
-
-✅ Game initialization and UI readiness
-✅ Movement in all 8 directions
-✅ Combat system integration
-✅ Item and inventory management
-✅ Status effects application
-✅ Combat encounter feedback and floating damage indicators
-✅ Full game session stability
+Failure traces and the HTML report are written by Playwright. Use `pnpm exec playwright test --debug` for interactive diagnosis.

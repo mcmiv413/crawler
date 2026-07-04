@@ -17,40 +17,37 @@ class GamePage {
     await startButton.waitFor({ state: 'visible' });
 
     const nameInput = this.page.locator('input[placeholder*="name"], input[placeholder*="character"]');
-    if (await nameInput.isVisible({ timeout: 2000 }).catch(() => false)) {
-      await nameInput.clear();
-      await nameInput.fill(playerName);
-    }
+    await expect(nameInput).toBeVisible();
+    await nameInput.clear();
+    await nameInput.fill(playerName);
 
     await startButton.click();
-    await this.page.waitForTimeout(500);
+    await this.page.waitForTimeout(500); // audit-allow-waitForTimeout: renderer timing assertion
   }
 
   async enterDungeon() {
     const enterButton = this.page.locator('button:has-text("Enter Dungeon")');
     await enterButton.waitFor({ state: 'visible', timeout: 5000 });
     await enterButton.click();
-    await this.page.waitForTimeout(500);
+    await this.page.waitForTimeout(500); // audit-allow-waitForTimeout: renderer timing assertion
   }
 
   async waitForDungeonLoaded() {
     // Use nth(1) to get the main dungeon map canvas (nth(0) is the sprite icon canvas)
     const canvas = this.page.locator('canvas').nth(1);
     await canvas.waitFor({ state: 'visible', timeout: 5000 });
-    await this.page.waitForTimeout(500);
+    await this.page.waitForTimeout(500); // audit-allow-waitForTimeout: renderer timing assertion
   }
 
   async enableSprites() {
     // Try to enable sprite rendering
     const spriteButton = this.page.locator('button:has-text("Sprites"), button:has-text("🎨")');
-    const isVisible = await spriteButton.isVisible({ timeout: 1000 }).catch(() => false);
-    if (isVisible) {
-      const currentText = await spriteButton.textContent();
-      // If it shows ASCII icon, click to enable sprites
-      if (currentText?.includes('⬛')) {
-        await spriteButton.click();
-        await this.page.waitForTimeout(300);
-      }
+    await expect(spriteButton).toBeVisible();
+    const currentText = await spriteButton.textContent();
+    // If it shows ASCII icon, click to enable sprites
+    if (currentText?.includes('⬛')) {
+      await spriteButton.click();
+      await this.page.waitForTimeout(300); // audit-allow-waitForTimeout: renderer timing assertion
     }
   }
 
@@ -129,7 +126,7 @@ test.describe('Sprite Rendering', () => {
     await gamePage.enableSprites();
 
     // Wait longer for sprite sheet to load
-    await page.waitForTimeout(2000);
+    await page.waitForTimeout(2000); // audit-allow-waitForTimeout: renderer timing assertion
 
     // Check if sprite sheet image is loaded by examining registry state
     const spriteState = await page.evaluate(() => {

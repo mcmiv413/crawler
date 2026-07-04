@@ -17,20 +17,18 @@ class GamePage {
     await startButton.waitFor({ state: 'visible' });
 
     const nameInput = this.page.locator('input').first();
-    if (await nameInput.isVisible({ timeout: 1000 }).catch(() => false)) {
-      await nameInput.clear();
-      await nameInput.fill(playerName);
-    }
+    await expect(nameInput).toBeVisible();
+    await nameInput.clear();
+    await nameInput.fill(playerName);
 
     await startButton.click();
-    await this.page.waitForTimeout(500);
+    await this.page.waitForTimeout(500); // audit-allow-waitForTimeout: animation timing assertion
   }
 
   async waitForDungeonLoaded() {
     const enterDungeonButton = this.page.locator('button:has-text("Enter Dungeon")').first();
-    if (await enterDungeonButton.isVisible({ timeout: 1000 }).catch(() => false)) {
-      await enterDungeonButton.click();
-    }
+    await expect(enterDungeonButton).toBeVisible();
+    await enterDungeonButton.click();
 
     const dungeonView = this.page.locator('canvas, .dungeon-phase, [data-testid="dungeon-view"]').first();
     await dungeonView.waitFor({ state: 'visible', timeout: 5000 });
@@ -57,7 +55,7 @@ test('combat indicators retain player-first then enemy beat DOM order', async ({
     emitIndicator('BEAT-E2', 290, 7);
   });
 
-  await page.waitForTimeout(450);
+  await page.waitForTimeout(450); // audit-allow-waitForTimeout: animation timing assertion
 
   const indicatorTexts = await page.locator('div').evaluateAll((nodes) =>
     nodes

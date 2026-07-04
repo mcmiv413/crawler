@@ -9,20 +9,20 @@ test('diagnose sprite loading issue', async ({ page }) => {
   const newGameButton = page.locator('button:has-text("New Game")');
   await newGameButton.waitFor({ state: 'visible' });
   await newGameButton.click();
-  await page.waitForTimeout(500);
+  await page.waitForTimeout(500); // audit-allow-waitForTimeout: renderer timing assertion
 
   // Enter dungeon
   const enterButton = page.locator('button:has-text("Enter Dungeon")');
   await enterButton.waitFor({ state: 'visible', timeout: 5000 });
   await enterButton.click();
-  await page.waitForTimeout(500);
+  await page.waitForTimeout(500); // audit-allow-waitForTimeout: renderer timing assertion
 
   // Wait for canvas to appear
   const canvas = page.locator('canvas').nth(1);
   await canvas.waitFor({ state: 'visible', timeout: 5000 });
 
   // Wait for sprites to load
-  await page.waitForTimeout(2000);
+  await page.waitForTimeout(2000); // audit-allow-waitForTimeout: renderer timing assertion
 
   // Check network requests
   console.log('\n=== NETWORK REQUESTS ===');

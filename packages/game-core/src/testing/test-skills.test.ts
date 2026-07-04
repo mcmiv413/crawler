@@ -165,6 +165,92 @@ describe('GameFlow', () => {
       expect(result.confidence).toBeGreaterThanOrEqual(0.5);
       expect(result.confidence).toBeLessThanOrEqual(1);
     });
+
+    it('rejects E2E assertions that cannot fail', () => {
+      const code = joinLines(
+        "import { expect, test } from '@playwright/test';",
+        "test('placebo', async () => {",
+        '  expect(true).toBeTruthy();',
+        '  expect(true).toBe(true);',
+        '  expect(controlVisible || true).toBeTruthy();',
+        '});',
+      );
+
+      const result = analyzeTestFile(code, 'e2e');
+
+      expect(result.validated).toBe(false);
+      expect(result.issues.map(issue => issue.code)).toEqual(expect.arrayContaining([
+        'E2E_LITERAL_ASSERTION',
+        'E2E_OR_TRUE_ASSERTION',
+      ]));
+    });
+
+    it('rejects broad body assertions and graceful skipping in E2E tests', () => {
+      const code = joinLines(
+        "import { expect, test } from '@playwright/test';",
+        "test('optional control', async ({ page }) => {",
+        "  const bodyText = await page.locator('body').textContent();",
+        '  if (await page.getByRole(\'button\').isVisible().catch(() => false)) {',
+        "    try { await page.getByRole('button').click(); } catch {}",
+        '  }',
+        "  if (await page.getByRole('button').isEnabled()) { await page.getByRole('button').click(); }",
+        '  expect(bodyText).toBeTruthy();',
+        '});',
+      );
+
+      const result = analyzeTestFile(code, 'e2e');
+
+      expect(result.issues.map(issue => issue.code)).toEqual(expect.arrayContaining([
+        'E2E_BROAD_BODY_ASSERTION',
+        'E2E_CONDITIONAL_SKIP',
+        'E2E_SWALLOWED_ERROR',
+      ]));
+      expect(result.issues.filter(issue => issue.code === 'E2E_CONDITIONAL_SKIP').length)
+        .toBeGreaterThanOrEqual(2);
+    });
+
+    it('rejects hard waits, non-visual base64 comparisons, and raw request substring checks', () => {
+      const code = joinLines(
+        "import { expect, test } from '@playwright/test';",
+        "test('movement check', async ({ page }) => {",
+        '  await page.waitForTimeout(200);',
+        "  const before = (await page.screenshot()).toString('base64');",
+        "  const request = await page.waitForRequest(request => request.postData()?.includes('MOVE') ?? false);",
+        "  expect(request.postData()).toContain('MOVE');",
+        '  expect(before).toBeDefined();',
+        '});',
+      );
+
+      const result = analyzeTestFile(code, 'e2e');
+
+      expect(result.issues.map(issue => issue.code)).toEqual(expect.arrayContaining([
+        'E2E_HARD_WAIT',
+        'E2E_BASE64_SCREENSHOT_ASSERTION',
+        'E2E_RAW_POST_DATA_ASSERTION',
+      ]));
+      expect(result.issues.filter(issue => issue.code === 'E2E_RAW_POST_DATA_ASSERTION')).toHaveLength(2);
+    });
+
+    it('allows documented timing waits, visual snapshots, and structured request parsing', () => {
+      const code = joinLines(
+        "import { expect, test } from '@playwright/test';",
+        "test('visual renderer timing', async ({ page }) => {",
+        '  await page.waitForTimeout(200); // audit-allow-waitForTimeout: renderer timing assertion',
+        "  const snapshot = (await page.screenshot()).toString('base64');",
+        '  const request = await page.waitForRequest(request => {',
+        '    const body = request.postDataJSON() as { type?: string };',
+        "    return body.type === 'MOVE';",
+        '  });',
+        "  expect((request.postDataJSON() as { type?: string }).type).toBe('MOVE');",
+        '  expect(snapshot.length).toBeGreaterThan(0);',
+        '});',
+      );
+
+      const result = analyzeTestFile(code, 'e2e');
+
+      expect(result.validated).toBe(true);
+      expect(result.issues).toHaveLength(0);
+    });
   });
 });
 

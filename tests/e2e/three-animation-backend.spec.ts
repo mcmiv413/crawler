@@ -1098,13 +1098,13 @@ test('Three animation overlay stays click-through over the dungeon canvas', asyn
   const moveRequest = page.waitForRequest((request) =>
     request.method() === 'POST'
       && /\/api\/games\/[^/]+\/commands$/.test(request.url())
-      && (request.postData()?.includes('"type":"MOVE"') ?? false),
+      && (request.postDataJSON() as { readonly type?: unknown } | null | undefined)?.type === 'MOVE',
   );
 
   await page.mouse.click(dungeonBox!.x + clickTarget.x, dungeonBox!.y + clickTarget.y);
 
   const request = await moveRequest;
-  expect(request.postData()).toContain('"type":"MOVE"');
+  expect((request.postDataJSON() as { readonly type?: unknown }).type).toBe('MOVE');
 });
 
 test('forced WebGL failure falls back to the dungeon canvas and canvas cannot satisfy the WebGL assertion', async ({ page }) => {

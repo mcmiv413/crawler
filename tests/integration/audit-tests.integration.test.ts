@@ -87,4 +87,28 @@ describe('audit-tests script', () => {
     expect(report).toContain('tests/e2e/game-loop.spec.ts');
     expect(report).toContain('packages/game-core/src/systems/enemy-ai.balance.test.ts');
   });
+
+  it('reports E2E anti-pattern errors for the merge guardrail', () => {
+    const rootDir = mkdtempSync(join(tmpdir(), 'audit-tests-e2e-'));
+    tempDirs.push(rootDir);
+    writeFixture(rootDir, 'tests/e2e/legacy.spec.ts', `
+import { expect, test } from '@playwright/test';
+
+test('legacy flow', async ({ page }) => {
+  await page.waitForTimeout(200);
+  expect(true).toBeTruthy();
+});
+`);
+
+    const [result] = auditAllTests(rootDir);
+    const report = generateReport([result!]);
+
+    expect(result?.isValid).toBe(false);
+    expect(result?.antiPatterns).toEqual(expect.arrayContaining([
+      'E2E_HARD_WAIT',
+      'E2E_LITERAL_ASSERTION',
+    ]));
+    expect(report).toContain('## Files with Errors (High Priority)');
+    expect(report).toContain('tests/e2e/legacy.spec.ts');
+  });
 });
