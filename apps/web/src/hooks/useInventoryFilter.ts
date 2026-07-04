@@ -66,18 +66,9 @@ export function sortInventoryItems<T extends FilterableItem>(
     return rarityDelta === 0 ? a.name.localeCompare(b.name) : rarityDelta;
   };
 
-  return items.reduce<T[]>((sortedItems, item) => {
-    const insertionIndex = sortedItems.findIndex(
-      (sortedItem) => compareItems(item, sortedItem) < 0,
-    );
-    return insertionIndex === -1
-      ? [...sortedItems, item]
-      : [
-          ...sortedItems.slice(0, insertionIndex),
-          item,
-          ...sortedItems.slice(insertionIndex),
-        ];
-  }, []);
+  const mutableItems = Array.from(items);
+  mutableItems.sort(compareItems);
+  return mutableItems;
 }
 
 export function useInventoryFilter(items: readonly InventoryItemView[]): {
