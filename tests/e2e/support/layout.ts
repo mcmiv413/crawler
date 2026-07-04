@@ -27,6 +27,8 @@ async function expectReachableInViewport(page: Page, locator: Locator): Promise<
   expect(box).not.toBeNull();
   expect(box!.width).toBeGreaterThan(0);
   expect(box!.height).toBeGreaterThan(0);
+  expect(box!.x).toBeGreaterThanOrEqual(-OVERFLOW_TOLERANCE_PX);
+  expect(box!.y).toBeGreaterThanOrEqual(-OVERFLOW_TOLERANCE_PX);
   expect(box!.x + box!.width).toBeLessThanOrEqual(viewport!.width + OVERFLOW_TOLERANCE_PX);
   expect(box!.y + box!.height).toBeLessThanOrEqual(viewport!.height + OVERFLOW_TOLERANCE_PX);
 }
