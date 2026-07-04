@@ -241,8 +241,12 @@ test.describe('Combat Indicators', () => {
   });
 });
 
+function escapeRegExp(value: string): string {
+  return value.replace(/[.*+?^${}()|[\]\\]/gu, '\\$&');
+}
+
 function scenarioActionButton(page: Page, label: string) {
-  return page.getByRole('button', { name: new RegExp(`^${label}:`, 'u') });
+  return page.getByRole('button', { name: new RegExp(`^${escapeRegExp(label)}:`, 'u') });
 }
 
 function scenarioCombatLog(page: Page) {
@@ -285,11 +289,15 @@ test('scenario inventory-chest-test: ios-min chest interaction awards visible in
   await expectNoDocumentOverflow(page, 'ios-min');
   await expectMobileNavVisibleWhenExpected(page, 'ios-min');
 
-  const interactResponsePromise = page.waitForResponse(response =>
-    response.request().method() === 'POST'
-    && response.url().includes('/commands')
-    && response.request().postData()?.includes('"type":"INTERACT"') === true,
-  );
+  const interactResponsePromise = page.waitForResponse(response => {
+    const request = response.request();
+    if (request.method() !== 'POST' || !response.url().includes('/commands')) {
+      return false;
+    }
+
+    const postData = request.postDataJSON() as { readonly type?: unknown } | null | undefined;
+    return postData?.type === 'INTERACT';
+  });
   await scenarioActionButton(page, 'Interact').click();
   await page.getByRole('button', { name: /Treasure Chest/iu }).click();
   const interactResponse = await interactResponsePromise;

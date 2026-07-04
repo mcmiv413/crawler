@@ -71,8 +71,9 @@ export class ScenarioPage {
       const loadedState = loadScenario(isolatedFixture, RESOLVERS).state;
       serializedState = serializeState(options.prepareState?.(loadedState) ?? loadedState);
     } catch (error) {
+      const errorMessage = error instanceof Error ? error.message : String(error);
       throw new Error(
-        `Failed to load scenario fixture "${scenarioName}": ${(error as Error).message}`,
+        `Failed to load scenario fixture "${scenarioName}": ${errorMessage}`,
         { cause: error },
       );
     }
