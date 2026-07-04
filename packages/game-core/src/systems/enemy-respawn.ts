@@ -169,34 +169,33 @@ export function respawnEnemiesOnPersistedFloor(
       return { x: x!, y: y! };
     });
 
-  const respawnResult = Array.from({ length: Math.max(0, eligibleRespawns) }).reduce<{
-    readonly enemies: Map<string, EnemyInstance>;
-    readonly candidateSpawns: readonly { x: number; y: number }[];
-  }>((current) => {
-    if (current.candidateSpawns.length === 0) {
-      return current;
-    }
+  let remainingCandidateSpawns: readonly { x: number; y: number }[] = candidateSpawns;
+  const spawnedEnemyEntries = Array.from(
+    { length: Math.max(0, eligibleRespawns) },
+    (): readonly [string, EnemyInstance] | null => {
+      if (remainingCandidateSpawns.length === 0) {
+        return null;
+      }
 
-    const spawnIdx = rng.int(0, current.candidateSpawns.length - 1);
-    const spawnPos = current.candidateSpawns[spawnIdx]!;
-    const remainingCandidateSpawns = current.candidateSpawns.filter((_, idx) => idx !== spawnIdx);
+      const spawnIdx = rng.int(0, remainingCandidateSpawns.length - 1);
+      const spawnPos = remainingCandidateSpawns[spawnIdx]!;
+      remainingCandidateSpawns = remainingCandidateSpawns.filter((_, idx) => idx !== spawnIdx);
 
-    // Pick enemy template from biome (no bosses)
-    let template: EnemyTemplate | null = pickEnemy(biome, rng);
-    while (template && template.archetype === 'boss') {
-      template = pickEnemy(biome, rng);
-    }
-    if (template === null) {
-      return { enemies: current.enemies, candidateSpawns: remainingCandidateSpawns };
-    }
+      // Pick enemy template from biome (no bosses)
+      let template: EnemyTemplate | null = pickEnemy(biome, rng);
+      while (template && template.archetype === 'boss') {
+        template = pickEnemy(biome, rng);
+      }
+      if (template === null) {
+        return null;
+      }
 
-    const newEnemy = createEnemyInstance(template, spawnPos, depth, { factions });
-    const enemies = new Map(current.enemies);
-    enemies.set(posKey(spawnPos), newEnemy);
-    return { enemies, candidateSpawns: remainingCandidateSpawns };
-  }, { enemies: new Map(currentEnemies), candidateSpawns });
+      const newEnemy = createEnemyInstance(template, spawnPos, depth, { factions });
+      return [posKey(spawnPos), newEnemy] as const;
+    },
+  ).filter((entry): entry is readonly [string, EnemyInstance] => entry !== null);
 
-  return respawnResult.enemies;
+  return new Map([...currentEnemies, ...spawnedEnemyEntries]);
 }
 
 /**

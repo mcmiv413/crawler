@@ -44,7 +44,7 @@ function buildInspectableEntities(state: GameState): readonly InspectableEntityV
       if (!template) return null;
 
       // Only show instanceColor if there are 2+ of this templateId visible
-      const showInstanceColor = templateIdCounts.get(enemy.templateId) ?? 0 >= 2;
+      const showInstanceColor = (templateIdCounts.get(enemy.templateId) ?? 0) >= 2;
 
       const preview = getEnemyCombatPreview(state, enemy);
 

@@ -200,24 +200,19 @@ function collectUniqueRumors(values: readonly (string | null)[]): readonly strin
   }, []);
 }
 
-function appendUniqueRumor(rumors: readonly string[], value: string | null): readonly string[] {
-  return value !== null && !rumors.includes(value) ? [...rumors, value] : rumors;
-}
-
 function fillWithFallbackRumors(
   rumors: readonly string[],
   rumorCount: number,
   seedBase: number,
-  fallbackOffset = 0,
 ): readonly string[] {
   if (rumors.length >= rumorCount) {
     return rumors.slice(0, rumorCount);
   }
 
-  return fillWithFallbackRumors(
-    appendUniqueRumor(rumors, pickDeterministic(FALLBACK_RUMORS, seedBase + 29 + fallbackOffset)),
-    rumorCount,
-    seedBase,
-    fallbackOffset + 1,
+  // Two passes preserve the prior ordering for negative seeds that cross zero.
+  const fallbackCandidates = Array.from(
+    { length: FALLBACK_RUMORS.length * 2 },
+    (_, fallbackOffset) => pickDeterministic(FALLBACK_RUMORS, seedBase + 29 + fallbackOffset),
   );
+  return Array.from(new Set([...rumors, ...fallbackCandidates])).slice(0, rumorCount);
 }
