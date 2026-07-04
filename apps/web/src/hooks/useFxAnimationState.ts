@@ -21,6 +21,7 @@ export function useFxAnimationState(): UseFxAnimationStateReturn {
   const rafRef = useRef<number | undefined>(undefined);
   const nextIdRef = useRef(0);
   const timersRef = useRef<ReturnType<typeof setTimeout>[]>([]);
+  const hasActiveAnimations = animations.length > 0;
 
   useEffect(() => {
     const handleAbilityAnimation = (event: Event) => {
@@ -50,15 +51,12 @@ export function useFxAnimationState(): UseFxAnimationStateReturn {
       window.removeEventListener('ability-animation', handleAbilityAnimation);
       timersRef.current.forEach((timer) => clearTimeout(timer));
       timersRef.current = [];
-      if (rafRef.current) {
-        cancelAnimationFrame(rafRef.current);
-      }
     };
   }, []);
 
   // Update progress values on every frame
   useEffect(() => {
-    if (animations.length === 0) {
+    if (hasActiveAnimations === false) {
       return;
     }
 
@@ -78,17 +76,18 @@ export function useFxAnimationState(): UseFxAnimationStateReturn {
             })
             .filter((anim) => anim.progress < 1),
       );
+      rafRef.current = requestAnimationFrame(updateProgress);
     };
 
     rafRef.current = requestAnimationFrame(updateProgress);
 
     return () => {
-      if (rafRef.current) {
+      if (rafRef.current !== undefined) {
         cancelAnimationFrame(rafRef.current);
         rafRef.current = undefined;
       }
     };
-  }, [animations]);
+  }, [hasActiveAnimations]);
 
   return { animations };
 }
