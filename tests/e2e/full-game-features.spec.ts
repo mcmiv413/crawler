@@ -62,7 +62,7 @@ function numericHudValue(text: string, pattern: RegExp, label: string): number {
   return Number.parseInt(match[1], 10);
 }
 
-test('full game features: new game assigns a quest, enters a run, and retreats to town', async ({ page }) => {
+test('@smoke full game features: new game assigns a quest, enters a run, and retreats to town', async ({ page }) => {
   await page.addInitScript(() => {
     window.sessionStorage.clear();
     window.localStorage.clear();
@@ -94,7 +94,7 @@ test('full game features: new game assigns a quest, enters a run, and retreats t
   await expect(page.getByRole('button', { name: 'Enter Dungeon' })).toBeEnabled();
 });
 
-test('full game features: persisted chest loot reaches inventory and a potion is consumed', async ({ page }) => {
+test('scenario full game features: persisted chest loot reaches inventory and a potion is consumed', async ({ page }) => {
   await ScenarioPage.load(page, 'inventory-chest-test', 'desktop-default');
 
   const interactResponsePromise = waitForCommand(page, 'INTERACT');
@@ -122,7 +122,7 @@ test('full game features: persisted chest loot reaches inventory and a potion is
   await expect(combatLog(page)).toContainText(/Used Health Potion/u);
 });
 
-test('full game features: combat levels up, earns gold, advances a quest, equips gear, explores, and restores', async ({ page }) => {
+test('scenario full game features: combat levels up, earns gold, advances a quest, equips gear, explores, and restores', async ({ page }) => {
   const scenario = await ScenarioPage.load(
     page,
     'full-feature-e2e-test',
@@ -210,7 +210,7 @@ test('full game features: combat levels up, earns gold, advances a quest, equips
   await expect(page.getByTestId('inventory-screen').getByText(/Hand Axe/u)).toBeVisible();
 });
 
-test('full game features: a ring ability casts through the real action UI', async ({ page }) => {
+test('scenario full game features: a ring ability casts through the real action UI', async ({ page }) => {
   await ScenarioPage.load(page, 'fire-spread-test', 'desktop-default');
 
   const abilityResponsePromise = waitForCommand(page, 'USE_ABILITY');
