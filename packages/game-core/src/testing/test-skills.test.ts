@@ -231,6 +231,50 @@ describe('GameFlow', () => {
       expect(result.issues.filter(issue => issue.code === 'E2E_RAW_POST_DATA_ASSERTION')).toHaveLength(2);
     });
 
+    it('rejects raw request substring checks through assigned postData variables', () => {
+      const code = joinLines(
+        "import { expect, test } from '@playwright/test';",
+        "test('movement request', async ({ page }) => {",
+        "  const request = await page.waitForRequest('**/commands');",
+        '  const body = request.postData();',
+        "  expect(body).toContain('MOVE');",
+        '});',
+      );
+
+      const result = analyzeTestFile(code, 'e2e');
+
+      expect(result.issues.map(issue => issue.code)).toContain('E2E_RAW_POST_DATA_ASSERTION');
+    });
+
+    it('does not allow rendering comments to exempt base64 screenshot comparisons', () => {
+      const code = joinLines(
+        "import { expect, test } from '@playwright/test';",
+        "test('movement check', async ({ page }) => {",
+        '  // Keep rendering stable while moving.',
+        "  const snapshot = (await page.screenshot()).toString('base64');",
+        '  expect(snapshot).toBeDefined();',
+        '});',
+      );
+
+      const result = analyzeTestFile(code, 'e2e');
+
+      expect(result.issues.map(issue => issue.code)).toContain('E2E_BASE64_SCREENSHOT_ASSERTION');
+    });
+
+    it('allows base64 screenshot comparisons in renderer test titles', () => {
+      const code = joinLines(
+        "import { expect, test } from '@playwright/test';",
+        "test('renderer comparison', async ({ page }) => {",
+        "  const snapshot = (await page.screenshot()).toString('base64');",
+        '  expect(snapshot).toBeDefined();',
+        '});',
+      );
+
+      const result = analyzeTestFile(code, 'e2e');
+
+      expect(result.issues.map(issue => issue.code)).not.toContain('E2E_BASE64_SCREENSHOT_ASSERTION');
+    });
+
     it('allows documented timing waits, visual snapshots, and structured request parsing', () => {
       const code = joinLines(
         "import { expect, test } from '@playwright/test';",
