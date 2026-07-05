@@ -418,7 +418,7 @@ Reject AI-generated tests that:
 
 TypeScript's `rootDir` validation in monorepos with cross-package path aliases produces TS6059 warnings when test files import from modules in sibling packages. This is expected and not an error.
 
-**Convention:** The validation script (`scripts/typecheck-tests.mjs`) ignores TS6059 warnings and only reports real type errors. Test `tsconfig.test.json` files use `rootDir: "."` to validate test-package-local files, and cross-package imports via path aliases are excluded from validation.
+**Convention:** The validation script (`scripts/typecheck-tests.mjs`) type-checks test files and their cross-package path-alias imports, filters only the expected TS6059 `rootDir` diagnostics, and reports all other type errors. Test `tsconfig.test.json` files use `rootDir: "."` to define the test package's source boundary.
 
 If `pnpm validate` shows a warning like:
 ```

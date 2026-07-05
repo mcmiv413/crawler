@@ -1,5 +1,5 @@
 import { expect } from '@playwright/test';
-import type { Locator, Page, Response } from '@playwright/test';
+import type { Locator, Page, Request, Response } from '@playwright/test';
 import type { GameState } from '@dungeon/contracts';
 
 import { loadScenario } from '../../../packages/game-core/src/fixtures/scenario-fixture-loader.js';
@@ -31,6 +31,14 @@ export interface ScenarioCommandEvent {
 export interface ScenarioCommandResponse {
   readonly events: readonly ScenarioCommandEvent[];
   readonly view?: unknown;
+}
+
+export function tryPostDataJSON(request: Request): unknown | undefined {
+  try {
+    return request.postDataJSON();
+  } catch {
+    return undefined;
+  }
 }
 
 export function escapeRegExp(value: string): string {
@@ -137,14 +145,19 @@ export class ScenarioPage {
         return false;
       }
 
-      const body = response.request().postDataJSON() as { readonly type?: unknown } | null | undefined;
+      const body = tryPostDataJSON(response.request()) as { readonly type?: unknown } | null | undefined;
       return body?.type === type;
     });
   }
 
   async commandJson(response: Response, expectedType: string): Promise<ScenarioCommandResponse> {
     expect(response.ok()).toBe(true);
-    const requestBody = response.request().postDataJSON() as { readonly type?: unknown } | null | undefined;
+    const requestBody = tryPostDataJSON(response.request()) as { readonly type?: unknown } | null | undefined;
+    if (requestBody === undefined) {
+      throw new Error(
+        `Failed to parse JSON request body for expected command "${expectedType}" at ${response.url()}`,
+      );
+    }
     expect(requestBody?.type).toBe(expectedType);
     return response.json() as Promise<ScenarioCommandResponse>;
   }

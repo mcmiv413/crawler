@@ -1,6 +1,6 @@
 import { test, expect } from '@playwright/test';
 
-test('diagnose sprite loading issue', async ({ page }) => {
+test('sprite renderer diagnoses sprite loading issues', async ({ page }) => {
   // Navigate to game
   await page.goto('/');
   await page.waitForLoadState('networkidle');
@@ -9,20 +9,31 @@ test('diagnose sprite loading issue', async ({ page }) => {
   const newGameButton = page.locator('button:has-text("New Game")');
   await newGameButton.waitFor({ state: 'visible' });
   await newGameButton.click();
-  await page.waitForTimeout(500); // audit-allow-waitForTimeout: renderer timing assertion
 
   // Enter dungeon
   const enterButton = page.locator('button:has-text("Enter Dungeon")');
   await enterButton.waitFor({ state: 'visible', timeout: 5000 });
   await enterButton.click();
-  await page.waitForTimeout(500); // audit-allow-waitForTimeout: renderer timing assertion
 
   // Wait for canvas to appear
   const canvas = page.locator('canvas').nth(1);
   await canvas.waitFor({ state: 'visible', timeout: 5000 });
 
-  // Wait for sprites to load
-  await page.waitForTimeout(2000); // audit-allow-waitForTimeout: renderer timing assertion
+  // Wait for the renderer to draw content.
+  await expect.poll(async () => page.evaluate(() => {
+    const canvases = document.querySelectorAll('canvas');
+    const mainCanvas = canvases[1] || canvases[0];
+    const context = mainCanvas?.getContext('2d');
+    if (!mainCanvas || !context) return false;
+
+    const imageData = context.getImageData(
+      0,
+      0,
+      Math.min(100, mainCanvas.width),
+      Math.min(100, mainCanvas.height),
+    );
+    return imageData.data.some((channel, index) => index % 4 !== 3 && channel > 0);
+  }), { timeout: 5000 }).toBe(true);
 
   // Check network requests
   console.log('\n=== NETWORK REQUESTS ===');
@@ -104,6 +115,7 @@ test('diagnose sprite loading issue', async ({ page }) => {
 
     return {
       canvasSize: { width: mainCanvas.width, height: mainCanvas.height },
+      sampledPixels: imageData.width * imageData.height,
       topColors: Object.fromEntries(topColors),
     };
   });
@@ -132,15 +144,11 @@ test('diagnose sprite loading issue', async ({ page }) => {
   // The canvas should NOT be mostly black if sprites are rendering correctly
   // If it is, the spriteName values aren't being found in the atlas
   const blackPixels = canvasPixels?.topColors['rgb(0,0,0)'] || 0;
-  const totalPixels = canvasPixels?.canvasSize.width! * canvasPixels?.canvasSize.height!;
+  const totalPixels = canvasPixels?.sampledPixels ?? 0;
+  expect(totalPixels).toBeGreaterThan(0);
   const blackPercentage = (blackPixels / totalPixels) * 100;
   console.log(`Black pixels: ${blackPixels}/${totalPixels} (${blackPercentage.toFixed(2)}%)`);
-
-  if (blackPercentage > 50) {
-    console.warn('⚠️  WARNING: Canvas is mostly black - sprites likely not rendering!');
-    console.warn('   This means spriteName values are not being found in DAWNLIKE_ATLAS');
-    console.warn('   or are not being passed through the MapView/EntityView correctly');
-  }
+  expect(blackPercentage, 'canvas should not be mostly black when sprites render').toBeLessThanOrEqual(50);
 
   // Test if specific sprite names exist in the atlas
   console.log('\n=== TESTING SPRITE NAMES ===');

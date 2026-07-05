@@ -22,7 +22,6 @@ class GamePage {
     await nameInput.fill(playerName);
 
     await startButton.click();
-    await this.page.waitForTimeout(500); // audit-allow-waitForTimeout: animation timing assertion
   }
 
   async waitForDungeonLoaded() {

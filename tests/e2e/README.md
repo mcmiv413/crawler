@@ -5,7 +5,7 @@ Playwright E2E tests cover behavior that requires a real browser: user interacti
 ## Test doctrine
 
 - Use `ScenarioPage.load` with a deterministic fixture from `fixtures/scenarios/` for gameplay states. Do not explore randomly or depend on generated encounters.
-- Assert both the structured command request/response and the resulting visible UI state. Parse request bodies with `postDataJSON()` or `JSON.parse`; never match raw `postData()` substrings.
+- Assert both the structured command request/response and the resulting visible UI state. Parse request bodies with the guarded `tryPostDataJSON()` helper from `./support/scenario-page.js`; parse failures must return a non-match rather than throw from request predicates. Never match raw `postData()` substrings.
 - Use Playwright auto-waiting assertions such as `toBeVisible`, `toContainText`, and `expect.poll` instead of fixed delays. A `waitForTimeout` is allowed only when elapsed time is the behavior under test and the line carries the audit allowlist comment.
 - Required controls are required. Do not catch failures or conditionally skip the rest of a test when a button, panel, enemy, or item is unavailable.
 - Avoid broad body-text checks and assertions that only prove the page did not crash. A “game stayed alive” test is appropriate only for a named crash regression with a specific trigger and outcome.

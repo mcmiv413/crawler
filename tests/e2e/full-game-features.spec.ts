@@ -4,7 +4,7 @@ import type { Page, Response } from '@playwright/test';
 import { huntDangerousEnemy } from '../../packages/content/src/quests/hunt-dangerous-enemy.js';
 import { createQuestFromTemplate } from '../../packages/game-core/src/systems/quest-selection.js';
 import { expectDungeonCanvasVisible } from './support/layout.js';
-import { escapeRegExp, ScenarioPage } from './support/scenario-page.js';
+import { escapeRegExp, ScenarioPage, tryPostDataJSON } from './support/scenario-page.js';
 
 interface CommandEvent {
   readonly type: string;
@@ -40,16 +40,10 @@ function waitForCommand(page: Page, type: string): Promise<Response> {
       return false;
     }
 
-    const body = response.request().postData();
-    if (body === null) {
-      return false;
-    }
-
-    try {
-      return (JSON.parse(body) as { readonly type?: string }).type === type;
-    } catch {
-      return false;
-    }
+    const body = tryPostDataJSON(response.request()) as {
+      readonly type?: unknown;
+    } | null | undefined;
+    return body?.type === type;
   });
 }
 
