@@ -209,6 +209,19 @@ describe('GameFlow', () => {
         .toBeGreaterThanOrEqual(2);
     });
 
+    it('rejects inline broad body assertions in E2E tests', () => {
+      const code = joinLines(
+        "import { expect, test } from '@playwright/test';",
+        "test('body content', async ({ page }) => {",
+        "  expect(await page.locator('body').textContent()).toBeTruthy();",
+        '});',
+      );
+
+      const result = analyzeTestFile(code, 'e2e');
+
+      expect(result.issues.map(issue => issue.code)).toContain('E2E_BROAD_BODY_ASSERTION');
+    });
+
     it('rejects hard waits, non-visual base64 comparisons, and raw request substring checks', () => {
       const code = joinLines(
         "import { expect, test } from '@playwright/test';",
