@@ -246,6 +246,21 @@ describe('GameFlow', () => {
       expect(result.issues.map(issue => issue.code)).toContain('E2E_RAW_POST_DATA_ASSERTION');
     });
 
+    it('rejects raw request substring checks through chained postData receivers', () => {
+      const code = joinLines(
+        "import { expect, test } from '@playwright/test';",
+        "test('movement response', async ({ page }) => {",
+        "  const response = await page.waitForResponse('**/commands');",
+        '  const body = response.request().postData();',
+        "  expect(body).toContain('MOVE');",
+        '});',
+      );
+
+      const result = analyzeTestFile(code, 'e2e');
+
+      expect(result.issues.map(issue => issue.code)).toContain('E2E_RAW_POST_DATA_ASSERTION');
+    });
+
     it('does not allow rendering comments to exempt base64 screenshot comparisons', () => {
       const code = joinLines(
         "import { expect, test } from '@playwright/test';",

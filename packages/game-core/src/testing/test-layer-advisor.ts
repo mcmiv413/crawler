@@ -285,7 +285,7 @@ function validateE2eLayer(
       .filter((name): name is string => name !== undefined),
   );
   const rawPostDataVariables = new Set(
-    [...code.matchAll(/\b(?:const|let|var)\s+(\w+)\s*=\s*(?:await\s+)?\w+\.postData\s*\(\s*\)/g)]
+    [...code.matchAll(/\b(?:const|let|var)\s+(\w+)\s*=\s*(?:await\s+)?\w+(?:\s*\.\s*\w+\s*(?:\([^()\n]*\))?)*\s*\.\s*postData\s*\(\s*\)/g)]
       .map(match => match[1])
       .filter((name): name is string => name !== undefined),
   );

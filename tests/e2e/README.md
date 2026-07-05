@@ -16,7 +16,7 @@ Playwright E2E tests cover behavior that requires a real browser: user interacti
 ## Naming and tags
 
 - `@smoke` in the test title: tiny startup checks run by the smoke script.
-- `scenario` in the test title or filename: deterministic scenario-driven gameplay.
+- `scenario` in the test or describe title: deterministic scenario-driven gameplay.
 - `layout` in the title: responsive reachability or overflow coverage.
 - `renderer` in the title: canvas/WebGL rendering behavior, including intentional visual comparisons.
 
