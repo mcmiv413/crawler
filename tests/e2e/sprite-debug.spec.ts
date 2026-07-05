@@ -6,7 +6,7 @@ test('sprite renderer diagnoses sprite loading issues', async ({ page }) => {
   await page.waitForLoadState('networkidle');
 
   // Start new game
-  const newGameButton = page.locator('button:has-text("New Game")');
+  const newGameButton = page.getByRole('button', { name: 'Start New Game' });
   await newGameButton.waitFor({ state: 'visible' });
   await newGameButton.click();
 

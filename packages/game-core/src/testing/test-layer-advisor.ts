@@ -322,6 +322,10 @@ function validateE2eLayer(
       addIssue('E2E_RAW_POST_DATA_ASSERTION', 'E2E test inspects raw request text. Parse the request with postDataJSON().', lineNumber);
     }
 
+    if (/expect\s*\(\s*await\s+page\.locator\(\s*['"]body['"]\s*\)\.(?:innerText|textContent)\s*\(\s*\)\s*\)\s*\./.test(line)) {
+      addIssue('E2E_BROAD_BODY_ASSERTION', 'E2E test asserts broad body text instead of a specific user-visible control.', lineNumber);
+    }
+
     for (const variable of rawPostDataVariables) {
       const escapedVariable = variable.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
       const includesAssertion = new RegExp(`\\b${escapedVariable}\\s*\\.\\s*includes\\s*\\(`);
