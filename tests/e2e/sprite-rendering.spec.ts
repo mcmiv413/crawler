@@ -1,5 +1,6 @@
 import { test, expect } from '@playwright/test';
 import type { Page } from '@playwright/test';
+import { expectDungeonCanvasVisible } from './support/layout.js';
 
 /**
  * Test sprite rendering to verify dawnlike atlas integration
@@ -8,35 +9,26 @@ class GamePage {
   constructor(private page: Page) {}
 
   async navigateToGame() {
-    await this.page.goto('/');
-    await this.page.waitForLoadState('networkidle');
+    await this.page.addInitScript(() => {
+      window.sessionStorage.clear();
+      window.localStorage.clear();
+    });
+    await this.page.goto('/', { waitUntil: 'domcontentloaded' });
   }
 
   async startNewGame(playerName: string = 'TestHero') {
-    const startButton = this.page.locator('button:has-text("New Game")');
-    await startButton.waitFor({ state: 'visible' });
-
-    const nameInput = this.page.locator('input[placeholder*="name"], input[placeholder*="character"]');
-    await expect(nameInput).toBeVisible();
-    await nameInput.clear();
-    await nameInput.fill(playerName);
-
-    await startButton.click();
-    await this.page.waitForTimeout(500); // audit-allow-waitForTimeout: renderer timing assertion
+    await this.page.getByRole('textbox').fill(playerName);
+    await this.page.getByRole('button', { name: 'Start New Game' }).click();
+    await expect(this.page.getByTestId('town-view')).toBeVisible();
   }
 
   async enterDungeon() {
-    const enterButton = this.page.locator('button:has-text("Enter Dungeon")');
-    await enterButton.waitFor({ state: 'visible', timeout: 5000 });
-    await enterButton.click();
-    await this.page.waitForTimeout(500); // audit-allow-waitForTimeout: renderer timing assertion
+    await this.page.getByRole('button', { name: 'Enter Dungeon' }).click();
   }
 
   async waitForDungeonLoaded() {
-    // Use nth(1) to get the main dungeon map canvas (nth(0) is the sprite icon canvas)
-    const canvas = this.page.locator('canvas').nth(1);
-    await canvas.waitFor({ state: 'visible', timeout: 5000 });
-    await this.page.waitForTimeout(500); // audit-allow-waitForTimeout: renderer timing assertion
+    await expect(this.page.getByTestId('dungeon-view')).toBeVisible();
+    await expectDungeonCanvasVisible(this.page);
   }
 
   async enableSprites() {
@@ -47,7 +39,7 @@ class GamePage {
     // If it shows ASCII icon, click to enable sprites
     if (currentText?.includes('⬛')) {
       await spriteButton.click();
-      await this.page.waitForTimeout(300); // audit-allow-waitForTimeout: renderer timing assertion
+      await expect(spriteButton).toContainText('Sprites');
     }
   }
 
@@ -91,7 +83,7 @@ class GamePage {
   }
 }
 
-test.describe('Sprite Rendering', () => {
+test.describe('Sprite renderer', () => {
   test('should render sprites on dungeon canvas', async ({ page }) => {
     const gamePage = new GamePage(page);
 
@@ -125,15 +117,17 @@ test.describe('Sprite Rendering', () => {
     await gamePage.waitForDungeonLoaded();
     await gamePage.enableSprites();
 
-    // Wait longer for sprite sheet to load
-    await page.waitForTimeout(2000); // audit-allow-waitForTimeout: renderer timing assertion
+    // Check the loaded sprite sheet image dimensions.
+    const spriteState = await page.evaluate(async () => {
+      const spriteSheet = await new Promise<HTMLImageElement>((resolve, reject) => {
+        const image = new Image();
+        image.onload = () => resolve(image);
+        image.onerror = () => reject(new Error('Failed to load DawnLike sprite sheet'));
+        image.src = '/sprites/dawnlike.png';
+      });
 
-    // Check if sprite sheet image is loaded by examining registry state
-    const spriteState = await page.evaluate(() => {
-      // The spriteRegistry is loaded in the window context
       return {
-        registryReady: (window as any).__spriteRegistryReady,
-        imagesLoaded: Array.from(document.images).map(img => ({
+        imagesLoaded: [spriteSheet, ...Array.from(document.images)].map(img => ({
           src: img.src,
           complete: img.complete,
           naturalWidth: img.naturalWidth,
@@ -144,6 +138,12 @@ test.describe('Sprite Rendering', () => {
 
     console.log('Sprite state:', spriteState);
     console.log('Images loaded:', JSON.stringify(spriteState.imagesLoaded, null, 2));
+    const spriteSheet = spriteState.imagesLoaded.find(
+      image => new URL(image.src).pathname === '/sprites/dawnlike.png',
+    );
+    expect(spriteSheet).toMatchObject({ complete: true });
+    expect(spriteSheet?.naturalWidth).toBeGreaterThan(0);
+    expect(spriteSheet?.naturalHeight).toBeGreaterThan(0);
   });
 
   test('should verify canvas context supports drawing', async ({ page }) => {

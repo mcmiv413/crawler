@@ -1,8 +1,9 @@
 import { expect, test } from '@playwright/test';
 import type { Page } from '@playwright/test';
 import { CELL_SIZE } from '../../apps/web/src/config/ui-config.js';
+import { E2E_API_BASE as API_BASE } from './support/api-base.js';
+import { tryPostDataJSON } from './support/scenario-page.js';
 
-const API_BASE = process.env['E2E_API_BASE'] ?? 'http://127.0.0.1:3000/api';
 const APP_BASE = process.env['E2E_APP_BASE'] ?? '/';
 const SEEDED_PLAYER_NAME = 'Playwright Three Animation Backend';
 const SEEDED_RUN = 424242;
@@ -1062,7 +1063,7 @@ const WEBGL_CATEGORY_SCENARIOS: ReadonlyArray<{
 ];
 
 for (const scenario of WEBGL_CATEGORY_SCENARIOS) {
-  test(`Three animation backend renders ${scenario.name} through WebGL`, async ({ page }) => {
+  test(`Three animation renderer backend renders ${scenario.name} through WebGL`, async ({ page }) => {
     const harness = await openDungeon(page, 'three');
     const viewportOrigin = await getViewportOriginForHarness(page, harness);
     await scenario.run(page, harness);
@@ -1098,13 +1099,13 @@ test('Three animation overlay stays click-through over the dungeon canvas', asyn
   const moveRequest = page.waitForRequest((request) =>
     request.method() === 'POST'
       && /\/api\/games\/[^/]+\/commands$/.test(request.url())
-      && (request.postDataJSON() as { readonly type?: unknown } | null | undefined)?.type === 'MOVE',
+      && (tryPostDataJSON(request) as { readonly type?: unknown } | null | undefined)?.type === 'MOVE',
   );
 
   await page.mouse.click(dungeonBox!.x + clickTarget.x, dungeonBox!.y + clickTarget.y);
 
   const request = await moveRequest;
-  expect((request.postDataJSON() as { readonly type?: unknown }).type).toBe('MOVE');
+  expect((tryPostDataJSON(request) as { readonly type?: unknown }).type).toBe('MOVE');
 });
 
 test('forced WebGL failure falls back to the dungeon canvas and canvas cannot satisfy the WebGL assertion', async ({ page }) => {

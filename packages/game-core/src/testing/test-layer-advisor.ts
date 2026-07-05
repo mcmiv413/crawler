@@ -341,7 +341,7 @@ function validateE2eLayer(
   });
 
   const isRendererFocused = [...code.matchAll(/\b(?:test(?:\.describe)?|describe)\s*\(\s*(['"`])([^\n]*?)\1/g)]
-    .some(match => /\b(?:renderer|rendering)\b/i.test(match[2] ?? ''));
+    .some(match => /\brenderer\b/i.test(match[2] ?? ''));
   if (isRendererFocused !== true) {
     for (const match of code.matchAll(/(?:page|\w+)\.screenshot\s*\([^)]*\)\s*\)?\.toString\(\s*['"]base64['"]\s*\)/g)) {
       const line = code.slice(0, match.index).split('\n').length;

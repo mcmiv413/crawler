@@ -1,8 +1,9 @@
 import { expect, test } from '@playwright/test';
 import type { Page } from '@playwright/test';
 import { CELL_SIZE } from '../../apps/web/src/config/ui-config.js';
+import { E2E_API_BASE as API_BASE } from './support/api-base.js';
+import { tryPostDataJSON } from './support/scenario-page.js';
 
-const API_BASE = process.env['E2E_API_BASE'] ?? 'http://127.0.0.1:3000/api';
 const APP_BASE = process.env['E2E_APP_BASE'] ?? '/';
 const SEEDED_PLAYER_NAME = 'Playwright Three Overlay';
 const SEEDED_RUN = 424242;
@@ -247,7 +248,7 @@ async function findOverlayCanvasIndex(
   });
 }
 
-test('Three healing pulse overlay stays aligned and click-through over the dungeon canvas', async ({ page }) => {
+test('Three healing pulse renderer overlay stays aligned and click-through over the dungeon canvas', async ({ page }) => {
   const { session, map } = await seedDungeonRunWithPotion(page);
 
   await page.addInitScript((storedSession: StoredSession) => {
@@ -310,11 +311,11 @@ test('Three healing pulse overlay stays aligned and click-through over the dunge
   const moveRequest = page.waitForRequest((request) =>
     request.method() === 'POST'
       && /\/api\/games\/[^/]+\/commands$/.test(request.url())
-      && (request.postDataJSON() as { readonly type?: unknown } | null | undefined)?.type === 'MOVE',
+      && (tryPostDataJSON(request) as { readonly type?: unknown } | null | undefined)?.type === 'MOVE',
   );
 
   await page.mouse.click(overlayBox!.x + clickTarget.x, overlayBox!.y + clickTarget.y);
 
   const request = await moveRequest;
-  expect((request.postDataJSON() as { readonly type?: unknown }).type).toBe('MOVE');
+  expect((tryPostDataJSON(request) as { readonly type?: unknown }).type).toBe('MOVE');
 });

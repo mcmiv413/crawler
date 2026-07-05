@@ -261,11 +261,10 @@ describe('GameFlow', () => {
       expect(result.issues.map(issue => issue.code)).toContain('E2E_RAW_POST_DATA_ASSERTION');
     });
 
-    it('does not allow rendering comments to exempt base64 screenshot comparisons', () => {
+    it('does not allow rendering alone to exempt base64 screenshot comparisons', () => {
       const code = joinLines(
         "import { expect, test } from '@playwright/test';",
-        "test('movement check', async ({ page }) => {",
-        '  // Keep rendering stable while moving.',
+        "test('rendering comparison', async ({ page }) => {",
         "  const snapshot = (await page.screenshot()).toString('base64');",
         '  expect(snapshot).toBeDefined();',
         '});',
@@ -297,8 +296,12 @@ describe('GameFlow', () => {
         '  await page.waitForTimeout(200); // audit-allow-waitForTimeout: renderer timing assertion',
         "  const snapshot = (await page.screenshot()).toString('base64');",
         '  const request = await page.waitForRequest(request => {',
-        '    const body = request.postDataJSON() as { type?: string };',
-        "    return body.type === 'MOVE';",
+        '    try {',
+        '      const body = request.postDataJSON() as { type?: string };',
+        "      return body.type === 'MOVE';",
+        '    } catch {',
+        '      return false;',
+        '    }',
         '  });',
         "  expect((request.postDataJSON() as { type?: string }).type).toBe('MOVE');",
         '  expect(snapshot.length).toBeGreaterThan(0);',

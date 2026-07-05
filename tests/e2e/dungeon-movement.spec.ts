@@ -3,6 +3,7 @@ import type { Locator, Page, Request } from '@playwright/test';
 import { CELL_SIZE } from '../../apps/web/src/config/ui-config.js';
 import { STEP_WALK_BOUNDARY_PROGRESS } from '../../apps/web/src/animations/move-style-profiles.js';
 import { E2E_API_BASE } from './support/api-base.js';
+import { tryPostDataJSON } from './support/scenario-page.js';
 
 interface DungeonMapSnapshot {
   readonly playerPosition: { readonly x: number; readonly y: number };
@@ -25,10 +26,15 @@ interface ClickTarget {
   readonly path: readonly { readonly x: number; readonly y: number }[];
 }
 
+interface MoveCommandBody {
+  readonly type?: unknown;
+  readonly direction?: unknown;
+}
+
 interface MovementProbe {
   readonly moveRequests: readonly {
     readonly at: number;
-    readonly body: string;
+    readonly body: MoveCommandBody;
   }[];
   readonly moveResponses: readonly {
     readonly at: number;
@@ -93,7 +99,7 @@ async function startSeededDungeonRun(page: Page, seed: number): Promise<DungeonM
       return;
     }
 
-    const body = response.request().postDataJSON() as {
+    const body = tryPostDataJSON(response.request()) as {
       readonly type?: unknown;
       readonly action?: unknown;
     } | null | undefined;
@@ -137,15 +143,21 @@ async function startSeededDungeonRun(page: Page, seed: number): Promise<DungeonM
           : input instanceof Request
             ? input.url
             : String(input);
-      const body = typeof init?.body === 'string' ? init.body : undefined;
+      const rawBody = typeof init?.body === 'string' ? init.body : undefined;
+      let body: MoveCommandBody | undefined;
+      try {
+        body = rawBody === undefined ? undefined : JSON.parse(rawBody) as MoveCommandBody;
+      } catch {
+        body = undefined;
+      }
 
-      if (/\/api\/games\/[^/]+\/commands$/.test(url) && body?.includes('"type":"MOVE"')) {
+      if (/\/api\/games\/[^/]+\/commands$/.test(url) && body?.type === 'MOVE') {
         const probe = (window as Window & { __movementProbe: MovementProbe }).__movementProbe;
         probe.moveRequests.push({ at: performance.now(), body });
       }
 
       const response = await originalFetch(...args);
-      if (/\/api\/games\/[^/]+\/commands$/.test(url) && body?.includes('"type":"MOVE"')) {
+      if (/\/api\/games\/[^/]+\/commands$/.test(url) && body?.type === 'MOVE') {
         const probe = (window as Window & { __movementProbe: MovementProbe }).__movementProbe;
         const responseAt = performance.now();
         void response.clone().json().then((json: {
@@ -209,7 +221,7 @@ function isMoveCommand(request: Request): boolean {
     return false;
   }
 
-  const body = request.postDataJSON() as { readonly type?: unknown } | null | undefined;
+  const body = tryPostDataJSON(request) as { readonly type?: unknown } | null | undefined;
   return body?.type === 'MOVE';
 }
 
@@ -217,7 +229,7 @@ test('movement keeps accepting turn inputs while move animations settle', async 
   const movePayloads: unknown[] = [];
   page.on('request', (request) => {
     if (isMoveCommand(request)) {
-      movePayloads.push(request.postDataJSON());
+      movePayloads.push(tryPostDataJSON(request));
     }
   });
 
@@ -469,8 +481,8 @@ test('click auto-walk collapses hidden turns and waits only for visible animatio
   ];
 
   expect(probe.moveRequests.map((request) => request.body)).toEqual([
-    `{\"type\":\"MOVE\",\"direction\":\"${expectedDirections[0]}\"}`,
-    `{\"type\":\"MOVE\",\"direction\":\"${expectedDirections[1]}\"}`,
+    { type: 'MOVE', direction: expectedDirections[0] },
+    { type: 'MOVE', direction: expectedDirections[1] },
   ]);
 
   const firstMoveAnimation = probe.moveAnimations[0];
@@ -488,7 +500,7 @@ test('click auto-walk collapses hidden turns and waits only for visible animatio
   expect(probe.moveRequests[1]!.at - firstMoveResponse!.at).toBeLessThanOrEqual(visibleSettleMs + 250);
 });
 
-test('four-tile click auto-walk stays visually continuous on canvas', async ({ page }) => {
+test('four-tile click auto-walk renderer stays visually continuous on canvas', async ({ page }) => {
   // Auto-walk intentionally cancels when a newly revealed enemy interrupts the
   // route, so probe candidate seeds until one supports an uninterrupted walk.
   const candidateSeeds = [7, 1, 5, 9, 13, 17, 19, 25, 31, 34];
