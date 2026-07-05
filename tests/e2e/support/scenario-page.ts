@@ -33,7 +33,7 @@ export interface ScenarioCommandResponse {
   readonly view?: unknown;
 }
 
-function escapeRegExp(value: string): string {
+export function escapeRegExp(value: string): string {
   return value.replace(/[.*+?^${}()|[\]\\]/gu, '\\$&');
 }
 

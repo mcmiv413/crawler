@@ -4,7 +4,7 @@ import type { Page, Response } from '@playwright/test';
 import { huntDangerousEnemy } from '../../packages/content/src/quests/hunt-dangerous-enemy.js';
 import { createQuestFromTemplate } from '../../packages/game-core/src/systems/quest-selection.js';
 import { expectDungeonCanvasVisible } from './support/layout.js';
-import { ScenarioPage } from './support/scenario-page.js';
+import { escapeRegExp, ScenarioPage } from './support/scenario-page.js';
 
 interface CommandEvent {
   readonly type: string;
@@ -24,7 +24,8 @@ interface CommandResponse {
 }
 
 function actionButton(page: Page, label: string) {
-  return page.getByRole('button', { name: new RegExp(`^${label}:`, 'u') });
+  const escapedLabel = escapeRegExp(label);
+  return page.getByRole('button', { name: new RegExp(`^${escapedLabel}:`, 'u') });
 }
 
 function combatLog(page: Page) {
