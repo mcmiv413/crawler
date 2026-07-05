@@ -284,6 +284,11 @@ function validateE2eLayer(
       .map(match => match[1])
       .filter((name): name is string => name !== undefined),
   );
+  const rawPostDataVariables = new Set(
+    [...code.matchAll(/\b(?:const|let|var)\s+(\w+)\s*=\s*(?:await\s+)?\w+\.postData\s*\(\s*\)/g)]
+      .map(match => match[1])
+      .filter((name): name is string => name !== undefined),
+  );
 
   const addIssue = (codeValue: string, description: string, line: number): void => {
     mutableIssues.push({ severity: 'error', code: codeValue, description, line });
@@ -317,6 +322,15 @@ function validateE2eLayer(
       addIssue('E2E_RAW_POST_DATA_ASSERTION', 'E2E test inspects raw request text. Parse the request with postDataJSON().', lineNumber);
     }
 
+    for (const variable of rawPostDataVariables) {
+      const escapedVariable = variable.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+      const includesAssertion = new RegExp(`\\b${escapedVariable}\\s*\\.\\s*includes\\s*\\(`);
+      const containsAssertion = new RegExp(`expect\\s*\\(\\s*${escapedVariable}\\s*\\)\\s*\\.\\s*toContain\\s*\\(`);
+      if (includesAssertion.test(line) || containsAssertion.test(line)) {
+        addIssue('E2E_RAW_POST_DATA_ASSERTION', 'E2E test inspects raw request text. Parse the request with postDataJSON().', lineNumber);
+      }
+    }
+
     for (const variable of broadBodyVariables) {
       const escapedVariable = variable.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
       const assertion = new RegExp(`expect\\s*\\(\\s*${escapedVariable}\\s*\\)\\s*\\.`);
@@ -326,7 +340,8 @@ function validateE2eLayer(
     }
   });
 
-  const isRendererFocused = /\b(?:renderer|rendering)\b/i.test(code);
+  const isRendererFocused = [...code.matchAll(/\b(?:test(?:\.describe)?|describe)\s*\(\s*(['"`])([^\n]*?)\1/g)]
+    .some(match => /\b(?:renderer|rendering)\b/i.test(match[2] ?? ''));
   if (isRendererFocused !== true) {
     for (const match of code.matchAll(/(?:page|\w+)\.screenshot\s*\([^)]*\)\s*\)?\.toString\(\s*['"]base64['"]\s*\)/g)) {
       const line = code.slice(0, match.index).split('\n').length;
