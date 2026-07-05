@@ -277,8 +277,69 @@ function validateBalanceLayer(
 function validateE2eLayer(
   code: string,
 ): Findings {
+  const mutableIssues: Issue[] = [];
+  const lines = code.split('\n');
+  const broadBodyVariables = new Set(
+    [...code.matchAll(/const\s+(\w+)\s*=\s*await\s+page\.locator\(\s*['"]body['"]\s*\)\.(?:innerText|textContent)\s*\(/g)]
+      .map(match => match[1])
+      .filter((name): name is string => name !== undefined),
+  );
+
+  const addIssue = (codeValue: string, description: string, line: number): void => {
+    mutableIssues.push({ severity: 'error', code: codeValue, description, line });
+  };
+
+  lines.forEach((line, index) => {
+    const lineNumber = index + 1;
+
+    if (/expect\s*\(\s*true\s*\)\s*\.\s*(?:toBeTruthy\s*\(\s*\)|toBe\s*\(\s*true\s*\))/.test(line)
+      || /expect\s*\(\s*false\s*\)\s*\.\s*(?:toBeFalsy\s*\(\s*\)|toBe\s*\(\s*false\s*\))/.test(line)) {
+      addIssue('E2E_LITERAL_ASSERTION', 'E2E assertion compares a literal to its known value and cannot fail.', lineNumber);
+    }
+
+    if (/expect\s*\([^\n;]*\|\|\s*true\b/.test(line)) {
+      addIssue('E2E_OR_TRUE_ASSERTION', 'E2E assertion uses `|| true`, so it cannot prove the expected behavior.', lineNumber);
+    }
+
+    if (/\.waitForTimeout\s*\(/.test(line) && !/audit-allow-waitForTimeout:/.test(line)) {
+      addIssue('E2E_HARD_WAIT', 'E2E test uses a hard wait without a documented timing exception.', lineNumber);
+    }
+
+    if (/if\s*\(.*await\s+.*\.is(?:Enabled|Visible)\s*\(/.test(line)) {
+      addIssue('E2E_CONDITIONAL_SKIP', 'E2E test conditionally skips an interaction when a required control is unavailable.', lineNumber);
+    }
+
+    if (/catch\s*(?:\([^)]*\))?\s*\{\s*\}/.test(line)) {
+      addIssue('E2E_SWALLOWED_ERROR', 'E2E test swallows an interaction error instead of failing.', lineNumber);
+    }
+
+    if (/\.postData\s*\(\s*\).*(?:\.includes\s*\(|\.toContain\s*\()/.test(line)) {
+      addIssue('E2E_RAW_POST_DATA_ASSERTION', 'E2E test inspects raw request text. Parse the request with postDataJSON().', lineNumber);
+    }
+
+    for (const variable of broadBodyVariables) {
+      const escapedVariable = variable.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+      const assertion = new RegExp(`expect\\s*\\(\\s*${escapedVariable}\\s*\\)\\s*\\.`);
+      if (assertion.test(line)) {
+        addIssue('E2E_BROAD_BODY_ASSERTION', 'E2E test asserts broad body text instead of a specific user-visible control.', lineNumber);
+      }
+    }
+  });
+
+  const isRendererFocused = /\b(?:renderer|rendering)\b/i.test(code);
+  if (isRendererFocused !== true) {
+    for (const match of code.matchAll(/(?:page|\w+)\.screenshot\s*\([^)]*\)\s*\)?\.toString\(\s*['"]base64['"]\s*\)/g)) {
+      const line = code.slice(0, match.index).split('\n').length;
+      addIssue(
+        'E2E_BASE64_SCREENSHOT_ASSERTION',
+        'E2E flow test compares base64 screenshots. Keep visual comparisons in renderer-focused specs.',
+        line,
+      );
+    }
+  }
+
   return {
-    issues: [],
+    issues: mutableIssues,
     suggestions: [
       ...(/@playwright\/test/.test(code) !== true
         ? ['E2E tests should use Playwright and verify browser-visible behavior.']

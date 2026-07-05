@@ -10,10 +10,17 @@ interface CommandEvent {
   readonly type: string;
   readonly itemName?: string;
   readonly gotLoot?: boolean;
+  readonly from?: { readonly x: number; readonly y: number };
+  readonly to?: { readonly x: number; readonly y: number };
 }
 
 interface CommandResponse {
   readonly events: readonly CommandEvent[];
+  readonly view?: {
+    readonly map?: {
+      readonly playerPosition: { readonly x: number; readonly y: number };
+    } | null;
+  };
 }
 
 function actionButton(page: Page, label: string) {
@@ -182,13 +189,14 @@ test('scenario full game features: combat levels up, earns gold, advances a ques
   await expect(inventory.getByText(/Hand Axe/u)).toBeVisible();
   await inventory.getByRole('button', { name: 'Back to Game' }).click();
 
-  const canvas = page.getByTestId('dungeon-canvas');
-  const beforeMove = (await canvas.screenshot()).toString('base64');
   const moveResponsePromise = waitForCommand(page, 'MOVE');
   await page.keyboard.press('ArrowRight');
   const moveResult = await commandJson(await moveResponsePromise);
-  expect(moveResult.events).toContainEqual(expect.objectContaining({ type: 'PLAYER_MOVED' }));
-  await expect.poll(async () => (await canvas.screenshot()).toString('base64')).not.toBe(beforeMove);
+  const moveEvent = moveResult.events.find(event => event.type === 'PLAYER_MOVED');
+  expect(moveEvent).toBeDefined();
+  expect(moveEvent?.to).not.toEqual(moveEvent?.from);
+  expect(moveResult.view?.map?.playerPosition).toEqual(moveEvent?.to);
+  await expect(page.getByTestId('dungeon-canvas')).toBeVisible();
 
   const storedGameId = await page.evaluate(() => {
     const raw = window.sessionStorage.getItem('dungeon-session');
