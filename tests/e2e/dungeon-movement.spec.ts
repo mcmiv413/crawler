@@ -151,13 +151,13 @@ async function startSeededDungeonRun(page: Page, seed: number): Promise<DungeonM
         body = undefined;
       }
 
-      if (/\/api\/games\/[^/]+\/commands$/.test(url) && body?.type === 'MOVE') {
+      if (/\/api\/games\/[^/]+\/commands$/.test(url) && body !== undefined && body.type === 'MOVE') {
         const probe = (window as Window & { __movementProbe: MovementProbe }).__movementProbe;
         probe.moveRequests.push({ at: performance.now(), body });
       }
 
       const response = await originalFetch(...args);
-      if (/\/api\/games\/[^/]+\/commands$/.test(url) && body?.type === 'MOVE') {
+      if (/\/api\/games\/[^/]+\/commands$/.test(url) && body !== undefined && body.type === 'MOVE') {
         const probe = (window as Window & { __movementProbe: MovementProbe }).__movementProbe;
         const responseAt = performance.now();
         void response.clone().json().then((json: {
