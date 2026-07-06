@@ -407,6 +407,47 @@ describe('GameFlow', () => {
       expect(result.issues.map(issue => issue.code)).not.toContain('E2E_BASE64_SCREENSHOT_ASSERTION');
     });
 
+    it('allows base64 screenshot comparisons in renderer describe title chains', () => {
+      const code = joinLines(
+        "import { expect, test } from '@playwright/test';",
+        "test.describe('full-game renderer', () => {",
+        "  test.describe('movement flow', () => {",
+        "    test('captures the frame', async ({ page }) => {",
+        "      const snapshot = (await page.screenshot()).toString('base64');",
+        '      expect(snapshot).toBeDefined();',
+        '    });',
+        '  });',
+        '});',
+      );
+
+      const result = analyzeTestFile(code, 'e2e');
+
+      expect(result.issues.map(issue => issue.code)).not.toContain('E2E_BASE64_SCREENSHOT_ASSERTION');
+    });
+
+    it('does not leak renderer describe exemptions to sibling title chains', () => {
+      const code = joinLines(
+        "import { expect, test } from '@playwright/test';",
+        "test.describe('renderer flow', () => {",
+        "  test('captures the frame', async ({ page }) => {",
+        "    const snapshot = (await page.screenshot()).toString('base64');",
+        '    expect(snapshot).toBeDefined();',
+        '  });',
+        '});',
+        "test.describe('movement flow', () => {",
+        "  test('captures the frame', async ({ page }) => {",
+        "    const snapshot = (await page.screenshot()).toString('base64');",
+        '    expect(snapshot).toBeDefined();',
+        '  });',
+        '});',
+      );
+
+      const result = analyzeTestFile(code, 'e2e');
+
+      expect(result.issues.filter(issue => issue.code === 'E2E_BASE64_SCREENSHOT_ASSERTION'))
+        .toHaveLength(1);
+    });
+
     it('scopes renderer base64 exemptions to the owning test block', () => {
       const code = joinLines(
         "import { expect, test } from '@playwright/test';",
