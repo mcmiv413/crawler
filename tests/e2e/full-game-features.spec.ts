@@ -64,7 +64,20 @@ function numericHudValue(text: string, pattern: RegExp, label: string): number {
   return Number.parseInt(match[1], 10);
 }
 
-test('@smoke full game features: new game assigns a quest, enters a run, and retreats to town', async ({ page }) => {
+test('@smoke full game features: new game starts in town', async ({ page }) => {
+  await page.addInitScript(() => {
+    window.sessionStorage.clear();
+    window.localStorage.clear();
+  });
+  await page.goto('/', { waitUntil: 'domcontentloaded' });
+
+  await page.getByRole('textbox').fill('Scenario Explorer');
+  await page.getByRole('button', { name: 'Start New Game' }).click();
+  await expect(page.getByTestId('town-view')).toBeVisible();
+  await expect(page.getByText('Scenario Explorer', { exact: true })).toBeVisible();
+});
+
+test('full game features: new game assigns a quest, enters a run, and retreats to town', async ({ page }) => {
   await page.addInitScript(() => {
     window.sessionStorage.clear();
     window.localStorage.clear();

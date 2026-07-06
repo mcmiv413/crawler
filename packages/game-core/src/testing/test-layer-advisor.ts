@@ -9,6 +9,11 @@
  *   if (result.issues.length > 0) { console.log(result.issues); }
  */
 
+import {
+  findE2eTestOwnership,
+  hasTunedNumericAssertion,
+} from './test-layer-advisor-patterns.js';
+
 export interface TestAnalysisResult {
   layer: 'unit' | 'property' | 'contract' | 'integration' | 'balance' | 'e2e';
   issues: Issue[];
@@ -35,11 +40,15 @@ interface Findings {
 export function analyzeTestFile(code: string, proposedLayer: string): TestAnalysisResult {
   // Parse imports
   const imports = parseImports(code);
-  const usesLiveConfig = imports.some((i) => i.from === '@dungeon/content' && i.typeOnly !== true);
+  const usesLiveConfig = imports.some((i) => (
+    i.from === '@dungeon/content'
+    || i.from.startsWith('@dungeon/content/')
+    || /^(?:\.\.\/)+packages\/content(?:\/src)?(?:\/|$)/.test(i.from)
+  ) && i.typeOnly !== true);
   const usesSeededRng = imports.some((i) => i.name === 'SeededRng' || i.name === 'Rng');
 
   // Analyze code patterns
-  const hasConfigValueAssertion = /expect\(\s*\w+\..*\)\s*\.toBe\(\s*\d+/.test(code);
+  const hasConfigValueAssertion = hasTunedNumericAssertion(code);
   const hasUnseededRandom = /Math\.random\(\)|randomInt\(|Math\.floor\(Math\.random/.test(code);
   const createsFullGameState = /new GameState|createGameState|GameEngine/.test(code);
   const hasFormatEvent = /formatEvent|combatLog|gameView/i.test(code);
@@ -146,7 +155,7 @@ function validateGeneralPatterns(
       ...(usesLiveConfig === true && (proposedLayer === 'unit' || proposedLayer === 'property') ? [{
         severity: 'error',
         code: 'LIVE_CONTENT_IMPORT_IN_ISOLATED_TEST',
-        description: 'Unit/property test imports @dungeon/content directly. Use fixtures and builders instead.',
+        description: 'Unit/property test imports live @dungeon/content modules. Use fixtures and builders instead.',
       } satisfies Issue] : []),
     ],
     suggestions: [
@@ -204,7 +213,7 @@ function validateContractLayer(
       ...(usesLiveConfig !== true
         ? ['Contract tests should validate live config. Consider importing @dungeon/content']
         : []),
-      ...(hasValueAssertions === true && /===|\===|toBe\(\d+\)/.test(code)
+      ...(hasValueAssertions === true
         ? ['Contract tests should validate schema and relationships, not exact values. Use toMatchObject() instead.']
         : []),
     ],
@@ -257,14 +266,14 @@ function validateBalanceLayer(
         code: 'BALANCE_TEST_UNSEEDED',
         description: 'Balance test uses unseeded randomness. Results will not be reproducible.',
       } satisfies Issue] : []),
-      ...(hasValueAssertions === true && /toBe\(\d+\)/.test(code) ? [{
+      ...(hasValueAssertions === true ? [{
         severity: 'warning',
         code: 'BALANCE_TEST_EXACT_VALUE',
         description: 'Balance test asserts exact value. Use ranges (e.g., toBeGreaterThan, toBeWithin).',
       } satisfies Issue] : []),
     ],
     suggestions: [
-      ...(hasValueAssertions === true && /toBe\(\d+\)/.test(code)
+      ...(hasValueAssertions === true
         ? ['Replace exact value assertions with range or distribution assertions']
         : []),
       ...(/ > | < | Between | Range | Distribution /.test(code) !== true
@@ -279,6 +288,7 @@ function validateE2eLayer(
 ): Findings {
   const mutableIssues: Issue[] = [];
   const lines = code.split('\n');
+  const testOwnership = findE2eTestOwnership(lines);
   const broadBodyVariables = new Set(
     [...code.matchAll(/const\s+(\w+)\s*=\s*await\s+page\.locator\(\s*['"]body['"]\s*\)\.(?:innerText|textContent)\s*\(/g)]
       .map(match => match[1])
@@ -289,6 +299,25 @@ function validateE2eLayer(
       .map(match => match[1])
       .filter((name): name is string => name !== undefined),
   );
+  const screenshotVariables = new Set(
+    [...code.matchAll(/\b(?:const|let|var)\s+(\w+)\s*=\s*(?:await\s+)?(?:page|\w+)\.screenshot\s*\(/g)]
+      .map(match => match[1])
+      .filter((name): name is string => name !== undefined),
+  );
+  const aliasAssignments = [...code.matchAll(/\b(?:const|let|var)\s+(\w+)\s*=\s*(\w+)\s*(?:;|$)/gm)];
+  let foundPostDataAlias = true;
+  while (foundPostDataAlias === true) {
+    foundPostDataAlias = false;
+    for (const match of aliasAssignments) {
+      const alias = match[1];
+      const source = match[2];
+      if (alias !== undefined && source !== undefined
+        && rawPostDataVariables.has(source) && rawPostDataVariables.has(alias) !== true) {
+        rawPostDataVariables.add(alias);
+        foundPostDataAlias = true;
+      }
+    }
+  }
 
   const addIssue = (codeValue: string, description: string, line: number): void => {
     mutableIssues.push({ severity: 'error', code: codeValue, description, line });
@@ -296,13 +325,17 @@ function validateE2eLayer(
 
   lines.forEach((line, index) => {
     const lineNumber = index + 1;
+    const assertionStart = line.search(/\bexpect\s*\(/);
+    const assertionWindow = assertionStart >= 0
+      ? [line.slice(assertionStart), ...lines.slice(index + 1, index + 6)].join(' ')
+      : '';
 
-    if (/expect\s*\(\s*true\s*\)\s*\.\s*(?:toBeTruthy\s*\(\s*\)|toBe\s*\(\s*true\s*\))/.test(line)
-      || /expect\s*\(\s*false\s*\)\s*\.\s*(?:toBeFalsy\s*\(\s*\)|toBe\s*\(\s*false\s*\))/.test(line)) {
+    if (/^expect\s*\(\s*true\s*\)\s*\.\s*(?:toBeTruthy\s*\(\s*\)|toBe\s*\(\s*true\s*\))/.test(assertionWindow)
+      || /^expect\s*\(\s*false\s*\)\s*\.\s*(?:toBeFalsy\s*\(\s*\)|toBe\s*\(\s*false\s*\))/.test(assertionWindow)) {
       addIssue('E2E_LITERAL_ASSERTION', 'E2E assertion compares a literal to its known value and cannot fail.', lineNumber);
     }
 
-    if (/expect\s*\([^\n;]*\|\|\s*true\b/.test(line)) {
+    if (/^expect\s*\([^;]*\|\|\s*true\b/.test(assertionWindow)) {
       addIssue('E2E_OR_TRUE_ASSERTION', 'E2E assertion uses `|| true`, so it cannot prove the expected behavior.', lineNumber);
     }
 
@@ -330,7 +363,11 @@ function validateE2eLayer(
       const escapedVariable = variable.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
       const includesAssertion = new RegExp(`\\b${escapedVariable}\\s*\\.\\s*includes\\s*\\(`);
       const containsAssertion = new RegExp(`expect\\s*\\(\\s*${escapedVariable}\\s*\\)\\s*\\.\\s*toContain\\s*\\(`);
-      if (includesAssertion.test(line) || containsAssertion.test(line)) {
+      const templateAssertion = new RegExp(`expect\\s*\\(\\s*\`[^\`\\n]*\\$\\{\\s*${escapedVariable}\\s*\\}[^\`\\n]*\``);
+      const matchAssertion = new RegExp(`expect\\s*\\(\\s*${escapedVariable}\\s*\\.\\s*match\\s*\\(`);
+      const regexpTestAssertion = new RegExp(`expect\\s*\\([^;\\n]*\\.\\s*test\\s*\\(\\s*${escapedVariable}\\s*\\)`);
+      if (includesAssertion.test(line) || containsAssertion.test(line)
+        || templateAssertion.test(line) || matchAssertion.test(line) || regexpTestAssertion.test(line)) {
         addIssue('E2E_RAW_POST_DATA_ASSERTION', 'E2E test inspects raw request text. Parse the request with postDataJSON().', lineNumber);
       }
     }
@@ -344,16 +381,29 @@ function validateE2eLayer(
     }
   });
 
-  const isRendererFocused = [...code.matchAll(/\b(?:test(?:\.describe)?|describe)\s*\(\s*(['"`])([^\n]*?)\1/g)]
-    .some(match => /\brenderer\b/i.test(match[2] ?? ''));
-  if (isRendererFocused !== true) {
-    for (const match of code.matchAll(/(?:page|\w+)\.screenshot\s*\([^)]*\)\s*\)?\.toString\(\s*['"]base64['"]\s*\)/g)) {
-      const line = code.slice(0, match.index).split('\n').length;
+  const addBase64ScreenshotIssue = (matchIndex: number): void => {
+    const line = code.slice(0, matchIndex).split('\n').length;
+    const owningTitle = testOwnership.titles[line - 1];
+    const isRendererFocused = owningTitle === undefined
+      ? testOwnership.hasRendererTest
+      : /\brenderer\b/i.test(owningTitle);
+    if (isRendererFocused !== true) {
       addIssue(
         'E2E_BASE64_SCREENSHOT_ASSERTION',
         'E2E flow test compares base64 screenshots. Keep visual comparisons in renderer-focused specs.',
         line,
       );
+    }
+  };
+
+  for (const match of code.matchAll(/(?:page|\w+)\.screenshot\s*\([^)]*\)\s*\)?\.toString\(\s*['"]base64['"]\s*\)/g)) {
+    addBase64ScreenshotIssue(match.index);
+  }
+  for (const variable of screenshotVariables) {
+    const escapedVariable = variable.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+    const conversionPattern = new RegExp(`\\b${escapedVariable}\\s*\\.\\s*toString\\s*\\(\\s*['"]base64['"]\\s*\\)`, 'g');
+    for (const match of code.matchAll(conversionPattern)) {
+      addBase64ScreenshotIssue(match.index);
     }
   }
 
