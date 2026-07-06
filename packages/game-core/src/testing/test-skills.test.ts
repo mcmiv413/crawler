@@ -80,6 +80,27 @@ describe('PlayerStats', () => {
       expect(configIssue?.severity).toBe('error');
     });
 
+    it('flags content subpath and deep-relative imports in isolated tests', () => {
+      const modulePaths = [
+        '@dungeon/content/items',
+        '../../packages/content/src/items/index.js',
+      ];
+
+      for (const modulePath of modulePaths) {
+        const code = joinLines(
+          `import { ITEMS } from '${modulePath}';`,
+          "it('uses live items', () => {",
+          '  expect(ITEMS).toBeDefined();',
+          '});',
+        );
+
+        const result = analyzeTestFile(code, 'unit');
+
+        expect(result.issues.map(issue => issue.code))
+          .toContain('LIVE_CONTENT_IMPORT_IN_ISOLATED_TEST');
+      }
+    });
+
     it('allows type-only content imports in isolated tests', () => {
       const code = joinLines(
         "import type { BiomeDefinition } from '@dungeon/content';",
@@ -159,6 +180,34 @@ describe('GameFlow', () => {
       expect(exactValueIssue?.severity).toBe('warning');
     });
 
+    it('catches bare multiline tuned values while allowing structural numeric assertions', () => {
+      const tunedCode = joinLines(
+        "describe('Balance', () => {",
+        "  it('checks damage tuning', () => {",
+        '    expect(',
+        '      damage',
+        '    ).toBe(',
+        '      17',
+        '    );',
+        '  });',
+        '});',
+      );
+      const structuralCode = joinLines(
+        'expect(items.length).toBe(4);',
+        'expect(emptyCount).toBe(0);',
+        'expect(singleCount).toBe(1);',
+      );
+
+      const tunedResult = analyzeTestFile(tunedCode, 'balance');
+      const structuralResult = analyzeTestFile(structuralCode, 'unit');
+
+      expect(tunedResult.issues.map(issue => issue.code)).toEqual(expect.arrayContaining([
+        'BALANCE_TEST_EXACT_VALUE',
+        'VALUE_ASSERTION',
+      ]));
+      expect(structuralResult.issues.map(issue => issue.code)).not.toContain('VALUE_ASSERTION');
+    });
+
     it('provides confidence score', () => {
       const code = `it('test', () => { expect(true).toBe(true); });`;
       const result = analyzeTestFile(code, 'unit');
@@ -179,6 +228,29 @@ describe('GameFlow', () => {
       const result = analyzeTestFile(code, 'e2e');
 
       expect(result.validated).toBe(false);
+      expect(result.issues.map(issue => issue.code)).toEqual(expect.arrayContaining([
+        'E2E_LITERAL_ASSERTION',
+        'E2E_OR_TRUE_ASSERTION',
+      ]));
+    });
+
+    it('rejects multiline E2E assertions that cannot fail', () => {
+      const code = joinLines(
+        "import { expect, test } from '@playwright/test';",
+        "test('multiline placebo', async () => {",
+        '  expect(',
+        '    true',
+        '  ).toBe(',
+        '    true',
+        '  );',
+        '  expect(',
+        '    controlVisible || true',
+        '  ).toBeTruthy();',
+        '});',
+      );
+
+      const result = analyzeTestFile(code, 'e2e');
+
       expect(result.issues.map(issue => issue.code)).toEqual(expect.arrayContaining([
         'E2E_LITERAL_ASSERTION',
         'E2E_OR_TRUE_ASSERTION',
@@ -259,6 +331,25 @@ describe('GameFlow', () => {
       expect(result.issues.map(issue => issue.code)).toContain('E2E_RAW_POST_DATA_ASSERTION');
     });
 
+    it('rejects aliased postData template, match, and RegExp assertions', () => {
+      const code = joinLines(
+        "import { expect, test } from '@playwright/test';",
+        "test('movement request aliases', async ({ page }) => {",
+        "  const request = await page.waitForRequest('**/commands');",
+        '  const body = request.postData();',
+        '  const bodyAlias = body;',
+        "  expect(`payload: ${bodyAlias}`).toContain('MOVE');",
+        '  expect(bodyAlias.match(/MOVE/)).not.toBeNull();',
+        '  expect(/MOVE/.test(bodyAlias)).toBe(true);',
+        '});',
+      );
+
+      const result = analyzeTestFile(code, 'e2e');
+
+      expect(result.issues.filter(issue => issue.code === 'E2E_RAW_POST_DATA_ASSERTION'))
+        .toHaveLength(3);
+    });
+
     it('rejects raw request substring checks through chained postData receivers', () => {
       const code = joinLines(
         "import { expect, test } from '@playwright/test';",
@@ -288,6 +379,20 @@ describe('GameFlow', () => {
       expect(result.issues.map(issue => issue.code)).toContain('E2E_BASE64_SCREENSHOT_ASSERTION');
     });
 
+    it('rejects base64 conversion of an assigned screenshot buffer', () => {
+      const code = joinLines(
+        "import { expect, test } from '@playwright/test';",
+        "test('movement buffer comparison', async ({ page }) => {",
+        '  const shot = await page.screenshot();',
+        "  expect(shot.toString('base64')).not.toBe('');",
+        '});',
+      );
+
+      const result = analyzeTestFile(code, 'e2e');
+
+      expect(result.issues.map(issue => issue.code)).toContain('E2E_BASE64_SCREENSHOT_ASSERTION');
+    });
+
     it('allows base64 screenshot comparisons in renderer test titles', () => {
       const code = joinLines(
         "import { expect, test } from '@playwright/test';",
@@ -300,6 +405,26 @@ describe('GameFlow', () => {
       const result = analyzeTestFile(code, 'e2e');
 
       expect(result.issues.map(issue => issue.code)).not.toContain('E2E_BASE64_SCREENSHOT_ASSERTION');
+    });
+
+    it('scopes renderer base64 exemptions to the owning test block', () => {
+      const code = joinLines(
+        "import { expect, test } from '@playwright/test';",
+        "const moduleSnapshot = async page => (await page.screenshot()).toString('base64');",
+        "test('renderer comparison', async ({ page }) => {",
+        "  const snapshot = (await page.screenshot()).toString('base64');",
+        '  expect(snapshot).toBeDefined();',
+        '});',
+        "test('movement comparison', async ({ page }) => {",
+        "  const snapshot = (await page.screenshot()).toString('base64');",
+        '  expect(snapshot).toBeDefined();',
+        '});',
+      );
+
+      const result = analyzeTestFile(code, 'e2e');
+
+      expect(result.issues.filter(issue => issue.code === 'E2E_BASE64_SCREENSHOT_ASSERTION'))
+        .toHaveLength(1);
     });
 
     it('allows documented timing waits, visual snapshots, and structured request parsing', () => {
