@@ -161,19 +161,36 @@ function formatFailure(failure) {
 
 function getVitestCall(node) {
   const expression = node.expression;
+
   if (ts.isIdentifier(expression) && ['test', 'it', 'describe'].includes(expression.text)) {
     return { base: expression.text, modifier: null };
   }
 
-  if (
-    ts.isPropertyAccessExpression(expression)
-    && ts.isIdentifier(expression.expression)
-    && ['test', 'it', 'describe'].includes(expression.expression.text)
-  ) {
-    return { base: expression.expression.text, modifier: expression.name.text };
+  if (!ts.isPropertyAccessExpression(expression)) {
+    return null;
   }
 
-  return null;
+  // Walk the whole member-access chain down to its root identifier, collecting property names,
+  // so chained/nested forms like test.describe.only(...), test.describe.skip(...), and
+  // test.only.each(...) are detected — not just single-level test.only(...).
+  const propertyNames = [];
+  let current = expression;
+  while (ts.isPropertyAccessExpression(current)) {
+    propertyNames.push(current.name.text);
+    current = current.expression;
+  }
+
+  if (!ts.isIdentifier(current) || !['test', 'it', 'describe'].includes(current.text)) {
+    return null;
+  }
+
+  const modifier = propertyNames.includes('only')
+    ? 'only'
+    : propertyNames.includes('skip')
+      ? 'skip'
+      : null;
+
+  return { base: current.text, modifier };
 }
 
 function getStringArgText(node) {
@@ -488,7 +505,7 @@ function checkFocusedAndSkipped({ relativePath, source, sourceFile }) {
           found,
           why: 'Focused tests hide the rest of the suite and can let broken behavior pass locally.',
           repair: [
-            `Replace ${call.base}.only with ${call.base}.`,
+            'Remove the .only modifier so the whole suite runs.',
             'Run the smallest affected test command, then finish on pnpm validate.',
           ],
         }),
@@ -508,7 +525,7 @@ function checkFocusedAndSkipped({ relativePath, source, sourceFile }) {
         found,
         why: 'Skipped tests silently remove proof. This repo only allows them when the reason is explicit and searchable.',
         repair: [
-          `Enable the test by replacing ${call.base}.skip with ${call.base}.`,
+          'Remove the .skip modifier to re-enable the test.',
           'If a skip is intentional, add a nearby comment: // test-quality: allow-skip - tracked reason',
         ],
       }),
