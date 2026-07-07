@@ -15,6 +15,11 @@ data/
 balance-results/
 scripts/node_modules/
 .claude/
+!.claude/
+.claude/*
+!.claude/hooks/
+.claude/hooks/*
+!.claude/hooks/post-tool-use-test-quality.sh
 .plan/
 .fossil/
 playwright-report/
