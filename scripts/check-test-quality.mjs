@@ -455,7 +455,7 @@ function checkIntentHeader({ relativePath, source, sourceFile }) {
         ' * Test layer: Unit | Property | Contract | Integration | Balance | E2E',
         ' * Behavior: the required behavior this file proves.',
         ' * Proof: the state/event/view/UI evidence asserted by the tests.',
-        ' * Validation: pnpm vitest run path/to/file.test.ts',
+        ' * Validation: <smallest pnpm command that runs this file, e.g. `pnpm vitest run path/to/file.test.ts` or `pnpm test:e2e path/to/file.spec.ts`>',
         ' */',
         `Missing: ${header.missingFields.join(', ')}`,
       ],
@@ -598,7 +598,7 @@ function checkUnitLayerBoundaries({ relativePath, source, sourceFile }) {
   if (gameEngineIdentifier !== null) {
     failures.push(
       makeFailure({
-        title: 'GameEngine usage in unit test',
+        title: 'GameEngine usage in unit/property test',
         relativePath,
         line: lineNumberAt(source, gameEngineIdentifier.getStart(sourceFile)),
         found: gameEngineIdentifier.getText(sourceFile),
