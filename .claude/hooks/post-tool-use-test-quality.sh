@@ -15,7 +15,7 @@ changed_paths="$(
   } | sort -u
 )"
 
-if ! printf '%s\n' "$changed_paths" | grep -Eq '(^|/)[^/]+\.test\.ts$|(^|/)[^/]+\.property\.test\.ts$|^tests/.*\.ts$|^tests/e2e/.*\.spec\.ts$'; then
+if ! printf '%s\n' "$changed_paths" | grep -Eq '(^|/)[^/]+\.test\.tsx?$|(^|/)[^/]+\.property\.test\.tsx?$|^tests/.*\.tsx?$|^tests/e2e/.*\.spec\.tsx?$'; then
   exit 0
 fi
 

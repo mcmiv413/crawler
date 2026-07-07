@@ -82,19 +82,21 @@ function listChangedPaths(repoRoot, baseRef = DEFAULT_BASE_REF) {
 function isChangedTestPath(relativePath) {
   return (
     relativePath.endsWith('.test.ts')
+    || relativePath.endsWith('.test.tsx')
     || relativePath.endsWith('.property.test.ts')
-    || (relativePath.startsWith('tests/') && relativePath.endsWith('.ts'))
-    || (relativePath.startsWith('tests/e2e/') && relativePath.endsWith('.spec.ts'))
+    || relativePath.endsWith('.property.test.tsx')
+    || (relativePath.startsWith('tests/') && (relativePath.endsWith('.ts') || relativePath.endsWith('.tsx')))
+    || (relativePath.startsWith('tests/e2e/') && (relativePath.endsWith('.spec.ts') || relativePath.endsWith('.spec.tsx')))
   );
 }
 
 function getLayer(relativePath) {
-  if (relativePath.startsWith('tests/e2e/') || relativePath.endsWith('.spec.ts')) return 'e2e';
+  if (relativePath.startsWith('tests/e2e/') || relativePath.endsWith('.spec.ts') || relativePath.endsWith('.spec.tsx')) return 'e2e';
   if (relativePath.startsWith('tests/contracts/') || relativePath.includes('.contract.test.')) return 'contract';
   if (relativePath.startsWith('tests/integration/') || relativePath.includes('.integration.test.')) return 'integration';
   if (relativePath.startsWith('tests/balance/') || relativePath.includes('.balance.test.')) return 'balance';
-  if (relativePath.endsWith('.property.test.ts')) return 'property';
-  if (relativePath.endsWith('.test.ts')) return 'unit';
+  if (relativePath.endsWith('.property.test.ts') || relativePath.endsWith('.property.test.tsx')) return 'property';
+  if (relativePath.endsWith('.test.ts') || relativePath.endsWith('.test.tsx')) return 'unit';
   return 'helper';
 }
 
@@ -429,8 +431,11 @@ function checkIntentHeader({ relativePath, source, sourceFile }) {
     ['test', 'it', 'describe'].includes(base),
   );
   const shouldRequireHeader = relativePath.endsWith('.test.ts')
+    || relativePath.endsWith('.test.tsx')
     || relativePath.endsWith('.property.test.ts')
+    || relativePath.endsWith('.property.test.tsx')
     || relativePath.endsWith('.spec.ts')
+    || relativePath.endsWith('.spec.tsx')
     || hasTestDeclarations;
 
   if (!shouldRequireHeader) {
