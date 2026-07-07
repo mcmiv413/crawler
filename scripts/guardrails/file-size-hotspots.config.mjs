@@ -6,6 +6,10 @@ export default {
   // Line budget for manually maintained source files (apps, packages, scripts)
   maxLinesPerFile: 500,
 
+  // Allowed drift (percent of the declared `lines` value) before an allowlist entry's
+  // line count must be re-pinned. Lets small edits land without a metadata bump on every change.
+  linesTolerancePercent: 5,
+
   // Scopes to check: when omitted, auto-discovered from rootDir as apps/*/src, packages/*/src, and scripts
   // Override this for tests or custom discovery behavior
   // includedRoots: undefined,

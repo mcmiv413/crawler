@@ -455,9 +455,10 @@ function checkIntentHeader({ relativePath, source, sourceFile }) {
       found: source.split('\n').slice(0, 8).join('\n') || '<empty file>',
       why: 'New or changed test files must declare the layer, behavior, proof obligation, and exact validation command before the test body.',
       repair: [
-        'Add this header near the top of the file:',
+        'Add this header near the top of the file (replace the layer with the one that applies):',
         '/**',
-        ' * Test layer: Unit | Property | Contract | Integration | Balance | E2E',
+        ' * Test layer: unit',
+        ' *   (one of: unit | property | contract | integration | balance | e2e)',
         ' * Behavior: the required behavior this file proves.',
         ' * Proof: the state/event/view/UI evidence asserted by the tests.',
         ' * Validation: <smallest pnpm command that runs this file, e.g. `pnpm vitest run path/to/file.test.ts` or `pnpm test:e2e path/to/file.spec.ts`>',

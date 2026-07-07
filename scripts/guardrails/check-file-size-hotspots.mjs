@@ -68,12 +68,20 @@ function validateAllowlistEntries(rootDir, config) {
       continue;
     }
 
-    // Check if lines field is present and matches actual count (prevent stale metadata)
-    if (typeof lines === 'number' && lines !== lineCount) {
-      failures.push(
-        `Allowlist entry '${path}' has stale lines metadata: declared ${lines}, actual ${lineCount} — update to match`,
-      );
-      continue;
+    // Check if lines field is present and within tolerance of the actual count (prevent stale metadata).
+    // A percentage tolerance lets an allowlisted file drift a little before the number must be re-pinned,
+    // so small edits don't force a metadata bump on every change.
+    if (typeof lines === 'number') {
+      const tolerancePercent =
+        typeof config.linesTolerancePercent === 'number' ? config.linesTolerancePercent : 0;
+      const allowedDrift = Math.ceil((lines * tolerancePercent) / 100);
+      if (Math.abs(lineCount - lines) > allowedDrift) {
+        failures.push(
+          `Allowlist entry '${path}' has stale lines metadata: declared ${lines}, actual ${lineCount} ` +
+          `(allowed drift ±${allowedDrift} at ${tolerancePercent}%) — update to match`,
+        );
+        continue;
+      }
     }
 
     // Check if reason is non-empty
