@@ -107,7 +107,7 @@ export default {
       path: 'scripts/check-test-quality.mjs',
       reason: 'Guardrail script with cohesive changed-file discovery, AST checks, and rich repair-message formatting for test-quality enforcement',
       auditReportNote: 'Probity-inspired native test-quality gate; future split seam is extracting AST helpers and individual rule checks if policy grows past the initial rollout',
-      lines: 738,
+      lines: 743,
     },
     {
       path: 'packages/game-core/src/fixtures/scenario-fixture-validation.ts',
