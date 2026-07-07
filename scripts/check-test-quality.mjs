@@ -37,12 +37,29 @@ function splitGitPaths(output) {
     .filter(Boolean);
 }
 
+function resolveBaseRef(repoRoot, baseRef) {
+  const fallbackRef = `origin/${baseRef}`;
+
+  for (const candidateRef of [baseRef, fallbackRef]) {
+    const resolved = runGit(repoRoot, ['rev-parse', '--verify', '--quiet', candidateRef], {
+      allowFailure: true,
+    }).trim();
+
+    if (resolved) {
+      return candidateRef;
+    }
+  }
+
+  throw new Error(
+    `Unable to resolve test quality base ref "${baseRef}" or "${fallbackRef}". Fetch the base branch before running this guardrail.`,
+  );
+}
+
 function listChangedPaths(repoRoot, baseRef = DEFAULT_BASE_REF) {
+  const resolvedBaseRef = resolveBaseRef(repoRoot, baseRef);
   const pathSets = [
     splitGitPaths(
-      runGit(repoRoot, ['diff', '--name-only', '--diff-filter=ACMR', `${baseRef}...HEAD`], {
-        allowFailure: true,
-      }),
+      runGit(repoRoot, ['diff', '--name-only', '--diff-filter=ACMR', `${resolvedBaseRef}...HEAD`]),
     ),
     splitGitPaths(runGit(repoRoot, ['diff', '--name-only', '--diff-filter=ACMR'])),
     splitGitPaths(runGit(repoRoot, ['diff', '--cached', '--name-only', '--diff-filter=ACMR'])),
