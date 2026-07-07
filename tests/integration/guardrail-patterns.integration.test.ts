@@ -1,3 +1,11 @@
+/**
+ * Test layer: integration
+ * Behavior: repo guardrail checkers (topology, optional-import boundaries, reference/centralized
+ *   literals, and file-size hotspots) flag violations and pass on compliant fixtures.
+ * Proof: each checker returns the expected failure strings for bad fixtures and an empty array for
+ *   good ones, driven through temp-dir repositories.
+ * Validation: pnpm exec vitest run -c tests/vitest.config.ts guardrail-patterns
+ */
 import { afterEach, describe, expect, it } from 'vitest';
 import { mkdtempSync, mkdirSync, rmSync, writeFileSync, readFileSync } from 'node:fs';
 import { spawnSync } from 'node:child_process';
@@ -746,6 +754,54 @@ describe('guardrail pattern checks', () => {
     expect(failures.join('\n')).toContain('stale lines metadata');
     expect(failures.join('\n')).toContain('declared 570');
     expect(failures.join('\n')).toContain('actual 571');
+  });
+
+  it('allows line-count drift within linesTolerancePercent without re-pinning', () => {
+    const rootDir = makeTempRoot('guardrail-allowlist-within-tolerance');
+    const config = {
+      maxLinesPerFile: 500,
+      linesTolerancePercent: 5,
+      includedRoots: ['packages/presenter/src'],
+      excludePatterns: [/\.test\.[tj]sx?$/, /\.property\.test\.[tj]sx?$/, /\.balance\.test\.[tj]sx?$/, /\.integration\.test\.[tj]sx?$/, /\.contract\.test\.[tj]sx?$/, /generated/, /-raw\.ts$/, /dist\//, /node_modules\//],
+      allowlistedFiles: [
+        {
+          path: 'packages/presenter/src/game-view.ts',
+          reason: 'Central DTO/read-model contract surface',
+          lines: 570, // 5% tolerance allows up to ±28 lines of drift
+        },
+      ],
+    };
+    // Actual 595 lines: drift of 25 is within the ceil(570 * 5%) = 29 allowance
+    const lines = Array.from({ length: 595 }, (_, i) => `const line${i} = ${i};`).join('\n');
+    writeFixture(rootDir, 'packages/presenter/src/game-view.ts', lines);
+
+    expect(checkFileSizeHotspots({ rootDir, config })).toEqual([]);
+  });
+
+  it('still flags line-count drift beyond linesTolerancePercent', () => {
+    const rootDir = makeTempRoot('guardrail-allowlist-beyond-tolerance');
+    const config = {
+      maxLinesPerFile: 500,
+      linesTolerancePercent: 5,
+      includedRoots: ['packages/presenter/src'],
+      excludePatterns: [/\.test\.[tj]sx?$/, /\.property\.test\.[tj]sx?$/, /\.balance\.test\.[tj]sx?$/, /\.integration\.test\.[tj]sx?$/, /\.contract\.test\.[tj]sx?$/, /generated/, /-raw\.ts$/, /dist\//, /node_modules\//],
+      allowlistedFiles: [
+        {
+          path: 'packages/presenter/src/game-view.ts',
+          reason: 'Central DTO/read-model contract surface',
+          lines: 570,
+        },
+      ],
+    };
+    // Actual 620 lines: drift of 50 exceeds the ceil(570 * 5%) = 29 allowance
+    const lines = Array.from({ length: 620 }, (_, i) => `const line${i} = ${i};`).join('\n');
+    writeFixture(rootDir, 'packages/presenter/src/game-view.ts', lines);
+
+    const failures = checkFileSizeHotspots({ rootDir, config });
+
+    expect(failures.join('\n')).toContain('stale lines metadata');
+    expect(failures.join('\n')).toContain('declared 570');
+    expect(failures.join('\n')).toContain('actual 620');
   });
 
   it('flags oversized .mjs guardrail scripts when scripts directory is included', () => {
