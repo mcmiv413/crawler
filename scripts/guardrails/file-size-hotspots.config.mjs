@@ -104,6 +104,12 @@ export default {
       lines: 910,
     },
     {
+      path: 'scripts/check-test-quality.mjs',
+      reason: 'Guardrail script with cohesive changed-file discovery, AST checks, and rich repair-message formatting for test-quality enforcement',
+      auditReportNote: 'Probity-inspired native test-quality gate; future split seam is extracting AST helpers and individual rule checks if policy grows past the initial rollout',
+      lines: 720,
+    },
+    {
       path: 'packages/game-core/src/fixtures/scenario-fixture-validation.ts',
       reason: 'Scenario fixture validator — consolidates player/world resolution plus map, enemy, loot, interactable, and spawn placement validation against untrusted JSON',
       auditReportNote: 'Fixture hardening for PR #36 review: resolveScenarioPlayer/resolveScenarioWorld now guard that ref is a non-empty string and that inline fixtures and resolver return values are objects before downstream validation; validateMapAndPlacements bails out on invalid width/height and only treats array map.floors as explicit floors; future split seam is extracting per-placement validators into discrete modules',

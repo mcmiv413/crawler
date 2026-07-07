@@ -36,6 +36,7 @@ AI assistants are allowed to generate test scaffolding, but every test must be r
 | Fast pre-commit gate | `pnpm run check:fast` |
 | Local confidence gate | `pnpm validate:quick` |
 | Tracked artifact guardrail | `pnpm run check:tracked-artifacts` |
+| Test quality guardrail | `pnpm run check:test-quality` |
 | Workspace wiring guardrail | `pnpm run check:workspace-wiring` |
 | Ability contract guardrail | `pnpm run check:ability-contracts` |
 | Package export guardrail | `pnpm run check:exports` |
@@ -59,6 +60,7 @@ Use the existing smoke scripts by failure class instead of building ad hoc one-o
 
 - `pnpm run check:tracked-artifacts` catches force-added or already tracked cache files, Zone.Identifier files, and source-map noise that `.gitignore` alone cannot prevent.
 - `pnpm run check:audit-guardrails` catches deterministic review failures: ignored or untracked tests, tests that execute mocked subjects, optional backend static imports, copied generated/catalog refs, stale docs paths, and configured source-of-truth literal drift.
+- `pnpm run check:test-quality` catches bad patterns only in test files changed against `main`: focused or unallowlisted skipped tests, unseeded randomness, weak assertion-only tests, unit/property layer drift, Playwright presence-only behavior proofs, missing intent headers, and exact numeric `.toBe(...)` assertions in guarded tunable game-core runtime areas.
 - `pnpm run check:workspace-wiring` catches undeclared workspace dependencies, `src`-internal imports across packages, and unexported workspace subpaths before the failure diffuses into later build or runtime noise.
 - `pnpm run check:ability-contracts` catches live ability metadata, command payload, and animation coverage drift with invariant checks that do not require per-ability snapshots.
 - `pnpm run check:exports` catches built-output and consumer-context package resolution failures that source-level tests can miss when local `dist/` state masks the problem.
@@ -71,6 +73,32 @@ This split is intentional: each script is cheap, deterministic, and points at a 
 - dot-walk generated/catalog refs through source-of-truth exports
 - update docs paths to real files or explicitly declared new files
 - import configured constants from their owner module
+
+## Test Intent Header
+
+New or changed test files must start with a short intent header before the test body:
+
+```ts
+/**
+ * Test layer: Integration
+ * Behavior: using a potion updates state and exposes the result to the player.
+ * Proof: command is available, state changes, event emits, GameView exposes inventory result.
+ * Validation: pnpm vitest run tests/integration/potion-use.integration.test.ts
+ */
+```
+
+Allowed layers are `Unit`, `Property`, `Contract`, `Integration`, `Balance`, and `E2E`. The validation line must name the smallest relevant `pnpm` command. The header is enforced by `pnpm run check:test-quality` for changed test files only.
+
+If a skipped test is intentional, add a nearby searchable allowlist comment with a reason:
+
+```ts
+// test-quality: allow-skip - blocked on issue-123 fixture migration
+test.skip('documents the pending behavior', () => {
+  // ...
+});
+```
+
+Do not use the allowlist for ordinary broken tests. Fix or delete those tests instead.
 
 ## Three Animation Proof Stack
 
@@ -125,7 +153,7 @@ These files cover the churn-heavy seam where `GameState` becomes `GameView`, ani
 
 1. No `Math.random()` in tests. Use `SeededRng`.
 2. No live config imports in unit/property tests. Use builders.
-3. No exact assertions on tunable values. Numeric literal `.toBe(...)` is only auto-blocked today in `packages/game-core/src/systems/**/*.test.ts` through `dungeon/no-numeric-toBe`; elsewhere, treat exact tunable assertions as brittle review failures and prefer range or comparative checks.
+3. No exact assertions on tunable values. `check:test-quality` blocks numeric literal `.toBe(...)` in changed tests under `packages/game-core/src/systems/`, `packages/game-core/src/abilities/effects/`, `packages/game-core/src/abilities/runtime/`, and `packages/game-core/src/engine/handlers/`. Treat these as tunable runtime areas because combat, ability, AI, status, and economy outcomes can move with balance tables. Prefer range, ordering, event shape, or state-transition assertions.
 4. No weak assertions such as `toBeDefined()` unless existence is the actual requirement.
 5. No state-only assertions for player-facing behavior.
 6. Any state change the player should notice must verify the full chain:
