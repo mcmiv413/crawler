@@ -767,7 +767,7 @@ describe('guardrail pattern checks', () => {
         {
           path: 'packages/presenter/src/game-view.ts',
           reason: 'Central DTO/read-model contract surface',
-          lines: 570, // 5% tolerance allows up to ±28 lines of drift
+          lines: 570, // 5% tolerance allows up to ceil(570 * 5%) = 29 lines of drift
         },
       ],
     };

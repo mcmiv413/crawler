@@ -72,8 +72,11 @@ function validateAllowlistEntries(rootDir, config) {
     // A percentage tolerance lets an allowlisted file drift a little before the number must be re-pinned,
     // so small edits don't force a metadata bump on every change.
     if (typeof lines === 'number') {
+      const rawTolerance = config.linesTolerancePercent;
       const tolerancePercent =
-        typeof config.linesTolerancePercent === 'number' ? config.linesTolerancePercent : 0;
+        typeof rawTolerance === 'number' && Number.isFinite(rawTolerance) && rawTolerance > 0
+          ? rawTolerance
+          : 0;
       const allowedDrift = Math.ceil((lines * tolerancePercent) / 100);
       if (Math.abs(lineCount - lines) > allowedDrift) {
         failures.push(
