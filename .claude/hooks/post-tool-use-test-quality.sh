@@ -4,6 +4,8 @@ set -euo pipefail
 ROOT="${CLAUDE_PROJECT_DIR:-$(git rev-parse --show-toplevel 2>/dev/null || pwd)}"
 cd "$ROOT"
 
+git rev-parse --is-inside-work-tree >/dev/null 2>&1 || exit 0
+
 changed_paths="$(
   {
     git diff --name-only --diff-filter=ACMR main...HEAD 2>/dev/null || true

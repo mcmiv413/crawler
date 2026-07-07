@@ -13,6 +13,14 @@ const TUNABLE_GAME_CORE_TEST_ROOTS = [
   'packages/game-core/src/abilities/runtime/',
   'packages/game-core/src/engine/handlers/',
 ];
+const PRESENCE_MATCHERS = new Set([
+  'toBeVisible',
+  'toBeAttached',
+  'toBeInViewport',
+  'toHaveCount',
+  'toBeTruthy',
+  'toBeDefined',
+]);
 
 function runGit(repoRoot, args, options = {}) {
   const result = spawnSync('git', ['-C', repoRoot, ...args], {
@@ -413,14 +421,7 @@ function hasInteractionSignal(testBody) {
 }
 
 function isPresenceMatcher(matcher) {
-  return new Set([
-    'toBeVisible',
-    'toBeAttached',
-    'toBeInViewport',
-    'toHaveCount',
-    'toBeTruthy',
-    'toBeDefined',
-  ]).has(matcher);
+  return PRESENCE_MATCHERS.has(matcher);
 }
 
 function checkIntentHeader({ relativePath, source, sourceFile }) {
