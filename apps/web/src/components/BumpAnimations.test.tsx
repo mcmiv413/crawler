@@ -1,7 +1,7 @@
 /**
  * Test layer: unit
- * Behavior: BumpAnimations covers BumpAnimations; renders null (animation happens on canvas); dispatches bump events through the runtime emitter boundary.
- * Proof: focused assertions verify returned values, state changes, rendered output, or emitted events.
+ * Behavior: BumpAnimations stays DOM-less while the runtime emitter publishes bump-animation events to window listeners.
+ * Proof: Asserts the rendered container has no firstChild and a listener registered for bump-animation is called after emitBumpAnimation receives a BumpAnimationEntry.
  * Validation: pnpm vitest run apps/web/src/components/BumpAnimations.test.tsx
  */
 import { describe, it, expect, vi } from 'vitest';

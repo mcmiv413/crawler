@@ -1,7 +1,7 @@
 /**
  * Test layer: unit
- * Behavior: Shockwave Ring covers createShockwaveRing; scale at progress 0 equals startScale; scale at progress 1 equals endScale.
- * Proof: focused assertions verify returned values, state changes, rendered output, or emitted events.
+ * Behavior: createShockwaveRing scales from start to end, fades after fadeStart, stays scene-detached, and disposes its ring resources once.
+ * Proof: Assertions check scale at progress 0, 0.5, and 1, opacity at base/fade/end progress values, no-throw updates, null object parent, and single geometry/material dispose calls.
  * Validation: pnpm vitest run apps/web/src/rendering/three/lib/shockwave-ring.test.ts
  */
 import { describe, expect, it, vi } from 'vitest';

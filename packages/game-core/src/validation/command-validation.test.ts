@@ -1,7 +1,7 @@
 /**
  * Test layer: unit
- * Behavior: Command Validation covers invalid command parsing and required command fields.
- * Proof: focused assertions verify returned values, state changes, rendered output, or emitted events.
+ * Behavior: Command validation rejects malformed or context-invalid commands without mutating source state while allowing deterministic valid command handling.
+ * Proof: Assertions check GameCommandSchema parse failures, PLAYER_ACTION_REJECTED and MOVEMENT_BLOCKED reason codes, absence of PLAYER_MOVED or ABILITY_USED, unchanged state fields, deterministic event counts, and WAIT turn advancement.
  * Validation: pnpm vitest run packages/game-core/src/validation/command-validation.test.ts
  */
 /**

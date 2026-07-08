@@ -1,7 +1,7 @@
 /**
  * Test layer: unit
- * Behavior: Three Animation Registry covers registerAnimationModule; stores a module retrievable by its id; stores multiple modules independently.
- * Proof: focused assertions verify returned values, state changes, rendered output, or emitted events.
+ * Behavior: The registry stores Three animation modules by ID, overwrites duplicate IDs, lists registered IDs, resets test state, and initializes generated built-in modules.
+ * Proof: Assertions check getAnimationModule returns exact registered references or undefined, listAnimationIds has expected IDs/counts without duplicates, resetForTesting clears entries, lightning built-ins are registered, and module lifecycle functions are called once.
  * Validation: pnpm vitest run apps/web/src/rendering/three/three-animation-registry.test.ts
  */
 /**

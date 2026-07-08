@@ -1,7 +1,7 @@
 /**
  * Test layer: unit
- * Behavior: Move Style Profiles covers MOVE_STYLE_PROFILES; locks the shared move style rendering table; returns the requested style profile.
- * Proof: focused assertions verify returned values, state changes, rendered output, or emitted events.
+ * Behavior: Move style profiles expose the locked style table, profile lookup, style easing curves, and walk-chain phase easing for movement rendering.
+ * Proof: Assertions check MOVE_STYLE_PROFILES equals the expected zero-secondary-motion table, getMoveStyleProfile returns exact profile objects, and applyMoveStyleEasing samples match per-style and walk-phase numeric curves with close tolerances.
  * Validation: pnpm vitest run apps/web/src/animations/move-style-profiles.test.ts
  */
 import { describe, expect, it } from 'vitest';

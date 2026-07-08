@@ -1,7 +1,7 @@
 /**
  * Test layer: unit
- * Behavior: Grid covers Grid utilities; calculates Manhattan distance correctly; calculates Chebyshev distance correctly.
- * Proof: focused assertions verify returned values, state changes, rendered output, or emitted events.
+ * Behavior: Grid utilities compute distances, movement offsets, equality, and neighboring positions on a two-dimensional grid.
+ * Proof: Assertions check Manhattan and Chebyshev numeric distances, moveInDirection results for all eight directions, positionsEqual booleans, and neighbor count and contents.
  * Validation: pnpm vitest run packages/game-core/src/utils/grid.test.ts
  */
 import { describe, it, expect } from 'vitest';

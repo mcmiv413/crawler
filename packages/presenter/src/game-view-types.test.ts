@@ -1,7 +1,7 @@
 /**
  * Test layer: unit
- * Behavior: Game View Types covers GameView DeathContext type; should define DeathContext interface with required fields; should allow null killerName and killerSpriteName.
- * Proof: focused assertions verify returned values, state changes, rendered output, or emitted events.
+ * Behavior: GameView death metadata supports complete and nullable DeathContext fields and exposes nullable deathContext on the view.
+ * Proof: Expectations check killerName and floor values, null killerName and killerSpriteName, equipmentLost slot/itemName entries, readonly field compatibility, and GameView deathContext presence or null.
  * Validation: pnpm vitest run packages/presenter/src/game-view-types.test.ts
  */
 import { describe, it, expect } from 'vitest';

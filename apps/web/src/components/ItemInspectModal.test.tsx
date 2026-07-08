@@ -1,7 +1,7 @@
 /**
  * Test layer: unit
- * Behavior: ItemInspectModal covers ItemInspectModal Component; Basic Rendering; renders item name and description.
- * Proof: focused assertions verify returned values, state changes, rendered output, or emitted events.
+ * Behavior: ItemInspectModal shows item details, stats, comparisons, rarity values, close controls, and phase-specific action buttons.
+ * Proof: Asserts Iron Sword description, backdrop and close-button onClose calls, weapon and armor stat text, comparison presence/absence with DMG rows, Equip/Unequip/Use/Sell buttons, EQUIP, UNEQUIP, and TOWN_ACTION shop_sell commands, common rarity, value, and sell price.
  * Validation: pnpm vitest run apps/web/src/components/ItemInspectModal.test.tsx
  */
 /**

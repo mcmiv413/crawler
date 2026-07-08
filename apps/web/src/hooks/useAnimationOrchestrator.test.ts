@@ -1,7 +1,7 @@
 /**
  * Test layer: unit
- * Behavior: UseAnimationOrchestrator covers useAnimationOrchestrator; uses the legacy timeout scheduler when the beat flag is off; uses the beat scheduler when the flag is on.
- * Proof: focused assertions verify returned values, state changes, rendered output, or emitted events.
+ * Behavior: useAnimationOrchestrator schedules animated events with legacy timeout and beat schedulers while preserving batch order through pauses and rerenders.
+ * Proof: Mock emitter assertions verify emitCombatIndicator timing for legacy, beat, and hit-stop cases plus emitted text order ['first', 'second'] and move entity order ['player-1', 'enemy-1'].
  * Validation: pnpm vitest run apps/web/src/hooks/useAnimationOrchestrator.test.ts
  */
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';

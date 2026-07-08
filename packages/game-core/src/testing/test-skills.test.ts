@@ -1,7 +1,7 @@
 /**
  * Test layer: unit
- * Behavior: Test Skills covers test-layer-advisor skill; analyzeTestFile; validates unit test with correct patterns.
- * Proof: focused assertions verify returned values, state changes, rendered output, or emitted events.
+ * Behavior: Test-skill utilities classify test files, report guardrail issue codes, and generate builder code with expected fluent APIs.
+ * Proof: Assertions check analyzeTestFile issue codes, validation status, confidence bounds, suggestions, generated builder strings, available builder names, and unknown-type throwing.
  * Validation: pnpm vitest run packages/game-core/src/testing/test-skills.test.ts
  */
 import { describe, it, expect } from 'vitest';

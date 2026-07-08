@@ -1,7 +1,7 @@
 /**
  * Test layer: unit
- * Behavior: Ability ui Metadata covers Ability UI Metadata Adapter; basic properties; derives name, description, and cooldown from ability definition.
- * Proof: focused assertions verify returned values, state changes, rendered output, or emitted events.
+ * Behavior: Ability UI metadata derives display fields, unlock requirements, weapon requirements, target modes, and trap modes from ability definitions.
+ * Proof: Assertions check power_strike id/name/description/cooldown/unlockLevel, ranged weapon requirements, targetMode values for combat and trap abilities, and that every definition yields metadata with id, name, and targetMode without errors.
  * Validation: pnpm vitest run packages/game-core/src/abilities/ability-ui-metadata.test.ts
  */
 import { describe, it, expect } from 'vitest';

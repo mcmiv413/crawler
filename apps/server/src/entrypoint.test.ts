@@ -1,7 +1,7 @@
 /**
  * Test layer: unit
- * Behavior: Entrypoint covers Server entrypoint separation; buildApp() can be imported without triggering listener startup; buildApp() creates a Fastify instance.
- * Proof: focused assertions verify returned values, state changes, rendered output, or emitted events.
+ * Behavior: Server entry modules expose buildApp and the hosted handler without starting a listener on import.
+ * Proof: Assertions check imported buildApp is a function, buildApp returns an object with listen and routing functions, and the hosted index default export is a function.
  * Validation: pnpm vitest run apps/server/src/entrypoint.test.ts
  */
 import { describe, it, expect } from 'vitest';

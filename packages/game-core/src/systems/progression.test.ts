@@ -1,7 +1,7 @@
 /**
  * Test layer: unit
- * Behavior: Progression covers checkLevelUp; does nothing when XP is insufficient; levels up when XP meets threshold.
- * Proof: focused assertions verify returned values, state changes, rendered output, or emitted events.
+ * Behavior: Level-up progression converts sufficient XP into levels, stat gains, healing, and one-time ability grants while leaving insufficient or max-level players unchanged.
+ * Proof: Assertions check levelsGained, LEVEL_UP events, player level/stat/health increases, max-level caps, granted power_strike and second_wind ids, and no duplicate power_strike grant.
  * Validation: pnpm vitest run packages/game-core/src/systems/progression.test.ts
  */
 import { describe, it, expect } from 'vitest';

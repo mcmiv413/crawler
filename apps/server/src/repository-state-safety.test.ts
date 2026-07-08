@@ -1,7 +1,7 @@
 /**
  * Test layer: unit
- * Behavior: Repository State Safety covers Repository: State Safety; State Boundary Safety; should clone state on create and load.
- * Proof: focused assertions verify returned values, state changes, rendered output, or emitted events.
+ * Behavior: InMemoryRepository clones stored GameState boundaries, isolates games, preserves persisted floor caches, records events and run metrics, and handles concurrent access without cross-game leakage.
+ * Proof: Assertions check loaded states are distinct clones with unchanged values after mutation attempts, separate game IDs keep independent player data, event logs preserve ATTACK_PERFORMED/ITEM_USED/ENTITY_DIED/LOOT_ACQUIRED order and limits, metrics logs accumulate, and persistedFloorCache survives reloads.
  * Validation: pnpm vitest run apps/server/src/repository-state-safety.test.ts
  */
 /**

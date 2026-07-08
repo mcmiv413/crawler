@@ -1,7 +1,7 @@
 /**
  * Test layer: unit
- * Behavior: Trap System covers Trap System; calculateHazardDamage; uses absolute healthDelta when rarity is absent.
- * Proof: focused assertions verify returned values, state changes, rendered output, or emitted events.
+ * Behavior: Trap system damage scales hazards by rarity and only disarms or places traps when adjacency and inventory preconditions are satisfied.
+ * Proof: Assertions compare hazard damage ordering and minimums, removed run.objects entries, increased inventory length after disarm, and unchanged state when disarm or set-trap preconditions fail.
  * Validation: pnpm vitest run packages/game-core/src/systems/trap-system.test.ts
  */
 import { describe, it, expect } from 'vitest';

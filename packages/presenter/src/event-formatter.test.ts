@@ -1,7 +1,7 @@
 /**
  * Test layer: unit
- * Behavior: Event Formatter covers formatEvent; formats ATTACK_PERFORMED hit with damage; formats ATTACK_PERFORMED critical hit.
- * Proof: focused assertions verify returned values, state changes, rendered output, or emitted events.
+ * Behavior: formatEvent and formatEvents produce player-facing log entries for non-silent domain events and null or filtered results for silent events.
+ * Proof: Assertions compare exact text, type, and timestamp for attack, death, loot, level, status, ability, quest, equipment, permadeath, gold, faction, floor, item, movement-blocked, enchantment, blueprint, shop, debug, and enchantment-effect events, check null for silent events, filtered formatEvents length, and the all-event stub exhaustiveness loop.
  * Validation: pnpm vitest run packages/presenter/src/event-formatter.test.ts
  */
 import { describe, it, expect } from 'vitest';

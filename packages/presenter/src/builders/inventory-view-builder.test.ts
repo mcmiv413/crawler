@@ -1,7 +1,7 @@
 /**
  * Test layer: unit
- * Behavior: Inventory View Builder covers buildInventoryView; basic inventory structure; returns InventoryView with items and equipped slots.
- * Proof: focused assertions verify returned values, state changes, rendered output, or emitted events.
+ * Behavior: buildInventoryView produces inventory items and equipped slots with stacking, sorting, pricing, labels, and item stat fields derived from player inventory and the item registry.
+ * Proof: Assertions check view.items, view.equipped, empty and missing-registry filtering, equipped-before-unequipped ordering, stacked quantities and stackEntityIds, sell price, off-hand suffixes, equipped slot IDs and nulls, and weapon or armor stats versus consumable omissions.
  * Validation: pnpm vitest run packages/presenter/src/builders/inventory-view-builder.test.ts
  */
 import { buildInventoryView } from './inventory-view-builder.js';

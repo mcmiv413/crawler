@@ -1,7 +1,7 @@
 /**
  * Test layer: contract
- * Behavior: Content Cross References covers Content Cross-References; Quest Templates; every collect_item objective targetId references an existing item.
- * Proof: live catalog/schema assertions validate IDs, shapes, and cross references.
+ * Behavior: Live quest, animation, status, and ring-magic content references resolve to the catalogs required by their contracts.
+ * Proof: Expectations check quest objective targetIds and targetCounts against item/enemy/depth rules, ability and consumable animation ids in ANIMATION_REF_BY_ID, exhaustive STATUS_DEFINITIONS keys and fields, Fire Ring wiring to the fire school without grant-ability enchantments, ring spell ability and school references, and required magic status ids.
  * Validation: pnpm vitest run tests/contracts/content-cross-references.contract.test.ts
  */
 import { describe, it, expect } from 'vitest';

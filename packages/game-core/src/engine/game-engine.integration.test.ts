@@ -1,7 +1,7 @@
 /**
  * Test layer: integration
- * Behavior: Game Engine covers GameEngine floor navigation; rejects locked abilities without damaging enemies or advancing the turn; entering the dungeon completes floo....
- * Proof: integrated command, service, or repository assertions verify the cross-module result.
+ * Behavior: GameEngine commands preserve floor navigation and cache semantics while enforcing ability and ranged attack rules, quest progression, event history limits, and Dungeon Ogre victory state.
+ * Proof: Assertions check PLAYER_ACTION_REJECTED and QUEST_READY events, phase/player.floor/runEnded/turnNumber transitions, persistedFloorCache and floorHistory contents, ranged attack turn advancement, runMetrics.causeOfEnd victory, game_over phase, and stable dungeonOgre selectedSpawnDepth/eligibleSpawnDepths.
  * Validation: pnpm vitest run packages/game-core/src/engine/game-engine.integration.test.ts
  */
 import { describe, it, expect } from 'vitest';

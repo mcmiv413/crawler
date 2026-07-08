@@ -1,7 +1,7 @@
 /**
  * Test layer: unit
- * Behavior: Known Ring Schools Migration covers knownRingSchools migration safety; old save missing knownRingSchools (pre-migration save); deserializes successfully when knownRingSchool....
- * Proof: focused assertions verify returned values, state changes, rendered output, or emitted events.
+ * Behavior: State deserialization backfills missing knownRingSchools from older saves without losing other player fields or altering present values across round trips.
+ * Proof: Assertions check deserializeState does not throw, knownRingSchools and learnedRingSpellIds default to empty arrays, named player fields are preserved, present fire school remains, and round-trip values stay stable.
  * Validation: pnpm vitest run packages/game-core/src/state/known-ring-schools-migration.test.ts
  */
 /**

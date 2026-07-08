@@ -1,7 +1,7 @@
 /**
  * Test layer: unit
- * Behavior: Command Handler covers handleUseAbility; ember; deducts mana, deals damage, and applies the content-authored burn duration on a valid cast.
- * Proof: focused assertions verify returned values, state changes, rendered output, or emitted events.
+ * Behavior: handleCommand dispatches ability, attack, movement, interaction, wait, equipment, weapon-swap, enchantment, and range-check commands with their expected state and event outcomes.
+ * Proof: Assertions check MANA_CHANGED, ABILITY_USED, STATUS_APPLIED, PLAYER_ACTION_REJECTED, ATTACK_PERFORMED, ENTITY_DIED, RUN_ENDED, PLAYER_MOVED, OBJECT_INTERACTED, and ENCHANTMENT_APPLIED evidence; player mana, XP, maxMana, position, turn, equipment, inventory, gold, cooldown, targetSnapshots, enemy health/status changes, and unchanged-state rejection cases.
  * Validation: pnpm vitest run packages/game-core/src/engine/command-handler.test.ts
  */
 import { describe, it, expect } from 'vitest';

@@ -1,7 +1,7 @@
 /**
  * Test layer: unit
- * Behavior: Enchantment Resistall covers Enchantment resistAll field; calculateEquippedStats applies resistAll without hardcoded logic; applies arcane_ward resistance to protecte....
- * Proof: focused assertions verify returned values, state changes, rendered output, or emitted events.
+ * Behavior: calculateEquippedStats applies generic resistAll enchantment fields to protected damage types, stacks them with item resistance, and caps resistance values.
+ * Proof: Asserts stats.resistances exists, protected resistance values are positive and no greater than 1, stacked fire resistance exceeds the item value, and arcane_ward/blight_ward expose expected resistAll arrays.
  * Validation: pnpm vitest run packages/game-core/src/systems/enchantment-resistall.test.ts
  */
 import { describe, it, expect } from 'vitest';

@@ -1,7 +1,7 @@
 /**
  * Test layer: unit
- * Behavior: Equipment Fifo covers equipment FIFO behavior; weapon FIFO; equips first weapon to primary slot.
- * Proof: focused assertions verify returned values, state changes, rendered output, or emitted events.
+ * Behavior: Equipment FIFO equip flow fills weapon and ring slots in order and returns the oldest occupied slot to inventory when both slots are full.
+ * Proof: Asserts weapon, secondaryWeapon, ring1, and ring2 slot assignments after sequential equips plus inventory containment of displaced sword and ring items.
  * Validation: pnpm vitest run packages/game-core/src/systems/equipment-fifo.test.ts
  */
 import { describe, it, expect, beforeEach } from 'vitest';

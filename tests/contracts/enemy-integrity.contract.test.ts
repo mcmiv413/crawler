@@ -1,7 +1,7 @@
 /**
  * Test layer: contract
- * Behavior: Enemy Integrity covers Enemy Content Integrity; Sprite uniqueness; no two enemies share the same sprite name.
- * Proof: live catalog/schema assertions validate IDs, shapes, and cross references.
+ * Behavior: Live enemy templates remain spawnable and consistently referenced by unique sprite/ascii keys, valid factions/biomes, tier coverage, spawn weights, and sprite names.
+ * Proof: Assertions require duplicate sprite/ascii lookups to be undefined, faction and biome maps to contain each reference, early biomes to have tier-1 enemies, spawn weights to be in range, and missing spriteName list to have length 0.
  * Validation: pnpm vitest run tests/contracts/enemy-integrity.contract.test.ts
  */
 import { describe, it, expect } from 'vitest';

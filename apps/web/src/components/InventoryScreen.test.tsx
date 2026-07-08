@@ -1,7 +1,7 @@
 /**
  * Test layer: unit
- * Behavior: InventoryScreen covers InventoryScreen Component; Header and Navigation; renders inventory title.
- * Proof: focused assertions verify returned values, state changes, rendered output, or emitted events.
+ * Behavior: InventoryScreen manages equipment, collapsible bag, item inspection, notices, equip actions, and mobile inventory layouts from presenter inventory data.
+ * Proof: Asserts inventory/equipment/bag text, Back to Game onClose, aria-expanded toggles, x3 quantity, Restores health and Damage modal text, EQUIP command for a1, notice messages appearing/dismissing by id, mobile padding/overflow, and full equipment item visibility.
  * Validation: pnpm vitest run apps/web/src/components/InventoryScreen.test.tsx
  */
 /**

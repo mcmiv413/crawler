@@ -1,7 +1,7 @@
 /**
  * Test layer: unit
- * Behavior: Auto Walk covers shouldCancelAutoWalk; returns false when phase is still dungeon and no threats; returns true when phase changes from dungeon to combat.
- * Proof: focused assertions verify returned values, state changes, rendered output, or emitted events.
+ * Behavior: shouldCancelAutoWalk cancels only when movement leaves dungeon, health decreases, or a new threat appears.
+ * Proof: Assertions check boolean returns for unchanged dungeon phase, combat, town, and game_over phase transitions, health loss versus steady or increased health, new map entity threats, and unchanged known enemy positions.
  * Validation: pnpm vitest run packages/game-core/src/utils/auto-walk.test.ts
  */
 import { describe, it, expect, beforeEach } from 'vitest';

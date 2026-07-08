@@ -1,7 +1,7 @@
 /**
  * Test layer: unit
- * Behavior: Player hud Builder covers buildPlayerHud; basic player stats; displays player name.
- * Proof: focused assertions verify returned values, state changes, rendered output, or emitted events.
+ * Behavior: buildPlayerHud exposes player stats, equipment, statuses, abilities, ring magic, quests, faction progress, and dungeon or town context from game state.
+ * Proof: Assertions check HUD fields for name, level, health, combat stats, gold, equipment names, status presentation metadata, ability readiness and mana, ring school mastery and learned spells, quest titles, faction and ogre progress, floor, biome, weapon mastery, and town nulls.
  * Validation: pnpm vitest run packages/presenter/src/builders/player-hud-builder.test.ts
  */
 import { describe, it, expect, beforeEach } from 'vitest';

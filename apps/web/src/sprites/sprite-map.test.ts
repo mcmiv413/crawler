@@ -1,7 +1,7 @@
 /**
  * Test layer: unit
- * Behavior: Sprite map covers SPRITE_MAP; has required static keys; all rects have non-negative integer coordinates and 16x16 dimensions.
- * Proof: focused assertions verify returned values, state changes, rendered output, or emitted events.
+ * Behavior: SPRITE_MAP exposes required player/item/enemy/status entries and valid 16x16 atlas rectangles while unknown keys remain safe to read.
+ * Proof: Assertions check required keys with arrayContaining, nonnegative integer x/y coordinates, 16px width and height, presence of enemy:goblin_archer, and undefined return without throwing for unknown:key.
  * Validation: pnpm vitest run apps/web/src/sprites/sprite-map.test.ts
  */
 import { describe, it, expect } from 'vitest';

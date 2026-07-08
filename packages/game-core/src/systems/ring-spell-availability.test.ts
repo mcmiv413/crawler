@@ -1,7 +1,7 @@
 /**
  * Test layer: unit
- * Behavior: Ring Spell Availability covers ring-spell-availability; exposes per-school XP gates for multi-school combo spells; marks all school gates as met when requirements are s....
- * Proof: focused assertions verify returned values, state changes, rendered output, or emitted events.
+ * Behavior: Ring spell study availability exposes per-school XP gates for combo spells and unlocks study only when school, gold, prerequisite, and XP requirements are met.
+ * Proof: Assertions check schoolGates lengths, fire and lightning currentXp/requiredXp/met values, visibleForStudy/unlockedForStudy/canStudy flags, and empty schoolGates for spells without XP requirements.
  * Validation: pnpm vitest run packages/game-core/src/systems/ring-spell-availability.test.ts
  */
 import { describe, it, expect } from 'vitest';

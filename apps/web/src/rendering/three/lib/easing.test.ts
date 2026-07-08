@@ -1,7 +1,7 @@
 /**
  * Test layer: unit
- * Behavior: Easing covers clamp01; clamps values below 0 to 0; clamps values above 1 to 1.
- * Proof: focused assertions verify returned values, state changes, rendered output, or emitted events.
+ * Behavior: Easing helpers clamp interpolation input, return endpoints and midpoints, keep cubic and quad eases monotonic, and allow easeOutBack to overshoot near the end.
+ * Proof: Assertions check clamp01 and lerp outputs at below/range/above bounds, easing endpoints and clamped extremes, nondecreasing sample values, and easeOutBack greater than 1 at t=0.75.
  * Validation: pnpm vitest run apps/web/src/rendering/three/lib/easing.test.ts
  */
 import { describe, expect, it } from 'vitest';

@@ -1,7 +1,7 @@
 /**
  * Test layer: unit
- * Behavior: Movement Behaviors covers Movement Behaviors; wall_stalker behavior; prefers tiles adjacent to walls over open tiles.
- * Proof: focused assertions verify returned values, state changes, rendered output, or emitted events.
+ * Behavior: Movement behavior selection returns valid neighboring tiles for specialized and default enemy movement and exposes behavior registry metadata.
+ * Proof: Assertions check chosen moves are members of getWalkableNeighbors, null-run neighbor lookup returns an empty array, registered ids include wall_stalker, rearline_anchor, chokepoint_holder, and ambush_idle, and behavior metadata fields have the expected types.
  * Validation: pnpm vitest run packages/game-core/src/systems/movement-behaviors.test.ts
  */
 import { describe, it, expect } from 'vitest';

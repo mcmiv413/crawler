@@ -1,7 +1,7 @@
 /**
  * Test layer: contract
- * Behavior: Game Config covers Ability Registry Contract; all abilities have required fields (id, name, cooldown, requiresTarget); ability stats are in valid ranges (co....
- * Proof: live catalog/schema assertions validate IDs, shapes, and cross references.
+ * Behavior: Game configuration exports provide structurally valid ability, enemy, item, balance, command schema, cross-reference, and generated sample data.
+ * Proof: Assertions require non-empty registries, required fields and numeric ranges, duplicate-free IDs, ITEM_BY_ID parity, GameCommandSchema accept/reject cases, and fast-check generated ability/item invariants.
  * Validation: pnpm vitest run tests/contracts/game-config.contract.test.ts
  */
 import { describe, it, expect } from 'vitest';

@@ -1,7 +1,7 @@
 /**
  * Test layer: unit
- * Behavior: Burn Spread covers spreadBurnFromDeadEnemy; spreads burn from a burned dead enemy to nearby living enemies only; does not spread when the dead enemy was not....
- * Proof: focused assertions verify returned values, state changes, rendered output, or emitted events.
+ * Behavior: spreadBurnFromDeadEnemy spreads burn and high-mastery panic from a burning dead enemy to nearby living enemies while leaving non-burning deaths unchanged.
+ * Proof: Asserts nearby enemy statuses gain burn or panic, far enemies do not, STATUS_APPLIED events target the affected enemy/status, and non-burning input returns the original enemy map with no events.
  * Validation: pnpm vitest run packages/game-core/src/systems/burn-spread.test.ts
  */
 import { describe, it, expect } from 'vitest';

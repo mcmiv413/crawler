@@ -1,7 +1,7 @@
 /**
  * Test layer: unit
- * Behavior: DispatchAnimatedEvent covers dispatchAnimatedEvent; preserves defender-hit snapshot position.
- * Proof: focused assertions verify returned values, state changes, rendered output, or emitted events.
+ * Behavior: dispatchAnimatedEvent forwards defender-hit events with their snapshot position to the defender-hit state hook.
+ * Proof: Assertions check triggerDefenderHit is called with enemy-1, the 120 ms duration, and the { x: 7, y: 4 } position from the AnimatedEvent data.
  * Validation: pnpm vitest run apps/web/src/animation-runtime/dispatchAnimatedEvent.test.ts
  */
 import { describe, expect, it, vi } from 'vitest';

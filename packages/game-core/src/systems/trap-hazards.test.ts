@@ -1,7 +1,7 @@
 /**
  * Test layer: unit
- * Behavior: Trap Hazards covers Trap Hazard Death Attribution; should attribute death to trap hazard when player steps on trap; should populate death context with trap h....
- * Proof: focused assertions verify returned values, state changes, rendered output, or emitted events.
+ * Behavior: Trap hazards attribute player deaths to the triggering hazard, compute overkill, and trigger game over when fatal damage exceeds the threshold.
+ * Proof: Assertions inspect PLAYER_DIED killerName, null killerSpriteName, overkillDamage ranges, a single death event, phase game_over, and PERMADEATH event presence.
  * Validation: pnpm vitest run packages/game-core/src/systems/trap-hazards.test.ts
  */
 import { describe, it, expect } from 'vitest';

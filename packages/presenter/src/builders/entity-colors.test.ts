@@ -1,7 +1,7 @@
 /**
  * Test layer: unit
- * Behavior: Entity Colors covers entity colors (shared presenter color source); prefers the template-provided enemy color; covers arcane and shadow damage types distinctl....
- * Proof: focused assertions verify returned values, state changes, rendered output, or emitted events.
+ * Behavior: Presenter enemy coloring consistently prefers template colors and falls back to damage-type colors across map and inspectable views.
+ * Proof: Assertions compare getEnemyColor, getDamageTypeColor for arcane, shadow, and physical damage, buildMapView entity colors, and buildGameView inspectable entity colors for template-colored and damage-type-colored enemies.
  * Validation: pnpm vitest run packages/presenter/src/builders/entity-colors.test.ts
  */
 import { describe, it, expect } from 'vitest';

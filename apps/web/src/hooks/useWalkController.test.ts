@@ -1,7 +1,7 @@
 /**
  * Test layer: unit
- * Behavior: UseWalkController covers useWalkController; continues held movement at the step boundary instead of raw key repeat; waits for loading to clear after the boundary....
- * Proof: focused assertions verify returned values, state changes, rendered output, or emitted events.
+ * Behavior: useWalkController paces held-key and auto-walk movement at step boundaries while stopping auto-walk on blocked steps, damage, or newly visible threats.
+ * Proof: Asserts MOVE E command sequences and call counts around boundary timers/loading, continuation signals [true, true, true, false], autoWalkPath clearing, and no extra sendCommand after cancellation.
  * Validation: pnpm vitest run apps/web/src/hooks/useWalkController.test.ts
  */
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';

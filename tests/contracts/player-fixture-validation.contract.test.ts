@@ -1,7 +1,7 @@
 /**
  * Test layer: contract
- * Behavior: Player Fixture Validation covers Group 3: Validation failures produce explicit errors (contract suite); rejects unknown item id in inventory; rejects unknown ring spell id.
- * Proof: live catalog/schema assertions validate IDs, shapes, and cross references.
+ * Behavior: Player fixture validation rejects malformed IDs, invalid numeric ranges, duplicate equipment, and unsupported schema versions with explicit errors.
+ * Proof: Assertions require isValid false, field-specific error entries and offending values in messages for inventoryItemIds, learnedRingSpellIds, knownRingSchools, gold, health, mana, experience, schemaVersion, level, equippedWeaponId, equippedArmorIds, plus loader throw behavior.
  * Validation: pnpm vitest run tests/contracts/player-fixture-validation.contract.test.ts
  */
 /**

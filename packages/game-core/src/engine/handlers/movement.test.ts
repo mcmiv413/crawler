@@ -1,7 +1,7 @@
 /**
  * Test layer: unit
- * Behavior: Movement covers handleMove - Trap Damage on Walk; should damage player when walking onto a trap; should emit TRAP_TRIGGERED event when stepping on trap.
- * Proof: focused assertions verify returned values, state changes, rendered output, or emitted events.
+ * Behavior: handleMove applies passive trap damage only when walking onto hazardous objects and treats chests or healing fountains as non-triggering walk-over objects.
+ * Proof: Assertions check position moves to the trap tile, health decreases by positive damage equal to TRAP_TRIGGERED.damage, TRAP_TRIGGERED trapId/trapName/position, no health change or TRAP_TRIGGERED for chest/fountain, and turnNumber increments by exactly one for trap movement.
  * Validation: pnpm vitest run packages/game-core/src/engine/handlers/movement.test.ts
  */
 import { describe, it, expect } from 'vitest';

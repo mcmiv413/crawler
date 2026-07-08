@@ -1,7 +1,7 @@
 /**
  * Test layer: unit
- * Behavior: Feature Flags covers isDepthAtmosphereEnabledFlag; default behaviour (no env var, no override); returns true when VITE_DEPTH_ATMOSPHERE is not set.
- * Proof: focused assertions verify returned values, state changes, rendered output, or emitted events.
+ * Behavior: Feature flag helpers resolve depth atmosphere and animation renderer settings from env values and global overrides.
+ * Proof: Assertions cover true/false returns for VITE_DEPTH_ATMOSPHERE, canvas/three results for VITE_ANIMATION_RENDERER_MODE, override precedence, and isThreeEffectsEnabledFlag matching getAnimationRendererMode() === 'three'.
  * Validation: pnpm vitest run apps/web/src/config/feature-flags.test.ts
  */
 import { describe, it, expect, vi, afterEach } from 'vitest';

@@ -1,7 +1,7 @@
 /**
  * Test layer: unit
- * Behavior: UseMoveAnimationState covers useMoveAnimationState; carries the rendered offset into a superseding move for the same entity; does not schedule an idle animation frame....
- * Proof: focused assertions verify returned values, state changes, rendered output, or emitted events.
+ * Behavior: useMoveAnimationState carries active movement offsets into chained steps, updates walk phases from continuation signals, and de-duplicates move animation subscribers.
+ * Proof: Asserts one active animation with middle phase and carried fromOffsetPx, zero idle timers, completed moves start at { x: 0, y: 0 }, phase retargets start to single, and duplicate subscriber calls fire once per registered move.
  * Validation: pnpm vitest run apps/web/src/hooks/useMoveAnimationState.test.ts
  */
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';

@@ -1,7 +1,7 @@
 /**
  * Test layer: unit
- * Behavior: Game View Builder Coverage covers game-view-builder coverage: entity visibility; visible entities appear in view; single visible enemy appears in inspectableEntities.
- * Proof: focused assertions verify returned values, state changes, rendered output, or emitted events.
+ * Behavior: buildGameView includes only visible, mapped, valid inspectable entities and carries player position plus sprite/template metadata into map-facing views.
+ * Proof: Expectations check inspectableEntities inclusion and emptiness, map.playerPosition, ascii/color/templateId/entityType/stat fields, deduplication and sort ordering, deterministic ids, and missing-template exclusion.
  * Validation: pnpm vitest run packages/presenter/src/game-view-builder-coverage.test.ts
  */
 /**

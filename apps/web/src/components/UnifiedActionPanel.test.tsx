@@ -1,7 +1,7 @@
 /**
  * Test layer: unit
- * Behavior: UnifiedActionPanel covers UnifiedActionPanel; Button Rendering; renders all 7 action buttons.
- * Proof: focused assertions verify returned values, state changes, rendered output, or emitted events.
+ * Behavior: UnifiedActionPanel renders the dungeon action buttons and routes clicks through direct commands, dropdown selections, tile targeting, and enabled-state rules.
+ * Proof: Button and dialog assertions verify Wait/Attack/Swap/Ability/Interact/Use/Inspect controls, enemy row markup, disabled states, startTileTargeting(thunder_step), and WAIT, ATTACK, SWAP_WEAPONS, USE_ABILITY, SET_TRAP, and USE_ITEM payloads.
  * Validation: pnpm vitest run apps/web/src/components/UnifiedActionPanel.test.tsx
  */
 /**

@@ -1,7 +1,7 @@
 /**
  * Test layer: unit
- * Behavior: Command Handler.type Safety covers command-handler type safety; handles MOVE command without type casting; handles ATTACK command with typed access.
- * Proof: focused assertions verify returned values, state changes, rendered output, or emitted events.
+ * Behavior: handleCommand accepts typed command objects for MOVE, ATTACK, EQUIP, WAIT, and the documented command union without ad hoc casts in normal paths.
+ * Proof: Assertions check dispatched MOVE results expose state/events, ATTACK/EQUIP/WAIT preserve the gameId and return events arrays, and the command type list contains expected entries including MOVE, ATTACK, USE_ITEM, WAIT, and USE_ABILITY.
  * Validation: pnpm vitest run packages/game-core/src/engine/command-handler.type-safety.test.ts
  */
 import { describe, it, expect, beforeEach } from 'vitest';

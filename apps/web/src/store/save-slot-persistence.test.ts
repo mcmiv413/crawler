@@ -1,7 +1,7 @@
 /**
  * Test layer: unit
- * Behavior: Save Slot Persistence covers save slot persistence; Test Group 8: stores and restores three independent save slots without contamination; Test Group 11: exposes save....
- * Proof: focused assertions verify returned values, state changes, rendered output, or emitted events.
+ * Behavior: Save slot persistence isolates the three supported slots, exposes metadata separately from snapshots, returns unsupported schema snapshots for validation, and clears slots atomically.
+ * Proof: Assertions check SAVE_SLOT_IDS order, per-slot snapshot equality after overwrites, metadata fields for slot-1 with corrupt snapshot JSON, thrown slot corruption and slot-4 writes, null loads after clear, empty slot metadata, removed storage keys, and remove operation order.
  * Validation: pnpm vitest run apps/web/src/store/save-slot-persistence.test.ts
  */
 import { beforeEach, describe, expect, it } from 'vitest';

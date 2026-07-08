@@ -1,7 +1,7 @@
 /**
  * Test layer: unit
- * Behavior: EnchanterPanel covers EnchanterPanel enchantment data consumption; fixture enchantments all have non-empty names; fixture enchantments all have valid tiers.
- * Proof: focused assertions verify returned values, state changes, rendered output, or emitted events.
+ * Behavior: EnchanterPanel fixture tests keep local enchantment data suitable for panel consumption without depending on the live catalog.
+ * Proof: Asserts every fixture enchantment name matches non-whitespace, tier is one of 1, 2, 3, or unique, cost is positive, and tier 2 and tier 3 costs increase over lower tiers.
  * Validation: pnpm vitest run apps/web/src/components/EnchanterPanel.test.ts
  */
 import { describe, it, expect } from 'vitest';

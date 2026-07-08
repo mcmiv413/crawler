@@ -1,7 +1,7 @@
 /**
  * Test layer: unit
- * Behavior: Action Rejection covers rejectPlayerAction; emits PLAYER_ACTION_REJECTED event; preserves state object values.
- * Proof: focused assertions verify returned values, state changes, rendered output, or emitted events.
+ * Behavior: rejectPlayerAction returns a PLAYER_ACTION_REJECTED result that preserves state and carries action, reason, timing, and optional context details.
+ * Proof: Assertions check one PLAYER_ACTION_REJECTED event with actionType/actionId/reasonCode/message/playerId, timestamp and turnNumber equal to state.turnNumber, no ABILITY_USED/ITEM_USED/ATTACK_PERFORMED events, runEnded false, optional target/item/ability/source fields, unchanged player values, and the same state reference.
  * Validation: pnpm vitest run packages/game-core/src/engine/action-rejection.test.ts
  */
 import { describe, it, expect } from 'vitest';

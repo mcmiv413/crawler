@@ -1,7 +1,7 @@
 /**
  * Test layer: balance
- * Behavior: Balance Simulation covers Balance Simulation - Damage Output Distributions; Player attack damage varies in expected range based on power; Enemy attack damage varie....
- * Proof: simulation and balance assertions verify aggregate tuning invariants.
+ * Behavior: Seeded balance simulations and properties constrain combat damage, ability outcomes, loot/economy progression, edge cases, formula bounds, and death pacing.
+ * Proof: Assertions check min/max/average damage ranges, hit/crit/status/heal percentages, victory/drop/rare-item/gold/XP/shop-tier rates, healing and duration caps, fast-check damage/hit/crit/variance bounds, and death-pacing hit counts, overkill thresholds, and outcome rates.
  * Validation: pnpm test:balance packages/game-core/src/systems/balance-simulation.balance.test.ts
  */
 /**

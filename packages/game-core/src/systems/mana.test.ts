@@ -1,7 +1,7 @@
 /**
  * Test layer: unit
- * Behavior: Mana covers Mana System; canAffordMana; returns true when current mana >= cost.
- * Proof: focused assertions verify returned values, state changes, rendered output, or emitted events.
+ * Behavior: Mana helpers report affordability and clamp deduct, restore, and regeneration amounts against zero and max mana boundaries.
+ * Proof: Assertions check boolean canAffordMana results, deducted amounts never drop below zero, restoreMana adds or caps at max, and regenerateMana increases by one without exceeding max.
  * Validation: pnpm vitest run packages/game-core/src/systems/mana.test.ts
  */
 import { describe, it, expect } from 'vitest';

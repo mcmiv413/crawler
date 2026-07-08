@@ -1,7 +1,7 @@
 /**
  * Test layer: contract
- * Behavior: Example World Fixtures covers example world fixture: fresh-world; passes validation; loads into a WorldState.
- * Proof: live catalog/schema assertions validate IDs, shapes, and cross references.
+ * Behavior: Example world fixture files load into WorldState objects matching fresh, mid-corruption, and ogre-emergence world profiles.
+ * Proof: Assertions check validateWorldFixture success and loaded world fields including faction ids/counts and powers, dungeonOgre status/emergence run/depth, totalRuns, deepestFloor, town prosperity/fear, and highestRarityFound.
  * Validation: pnpm vitest run packages/game-core/src/fixtures/example-world-fixtures.contract.test.ts
  */
 /**

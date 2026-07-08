@@ -1,7 +1,7 @@
 /**
  * Test layer: unit
- * Behavior: Workspace Resolution covers workspace package resolution; resolves @dungeoncore root export; resolves @dungeoncoreaiai-service.js subpath.
- * Proof: focused assertions verify returned values, state changes, rendered output, or emitted events.
+ * Behavior: Vitest resolves the @dungeon/core root export and AI subpath exports through the workspace package configuration.
+ * Proof: Assertions check GameEngine and prompt-builder exports are functions, the ai-service subpath has no runtime keys, and all prompt builder functions are callable.
  * Validation: pnpm vitest run apps/server/src/ai/workspace-resolution.test.ts
  */
 /**
@@ -20,7 +20,7 @@ import * as promptBuilders from '@dungeon/core/ai/prompt-builders.js';
 
 describe('workspace package resolution', () => {
   it('resolves @dungeon/core root export', () => {
-    const exportedCtor = core['Game' + 'Engine' as keyof typeof core];
+    const exportedCtor = core[('Game' + 'Engine') as keyof typeof core];
     expect(typeof exportedCtor).toBe('function');
   });
 

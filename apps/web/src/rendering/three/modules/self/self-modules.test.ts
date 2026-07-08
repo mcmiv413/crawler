@@ -1,7 +1,7 @@
 /**
  * Test layer: unit
- * Behavior: Self Modules covers healingPulse; staminaSurge; cureSparkle.
- * Proof: focused assertions verify returned values, state changes, rendered output, or emitted events.
+ * Behavior: Self-target animation modules satisfy the shared Three animation lifecycle contract for healingPulse, staminaSurge, cureSparkle, secondWindBuff, and heatSurgeAura.
+ * Proof: runThreeAnimationContract assertions check fx ID format, category prefix, create/setPosition/update/dispose no-throw behavior, scene.add/remove counts, tile-scale visible geometry/material opacity, and geometry/material/texture disposal.
  * Validation: pnpm vitest run apps/web/src/rendering/three/modules/self/self-modules.test.ts
  */
 /**

@@ -1,7 +1,7 @@
 /**
  * Test layer: unit
- * Behavior: Three Transient Animation Ownership covers Transient animation ownership — ID-based keying; resolves empty owned IDs when no animations are active; owns a single animationId when o....
- * Proof: focused assertions verify returned values, state changes, rendered output, or emitted events.
+ * Behavior: Transient animation ownership resolves unique registered animation IDs and replaces stored ownership immutably across reportThreeOwnership calls.
+ * Proof: Assertions check empty, registered, unregistered, duplicate, mixed, and high-volume owned ID arrays, prior-state preservation, replacement with ID_AOE, and clearing back to an empty owned-ID list.
  * Validation: pnpm vitest run apps/web/src/rendering/three/three-transient-animation-ownership.test.ts
  */
 /**

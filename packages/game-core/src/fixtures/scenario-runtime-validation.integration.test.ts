@@ -1,7 +1,7 @@
 /**
  * Test layer: integration
- * Behavior: Scenario Runtime Validation covers Group 1: Scenario Loading; a valid scenario loads into a dungeon-phase GameState; loaded state initializes all core systems (player, run,....
- * Proof: integrated command, service, or repository assertions verify the cross-module result.
+ * Behavior: Scenario fixtures load deterministic dungeon GameStates that exercise normal engine combat, movement, loot, world scaling, spell casting, isolation, and invalid-input validation.
+ * Proof: Assertions check loaded phase/run/player/world/itemRegistry and placed enemy coordinates, resolver effects, offense preview band equality, ATTACK/MOVE/USE_ITEM/USE_ABILITY outcomes with turn/events/health/inventory/mana changes, repeated-load state/enemy id/stat equality, depth/world-scaled enemy health and ENTITY_DIED removal, loot LOOT_ACQUIRED/registry usability, independent factions/registries, validateScenarioFixture errors for schema/ref/map/placement/status/health cases, resolver call count, and ScenarioLoadError messages.
  * Validation: pnpm vitest run packages/game-core/src/fixtures/scenario-runtime-validation.integration.test.ts
  */
 /**

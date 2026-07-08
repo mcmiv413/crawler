@@ -1,7 +1,7 @@
 /**
  * Test layer: unit
- * Behavior: Index covers enchantment catalog; all enchantments are in ENCHANTMENT_BY_ID map; map size matches data array.
- * Proof: focused assertions verify returned values, state changes, rendered output, or emitted events.
+ * Behavior: The enchantment catalog maps every enchantment by ID, preserves tier metadata, prices tiers correctly, and reports implied blueprints.
+ * Proof: Assertions expect map membership and size equality, non-empty standard and unique tiers, retrieved tiers matching source entries, tier-based costs with increasing standard costs, zero unknown cost, self-only implied blueprints, and empty unknown blueprints.
  * Validation: pnpm vitest run packages/content/src/enchantments/index.test.ts
  */
 import { describe, it, expect } from 'vitest';

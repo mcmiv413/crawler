@@ -1,7 +1,7 @@
 /**
  * Test layer: unit
- * Behavior: Three Entity Motion covers computeMoveScreenPosition; at progress 0 returns tile center of fromPos; at progress 1 returns tile center of toPos.
- * Proof: focused assertions verify returned values, state changes, rendered output, or emitted events.
+ * Behavior: Three entity motion converts move and bump progress into screen-space coordinates and decides when canvas should suppress Three-owned entities.
+ * Proof: Asserts tile-center interpolation, viewport and camera offsets, fromOffsetPx carry and decay, diagonal/large finite positions, bump displacement/recoil, and shouldCanvasSuppressEntity true/false for owned, missing, empty, and large ID lists.
  * Validation: pnpm vitest run apps/web/src/rendering/three/entities/three-entity-motion.test.ts
  */
 /**

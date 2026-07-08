@@ -1,7 +1,7 @@
 /**
  * Test layer: integration
- * Behavior: Three Animation Docs covers Three animation docs guardrail; keeps the animation authoring guide aligned with the generated-module workflow; keeps the UI design guide....
- * Proof: integrated command, service, or repository assertions verify the cross-module result.
+ * Behavior: The Three animation documentation guardrail keeps animation, UI design, and testing guides aligned with the generated module workflow and renderer-mode rules.
+ * Proof: Assertions check required snippets for module paths, generator scripts, contract runners, renderer env vars, overlay test IDs, gl.readPixels, and forced WebGL failure, while rejecting legacy VITE_THREE_EFFECTS and three-effect-registry snippets.
  * Validation: pnpm vitest run tests/integration/three-animation-docs.integration.test.ts
  */
 import { describe, expect, it } from 'vitest';

@@ -1,7 +1,7 @@
 /**
  * Test layer: contract
- * Behavior: Ability Tuning covers Ability Definitions — Area 3 tuning; power_strike has a reasonable unlock level; second_wind has a reasonable unlock level.
- * Proof: live catalog/schema assertions validate IDs, shapes, and cross references.
+ * Behavior: Ability tuning keeps key unlock levels, cooldowns, unlock tables, and mastery thresholds within reasonable progression bounds.
+ * Proof: Expectations check unlock levels for power_strike and second_wind, positive sub-ten cooldowns for weapon ability groups, positive unlock table levels under twenty, ascending MASTERY_THRESHOLDS, and threshold values between zero and one thousand.
  * Validation: pnpm vitest run tests/contracts/ability-tuning.contract.test.ts
  */
 import { describe, it, expect } from 'vitest';

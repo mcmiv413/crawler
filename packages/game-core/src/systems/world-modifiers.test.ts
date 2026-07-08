@@ -1,7 +1,7 @@
 /**
  * Test layer: unit
- * Behavior: World Modifiers covers buildWorldModifiers; default world returns empty preferences and stable faction multipliers; high fear adds aggressive archetype preferences.
- * Proof: focused assertions verify returned values, state changes, rendered output, or emitted events.
+ * Behavior: buildWorldModifiers converts town fear, corruption, faction status, and reserved slot input into encounter preference and multiplier modifiers.
+ * Proof: Assertions check preferredArchetypes, preferredDamageTypes, enemyHealthMultiplier, tierUpgradeChance, factionWeightMultipliers, reservedEncounterSlots, and returned factions.
  * Validation: pnpm vitest run packages/game-core/src/systems/world-modifiers.test.ts
  */
 import { describe, expect, it } from 'vitest';

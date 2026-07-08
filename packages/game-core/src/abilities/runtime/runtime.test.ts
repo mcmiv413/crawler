@@ -1,7 +1,7 @@
 /**
  * Test layer: unit
- * Behavior: Runtime covers abilitiesruntime; validateRequirements; should pass when no requirements.
- * Proof: focused assertions verify returned values, state changes, rendered output, or emitted events.
+ * Behavior: Ability runtime helpers validate requirements, resolve targets, and execute abilities with rejection, damage, snapshot, death, and ring-mastery side effects.
+ * Proof: Assertions check validateRequirements valid/reason results for target, health, range, visibility, and HP-threshold cases; resolveTargets outputs for self, missing run, single, nearest, all-visible, and adjacent selectors; executeAbility PLAYER_ACTION_REJECTED and ABILITY_USED events, matching attack damage, targetSnapshots before mutation, ENTITY_DIED ordering/details, storm_active status, and lightning/fire XP changes.
  * Validation: pnpm vitest run packages/game-core/src/abilities/runtime/runtime.test.ts
  */
 import { describe, it, expect } from 'vitest';

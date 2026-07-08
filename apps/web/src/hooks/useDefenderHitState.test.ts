@@ -1,7 +1,7 @@
 /**
  * Test layer: unit
- * Behavior: UseDefenderHitState covers useDefenderHitState; tracks the trigger and clear lifecycle; retains optional snapshot position for defender-hit flashes.
- * Proof: focused assertions verify returned values, state changes, rendered output, or emitted events.
+ * Behavior: useDefenderHitState records defender-hit entries, preserves optional snapshot positions, and clears or refreshes entries according to hit timers.
+ * Proof: Asserts the hit map gains and loses enemy-1 after fake timer advancement, stores { x: 7, y: 4 }, and remains active until the refreshed timer expires.
  * Validation: pnpm vitest run apps/web/src/hooks/useDefenderHitState.test.ts
  */
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';

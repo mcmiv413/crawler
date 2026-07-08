@@ -1,7 +1,7 @@
 /**
  * Test layer: unit
- * Behavior: Animation Sequence covers buildAnimationSequence; groups actor events into ordered beats with shared beat ids; uses fixed bump timing for player and enemy attacks.
- * Proof: focused assertions verify returned values, state changes, rendered output, or emitted events.
+ * Behavior: buildAnimationSequence converts movement, attack, ability, status, and visibility-filtered events into ordered non-overlapping animation beats with stable timing and action-time target positions.
+ * Proof: Assertions inspect beat indexes, beat IDs, delays, bump timing, damage and ability positions, hidden beat filtering, lightning animation IDs, empty no-run output, and getAnimatedEventBatchSettleMs matching getBeatSettleMs.
  * Validation: pnpm vitest run packages/presenter/src/animation-sequence.test.ts
  */
 import { describe, expect, it } from 'vitest';

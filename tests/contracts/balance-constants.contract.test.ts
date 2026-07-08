@@ -1,7 +1,7 @@
 /**
  * Test layer: contract
- * Behavior: Balance Constants covers Config Governance: Balance Constants; all balance constants are properly exported from tables.ts.
- * Proof: live catalog/schema assertions validate IDs, shapes, and cross references.
+ * Behavior: Exported balance constants remain present and structurally sensible for prosperity, kill streak, NPC, fear, corruption, and world modifier systems.
+ * Proof: Expectations check positive MAX_EVENT_HISTORY, signed prosperity deltas, increasing kill streak thresholds, shopkeeper return threshold above leave threshold, positive fear values, bounded corruption and fear modifiers, and positive world extra-enemy caps.
  * Validation: pnpm vitest run tests/contracts/balance-constants.contract.test.ts
  */
 import { describe, it, expect } from 'vitest';

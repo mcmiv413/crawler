@@ -1,7 +1,7 @@
 /**
  * Test layer: contract
- * Behavior: Example Fixtures covers example fixture: new-character; passes validation; loads into a player at level 1.
- * Proof: live catalog/schema assertions validate IDs, shapes, and cross references.
+ * Behavior: Example player fixture files load into players that match their documented new-character, midgame-warrior, fire-mage, and high-level profiles.
+ * Proof: Assertions check each fixture passes validatePlayerFixture and loaded players have expected level, gold, inventory length, equipped slots, ringMastery schools/xp, learnedRingSpellIds, mana cap, ring slots, full equipment, and maximum gold.
  * Validation: pnpm vitest run packages/game-core/src/fixtures/example-fixtures.contract.test.ts
  */
 /**

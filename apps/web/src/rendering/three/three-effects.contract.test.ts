@@ -1,7 +1,7 @@
 /**
  * Test layer: contract
- * Behavior: Three Effects covers Three effect contracts; derives metadata ids from the generated Three registry; registers every built-in metadata id into the Three anima....
- * Proof: live catalog/schema assertions validate IDs, shapes, and cross references.
+ * Behavior: The Three effect contract keeps generated effect IDs, content animation refs, registry modules, and Lightning ring modules in sync.
+ * Proof: Assertions compare listAnimationIds with BUILT_IN_THREE_EFFECT_IDS, require every built-in ID in ANIMATION_REF_BY_ID, verify registered modules contain matching ids, assert Lightning strike/bolt refs resolve to exact modules, and include fx.self.healing-pulse.
  * Validation: pnpm vitest run apps/web/src/rendering/three/three-effects.contract.test.ts
  */
 import { beforeEach, describe, expect, it } from 'vitest';

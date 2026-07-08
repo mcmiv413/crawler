@@ -1,7 +1,7 @@
 /**
  * Test layer: unit
- * Behavior: Impact Modules covers radialImpactBurst; forwardSlash; cleaveArc (impact).
- * Proof: focused assertions verify returned values, state changes, rendered output, or emitted events.
+ * Behavior: Impact animation modules satisfy the shared Three animation lifecycle contract for radialImpactBurst, forwardSlash, cleaveArc, executionStrike, staggerShockwave, shatterBurst, riposteGlint, bleedingStrike, disarmStrike, and lightningStrike.
+ * Proof: runThreeAnimationContract assertions check fx ID format, category prefix, create/setPosition/update/dispose no-throw behavior, scene.add/remove counts, tile-scale visible geometry/material opacity, and geometry/material/texture disposal.
  * Validation: pnpm vitest run apps/web/src/rendering/three/modules/impact/impact-modules.test.ts
  */
 /**

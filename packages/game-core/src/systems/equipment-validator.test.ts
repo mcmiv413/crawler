@@ -1,7 +1,7 @@
 /**
  * Test layer: unit
- * Behavior: Equipment Validator covers validateEquipmentAction; item not found; rejects when item entity id is not in registry.
- * Proof: focused assertions verify returned values, state changes, rendered output, or emitted events.
+ * Behavior: validateEquipmentAction accepts owned compatible equipment and rejects missing, non-equippable, absent, or incompatible items without mutating player state.
+ * Proof: Asserts result.valid outcomes, rejectionCode values, nonempty rejection messages, unchanged gold and inventory length, and valid results for owned weapon and armor equips.
  * Validation: pnpm vitest run packages/game-core/src/systems/equipment-validator.test.ts
  */
 /**

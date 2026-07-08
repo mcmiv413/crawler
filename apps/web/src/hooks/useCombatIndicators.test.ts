@@ -1,7 +1,7 @@
 /**
  * Test layer: unit
- * Behavior: UseCombatIndicators covers useCombatIndicators; should not throw when given valid inputs; should handle empty indicator array.
- * Proof: focused assertions verify returned values, state changes, rendered output, or emitted events.
+ * Behavior: useCombatIndicators accepts empty, repeated, and mixed combat indicator inputs without throwing during hook render or rerender.
+ * Proof: Assertions wrap renderHook and rerender in not.toThrow for damage, heal, status, gold, mixed, same-position, empty, and multi-indicator arrays.
  * Validation: pnpm vitest run apps/web/src/hooks/useCombatIndicators.test.ts
  */
 import { renderHook } from '@testing-library/react';

@@ -1,7 +1,7 @@
 /**
  * Test layer: unit
- * Behavior: Enemy ai covers decideEnemyAction; un-alerted enemy beyond dist 5 returns wait; un-alerted enemy at dist 4 (within detection) approaches (not wait).
- * Proof: focused assertions verify returned values, state changes, rendered output, or emitted events.
+ * Behavior: decideEnemyAction chooses wait, attack, move, ability, retreat, and pursuit actions from enemy archetype, distance, terrain, alert, and last-known-player context.
+ * Proof: Asserts returned action.type values or allowed sets for each archetype scenario and checks retreat targetPosition equals the tile that maximizes distance from the player.
  * Validation: pnpm vitest run packages/game-core/src/systems/enemy-ai.test.ts
  */
 import { describe, it, expect } from 'vitest';

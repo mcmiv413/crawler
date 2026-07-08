@@ -1,7 +1,7 @@
 /**
  * Test layer: unit
- * Behavior: Particle Burst covers createParticleBurst; returns object, geometry, and material; position attribute length equals count  3.
- * Proof: focused assertions verify returned values, state changes, rendered output, or emitted events.
+ * Behavior: createParticleBurst wires particles to geometry/material, allocates one XYZ triplet per particle, updates safely, keeps seeded positions deterministic, and disposes once.
+ * Proof: Assertions check object geometry/material identity, position attribute length equals count * 3, update at 0/0.5/1 does not throw, matching seeded position array values, and single geometry/material dispose calls.
  * Validation: pnpm vitest run apps/web/src/rendering/three/lib/particle-burst.test.ts
  */
 import { describe, expect, it, vi } from 'vitest';

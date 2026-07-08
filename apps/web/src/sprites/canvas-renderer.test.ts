@@ -1,7 +1,7 @@
 /**
  * Test layer: unit
- * Behavior: Canvas Renderer covers canvas-renderer with bump animations; accepts bump animations parameter in renderMap; draws player status presentation without renderer-s....
- * Proof: focused assertions verify returned values, state changes, rendered output, or emitted events.
+ * Behavior: The canvas renderer accepts movement/status inputs, applies camera and move animation drawing transforms, and skips only consumable animations handled by Three.
+ * Proof: Assertions check renderMap does not throw with bump animations, strokeRect status bounds, translate and fillText calls during camera pan, entity translate/font scaling for move profiles, save/restore draw calls, and exact skipHandledAnimationIds save-count differences.
  * Validation: pnpm vitest run apps/web/src/sprites/canvas-renderer.test.ts
  */
 import { describe, it, expect, vi } from 'vitest';

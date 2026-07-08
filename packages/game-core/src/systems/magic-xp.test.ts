@@ -1,7 +1,7 @@
 /**
  * Test layer: unit
- * Behavior: Magic xp covers magic-xp; tracks Fire XP without discarding learned spells; applies a multi-school spell cast XP gain to every listed school.
- * Proof: focused assertions verify returned values, state changes, rendered output, or emitted events.
+ * Behavior: Magic XP updates ring school mastery, learned spells, mana growth, Fire mastery benefits, and post-cap display levels.
+ * Proof: Assertions check per-school XP totals, learnedRingSpellIds preservation and idempotence, getTotalMagicXp/getMagicLevel/maxMana thresholds, Fire burn scaling and high-mastery gates, and compile-time rejection of invalid school keys.
  * Validation: pnpm vitest run packages/game-core/src/systems/magic-xp.test.ts
  */
 import { describe, it, expect } from 'vitest';

@@ -1,7 +1,7 @@
 /**
  * Test layer: unit
- * Behavior: Config covers config test migration note; keeps balance-constants coverage in the contract layer.
- * Proof: focused assertions verify returned values, state changes, rendered output, or emitted events.
+ * Behavior: The unit config test documents that balance-constants coverage lives in the contract test suite.
+ * Proof: Assertion checks the balance-constants contract test file exists at tests/contracts/balance-constants.contract.test.ts.
  * Validation: pnpm vitest run packages/game-core/src/config.test.ts
  */
 /**

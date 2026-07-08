@@ -1,7 +1,7 @@
 /**
  * Test layer: unit
- * Behavior: Biome Layout covers BiomeDefinition.mapGen; every biome has mapGen params; forest rooms are wider than goblin_warrens rooms.
- * Proof: focused assertions verify returned values, state changes, rendered output, or emitted events.
+ * Behavior: Biome map generation entries expose required mapGen fields and keep forest layouts wider and more open than selected comparison biomes.
+ * Proof: Assertions expect each biome mapGen to contain corridorLength, dugPercentage, roomHeight, and roomWidth, forest max room width above goblin_warrens, and forest dugPercentage above frozen_depths.
  * Validation: pnpm vitest run packages/content/src/biomes/biome-layout.test.ts
  */
 import { describe, it, expect } from 'vitest';

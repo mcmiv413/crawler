@@ -1,7 +1,7 @@
 /**
  * Test layer: unit
- * Behavior: Debug covers debug routes; skips registering routes in production; returns 404 when game not found.
- * Proof: focused assertions verify returned values, state changes, rendered output, or emitted events.
+ * Behavior: Debug routes stay disabled in production and apply development-only state patches for player level, weapon mastery, abilities, and unlocked blueprints.
+ * Proof: Assertions check production requests return 404 without loading state, missing games return a Game not found error, saveGame receives patched state, duplicate grants are not repeated, empty patches preserve existing fields, and level 0 or 999 is saved.
  * Validation: pnpm vitest run apps/server/src/routes/debug.test.ts
  */
 import { describe, it, expect, beforeEach, vi } from 'vitest';

@@ -1,7 +1,7 @@
 /**
  * Test layer: unit
- * Behavior: Three Guardrails covers getAnimationRendererMode default; returns "canvas" as the default mode when no env var is set; still supports "canvas" mode via env override.
- * Proof: focused assertions verify returned values, state changes, rendered output, or emitted events.
+ * Behavior: Three guardrails lock renderer mode defaults, registry coverage rules, AnimationId format, targeted overlay positioning, and lazy import boundaries.
+ * Proof: Assertions check canvas/three env results, empty and complete registry coverage, duplicate overwrite counts, fx.<category>.<name> ID matches and categories, empty overlay positions for targetless targeted effects, and runtime imports that avoid eager Three.js values.
  * Validation: pnpm vitest run apps/web/src/rendering/three/three-guardrails.test.ts
  */
 /**
@@ -211,7 +211,17 @@ describe('Three import boundary — lazy-load contract', () => {
   });
 
   it('three-animation-types does not eagerly import Three.js runtime', async () => {
-    const types = await import('./three-animation-types.js');
-    expect(Object.keys(types)).toEqual([]);
+    vi.resetModules();
+    vi.doMock('three', () => {
+      throw new Error('three-animation-types must not import the Three.js runtime');
+    });
+
+    try {
+      const types = await import('./three-animation-types.js');
+      expect(Object.keys(types)).toEqual([]);
+    } finally {
+      vi.doUnmock('three');
+      vi.resetModules();
+    }
   });
 });

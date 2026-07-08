@@ -1,7 +1,7 @@
 /**
  * Test layer: unit
- * Behavior: Quests covers quest templates; exports at least 3 quest templates; each template has required fields.
- * Proof: focused assertions verify returned values, state changes, rendered output, or emitted events.
+ * Behavior: Quest template exports provide multiple uniquely identified quests with display text, supported objective types, and positive gold rewards.
+ * Proof: Assertions check QUEST_TEMPLATES length, required id/title/description/objectiveText/objective/reward fields, objectiveText distinct from description, objective type matching collect_item/defeat_enemy/reach_floor, gold reward amount above zero, and unique ids.
  * Validation: pnpm vitest run packages/content/src/quests/quests.test.ts
  */
 import { describe, it, expect } from 'vitest';

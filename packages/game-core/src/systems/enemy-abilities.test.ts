@@ -1,7 +1,7 @@
 /**
  * Test layer: unit
- * Behavior: Enemy Abilities covers Enemy Abilities; ENEMY_ABILITY_DEFINITIONS; should have crushing_blow ability.
- * Proof: focused assertions verify returned values, state changes, rendered output, or emitted events.
+ * Behavior: Enemy ability definitions, actions, cooldowns, and resolveEnemyAbility produce the expected attack, status, self-buff, damage, cooldown, and invalid-input outcomes.
+ * Proof: Asserts ability definition entries and action fields, ATTACK_PERFORMED and STATUS_APPLIED events, player/enemy status and health changes, cooldown increases, zero-damage suppression, and unchanged state with no events for invalid ability or missing run.
  * Validation: pnpm vitest run packages/game-core/src/systems/enemy-abilities.test.ts
  */
 import { describe, it, expect } from 'vitest';

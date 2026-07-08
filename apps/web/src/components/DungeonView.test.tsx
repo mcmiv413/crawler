@@ -2,8 +2,8 @@
 
 /**
  * Test layer: unit
- * Behavior: DungeonView covers DungeonView; starts auto-walk when clicking a reachable tile outside tile-target mode; casts the selected tile-target ability instead of....
- * Proof: focused assertions verify returned values, state changes, rendered output, or emitted events.
+ * Behavior: DungeonView maps tile clicks to auto-walk paths or the selected tile-target ability while ignoring invalid remembered or current-player targets.
+ * Proof: Asserts findPath is called with the clicked tile and startAutoWalk receives the path when targeting is inactive, sendCommand receives USE_ABILITY thunder_step with targetPosition when active, invalid tile clicks make no calls, and Escape calls cancelTileTargeting once.
  * Validation: pnpm vitest run apps/web/src/components/DungeonView.test.tsx
  */
 import React from 'react';

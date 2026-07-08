@@ -1,7 +1,7 @@
 /**
  * Test layer: unit
- * Behavior: Three Animation Ownership covers AnimationOwnershipState; createAnimationOwnershipState; creates initial state with no Three ownership.
- * Proof: focused assertions verify returned values, state changes, rendered output, or emitted events.
+ * Behavior: The ownership state reports and queries which animations, entities, status presentation, and combat indicators are currently owned by Three.
+ * Proof: Assertions check empty initial arrays and flags, updated and replaced animation/entity ownership, status and combat ownership booleans, unchanged prior state after reporting, and true/false animation ID membership results.
  * Validation: pnpm vitest run apps/web/src/rendering/three/three-animation-ownership.test.ts
  */
 import { describe, it, expect, beforeEach } from 'vitest';

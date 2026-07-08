@@ -1,7 +1,7 @@
 /**
  * Test layer: contract
- * Behavior: Ring Magic covers Ring Magic System Contracts; When RING_SPELL_BY_ID is populated; every spell has a non-empty schools array.
- * Proof: live catalog/schema assertions validate IDs, shapes, and cross references.
+ * Behavior: Ring magic content, player initialization, and package boundaries stay internally consistent across spells, schools, items, abilities, statuses, and mastery data.
+ * Proof: Assertions check spell metadata, XP/gold gates, effect handlers, school/prerequisite/status/ability references, combo gates, school ring IDs, empty learned spells on new game, ringMastery { xp } entries after EQUIP, no content import of @dungeon/core, and required type fields.
  * Validation: pnpm vitest run tests/contracts/ring-magic.contract.test.ts
  */
 import { describe, it, expect } from 'vitest';

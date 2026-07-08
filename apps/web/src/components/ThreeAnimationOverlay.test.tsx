@@ -1,7 +1,7 @@
 /**
  * Test layer: unit
- * Behavior: ThreeAnimationOverlay covers componentsThreeAnimationOverlay; initializes the generated registry before rendering the lazy overlay; stays unloaded when no Three-owned....
- * Proof: focused assertions verify returned values, state changes, rendered output, or emitted events.
+ * Behavior: ThreeAnimationOverlay initializes the generated registry only when Three-owned visuals or atmosphere rendering require the lazy overlay.
+ * Proof: Asserts inner overlay appears and initializeThreeAnimationModules runs once for fxAnimations, no firstChild and no registry call when fxAnimations are empty, and mockInnerOverlay receives atmosphereEnabled true when atmosphere rendering is enabled.
  * Validation: pnpm vitest run apps/web/src/components/ThreeAnimationOverlay.test.tsx
  */
 import React from 'react';

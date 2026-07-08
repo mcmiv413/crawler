@@ -1,7 +1,7 @@
 /**
  * Test layer: unit
- * Behavior: Turn Scheduler covers processEnemyTurns; fastest enemy acts first (speed ordering); emits enemy attacks in strict speed-descending order.
- * Proof: focused assertions verify returned values, state changes, rendered output, or emitted events.
+ * Behavior: processEnemyTurns schedules enemy actions by speed and accumulators while applying alerts, movement hazards, combat enchantments, storm effects, cooldowns, and status ticks during enemy turn processing.
+ * Proof: Assertions check ATTACK_PERFORMED attacker order and player damage, ENEMY_ALERTED propagation, no actions for stunned/dead-player cases, TRAP_TRIGGERED before ENTITY_DIED and THORNS_REFLECTED before ENTITY_DIED with enemy removal, deterministic thunderstorm ABILITY_USED targetSnapshots with burn/stun statuses and hidden enemies untouched, BLINK_DODGED/LIFE_STEAL/debug event shapes, speedAccumulator values/action counts, cooldown decrements, and burn damage clamped on player/enemies.
  * Validation: pnpm vitest run packages/game-core/src/engine/turn-scheduler.test.ts
  */
 import { describe, it, expect } from 'vitest';

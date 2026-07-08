@@ -1,7 +1,7 @@
 /**
  * Test layer: unit
- * Behavior: Emit Events covers buildAbilityUsedEvent; includes hit false for missed attack ability results; defaults hit true when the result does not specify a hit value.
- * Proof: focused assertions verify returned values, state changes, rendered output, or emitted events.
+ * Behavior: buildAbilityUsedEvent preserves explicit miss data and defaults unspecified hit values to successful hits.
+ * Proof: Assertions match ABILITY_USED payloads for ember with abilityId, abilityName, targetName, hit false, and damage 0, and for second_wind with hit true and healAmount 10.
  * Validation: pnpm vitest run packages/game-core/src/abilities/runtime/emit-events.test.ts
  */
 import { describe, expect, it } from 'vitest';

@@ -1,7 +1,7 @@
 /**
  * Test layer: contract
- * Behavior: Integrity covers Ability Registry Structure; all abilities have required fields; all ability IDs are strings (not nullundefined).
- * Proof: live catalog/schema assertions validate IDs, shapes, and cross references.
+ * Behavior: Ability definitions satisfy registry contracts for identity, cooldowns, effects, targeting, unlocks, weapon mastery, tags, and requirement shapes.
+ * Proof: Assertions check required ability fields, lowercase unique ids, cooldown integer/range constraints, high-damage cooldowns, valid effect and requirement kinds, positive attack contributions, selector kinds, self-target requirement rules, unlock level bounds, mastery weapon types/indexes, non-empty non-custom effects, weapon ability grouping, valid tags, and target HP percentage bounds.
  * Validation: pnpm vitest run packages/game-core/src/abilities/integrity.contract.test.ts
  */
 import { describe, it, expect } from 'vitest';

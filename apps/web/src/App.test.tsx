@@ -1,8 +1,8 @@
 /// <reference types="@testing-library/jest-dom" />
 /**
  * Test layer: unit
- * Behavior: App covers App progress notices; shows the faction leader emerged surface; shows the faction leader slain surface.
- * Proof: focused assertions verify returned values, state changes, rendered output, or emitted events.
+ * Behavior: App renders typed progress, quest, death, game-over, and desktop navigation surfaces from GameView store state while respecting dismissed notice identities.
+ * Proof: Assertions check DOM text for faction leader emerged/slain, dungeon ogre emerged, quest notice, death notice replacement after dismiss, game over, and nav, plus absence of dismissed notice text and Continue button on rerender.
  * Validation: pnpm vitest run apps/web/src/App.test.tsx
  */
 import React from 'react';

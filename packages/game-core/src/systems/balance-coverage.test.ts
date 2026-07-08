@@ -1,7 +1,7 @@
 /**
  * Test layer: unit
- * Behavior: Balance Coverage covers Balance Coverage — RNG Unit Tests; RNG determinism: same seed produces identical sequences; SeededRNG implements RNG interface correctly.
- * Proof: focused assertions verify returned values, state changes, rendered output, or emitted events.
+ * Behavior: SeededRNG provides deterministic sequences and bounded RNG interface behavior for next, chance, int, float, pick, shuffle, and seed reporting.
+ * Proof: Assertions check same-seed next equality, numeric bounds and types for next/int/float/chance, picked membership, shuffled element preservation, chance(0/100/50) rates, and getSeed equality.
  * Validation: pnpm vitest run packages/game-core/src/systems/balance-coverage.test.ts
  */
 import { describe, it, expect } from 'vitest';

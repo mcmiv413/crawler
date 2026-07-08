@@ -1,7 +1,7 @@
 /**
  * Test layer: unit
- * Behavior: Floor Populator covers populateFloor; spawns enemies and objects at valid positions on a standard floor; extraEnemies increases spawn count for the same floor seed.
- * Proof: focused assertions verify returned values, state changes, rendered output, or emitted events.
+ * Behavior: Floor population places enemies and objects on valid floor positions and applies world modifier effects to spawn count, faction weighting, health, tier, and instance colors.
+ * Proof: Assertions check enemy/object map sizes, no entrance/exit or object collisions, Chebyshev entrance distance, spawn-count ordering, faction/tier/health totals, positive stats, and serialized instanceColor fields.
  * Validation: pnpm vitest run packages/game-core/src/generation/floor-populator.test.ts
  */
 import { describe, expect, it } from 'vitest';

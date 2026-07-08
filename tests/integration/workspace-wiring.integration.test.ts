@@ -1,7 +1,7 @@
 /**
  * Test layer: integration
- * Behavior: Workspace Wiring covers check-workspace-wiring script; passes for declared workspace imports that use exported subpaths; fails when a consumer imports another wo....
- * Proof: integrated command, service, or repository assertions verify the cross-module result.
+ * Behavior: The workspace wiring checker accepts declared exported workspace imports and rejects src internals, undeclared packages, and unexported subpaths.
+ * Proof: Assertions check exit status 0 with the pass message and exit status 1 diagnostics for @dungeon/presenter/src/targeting/index.js, missing @dungeon/presenter dependency declaration, and missing ./targeting export.
  * Validation: pnpm vitest run tests/integration/workspace-wiring.integration.test.ts
  */
 import { afterEach, describe, expect, it } from 'vitest';

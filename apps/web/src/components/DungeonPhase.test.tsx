@@ -1,7 +1,7 @@
 /**
  * Test layer: unit
- * Behavior: DungeonPhase covers DungeonPhase – legacy rendering (regression); renders player HUD with name and HP bar; renders danger indicator from map.
- * Proof: focused assertions verify returned values, state changes, rendered output, or emitted events.
+ * Behavior: DungeonPhase renders the dungeon HUD and routes map display plus animation ownership across canvas, ASCII, and Three overlay paths.
+ * Proof: Asserts HUD, danger, Wait, error, and combat-log DOM output; Three overlay presence/absence and data attributes; pointer-events none; useDungeonRenderState call counts/args; renderMap retained-map, skipHandledAnimationIds, entity, status, and combat-indicator fallback arguments.
  * Validation: pnpm vitest run apps/web/src/components/DungeonPhase.test.tsx
  */
 /**

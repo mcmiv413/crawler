@@ -1,7 +1,7 @@
 /**
  * Test layer: unit
- * Behavior: EquipmentDoll covers EquipmentDoll Component; Slot Labels and Structure; renders all 8 equipment slots.
- * Proof: focused assertions verify returned values, state changes, rendered output, or emitted events.
+ * Behavior: EquipmentDoll renders all equipment slots, empty placeholders, equipped item labels, rarity colors, and click callbacks for occupied slots.
+ * Proof: Asserts eight slot labels, two-column grid styles, eight empty markers, no callback for empty clicks, equipped weapon/armor/ring names, common/epic/legendary color styles, and onSlotClick called with mockWeapon.
  * Validation: pnpm vitest run apps/web/src/components/EquipmentDoll.test.tsx
  */
 /**

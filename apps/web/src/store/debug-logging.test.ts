@@ -1,7 +1,7 @@
 /**
  * Test layer: unit
- * Behavior: Debug Logging covers debug-logging; isAttackCommand; returns true for ATTACK command.
- * Proof: focused assertions verify returned values, state changes, rendered output, or emitted events.
+ * Behavior: Debug logging identifies ATTACK commands and only writes attack or combat result console entries when debug logging and relevant view data are present.
+ * Proof: Assertions check isAttackCommand true for ATTACK and false for MOVE/null/primitives, console.log not called for disabled or irrelevant inputs, and debug attack/combat messages called once with expected labels and object payloads.
  * Validation: pnpm vitest run apps/web/src/store/debug-logging.test.ts
  */
 import { describe, it, expect, vi, afterEach } from 'vitest';

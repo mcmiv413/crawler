@@ -1,7 +1,7 @@
 /**
  * Test layer: unit
- * Behavior: Game Store covers useGameStore (Zustand); createGame; success: POST apigames → state updates (gameId, view, loading cleared).
- * Proof: focused assertions verify returned values, state changes, rendered output, or emitted events.
+ * Behavior: The Zustand game store coordinates create, command, restore, refresh, log, autowalk, targeting, reset, early-return, and debug-toggle state transitions around the mocked API.
+ * Proof: Assertions check store fields for gameId/view/loading/error/sessionToken/combatLog/tileTargetMode, mocked API and session persistence calls, beat-scheduler staging and queue-drain state, 404 restore recovery, save-clearing rules, combat log capping, autowalk enemy sets, reset clearing, early API non-calls, and TOGGLE_DEBUG payload.
  * Validation: pnpm vitest run apps/web/src/store/game-store.test.ts
  */
 /**

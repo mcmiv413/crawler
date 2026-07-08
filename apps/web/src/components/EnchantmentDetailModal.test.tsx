@@ -1,7 +1,7 @@
 /**
  * Test layer: unit
- * Behavior: EnchantmentDetailModal covers EnchantmentDetailModal; renders presenter-provided enchantment details; renders the empty detail state when presenter supplies no equippe....
- * Proof: focused assertions verify returned values, state changes, rendered output, or emitted events.
+ * Behavior: EnchantmentDetailModal and EnchantmentLibrary render presenter-provided equipped enchantments and hide library UI when no enchantments are equipped.
+ * Proof: Asserts Keen Edge and Test Sword detail text, the empty detail prompt, and absence of the ENCHANTMENTS library heading for a player with no equipped enchantments.
  * Validation: pnpm vitest run apps/web/src/components/EnchantmentDetailModal.test.tsx
  */
 import { render, screen } from '@testing-library/react';

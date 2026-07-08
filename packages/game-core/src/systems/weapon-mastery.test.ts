@@ -1,7 +1,7 @@
 /**
  * Test layer: unit
- * Behavior: Weapon Mastery covers checkWeaponMasteryUnlocks; grants T1 ability when blade hits reach 10; grants T2 ability when blade hits reach 25.
- * Proof: focused assertions verify returned values, state changes, rendered output, or emitted events.
+ * Behavior: checkWeaponMasteryUnlocks grants weapon-specific abilities at mastery hit thresholds without duplicating already owned abilities.
+ * Proof: Assertions inspect player ability IDs blade_bleed, blade_riposte, and bludgeon_stagger plus MASTERY_UNLOCKED event counts and payload fields tier, abilityId, and weaponType.
  * Validation: pnpm vitest run packages/game-core/src/systems/weapon-mastery.test.ts
  */
 import { describe, it, expect } from 'vitest';

@@ -1,7 +1,7 @@
 /**
  * Test layer: unit
- * Behavior: UseHitStop covers useHitStop; tracks the trigger and clear lifecycle; stays paused until overlapping hit stops have both cleared.
- * Proof: focused assertions verify returned values, state changes, rendered output, or emitted events.
+ * Behavior: useHitStop toggles pause state for hit-stop durations and keeps overlapping hit stops paused until the longest timer clears.
+ * Proof: Asserts isPaused changes false to true to false around triggerHitStop(80) and stays true after 60 ms of overlapping 100/50 ms stops before clearing after 101 ms.
  * Validation: pnpm vitest run apps/web/src/hooks/useHitStop.test.ts
  */
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';

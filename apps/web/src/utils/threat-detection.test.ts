@@ -1,7 +1,7 @@
 /**
  * Test layer: unit
- * Behavior: Threat Detection covers detectNewThreats; returns empty when no new enemies; detects newly visible enemy (ID not in known set).
- * Proof: focused assertions verify returned values, state changes, rendered output, or emitted events.
+ * Behavior: detectNewThreats returns only current enemy views whose IDs are absent from the known-threat set.
+ * Proof: Assertions expect empty arrays for known enemies, a single e2 threat for one new enemy, and length 3 when all current enemies are new.
  * Validation: pnpm vitest run apps/web/src/utils/threat-detection.test.ts
  */
 import { describe, it, expect } from 'vitest';

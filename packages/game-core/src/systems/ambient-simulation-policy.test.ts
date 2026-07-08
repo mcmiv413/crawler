@@ -1,7 +1,7 @@
 /**
  * Test layer: unit
- * Behavior: Ambient Simulation Policy covers ambient-simulation-policy; getSimulationFidelity; returns High fidelity when distance <= 5.
- * Proof: focused assertions verify returned values, state changes, rendered output, or emitted events.
+ * Behavior: Simulation fidelity selection maps Chebyshev distance and ambient state age to High, Medium, or Low fidelity at the configured boundaries.
+ * Proof: Assertions check exact SimulationFidelity values for distances 0, 5, 6, 12, 13, far and negative coordinates, recently acted ages 0/1/undefined, older age 2, and transition boundaries.
  * Validation: pnpm vitest run packages/game-core/src/systems/ambient-simulation-policy.test.ts
  */
 import { describe, it, expect } from 'vitest';

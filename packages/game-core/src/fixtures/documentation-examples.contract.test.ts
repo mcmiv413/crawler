@@ -1,7 +1,7 @@
 /**
  * Test layer: contract
- * Behavior: Documentation Examples covers Documentation Examples Validation; Quick Start Example (docsguidesadding-fixture.md); should validate the Quick Start example fixture.
- * Proof: live catalog/schema assertions validate IDs, shapes, and cross references.
+ * Behavior: Documentation fixture examples validate and load against the player fixture schema, including equipped weapon optionality, spell IDs, schema version, and loader return shape.
+ * Proof: Assertions check validatePlayerFixture isValid true/false for Quick Start, equippedWeaponId, learnedRingSpellIds, and schemaVersion cases; validation errors include field/message for invalid fireball and schemaVersion, and loadPlayerFromFixture does not throw, returns player/itemRegistry, and preserves learned ember.
  * Validation: pnpm vitest run packages/game-core/src/fixtures/documentation-examples.contract.test.ts
  */
 /**

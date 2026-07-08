@@ -1,7 +1,7 @@
 /**
  * Test layer: unit
- * Behavior: Combat Indicators covers buildCombatIndicators; ATTACK_PERFORMED; creates damage indicator on defender position for hit attack.
- * Proof: focused assertions verify returned values, state changes, rendered output, or emitted events.
+ * Behavior: buildCombatIndicators maps combat-related domain events into positioned damage, miss, heal, gold, and status indicator view data.
+ * Proof: Assertions compare indicator objects for ATTACK_PERFORMED, STATUS_DAMAGE_TICK, STATUS_APPLIED, ABILITY_USED, GOLD_CHANGED, LIFE_STEAL, OBJECT_INTERACTED, TRAP_TRIGGERED, and THORNS_REFLECTED, including text, type, x/y positions, snapshot fallback, skips, and empty no-run output.
  * Validation: pnpm vitest run packages/presenter/src/combat-indicators.test.ts
  */
 import { describe, it, expect } from 'vitest';

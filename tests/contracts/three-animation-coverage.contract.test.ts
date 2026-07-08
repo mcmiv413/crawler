@@ -1,7 +1,7 @@
 /**
  * Test layer: contract
- * Behavior: Three Animation Coverage covers Three animation module coverage contract; content catalog has at least 20 animation IDs; every content AnimationId has a registered Three....
- * Proof: live catalog/schema assertions validate IDs, shapes, and cross references.
+ * Behavior: Content AnimationId references and registered Three animation modules stay in one-to-one format-compatible coverage.
+ * Proof: Assertions require at least 20 content IDs, no missing or unknown registered IDs, registered IDs matching fx.<category>.<name>, and module.category equal to the ID category segment.
  * Validation: pnpm vitest run tests/contracts/three-animation-coverage.contract.test.ts
  */
 /**

@@ -1,7 +1,7 @@
 /**
  * Test layer: unit
- * Behavior: Targeting Rules covers Targeting Rules; getEffectiveRange; returns melee range (1) for non-ranged abilities.
- * Proof: focused assertions verify returned values, state changes, rendered output, or emitted events.
+ * Behavior: Targeting rules derive effective ranges, valid enemy and trap targets, auto-target selection, and action enablement from ability modes and positions.
+ * Proof: Expectations check exact range objects, adjacent enemy ids and trap counts, null versus single auto-target returns, boolean enablement for target modes, and occupied-position direction counts.
  * Validation: pnpm vitest run packages/presenter/src/targeting/targeting-rules.test.ts
  */
 import { describe, it, expect } from 'vitest';

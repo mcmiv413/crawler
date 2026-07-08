@@ -1,7 +1,7 @@
 /**
  * Test layer: unit
- * Behavior: Death covers handlePlayerDeath; normal death: returns to town with gold loss; equipment drop: equipped items become death stash.
- * Proof: focused assertions verify returned values, state changes, rendered output, or emitted events.
+ * Behavior: handlePlayerDeath transitions normal, stash-dropping, and permadeath outcomes while populating enriched PLAYER_DIED metadata.
+ * Proof: Asserts phase/run reset, health/status/gold/death counters, deathStash contents, equipment clearing, PLAYER_DIED/RUN_ENDED/PHASE_CHANGED/PERMADEATH/EQUIPMENT_DROPPED event presence, and killerName/killerSpriteName/goldLost/overkillDamage/floor fields.
  * Validation: pnpm vitest run packages/game-core/src/systems/death.test.ts
  */
 import { describe, it, expect } from 'vitest';

@@ -1,7 +1,7 @@
 /**
  * Test layer: unit
- * Behavior: PlayerHud covers PlayerHud compact layout; keeps compact bars in 3-column layout on desktop; renders HP, MP, and XP in 3-column layout on mobile compact HUD.
- * Proof: focused assertions verify returned values, state changes, rendered output, or emitted events.
+ * Behavior: PlayerHud compact mode keeps HP, MP, and XP bars readable across desktop and mobile, including low-health and mana states.
+ * Proof: Asserts compact-player-hud-bars grid columns, 42/55 and 30/100 text, HP/XP/MP fill widths, low-health borderColor and hpPulse animation, and MP 12/20 text when mana exists.
  * Validation: pnpm vitest run apps/web/src/components/PlayerHud.test.tsx
  */
 import React from 'react';

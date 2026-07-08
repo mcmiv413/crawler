@@ -1,7 +1,7 @@
 /**
  * Test layer: unit
- * Behavior: run Three Animation Contract covers runThreeAnimationContract guardrails; fails sub-pixel geometry that would be invisible at runtime; fails modules that do not dispose geom....
- * Proof: focused assertions verify returned values, state changes, rendered output, or emitted events.
+ * Behavior: The Three animation contract guardrails reject invisible sub-pixel geometry and modules that fail to dispose resources.
+ * Proof: Assertions expect assertThreeAnimationVisibility to throw for 0.4-by-0.4 geometry and assertThreeAnimationDisposal to throw when geometry/material dispose spies are never called.
  * Validation: pnpm vitest run apps/web/src/rendering/three/testing/run-three-animation-contract.test.ts
  */
 import { describe, expect, it, vi } from 'vitest';

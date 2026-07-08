@@ -1,7 +1,7 @@
 /**
  * Test layer: unit
- * Behavior: Item Stats covers getItemStats; returns "0 def" for armor with 0 defense; returns defense with evasion penalty.
- * Proof: focused assertions verify returned values, state changes, rendered output, or emitted events.
+ * Behavior: getItemStats formats armor, weapon, ranged weapon, combined weapon-armor, and statless consumable summaries.
+ * Proof: Assertions expect exact strings for zero defense, defense with evasion penalty, 8–8 and 6–10 physical damage, an empty consumable string, and combined fire damage plus armor text.
  * Validation: pnpm vitest run apps/web/src/utils/item-stats.test.ts
  */
 import { describe, it, expect } from 'vitest';

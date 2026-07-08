@@ -1,7 +1,7 @@
 /**
  * Test layer: unit
- * Behavior: World Fixture covers Group 1: Minimal world fixture creates valid WorldState with defaults; validates a minimal world fixture without errors; loads a minimal....
- * Proof: focused assertions verify returned values, state changes, rendered output, or emitted events.
+ * Behavior: World fixture loading applies defaults, overrides, validation errors, schema versioning, and player-world serialization compatibility for fixture-backed WorldState.
+ * Proof: Assertions check validateWorldFixture isValid/errors fields, loaded faction/town/dungeonOgre values, WORLD_FIXTURE_SCHEMA_VERSION, serializeState JSON retention, and non-throwing malformed dungeonOgre validation.
  * Validation: pnpm vitest run packages/game-core/src/fixtures/world-fixture.test.ts
  */
 /**

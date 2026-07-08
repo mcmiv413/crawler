@@ -1,7 +1,7 @@
 /**
  * Test layer: unit
- * Behavior: Enemy ai Engine covers Enemy AI Scoring Engine; scoreEnemyActions; returns valid trace with candidates.
- * Proof: focused assertions verify returned values, state changes, rendered output, or emitted events.
+ * Behavior: scoreEnemyActions produces scored candidate traces that choose valid archetype actions, honor condition checks, preserve fallback wait actions, filter cooldowns, and break score ties stably.
+ * Proof: Asserts trace enemyId, candidates, chosen action types, candidate scores/reasoning, highest-score chosen total, wait candidate objects, cooldown thresholds, and first tied candidate selection.
  * Validation: pnpm vitest run packages/game-core/src/systems/enemy-ai-engine.test.ts
  */
 import { describe, it, expect } from 'vitest';

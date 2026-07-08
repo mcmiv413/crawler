@@ -1,7 +1,7 @@
 /**
  * Test layer: unit
- * Behavior: ThreeAnimationOverlay covers ThreeAnimationOverlay – canvas identity; mounts canvas with data-testid="three-animation-overlay"; canvas has pointer-events:none style.
- * Proof: focused assertions verify returned values, state changes, rendered output, or emitted events.
+ * Behavior: ThreeAnimationOverlay renders and manages the Three canvas only when active module-backed visuals, entity ownership, defender hits, or atmosphere require it.
+ * Proof: Asserts canvas identity/styles/null gating, defender-hit positioning, phase-aware sprite scaling, onInitialized IDs, renderer sizing/disposal, atmosphere lifecycle, resolved FX/projectile positions, ownership callbacks, registry calls, and style merging.
  * Validation: pnpm vitest run apps/web/src/rendering/three/ThreeAnimationOverlay.test.tsx
  */
 /**

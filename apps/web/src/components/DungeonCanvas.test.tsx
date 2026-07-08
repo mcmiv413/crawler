@@ -1,7 +1,7 @@
 /**
  * Test layer: unit
- * Behavior: DungeonCanvas covers DungeonCanvas; prop-driven rendering; accepts bumpAnimations as a prop and forwards it to renderMap.
- * Proof: focused assertions verify returned values, state changes, rendered output, or emitted events.
+ * Behavior: DungeonCanvas drives rendering from props and turns valid canvas clicks into auto-walk or tile-target ability commands while preserving viewport and camera math.
+ * Proof: Asserts renderMap receives map, vpLeft/vpTop, viewport size, animation arrays, statusPresentations, cameraOffset, and skipHandledAnimationIds at the expected argument indexes; canvas dimensions use CELL_SIZE; clicks call findPath/startAutoWalk or send USE_ABILITY thunder_step only for valid visible targets.
  * Validation: pnpm vitest run apps/web/src/components/DungeonCanvas.test.tsx
  */
 import React from 'react';

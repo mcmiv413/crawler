@@ -1,7 +1,7 @@
 /**
  * Test layer: unit
- * Behavior: AbilityDropdown covers AbilityDropdown; Self-targeted abilities; does not assign targetId for self-targeted abilities.
- * Proof: focused assertions verify returned values, state changes, rendered output, or emitted events.
+ * Behavior: AbilityDropdown selects abilities across self, tile, enemy, trap, cooldown, and direction flows without choosing invalid targets.
+ * Proof: onSelect assertions verify second_wind, thunder_step tileTarget, power_strike and ranged_pin targetIds, dagger_disarm and dagger_set_trap directions/itemEntityId, plus DOM assertions for choosers, cooldown text, and disabled buttons.
  * Validation: pnpm vitest run apps/web/src/components/dropdowns/AbilityDropdown.test.tsx
  */
 import { describe, it, expect, vi } from 'vitest';

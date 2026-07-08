@@ -1,7 +1,7 @@
 /**
  * Test layer: contract
- * Behavior: Biome Selection covers selectBiomeForFloor — live biome and faction content; biases eligible biome selection toward led dominant factions and away from broken f....
- * Proof: live catalog/schema assertions validate IDs, shapes, and cross references.
+ * Behavior: selectBiomeForFloor biases eligible goblin_warrens selection toward a led dominant faction while keeping broken faction biomes reachable.
+ * Proof: Expectations compare goblin_warrens counts from deterministic RNG samples for led versus broken goblin_warband states and require the broken-state count to stay greater than zero.
  * Validation: pnpm vitest run tests/contracts/biome-selection.contract.test.ts
  */
 import { describe, expect, it } from 'vitest';

@@ -1,7 +1,7 @@
 /**
  * Test layer: unit
- * Behavior: ai Service Composite covers CompositeAiService — fallback on queryLmStudio throw; generateDialogue uses fallback when queryLmStudio throws; generateDialogue returns....
- * Proof: focused assertions verify returned values, state changes, rendered output, or emitted events.
+ * Behavior: CompositeAiService returns LM Studio text when present and falls back to the fallback AI service when dialogue, rumor, or run-summary LM queries fail or return null text.
+ * Proof: Assertions check generated dialogue returns LM text, fallback dialogue on thrown or null LM responses, fallback rumor on thrown LM response, and fallback run summary on thrown LM response.
  * Validation: pnpm vitest run apps/server/src/ai/ai-service-composite.test.ts
  */
 import { describe, it, expect, vi, beforeEach } from 'vitest';

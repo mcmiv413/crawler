@@ -1,7 +1,7 @@
 /**
  * Test layer: unit
- * Behavior: Abilities covers grantAbility; adds a new ability with cooldown 0; is idempotent — does not duplicate an already-granted ability.
- * Proof: focused assertions verify returned values, state changes, rendered output, or emitted events.
+ * Behavior: Ability helpers grant unique abilities, decrement cooldowns without going negative, and answer readiness from ownership and cooldown state.
+ * Proof: Assertions check player ability array length, granted ability id and cooldownRemaining, cooldown ordering/non-negativity across one or many abilities, and canUseAbility booleans for missing, cooling down, and ready abilities.
  * Validation: pnpm vitest run packages/game-core/src/systems/abilities.test.ts
  */
 import { describe, it, expect } from 'vitest';

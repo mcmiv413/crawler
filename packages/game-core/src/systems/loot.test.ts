@@ -1,7 +1,7 @@
 /**
  * Test layer: unit
- * Behavior: Loot covers Loot system; gold drop scales with enemy tier; item drop returns null or a valid string across multiple seeds.
- * Proof: focused assertions verify returned values, state changes, rendered output, or emitted events.
+ * Behavior: Loot rolls scale gold by enemy tier and process enemy loot into gold awards, optional item acquisition, or dropped loot when inventory is full.
+ * Proof: Assertions check tier-five gold is at least tier-one gold, item rolls return null or non-empty ids, player gold increases, inventory changes only on LOOT_ACQUIRED, and GOLD_CHANGED/LOOT_DROPPED events are emitted.
  * Validation: pnpm vitest run packages/game-core/src/systems/loot.test.ts
  */
 import { describe, it, expect } from 'vitest';

@@ -1,7 +1,7 @@
 /**
  * Test layer: unit
- * Behavior: UseCombatIndicatorState covers useCombatIndicatorState; collects and expires combat indicators on the shared channel; keeps combat indicators visible until the configur....
- * Proof: focused assertions verify returned values, state changes, rendered output, or emitted events.
+ * Behavior: useCombatIndicatorState collects combat-indicator events, keeps them for the fade duration, and clears or ignores them when disabled.
+ * Proof: Hook state assertions verify the damage indicator fields x/y/text/type, retention until 749ms of a 750ms fade, empty arrays after expiry, and no heal indicators after disabling.
  * Validation: pnpm vitest run apps/web/src/hooks/useCombatIndicatorState.test.ts
  */
 import { act, renderHook } from '@testing-library/react';

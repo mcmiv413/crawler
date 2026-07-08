@@ -1,7 +1,7 @@
 /**
  * Test layer: unit
- * Behavior: Three Entity Sprite covers createEntitySprite; returns a sprite instance with geometry and material; adds the mesh to the scene on creation.
- * Proof: focused assertions verify returned values, state changes, rendered output, or emitted events.
+ * Behavior: Entity sprite helpers create tile-scale scene meshes, position and offset them in screen space, dispose GPU resources, and draw optional instance color markers.
+ * Proof: Assertions check mesh geometry/material identity, scene.add/remove calls, tile-sized geometry, y-axis flipped x/y/z positions, offset math, dispose call counts, and fillRect marker calls or absence.
  * Validation: pnpm vitest run apps/web/src/rendering/three/entities/three-entity-sprite.test.ts
  */
 /**

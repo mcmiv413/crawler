@@ -1,7 +1,7 @@
 /**
  * Test layer: unit
- * Behavior: Retreat covers retreat; canRetreat returns true when on stairs_up tile; canRetreat returns true when on entrance position.
- * Proof: focused assertions verify returned values, state changes, rendered output, or emitted events.
+ * Behavior: Retreat logic permits leaving from stairs or the entrance and records run-ending state when executing a retreat.
+ * Proof: Assertions check canRetreat booleans, town phase, cleared run, incremented totalRuns, RUN_ENDED event emission, persistedFloorCache depth, and lastRetreatFloor bounds.
  * Validation: pnpm vitest run packages/game-core/src/systems/retreat.test.ts
  */
 import { describe, it, expect } from 'vitest';

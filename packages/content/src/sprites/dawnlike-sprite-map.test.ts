@@ -1,7 +1,7 @@
 /**
  * Test layer: unit
- * Behavior: Dawnlike Sprite map covers DawnLike Sprite Map; all entries fit within atlas bounds; all enemy sprites are unique.
- * Proof: focused assertions verify returned values, state changes, rendered output, or emitted events.
+ * Behavior: The DawnLike sprite map keeps atlas rectangles in bounds and provides distinct, resolvable coordinates for enemies, objects, and biome overrides.
+ * Proof: Assertions check each rect stays within 2048x1024 at 16x16, enemy and object coordinate sets have no duplicates, floor and wall biome override sets meet distinct-count thresholds, and every DAWNLIKE_NAME_MAP key resolves with no missing sprites.
  * Validation: pnpm vitest run packages/content/src/sprites/dawnlike-sprite-map.test.ts
  */
 import { describe, it, expect } from 'vitest';
