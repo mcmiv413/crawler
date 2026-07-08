@@ -1,7 +1,7 @@
 /**
  * Test layer: contract
- * Behavior: Custom Ring Spell Handlers covers Custom Ring Spell Handlers Contract; every custom ring spell has an effectHandlerId; every custom ring spell effectHandlerId has a regist....
- * Proof: live catalog/schema assertions validate IDs, shapes, and cross references.
+ * Behavior: Custom ring spell content and runtime handler registration stay in one-to-one effectHandlerId alignment.
+ * Proof: Expectations require no custom RING_SPELL_BY_ID entries missing effectHandlerId, no custom spells missing registered handlers, no registered handler ids without matching custom spells, and no duplicate effectHandlerIds.
  * Validation: pnpm vitest run tests/contracts/custom-ring-spell-handlers.contract.test.ts
  */
 import { describe, it, expect } from 'vitest';

@@ -1,7 +1,7 @@
 /**
  * Test layer: contract
- * Behavior: Abilities Coverage covers Abilities Coverage Contract; All abilities are properly defined; all ability definitions exist and have names.
- * Proof: live catalog/schema assertions validate IDs, shapes, and cross references.
+ * Behavior: Ability content exposes named required abilities and remains usable by initialized game states and command submission.
+ * Proof: Expectations check ABILITY_DEFINITIONS size, id/name object fields, required attack and trap ability ids, specific names for dagger_disarm, dagger_set_trap, and power_strike, player cooldown fields, nonblank gameIds, dungeon depth, stable gameId after MOVE, and events arrays.
  * Validation: pnpm vitest run tests/contracts/abilities-coverage.contract.test.ts
  */
 import { describe, it, expect } from 'vitest';

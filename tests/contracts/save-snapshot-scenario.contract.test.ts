@@ -1,7 +1,7 @@
 /**
  * Test layer: contract
- * Behavior: Save Snapshot Scenario covers SaveSnapshot scenario compatibility; Test Group 12: restores scenario-derived gameplay after turns and continues equivalently.
- * Proof: live catalog/schema assertions validate IDs, shapes, and cross references.
+ * Behavior: Scenario-derived gameplay can be save-restored after chest and item use and then continue with equivalent command results.
+ * Proof: Assertions compare exported snapshots before and after restore and require the restored MOVE command to emit the same events and exported state as the original command.
  * Validation: pnpm vitest run tests/contracts/save-snapshot-scenario.contract.test.ts
  */
 import { describe, expect, it } from 'vitest';

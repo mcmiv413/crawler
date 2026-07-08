@@ -1,7 +1,7 @@
 /**
  * Test layer: unit
- * Behavior: Town Text covers deterministic town text; builds rumors from faction state and town impact without randomness; summarizes the run from metrics, faction pr....
- * Proof: focused assertions verify returned values, state changes, rendered output, or emitted events.
+ * Behavior: Deterministic town text derives rumors and run summaries from faction, town, and run metric state and exposes the same strings through buildTownView.
+ * Proof: Assertions compare two rumor passes for equality, verify three rumors including faction content and excluding Ogre text, check summary substrings for player, faction, prosperity, and corruption, and compare view.rumors and view.lastRunSummary to the deterministic builders.
  * Validation: pnpm vitest run packages/presenter/src/builders/town-text.test.ts
  */
 import { describe, expect, it } from 'vitest';

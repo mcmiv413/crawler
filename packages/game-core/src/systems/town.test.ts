@@ -1,7 +1,7 @@
 /**
  * Test layer: unit
- * Behavior: Town covers processTownAction rest; restores HP to max when player can afford full heal; heals only affordable HP when gold is insufficient.
- * Proof: focused assertions verify returned values, state changes, rendered output, or emitted events.
+ * Behavior: processTownAction applies rest, shop, spell study, rejection, and armor enchantment outcomes while preserving failed actions unchanged.
+ * Proof: Assertions check health, gold, inventory, shop stock, learnedRingSpellIds, abilities, enchantment slots, defense recalculation, and events GOLD_CHANGED, SPELL_UNLOCKED, PLAYER_ACTION_REJECTED, and ENCHANTMENT_APPLIED.
  * Validation: pnpm vitest run packages/game-core/src/systems/town.test.ts
  */
 import { describe, it, expect } from 'vitest';

@@ -1,7 +1,7 @@
 /**
  * Test layer: unit
- * Behavior: Three Combat Indicators Ownership covers Combat indicators ownership; initial state has combatIndicators = false; setting combatIndicators=true marks Three as owning label rendering.
- * Proof: focused assertions verify returned values, state changes, rendered output, or emitted events.
+ * Behavior: Combat indicator ownership determines canvas label suppression while label helpers preserve and order combat label view data.
+ * Proof: Assertions check combat ownership initial/set/release flags, status ownership independence, original-state preservation, label text/count preservation without input mutation, recency sorting, and shouldCanvasSuppressCombatIndicators true/false results.
  * Validation: pnpm vitest run apps/web/src/rendering/three/three-combat-indicators-ownership.test.ts
  */
 /**

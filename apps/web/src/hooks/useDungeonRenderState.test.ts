@@ -1,7 +1,7 @@
 /**
  * Test layer: unit
- * Behavior: UseDungeonRenderState covers useDungeonRenderState; returns the expected render-state fields; accepts map, vpTilesWidth, and vpTilesHeight as inputs.
- * Proof: focused assertions verify returned values, state changes, rendered output, or emitted events.
+ * Behavior: useDungeonRenderState composes dungeon display state from map input, animation hooks, player statuses, viewport math, camera panning, and beat-timed entity positions.
+ * Proof: Asserts returned keys, animation arrays, statusPresentations, viewport origins, cameraOffset values, and displayMap entities retained or moved according to ability and move beat timing.
  * Validation: pnpm vitest run apps/web/src/hooks/useDungeonRenderState.test.ts
  */
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';

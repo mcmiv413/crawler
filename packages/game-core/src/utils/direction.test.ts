@@ -1,7 +1,7 @@
 /**
  * Test layer: unit
- * Behavior: Direction covers positionToDirection; returns N when moving north (dy = -1); returns S when moving south (dy = 1).
- * Proof: focused assertions verify returned values, state changes, rendered output, or emitted events.
+ * Behavior: positionToDirection maps adjacent cardinal and diagonal moves to direction codes and returns null for no or invalid movement.
+ * Proof: Assertions check N, S, E, W, NE, NW, SE, and SW return values plus null for same-position and more-than-one-cell moves.
  * Validation: pnpm vitest run packages/game-core/src/utils/direction.test.ts
  */
 import { describe, it, expect } from 'vitest';

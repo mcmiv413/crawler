@@ -1,7 +1,7 @@
 /**
  * Test layer: unit
- * Behavior: Client covers API Client; json() response handler (tested via createGame); parses successful response (res.ok=true).
- * Proof: focused assertions verify returned values, state changes, rendered output, or emitted events.
+ * Behavior: Web API client functions serialize requests, parse successful game responses, and convert server errors into typed or formatted exceptions.
+ * Proof: Assertions check fetch URLs/methods/bodies for createGame, fetchGameView, sendCommand, restoreGame, and fetchNpcDialogue; parsed game/view/command fields; GameNotFoundError and ApiError properties; and fallback messages for 4xx/5xx/statusText errors.
  * Validation: pnpm vitest run apps/web/src/api/client.test.ts
  */
 import { describe, it, expect, beforeEach, vi } from 'vitest';

@@ -1,7 +1,7 @@
 /**
  * Test layer: unit
- * Behavior: Quest Progress covers Quest Progress System; evaluateQuestProgress; marks a collect_item quest ready when player acquires item.
- * Proof: focused assertions verify returned values, state changes, rendered output, or emitted events.
+ * Behavior: Quest progress evaluates collect, floor, and defeat objectives, redeems ready quests for gold, and formats fallback objective text.
+ * Proof: Assertions check QUEST_READY and QUEST_TURNED_IN events, quest status/progress changes, reward gold, thrown error for active quest redemption, generated objective strings, and full lifecycle rewarded status.
  * Validation: pnpm vitest run packages/game-core/src/systems/quest-progress.test.ts
  */
 import { describe, it, expect } from 'vitest';

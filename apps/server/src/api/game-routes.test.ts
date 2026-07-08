@@ -1,7 +1,7 @@
 /**
  * Test layer: unit
- * Behavior: Game Routes covers Game Routes; POST apigames; creates a new game and returns 201 with gameId, view, and serializedState.
- * Proof: focused assertions verify returned values, state changes, rendered output, or emitted events.
+ * Behavior: Game API routes create games, submit commands, serve views, restore saves, and report validation or persistence failures with stable HTTP payloads.
+ * Proof: Assertions check status codes and JSON fields for create/command/view/restore endpoints, serializedState round-trips and canonical trimming, victory causeOfEnd/totalRuns state, restore error codes, combatLog arrays, and JSON content types.
  * Validation: pnpm vitest run apps/server/src/api/game-routes.test.ts
  */
 import { describe, it, expect, beforeEach, afterEach, vi } from 'vitest';

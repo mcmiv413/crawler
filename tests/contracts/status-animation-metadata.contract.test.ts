@@ -1,7 +1,7 @@
 /**
  * Test layer: contract
- * Behavior: Status Animation Metadata covers status animation metadata contract; exports animation ids directly on every ring presentation.
- * Proof: live catalog/schema assertions validate IDs, shapes, and cross references.
+ * Behavior: Ring status presentation metadata exposes the same animationId as the corresponding content status overlay.
+ * Proof: Assertions require each ring presentation overlay id to be defined and both direct presentation and getStatusPresentation animationId values to equal that overlay id.
  * Validation: pnpm vitest run tests/contracts/status-animation-metadata.contract.test.ts
  */
 import { describe, expect, it } from 'vitest';

@@ -1,7 +1,7 @@
 /**
  * Test layer: unit
- * Behavior: Direction covers positionToDirection; maps N correctly (0, -1); maps S correctly (0, +1).
- * Proof: focused assertions verify returned values, state changes, rendered output, or emitted events.
+ * Behavior: positionToDirection converts each adjacent delta into the matching compass direction and rejects non-adjacent targets.
+ * Proof: Assertions expect N, S, E, W, NE, NW, SE, and SW for one-step offsets, and null for two- or three-tile offsets.
  * Validation: pnpm vitest run apps/web/src/utils/direction.test.ts
  */
 import { describe, it, expect } from 'vitest';

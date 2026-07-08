@@ -1,7 +1,7 @@
 /**
  * Test layer: unit
- * Behavior: map Generator covers Map Generation; generates a floor with entrance and exit; floor cells exist and are a Map.
- * Proof: focused assertions verify returned values, state changes, rendered output, or emitted events.
+ * Behavior: Map generation creates connected seeded floors whose entrances, exits, cells, and biome mapGen parameters are reflected in generated layouts.
+ * Proof: Assertions check result.valid, bounded entrance/exit coordinates, Map cell storage, bfsReachable true/false cases, seed-to-layout differences, and mapGen-driven layout differences.
  * Validation: pnpm vitest run packages/game-core/src/generation/map-generator.test.ts
  */
 import { describe, it, expect } from 'vitest';

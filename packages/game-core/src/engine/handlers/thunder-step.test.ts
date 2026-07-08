@@ -1,7 +1,7 @@
 /**
  * Test layer: unit
- * Behavior: Thunder Step covers handleThunderStep; teleports player, damages both blast zones, and emits both strike positions; recomputes visibility from the arrival ti....
- * Proof: focused assertions verify returned values, state changes, rendered output, or emitted events.
+ * Behavior: handleThunderStep teleports only to valid visible walkable targets, spends mana and cooldown on success, damages departure and arrival blast zones, and leaves state unchanged on rejected casts.
+ * Proof: Assertions check player position, mana decrease, cooldownRemaining, ABILITY_USED targetSnapshots for departure/arrival positions, enemy health loss in both blast zones, visibility recomputation, ENTITY_DIED with kill/xp gains for lethal hits, and PLAYER_ACTION_REJECTED reasonCode TILE_NOT_VISIBLE, INVALID_TILE_TARGET, TILE_OCCUPIED, INSUFFICIENT_MANA, or ABILITY_ON_COOLDOWN with unchanged position/mana/turn/enemy health.
  * Validation: pnpm vitest run packages/game-core/src/engine/handlers/thunder-step.test.ts
  */
 import { describe, it, expect } from 'vitest';

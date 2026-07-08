@@ -1,7 +1,7 @@
 /**
  * Test layer: unit
- * Behavior: TownPhase covers TownPhase Component; Shop Rendering; displays shop section when items exist.
- * Proof: focused assertions verify returned values, state changes, rendered output, or emitted events.
+ * Behavior: TownPhase renders town shop, faction, NPC, mobile layout, message, and ring-study controls and dispatches town actions from those controls.
+ * Proof: getByRole/getByText assertions verify Shop, Faction Pressure, Ring Study, Thunderstorm XP gates, tab-bar padding, dialogue text, and TOWN_ACTION rest and study_spell heat_surge commands.
  * Validation: pnpm vitest run apps/web/src/components/TownPhase.test.tsx
  */
 /**

@@ -1,7 +1,7 @@
 /**
  * Test layer: unit
- * Behavior: Tables covers Balance tables — property tests; MAP_GENERATION scaling; floor N enemies scales with baseDensity + perFloor  N.
- * Proof: focused assertions verify returned values, state changes, rendered output, or emitted events.
+ * Behavior: Balance tables keep enemy density and floor scaling monotonic while gating shop rarity by the highest rarity found.
+ * Proof: Assertions compare density growth across depths, positive integer density settings, multipliers above 1 with health at least attack, sqrt early-floor multipliers, normal floor 3+ multipliers, and exact buyability booleans for common through legendary plus unknown rarity.
  * Validation: pnpm vitest run packages/content/src/balance/tables.test.ts
  */
 import { describe, it, expect } from 'vitest';

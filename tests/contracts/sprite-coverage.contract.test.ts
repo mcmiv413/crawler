@@ -1,7 +1,7 @@
 /**
  * Test layer: contract
- * Behavior: Sprite Coverage covers Sprite Coverage Contract; every biome has floor and wall tile sprite overrides; every enemy template has a sprite entry.
- * Proof: live catalog/schema assertions validate IDs, shapes, and cross references.
+ * Behavior: Sprite map coverage stays complete and non-overlapping for biomes, enemy templates, and object templates.
+ * Proof: Assertions require floor and wall tile keys for every biome, enemy and object sprite keys for every template, and unique sprite rect coordinates for enemy and object entries.
  * Validation: pnpm vitest run tests/contracts/sprite-coverage.contract.test.ts
  */
 import { describe, it, expect } from 'vitest';

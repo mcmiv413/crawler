@@ -1,8 +1,8 @@
 /// <reference types="@testing-library/jest-dom" />
 /**
  * Test layer: unit
- * Behavior: CharacterScreen covers CharacterScreen faction progress; shows faction progress and ogre progress from presenter data; opens the faction detail modal with leade....
- * Proof: focused assertions verify returned values, state changes, rendered output, or emitted events.
+ * Behavior: CharacterScreen renders presenter-driven faction, magic, mastery, stat detail, and mobile scroll states without duplicating spell abilities or stale panels.
+ * Proof: Asserts Faction Progress, Goblin Warband, Brakka Knife-King, Dungeon Ogre summary, mobile padding-bottom, Magic modal Fire Magic and Heat Surge count, blade Mastery removal after rerender, and Base Value closing.
  * Validation: pnpm vitest run apps/web/src/components/CharacterScreen.test.tsx
  */
 import React from 'react';

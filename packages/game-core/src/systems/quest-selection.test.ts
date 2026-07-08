@@ -1,7 +1,7 @@
 /**
  * Test layer: unit
- * Behavior: Quest Selection covers selectFromTemplates — RNG behavior with local fixtures; returns a template from the provided templates array; accepts different rng value....
- * Proof: focused assertions verify returned values, state changes, rendered output, or emitted events.
+ * Behavior: selectFromTemplates chooses only from the provided local templates across RNG values including zero and one.
+ * Proof: Assertions check returned templates are contained in LOCAL_TEMPLATES, selected ids are strings, and rng zero returns test_quest_1.
  * Validation: pnpm vitest run packages/game-core/src/systems/quest-selection.test.ts
  */
 import { describe, it, expect } from 'vitest';

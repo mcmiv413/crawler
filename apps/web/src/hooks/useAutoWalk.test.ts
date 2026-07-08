@@ -1,7 +1,7 @@
 /**
  * Test layer: unit
- * Behavior: UseAutoWalk covers useAutoWalk; cancels an active path on any keydown; also cancels auto-walk when movement input takes over.
- * Proof: focused assertions verify returned values, state changes, rendered output, or emitted events.
+ * Behavior: useAutoWalk cancels the active auto-walk path when keyboard input interrupts movement.
+ * Proof: After Escape and ArrowRight keydown events, store assertions verify useGameStore.getState().autoWalkPath equals an empty array.
  * Validation: pnpm vitest run apps/web/src/hooks/useAutoWalk.test.ts
  */
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';

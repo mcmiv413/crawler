@@ -1,7 +1,7 @@
 /**
  * Test layer: unit
- * Behavior: Disarm Trap covers handleDisarmTrap - trap disarm observability (Phase 4B); invalid disarm rejection; emits PLAYER_ACTION_REJECTED with WRONG_PHASE when not....
- * Proof: focused assertions verify returned values, state changes, rendered output, or emitted events.
+ * Behavior: handleDisarmTrap rejects invalid trap disarms without advancing the turn and converts an adjacent trap into loot while removing it from the floor on success.
+ * Proof: Assertions check PLAYER_ACTION_REJECTED reasonCode WRONG_PHASE/NO_TRAP_TARGET with unchanged state, inventory, objects, turnNumber, and runEnded; successful disarms emit TRAP_DISARMED and LOOT_ACQUIRED, remove the trap object, increase inventory length, advance turnNumber, and omit PLAYER_ACTION_REJECTED.
  * Validation: pnpm vitest run packages/game-core/src/engine/handlers/disarm-trap.test.ts
  */
 /**

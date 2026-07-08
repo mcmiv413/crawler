@@ -1,7 +1,7 @@
 /**
  * Test layer: unit
- * Behavior: UseInventoryFilter covers inventory filtering helpers; filters by supported item classes; sorts known rarities descending and keeps unknown rarities last.
- * Proof: focused assertions verify returned values, state changes, rendered output, or emitted events.
+ * Behavior: Inventory filtering helpers and useInventoryFilter apply item class filters and rarity/name sorting to produce deterministic displayed item order.
+ * Proof: Asserts filtered item-name arrays for all, weapons, armor, and consumables; rarity order Epic/Rare/Common/unknown; alphabetical rare ties; and hook output after setFilter/setSortBy.
  * Validation: pnpm vitest run apps/web/src/hooks/useInventoryFilter.test.ts
  */
 import { act, renderHook } from '@testing-library/react';

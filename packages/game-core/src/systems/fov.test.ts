@@ -1,7 +1,7 @@
 /**
  * Test layer: unit
- * Behavior: fov covers computeFov; open room: tiles within radius are visible; wall blocks vision behind it.
- * Proof: focused assertions verify returned values, state changes, rendered output, or emitted events.
+ * Behavior: computeFov marks visible, hidden, and remembered tiles based on radius, walls, previous visibility, and custom vision range.
+ * Proof: Asserts specific grid keys such as 5,5, 4,0, 2,0, and 10,0 have visible, hidden, or remembered visibility after open-room, wall, movement, and radius-limited scans.
  * Validation: pnpm vitest run packages/game-core/src/systems/fov.test.ts
  */
 import { describe, it, expect } from 'vitest';

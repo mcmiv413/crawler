@@ -1,7 +1,7 @@
 /**
  * Test layer: unit
- * Behavior: Pathfinding covers findPath; returns empty array when start === destination; finds straight-line path on open grid.
- * Proof: focused assertions verify returned values, state changes, rendered output, or emitted events.
+ * Behavior: findPath returns tile steps through visible or remembered walkable cells while avoiding walls, enemies, hidden cells, and unreachable destinations.
+ * Proof: Assertions expect empty paths for same-tile and blocked routes, straight and diagonal step arrays, paths ending at the goal, no wall/enemy coordinates, and start-excluded goal-included paths.
  * Validation: pnpm vitest run apps/web/src/utils/pathfinding.test.ts
  */
 import { describe, it, expect } from 'vitest';

@@ -1,7 +1,7 @@
 /**
  * Test layer: unit
- * Behavior: Town Validator covers validateTownTransaction; STUDY_SPELL; rejects when spellId is not provided.
- * Proof: focused assertions verify returned values, state changes, rendered output, or emitted events.
+ * Behavior: validateTownTransaction accepts valid town actions and rejects invalid spell study, item purchase, and quest turn-in requests with stable reason codes.
+ * Proof: Assertions check result.valid, rejectionCode values SPELL_NOT_FOUND, ITEM_NOT_FOR_SALE, INSUFFICIENT_GOLD, QUEST_NOT_FOUND, and QUEST_NOT_READY, nonempty messages, and unchanged gold or quest counts on rejection.
  * Validation: pnpm vitest run packages/game-core/src/systems/town-validator.test.ts
  */
 /**

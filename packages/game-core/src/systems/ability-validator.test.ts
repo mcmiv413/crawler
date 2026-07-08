@@ -1,7 +1,7 @@
 /**
  * Test layer: unit
- * Behavior: Ability Validator covers validateAbilityAction; ability not found; rejects when ability id does not exist.
- * Proof: focused assertions verify returned values, state changes, rendered output, or emitted events.
+ * Behavior: Ability action validation rejects invalid ability use with stable reason codes and messages while preserving state and allowing only valid dungeon-phase result shapes.
+ * Proof: Assertions check valid=false with rejectionCode values ABILITY_NOT_FOUND, ABILITY_ON_COOLDOWN, ABILITY_NOT_UNLOCKED, MISSING_TILE_TARGET or ABILITY_REQUIREMENTS_NOT_MET, TILE_NOT_VISIBLE, TILE_OCCUPIED, OUT_OF_RANGE, WRONG_PHASE; message text exists, state fields remain unchanged, and valid results equal { valid: true } when returned.
  * Validation: pnpm vitest run packages/game-core/src/systems/ability-validator.test.ts
  */
 /**

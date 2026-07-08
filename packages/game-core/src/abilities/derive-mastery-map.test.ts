@@ -1,7 +1,7 @@
 /**
  * Test layer: unit
- * Behavior: Derive Mastery map covers deriveMasteryAbilities; derives mastery ability map from definitions; all mastery-unlocked abilities are in the map.
- * Proof: focused assertions verify returned values, state changes, rendered output, or emitted events.
+ * Behavior: deriveMasteryAbilities builds a weapon-type mastery map that includes every mastery-unlocked ability and only references defined abilities.
+ * Proof: Assertions check every WEAPON_TYPES entry exists, total map entries are present, each mastery unlock id appears in the map, and every mapped ability id is found in ALL_ABILITY_DEFINITIONS.
  * Validation: pnpm vitest run packages/game-core/src/abilities/derive-mastery-map.test.ts
  */
 import { describe, it, expect } from 'vitest';

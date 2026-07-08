@@ -1,7 +1,7 @@
 /**
  * Test layer: unit
- * Behavior: Dice covers rollDamage; returns a value within the expected variance range; produces deterministic results with the same seed.
- * Proof: focused assertions verify returned values, state changes, rendered output, or emitted events.
+ * Behavior: Dice utilities bound randomized damage, produce seeded deterministic rolls, clamp hit chance, and mitigate damage through defense.
+ * Proof: Assertions compare rollDamage to variance bounds and same-seed equality, calculateHitChance to clamp and in-range values, and applyDefense to mitigated and minimum damage results.
  * Validation: pnpm vitest run packages/game-core/src/utils/dice.test.ts
  */
 import { describe, it, expect } from 'vitest';

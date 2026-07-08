@@ -1,7 +1,7 @@
 /**
  * Test layer: unit
- * Behavior: lm Studio Client covers queryLmStudio; returns text on successful API response; trims whitespace from response text.
- * Proof: focused assertions verify returned values, state changes, rendered output, or emitted events.
+ * Behavior: queryLmStudio posts chat-completion prompts to LM Studio and normalizes success, malformed response, HTTP error, network error, and missing-content outcomes.
+ * Proof: Assertions check returned text or text-null error objects, trimmed content, fetch URL/method/body fields, status-code error messages, invalid JSON errors, and non-Error rejection text.
  * Validation: pnpm vitest run apps/server/src/ai/lm-studio-client.test.ts
  */
 import { describe, it, expect, beforeEach, afterEach, vi } from 'vitest';

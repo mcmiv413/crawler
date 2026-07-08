@@ -1,7 +1,7 @@
 /**
  * Test layer: integration
- * Behavior: Tracked Artifacts covers check-tracked-artifacts script; passes when only legitimate tracked files are present; fails when a banned generated artifact is already....
- * Proof: integrated command, service, or repository assertions verify the cross-module result.
+ * Behavior: The tracked-artifacts checker accepts ordinary tracked source files and rejects generated source maps or forced-added local cache artifacts.
+ * Proof: Assertions check exit status 0 with the pass message, then exit status 1 with stderr naming dist/index.js.map as generated and .eslintcache-typed as an ESLint cache artifact.
  * Validation: pnpm vitest run tests/integration/tracked-artifacts.integration.test.ts
  */
 import { afterEach, describe, expect, it } from 'vitest';

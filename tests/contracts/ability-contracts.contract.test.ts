@@ -1,7 +1,7 @@
 /**
  * Test layer: contract
- * Behavior: Ability Contracts covers Ability Contracts; keeps live ability metadata aligned with animation refs and public command payloads; keeps game-core ability cooldowns....
- * Proof: live catalog/schema assertions validate IDs, shapes, and cross references.
+ * Behavior: Live ability metadata stays aligned with animation references, command payload contracts, and game-core runtime cooldowns.
+ * Proof: Expectations require collectAbilityContractFailures(createLiveAbilityContractSnapshot()) to return an empty array and each runtime ability cooldown to equal its content definition cooldown.
  * Validation: pnpm vitest run tests/contracts/ability-contracts.contract.test.ts
  */
 import { describe, expect, it } from 'vitest';

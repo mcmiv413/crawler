@@ -1,7 +1,7 @@
 /**
  * Test layer: unit
- * Behavior: Threat and Balance.regression covers Regression Tests - Threat and Balance Rules; Threat Detection (isPlayerThreatened); returns false when not in dungeon.
- * Proof: focused assertions verify returned values, state changes, rendered output, or emitted events.
+ * Behavior: Threat, balance, and equipment regressions preserve threat detection and ratings, dual-weapon equip and swap rules, ranged attack distance checks, and scalar weapon damage assumptions.
+ * Proof: Assertions check isPlayerThreatened booleans, computed threat labels, primary/secondary weapon ids after equip/unequip/swap, Chebyshev range comparisons, finite weapon damage, and attack stat increase after equipping a weapon.
  * Validation: pnpm vitest run packages/game-core/src/systems/threat-and-balance.regression.test.ts
  */
 import { describe, it, expect } from 'vitest';

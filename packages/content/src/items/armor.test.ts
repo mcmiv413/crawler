@@ -1,7 +1,7 @@
 /**
  * Test layer: unit
- * Behavior: Armor covers armor catalog; every item has a valid ArmorSlot; enchantmentSlots matches ENCHANTMENT_SLOTS_BY_RARITY[rarity].
- * Proof: focused assertions verify returned values, state changes, rendered output, or emitted events.
+ * Behavior: The armor catalog assigns valid slots, rarity-based enchantment slot counts, consistent enchantment arrays, slot coverage, and valid pre-enchantment IDs.
+ * Proof: Assertions expect every slot in VALID_ARMOR_SLOTS, enchantmentSlots equal to ENCHANTMENT_SLOTS_BY_RARITY, array length parity, all-null or any-non-null enchantments, at least two items per slot, and registered enchantment IDs.
  * Validation: pnpm vitest run packages/content/src/items/armor.test.ts
  */
 import { describe, it, expect } from 'vitest';

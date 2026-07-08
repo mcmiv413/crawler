@@ -1,7 +1,7 @@
 /**
  * Test layer: unit
- * Behavior: Combat Preview covers combat preview helpers; increases player damage preview when a weapon is equipped; matches live ranged accuracy falloff as targets get fa....
- * Proof: focused assertions verify returned values, state changes, rendered output, or emitted events.
+ * Behavior: Combat preview helpers reflect equipped weapon damage, ranged hit-chance falloff, and deadly threat classification.
+ * Proof: Assertions compare armed versus unarmed totalDamageMin/Max while attack stays equal, near versus far playerHitChance for a bow, and a high-speed high-attack enemy preview with isFasterThanPlayer true and threatRating "Deadly".
  * Validation: pnpm vitest run packages/game-core/src/combat-preview.test.ts
  */
 import type { AnyItemTemplate, EnemyInstance } from '@dungeon/contracts';

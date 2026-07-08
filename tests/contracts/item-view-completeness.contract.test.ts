@@ -1,7 +1,7 @@
 /**
  * Test layer: contract
- * Behavior: Item View Completeness covers Item View Completeness; InventoryItemView weapons; all weapons have damageMin and damageMax defined and positive.
- * Proof: live catalog/schema assertions validate IDs, shapes, and cross references.
+ * Behavior: Inventory and shop item view builders expose complete weapon and armor stats needed by UI item displays.
+ * Proof: Assertions inspect InventoryItemView and ShopItemView weaponStats/weaponData for positive damageMin and damageMax bounds, equipped weapon stats, and armor defense, evasionPenalty, and slot fields.
  * Validation: pnpm vitest run tests/contracts/item-view-completeness.contract.test.ts
  */
 import { describe, it, expect } from 'vitest';

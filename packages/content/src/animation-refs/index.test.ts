@@ -1,7 +1,7 @@
 /**
  * Test layer: unit
- * Behavior: Index covers animation ref catalog; every exported ref has integer impact and recovery timing; projectile and aoe refs explicitly declare suppressActo....
- * Proof: focused assertions verify returned values, state changes, rendered output, or emitted events.
+ * Behavior: The animation ref catalog exposes integer timing fields, declares actor-bump suppression on moving effect refs, and resolves status overlays to status refs.
+ * Proof: Assertions expect integer impactFrameMs and recoveryMs, suppressActorBump keys on projectile and aoe refs, defined overlay refs, and status categories for overlays.
  * Validation: pnpm vitest run packages/content/src/animation-refs/index.test.ts
  */
 import { describe, expect, it } from 'vitest';

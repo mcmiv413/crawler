@@ -1,7 +1,7 @@
 /**
  * Test layer: unit
- * Behavior: Actions Builder covers buildAvailableActions; town phase; includes enter_dungeon action.
- * Proof: focused assertions verify returned values, state changes, rendered output, or emitted events.
+ * Behavior: buildAvailableActions exposes the correct enabled actions for town, dungeon, ability, item, object, movement, retreat, ascend, and invalid-state contexts.
+ * Proof: Assertions check action IDs such as enter_dungeon, rest, talk_npc1, movement, attack, retreat, ascend, interact_*, use_ability_power_strike, use_ability_thunder_step, and consumable use_*, plus enabled flags, labels, tileTarget, and empty arrays for invalid or missing-run states.
  * Validation: pnpm vitest run packages/presenter/src/builders/actions-builder.test.ts
  */
 import { describe, it, expect, beforeEach } from 'vitest';

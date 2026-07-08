@@ -1,7 +1,7 @@
 /**
  * Test layer: unit
- * Behavior: Inventory covers Inventory System; adds an item to inventory and emits event; removes an item from inventory.
- * Proof: focused assertions verify returned values, state changes, rendered output, or emitted events.
+ * Behavior: Inventory operations add and remove items and consume potions, cures, bombs, mana items, and buffs without mutating unrelated player stats.
+ * Proof: Assertions check inventory length and item removal, LOOT_ACQUIRED, ITEM_USED, and MANA_CHANGED events, player health/mana/status changes, enemy damage, and unchanged attack after strength buffs.
  * Validation: pnpm vitest run packages/game-core/src/systems/inventory.test.ts
  */
 import { describe, it, expect, beforeEach } from 'vitest';

@@ -1,7 +1,7 @@
 /**
  * Test layer: unit
- * Behavior: Styles covers Typography tokens (Slice 1); should export fontSize tokens with mobile-friendly values; should ensure primary mobile text is 15px or larger.
- * Proof: focused assertions verify returned values, state changes, rendered output, or emitted events.
+ * Behavior: Shared style tokens provide mobile-friendly typography and spacing values without tiny font-size entries.
+ * Proof: Assertions check exact fontSize and spacing token numbers, minimum primary/secondary/metadata font sizes, and absence of 9px, 10px, and 11px fontSize values.
  * Validation: pnpm vitest run apps/web/src/styles.test.ts
  */
 import { describe, it, expect } from 'vitest';

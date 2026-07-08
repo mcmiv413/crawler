@@ -1,7 +1,7 @@
 /**
  * Test layer: unit
- * Behavior: UseBreakpoint covers useBreakpoint Hook; returns isMobile: false when media query does not match; returns isMobile: true when media query matches.
- * Proof: focused assertions verify returned values, state changes, rendered output, or emitted events.
+ * Behavior: useBreakpoint reports the 768px mobile breakpoint and responds to matchMedia change subscriptions.
+ * Proof: Hook assertions verify isMobile false and true states, add/remove change listeners, toggled change-event updates, and matchMedia('(max-width: 768px)') usage.
  * Validation: pnpm vitest run apps/web/src/hooks/useBreakpoint.test.ts
  */
 /**

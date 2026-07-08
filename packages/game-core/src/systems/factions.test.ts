@@ -1,7 +1,7 @@
 /**
  * Test layer: unit
- * Behavior: Factions covers faction progression; member kills reduce power and increment faction kill tracking; player death against a leaderless faction creates a l....
- * Proof: focused assertions verify returned values, state changes, rendered output, or emitted events.
+ * Behavior: Faction progression updates power, leader state, broken status, deepest-floor pressure, member scaling, town impact, and deterministic boss spawn depth from faction events.
+ * Proof: Asserts faction power and counters, status/leader fields, FACTION_POWER_CHANGED and FACTION_LEADER_EMERGED event objects, no-op world equality with empty events, power bands, town impact, scaled member stats, and stable selectedSpawnDepth.
  * Validation: pnpm vitest run packages/game-core/src/systems/factions.test.ts
  */
 import { describe, expect, it } from 'vitest';

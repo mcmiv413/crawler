@@ -1,7 +1,7 @@
 /**
  * Test layer: unit
- * Behavior: Enchantment Hooks covers getTotalThornsReflect; returns 0 when no thornsspikes enchantments; returns reasonable damage for thorns enchantment.
- * Proof: focused assertions verify returned values, state changes, rendered output, or emitted events.
+ * Behavior: Enchantment hook helpers derive thorns, regen, experience, blink, and life-steal effects from equipped enchantments and apply thorns damage through the central damage path.
+ * Proof: Asserts hook return bounds for no-enchantment and enchanted states, applyThornsToAttacker finalDamage/killed results including defense and resistance bypass, and applyBlinkOnHit boolean outcomes from seeded RNG values.
  * Validation: pnpm vitest run packages/game-core/src/systems/enchantment-hooks.test.ts
  */
 import { describe, it, expect } from 'vitest';

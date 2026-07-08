@@ -27,6 +27,7 @@ const PRESENCE_MATCHERS = new Set([
   'toBeTruthy',
   'toBeDefined',
 ]);
+const GENERIC_PROOF_PHRASES = ['focused assertions verify returned values, state changes, rendered output, or emitted events', 'assertions verify returned values, state changes, rendered output, or emitted events', 'live catalog/schema assertions validate ids, shapes, and cross references'];
 
 function runGit(repoRoot, args, options = {}) {
   const result = spawnSync('git', ['-C', repoRoot, ...args], {
@@ -411,6 +412,13 @@ function hasIntentHeader(source) {
   };
 }
 
+function getHeaderFieldValues(source) {
+  const firstLines = source.split('\n').slice(0, 30).join('\n');
+  return { behavior: firstLines.match(/Behavior:\s*(.+)/i)?.[1]?.trim(), proof: firstLines.match(/Proof:\s*(.+)/i)?.[1]?.trim() };
+}
+
+function normalizeHeaderText(value) { return value.toLowerCase().replace(/[.…\s]+$/, '').trim(); }
+
 function hasContentImport(sourceFile) {
   let contentImport = null;
   walk(sourceFile, (node) => {
@@ -456,19 +464,13 @@ function isPresenceMatcher(matcher) {
   return PRESENCE_MATCHERS.has(matcher);
 }
 
-function checkIntentHeader({ relativePath, source, sourceFile }) {
-  const hasTestDeclarations = collectVitestCalls(sourceFile).some(({ base }) =>
-    ['test', 'it', 'describe'].includes(base),
-  );
-  const shouldRequireHeader = relativePath.endsWith('.test.ts')
-    || relativePath.endsWith('.test.tsx')
-    || relativePath.endsWith('.property.test.ts')
-    || relativePath.endsWith('.property.test.tsx')
-    || relativePath.endsWith('.spec.ts')
-    || relativePath.endsWith('.spec.tsx')
-    || hasTestDeclarations;
+function shouldRequireHeader(relativePath, sourceFile) {
+  const hasTestDeclarations = collectVitestCalls(sourceFile).some(({ base }) => ['test', 'it', 'describe'].includes(base));
+  return ['.test.ts', '.test.tsx', '.property.test.ts', '.property.test.tsx', '.spec.ts', '.spec.tsx'].some((suffix) => relativePath.endsWith(suffix)) || hasTestDeclarations;
+}
 
-  if (!shouldRequireHeader) {
+function checkIntentHeader({ relativePath, source, sourceFile }) {
+  if (!shouldRequireHeader(relativePath, sourceFile)) {
     return [];
   }
 
@@ -497,6 +499,27 @@ function checkIntentHeader({ relativePath, source, sourceFile }) {
       ],
     }),
   ];
+}
+
+function checkHeaderBoilerplate({ relativePath, source, sourceFile }) {
+  if (!shouldRequireHeader(relativePath, sourceFile)) return [];
+  const { behavior, proof } = getHeaderFieldValues(source);
+  if (behavior === undefined && proof === undefined) return [];
+  const failures = [];
+  const push = (title, found, why, repair) => failures.push(makeFailure({ title, relativePath, line: 1, found, why, repair }));
+  const coversMatch = behavior?.match(/^(.+?)\s+covers\s+(.+?)(?:[;.]|$)/i);
+  if (coversMatch) {
+    const [subject, covered] = coversMatch.slice(1, 3).map(normalizeHeaderText);
+    if (subject && subject === covered) push('boilerplate behavior header (duplicated phrase around "covers")', `Behavior: ${behavior}`, 'A Behavior line of the form "X covers X" restates the suite name instead of describing the behavior under test.', ['Rewrite Behavior to state the specific behavior this file proves.', 'Name the concrete inputs and the observable result, not the suite title.']);
+  }
+  if (proof) {
+    const np = normalizeHeaderText(proof);
+    if (GENERIC_PROOF_PHRASES.some((p) => np === p || np.startsWith(p))) push('generic proof header', `Proof: ${proof}`, 'This Proof line is shared filler that does not describe what THIS file asserts.', ['Replace Proof with a file-specific sentence naming the actual assertions:', '- the emitted event type(s), state transition, presenter/GameView field, or UI/pixel evidence this file checks.']);
+  }
+  for (const [field, value] of [['Behavior', behavior], ['Proof', proof]]) {
+    if (value && (/\.{4,}/.test(value) || /…/.test(value))) push('truncated/placeholder header', `${field}: ${value}`, 'A header line ending in "...." or an ellipsis is truncated and not searchable.', ['Finish the sentence: state the complete behavior/proof without "...." or an ellipsis.']);
+  }
+  return failures;
 }
 
 function checkFocusedAndSkipped({ relativePath, source, sourceFile }) {
@@ -724,6 +747,7 @@ function checkFile(repoRoot, relativePath) {
 
   return [
     ...checkIntentHeader(context),
+    ...checkHeaderBoilerplate(context),
     ...checkFocusedAndSkipped(context),
     ...checkMathRandom(context),
     ...checkWeakAssertionOnlyTests(context),
@@ -756,7 +780,7 @@ function runReportAll(repoRoot) {
     `Checked ${testPaths.length} tracked test file(s).`,
     `Files with violations: ${failingRows.length}.`,
     '',
-    ...failingRows.map(formatReportAllRow),
+    ...rows.map(formatReportAllRow),
   ].join('\n'));
 }
 

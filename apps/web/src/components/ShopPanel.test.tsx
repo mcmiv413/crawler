@@ -1,7 +1,7 @@
 /**
  * Test layer: unit
- * Behavior: ShopPanel covers ShopPanel; sorts buy items by rarity with unknown rarities after known rarities; Mobile layout (Slice 3).
- * Proof: focused assertions verify returned values, state changes, rendered output, or emitted events.
+ * Behavior: ShopPanel orders buy items by rarity and keeps mobile shop cards, prices, stock, stats, and buy buttons readable.
+ * Proof: Asserts Epic Axe appears before Common Armor before Odd Relic after clicking Rarity, Health Potion and Iron Sword text, 10g and stock count text, Dmg 6-10 physical stats, Buy button count, and minimum font-size checks against readable thresholds.
  * Validation: pnpm vitest run apps/web/src/components/ShopPanel.test.tsx
  */
 import { fireEvent, render, screen } from '@testing-library/react';

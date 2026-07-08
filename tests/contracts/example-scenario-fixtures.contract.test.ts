@@ -1,7 +1,7 @@
 /**
  * Test layer: contract
- * Behavior: Example Scenario Fixtures covers Example scenario library: structural validity; case validates against live content and Phase-1 fixtures; case loads into a dungeon-phase....
- * Proof: live catalog/schema assertions validate IDs, shapes, and cross references.
+ * Behavior: Every example scenario validates against live resolvers, loads as dungeon state, and executes its documented gameplay action.
+ * Proof: Assertions require empty validation errors, dungeon phase with non-null run, ENTITY_DIED on attack, negative MANA_CHANGED for ember, loot and health changes from chest/potion use, faction scaling above fresh world, and an attackable dungeon_ogre.
  * Validation: pnpm vitest run tests/contracts/example-scenario-fixtures.contract.test.ts
  */
 /**

@@ -1,7 +1,7 @@
 /**
  * Test layer: unit
- * Behavior: Projectile Modules covers singleArrow; arrowVolley; emberBolt.
- * Proof: focused assertions verify returned values, state changes, rendered output, or emitted events.
+ * Behavior: Projectile animation modules satisfy the shared lifecycle contract and keep singleArrow, emberBolt, and arrowVolley traveling from source to target over progress.
+ * Proof: runThreeAnimationContract assertions check ID/category, create/setPosition/update/dispose, scene.add/remove, visibility, and resource disposal; direct assertions check group.position start/intermediate/end coordinates, path rotation, and emberBolt impact scale growth.
  * Validation: pnpm vitest run apps/web/src/rendering/three/modules/projectile/projectile-modules.test.ts
  */
 /**

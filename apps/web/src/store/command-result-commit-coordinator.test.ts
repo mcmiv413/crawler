@@ -1,7 +1,7 @@
 /**
  * Test layer: unit
- * Behavior: Command Result Commit Coordinator covers CommandResultCommitCoordinator; should commit the latest pendingQueueDrainCommit when queue drains after two staged commands; should pres....
- * Proof: focused assertions verify returned values, state changes, rendered output, or emitted events.
+ * Behavior: The command result commit coordinator stages command views, commits only the latest queued drain result, preserves settled flags, and registers move animations before commit.
+ * Proof: Assertions check immediate commit payloads, second drain callback and last commit payload after queue drain, first drain callback not called, deathTransitioning/loading false on drain, registerMoveAnimation called with the move event, and register-before-commit order.
  * Validation: pnpm vitest run apps/web/src/store/command-result-commit-coordinator.test.ts
  */
 import { describe, it, expect, vi, beforeEach } from 'vitest';

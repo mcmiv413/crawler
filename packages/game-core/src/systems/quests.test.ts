@@ -1,7 +1,7 @@
 /**
  * Test layer: unit
- * Behavior: Quests covers completeFloorDepthQuests; marks a reach_floor quest ready when the target depth is reached; leaves a reach_floor quest active when a diff....
- * Proof: focused assertions verify returned values, state changes, rendered output, or emitted events.
+ * Behavior: completeFloorDepthQuests marks active reach-floor quests ready only at the matching depth and leaves other quest states unchanged.
+ * Proof: Assertions check ready_to_turn_in versus active status, unchanged player gold, no-op state equality, empty events for non-completions, and QUEST_READY with the matching questId.
  * Validation: pnpm vitest run packages/game-core/src/systems/quests.test.ts
  */
 import { describe, it, expect } from 'vitest';

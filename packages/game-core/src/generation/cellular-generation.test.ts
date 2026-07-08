@@ -1,7 +1,7 @@
 /**
  * Test layer: unit
- * Behavior: Cellular Generation covers Cellular Automata Map Generation; forest biome uses cellular algorithm; moss caverns biome uses cellular algorithm.
- * Proof: focused assertions verify returned values, state changes, rendered output, or emitted events.
+ * Behavior: Floor generation chooses cellular or digger layout algorithms from biome mapGen settings while preserving valid stairs and playable cell maps.
+ * Proof: Assertions check biomeId, result.valid, cell-map sizes, wall-density bounds, and entrance/exit cells with stairs_up/stairs_down tiles.
  * Validation: pnpm vitest run packages/game-core/src/generation/cellular-generation.test.ts
  */
 import { describe, it, expect } from 'vitest';

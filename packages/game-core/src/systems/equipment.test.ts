@@ -1,7 +1,7 @@
 /**
  * Test layer: unit
- * Behavior: Equipment covers calculateEquippedStats; returns base stats when nothing is equipped; adds weapon damage, accuracy, and speed bonuses.
- * Proof: focused assertions verify returned values, state changes, rendered output, or emitted events.
+ * Behavior: Equipment helpers recalculate stats, manage equip/unequip/swap lifecycle, grant or remove ring and enchantment abilities, preserve inventory ownership, and reject invalid equipment commands.
+ * Proof: Asserts player equipment slots, inventory containment, stat increases or resets, ability ID presence and cooldown preservation, ring mastery entries, empty event arrays, and unchanged state for rejected equipment commands.
  * Validation: pnpm vitest run packages/game-core/src/systems/equipment.test.ts
  */
 import { describe, it, expect } from 'vitest';

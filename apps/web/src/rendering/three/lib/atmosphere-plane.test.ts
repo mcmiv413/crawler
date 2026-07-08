@@ -1,7 +1,7 @@
 /**
  * Test layer: unit
- * Behavior: Atmosphere Plane covers createAtmosphereVignette; creates object, material, and texture when canvas APIs are available; falls back to a null texture when documen....
- * Proof: focused assertions verify returned values, state changes, rendered output, or emitted events.
+ * Behavior: createAtmosphereVignette creates a viewport-sized black vignette that works with and without canvas texture support, clamps opacity, recenters on resize, and disposes resources once.
+ * Proof: Assertions check object/material/texture presence or null fallback, material color/blending/depth flags, z/renderOrder, scale and centered position after setSize, clamped opacity values, and single geometry/material/texture dispose calls.
  * Validation: pnpm vitest run apps/web/src/rendering/three/lib/atmosphere-plane.test.ts
  */
 import * as THREE from 'three';

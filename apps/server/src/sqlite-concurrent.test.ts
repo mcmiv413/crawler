@@ -1,7 +1,7 @@
 /**
  * Test layer: unit
- * Behavior: Sqlite Concurrent covers OCC (Optimistic Concurrency Control); should reject concurrent writes with stale version; should allow exactly one of two concurrent writ....
- * Proof: focused assertions verify returned values, state changes, rendered output, or emitted events.
+ * Behavior: Repository optimistic concurrency rejects stale writes while allowing correctly versioned saveGame and commitTick updates to advance atomically.
+ * Proof: Assertions check stale saveGame and commitTick calls reject, final versions and gold remain at the winning update, sequential writes reach versions 2 through 5, failed commitTick appends no events, and successful commitTick advances version and state together.
  * Validation: pnpm vitest run apps/server/src/sqlite-concurrent.test.ts
  */
 /**

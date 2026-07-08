@@ -1,7 +1,7 @@
 /**
  * Test layer: e2e
- * Behavior: Three Animation Backend covers Three animation renderer backend renders case through WebGL; Three animation overlay stays click-through over the dungeon canvas; forced....
- * Proof: Playwright actions and visible UI assertions verify the browser-facing outcome.
+ * Behavior: The Three animation backend renders every animation category through WebGL, keeps its overlay click-through, and falls back to canvas when WebGL creation is forced to fail.
+ * Proof: Assertions check expected WebGL overlay pixel regions for movement, bump attack, projectile, impact, aoe, self consumable, status pulse, combat label, and defender-hit flash; overlay pointer-events none, MOVE request pass-through, changed canvas pixels, absent overlay, and -1 WebGL pixel count on fallback.
  * Validation: pnpm test:e2e tests/e2e/three-animation-backend.spec.ts
  */
 import { expect, test } from '@playwright/test';

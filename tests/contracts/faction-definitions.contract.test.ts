@@ -1,7 +1,7 @@
 /**
  * Test layer: contract
- * Behavior: Faction Definitions covers Faction Definitions Contract; all faction IDs in INITIAL_FACTIONS have entries in FACTION_DEFINITIONS; all faction definitions have non-e....
- * Proof: live catalog/schema assertions validate IDs, shapes, and cross references.
+ * Behavior: Live faction definitions stay aligned with initial factions, leader pools/templates, enemy membership, and power configuration.
+ * Proof: Assertions match INITIAL_FACTIONS ids to FACTION_DEFINITIONS, require leader names/titles and templates, verify enemy faction references and member coverage, and constrain initialPower to 0 through 100 with disposition present.
  * Validation: pnpm vitest run tests/contracts/faction-definitions.contract.test.ts
  */
 import { describe, expect, it } from 'vitest';

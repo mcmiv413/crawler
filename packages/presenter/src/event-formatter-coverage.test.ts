@@ -1,7 +1,7 @@
 /**
  * Test layer: unit
- * Behavior: Event Formatter Coverage covers Event Formatter Type Safety; formatter mapping is exhaustive at compile time; type system ensures no unknown event types reach formatEvent.
- * Proof: focused assertions verify returned values, state changes, rendered output, or emitted events.
+ * Behavior: Event formatter coverage documents that the formatter export is present for the compile-time exhaustive event mapping.
+ * Proof: Assertions check typeof formatEvent is function in both exhaustiveness and invalid-event type-safety documentation tests.
  * Validation: pnpm vitest run packages/presenter/src/event-formatter-coverage.test.ts
  */
 /**

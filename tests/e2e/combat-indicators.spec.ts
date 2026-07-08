@@ -1,7 +1,7 @@
 /**
  * Test layer: e2e
- * Behavior: Combat Indicators covers scenario enemy attack shows a visible damage combat indicator; scenario healing ability shows a visible healing combat indicator; scenari....
- * Proof: Playwright actions and visible UI assertions verify the browser-facing outcome.
+ * Behavior: Combat scenarios keep damage indicators, combat feedback, and chest-loot inventory rows visible on desktop and mobile while the healing indicator gap remains documented.
+ * Proof: Assertions check visible damage indicator locators after ATTACK, ENTITY_DIED events, delayed indicator visibility, mobile combat-log text, LOOT_ACQUIRED itemName, and inventory item-list text containing that loot.
  * Validation: pnpm test:e2e tests/e2e/combat-indicators.spec.ts
  */
 import { expect, test } from '@playwright/test';

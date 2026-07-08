@@ -1,7 +1,7 @@
 /**
  * Test layer: unit
- * Behavior: Three Combat Label covers createCombatLabel; returns a label instance; adds the label mesh to the scene.
- * Proof: focused assertions verify returned values, state changes, rendered output, or emitted events.
+ * Behavior: Combat label helpers create independent textured scene labels, set opacity and screen-space position, dispose their resources, and support multiple stacked labels.
+ * Proof: Assertions check mesh geometry/material identity, scene.add/remove calls, 128x32 texture image, opacity values and transparency, independent label/material instances, no-throw text cases, y-axis flipped x position, geometry/material/texture dispose calls, and per-label stacked opacity.
  * Validation: pnpm vitest run apps/web/src/rendering/three/text/three-combat-label.test.ts
  */
 /**

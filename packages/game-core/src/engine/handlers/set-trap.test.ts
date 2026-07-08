@@ -1,7 +1,7 @@
 /**
  * Test layer: unit
- * Behavior: set Trap covers handleSetTrap - trap placement observability (Phase 4B); invalid placement rejection; emits PLAYER_ACTION_REJECTED with WRONG_PHASE when....
- * Proof: focused assertions verify returned values, state changes, rendered output, or emitted events.
+ * Behavior: handleSetTrap rejects invalid trap placement reasons without consuming the item and places a valid trap object while spending a turn.
+ * Proof: Assertions check PLAYER_ACTION_REJECTED reasonCode WRONG_PHASE, TRAP_ITEM_NOT_IN_INVENTORY, ITEM_NOT_TRAP, TILE_OCCUPIED, and TILE_OCCUPIED_BY_ENEMY with no TRAP_PLACED, unchanged inventory/state/turnNumber/runEnded, no ENEMY_MOVED or MANA_CHANGED on rejection, and successful TRAP_PLACED fields, inventory removal, object count increase, turn advancement, event ordering, and no rejection event.
  * Validation: pnpm vitest run packages/game-core/src/engine/handlers/set-trap.test.ts
  */
 /**

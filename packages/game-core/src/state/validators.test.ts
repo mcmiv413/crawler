@@ -1,7 +1,7 @@
 /**
  * Test layer: unit
- * Behavior: Validators covers state validators; validateGameState; accepts valid game state.
- * Proof: focused assertions verify returned values, state changes, rendered output, or emitted events.
+ * Behavior: State validators accept valid game, player, enemy, run, and world objects while reporting precise paths for invalid fields and phase/run invariants.
+ * Proof: Assertions check isValid booleans, errors length, path/message matches for gameId, phase, version, stats, run/enemies, world factions and dungeonOgre fields, plus isGameStateValid true/false results.
  * Validation: pnpm vitest run packages/game-core/src/state/validators.test.ts
  */
 import { describe, it, expect } from 'vitest';

@@ -1,7 +1,7 @@
 /**
  * Test layer: unit
- * Behavior: Projectile Trail covers createProjectileTrail; places mesh at local y = -lengthPx  2; places mesh at local x = 0 and z = 0.
- * Proof: focused assertions verify returned values, state changes, rendered output, or emitted events.
+ * Behavior: createProjectileTrail builds a centered local trail mesh whose update grows and fades with clamped progress and whose dispose path is idempotent.
+ * Proof: Assertions check local x/y/z placement, geometry/material identity, no-throw updates for in-range and out-of-range progress, opacity and scale values at fade points, custom opacity/fadeStart handling, and single geometry/material dispose calls.
  * Validation: pnpm vitest run apps/web/src/rendering/three/lib/projectile-trail.test.ts
  */
 import { beforeEach, describe, expect, it, vi } from 'vitest';

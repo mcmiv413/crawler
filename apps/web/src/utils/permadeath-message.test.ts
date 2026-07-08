@@ -1,7 +1,7 @@
 /**
  * Test layer: unit
- * Behavior: Permadeath Message covers getPermadeathProximityMessage; handles threshold === 0 without division by zero; returns clean kill message when overkillDamage === 0.
- * Proof: focused assertions verify returned values, state changes, rendered output, or emitted events.
+ * Behavior: getPermadeathProximityMessage chooses the correct death-risk copy for unset thresholds, clean kills, low overkill, close calls, and large thresholds.
+ * Proof: Assertions expect the five exact message strings for threshold zero, overkill zero, 4/10 overkill, 5/10 overkill, and 100/1000 overkill cases.
  * Validation: pnpm vitest run apps/web/src/utils/permadeath-message.test.ts
  */
 import { describe, it, expect } from 'vitest';

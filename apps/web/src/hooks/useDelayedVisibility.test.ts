@@ -1,7 +1,7 @@
 /**
  * Test layer: unit
- * Behavior: UseDelayedVisibility covers useDelayedVisibility; returns false initially when trigger is false; returns false immediately when trigger is true (within delay).
- * Proof: focused assertions verify returned values, state changes, rendered output, or emitted events.
+ * Behavior: useDelayedVisibility delays visibility until the trigger's timer completes, resets when the trigger turns false, and clears timers on unmount.
+ * Proof: Asserts isVisible is false before delay, true after 2000 ms, false after rerendering trigger false, and global clearTimeout is called on unmount.
  * Validation: pnpm vitest run apps/web/src/hooks/useDelayedVisibility.test.ts
  */
 import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest';

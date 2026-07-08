@@ -1,7 +1,7 @@
 /**
  * Test layer: unit
- * Behavior: Process Command covers processGameCommand; uses deterministic run-end town text without calling AI summary or rumor generation.
- * Proof: focused assertions verify returned values, state changes, rendered output, or emitted events.
+ * Behavior: processGameCommand builds run-end town summary and rumors from deterministic presenter helpers instead of invoking AI generators or persisting display text.
+ * Proof: Assertions check commitTick receives unchanged town lastRunSummary and rumors, the returned GameView town fields equal buildDeterministicRunSummary and buildDeterministicTownRumors, and AI summary/rumor mocks are not called.
  * Validation: pnpm vitest run apps/server/src/game-command/process-command.test.ts
  */
 import type {

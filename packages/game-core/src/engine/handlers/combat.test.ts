@@ -1,7 +1,7 @@
 /**
  * Test layer: unit
- * Behavior: Combat covers handleAttack integration; rejects attacks against a missing target; should pass weapon damage profile to combat resolver.
- * Proof: focused assertions verify returned values, state changes, rendered output, or emitted events.
+ * Behavior: handleAttack rejects invalid targets, applies weapon damage and on-hit statuses, and finalizes enemy death exactly once with ordered attack and death events.
+ * Proof: Assertions check state identity and PLAYER_ACTION_REJECTED/TARGET_NOT_FOUND for missing targets, ATTACK_PERFORMED before ENTITY_DIED with matching positions and cause ids, enemy removal, single ENTITY_DIED finalization with kill/xp gains, damage spread, STATUS_APPLIED burn duration/magnitude, and no heat_surge burn after lethal damage.
  * Validation: pnpm vitest run packages/game-core/src/engine/handlers/combat.test.ts
  */
 import { describe, it, expect } from 'vitest';

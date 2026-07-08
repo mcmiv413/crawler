@@ -1,7 +1,7 @@
 /**
  * Test layer: unit
- * Behavior: UseKeyboard covers useKeyboard; blocks non-movement shortcuts while loading; dispatches wait when loading is false.
- * Proof: focused assertions verify returned values, state changes, rendered output, or emitted events.
+ * Behavior: useKeyboard handles keyboard shortcuts by sending WAIT only when not loading, ignoring movement keys, and keeping a single keydown listener across store updates.
+ * Proof: Asserts '.' while loading does not call sendCommand, '.' when idle calls { type: 'WAIT' }, ArrowUp does not call sendCommand, and listener add/remove counts stay 1/0 until unmount removes once.
  * Validation: pnpm vitest run apps/web/src/hooks/useKeyboard.test.ts
  */
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';

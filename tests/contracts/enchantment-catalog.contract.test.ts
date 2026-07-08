@@ -1,7 +1,7 @@
 /**
  * Test layer: contract
- * Behavior: Enchantment Catalog covers Enchantment Catalog Contract; all enchantments have non-empty names defined in content; all enchantments have valid tiers.
- * Proof: live catalog/schema assertions validate IDs, shapes, and cross references.
+ * Behavior: The live enchantment catalog exposes named enchantments with valid tiers and resolvable positive costs.
+ * Proof: Expectations check non-empty names, tiers limited to 1, 2, 3, or unique, positive getEnchantmentCost results, non-empty ENCHANTMENT_BY_ID, and ascending tier costs where tier examples exist.
  * Validation: pnpm vitest run tests/contracts/enchantment-catalog.contract.test.ts
  */
 import { describe, it, expect } from 'vitest';

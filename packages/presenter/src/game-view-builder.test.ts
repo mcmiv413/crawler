@@ -1,7 +1,7 @@
 /**
  * Test layer: unit
- * Behavior: Game View Builder covers buildGameView runResult; returns runResult "victory" when game_over with victory metrics; returns runResult "death" when game_over with d....
- * Proof: focused assertions verify returned values, state changes, rendered output, or emitted events.
+ * Behavior: buildGameView projects run results, shop pricing, actions, inventory, map, notices, quest data, and inspectable entities from GameState into GameView.
+ * Proof: Expectations check runResult values, effectivePrice and sellPrice bounds, action ids, ability readiness and labels, inventory quantities/isEquipped fields, map tile/sprite/template fields, town summaries, notice kinds/messages, and inspectableEntities ordering/exclusion.
  * Validation: pnpm vitest run packages/presenter/src/game-view-builder.test.ts
  */
 import { describe, it, expect } from 'vitest';

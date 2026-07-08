@@ -1,7 +1,7 @@
 /**
  * Test layer: unit
- * Behavior: Bump Animations covers buildBumpAnimations; ATTACK_PERFORMED; creates bump animation for player attacking enemy.
- * Proof: focused assertions verify returned values, state changes, rendered output, or emitted events.
+ * Behavior: buildBumpAnimations returns attack bump animations only when ATTACK_PERFORMED events can be resolved to attacker and defender positions.
+ * Proof: Assertions compare animation arrays for player-to-enemy, enemy-to-player, missed, and multiple attacks, verify attacker and defender coordinates and IDs, and expect empty arrays for unresolved participants, non-attack events, and null run state.
  * Validation: pnpm vitest run packages/presenter/src/bump-animations.test.ts
  */
 import { describe, it, expect } from 'vitest';

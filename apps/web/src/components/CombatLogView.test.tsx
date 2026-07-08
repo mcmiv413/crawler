@@ -1,7 +1,7 @@
 /**
  * Test layer: unit
- * Behavior: CombatLogView covers CombatLogView Component; Basic Rendering; renders null when entries are empty.
- * Proof: focused assertions verify returned values, state changes, rendered output, or emitted events.
+ * Behavior: CombatLogView renders filtered combat log entries with event-type colors, scroll sizing, debug visibility, and mobile tab-bar clearance.
+ * Proof: Asserts empty or fully filtered entries render null, attack/death/loot/info/debug text presence or absence, death/loot/info/default colors, scrollTop/maxHeight/flex styles, duplicate entry count, and combat-log-entries padding-bottom.
  * Validation: pnpm vitest run apps/web/src/components/CombatLogView.test.tsx
  */
 /**

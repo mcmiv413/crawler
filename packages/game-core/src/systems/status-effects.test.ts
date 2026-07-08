@@ -1,7 +1,7 @@
 /**
  * Test layer: unit
- * Behavior: Status Effects covers status-effects; applies a new status to player; refreshes existing status duration.
- * Proof: focused assertions verify returned values, state changes, rendered output, or emitted events.
+ * Behavior: Status effects apply, refresh, tick, expire, clamp damage or healing, adjust effective stats, and resolve storm_active strikes only when the player remains alive.
+ * Proof: Assertions check status arrays and effective stat values, player/enemy health clamps, STATUS_EXPIRED, STATUS_DAMAGE_TICK, ENTITY_DIED, and thunderstorm ABILITY_USED events, enemy map removal, kill counts, XP gains, and deterministic visible strike positions.
  * Validation: pnpm vitest run packages/game-core/src/systems/status-effects.test.ts
  */
 import { describe, it, expect } from 'vitest';

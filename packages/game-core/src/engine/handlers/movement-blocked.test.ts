@@ -1,7 +1,7 @@
 /**
  * Test layer: unit
- * Behavior: Movement Blocked covers handleMove - blocked movement observability (Phase 4A); emits MOVEMENT_BLOCKED with OUT_OF_BOUNDS when moving off the map; emits MOVEMENT....
- * Proof: focused assertions verify returned values, state changes, rendered output, or emitted events.
+ * Behavior: handleMove reports blocked dungeon movement reasons without spending a turn while preserving bump-to-attack behavior for occupied enemy tiles.
+ * Proof: Assertions check MOVEMENT_BLOCKED reasonCode OUT_OF_BOUNDS, NOT_WALKABLE, and NOT_IN_DUNGEON with from/direction/message, no PLAYER_MOVED or ATTACK_PERFORMED on blocked paths, unchanged position/turnNumber/runEnded/state identity, no ENEMY_MOVED/MANA_CHANGED/TRAP_TRIGGERED, and ATTACK_PERFORMED without MOVEMENT_BLOCKED for enemy bumps.
  * Validation: pnpm vitest run packages/game-core/src/engine/handlers/movement-blocked.test.ts
  */
 import { describe, it, expect } from 'vitest';

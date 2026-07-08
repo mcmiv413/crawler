@@ -1,7 +1,7 @@
 /**
  * Test layer: unit
- * Behavior: Soft Glow covers createSoftGlow; creates object, material, and texture; setScale.
- * Proof: focused assertions verify returned values, state changes, rendered output, or emitted events.
+ * Behavior: createSoftGlow creates a textured glow sprite whose scale and opacity setters clamp visible values and whose dispose path tolerates repeated calls.
+ * Proof: Assertions check object/material/texture presence, constructor and setScale x/y sizes, opacity at direct, negative, and above-one inputs, non-null texture setup, single material/texture dispose calls, and no-throw double dispose.
  * Validation: pnpm vitest run apps/web/src/rendering/three/lib/soft-glow.test.ts
  */
 import { beforeEach, describe, expect, it, vi } from 'vitest';

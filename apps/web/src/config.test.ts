@@ -1,7 +1,7 @@
 /**
  * Test layer: unit
- * Behavior: Config covers Config Governance: UI Sizing; all UI sizing constants are defined and positive numbers; computed viewport pixel dimensions equal tiles ×....
- * Proof: focused assertions verify returned values, state changes, rendered output, or emitted events.
+ * Behavior: UI sizing config exports positive dimensions, derived viewport pixel sizes, and a nav touch target that is at least the base button height.
+ * Proof: Assertions check every exported sizing constant is greater than zero, VIEWPORT_PX_WIDTH/HEIGHT equal tile counts times CELL_SIZE, and NAV_BTN_MIN_HEIGHT >= BTN_MIN_HEIGHT.
  * Validation: pnpm vitest run apps/web/src/config.test.ts
  */
 import { describe, it, expect } from 'vitest';

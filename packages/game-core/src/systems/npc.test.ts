@@ -1,7 +1,7 @@
 /**
  * Test layer: unit
- * Behavior: npc covers processTalkNpc; informant assigns a quest on first conversation; informant does not assign duplicate quest on second talk.
- * Proof: focused assertions verify returned values, state changes, rendered output, or emitted events.
+ * Behavior: Talking to NPCs updates disposition and allows warm informants to assign exactly one active quest while shopkeepers, unknown NPCs, and cold informants do not.
+ * Proof: Assertions check activeQuests length/status/giverNpcId, disposition increases/decreases with 0-100 clamping, unknown NPC state remains unchanged, and unrelated NPC disposition is preserved.
  * Validation: pnpm vitest run packages/game-core/src/systems/npc.test.ts
  */
 import { describe, it, expect } from 'vitest';

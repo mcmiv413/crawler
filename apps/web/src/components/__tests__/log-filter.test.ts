@@ -1,7 +1,7 @@
 /**
  * Test layer: unit
- * Behavior: log Filter covers filterCombatLogForDisplay; passes all entries when debugMode is true; filters out [DEBUG]-prefixed entries when debugMode is false.
- * Proof: focused assertions verify returned values, state changes, rendered output, or emitted events.
+ * Behavior: filterCombatLogForDisplay preserves normal log entries while hiding uppercase [DEBUG] entries when debug mode is off.
+ * Proof: Returned arrays are asserted for debugMode true passthrough, debugMode false filtering, preserved order, empty inputs, all-debug inputs, and lowercase [debug] retention.
  * Validation: pnpm vitest run apps/web/src/components/__tests__/log-filter.test.ts
  */
 import { describe, it, expect } from 'vitest';

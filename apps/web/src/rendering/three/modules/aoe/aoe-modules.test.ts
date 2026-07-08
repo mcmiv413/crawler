@@ -1,7 +1,7 @@
 /**
  * Test layer: unit
- * Behavior: aoe Modules covers bombBlast; cleaveArc (aoe); shatterBurst (aoe).
- * Proof: focused assertions verify returned values, state changes, rendered output, or emitted events.
+ * Behavior: AOE animation modules satisfy the shared Three animation lifecycle contract for bombBlast, cleaveArc, shatterBurst, and cinderWake.
+ * Proof: runThreeAnimationContract assertions check fx ID format, category prefix, create/setPosition/update/dispose no-throw behavior, scene.add/remove counts, tile-scale visible geometry/material opacity, and geometry/material/texture disposal.
  * Validation: pnpm vitest run apps/web/src/rendering/three/modules/aoe/aoe-modules.test.ts
  */
 /**

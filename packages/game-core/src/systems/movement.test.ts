@@ -1,7 +1,7 @@
 /**
  * Test layer: unit
- * Behavior: Movement covers validateMove; allows a valid move on a floor tile; blocks movement by a wall.
- * Proof: focused assertions verify returned values, state changes, rendered output, or emitted events.
+ * Behavior: validateMove accepts walkable floor movement and rejects walls, occupied enemy tiles, out-of-bounds positions, and moves outside a dungeon run.
+ * Proof: Assertions check result.valid and newPosition for a legal east move and exact failure reasons for wall, enemy, bounds, and missing-run cases.
  * Validation: pnpm vitest run packages/game-core/src/systems/movement.test.ts
  */
 import { describe, it, expect } from 'vitest'

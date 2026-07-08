@@ -1,7 +1,7 @@
 /**
  * Test layer: unit
- * Behavior: CombatIndicators covers CombatIndicators; renders nothing when the runtime supplies no labels; positions labels relative to the viewport and fade progress.
- * Proof: focused assertions verify returned values, state changes, rendered output, or emitted events.
+ * Behavior: CombatIndicators renders floating runtime labels only when labels exist, applying type colors, viewport-relative positions, stacking offsets, and shared text styling.
+ * Proof: Asserts empty labels render null, damage/heal/status/gold text colors, -15 left/top/opacity from vpLeft/vpTop and fade timing, stacked top offsets, and monospace bold pointer-events styling.
  * Validation: pnpm vitest run apps/web/src/components/CombatIndicators.test.tsx
  */
 import { render, screen } from '@testing-library/react';

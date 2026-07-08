@@ -1,7 +1,7 @@
 /**
  * Test layer: unit
- * Behavior: Feature Chain Helpers covers assertFeatureChain; runs entryCheck, viewChecks, and uiCheck against the presenter view contract; fails when entryCheck reports the featu....
- * Proof: focused assertions verify returned values, state changes, rendered output, or emitted events.
+ * Behavior: assertFeatureChain validates that a command-triggered feature is triggerable, changes state, emits the requested event, updates presenter data, and exposes UI-facing data.
+ * Proof: The success path requires PLAYER_MOVED, eastward player movement, enabled move_e action, and GameView map.playerPosition updates; failure assertions check the entryCheck and uiCheck error messages.
  * Validation: pnpm vitest run packages/presenter/src/testing/feature-chain-helpers.test.ts
  */
 import { describe, expect, it } from 'vitest';

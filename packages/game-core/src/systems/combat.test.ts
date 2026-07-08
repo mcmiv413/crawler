@@ -1,7 +1,7 @@
 /**
  * Test layer: unit
- * Behavior: Combat covers resolveAttack; should resolve a hit when accuracy exceeds evasion; should miss when evasion exceeds accuracy.
- * Proof: focused assertions verify returned values, state changes, rendered output, or emitted events.
+ * Behavior: resolveAttack calculates hit, miss, mitigation, resistance, status, death, accuracy, and weapon-profile outcomes for deterministic combat inputs.
+ * Proof: Asserts result hit flags, damage and mitigated values, hitRoll and criticalHit fields, statusesApplied, defenderDied, missReason, and weapon damage roll ranges.
  * Validation: pnpm vitest run packages/game-core/src/systems/combat.test.ts
  */
 import { describe, it, expect, vi } from 'vitest';

@@ -1,7 +1,7 @@
 /**
  * Test layer: unit
- * Behavior: id covers generateId; uses crypto.randomUUID when available; falls back to a v4 UUID when crypto is unavailable.
- * Proof: focused assertions verify returned values, state changes, rendered output, or emitted events.
+ * Behavior: generateId uses crypto.randomUUID when available and otherwise creates unique RFC 4122 version 4 UUID strings without Math.random.
+ * Proof: Assertions check the crypto UUID return value and call count, fallback UUID regex matches for two IDs, uniqueness, and that Math.random is not called.
  * Validation: pnpm vitest run packages/game-core/src/utils/id.test.ts
  */
 import { afterEach, describe, expect, it, vi } from 'vitest';

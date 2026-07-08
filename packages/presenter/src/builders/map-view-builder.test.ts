@@ -1,7 +1,7 @@
 /**
  * Test layer: unit
- * Behavior: map View Builder covers buildMapView; renders player on top of objects at same position; renders enemies before player.
- * Proof: focused assertions verify returned values, state changes, rendered output, or emitted events.
+ * Behavior: buildMapView orders map entities so objects and enemies render beneath the player when they share or precede the player's tile.
+ * Proof: Assertions verify non-null map views and compare entities indexes so the player appears after the same-tile object, after enemies, and at the last entity position.
  * Validation: pnpm vitest run packages/presenter/src/builders/map-view-builder.test.ts
  */
 import { describe, it, expect } from 'vitest';

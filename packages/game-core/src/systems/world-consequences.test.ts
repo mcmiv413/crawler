@@ -1,7 +1,7 @@
 /**
  * Test layer: unit
- * Behavior: World Consequences covers applyRunConsequences; decreases prosperity on death; increases prosperity on retreat.
- * Proof: focused assertions verify returned values, state changes, rendered output, or emitted events.
+ * Behavior: Run consequences adjust town prosperity, NPC availability, fear spikes, event history, and faction state based on run outcomes and recent events.
+ * Proof: Assertions check prosperity and fear comparisons, TOWN_STATE_CHANGED event types, shopkeeper availability booleans, eventHistory length caps, and unchanged faction fields for non-faction events.
  * Validation: pnpm vitest run packages/game-core/src/systems/world-consequences.test.ts
  */
 import { describe, it, expect } from 'vitest';

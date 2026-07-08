@@ -1,7 +1,7 @@
 /**
  * Test layer: unit
- * Behavior: Feature Completeness covers Feature Completeness: Combat (ATTACK); full chain: attack → damage dealt → event emitted → enemy dies → loot; Feature Completeness: Movem....
- * Proof: focused assertions verify returned values, state changes, rendered output, or emitted events.
+ * Behavior: The feature completeness guardrail exercises command, town-action, death, presenter, and formatter chains for combat, movement, equipment, items, quests, factions, status effects, shops, and recovery flows.
+ * Proof: Assertions check emitted event types such as ATTACK_PERFORMED, PLAYER_MOVED, ITEM_USED, PLAYER_DIED, PERMADEATH, TOWN_STATE_CHANGED, ABILITY_USED, and ENCHANTMENT_APPLIED, formatted event output, state transitions for phase, equipment, inventory, metrics, and GameView fields including town, HUD, shop, factions, actions, inventory, and death stash.
  * Validation: pnpm vitest run packages/presenter/src/feature-completeness.test.ts
  */
 /**

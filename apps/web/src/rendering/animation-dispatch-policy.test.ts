@@ -1,7 +1,7 @@
 /**
  * Test layer: unit
- * Behavior: Animation Dispatch Policy covers AnimationDispatchPolicy; getThreeOwnedAnimationIds; extracts animation IDs from module animations.
- * Proof: focused assertions verify returned values, state changes, rendered output, or emitted events.
+ * Behavior: Animation dispatch policy derives Three-owned animation IDs, status ownership, entity ownership, and full dispatch policies from registered module animations and active entity animations.
+ * Proof: Asserts deduped owned IDs, status ownership true/false for owned, unknown, missing, or empty IDs, entity IDs for move/bump/player ownership, and policy fields threeOwnedAnimationIds, threeOwnsStatusPresentations, and threeOwnedEntityIds.
  * Validation: pnpm vitest run apps/web/src/rendering/animation-dispatch-policy.test.ts
  */
 import { describe, it, expect } from 'vitest';

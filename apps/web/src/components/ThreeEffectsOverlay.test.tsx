@@ -1,7 +1,7 @@
 /**
  * Test layer: unit
- * Behavior: ThreeEffectsOverlay covers componentsThreeEffectsOverlay; routes legacy imports through the modern ThreeAnimationOverlay wrapper.
- * Proof: focused assertions verify returned values, state changes, rendered output, or emitted events.
+ * Behavior: ThreeEffectsOverlay renders the modern ThreeAnimationOverlay wrapper for legacy imports while forwarding animation props.
+ * Proof: Rendering asserts the wrapper test id is present and the mocked ThreeAnimationOverlay receives empty combatIndicators plus the fxAnimations entry fx-1.
  * Validation: pnpm vitest run apps/web/src/components/ThreeEffectsOverlay.test.tsx
  */
 import React from 'react';

@@ -1,7 +1,7 @@
 /**
  * Test layer: unit
- * Behavior: Ambient Behavior Engine covers ambient-behavior-engine; scoreTiles; returns empty map when run is null.
- * Proof: focused assertions verify returned values, state changes, rendered output, or emitted events.
+ * Behavior: Ambient behavior scoring, social analysis, state transitions, and action decisions respond to run availability, tile preferences, ally proximity, timers, anchors, and default states.
+ * Proof: Assertions check score map sizes and walkable cells, social same/other counts and nearestAllyPos, transition booleans for time_elapsed, ally_nearby, no_allies and disturbance_heard, action.type move or wait, ambientStateAge increments, and ENEMY_AMBIENT_STATE_CHANGED metadata.
  * Validation: pnpm vitest run packages/game-core/src/systems/ambient-behavior-engine.test.ts
  */
 import { describe, it, expect, beforeEach } from 'vitest';

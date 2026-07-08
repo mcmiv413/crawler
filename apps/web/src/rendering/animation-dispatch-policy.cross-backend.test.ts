@@ -1,7 +1,7 @@
 /**
  * Test layer: unit
- * Behavior: Animation Dispatch Policy.cross Backend covers AnimationDispatchPolicy - Cross-Backend Coordination; Three-owned animations excluded from canvas; canvas filters out Three-owned module....
- * Proof: focused assertions verify returned values, state changes, rendered output, or emitted events.
+ * Behavior: Cross-backend animation dispatch policy keeps Three-owned animations and status presentations out of canvas fallback paths while preserving canvas-owned fallbacks.
+ * Proof: Asserts canvas filters leave only shield-boost, Three-owned sparkle-burst shouldRender is false, canvas-owned hearts/status paths are not skipped, status ownership booleans, player/enemy entity IDs, and backward-compatible canvas rendering checks.
  * Validation: pnpm vitest run apps/web/src/rendering/animation-dispatch-policy.cross-backend.test.ts
  */
 import { describe, it, expect } from 'vitest';

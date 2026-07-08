@@ -1,7 +1,7 @@
 /**
  * Test layer: unit
- * Behavior: ThreeEffectsOverlay covers ThreeEffectsOverlay; delegates legacy callers to ThreeAnimationOverlay; forwards legacy visual inputs without touching ownership-only props.
- * Proof: focused assertions verify returned values, state changes, rendered output, or emitted events.
+ * Behavior: ThreeEffectsOverlay adapts legacy effect overlay props to ThreeAnimationOverlay without adding ownership-only data.
+ * Proof: Asserts the mocked ThreeAnimationOverlay renders and receives combatIndicators: [], consumableAnimations, fxAnimations, and statusPresentations via objectContaining.
  * Validation: pnpm vitest run apps/web/src/rendering/three/ThreeEffectsOverlay.test.tsx
  */
 import React from 'react';

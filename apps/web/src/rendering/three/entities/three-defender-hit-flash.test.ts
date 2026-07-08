@@ -1,7 +1,7 @@
 /**
  * Test layer: unit
- * Behavior: Three Defender hit Flash covers three-defender-hit-flash; creates a flash mesh and adds it to the scene; positions with the standard y-axis flip.
- * Proof: focused assertions verify returned values, state changes, rendered output, or emitted events.
+ * Behavior: three-defender-hit-flash creates, positions, animates, and disposes the defender-hit flash mesh.
+ * Proof: Asserts scene.add receives the mesh, y-axis flip positions (96, 240, 3), opacity drops while scale grows at progress 0.5, and cleanup removes the mesh and disposes geometry/material once.
  * Validation: pnpm vitest run apps/web/src/rendering/three/entities/three-defender-hit-flash.test.ts
  */
 import { describe, expect, it, vi } from 'vitest';

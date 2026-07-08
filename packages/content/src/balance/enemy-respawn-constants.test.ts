@@ -1,7 +1,7 @@
 /**
  * Test layer: unit
- * Behavior: Enemy Respawn Constants covers ENEMY_RESPAWN constants; respawnIntervalTurns is a positive integer (respawns happen regularly); maxEnemiesOnFloor is a positive integer....
- * Proof: focused assertions verify returned values, state changes, rendered output, or emitted events.
+ * Behavior: ENEMY_RESPAWN defines positive integer respawn pacing and caps while keeping spawn distance non-negative.
+ * Proof: Assertions expect positive integer interval, max count, and count per tick, non-negative integer player distance, and exactly four known config keys.
  * Validation: pnpm vitest run packages/content/src/balance/enemy-respawn-constants.test.ts
  */
 import { describe, it, expect } from 'vitest';

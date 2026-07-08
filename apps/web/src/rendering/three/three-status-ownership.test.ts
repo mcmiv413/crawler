@@ -1,7 +1,7 @@
 /**
  * Test layer: unit
- * Behavior: Three Status Ownership covers Status presentation ownership; initial state has statusPresentation = false; setting statusPresentation=true marks Three as owning status....
- * Proof: focused assertions verify returned values, state changes, rendered output, or emitted events.
+ * Behavior: Status ownership controls canvas status-ring suppression and confirms the goldRingPulse module exposes the expected status animation contract.
+ * Proof: Assertions check statusPresentation initial/set/release booleans, combat indicator independence, unchanged prior state, goldRingPulse id/category/lifecycle function types, and status suppression true/false results.
  * Validation: pnpm vitest run apps/web/src/rendering/three/three-status-ownership.test.ts
  */
 /**

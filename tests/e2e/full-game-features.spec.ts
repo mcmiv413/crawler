@@ -1,7 +1,7 @@
 /**
  * Test layer: e2e
- * Behavior: Full Game Features covers @smoke full game features: new game starts in town; full game features: new game assigns a quest, enters a run, and retreats to town; sce....
- * Proof: Playwright actions and visible UI assertions verify the browser-facing outcome.
+ * Behavior: Core browser flows start a named game, assign and complete dungeon progression, preserve session state, and drive loot, items, equipment, movement, quests, and ring abilities through the real UI.
+ * Proof: Assertions check town, dungeon, quest, inventory, and combat-log UI plus OBJECT_INTERACTED, LOOT_ACQUIRED, ITEM_USED, ENTITY_DIED, PLAYER_MOVED, and ABILITY_USED events, HUD level and gold increases, map playerPosition matching the move event, and sessionStorage gameId persistence.
  * Validation: pnpm test:e2e tests/e2e/full-game-features.spec.ts
  */
 import { expect, test } from '@playwright/test';

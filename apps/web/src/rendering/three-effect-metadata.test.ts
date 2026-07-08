@@ -1,7 +1,7 @@
 /**
  * Test layer: unit
- * Behavior: Three Effect Metadata covers three-effect-metadata; isBuiltInThreeEffectId; returns false when no modules are registered.
- * Proof: focused assertions verify returned values, state changes, rendered output, or emitted events.
+ * Behavior: Three effect metadata reports which animation IDs are handled by registered Three modules across single and grouped animation lists.
+ * Proof: Asserts isBuiltInThreeEffectId for registered, unregistered, undefined, and empty registry cases; collectHandledThreeAnimationIds returns, deduplicates, or ignores IDs; and hasHandledThreeAnimation booleans match registered groups.
  * Validation: pnpm vitest run apps/web/src/rendering/three-effect-metadata.test.ts
  */
 /**

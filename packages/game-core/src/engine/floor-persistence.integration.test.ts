@@ -1,7 +1,7 @@
 /**
  * Test layer: integration
- * Behavior: Floor Persistence covers Floor Persistence & Selection (Phase 5); player can select and re-enter a previously visited floor; floor selection defaults to last retr....
- * Proof: integrated command, service, or repository assertions verify the cross-module result.
+ * Behavior: Floor navigation persists visited floors so retreat, re-entry, ascent, and death recovery restore the correct cached floor while validating selectable start depths.
+ * Proof: Assertions check dungeon/town phase and player.floor transitions, persistedFloorCache entries and originalEnemyCount, stable floor fingerprints across ascent, re-entry, and death, plus FLOOR_ENTERED biomeId for restored floors.
  * Validation: pnpm vitest run packages/game-core/src/engine/floor-persistence.integration.test.ts
  */
 import { describe, it, expect } from 'vitest';

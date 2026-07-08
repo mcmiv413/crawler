@@ -1,7 +1,7 @@
 /**
  * Test layer: unit
- * Behavior: Trap Action Validator covers validateDisarmTrapAction; rejects when not in dungeon phase; returns WRONG_PHASE when run is null.
- * Proof: focused assertions verify returned values, state changes, rendered output, or emitted events.
+ * Behavior: Trap action validators reject disarm and set-trap commands when phase, direction, inventory, registry item, trap type, or target tile preconditions fail.
+ * Proof: Assertions check invalid results with rejectionCode values WRONG_PHASE, INVALID_DIRECTION, NO_TRAP_TARGET, TRAP_ITEM_NOT_IN_INVENTORY, ITEM_NOT_FOUND, ITEM_NOT_TRAP, TILE_OCCUPIED, and TILE_OCCUPIED_BY_ENEMY.
  * Validation: pnpm vitest run packages/game-core/src/systems/trap-action-validator.test.ts
  */
 /**

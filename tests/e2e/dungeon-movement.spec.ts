@@ -1,7 +1,7 @@
 /**
  * Test layer: e2e
- * Behavior: Dungeon Movement covers movement keeps accepting turn inputs while move animations settle; click auto-walk collapses hidden turns and waits only for visible anim....
- * Proof: Playwright actions and visible UI assertions verify the browser-facing outcome.
+ * Behavior: Dungeon movement accepts queued keyboard directions during animation, auto-walk waits only for visible settle timing across hidden enemy turns, and long canvas walks remain visually continuous.
+ * Proof: Assertions check three MOVE request bodies for N/E/S, two auto-walk MOVE bodies matching path directions, request timing against STEP_WALK_BOUNDARY_PROGRESS and animated settle bounds, hidden enemy-turn events, and canvas visible-pixel and frame-delta thresholds.
  * Validation: pnpm test:e2e tests/e2e/dungeon-movement.spec.ts
  */
 import { expect, test } from '@playwright/test';

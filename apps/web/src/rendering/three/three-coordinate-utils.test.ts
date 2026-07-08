@@ -1,7 +1,7 @@
 /**
  * Test layer: unit
- * Behavior: Three Coordinate Utils covers tileCenterWorld; places tile (0,0) center at (halfTile, halfTile); places tile (1,0) center one full tile to the right.
- * Proof: focused assertions verify returned values, state changes, rendered output, or emitted events.
+ * Behavior: Three coordinate helpers translate tile centers and world positions into screen coordinates and classify viewport bounds for the y-down canvas grid.
+ * Proof: Assertions check exact x/y coordinates for tile centers and worldToScreen offsets, y increasing downward, isOffViewport boundary booleans, zero-tile-size non-throwing behavior, and camera/viewport shifts that keep or move positions off screen.
  * Validation: pnpm vitest run apps/web/src/rendering/three/three-coordinate-utils.test.ts
  */
 import { describe, it, expect } from 'vitest';

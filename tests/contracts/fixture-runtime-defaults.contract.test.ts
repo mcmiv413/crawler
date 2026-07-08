@@ -1,7 +1,7 @@
 /**
  * Test layer: contract
- * Behavior: Fixture Runtime Defaults covers fixture default: shop.buybackMultiplier matches runtime; runtime initialises buybackMultiplier from ECONOMY.buybackRate; fixture default....
- * Proof: live catalog/schema assertions validate IDs, shapes, and cross references.
+ * Behavior: Blank world fixtures produce the same default world values as runtime initialization.
+ * Proof: Assertions compare fixture and runtime shop buybackMultiplier, town prosperity/fear/corruption, totalRuns, deepestFloor, highestRarityFound, dungeonOgre status, faction count, and ECONOMY.buybackRate.
  * Validation: pnpm vitest run tests/contracts/fixture-runtime-defaults.contract.test.ts
  */
 /**

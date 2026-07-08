@@ -1,7 +1,7 @@
 /**
  * Test layer: integration
- * Behavior: Package Exports covers check-package-exports script; passes for valid export maps and consumer-context runtime resolution; fails when an export condition object....
- * Proof: integrated command, service, or repository assertions verify the cross-module result.
+ * Behavior: The package export checker accepts valid export maps with consumer runtime resolution and rejects misordered conditions or missing dist files.
+ * Proof: Assertions check exit status 0 with export-map OK output and consumer-context success text, then exit status 1 with stderr for types after default and unresolved @dungeon/core/ai/ai-service.js.
  * Validation: pnpm vitest run tests/integration/package-exports.integration.test.ts
  */
 import { afterEach, describe, expect, it } from 'vitest';

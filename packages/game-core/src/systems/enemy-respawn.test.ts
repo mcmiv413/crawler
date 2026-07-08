@@ -1,7 +1,7 @@
 /**
  * Test layer: unit
- * Behavior: Enemy Respawn covers checkRespawn; returns unchanged state if respawn interval not reached; respawns an enemy when interval is reached and count < max.
- * Proof: focused assertions verify returned values, state changes, rendered output, or emitted events.
+ * Behavior: Respawn systems spawn eligible non-boss enemies only when timing, caps, visibility, and persisted-floor elapsed-time rules allow it.
+ * Proof: Asserts unchanged state with no events before interval, ENEMY_SPAWNED event presence or absence, non-boss archetypes, non-visible spawn cells, bounded spawned counts, positive scaled stats, respawned map sizes, and lastSimulatedTurn bounds.
  * Validation: pnpm vitest run packages/game-core/src/systems/enemy-respawn.test.ts
  */
 import { describe, it, expect } from 'vitest';

@@ -1,7 +1,7 @@
 /**
  * Test layer: unit
- * Behavior: Town View Builder covers buildTownView; town stats; displays prosperity level.
- * Proof: focused assertions verify returned values, state changes, rendered output, or emitted events.
+ * Behavior: buildTownView exposes town stats, atmosphere, factions, NPCs, shop items, prep advice, blueprints, and studyable ring spells from town state.
+ * Proof: Assertions check prosperity, fear, corruption, non-empty atmosphere descriptions, faction power and ogre progress text, NPC availability, shop discounts and item filtering, prepAdvice warnings, unlocked blueprint IDs, and studyable spell affordability, gates, masteries, learned state, and canStudy flags.
  * Validation: pnpm vitest run packages/presenter/src/builders/town-view-builder.test.ts
  */
 import { describe, it, expect, beforeEach } from 'vitest';

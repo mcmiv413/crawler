@@ -1,7 +1,7 @@
 /**
  * Test layer: unit
- * Behavior: Apply Attack covers applyAttack; invalid target — no active run; emits ATTACK_PERFORMED with hit:false when run is null.
- * Proof: focused assertions verify returned values, state changes, rendered output, or emitted events.
+ * Behavior: applyAttack reports invalid, hit, and miss outcomes without mutating unrelated state and updates enemy health only on successful hits.
+ * Proof: Assertions check ATTACK_PERFORMED hit false events and invalid_target reasons for missing run or target, zero damage and same-state/no-enemy-count changes for invalid paths, positive damage and lower enemy health on forced hits, and zero damage on guaranteed misses.
  * Validation: pnpm vitest run packages/game-core/src/abilities/effects/apply-attack.test.ts
  */
 /**

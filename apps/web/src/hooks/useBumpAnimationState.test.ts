@@ -1,7 +1,7 @@
 /**
  * Test layer: unit
- * Behavior: UseBumpAnimationState covers useBumpAnimationState; returns empty animations initially; tracks active bump animations.
- * Proof: focused assertions verify returned values, state changes, rendered output, or emitted events.
+ * Behavior: useBumpAnimationState collects bump-animation events, tracks timing/progress, expires entries, and removes its listener on unmount.
+ * Proof: Hook state assertions verify attackerId/defenderId entries, durationMs and impactFrameMs preservation, progress range and increase, expiration counts, simultaneous animations, and removeEventListener('bump-animation').
  * Validation: pnpm vitest run apps/web/src/hooks/useBumpAnimationState.test.ts
  */
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';

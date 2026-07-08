@@ -1,7 +1,7 @@
 /**
  * Test layer: integration
- * Behavior: Fixture Runtime Validation covers Group 1: Item Registry Resolution; every inventory item in high-level-everything resolves in itemRegistry; every equipped item in high-le....
- * Proof: integrated command, service, or repository assertions verify the cross-module result.
+ * Behavior: Fixture-loaded players and worlds integrate with runtime systems for item registries, consumables, equipment previews, validation, deterministic entity identity, faction influence, and engine dungeon entry.
+ * Proof: Assertions check fixture inventory/equipment EntityIds resolve to itemRegistry and ITEM_BY_ID templates, ITEM_USED heal/mana events and inventory removal, health and offense preview changes matching gameplay players, validatePlayerFixture slot errors/successes, deterministic unique EntityIds without collisions, world faction power bands/spawn and strength multipliers/dungeonOgre state, and GameEngine enter_dungeon/MOVE behavior with ring spell/equipment persistence.
  * Validation: pnpm vitest run packages/game-core/src/fixtures/fixture-runtime-validation.integration.test.ts
  */
 /**

@@ -1,7 +1,7 @@
 /**
  * Test layer: unit
- * Behavior: Content Integrity covers enemy integrity migration note; keeps enemy-integrity coverage in the contract layer.
- * Proof: focused assertions verify returned values, state changes, rendered output, or emitted events.
+ * Behavior: The migrated enemy integrity placeholder keeps package-local coverage pointed at the contract-layer enemy integrity test.
+ * Proof: Assertion expects the enemy-integrity contract test file path to exist via existsSync.
  * Validation: pnpm vitest run packages/content/src/enemies/content-integrity.test.ts
  */
 /**

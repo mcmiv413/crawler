@@ -1,7 +1,7 @@
 /**
  * Test layer: unit
- * Behavior: Weapons covers WEAPONS; has at least one weapon defined; every weapon has weaponType defined.
- * Proof: focused assertions verify returned values, state changes, rendered output, or emitted events.
+ * Behavior: The weapon catalog contains starter weapons, valid weapon types and rarities, positive damage, type coverage, rarity damage ordering, and unique item IDs.
+ * Proof: Assertions expect rusty_sword and common_dagger IDs, weaponType membership, damage at least 1, at least one weapon per type, allowed rarities, common-to-uncommon-to-rare damage ordering, and unique itemId count.
  * Validation: pnpm vitest run packages/content/src/items/weapons.test.ts
  */
 import { describe, it, expect } from 'vitest';

@@ -1,7 +1,7 @@
 /**
  * Test layer: unit
- * Behavior: Player Fixture covers Group 1: Minimal fixture creates valid player with defaults; validates a minimal fixture without errors; loads a minimal fixture into a P....
- * Proof: focused assertions verify returned values, state changes, rendered output, or emitted events.
+ * Behavior: Player fixture loading validates minimal and populated player fixtures, produces deterministic Player and itemRegistry output, rejects malformed equipment or ringMastery data, and remains compatible with GameState serialization.
+ * Proof: Assertions check validatePlayerFixture isValid/errors for defaults, full fixtures, slot compatibility, secondaryWeapon, and ringMastery null/type/xp/level cases; loaded players preserve level/experience/health/mana/gold/equipment/inventory/ringMastery/spells/statuses and match gameplay-created defaults; repeated loads keep scalar fields and inventory EntityIds stable; serializeState/JSON retains schemaVersion/player fields; FIXTURE_SCHEMA_VERSION is 1; loadPlayerFromFixture returns player plus itemRegistry with weapon/armor/ring/inventory templates.
  * Validation: pnpm vitest run packages/game-core/src/fixtures/player-fixture.test.ts
  */
 /**

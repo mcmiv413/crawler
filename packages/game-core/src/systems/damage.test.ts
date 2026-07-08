@@ -1,7 +1,7 @@
 /**
  * Test layer: unit
- * Behavior: Damage covers damage system; applyDamageToPlayer; applies damage and reduces health.
- * Proof: focused assertions verify returned values, state changes, rendered output, or emitted events.
+ * Behavior: The damage system applies player and enemy damage with defense, resistance, source defaults, kill flags, target snapshots, overkill, and hazard damage-type mapping.
+ * Proof: Asserts finalDamage bounds, updated player and enemy health, killed flags, targetSnapshot and overkillDamage fields, and hazardTypeToDamageType return values for spike, fire, poison, frost, and lightning.
  * Validation: pnpm vitest run packages/game-core/src/systems/damage.test.ts
  */
 import { describe, it, expect } from 'vitest';

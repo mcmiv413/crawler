@@ -1,7 +1,7 @@
 /**
  * Test layer: unit
- * Behavior: Execute Ability covers executeAbility ring spell runtime; awards lightning XP and respects shock resistance when Bolt lands; applies storm_active and awards bot....
- * Proof: focused assertions verify returned values, state changes, rendered output, or emitted events.
+ * Behavior: executeAbility applies learned ring spell effects and rejects unavailable or unaffordable abilities without spending resources or ending the run.
+ * Proof: Assertions check bolt ABILITY_USED damage drops against shock resistance while lightning XP increases, thunderstorm emits ABILITY_USED, applies storm_active, and awards equal fire/lightning XP, and rejection paths emit PLAYER_ACTION_REJECTED reasonCodes ABILITY_NOT_FOUND, INSUFFICIENT_MANA, or ABILITY_NOT_AVAILABLE without mana loss, ABILITY_USED events, or run termination.
  * Validation: pnpm vitest run packages/game-core/src/abilities/runtime/execute-ability.test.ts
  */
 import { describe, expect, it } from 'vitest';

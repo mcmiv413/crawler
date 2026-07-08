@@ -1,7 +1,7 @@
 /**
  * Test layer: unit
- * Behavior: Exports covers package exports: @dungeoncoretesting; should export test utilities from @dungeoncoretesting; should be able to create test objects using....
- * Proof: focused assertions verify returned values, state changes, rendered output, or emitted events.
+ * Behavior: The testing subpath exports helper factories and command builders that create usable test players, enemies, and game states.
+ * Proof: Assertions check exported utility bindings are functions, created player and enemy fields are populated, gameState.phase is town, and player health equals maxHealth.
  * Validation: pnpm vitest run packages/game-core/src/testing/exports.test.ts
  */
 import { describe, it, expect } from 'vitest';

@@ -1,7 +1,7 @@
 /**
  * Test layer: contract
- * Behavior: Quests covers completeFloorDepthQuests — live template round-trips; completes every live floor-depth quest template when its target depth is reached; l....
- * Proof: live catalog/schema assertions validate IDs, shapes, and cross references.
+ * Behavior: Floor-depth quest templates become ready only at their target depth and remain active at other depths.
+ * Proof: Assertions require ready_to_turn_in status, unchanged player gold, one QUEST_READY event with questId at target depth, and active status with empty events when depth differs.
  * Validation: pnpm vitest run tests/contracts/quests.contract.test.ts
  */
 import { describe, it, expect } from 'vitest';

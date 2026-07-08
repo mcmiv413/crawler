@@ -1,7 +1,7 @@
 /**
  * Test layer: unit
- * Behavior: Validate Ability covers validate-ability: has_tile_target requirement; should pass when targetPosition is provided; should fail when targetPosition is undefined.
- * Proof: focused assertions verify returned values, state changes, rendered output, or emitted events.
+ * Behavior: validateRequirements enforces has_tile_target only when a targetPosition is supplied.
+ * Proof: Assertions check result.valid is true with targetPosition and false with reason "Requires a target tile" when targetPosition is undefined or omitted.
  * Validation: pnpm vitest run packages/game-core/src/abilities/runtime/validate-ability.test.ts
  */
 import { describe, it, expect } from 'vitest';

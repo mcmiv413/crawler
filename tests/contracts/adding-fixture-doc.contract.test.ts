@@ -1,7 +1,7 @@
 /**
  * Test layer: contract
- * Behavior: Adding Fixture doc covers adding-fixture.md: all JSON code blocks are valid JSON; doc file exists and is readable; every ```json block parses without error.
- * Proof: live catalog/schema assertions validate IDs, shapes, and cross references.
+ * Behavior: The adding-fixture guide and referenced fixture examples stay parseable, valid, and aligned with current item, ring school, ring spell, player, and world fixture contracts.
+ * Proof: Expectations check guide text presence, JSON block parsing and classification, validatePlayerFixture and validateWorldFixture results, loadPlayerFromFixture/loadWorldFromFixture outputs, content ids for iron_sword, armor, fire, and ember, expected invalid fixture errors for ice and health over maxHealth, documented spell coverage, fixture file parsing, and default world fields.
  * Validation: pnpm vitest run tests/contracts/adding-fixture-doc.contract.test.ts
  */
 /**

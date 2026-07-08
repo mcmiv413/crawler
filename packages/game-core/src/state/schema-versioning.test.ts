@@ -1,7 +1,7 @@
 /**
  * Test layer: unit
- * Behavior: Schema Versioning covers Schema Versioning; serializeState with schemaVersion; should include schemaVersion in serialized output.
- * Proof: focused assertions verify returned values, state changes, rendered output, or emitted events.
+ * Behavior: State serialization, deserialization, schema validation, migrations, and error helpers preserve current saves and reject malformed or incompatible save payloads.
+ * Proof: Assertions check schemaVersion fields, gameId/player/phase preservation, SchemaVersionMismatchError and SchemaParseError throws, migrated persistedFloorCache Map keys/depths, default magic-ring player fields, and error-message text.
  * Validation: pnpm vitest run packages/game-core/src/state/schema-versioning.test.ts
  */
 /**

@@ -1,7 +1,7 @@
 /**
  * Test layer: contract
- * Behavior: no Nemesis Artifacts covers PV0 — Nemesis system fully removed; no source file references any nemesis identifier; NemesisRisenScreen.tsx, NemesisSlainScreen.tsx, Nem....
- * Proof: live catalog/schema assertions validate IDs, shapes, and cross references.
+ * Behavior: Legacy nemesis code and UI artifacts remain fully removed from source and component paths.
+ * Proof: Assertions require the repository scan offender list to equal [], and fs.existsSync to be false for the removed screen and system file paths.
  * Validation: pnpm vitest run tests/contracts/no-nemesis-artifacts.contract.test.ts
  */
 import { describe, it, expect } from 'vitest';

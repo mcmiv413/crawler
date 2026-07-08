@@ -1,7 +1,7 @@
 /**
  * Test layer: unit
- * Behavior: Spawn Validator covers validateSpawns; returns valid when no enemies are present; returns invalid when an enemy is on the entrance tile.
- * Proof: focused assertions verify returned values, state changes, rendered output, or emitted events.
+ * Behavior: Spawn validation accepts empty or safe spawn maps and reports violations for entrance, exit, proximity, enemy-count, and reachability rules.
+ * Proof: Assertions check result.valid, issue counts, issue text containing entrance, exit, too close, Too many enemies, and absence of proximity or reachability issues for safe cases.
  * Validation: pnpm vitest run packages/game-core/src/generation/spawn-validator.test.ts
  */
 import { describe, it, expect, beforeAll } from 'vitest';
