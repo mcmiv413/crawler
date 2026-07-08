@@ -929,7 +929,7 @@ describe('game-view-builder coverage: edge cases', () => {
       const baseState = createTestGameStateInCombat();
       
       // This would be unusual in practice, but test robustness
-      const cells = new Map([['1,0', createVisibilityCell('visible')]]);
+      const cells = new Map([['1,0', createVisibilityCell('hidden')]]);
       
       const modifiedRun = {
         ...baseState.run!,
@@ -940,7 +940,7 @@ describe('game-view-builder coverage: edge cases', () => {
       
       // Should not crash even with no entities
       const view = buildGameView(modifiedState);
-      expect(view.inspectableEntities[0]?.name).toMatch(/\S/);
+      expect(view.inspectableEntities).toEqual([]);
     });
 
     it('no run state returns empty inspectableEntities', () => {
