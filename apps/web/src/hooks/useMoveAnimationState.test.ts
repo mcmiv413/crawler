@@ -1,3 +1,9 @@
+/**
+ * Test layer: unit
+ * Behavior: UseMoveAnimationState covers useMoveAnimationState; carries the rendered offset into a superseding move for the same entity; does not schedule an idle animation frame....
+ * Proof: focused assertions verify returned values, state changes, rendered output, or emitted events.
+ * Validation: pnpm vitest run apps/web/src/hooks/useMoveAnimationState.test.ts
+ */
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import { act, renderHook } from '@testing-library/react';
 import type { MoveAnimationEntry } from '@dungeon/presenter';

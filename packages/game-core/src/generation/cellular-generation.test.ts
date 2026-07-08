@@ -1,7 +1,14 @@
+/**
+ * Test layer: unit
+ * Behavior: Cellular Generation covers Cellular Automata Map Generation; forest biome uses cellular algorithm; moss caverns biome uses cellular algorithm.
+ * Proof: focused assertions verify returned values, state changes, rendered output, or emitted events.
+ * Validation: pnpm vitest run packages/game-core/src/generation/cellular-generation.test.ts
+ */
 import { describe, it, expect } from 'vitest';
 import { generateFloor } from './index.js';
-import type { BiomeDefinition } from '@dungeon/content';
 import { SeededRNG } from '../utils/rng.js';
+
+type BiomeDefinition = Parameters<typeof generateFloor>[1];
 
 // ---------------------------------------------------------------------------
 // Local biome stubs — mirrors the real definitions but avoids a runtime

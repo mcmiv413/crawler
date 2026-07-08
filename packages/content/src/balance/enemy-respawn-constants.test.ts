@@ -1,3 +1,9 @@
+/**
+ * Test layer: unit
+ * Behavior: Enemy Respawn Constants covers ENEMY_RESPAWN constants; respawnIntervalTurns is a positive integer (respawns happen regularly); maxEnemiesOnFloor is a positive integer....
+ * Proof: focused assertions verify returned values, state changes, rendered output, or emitted events.
+ * Validation: pnpm vitest run packages/content/src/balance/enemy-respawn-constants.test.ts
+ */
 import { describe, it, expect } from 'vitest';
 import { ENEMY_RESPAWN } from './tables.js';
 
@@ -23,10 +29,11 @@ describe('ENEMY_RESPAWN constants', () => {
   });
 
   it('all constants exist and are defined', () => {
-    expect(ENEMY_RESPAWN).toBeDefined();
-    expect(ENEMY_RESPAWN.respawnIntervalTurns).toBeDefined();
-    expect(ENEMY_RESPAWN.maxEnemiesOnFloor).toBeDefined();
-    expect(ENEMY_RESPAWN.minSpawnDistFromPlayer).toBeDefined();
-    expect(ENEMY_RESPAWN.respawnCountPerTick).toBeDefined();
+    expect(Object.keys(ENEMY_RESPAWN).sort()).toEqual([
+      'maxEnemiesOnFloor',
+      'minSpawnDistFromPlayer',
+      'respawnCountPerTick',
+      'respawnIntervalTurns',
+    ]);
   });
 });

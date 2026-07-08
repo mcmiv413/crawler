@@ -1,3 +1,9 @@
+/**
+ * Test layer: unit
+ * Behavior: map View Builder covers buildMapView; renders player on top of objects at same position; renders enemies before player.
+ * Proof: focused assertions verify returned values, state changes, rendered output, or emitted events.
+ * Validation: pnpm vitest run packages/presenter/src/builders/map-view-builder.test.ts
+ */
 import { describe, it, expect } from 'vitest';
 import { buildMapView } from './map-view-builder.js';
 import { entityId, posKey } from '@dungeon/contracts';

@@ -1,3 +1,9 @@
+/**
+ * Test layer: unit
+ * Behavior: Inventory covers Inventory System; adds an item to inventory and emits event; removes an item from inventory.
+ * Proof: focused assertions verify returned values, state changes, rendered output, or emitted events.
+ * Validation: pnpm vitest run packages/game-core/src/systems/inventory.test.ts
+ */
 import { describe, it, expect, beforeEach } from 'vitest';
 import {
   addItemToInventory,

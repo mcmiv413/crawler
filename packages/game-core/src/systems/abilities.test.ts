@@ -1,3 +1,9 @@
+/**
+ * Test layer: unit
+ * Behavior: Abilities covers grantAbility; adds a new ability with cooldown 0; is idempotent — does not duplicate an already-granted ability.
+ * Proof: focused assertions verify returned values, state changes, rendered output, or emitted events.
+ * Validation: pnpm vitest run packages/game-core/src/systems/abilities.test.ts
+ */
 import { describe, it, expect } from 'vitest';
 import { grantAbility, tickAbilityCooldowns, canUseAbility } from './abilities.js';
 import { createTestGameState } from '../test-utils.js';

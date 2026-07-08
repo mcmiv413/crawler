@@ -1,3 +1,9 @@
+/**
+ * Test layer: unit
+ * Behavior: Screen to Grid covers screenToGrid; converts (0,0) click to viewport origin; converts mid-canvas click correctly.
+ * Proof: focused assertions verify returned values, state changes, rendered output, or emitted events.
+ * Validation: pnpm vitest run apps/web/src/utils/screen-to-grid.test.ts
+ */
 import { describe, it, expect } from 'vitest';
 import { screenToGrid } from './screen-to-grid.js';
 

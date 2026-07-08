@@ -1,4 +1,10 @@
 /**
+ * Test layer: unit
+ * Behavior: Sqlite Concurrent covers OCC (Optimistic Concurrency Control); should reject concurrent writes with stale version; should allow exactly one of two concurrent writ....
+ * Proof: focused assertions verify returned values, state changes, rendered output, or emitted events.
+ * Validation: pnpm vitest run apps/server/src/sqlite-concurrent.test.ts
+ */
+/**
  * Optimistic Concurrency Control (OCC) tests for repository implementations.
  *
  * These tests verify that both InMemoryRepository and SqliteRepository

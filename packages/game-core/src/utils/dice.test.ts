@@ -1,3 +1,9 @@
+/**
+ * Test layer: unit
+ * Behavior: Dice covers rollDamage; returns a value within the expected variance range; produces deterministic results with the same seed.
+ * Proof: focused assertions verify returned values, state changes, rendered output, or emitted events.
+ * Validation: pnpm vitest run packages/game-core/src/utils/dice.test.ts
+ */
 import { describe, it, expect } from 'vitest';
 import { rollDamage, calculateHitChance, applyDefense } from './dice.js';
 import { SeededRNG } from './rng.js';

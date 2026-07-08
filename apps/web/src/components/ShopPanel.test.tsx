@@ -1,3 +1,9 @@
+/**
+ * Test layer: unit
+ * Behavior: ShopPanel covers ShopPanel; sorts buy items by rarity with unknown rarities after known rarities; Mobile layout (Slice 3).
+ * Proof: focused assertions verify returned values, state changes, rendered output, or emitted events.
+ * Validation: pnpm vitest run apps/web/src/components/ShopPanel.test.tsx
+ */
 import { fireEvent, render, screen } from '@testing-library/react';
 import { describe, expect, it, vi } from 'vitest';
 import type { GameView, ShopItemView } from '@dungeon/presenter';

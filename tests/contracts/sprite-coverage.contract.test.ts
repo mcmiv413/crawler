@@ -1,3 +1,9 @@
+/**
+ * Test layer: contract
+ * Behavior: Sprite Coverage covers Sprite Coverage Contract; every biome has floor and wall tile sprite overrides; every enemy template has a sprite entry.
+ * Proof: live catalog/schema assertions validate IDs, shapes, and cross references.
+ * Validation: pnpm vitest run tests/contracts/sprite-coverage.contract.test.ts
+ */
 import { describe, it, expect } from 'vitest';
 import { ENEMY_TEMPLATES, BIOMES, OBJECT_TEMPLATES } from '@dungeon/content';
 import { SPRITE_MAP } from '../../apps/web/src/sprites/sprite-map.js';
@@ -14,20 +20,20 @@ import { SPRITE_MAP } from '../../apps/web/src/sprites/sprite-map.js';
 describe('Sprite Coverage Contract', () => {
   it('every biome has floor and wall tile sprite overrides', () => {
     for (const [biomeId] of BIOMES) {
-      expect(SPRITE_MAP[`tile:floor:${biomeId}`], `tile:floor:${biomeId}`).toBeDefined();
-      expect(SPRITE_MAP[`tile:wall:${biomeId}`], `tile:wall:${biomeId}`).toBeDefined();
+      expect(Object.hasOwn(SPRITE_MAP, `tile:floor:${biomeId}`), `tile:floor:${biomeId}`).toBe(true);
+      expect(Object.hasOwn(SPRITE_MAP, `tile:wall:${biomeId}`), `tile:wall:${biomeId}`).toBe(true);
     }
   });
 
   it('every enemy template has a sprite entry', () => {
     for (const [enemyId] of ENEMY_TEMPLATES) {
-      expect(SPRITE_MAP[`enemy:${enemyId}`], `enemy:${enemyId}`).toBeDefined();
+      expect(Object.hasOwn(SPRITE_MAP, `enemy:${enemyId}`), `enemy:${enemyId}`).toBe(true);
     }
   });
 
   it('every object template has a sprite entry', () => {
     for (const [objectId] of OBJECT_TEMPLATES) {
-      expect(SPRITE_MAP[`object:${objectId}`], `object:${objectId}`).toBeDefined();
+      expect(Object.hasOwn(SPRITE_MAP, `object:${objectId}`), `object:${objectId}`).toBe(true);
     }
   });
 

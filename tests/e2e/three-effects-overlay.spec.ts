@@ -1,3 +1,9 @@
+/**
+ * Test layer: e2e
+ * Behavior: Three Effects Overlay covers Three healing pulse renderer overlay stays aligned and click-through over the dungeon canvas.
+ * Proof: Playwright actions and visible UI assertions verify the browser-facing outcome.
+ * Validation: pnpm test:e2e tests/e2e/three-effects-overlay.spec.ts
+ */
 import { expect, test } from '@playwright/test';
 import type { Page } from '@playwright/test';
 import { CELL_SIZE } from '../../apps/web/src/config/ui-config.js';

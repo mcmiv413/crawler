@@ -1,3 +1,9 @@
+/**
+ * Test layer: unit
+ * Behavior: Town covers processTownAction rest; restores HP to max when player can afford full heal; heals only affordable HP when gold is insufficient.
+ * Proof: focused assertions verify returned values, state changes, rendered output, or emitted events.
+ * Validation: pnpm vitest run packages/game-core/src/systems/town.test.ts
+ */
 import { describe, it, expect } from 'vitest';
 import { processTownAction, processEnchantArmor } from './town.js';
 import { validateTownTransaction } from './town-validator.js';

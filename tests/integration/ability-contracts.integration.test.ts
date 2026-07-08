@@ -1,3 +1,9 @@
+/**
+ * Test layer: integration
+ * Behavior: Ability Contracts covers check-ability-contracts helper; accepts valid ability contracts; fails when an ability points at a missing animation ref.
+ * Proof: integrated command, service, or repository assertions verify the cross-module result.
+ * Validation: pnpm vitest run tests/integration/ability-contracts.integration.test.ts
+ */
 import { describe, expect, it } from 'vitest';
 import type { AbilityDefinition } from '@dungeon/content';
 import { collectAbilityContractFailures } from '../../scripts/check-ability-contracts.js';

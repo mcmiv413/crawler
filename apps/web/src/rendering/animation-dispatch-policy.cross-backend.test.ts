@@ -1,12 +1,19 @@
+/**
+ * Test layer: unit
+ * Behavior: Animation Dispatch Policy.cross Backend covers AnimationDispatchPolicy - Cross-Backend Coordination; Three-owned animations excluded from canvas; canvas filters out Three-owned module....
+ * Proof: focused assertions verify returned values, state changes, rendered output, or emitted events.
+ * Validation: pnpm vitest run apps/web/src/rendering/animation-dispatch-policy.cross-backend.test.ts
+ */
 import { describe, it, expect } from 'vitest';
 import type { MapView } from '@dungeon/presenter';
 import type { StatusPresentationView } from '@dungeon/presenter';
-import type { AnimationId } from '@dungeon/content';
 import type { EntityId } from '@dungeon/contracts';
 import {
   computeAnimationDispatchPolicy,
   isAnimationOwnedByThree,
 } from './animation-dispatch-policy.js';
+
+type AnimationId = `fx.${'status' | 'impact' | 'projectile' | 'self' | 'aoe' | 'utility'}.${string}`;
 
 /**
  * Cross-backend proof tests verify that the dispatch policy correctly divides
@@ -65,7 +72,7 @@ describe('AnimationDispatchPolicy - Cross-Backend Coordination', () => {
     it('Three owns consumable effect animations via module registry', () => {
       // When Three registers a module animation for a consumable effect,
       // canvas should skip rendering that animation
-      const threeOwnedFxId = 'fx.heal.sparkle-burst' as AnimationId;
+      const threeOwnedFxId = 'fx.self.sparkle-burst' as AnimationId;
       const policy = computeAnimationDispatchPolicy(
         createMockMap(),
         [{ animationId: threeOwnedFxId }],
@@ -84,7 +91,7 @@ describe('AnimationDispatchPolicy - Cross-Backend Coordination', () => {
   describe('Canvas-owned animations still render', () => {
     it('canvas renders fallback consumable effects when not owned by Three', () => {
       // A consumable effect animation ID that Three does NOT own
-      const canvasOwnedFxId = 'fx.heal.hearts-float' as AnimationId;
+      const canvasOwnedFxId = 'fx.self.hearts-float' as AnimationId;
       const policy = computeAnimationDispatchPolicy(
         createMockMap(),
         [], // Three owns no animations
@@ -117,12 +124,12 @@ describe('AnimationDispatchPolicy - Cross-Backend Coordination', () => {
   describe('Status presentation ownership coordination', () => {
     it('Three owns all status presentations when they all reference owned animations', () => {
       const threeModuleAnimations = [
-        { animationId: 'status.poisoned-aura' as AnimationId },
-        { animationId: 'status.blessed-light' as AnimationId },
+        { animationId: 'fx.status.poisoned-aura' as AnimationId },
+        { animationId: 'fx.status.blessed-light' as AnimationId },
       ];
       const statusPresentations: StatusPresentationView[] = [
-        { animationId: 'status.poisoned-aura' as AnimationId, entityScale: 1.2, ring: undefined },
-        { animationId: 'status.blessed-light' as AnimationId, entityScale: undefined, ring: undefined },
+        { animationId: 'fx.status.poisoned-aura' as AnimationId, entityScale: 1.2, ring: undefined },
+        { animationId: 'fx.status.blessed-light' as AnimationId, entityScale: undefined, ring: undefined },
       ];
 
       const policy = computeAnimationDispatchPolicy(
@@ -139,11 +146,11 @@ describe('AnimationDispatchPolicy - Cross-Backend Coordination', () => {
 
     it('Three does not own status presentations when any reference non-owned animations', () => {
       const threeModuleAnimations = [
-        { animationId: 'status.poisoned-aura' as AnimationId },
+        { animationId: 'fx.status.poisoned-aura' as AnimationId },
       ];
       const statusPresentations: StatusPresentationView[] = [
-        { animationId: 'status.poisoned-aura' as AnimationId, entityScale: 1.2, ring: undefined },
-        { animationId: 'status.blessed-light' as AnimationId, entityScale: undefined, ring: undefined }, // Not owned by Three
+        { animationId: 'fx.status.poisoned-aura' as AnimationId, entityScale: 1.2, ring: undefined },
+        { animationId: 'fx.status.blessed-light' as AnimationId, entityScale: undefined, ring: undefined }, // Not owned by Three
       ];
 
       const policy = computeAnimationDispatchPolicy(
@@ -160,10 +167,10 @@ describe('AnimationDispatchPolicy - Cross-Backend Coordination', () => {
 
     it('Three owns player entity when status presentations are owned', () => {
       const threeModuleAnimations = [
-        { animationId: 'status.buff' as AnimationId },
+        { animationId: 'fx.status.buff' as AnimationId },
       ];
       const statusPresentations: StatusPresentationView[] = [
-        { animationId: 'status.buff' as AnimationId, entityScale: 1.2, ring: undefined },
+        { animationId: 'fx.status.buff' as AnimationId, entityScale: 1.2, ring: undefined },
       ];
 
       const policy = computeAnimationDispatchPolicy(
@@ -210,7 +217,7 @@ describe('AnimationDispatchPolicy - Cross-Backend Coordination', () => {
       );
 
       // For any animation in the scene:
-      const allAnimationIds = ['fx.impact.burst', 'fx.self.heal', 'fx.heal.hearts'] as AnimationId[];
+      const allAnimationIds = ['fx.impact.burst', 'fx.self.heal', 'fx.self.hearts'] as AnimationId[];
 
       for (const animId of allAnimationIds) {
         const isThreeOwned = isAnimationOwnedByThree(animId, policy);
@@ -247,7 +254,7 @@ describe('AnimationDispatchPolicy - Cross-Backend Coordination', () => {
       const oldStyleSkipList: AnimationId[] = [];
 
       // Canvas checks if animation should be skipped (it has None to skip)
-      const shouldRender = !oldStyleSkipList.includes('fx.heal.hearts' as AnimationId);
+      const shouldRender = !oldStyleSkipList.includes('fx.self.hearts' as AnimationId);
 
       expect(shouldRender).toBe(true);
       // Canvas renders the fallback hearts animation

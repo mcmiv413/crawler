@@ -1,3 +1,9 @@
+/**
+ * Test layer: contract
+ * Behavior: Item View Completeness covers Item View Completeness; InventoryItemView weapons; all weapons have damageMin and damageMax defined and positive.
+ * Proof: live catalog/schema assertions validate IDs, shapes, and cross references.
+ * Validation: pnpm vitest run tests/contracts/item-view-completeness.contract.test.ts
+ */
 import { describe, it, expect } from 'vitest';
 import { describe, it, expect } from 'vitest';
 import { ITEM_BY_ID } from '@dungeon/content';

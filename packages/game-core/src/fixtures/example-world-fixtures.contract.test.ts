@@ -1,4 +1,10 @@
 /**
+ * Test layer: contract
+ * Behavior: Example World Fixtures covers example world fixture: fresh-world; passes validation; loads into a WorldState.
+ * Proof: live catalog/schema assertions validate IDs, shapes, and cross references.
+ * Validation: pnpm vitest run packages/game-core/src/fixtures/example-world-fixtures.contract.test.ts
+ */
+/**
  * Contract tests for the example world fixtures.
  *
  * Verifies that each fixture file under fixtures/worlds/ is valid and
@@ -22,7 +28,13 @@ describe('example world fixture: fresh-world', () => {
 
   it('loads into a WorldState', () => {
     const world = loadWorldFromFixture(fixture);
-    expect(world).toBeDefined();
+    expect(world.highestRarityFound).toBe('common');
+    expect(world.factions.map(faction => faction.id)).toEqual(expect.arrayContaining([
+      'goblin_warband',
+      'undead_legion',
+      'beast_swarm',
+      'shadow_cult',
+    ]));
   });
 
   it('has all four factions', () => {
@@ -68,7 +80,8 @@ describe('example world fixture: mid-corruption-world', () => {
 
   it('loads into a WorldState', () => {
     const world = loadWorldFromFixture(fixture);
-    expect(world).toBeDefined();
+    expect(world.totalRuns).toBe(3);
+    expect(world.highestRarityFound).toBe('uncommon');
   });
 
   it('has all four factions', () => {
@@ -125,7 +138,8 @@ describe('example world fixture: ogre-emergence-world', () => {
 
   it('loads into a WorldState', () => {
     const world = loadWorldFromFixture(fixture);
-    expect(world).toBeDefined();
+    expect(world.dungeonOgre.status).toBe('emerged');
+    expect(world.factions.map(faction => faction.id)).toContain('goblin_warband');
   });
 
   it('has all four factions', () => {

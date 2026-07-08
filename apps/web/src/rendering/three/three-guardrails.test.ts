@@ -1,4 +1,10 @@
 /**
+ * Test layer: unit
+ * Behavior: Three Guardrails covers getAnimationRendererMode default; returns "canvas" as the default mode when no env var is set; still supports "canvas" mode via env override.
+ * Proof: focused assertions verify returned values, state changes, rendered output, or emitted events.
+ * Validation: pnpm vitest run apps/web/src/rendering/three/three-guardrails.test.ts
+ */
+/**
  * Workstream 9: Guardrail tests.
  *
  * Tests that verify:
@@ -20,8 +26,10 @@ import {
   resetForTesting,
 } from './three-animation-registry.js';
 import type { ThreeAnimationModule } from './three-animation-types.js';
-import type { AnimationId, AnimationCategory } from '@dungeon/content';
 import { getOverlayPositions } from './ThreeAnimationOverlay.js';
+
+type AnimationId = ThreeAnimationModule['id'];
+type AnimationCategory = ThreeAnimationModule['category'];
 
 // ---------------------------------------------------------------------------
 // Stable local test IDs — no live @dungeon/content imports
@@ -204,6 +212,6 @@ describe('Three import boundary — lazy-load contract', () => {
 
   it('three-animation-types does not eagerly import Three.js runtime', async () => {
     const types = await import('./three-animation-types.js');
-    expect(types).toBeDefined();
+    expect(Object.keys(types)).toEqual([]);
   });
 });

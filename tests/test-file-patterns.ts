@@ -42,6 +42,13 @@ type LayerMatcher = Readonly<{
   matches: (normalizedPath: string) => boolean;
 }>;
 
+const COLOCATED_INTEGRATION_TEST_PATHS = new Set([
+  'packages/game-core/src/engine/damage-type.test.ts',
+  'packages/game-core/src/engine/engine-consequences.test.ts',
+  'packages/game-core/src/engine/save-load.property.test.ts',
+  'packages/game-core/src/state/save-snapshot.test.ts',
+]);
+
 const TEST_LAYER_MATCHERS: readonly LayerMatcher[] = [
   {
     layer: 'e2e',
@@ -65,6 +72,7 @@ const TEST_LAYER_MATCHERS: readonly LayerMatcher[] = [
   {
     layer: 'integration',
     matches: (normalizedPath) =>
+      COLOCATED_INTEGRATION_TEST_PATHS.has(normalizedPath) ||
       normalizedPath.includes('/tests/integration/') ||
       normalizedPath.endsWith('.integration.test.ts'),
   },

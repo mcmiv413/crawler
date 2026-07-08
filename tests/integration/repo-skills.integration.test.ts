@@ -1,3 +1,9 @@
+/**
+ * Test layer: integration
+ * Behavior: Repo Skills covers repo skill sync tooling; generates all mirror trees from canonical docsskills; passes the mirror check after generation.
+ * Proof: integrated command, service, or repository assertions verify the cross-module result.
+ * Validation: pnpm vitest run tests/integration/repo-skills.integration.test.ts
+ */
 import { afterEach, describe, expect, it } from 'vitest';
 import { existsSync, mkdtempSync, mkdirSync, readFileSync, rmSync, writeFileSync } from 'node:fs';
 import { spawnSync } from 'node:child_process';

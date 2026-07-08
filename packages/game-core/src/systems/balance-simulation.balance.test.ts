@@ -1,4 +1,10 @@
 /**
+ * Test layer: balance
+ * Behavior: Balance Simulation covers Balance Simulation - Damage Output Distributions; Player attack damage varies in expected range based on power; Enemy attack damage varie....
+ * Proof: simulation and balance assertions verify aggregate tuning invariants.
+ * Validation: pnpm test:balance packages/game-core/src/systems/balance-simulation.balance.test.ts
+ */
+/**
  * balance-simulation.balance.test.ts
  *
  * Comprehensive balance simulation tests validating core game mechanics

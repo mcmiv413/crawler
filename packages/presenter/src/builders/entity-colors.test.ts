@@ -1,3 +1,9 @@
+/**
+ * Test layer: unit
+ * Behavior: Entity Colors covers entity colors (shared presenter color source); prefers the template-provided enemy color; covers arcane and shadow damage types distinctl....
+ * Proof: focused assertions verify returned values, state changes, rendered output, or emitted events.
+ * Validation: pnpm vitest run packages/presenter/src/builders/entity-colors.test.ts
+ */
 import { describe, it, expect } from 'vitest';
 import { posKey } from '@dungeon/contracts';
 import type { EnemyInstance, GameState } from '@dungeon/contracts';

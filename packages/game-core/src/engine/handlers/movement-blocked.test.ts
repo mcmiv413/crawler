@@ -1,3 +1,9 @@
+/**
+ * Test layer: unit
+ * Behavior: Movement Blocked covers handleMove - blocked movement observability (Phase 4A); emits MOVEMENT_BLOCKED with OUT_OF_BOUNDS when moving off the map; emits MOVEMENT....
+ * Proof: focused assertions verify returned values, state changes, rendered output, or emitted events.
+ * Validation: pnpm vitest run packages/game-core/src/engine/handlers/movement-blocked.test.ts
+ */
 import { describe, it, expect } from 'vitest';
 import { handleMove } from './movement.js';
 import { SeededRNG } from '../../utils/rng.js';

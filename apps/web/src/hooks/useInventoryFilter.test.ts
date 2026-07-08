@@ -1,3 +1,9 @@
+/**
+ * Test layer: unit
+ * Behavior: UseInventoryFilter covers inventory filtering helpers; filters by supported item classes; sorts known rarities descending and keeps unknown rarities last.
+ * Proof: focused assertions verify returned values, state changes, rendered output, or emitted events.
+ * Validation: pnpm vitest run apps/web/src/hooks/useInventoryFilter.test.ts
+ */
 import { act, renderHook } from '@testing-library/react';
 import { describe, expect, it } from 'vitest';
 import type { InventoryItemView } from '@dungeon/presenter';

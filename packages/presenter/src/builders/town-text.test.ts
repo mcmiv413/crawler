@@ -1,3 +1,9 @@
+/**
+ * Test layer: unit
+ * Behavior: Town Text covers deterministic town text; builds rumors from faction state and town impact without randomness; summarizes the run from metrics, faction pr....
+ * Proof: focused assertions verify returned values, state changes, rendered output, or emitted events.
+ * Validation: pnpm vitest run packages/presenter/src/builders/town-text.test.ts
+ */
 import { describe, expect, it } from 'vitest';
 import { createTestGameState } from '@dungeon/core/testing';
 import type { FactionState, GameState } from '@dungeon/contracts';

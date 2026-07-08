@@ -1,3 +1,9 @@
+/**
+ * Test layer: contract
+ * Behavior: Content Cross References covers Content Cross-References; Quest Templates; every collect_item objective targetId references an existing item.
+ * Proof: live catalog/schema assertions validate IDs, shapes, and cross references.
+ * Validation: pnpm vitest run tests/contracts/content-cross-references.contract.test.ts
+ */
 import { describe, it, expect } from 'vitest';
 import { QUEST_TEMPLATES } from '@dungeon/content';
 import { ITEM_BY_ID } from '@dungeon/content';
@@ -45,15 +51,14 @@ describe('Content Cross-References', () => {
         if (quest.objective.type === 'collect_item') {
           const targetId = quest.objective.targetId;
           expect(
-            targetId,
+            typeof targetId,
             `Quest "${quest.id}" collect_item objective is missing targetId`,
-          ).toBeDefined();
+          ).toBe('string');
 
-          const item = ITEM_BY_ID.get(targetId ?? '');
           expect(
-            item,
+            ITEM_BY_ID.has(targetId ?? ''),
             `Quest "${quest.id}" references non-existent item "${targetId}"`,
-          ).toBeDefined();
+          ).toBe(true);
         }
       }
     });
@@ -125,19 +130,18 @@ describe('Content Cross-References', () => {
         expect(
           ability.animation,
           `Ability "${abilityId}" is missing animation property`,
-        ).toBeDefined();
+        ).toEqual(expect.objectContaining({ id: expect.any(String) }));
 
         const animationId = ability.animation.id;
         expect(
-          animationId,
+          typeof animationId,
           `Ability "${abilityId}" animation is missing id`,
-        ).toBeDefined();
+        ).toBe('string');
 
-        const animRef = ANIMATION_REF_BY_ID.get(animationId);
         expect(
-          animRef,
+          ANIMATION_REF_BY_ID.has(animationId),
           `Ability "${abilityId}" references non-existent animation ID "${animationId}"`,
-        ).toBeDefined();
+        ).toBe(true);
       }
     });
 
@@ -148,19 +152,18 @@ describe('Content Cross-References', () => {
         expect(
           (item as any).animation,
           `Consumable "${itemId}" is missing animation property`,
-        ).toBeDefined();
+        ).toEqual(expect.objectContaining({ id: expect.any(String) }));
 
         const animationId = (item as any).animation.id;
         expect(
-          animationId,
+          typeof animationId,
           `Consumable "${itemId}" animation is missing id`,
-        ).toBeDefined();
+        ).toBe('string');
 
-        const animRef = ANIMATION_REF_BY_ID.get(animationId);
         expect(
-          animRef,
+          ANIMATION_REF_BY_ID.has(animationId),
           `Consumable "${itemId}" references non-existent animation ID "${animationId}"`,
-        ).toBeDefined();
+        ).toBe(true);
       }
     });
   });

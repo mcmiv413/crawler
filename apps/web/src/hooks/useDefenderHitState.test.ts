@@ -1,3 +1,9 @@
+/**
+ * Test layer: unit
+ * Behavior: UseDefenderHitState covers useDefenderHitState; tracks the trigger and clear lifecycle; retains optional snapshot position for defender-hit flashes.
+ * Proof: focused assertions verify returned values, state changes, rendered output, or emitted events.
+ * Validation: pnpm vitest run apps/web/src/hooks/useDefenderHitState.test.ts
+ */
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import { act, renderHook } from '@testing-library/react';
 import { triggerDefenderHit, useDefenderHitState } from './useDefenderHitState.js';

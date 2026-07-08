@@ -1,3 +1,9 @@
+/**
+ * Test layer: unit
+ * Behavior: Trap System covers Trap System; calculateHazardDamage; uses absolute healthDelta when rarity is absent.
+ * Proof: focused assertions verify returned values, state changes, rendered output, or emitted events.
+ * Validation: pnpm vitest run packages/game-core/src/systems/trap-system.test.ts
+ */
 import { describe, it, expect } from 'vitest';
 import { createTestGameStateInCombat } from '../test-utils.js';
 import { handleDisarmTrap } from '../engine/handlers/disarm-trap.js';

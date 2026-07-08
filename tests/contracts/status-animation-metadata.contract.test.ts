@@ -1,3 +1,9 @@
+/**
+ * Test layer: contract
+ * Behavior: Status Animation Metadata covers status animation metadata contract; exports animation ids directly on every ring presentation.
+ * Proof: live catalog/schema assertions validate IDs, shapes, and cross references.
+ * Validation: pnpm vitest run tests/contracts/status-animation-metadata.contract.test.ts
+ */
 import { describe, expect, it } from 'vitest';
 import { STATUS_DEFINITIONS } from '@dungeon/content';
 import { PLAYER_STATUS_PRESENTATION, getStatusPresentation } from '../../packages/presenter/src/animation-metadata.js';

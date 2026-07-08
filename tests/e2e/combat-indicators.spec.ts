@@ -1,3 +1,9 @@
+/**
+ * Test layer: e2e
+ * Behavior: Combat Indicators covers scenario enemy attack shows a visible damage combat indicator; scenario healing ability shows a visible healing combat indicator; scenari....
+ * Proof: Playwright actions and visible UI assertions verify the browser-facing outcome.
+ * Validation: pnpm test:e2e tests/e2e/combat-indicators.spec.ts
+ */
 import { expect, test } from '@playwright/test';
 
 import {
@@ -59,7 +65,8 @@ test('scenario combat indicator remains visible through its documented display w
   const scenario = await ScenarioPage.load(page, 'enemy-death-test', 'desktop-default');
   const attackResponsePromise = scenario.waitForCommand('ATTACK');
   await scenario.actionButton('Attack').click();
-  await scenario.commandJson(await attackResponsePromise, 'ATTACK');
+  const attackResult = await scenario.commandJson(await attackResponsePromise, 'ATTACK');
+  expect(attackResult.events).toContainEqual(expect.objectContaining({ type: 'ENTITY_DIED' }));
 
   await page.waitForTimeout(200); // audit-allow-waitForTimeout: animation timing assertion
   await expect(damageIndicators(page).first()).toBeVisible();

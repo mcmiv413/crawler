@@ -1,3 +1,9 @@
+/**
+ * Test layer: integration
+ * Behavior: Abilities Coverage covers Single-Target Abilities; power_strike; emits ABILITY_USED, reduces target health, updates cooldown.
+ * Proof: integrated command, service, or repository assertions verify the cross-module result.
+ * Validation: pnpm vitest run packages/game-core/src/engine/abilities-coverage.integration.test.ts
+ */
 import { describe, it, expect } from 'vitest';
 import { handleCommand, type CommandResult } from './command-handler.js';
 import { SeededRNG } from '../utils/rng.js';
@@ -216,8 +222,8 @@ describe('AOE Abilities', () => {
         expect(formatEvent(abilityEvent)).not.toBeNull();
       }
       // If no event, that's ok too (ability might be rejected)
-      expect(result.state).toBeDefined();
-      expect(result.events).toBeDefined();
+      expect(result.state.gameId).toBe(state.gameId);
+      expect(Array.isArray(result.events)).toBe(true);
     });
 
     it('feature chain validates cleave against single target', () => {
@@ -227,9 +233,9 @@ describe('AOE Abilities', () => {
 
       const result = useAbility(state, 'axe_cleave', rng, targetId);
 
-      // Just verify it doesn't crash
-      expect(result.state).toBeDefined();
-      expect(result.events).toBeDefined();
+      // Just verify it doesn't crash while preserving command result shape.
+      expect(result.state.gameId).toBe(state.gameId);
+      expect(Array.isArray(result.events)).toBe(true);
     });
   });
 
@@ -365,8 +371,7 @@ describe('Feature Completeness Chain', () => {
     const abilityEvent = result.events.find((e) => e.type === 'ABILITY_USED');
     if (abilityEvent) {
       const formatted = expectFormattedEvent(abilityEvent);
-      expect(formatted.text).toBeTruthy();
-      expect(formatted.text.length).toBeGreaterThan(0);
+      expect(formatted.text).toMatch(/\S/);
     }
   });
 
@@ -424,9 +429,9 @@ describe('Edge Cases', () => {
 
     const result = useAbility(state, 'power_strike', rng, farEnemyId);
 
-    // May fail or hit, but should be handled gracefully without crash
-    expect(result.state).toBeDefined();
-    expect(result.events).toBeDefined();
+    // May fail or hit, but should be handled gracefully without crash.
+    expect(result.state.gameId).toBe(state.gameId);
+    expect(Array.isArray(result.events)).toBe(true);
   });
 
   it('multiple abilities in sequence maintain cooldowns correctly', () => {

@@ -1,3 +1,9 @@
+/**
+ * Test layer: integration
+ * Behavior: Game Engine covers GameEngine floor navigation; rejects locked abilities without damaging enemies or advancing the turn; entering the dungeon completes floo....
+ * Proof: integrated command, service, or repository assertions verify the cross-module result.
+ * Validation: pnpm vitest run packages/game-core/src/engine/game-engine.integration.test.ts
+ */
 import { describe, it, expect } from 'vitest';
 import { GameEngine } from './game-engine.js';
 import { entityId } from '@dungeon/contracts';

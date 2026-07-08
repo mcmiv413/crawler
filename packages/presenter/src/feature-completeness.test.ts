@@ -1,4 +1,10 @@
 /**
+ * Test layer: unit
+ * Behavior: Feature Completeness covers Feature Completeness: Combat (ATTACK); full chain: attack → damage dealt → event emitted → enemy dies → loot; Feature Completeness: Movem....
+ * Proof: focused assertions verify returned values, state changes, rendered output, or emitted events.
+ * Validation: pnpm vitest run packages/presenter/src/feature-completeness.test.ts
+ */
+/**
  * Feature Completeness Guardrail Tests
  *
  * Each test exercises the full "So What" 4-link chain:
@@ -57,6 +63,27 @@ const RUSTY_SWORD_TEMPLATE = {
     damageType: 'physical',
     accuracy: 5,
     speed: 0,
+    slot: 'weapon',
+    weaponRange: 1,
+    weaponType: 'blade',
+  },
+} as const;
+
+const RUSTY_DAGGER_TEMPLATE = {
+  itemId: 'rusty_dagger',
+  name: 'Rusty Dagger',
+  description: 'A small backup blade.',
+  itemClass: 'weapon',
+  rarity: 'common',
+  value: 10,
+  stackable: false,
+  maxStack: 1,
+  spriteName: 'dwarvish dagger',
+  weapon: {
+    damage: 2,
+    damageType: 'physical',
+    accuracy: 10,
+    speed: 5,
     slot: 'weapon',
     weaponRange: 1,
     weaponType: 'blade',
@@ -765,7 +792,7 @@ describe('Feature Completeness: Weapon Mastery Unlock', () => {
 
     // Verify weapon mastery count increased
     const newMastery = result.state.weaponMastery;
-    expect(newMastery).toBeDefined();
+    expect(newMastery).toEqual(expect.any(Object));
 
     // Verify mastery unlock events (if count reaches threshold)
     const masteryEvents = result.events.filter(e => e.type === 'MASTERY_UNLOCKED');
@@ -789,7 +816,7 @@ describe('Feature Completeness: Blueprint Unlock (on loot)', () => {
     if (blueprintEvents.length > 0) {
       for (const event of blueprintEvents) {
         expectFormattedEvent(event);
-        expect((event as any).blueprintIds).toBeDefined();
+        expect((event as any).blueprintIds).toEqual(expect.any(Array));
       }
     }
 
@@ -827,7 +854,7 @@ describe('Feature Completeness: Enemy Respawn', () => {
     };
 
     const view = buildGameView(state);
-    expect(view.map).toBeDefined();
+    expect(view.map?.width).toBeGreaterThan(0);
     // View should render even with no enemies
   });
 });
@@ -888,21 +915,27 @@ describe('Feature Completeness: Retreat (RETREAT)', () => {
     const result = handleCommand(state, { type: 'RETREAT' }, rng());
 
     // Floor depth should be preserved or phase changed to town
-    expect(result.state.run?.floor.depth ?? result.state.phase).toBeDefined();
+    expect(result.state.phase === 'town' || result.state.run?.floor.depth === floorBefore).toBe(true);
 
     expectAllEventsFormatted([...result.events]);
   });
 });
 
 describe('Feature Completeness: Retreat from Dead End (No Adjacent Exit)', () => {
-  it('full chain: retreat blocked → remains in dungeon → event explains it', () => {
-    const state = createTestGameStateInCombat();
+  it('full chain: retreat blocked → remains in dungeon without ending the run', () => {
+    const baseState = createTestGameStateInCombat();
+    const state = {
+      ...baseState,
+      player: {
+        ...baseState.player,
+        position: { x: 2, y: 2 },
+      },
+    };
 
     const result = handleCommand(state, { type: 'RETREAT' }, rng());
 
-    // Retreat may fail if exit not reachable
-    const attackEvents = result.events.filter(e => e.type === 'ATTACK_PERFORMED');
-    expect(attackEvents).toBeDefined(); // May retry as attack instead
+    expect(result.state).toBe(state);
+    expect(result.events).toEqual([]);
 
     expectAllEventsFormatted([...result.events]);
   });
@@ -957,38 +990,61 @@ describe('Feature Completeness: Overkill (Damage Exceeds Health)', () => {
 describe('Feature Completeness: NPC Disposition Impact (Shop Pricing)', () => {
   it('full chain: NPC disposition affects price → effective price calculated → view shows discount', () => {
     const state = createTestGameState({ phase: 'town' });
+    const shopkeeper: NpcState = {
+      id: entityId('npc_shopkeeper'),
+      name: 'Torben',
+      role: 'shopkeeper',
+      disposition: 50,
+      available: true,
+      dialogueKey: 'shopkeeper',
+    };
 
     // Manually set NPC disposition to positive
     const stateWithBonus = {
       ...state,
       world: {
         ...state.world,
-        npcs: state.world.npcs.map(npc =>
-          npc.role === 'shopkeeper' ? { ...npc, disposition: 50 } : npc,
-        ),
+        npcs: [shopkeeper],
+        shop: {
+          items: [{ itemId: 'common_dagger', price: 100, stock: 1 }],
+          buybackMultiplier: state.world.shop.buybackMultiplier,
+        },
+        highestRarityFound: 'common' as const,
       },
     };
 
     const view = buildGameView(stateWithBonus);
-    expect(view.town?.shop.items).toBeDefined();
+    const item = view.town?.shop.items.find(shopItem => shopItem.itemId === 'common_dagger');
+    expect(item).toEqual(expect.objectContaining({ itemId: 'common_dagger', price: 100 }));
+    expect(item?.effectivePrice).toBeLessThan(100);
   });
 });
 
 describe('Feature Completeness: NPC Unavailability (Low Prosperity)', () => {
   it('full chain: low prosperity → NPC unavailable → action disabled in view', () => {
     const baseState = createTestGameState({ phase: 'town' });
+    const unavailableNpc: NpcState = {
+      id: entityId('npc_informant'),
+      name: 'Mira',
+      role: 'informant',
+      disposition: -20,
+      available: false,
+      dialogueKey: 'informant',
+    };
     const state = {
       ...baseState,
       world: {
         ...baseState.world,
         town: { ...baseState.world.town, prosperity: 10 },
+        npcs: [unavailableNpc],
       },
     };
 
     const view = buildGameView(state);
-    // Some NPCs may be unavailable
-    const unavailable = view.town?.npcs.filter(n => !n.available) ?? [];
-    expect(unavailable).toBeDefined();
+    expect(view.town?.npcs).toEqual(expect.arrayContaining([
+      expect.objectContaining({ id: unavailableNpc.id, available: false }),
+    ]));
+    expect(view.availableActions.map(action => action.id)).not.toContain(`talk_${unavailableNpc.id}`);
   });
 });
 
@@ -996,11 +1052,25 @@ describe('Feature Completeness: World Modifiers (Corruption/Fear Impact)', () =>
   it('full chain: world state affects game → modifier applied → affects next turn', () => {
     // Corruption and fear are tested at generation/consequences level
     // Feature completeness validates they're computed and stored
-    const state = createTestGameStateInCombat();
+    const state = createTestGameState({
+      phase: 'town',
+      world: {
+        town: {
+          prosperity: 35,
+          fear: 65,
+          corruption: 70,
+          rumors: [],
+          lastRunSummary: null,
+        },
+      },
+    });
 
     const view = buildGameView(state);
-    expect(view.town).toBeDefined();
-    // View should show town state with corruption/fear values
+    expect(view.town).toEqual(expect.objectContaining({
+      fear: 65,
+      corruption: 70,
+      atmosphereDescription: expect.stringMatching(/\S/),
+    }));
   });
 });
 
@@ -1106,8 +1176,12 @@ describe('Feature Completeness: Item Type Actions (Consumables)', () => {
 describe('Feature Completeness: Swap Secondary Weapon', () => {
   it('full chain: equip secondary weapon → visible in HUD', () => {
     const baseState = createTestGameState();
+    const registry = new Map(baseState.itemRegistry.items);
+    registry.set(entityId('rusty_sword'), RUSTY_SWORD_TEMPLATE as any);
+    registry.set(entityId('rusty_dagger'), RUSTY_DAGGER_TEMPLATE as any);
     const state = {
       ...baseState,
+      itemRegistry: { items: registry },
       player: {
         ...baseState.player,
         inventory: ['rusty_sword', 'rusty_dagger'].map(entityId),
@@ -1120,7 +1194,7 @@ describe('Feature Completeness: Swap Secondary Weapon', () => {
     };
 
     const view = buildGameView(state);
-    expect(view.player).toBeDefined();
+    expect(view.inventory.equipped.secondaryWeapon?.templateId).toBe('rusty_dagger');
   });
 });
 
@@ -1129,11 +1203,18 @@ describe('Feature Completeness: Encounter Recovery (From Stash)', () => {
     const baseState = createTestGameState({ phase: 'town' });
     const state = {
       ...baseState,
-      deathStashFloor: 3,
+      player: {
+        ...baseState.player,
+        deathStash: {
+          floor: 3,
+          items: [],
+          position: { x: 1, y: 1 },
+        },
+      },
     };
 
     const view = buildGameView(state);
-    expect(view).toBeDefined();
+    expect(view.deathStashFloor).toBe(3);
   });
 });
 

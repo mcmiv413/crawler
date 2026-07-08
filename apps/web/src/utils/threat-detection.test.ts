@@ -1,3 +1,9 @@
+/**
+ * Test layer: unit
+ * Behavior: Threat Detection covers detectNewThreats; returns empty when no new enemies; detects newly visible enemy (ID not in known set).
+ * Proof: focused assertions verify returned values, state changes, rendered output, or emitted events.
+ * Validation: pnpm vitest run apps/web/src/utils/threat-detection.test.ts
+ */
 import { describe, it, expect } from 'vitest';
 import { detectNewThreats } from './threat-detection.js';
 import type { EntityView } from '@dungeon/presenter';

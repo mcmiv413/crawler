@@ -1,4 +1,10 @@
 /**
+ * Test layer: unit
+ * Behavior: ItemInspectModal covers ItemInspectModal Component; Basic Rendering; renders item name and description.
+ * Proof: focused assertions verify returned values, state changes, rendered output, or emitted events.
+ * Validation: pnpm vitest run apps/web/src/components/ItemInspectModal.test.tsx
+ */
+/**
  * ItemInspectModal Component Tests
  *
  * Verifies that the item inspection modal displays full stats,

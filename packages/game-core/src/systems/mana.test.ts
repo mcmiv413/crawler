@@ -1,3 +1,9 @@
+/**
+ * Test layer: unit
+ * Behavior: Mana covers Mana System; canAffordMana; returns true when current mana >= cost.
+ * Proof: focused assertions verify returned values, state changes, rendered output, or emitted events.
+ * Validation: pnpm vitest run packages/game-core/src/systems/mana.test.ts
+ */
 import { describe, it, expect } from 'vitest';
 import {
   canAffordMana,

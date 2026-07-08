@@ -1,4 +1,10 @@
 /**
+ * Test layer: unit
+ * Behavior: Game View Builder Coverage covers game-view-builder coverage: entity visibility; visible entities appear in view; single visible enemy appears in inspectableEntities.
+ * Proof: focused assertions verify returned values, state changes, rendered output, or emitted events.
+ * Validation: pnpm vitest run packages/presenter/src/game-view-builder-coverage.test.ts
+ */
+/**
  * Comprehensive coverage tests for entity visibility, sprite handling, and view builder.
  * These tests cover the same ground as failing tests but from different angles,
  * focusing on observable behavior rather than implementation details.
@@ -186,7 +192,7 @@ describe('game-view-builder coverage: entity visibility', () => {
       const view = buildGameView(modifiedState);
       
       // Unmapped positions should either be excluded or not crash
-      expect(view.inspectableEntities).toBeDefined();
+      expect(view.inspectableEntities).toEqual([]);
     });
   });
 
@@ -202,8 +208,8 @@ describe('game-view-builder coverage: entity visibility', () => {
       
       const view = buildGameView(modifiedState);
       // No crash, valid GameView returned
-      expect(view).toBeDefined();
-      expect(view.inspectableEntities).toBeDefined();
+      expect(view.phase).toBe('dungeon');
+      expect(view.inspectableEntities).toEqual(expect.any(Array));
     });
 
     it('mixed visibility states in floor cells handled', () => {
@@ -387,8 +393,7 @@ describe('game-view-builder coverage: sprite/template reference resolution', () 
       const view = buildGameView(modifiedState);
       
       view.inspectableEntities.forEach(entity => {
-        expect(entity.name).toBeDefined();
-        expect(entity.name.length).toBeGreaterThan(0);
+        expect(entity.name).toMatch(/\S/);
       });
     });
 
@@ -799,8 +804,9 @@ describe('game-view-builder coverage: edge cases', () => {
       
       // Should not crash
       const view = buildGameView(modifiedState);
-      expect(view).toBeDefined();
-      expect(view.inspectableEntities).toBeDefined();
+      expect(view.inspectableEntities).toEqual(expect.arrayContaining([
+        expect.objectContaining({ id: entityId('e1') }),
+      ]));
     });
 
     it('entities at max boundaries (width-1, height-1) handled correctly', () => {
@@ -818,8 +824,9 @@ describe('game-view-builder coverage: edge cases', () => {
       const modifiedState = { ...baseState, run: modifiedRun };
       
       const view = buildGameView(modifiedState);
-      expect(view).toBeDefined();
-      expect(view.inspectableEntities).toBeDefined();
+      expect(view.inspectableEntities).toEqual(expect.arrayContaining([
+        expect.objectContaining({ id: entityId('e1') }),
+      ]));
     });
   });
 
@@ -933,7 +940,7 @@ describe('game-view-builder coverage: edge cases', () => {
       
       // Should not crash even with no entities
       const view = buildGameView(modifiedState);
-      expect(view).toBeDefined();
+      expect(view.inspectableEntities[0]?.name).toMatch(/\S/);
     });
 
     it('no run state returns empty inspectableEntities', () => {

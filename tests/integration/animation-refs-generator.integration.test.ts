@@ -1,3 +1,9 @@
+/**
+ * Test layer: integration
+ * Behavior: Animation Refs Generator covers generateAnimationRefsIndex; emits an index for valid timing metadata; fails when timing fields are missing.
+ * Proof: integrated command, service, or repository assertions verify the cross-module result.
+ * Validation: pnpm vitest run tests/integration/animation-refs-generator.integration.test.ts
+ */
 import { afterEach, describe, expect, it } from 'vitest';
 import { randomUUID } from 'node:crypto';
 import { existsSync, mkdirSync, readFileSync, rmSync, writeFileSync } from 'node:fs';

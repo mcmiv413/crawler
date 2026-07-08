@@ -1,3 +1,9 @@
+/**
+ * Test layer: unit
+ * Behavior: Item Stats covers getItemStats; returns "0 def" for armor with 0 defense; returns defense with evasion penalty.
+ * Proof: focused assertions verify returned values, state changes, rendered output, or emitted events.
+ * Validation: pnpm vitest run apps/web/src/utils/item-stats.test.ts
+ */
 import { describe, it, expect } from 'vitest';
 import { getItemStats } from './item-stats.js';
 import type { InventoryItemView } from '@dungeon/presenter';

@@ -1,3 +1,9 @@
+/**
+ * Test layer: contract
+ * Behavior: Biome Selection covers selectBiomeForFloor — live biome and faction content; biases eligible biome selection toward led dominant factions and away from broken f....
+ * Proof: live catalog/schema assertions validate IDs, shapes, and cross references.
+ * Validation: pnpm vitest run tests/contracts/biome-selection.contract.test.ts
+ */
 import { describe, expect, it } from 'vitest';
 import type { FactionState } from '@dungeon/contracts';
 import { INITIAL_FACTIONS } from '@dungeon/content';

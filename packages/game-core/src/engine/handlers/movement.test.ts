@@ -1,3 +1,9 @@
+/**
+ * Test layer: unit
+ * Behavior: Movement covers handleMove - Trap Damage on Walk; should damage player when walking onto a trap; should emit TRAP_TRIGGERED event when stepping on trap.
+ * Proof: focused assertions verify returned values, state changes, rendered output, or emitted events.
+ * Validation: pnpm vitest run packages/game-core/src/engine/handlers/movement.test.ts
+ */
 import { describe, it, expect } from 'vitest';
 import { handleMove } from './movement.js';
 import { SeededRNG } from '../../utils/rng.js';

@@ -1,4 +1,10 @@
 /**
+ * Test layer: unit
+ * Behavior: TownPhase covers TownPhase Component; Shop Rendering; displays shop section when items exist.
+ * Proof: focused assertions verify returned values, state changes, rendered output, or emitted events.
+ * Validation: pnpm vitest run apps/web/src/components/TownPhase.test.tsx
+ */
+/**
  * TownPhase Component Tests
  *
  * Verifies that the town view correctly renders shop, factions, NPCs,

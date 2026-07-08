@@ -1,3 +1,9 @@
+/**
+ * Test layer: unit
+ * Behavior: Death covers handlePlayerDeath; normal death: returns to town with gold loss; equipment drop: equipped items become death stash.
+ * Proof: focused assertions verify returned values, state changes, rendered output, or emitted events.
+ * Validation: pnpm vitest run packages/game-core/src/systems/death.test.ts
+ */
 import { describe, it, expect } from 'vitest';
 import { handlePlayerDeath } from './death.js';
 import { SeededRNG } from '../utils/rng.js';

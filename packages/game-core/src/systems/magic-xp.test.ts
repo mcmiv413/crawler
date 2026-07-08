@@ -1,3 +1,9 @@
+/**
+ * Test layer: unit
+ * Behavior: Magic xp covers magic-xp; tracks Fire XP without discarding learned spells; applies a multi-school spell cast XP gain to every listed school.
+ * Proof: focused assertions verify returned values, state changes, rendered output, or emitted events.
+ * Validation: pnpm vitest run packages/game-core/src/systems/magic-xp.test.ts
+ */
 import { describe, it, expect } from 'vitest';
 import { createTestPlayer } from '../test-utils.js';
 import {

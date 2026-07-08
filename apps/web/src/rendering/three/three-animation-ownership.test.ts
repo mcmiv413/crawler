@@ -1,3 +1,9 @@
+/**
+ * Test layer: unit
+ * Behavior: Three Animation Ownership covers AnimationOwnershipState; createAnimationOwnershipState; creates initial state with no Three ownership.
+ * Proof: focused assertions verify returned values, state changes, rendered output, or emitted events.
+ * Validation: pnpm vitest run apps/web/src/rendering/three/three-animation-ownership.test.ts
+ */
 import { describe, it, expect, beforeEach } from 'vitest';
 import {
   createAnimationOwnershipState,
@@ -8,8 +14,9 @@ import {
   areCombatIndicatorsOwnedByThree,
   isAnimationOwnedByThree,
 } from './three-animation-ownership.js';
-import type { AnimationId } from '@dungeon/content';
 import type { EntityId } from '@dungeon/contracts';
+
+type AnimationId = `fx.${'status' | 'impact' | 'projectile' | 'self' | 'aoe' | 'utility'}.${string}`;
 
 describe('AnimationOwnershipState', () => {
   describe('createAnimationOwnershipState', () => {

@@ -1,4 +1,10 @@
 /**
+ * Test layer: unit
+ * Behavior: Repository State Safety covers Repository: State Safety; State Boundary Safety; should clone state on create and load.
+ * Proof: focused assertions verify returned values, state changes, rendered output, or emitted events.
+ * Validation: pnpm vitest run apps/server/src/repository-state-safety.test.ts
+ */
+/**
  * tests/repository/state-safety.test.ts
  *
  * Comprehensive tests for InMemoryRepository state management.

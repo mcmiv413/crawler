@@ -1,3 +1,9 @@
+/**
+ * Test layer: unit
+ * Behavior: Pathfinding covers findPath (shared @dungeoncore); returns empty array when start === destination; finds straight-line path on open grid.
+ * Proof: focused assertions verify returned values, state changes, rendered output, or emitted events.
+ * Validation: pnpm vitest run packages/game-core/src/utils/pathfinding.test.ts
+ */
 import { describe, it, expect } from 'vitest';
 import { findPath } from './pathfinding.js';
 

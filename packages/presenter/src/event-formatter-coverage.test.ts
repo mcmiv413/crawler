@@ -1,4 +1,10 @@
 /**
+ * Test layer: unit
+ * Behavior: Event Formatter Coverage covers Event Formatter Type Safety; formatter mapping is exhaustive at compile time; type system ensures no unknown event types reach formatEvent.
+ * Proof: focused assertions verify returned values, state changes, rendered output, or emitted events.
+ * Validation: pnpm vitest run packages/presenter/src/event-formatter-coverage.test.ts
+ */
+/**
  * Event formatter type safety verification.
  *
  * The event formatter uses a mapped type that enforces exhaustiveness:
@@ -29,7 +35,7 @@ describe('Event Formatter Type Safety', () => {
     // TypeScript will error:
     //   Type '{ type: "MY_NEW_EVENT", ... }' is not assignable to
     //   type 'EventFormatterMap[K]'...
-    expect(formatEvent).toBeDefined();
+    expect(typeof formatEvent).toBe('function');
   });
 
   it('type system ensures no unknown event types reach formatEvent', () => {
@@ -38,6 +44,6 @@ describe('Event Formatter Type Safety', () => {
     // Unknown events would fail to type-check, so they never reach formatEvent at runtime.
     //
     // This prevents the "silent null return for missing formatter" class of bug.
-    expect(formatEvent).toBeDefined();
+    expect(typeof formatEvent).toBe('function');
   });
 });

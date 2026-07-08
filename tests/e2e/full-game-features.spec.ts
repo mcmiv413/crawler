@@ -1,3 +1,9 @@
+/**
+ * Test layer: e2e
+ * Behavior: Full Game Features covers @smoke full game features: new game starts in town; full game features: new game assigns a quest, enters a run, and retreats to town; sce....
+ * Proof: Playwright actions and visible UI assertions verify the browser-facing outcome.
+ * Validation: pnpm test:e2e tests/e2e/full-game-features.spec.ts
+ */
 import { expect, test } from '@playwright/test';
 import type { Page, Response } from '@playwright/test';
 
@@ -75,6 +81,7 @@ test('@smoke full game features: new game starts in town', async ({ page }) => {
   await page.getByRole('button', { name: 'Start New Game' }).click();
   await expect(page.getByTestId('town-view')).toBeVisible();
   await expect(page.getByText('Scenario Explorer', { exact: true })).toBeVisible();
+  await expect(page.getByTestId('town-view')).toContainText('Enter Dungeon');
 });
 
 test('full game features: new game assigns a quest, enters a run, and retreats to town', async ({ page }) => {

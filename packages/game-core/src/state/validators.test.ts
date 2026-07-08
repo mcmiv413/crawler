@@ -1,3 +1,9 @@
+/**
+ * Test layer: unit
+ * Behavior: Validators covers state validators; validateGameState; accepts valid game state.
+ * Proof: focused assertions verify returned values, state changes, rendered output, or emitted events.
+ * Validation: pnpm vitest run packages/game-core/src/state/validators.test.ts
+ */
 import { describe, it, expect } from 'vitest';
 import {
   validateGameState,
@@ -431,7 +437,10 @@ describe('state validators', () => {
         run,
       };
       const result = validateGameState(invalid);
-      expect(result.errors.length).toBeGreaterThan(0);
+      expect(result.errors.map(error => error.path)).toEqual(expect.arrayContaining([
+        'run.enemies.0,0.tier',
+        'run.enemies.1,1.tier',
+      ]));
     });
   });
 

@@ -1,4 +1,10 @@
 /**
+ * Test layer: unit
+ * Behavior: Three Transient Animation Ownership covers Transient animation ownership — ID-based keying; resolves empty owned IDs when no animations are active; owns a single animationId when o....
+ * Proof: focused assertions verify returned values, state changes, rendered output, or emitted events.
+ * Validation: pnpm vitest run apps/web/src/rendering/three/three-transient-animation-ownership.test.ts
+ */
+/**
  * Workstream 5: Transient animation ownership tests.
  *
  * Verifies that the ownership state correctly tracks transient consumable/fx
@@ -19,7 +25,8 @@ import {
   reportThreeOwnership,
   getThreeOwnedAnimationIds,
 } from './three-animation-ownership.js';
-import type { AnimationId } from '@dungeon/content';
+
+type AnimationId = `fx.${'status' | 'impact' | 'projectile' | 'self' | 'aoe' | 'utility'}.${string}`;
 
 // ---------------------------------------------------------------------------
 // Helpers — stable test IDs, no live content imports

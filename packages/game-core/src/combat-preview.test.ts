@@ -1,3 +1,9 @@
+/**
+ * Test layer: unit
+ * Behavior: Combat Preview covers combat preview helpers; increases player damage preview when a weapon is equipped; matches live ranged accuracy falloff as targets get fa....
+ * Proof: focused assertions verify returned values, state changes, rendered output, or emitted events.
+ * Validation: pnpm vitest run packages/game-core/src/combat-preview.test.ts
+ */
 import type { AnyItemTemplate, EnemyInstance } from '@dungeon/contracts';
 import { entityId } from '@dungeon/contracts';
 import { describe, expect, it } from 'vitest';

@@ -1,3 +1,9 @@
+/**
+ * Test layer: unit
+ * Behavior: Index covers enchantment catalog; all enchantments are in ENCHANTMENT_BY_ID map; map size matches data array.
+ * Proof: focused assertions verify returned values, state changes, rendered output, or emitted events.
+ * Validation: pnpm vitest run packages/content/src/enchantments/index.test.ts
+ */
 import { describe, it, expect } from 'vitest';
 import {
   ENCHANTMENTS,

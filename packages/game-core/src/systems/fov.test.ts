@@ -1,3 +1,9 @@
+/**
+ * Test layer: unit
+ * Behavior: fov covers computeFov; open room: tiles within radius are visible; wall blocks vision behind it.
+ * Proof: focused assertions verify returned values, state changes, rendered output, or emitted events.
+ * Validation: pnpm vitest run packages/game-core/src/systems/fov.test.ts
+ */
 import { describe, it, expect } from 'vitest';
 import { computeFov } from './fov.js';
 import { posKey } from '@dungeon/contracts';

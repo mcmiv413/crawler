@@ -1,3 +1,9 @@
+/**
+ * Test layer: unit
+ * Behavior: Canvas Renderer covers canvas-renderer with bump animations; accepts bump animations parameter in renderMap; draws player status presentation without renderer-s....
+ * Proof: focused assertions verify returned values, state changes, rendered output, or emitted events.
+ * Validation: pnpm vitest run apps/web/src/sprites/canvas-renderer.test.ts
+ */
 import { describe, it, expect, vi } from 'vitest';
 import type { MapView, EntityView } from '@dungeon/presenter';
 import { renderMap } from './canvas-renderer.js';

@@ -1,3 +1,9 @@
+/**
+ * Test layer: contract
+ * Behavior: Faction Definitions covers Faction Definitions Contract; all faction IDs in INITIAL_FACTIONS have entries in FACTION_DEFINITIONS; all faction definitions have non-e....
+ * Proof: live catalog/schema assertions validate IDs, shapes, and cross references.
+ * Validation: pnpm vitest run tests/contracts/faction-definitions.contract.test.ts
+ */
 import { describe, expect, it } from 'vitest';
 import { ENEMY_TEMPLATES, FACTION_DEFINITIONS, INITIAL_FACTIONS } from '@dungeon/content';
 
@@ -44,7 +50,10 @@ describe('Faction Definitions Contract', () => {
       const member = Array.from(ENEMY_TEMPLATES.values())
         .find(template => template.factions?.some(faction => faction.factionId === factionId) === true);
 
-      expect(member, `Faction "${factionId}" must have at least one enemy member template`).toBeDefined();
+      expect(
+        member?.factions?.map(faction => faction.factionId),
+        `Faction "${factionId}" must have at least one enemy member template`,
+      ).toContain(factionId);
     }
   });
 

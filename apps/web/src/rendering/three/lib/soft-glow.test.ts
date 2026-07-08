@@ -1,3 +1,9 @@
+/**
+ * Test layer: unit
+ * Behavior: Soft Glow covers createSoftGlow; creates object, material, and texture; setScale.
+ * Proof: focused assertions verify returned values, state changes, rendered output, or emitted events.
+ * Validation: pnpm vitest run apps/web/src/rendering/three/lib/soft-glow.test.ts
+ */
 import { beforeEach, describe, expect, it, vi } from 'vitest';
 import { createSoftGlow } from './soft-glow.js';
 

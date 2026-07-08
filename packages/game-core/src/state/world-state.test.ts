@@ -1,3 +1,9 @@
+/**
+ * Test layer: unit
+ * Behavior: World State covers Initial World State - Shop; includes Fire Ring in shop; Fire Ring is properly priced.
+ * Proof: focused assertions verify returned values, state changes, rendered output, or emitted events.
+ * Validation: pnpm vitest run packages/game-core/src/state/world-state.test.ts
+ */
 import { describe, it, expect } from 'vitest';
 import { createInitialWorldState } from './world-state.js';
 import { SeededRNG } from '../utils/rng.js';

@@ -1,4 +1,10 @@
 /// <reference types="@testing-library/jest-dom" />
+/**
+ * Test layer: unit
+ * Behavior: CharacterScreen covers CharacterScreen faction progress; shows faction progress and ogre progress from presenter data; opens the faction detail modal with leade....
+ * Proof: focused assertions verify returned values, state changes, rendered output, or emitted events.
+ * Validation: pnpm vitest run apps/web/src/components/CharacterScreen.test.tsx
+ */
 import React from 'react';
 import { beforeEach, describe, it, expect, vi } from 'vitest';
 import { fireEvent, render, screen } from '@testing-library/react';

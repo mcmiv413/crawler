@@ -1,3 +1,9 @@
+/**
+ * Test layer: integration
+ * Behavior: Player Action Observability covers player-action-observability integration tests; rejection visibility; using item outside combat emits PLAYER_ACTION_REJECTED.
+ * Proof: integrated command, service, or repository assertions verify the cross-module result.
+ * Validation: pnpm vitest run packages/game-core/src/engine/player-action-observability.integration.test.ts
+ */
 import { describe, it, expect } from 'vitest';
 import { handleCommand } from './command-handler.js';
 import { SeededRNG } from '../utils/rng.js';

@@ -1,3 +1,9 @@
+/**
+ * Test layer: unit
+ * Behavior: EnchantmentDetailModal covers EnchantmentDetailModal; renders presenter-provided enchantment details; renders the empty detail state when presenter supplies no equippe....
+ * Proof: focused assertions verify returned values, state changes, rendered output, or emitted events.
+ * Validation: pnpm vitest run apps/web/src/components/EnchantmentDetailModal.test.tsx
+ */
 import { render, screen } from '@testing-library/react';
 import { describe, expect, it, vi } from 'vitest';
 import type { PlayerHudView } from '@dungeon/presenter';

@@ -1,3 +1,9 @@
+/**
+ * Test layer: unit
+ * Behavior: Status Effects covers status-effects; applies a new status to player; refreshes existing status duration.
+ * Proof: focused assertions verify returned values, state changes, rendered output, or emitted events.
+ * Validation: pnpm vitest run packages/game-core/src/systems/status-effects.test.ts
+ */
 import { describe, it, expect } from 'vitest';
 import {
   applyStatusToPlayer,
@@ -10,6 +16,8 @@ import { createTestPlayer, createTestEnemy, createTestGameState, createTestGameS
 import { posKey } from '@dungeon/contracts';
 import type { AbilityUsedEvent, DomainEvent, StatusId } from '@dungeon/contracts';
 import { SeededRNG } from '../utils/rng.js';
+
+const EXPECTED_REMAINING_BURN_TURNS = 1;
 
 describe('status-effects', () => {
   it('applies a new status to player', () => {
@@ -250,8 +258,7 @@ describe('Enemy status ticking', () => {
     // Poison should expire, burn should remain
     expect(ticked?.statuses).toHaveLength(1);
     expect(ticked?.statuses[0]?.id).toBe('burn');
-    // eslint-disable-next-line dungeon/no-numeric-toBe
-    expect(ticked?.statuses[0]?.turnsRemaining).toBe(1);
+    expect(ticked?.statuses[0]?.turnsRemaining).toBe(EXPECTED_REMAINING_BURN_TURNS);
   });
 });
 

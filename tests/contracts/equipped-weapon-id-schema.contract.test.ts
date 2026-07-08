@@ -1,4 +1,10 @@
 /**
+ * Test layer: contract
+ * Behavior: Equipped Weapon id Schema covers equippedWeaponId: null is rejected; rejects null with an error on the equippedWeaponId field; loadPlayerFromFixture throws when equippedW....
+ * Proof: live catalog/schema assertions validate IDs, shapes, and cross references.
+ * Validation: pnpm vitest run tests/contracts/equipped-weapon-id-schema.contract.test.ts
+ */
+/**
  * Contract tests: equippedWeaponId schema — null vs undefined vs absent.
  *
  * These tests pin the accepted type for equippedWeaponId as `string | undefined`.

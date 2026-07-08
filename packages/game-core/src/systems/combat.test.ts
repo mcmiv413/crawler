@@ -1,3 +1,9 @@
+/**
+ * Test layer: unit
+ * Behavior: Combat covers resolveAttack; should resolve a hit when accuracy exceeds evasion; should miss when evasion exceeds accuracy.
+ * Proof: focused assertions verify returned values, state changes, rendered output, or emitted events.
+ * Validation: pnpm vitest run packages/game-core/src/systems/combat.test.ts
+ */
 import { describe, it, expect, vi } from 'vitest';
 import { resolveAttack } from './combat.js';
 import { SeededRNG } from '../utils/rng.js';

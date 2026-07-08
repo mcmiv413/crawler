@@ -1,3 +1,9 @@
+/**
+ * Test layer: unit
+ * Behavior: Auto Walk covers shouldCancelAutoWalk; returns false when phase is still dungeon and no threats; returns true when phase changes from dungeon to combat.
+ * Proof: focused assertions verify returned values, state changes, rendered output, or emitted events.
+ * Validation: pnpm vitest run packages/game-core/src/utils/auto-walk.test.ts
+ */
 import { describe, it, expect, beforeEach } from 'vitest';
 import { shouldCancelAutoWalk } from './auto-walk.js';
 import { createTestGameState } from '../test-utils.js';

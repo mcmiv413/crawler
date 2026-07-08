@@ -1,3 +1,9 @@
+/**
+ * Test layer: unit
+ * Behavior: Animation Sequence covers buildAnimationSequence; groups actor events into ordered beats with shared beat ids; uses fixed bump timing for player and enemy attacks.
+ * Proof: focused assertions verify returned values, state changes, rendered output, or emitted events.
+ * Validation: pnpm vitest run packages/presenter/src/animation-sequence.test.ts
+ */
 import { describe, expect, it } from 'vitest';
 import { entityId, type DomainEvent, type EntityId, type GameState } from '@dungeon/contracts';
 import { createTestEnemy, createTestGameStateInCombat } from '@dungeon/core/testing';

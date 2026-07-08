@@ -1,3 +1,9 @@
+/**
+ * Test layer: unit
+ * Behavior: Dawnlike Sprite map covers DawnLike Sprite Map; all entries fit within atlas bounds; all enemy sprites are unique.
+ * Proof: focused assertions verify returned values, state changes, rendered output, or emitted events.
+ * Validation: pnpm vitest run packages/content/src/sprites/dawnlike-sprite-map.test.ts
+ */
 import { describe, it, expect } from 'vitest';
 import { DAWNLIKE_SPRITE_MAP } from './dawnlike-sprite-map.js';
 import { DAWNLIKE_NAME_MAP, resolveSprite } from './dawnlike-name-map.js';

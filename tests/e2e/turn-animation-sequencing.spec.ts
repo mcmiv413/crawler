@@ -1,3 +1,9 @@
+/**
+ * Test layer: e2e
+ * Behavior: Turn Animation Sequencing covers combat indicators retain player-first then enemy beat DOM order.
+ * Proof: Playwright actions and visible UI assertions verify the browser-facing outcome.
+ * Validation: pnpm test:e2e tests/e2e/turn-animation-sequencing.spec.ts
+ */
 import { expect, test } from '@playwright/test';
 import type { Page } from '@playwright/test';
 

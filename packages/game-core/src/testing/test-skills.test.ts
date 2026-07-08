@@ -1,3 +1,9 @@
+/**
+ * Test layer: unit
+ * Behavior: Test Skills covers test-layer-advisor skill; analyzeTestFile; validates unit test with correct patterns.
+ * Proof: focused assertions verify returned values, state changes, rendered output, or emitted events.
+ * Validation: pnpm vitest run packages/game-core/src/testing/test-skills.test.ts
+ */
 import { describe, it, expect } from 'vitest';
 import {
   analyzeTestFile,
@@ -57,9 +63,11 @@ describe('PlayerStats', () => {
       );
 
       const result = analyzeTestFile(code, 'unit');
-      expect(result.issues.length).toBeGreaterThan(0);
+      expect(result.issues.map(issue => issue.code)).toContain('LIVE_CONTENT_IMPORT_IN_ISOLATED_TEST');
       const configIssue = result.issues.find((i) => i.code === 'LIVE_CONTENT_IMPORT_IN_ISOLATED_TEST');
-      expect(configIssue).toBeDefined();
+      expect(configIssue).toEqual(expect.objectContaining({
+        code: 'LIVE_CONTENT_IMPORT_IN_ISOLATED_TEST',
+      }));
     });
 
     it('flags property test importing live config', () => {

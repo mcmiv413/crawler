@@ -1,3 +1,9 @@
+/**
+ * Test layer: unit
+ * Behavior: Weapons covers WEAPONS; has at least one weapon defined; every weapon has weaponType defined.
+ * Proof: focused assertions verify returned values, state changes, rendered output, or emitted events.
+ * Validation: pnpm vitest run packages/content/src/items/weapons.test.ts
+ */
 import { describe, it, expect } from 'vitest';
 import { WEAPONS } from './weapons/index.js';
 import { WEAPON_TYPES } from '@dungeon/contracts';
@@ -12,12 +18,15 @@ import { WEAPON_TYPES } from '@dungeon/contracts';
  */
 describe('WEAPONS', () => {
   it('has at least one weapon defined', () => {
-    expect(WEAPONS.length).toBeGreaterThan(0);
+    expect(WEAPONS.map(w => w.itemId)).toEqual(expect.arrayContaining([
+      'rusty_sword',
+      'common_dagger',
+    ]));
   });
 
   it('every weapon has weaponType defined', () => {
     for (const w of WEAPONS) {
-      expect(w.weapon.weaponType, `${w.itemId} missing weaponType`).toBeDefined();
+      expect(WEAPON_TYPES, `${w.itemId} missing weaponType`).toContain(w.weapon.weaponType);
     }
   });
 

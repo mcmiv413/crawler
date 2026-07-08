@@ -1,4 +1,10 @@
 /**
+ * Test layer: contract
+ * Behavior: Player Fixture Validation covers Group 3: Validation failures produce explicit errors (contract suite); rejects unknown item id in inventory; rejects unknown ring spell id.
+ * Proof: live catalog/schema assertions validate IDs, shapes, and cross references.
+ * Validation: pnpm vitest run tests/contracts/player-fixture-validation.contract.test.ts
+ */
+/**
  * Contract tests for player fixture validation against live content registries.
  *
  * These tests verify that validatePlayerFixture correctly rejects fixture data

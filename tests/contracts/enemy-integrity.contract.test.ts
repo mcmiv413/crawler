@@ -1,3 +1,9 @@
+/**
+ * Test layer: contract
+ * Behavior: Enemy Integrity covers Enemy Content Integrity; Sprite uniqueness; no two enemies share the same sprite name.
+ * Proof: live catalog/schema assertions validate IDs, shapes, and cross references.
+ * Validation: pnpm vitest run tests/contracts/enemy-integrity.contract.test.ts
+ */
 import { describe, it, expect } from 'vitest';
 import { ENEMY_TEMPLATES, ENEMIES_BY_BIOME, BIOMES, FACTIONS } from '@dungeon/content';
 
@@ -103,9 +109,11 @@ describe('Enemy Content Integrity', () => {
       for (const t of ENEMY_TEMPLATES.values()) {
         const biomes = t.biomes ?? [];
         expect(
-          biomes.length,
+          biomes,
           `${t.templateId} belongs to no biome and can never spawn`,
-        ).toBeGreaterThan(0);
+        ).toEqual(expect.arrayContaining([
+          expect.objectContaining({ biomeId: expect.any(String) }),
+        ]));
       }
     });
 

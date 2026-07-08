@@ -1,3 +1,9 @@
+/**
+ * Test layer: unit
+ * Behavior: Emit Events covers buildAbilityUsedEvent; includes hit false for missed attack ability results; defaults hit true when the result does not specify a hit value.
+ * Proof: focused assertions verify returned values, state changes, rendered output, or emitted events.
+ * Validation: pnpm vitest run packages/game-core/src/abilities/runtime/emit-events.test.ts
+ */
 import { describe, expect, it } from 'vitest';
 import { entityId } from '@dungeon/contracts';
 import type { AbilityContext } from '../types.js';

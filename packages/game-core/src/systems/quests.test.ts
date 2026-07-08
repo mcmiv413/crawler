@@ -1,3 +1,9 @@
+/**
+ * Test layer: unit
+ * Behavior: Quests covers completeFloorDepthQuests; marks a reach_floor quest ready when the target depth is reached; leaves a reach_floor quest active when a diff....
+ * Proof: focused assertions verify returned values, state changes, rendered output, or emitted events.
+ * Validation: pnpm vitest run packages/game-core/src/systems/quests.test.ts
+ */
 import { describe, it, expect } from 'vitest';
 import { completeFloorDepthQuests } from './quests.js';
 import { createTestGameState } from '../test-utils.js';

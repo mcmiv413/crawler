@@ -1,4 +1,10 @@
 /**
+ * Test layer: unit
+ * Behavior: Three Status Ownership covers Status presentation ownership; initial state has statusPresentation = false; setting statusPresentation=true marks Three as owning status....
+ * Proof: focused assertions verify returned values, state changes, rendered output, or emitted events.
+ * Validation: pnpm vitest run apps/web/src/rendering/three/three-status-ownership.test.ts
+ */
+/**
  * Workstream 7: Status presentation ownership tests.
  *
  * Verifies that the status ownership suppression logic works correctly:

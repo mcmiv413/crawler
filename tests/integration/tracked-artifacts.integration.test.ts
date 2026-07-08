@@ -1,3 +1,9 @@
+/**
+ * Test layer: integration
+ * Behavior: Tracked Artifacts covers check-tracked-artifacts script; passes when only legitimate tracked files are present; fails when a banned generated artifact is already....
+ * Proof: integrated command, service, or repository assertions verify the cross-module result.
+ * Validation: pnpm vitest run tests/integration/tracked-artifacts.integration.test.ts
+ */
 import { afterEach, describe, expect, it } from 'vitest';
 import { mkdtempSync, mkdirSync, rmSync, writeFileSync } from 'node:fs';
 import { spawnSync } from 'node:child_process';

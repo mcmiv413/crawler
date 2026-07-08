@@ -1,3 +1,9 @@
+/**
+ * Test layer: unit
+ * Behavior: Execute Ability covers executeAbility ring spell runtime; awards lightning XP and respects shock resistance when Bolt lands; applies storm_active and awards bot....
+ * Proof: focused assertions verify returned values, state changes, rendered output, or emitted events.
+ * Validation: pnpm vitest run packages/game-core/src/abilities/runtime/execute-ability.test.ts
+ */
 import { describe, expect, it } from 'vitest';
 import { entityId, type AbilityUsedEvent, type ItemTemplate } from '@dungeon/contracts';
 import { createTestGameStateInCombat } from '../../test-utils.js';

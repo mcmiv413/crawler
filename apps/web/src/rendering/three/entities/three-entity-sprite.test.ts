@@ -1,4 +1,10 @@
 /**
+ * Test layer: unit
+ * Behavior: Three Entity Sprite covers createEntitySprite; returns a sprite instance with geometry and material; adds the mesh to the scene on creation.
+ * Proof: focused assertions verify returned values, state changes, rendered output, or emitted events.
+ * Validation: pnpm vitest run apps/web/src/rendering/three/entities/three-entity-sprite.test.ts
+ */
+/**
  * Tests for three-entity-sprite.ts
  *
  * Provides tile-sized plane geometry for rendering entities as sprites in the
@@ -51,10 +57,8 @@ describe('createEntitySprite', () => {
   it('returns a sprite instance with geometry and material', () => {
     const ctx = makeContext();
     const sprite = createEntitySprite(ctx);
-    expect(sprite).toBeDefined();
-    expect(sprite.geometry).toBeDefined();
-    expect(sprite.material).toBeDefined();
-    expect(sprite.mesh).toBeDefined();
+    expect(sprite.mesh.geometry).toBe(sprite.geometry);
+    expect(sprite.mesh.material).toBe(sprite.material);
   });
 
   it('adds the mesh to the scene on creation', () => {

@@ -1,3 +1,9 @@
+/**
+ * Test layer: unit
+ * Behavior: Command Result Commit Coordinator covers CommandResultCommitCoordinator; should commit the latest pendingQueueDrainCommit when queue drains after two staged commands; should pres....
+ * Proof: focused assertions verify returned values, state changes, rendered output, or emitted events.
+ * Validation: pnpm vitest run apps/web/src/store/command-result-commit-coordinator.test.ts
+ */
 import { describe, it, expect, vi, beforeEach } from 'vitest';
 import type { GameView, CombatLogEntry } from '@dungeon/presenter';
 import * as presenter from '@dungeon/presenter';

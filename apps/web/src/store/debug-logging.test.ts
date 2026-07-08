@@ -1,3 +1,9 @@
+/**
+ * Test layer: unit
+ * Behavior: Debug Logging covers debug-logging; isAttackCommand; returns true for ATTACK command.
+ * Proof: focused assertions verify returned values, state changes, rendered output, or emitted events.
+ * Validation: pnpm vitest run apps/web/src/store/debug-logging.test.ts
+ */
 import { describe, it, expect, vi, afterEach } from 'vitest';
 import { isAttackCommand, logDebugAttack, logDebugCombatResult } from './debug-logging.js';
 import type { GameView } from '@dungeon/presenter';

@@ -1,10 +1,17 @@
+/**
+ * Test layer: unit
+ * Behavior: Enemy Respawn covers checkRespawn; returns unchanged state if respawn interval not reached; respawns an enemy when interval is reached and count < max.
+ * Proof: focused assertions verify returned values, state changes, rendered output, or emitted events.
+ * Validation: pnpm vitest run packages/game-core/src/systems/enemy-respawn.test.ts
+ */
 import { describe, it, expect } from 'vitest';
 import { checkRespawn, respawnEnemiesOnPersistedFloor, simulatePersistedFloorTimeElapsed } from './enemy-respawn.js';
 import { computeFov } from './fov.js';
 import { createTestGameState, createTestRunState, createTestEnemy } from '../test-utils.js';
 import { SeededRNG } from '../utils/rng.js';
 import type { MapCell, StoredFloor } from '@dungeon/contracts';
-import type { BiomeDefinition } from '@dungeon/content';
+
+type BiomeDefinition = Parameters<typeof checkRespawn>[1];
 
 const stoneCrypt: BiomeDefinition = {
   biomeId: 'stone_crypt',

@@ -1,4 +1,10 @@
 /**
+ * Test layer: contract
+ * Behavior: Three Animation Coverage covers Three animation module coverage contract; content catalog has at least 20 animation IDs; every content AnimationId has a registered Three....
+ * Proof: live catalog/schema assertions validate IDs, shapes, and cross references.
+ * Validation: pnpm vitest run tests/contracts/three-animation-coverage.contract.test.ts
+ */
+/**
  * Contract test: Three.js animation module coverage.
  *
  * Verifies that every AnimationId declared in @dungeon/content has a

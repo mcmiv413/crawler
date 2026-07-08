@@ -1,4 +1,10 @@
 /**
+ * Test layer: unit
+ * Behavior: Status Modules covers goldRingPulse; heatSurgeRing; arcaneChargeRing.
+ * Proof: focused assertions verify returned values, state changes, rendered output, or emitted events.
+ * Validation: pnpm vitest run apps/web/src/rendering/three/modules/status/status-modules.test.ts
+ */
+/**
  * Lifecycle contract tests for all status Three animation modules.
  */
 

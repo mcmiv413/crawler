@@ -1,3 +1,9 @@
+/**
+ * Test layer: unit
+ * Behavior: Permadeath Message covers getPermadeathProximityMessage; handles threshold === 0 without division by zero; returns clean kill message when overkillDamage === 0.
+ * Proof: focused assertions verify returned values, state changes, rendered output, or emitted events.
+ * Validation: pnpm vitest run apps/web/src/utils/permadeath-message.test.ts
+ */
 import { describe, it, expect } from 'vitest';
 import { getPermadeathProximityMessage } from './permadeath-message.js';
 

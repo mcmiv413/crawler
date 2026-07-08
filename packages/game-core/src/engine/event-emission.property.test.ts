@@ -1,4 +1,10 @@
 /**
+ * Test layer: property
+ * Behavior: Event Emission covers Event Emission Guarantees (Property Tests); MOVE command; always emits PLAYER_MOVED and advances turn.
+ * Proof: seeded/generated cases preserve the invariant under varied inputs.
+ * Validation: pnpm vitest run packages/game-core/src/engine/event-emission.property.test.ts
+ */
+/**
  * Event Emission Guarantee Tests (Property-Based)
  *
  * These tests prove that critical commands ALWAYS emit expected events
@@ -242,7 +248,11 @@ describe('Event Emission Guarantees (Property Tests)', () => {
 
           // Equipment should be updated or event explains why not
           const equipmentChanged = result.state.player.equipment !== state.player.equipment;
-          expect(equipmentChanged || result.events.length > 0).toBe(true);
+          if (equipmentChanged) {
+            expect(result.state.player.equipment).not.toBe(state.player.equipment);
+          } else {
+            expect(result.events.map(event => event.type)).toContain('PLAYER_ACTION_REJECTED');
+          }
         }),
       );
     });

@@ -1,3 +1,9 @@
+/**
+ * Test layer: unit
+ * Behavior: Damage covers damage system; applyDamageToPlayer; applies damage and reduces health.
+ * Proof: focused assertions verify returned values, state changes, rendered output, or emitted events.
+ * Validation: pnpm vitest run packages/game-core/src/systems/damage.test.ts
+ */
 import { describe, it, expect } from 'vitest';
 import { applyDamageToEnemy, applyDamageToPlayer } from './damage.js';
 import { hazardTypeToDamageType } from './hazard-damage.js';

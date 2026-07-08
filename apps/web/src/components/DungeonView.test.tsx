@@ -1,5 +1,11 @@
 /// <reference types="@testing-library/jest-dom" />
 
+/**
+ * Test layer: unit
+ * Behavior: DungeonView covers DungeonView; starts auto-walk when clicking a reachable tile outside tile-target mode; casts the selected tile-target ability instead of....
+ * Proof: focused assertions verify returned values, state changes, rendered output, or emitted events.
+ * Validation: pnpm vitest run apps/web/src/components/DungeonView.test.tsx
+ */
 import React from 'react';
 import { beforeEach, describe, expect, it, vi } from 'vitest';
 import { fireEvent, render, screen } from '@testing-library/react';

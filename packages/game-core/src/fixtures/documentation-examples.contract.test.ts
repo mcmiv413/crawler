@@ -1,4 +1,10 @@
 /**
+ * Test layer: contract
+ * Behavior: Documentation Examples covers Documentation Examples Validation; Quick Start Example (docsguidesadding-fixture.md); should validate the Quick Start example fixture.
+ * Proof: live catalog/schema assertions validate IDs, shapes, and cross references.
+ * Validation: pnpm vitest run packages/game-core/src/fixtures/documentation-examples.contract.test.ts
+ */
+/**
  * Documentation Examples Validation Test
  *
  * Validates that all JSON examples in docs/guides/adding-fixture.md

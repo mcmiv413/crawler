@@ -1,3 +1,9 @@
+/**
+ * Test layer: unit
+ * Behavior: UseBumpAnimationState covers useBumpAnimationState; returns empty animations initially; tracks active bump animations.
+ * Proof: focused assertions verify returned values, state changes, rendered output, or emitted events.
+ * Validation: pnpm vitest run apps/web/src/hooks/useBumpAnimationState.test.ts
+ */
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import { act, renderHook } from '@testing-library/react';
 import type { BumpAnimationEntry } from '@dungeon/presenter';

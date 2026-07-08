@@ -1,3 +1,9 @@
+/**
+ * Test layer: unit
+ * Behavior: Turn Scheduler covers processEnemyTurns; fastest enemy acts first (speed ordering); emits enemy attacks in strict speed-descending order.
+ * Proof: focused assertions verify returned values, state changes, rendered output, or emitted events.
+ * Validation: pnpm vitest run packages/game-core/src/engine/turn-scheduler.test.ts
+ */
 import { describe, it, expect } from 'vitest';
 import { processEnemyTurns } from './turn-scheduler.js';
 import { SeededRNG } from '../utils/rng.js';
@@ -194,7 +200,10 @@ describe('processEnemyTurns', () => {
     const { events } = processEnemyTurns(state, rng);
 
     const alertEvent = events.find((e) => e.type === 'ENEMY_ALERTED');
-    expect(alertEvent).toBeDefined();
+    expect(alertEvent).toEqual(expect.objectContaining({
+      enemyId: enemy.id,
+      type: 'ENEMY_ALERTED',
+    }));
   });
 
   it('un-alerted enemy beyond range 5 stays idle', () => {
@@ -244,7 +253,10 @@ describe('processEnemyTurns', () => {
     const attackEvent = events.find(
       (e) => e.type === 'ATTACK_PERFORMED' && (e as any).attackerId === enemy.id,
     );
-    expect(attackEvent).toBeDefined();
+    expect(attackEvent).toEqual(expect.objectContaining({
+      attackerId: enemy.id,
+      type: 'ATTACK_PERFORMED',
+    }));
   });
 
   it('enemy attack damages player', () => {

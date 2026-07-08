@@ -1,4 +1,10 @@
 /**
+ * Test layer: integration
+ * Behavior: Scenario Runtime Validation covers Group 1: Scenario Loading; a valid scenario loads into a dungeon-phase GameState; loaded state initializes all core systems (player, run,....
+ * Proof: integrated command, service, or repository assertions verify the cross-module result.
+ * Validation: pnpm vitest run packages/game-core/src/fixtures/scenario-runtime-validation.integration.test.ts
+ */
+/**
  * Scenario Fixture Runtime Validation Tests
  *
  * The most important deliverable of the scenario system: confidence that a

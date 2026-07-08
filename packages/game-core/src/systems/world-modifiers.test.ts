@@ -1,3 +1,9 @@
+/**
+ * Test layer: unit
+ * Behavior: World Modifiers covers buildWorldModifiers; default world returns empty preferences and stable faction multipliers; high fear adds aggressive archetype preferences.
+ * Proof: focused assertions verify returned values, state changes, rendered output, or emitted events.
+ * Validation: pnpm vitest run packages/game-core/src/systems/world-modifiers.test.ts
+ */
 import { describe, expect, it } from 'vitest';
 import { buildWorldModifiers } from './world-modifiers.js';
 import { createTestGameState } from '../test-utils.js';

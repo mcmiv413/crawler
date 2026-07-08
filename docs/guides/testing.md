@@ -89,6 +89,14 @@ New or changed test files must start with a short intent header before the test 
 
 Allowed layers are `Unit`, `Property`, `Contract`, `Integration`, `Balance`, and `E2E`. The validation line must name the smallest relevant `pnpm` command. The header is enforced by `pnpm run check:test-quality` for changed test files only.
 
+To audit the full tracked test suite without failing the command, run:
+
+```bash
+pnpm run check:test-quality -- --report-all
+```
+
+This prints a `file -> [violations]` table for tracked test files and exits successfully so batches can be partitioned before editing. The normal `pnpm run check:test-quality` gate remains the failing pre-commit check for changed test files.
+
 If a skipped test is intentional, add a nearby searchable allowlist comment with a reason:
 
 ```ts

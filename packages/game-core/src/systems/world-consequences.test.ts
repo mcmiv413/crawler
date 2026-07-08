@@ -1,3 +1,9 @@
+/**
+ * Test layer: unit
+ * Behavior: World Consequences covers applyRunConsequences; decreases prosperity on death; increases prosperity on retreat.
+ * Proof: focused assertions verify returned values, state changes, rendered output, or emitted events.
+ * Validation: pnpm vitest run packages/game-core/src/systems/world-consequences.test.ts
+ */
 import { describe, it, expect } from 'vitest';
 import { applyRunConsequences, evaluateEventChains } from './world-consequences.js';
 import type { RunMetrics, NpcState } from '@dungeon/contracts';
@@ -35,7 +41,7 @@ describe('applyRunConsequences', () => {
     const state = createTestGameState();
     const { events } = applyRunConsequences(state, metrics({ causeOfEnd: 'death' }));
     const changes = events.filter(e => e.type === 'TOWN_STATE_CHANGED');
-    expect(changes.length).toBeGreaterThan(0);
+    expect(changes.map(change => change.type)).toContain('TOWN_STATE_CHANGED');
   });
 });
 

@@ -1,3 +1,9 @@
+/**
+ * Test layer: unit
+ * Behavior: Progression covers checkLevelUp; does nothing when XP is insufficient; levels up when XP meets threshold.
+ * Proof: focused assertions verify returned values, state changes, rendered output, or emitted events.
+ * Validation: pnpm vitest run packages/game-core/src/systems/progression.test.ts
+ */
 import { describe, it, expect } from 'vitest';
 import { checkLevelUp } from './progression.js';
 import { BASE_TEST_STATS, createTestGameState } from '../test-utils.js';

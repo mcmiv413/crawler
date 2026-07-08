@@ -1,3 +1,9 @@
+/**
+ * Test layer: unit
+ * Behavior: Enemy Abilities covers Enemy Abilities; ENEMY_ABILITY_DEFINITIONS; should have crushing_blow ability.
+ * Proof: focused assertions verify returned values, state changes, rendered output, or emitted events.
+ * Validation: pnpm vitest run packages/game-core/src/systems/enemy-abilities.test.ts
+ */
 import { describe, it, expect } from 'vitest';
 import { ENEMY_ABILITY_DEFINITIONS, resolveEnemyAbility } from './enemy-abilities.js';
 import type { EnemyAction } from './enemy-ai.js';
@@ -8,27 +14,39 @@ import { posKey } from '@dungeon/contracts';
 describe('Enemy Abilities', () => {
   describe('ENEMY_ABILITY_DEFINITIONS', () => {
     it('should have crushing_blow ability', () => {
-      expect(ENEMY_ABILITY_DEFINITIONS.get('crushing_blow')).toBeDefined();
+      expect(ENEMY_ABILITY_DEFINITIONS.get('crushing_blow')).toEqual(expect.objectContaining({
+        id: 'crushing_blow',
+      }));
     });
 
     it('should have fire_bolt ability', () => {
-      expect(ENEMY_ABILITY_DEFINITIONS.get('fire_bolt')).toBeDefined();
+      expect(ENEMY_ABILITY_DEFINITIONS.get('fire_bolt')).toEqual(expect.objectContaining({
+        id: 'fire_bolt',
+      }));
     });
 
     it('should have flame_trail ability', () => {
-      expect(ENEMY_ABILITY_DEFINITIONS.get('flame_trail')).toBeDefined();
+      expect(ENEMY_ABILITY_DEFINITIONS.get('flame_trail')).toEqual(expect.objectContaining({
+        id: 'flame_trail',
+      }));
     });
 
     it('should have frost_bolt ability', () => {
-      expect(ENEMY_ABILITY_DEFINITIONS.get('frost_bolt')).toBeDefined();
+      expect(ENEMY_ABILITY_DEFINITIONS.get('frost_bolt')).toEqual(expect.objectContaining({
+        id: 'frost_bolt',
+      }));
     });
 
     it('should have roar ability', () => {
-      expect(ENEMY_ABILITY_DEFINITIONS.get('roar')).toBeDefined();
+      expect(ENEMY_ABILITY_DEFINITIONS.get('roar')).toEqual(expect.objectContaining({
+        id: 'roar',
+      }));
     });
 
     it('should have chilling_aura ability', () => {
-      expect(ENEMY_ABILITY_DEFINITIONS.get('chilling_aura')).toBeDefined();
+      expect(ENEMY_ABILITY_DEFINITIONS.get('chilling_aura')).toEqual(expect.objectContaining({
+        id: 'chilling_aura',
+      }));
     });
   });
 
@@ -102,7 +120,7 @@ describe('Enemy Abilities', () => {
 
       const result = resolveEnemyAbility('frost_bolt', enemy, state, rng);
 
-      expect(result.events.length).toBeGreaterThan(0);
+      expect(result.events.map(event => event.type)).toContain('ATTACK_PERFORMED');
     });
 
     it('resolves roar ability', () => {
@@ -162,7 +180,10 @@ describe('Enemy Abilities', () => {
       const result = resolveEnemyAbility('flame_trail', enemy, state, rng);
 
       const statusEvent = result.events.find(e => e.type === 'STATUS_APPLIED' && (e as any).statusId === 'burn');
-      expect(statusEvent).toBeDefined();
+      expect(statusEvent).toEqual(expect.objectContaining({
+        statusId: 'burn',
+        type: 'STATUS_APPLIED',
+      }));
     });
 
     it('frost_bolt applies slow status on hit', () => {
@@ -173,11 +194,14 @@ describe('Enemy Abilities', () => {
       const result = resolveEnemyAbility('frost_bolt', enemy, state, rng);
 
       const attackEvent = result.events.find(e => e.type === 'ATTACK_PERFORMED');
-      expect(attackEvent).toBeDefined();
+      expect(attackEvent).toEqual(expect.objectContaining({ type: 'ATTACK_PERFORMED' }));
 
       if (attackEvent && (attackEvent as any).hit) {
         const slowEvent = result.events.find(e => e.type === 'STATUS_APPLIED' && (e as any).statusId === 'slow');
-        expect(slowEvent).toBeDefined();
+        expect(slowEvent).toEqual(expect.objectContaining({
+          statusId: 'slow',
+          type: 'STATUS_APPLIED',
+        }));
       }
     });
 

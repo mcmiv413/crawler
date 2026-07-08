@@ -1,3 +1,9 @@
+/**
+ * Test layer: unit
+ * Behavior: Event Formatter covers formatEvent; formats ATTACK_PERFORMED hit with damage; formats ATTACK_PERFORMED critical hit.
+ * Proof: focused assertions verify returned values, state changes, rendered output, or emitted events.
+ * Validation: pnpm vitest run packages/presenter/src/event-formatter.test.ts
+ */
 import { describe, it, expect } from 'vitest';
 import { formatEvent, formatEvents } from './event-formatter.js';
 import type { DomainEvent } from '@dungeon/contracts';

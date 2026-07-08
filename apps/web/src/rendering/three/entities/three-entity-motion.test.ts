@@ -1,4 +1,10 @@
 /**
+ * Test layer: unit
+ * Behavior: Three Entity Motion covers computeMoveScreenPosition; at progress 0 returns tile center of fromPos; at progress 1 returns tile center of toPos.
+ * Proof: focused assertions verify returned values, state changes, rendered output, or emitted events.
+ * Validation: pnpm vitest run apps/web/src/rendering/three/entities/three-entity-motion.test.ts
+ */
+/**
  * Workstream 6: Entity motion in Three.js overlay.
  *
  * three-entity-motion.ts — logic for computing entity positions during

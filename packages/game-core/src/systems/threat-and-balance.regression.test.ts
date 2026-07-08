@@ -1,3 +1,9 @@
+/**
+ * Test layer: unit
+ * Behavior: Threat and Balance.regression covers Regression Tests - Threat and Balance Rules; Threat Detection (isPlayerThreatened); returns false when not in dungeon.
+ * Proof: focused assertions verify returned values, state changes, rendered output, or emitted events.
+ * Validation: pnpm vitest run packages/game-core/src/systems/threat-and-balance.regression.test.ts
+ */
 import { describe, it, expect } from 'vitest';
 import { isPlayerThreatened } from './threat.js';
 import { computeEnemyThreatRating } from './threat-rating.js';

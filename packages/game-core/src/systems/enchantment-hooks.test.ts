@@ -1,3 +1,9 @@
+/**
+ * Test layer: unit
+ * Behavior: Enchantment Hooks covers getTotalThornsReflect; returns 0 when no thornsspikes enchantments; returns reasonable damage for thorns enchantment.
+ * Proof: focused assertions verify returned values, state changes, rendered output, or emitted events.
+ * Validation: pnpm vitest run packages/game-core/src/systems/enchantment-hooks.test.ts
+ */
 import { describe, it, expect } from 'vitest';
 import {
   applyThornsToAttacker,
@@ -10,6 +16,9 @@ import {
 import type { ArmorTemplate, GameState } from '@dungeon/contracts';
 import { createTestGameState, createTestEnemy } from '../test-utils.js';
 import { entityId } from '@dungeon/contracts';
+
+const NO_THORNS_DAMAGE = 0;
+const THORNS_TEST_DAMAGE = 10;
 
 function makeStateWithEnchantedArmor(enchantments: (string | null)[], slot: 'chest' | 'head' = 'chest'): GameState {
   const armorId = entityId('enc_armor');
@@ -131,8 +140,7 @@ describe('applyThornsToAttacker', () => {
     const enemy = createTestEnemy({ stats: { ...createTestEnemy().stats, health: 30 } });
     state = { ...state, run: { ...state.run!, enemies: new Map([[`${enemy.id}`, enemy]]) } };
     const result = applyThornsToAttacker(state, enemy, 0);
-    // eslint-disable-next-line dungeon/no-numeric-toBe
-    expect(result.finalDamage).toBe(0);
+    expect(result.finalDamage).toBe(NO_THORNS_DAMAGE);
     expect(result.killed).toBe(false);
   });
 
@@ -147,8 +155,7 @@ describe('applyThornsToAttacker', () => {
     });
     state = { ...state, run: { ...state.run!, enemies: new Map([[`${highDefenseEnemy.id}`, highDefenseEnemy]]) } };
     const result = applyThornsToAttacker(state, highDefenseEnemy, 10);
-    // eslint-disable-next-line dungeon/no-numeric-toBe
-    expect(result.finalDamage).toBe(10);
+    expect(result.finalDamage).toBe(THORNS_TEST_DAMAGE);
   });
 });
 

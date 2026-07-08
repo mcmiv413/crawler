@@ -1,3 +1,9 @@
+/**
+ * Test layer: unit
+ * Behavior: Feature Flags covers isDepthAtmosphereEnabledFlag; default behaviour (no env var, no override); returns true when VITE_DEPTH_ATMOSPHERE is not set.
+ * Proof: focused assertions verify returned values, state changes, rendered output, or emitted events.
+ * Validation: pnpm vitest run apps/web/src/config/feature-flags.test.ts
+ */
 import { describe, it, expect, vi, afterEach } from 'vitest';
 import {
   isDepthAtmosphereEnabledFlag,

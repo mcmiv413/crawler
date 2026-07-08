@@ -1,3 +1,9 @@
+/**
+ * Test layer: unit
+ * Behavior: DungeonCanvas covers DungeonCanvas; prop-driven rendering; accepts bumpAnimations as a prop and forwards it to renderMap.
+ * Proof: focused assertions verify returned values, state changes, rendered output, or emitted events.
+ * Validation: pnpm vitest run apps/web/src/components/DungeonCanvas.test.tsx
+ */
 import React from 'react';
 import { beforeEach, describe, expect, it, vi } from 'vitest';
 import { fireEvent, render } from '@testing-library/react';

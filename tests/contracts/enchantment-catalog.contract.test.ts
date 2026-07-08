@@ -1,3 +1,9 @@
+/**
+ * Test layer: contract
+ * Behavior: Enchantment Catalog covers Enchantment Catalog Contract; all enchantments have non-empty names defined in content; all enchantments have valid tiers.
+ * Proof: live catalog/schema assertions validate IDs, shapes, and cross references.
+ * Validation: pnpm vitest run tests/contracts/enchantment-catalog.contract.test.ts
+ */
 import { describe, it, expect } from 'vitest';
 import { ENCHANTMENT_BY_ID, getEnchantmentCost } from '@dungeon/content';
 
@@ -13,8 +19,7 @@ import { ENCHANTMENT_BY_ID, getEnchantmentCost } from '@dungeon/content';
 describe('Enchantment Catalog Contract', () => {
   it('all enchantments have non-empty names defined in content', () => {
     for (const [enchId, enchDef] of ENCHANTMENT_BY_ID) {
-      expect(enchDef.name, `enchantment ${enchId} has no name`).toBeDefined();
-      expect(enchDef.name.length, `enchantment ${enchId} has empty name`).toBeGreaterThan(0);
+      expect(enchDef.name, `enchantment ${enchId} has empty name`).toMatch(/\S/);
     }
   });
 

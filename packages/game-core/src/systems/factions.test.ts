@@ -1,3 +1,9 @@
+/**
+ * Test layer: unit
+ * Behavior: Factions covers faction progression; member kills reduce power and increment faction kill tracking; player death against a leaderless faction creates a l....
+ * Proof: focused assertions verify returned values, state changes, rendered output, or emitted events.
+ * Validation: pnpm vitest run packages/game-core/src/systems/factions.test.ts
+ */
 import { describe, expect, it } from 'vitest';
 import type { EnemyTemplate, EntityId, FactionState } from '@dungeon/contracts';
 import {

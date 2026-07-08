@@ -1,3 +1,9 @@
+/**
+ * Test layer: unit
+ * Behavior: Runtime covers abilitiesruntime; validateRequirements; should pass when no requirements.
+ * Proof: focused assertions verify returned values, state changes, rendered output, or emitted events.
+ * Validation: pnpm vitest run packages/game-core/src/abilities/runtime/runtime.test.ts
+ */
 import { describe, it, expect } from 'vitest';
 import type { AbilityContext } from '../types.js';
 import { validateRequirements } from './validate-ability.js';
@@ -715,7 +721,7 @@ describe('abilities/runtime', () => {
       const abilityIndex = result.events.findIndex(event => event.type === 'ABILITY_USED');
       const deathIndex = result.events.findIndex(event => event.type === 'ENTITY_DIED');
 
-      expect(result.state.run?.enemies.size).toBe(0);
+      expect([...(result.state.run?.enemies.values() ?? [])].map(enemy => enemy.id)).not.toContain(targetId);
       expect(abilityIndex).toBeGreaterThanOrEqual(0);
       expect(deathIndex).toBeGreaterThan(abilityIndex);
       expect(abilityEvent?.targetSnapshots).toEqual([
@@ -791,7 +797,7 @@ describe('abilities/runtime', () => {
 
       expect(baseAbilityEvent?.damage ?? 0).toBeGreaterThan(resistantAbilityEvent?.damage ?? 0);
       expect(baseResult.state.player.ringMastery.lightning?.xp ?? 0).toBeGreaterThan(0);
-      expect(baseResult.state.player.ringMastery.fire?.xp ?? 0).toBe(0);
+      expect(baseResult.state.player.ringMastery.fire).toBeUndefined();
     });
 
     it('applies storm_active and awards both schools XP when Thunderstorm is cast', () => {

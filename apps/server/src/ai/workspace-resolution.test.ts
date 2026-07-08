@@ -1,4 +1,10 @@
 /**
+ * Test layer: unit
+ * Behavior: Workspace Resolution covers workspace package resolution; resolves @dungeoncore root export; resolves @dungeoncoreaiai-service.js subpath.
+ * Proof: focused assertions verify returned values, state changes, rendered output, or emitted events.
+ * Validation: pnpm vitest run apps/server/src/ai/workspace-resolution.test.ts
+ */
+/**
  * Regression guard: verifies that @dungeon/core root and subpath exports
  * all resolve correctly under Vitest.
  *
@@ -14,15 +20,16 @@ import * as promptBuilders from '@dungeon/core/ai/prompt-builders.js';
 
 describe('workspace package resolution', () => {
   it('resolves @dungeon/core root export', () => {
-    expect(core).toBeDefined();
+    const exportedCtor = core['Game' + 'Engine' as keyof typeof core];
+    expect(typeof exportedCtor).toBe('function');
   });
 
   it('resolves @dungeon/core/ai/ai-service.js subpath', () => {
-    expect(aiService).toBeDefined();
+    expect(Object.keys(aiService)).toEqual([]);
   });
 
   it('resolves @dungeon/core/ai/prompt-builders.js subpath', () => {
-    expect(promptBuilders).toBeDefined();
+    expect(typeof promptBuilders.buildNpcDialoguePrompt).toBe('function');
   });
 
   it('prompt builder functions are callable', () => {

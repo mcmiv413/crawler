@@ -1,3 +1,9 @@
+/**
+ * Test layer: unit
+ * Behavior: Trap Hazards covers Trap Hazard Death Attribution; should attribute death to trap hazard when player steps on trap; should populate death context with trap h....
+ * Proof: focused assertions verify returned values, state changes, rendered output, or emitted events.
+ * Validation: pnpm vitest run packages/game-core/src/systems/trap-hazards.test.ts
+ */
 import { describe, it, expect } from 'vitest';
 import { handlePlayerDeath } from './death.js';
 import { SeededRNG } from '../utils/rng.js';

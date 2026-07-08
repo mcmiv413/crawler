@@ -1,4 +1,10 @@
 /**
+ * Test layer: unit
+ * Behavior: Game Store covers useGameStore (Zustand); createGame; success: POST apigames → state updates (gameId, view, loading cleared).
+ * Proof: focused assertions verify returned values, state changes, rendered output, or emitted events.
+ * Validation: pnpm vitest run apps/web/src/store/game-store.test.ts
+ */
+/**
  * Game Store Tests (Zustand)
  *
  * Comprehensive tests for the game store covering:

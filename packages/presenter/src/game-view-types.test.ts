@@ -1,3 +1,9 @@
+/**
+ * Test layer: unit
+ * Behavior: Game View Types covers GameView DeathContext type; should define DeathContext interface with required fields; should allow null killerName and killerSpriteName.
+ * Proof: focused assertions verify returned values, state changes, rendered output, or emitted events.
+ * Validation: pnpm vitest run packages/presenter/src/game-view-types.test.ts
+ */
 import { describe, it, expect } from 'vitest';
 import type { DeathContext, GameView } from './game-view.js';
 

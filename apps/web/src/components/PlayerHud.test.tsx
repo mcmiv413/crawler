@@ -1,3 +1,9 @@
+/**
+ * Test layer: unit
+ * Behavior: PlayerHud covers PlayerHud compact layout; keeps compact bars in 3-column layout on desktop; renders HP, MP, and XP in 3-column layout on mobile compact HUD.
+ * Proof: focused assertions verify returned values, state changes, rendered output, or emitted events.
+ * Validation: pnpm vitest run apps/web/src/components/PlayerHud.test.tsx
+ */
 import React from 'react';
 import { beforeEach, describe, expect, it, vi } from 'vitest';
 import { render, screen } from '@testing-library/react';

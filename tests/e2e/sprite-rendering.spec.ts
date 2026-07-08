@@ -1,3 +1,9 @@
+/**
+ * Test layer: e2e
+ * Behavior: Sprite Rendering covers Sprite renderer; should render sprites on dungeon canvas; should show sprite sheet loaded.
+ * Proof: Playwright actions and visible UI assertions verify the browser-facing outcome.
+ * Validation: pnpm test:e2e tests/e2e/sprite-rendering.spec.ts
+ */
 import { test, expect } from '@playwright/test';
 import type { Page } from '@playwright/test';
 import { expectDungeonCanvasVisible } from './support/layout.js';

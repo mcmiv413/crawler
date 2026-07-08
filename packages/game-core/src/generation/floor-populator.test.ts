@@ -1,5 +1,10 @@
+/**
+ * Test layer: unit
+ * Behavior: Floor Populator covers populateFloor; spawns enemies and objects at valid positions on a standard floor; extraEnemies increases spawn count for the same floor seed.
+ * Proof: focused assertions verify returned values, state changes, rendered output, or emitted events.
+ * Validation: pnpm vitest run packages/game-core/src/generation/floor-populator.test.ts
+ */
 import { describe, expect, it } from 'vitest';
-import type { BiomeDefinition } from '@dungeon/content';
 import { posKey } from '@dungeon/contracts';
 import { populateFloor } from './floor-populator.js';
 import type { WorldModifiers } from '../systems/world-modifiers.js';
@@ -8,6 +13,8 @@ import { chebyshevDistance } from '../utils/grid.js';
 import { SeededRNG } from '../utils/rng.js';
 import { buildWorldModifiers } from '../systems/world-modifiers.js';
 import { createTestGameState } from '../test-utils.js';
+
+type BiomeDefinition = Parameters<typeof populateFloor>[1];
 
 // ---------------------------------------------------------------------------
 // Local biome fixtures -- avoids importing live @dungeon/content in unit tests

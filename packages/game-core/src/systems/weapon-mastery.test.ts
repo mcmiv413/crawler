@@ -1,3 +1,9 @@
+/**
+ * Test layer: unit
+ * Behavior: Weapon Mastery covers checkWeaponMasteryUnlocks; grants T1 ability when blade hits reach 10; grants T2 ability when blade hits reach 25.
+ * Proof: focused assertions verify returned values, state changes, rendered output, or emitted events.
+ * Validation: pnpm vitest run packages/game-core/src/systems/weapon-mastery.test.ts
+ */
 import { describe, it, expect } from 'vitest';
 import { checkWeaponMasteryUnlocks } from './weapon-mastery.js';
 import { createTestGameState, createTestRunState } from '../test-utils.js';

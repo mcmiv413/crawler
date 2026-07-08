@@ -1,3 +1,9 @@
+/**
+ * Test layer: integration
+ * Behavior: Save Snapshot covers SaveSnapshot validation path consistency; uses root weaponMastery paths; uses player equipment paths for missing and incompatible equipment.
+ * Proof: integrated GameEngine and snapshot assertions verify validation paths and state compatibility.
+ * Validation: pnpm vitest run packages/game-core/src/state/save-snapshot.test.ts
+ */
 import { describe, expect, it } from 'vitest';
 import type {
   AnyItemTemplate,

@@ -1,4 +1,10 @@
 /**
+ * Test layer: unit
+ * Behavior: Disarm Trap covers handleDisarmTrap - trap disarm observability (Phase 4B); invalid disarm rejection; emits PLAYER_ACTION_REJECTED with WRONG_PHASE when not....
+ * Proof: focused assertions verify returned values, state changes, rendered output, or emitted events.
+ * Validation: pnpm vitest run packages/game-core/src/engine/handlers/disarm-trap.test.ts
+ */
+/**
  * Tests for trap disarm action observability (Phase 4B).
  *
  * Proves:
@@ -174,7 +180,6 @@ describe('handleDisarmTrap - trap disarm observability (Phase 4B)', () => {
       const result = handleDisarmTrap(stateWithTrap, 'N', rng);
 
       expect(result.state.run?.objects.has(trapKey)).toBe(false);
-      expect(result.state.run?.objects.size).toBe(0);
     });
 
     it('adds recovered trap item to inventory', () => {

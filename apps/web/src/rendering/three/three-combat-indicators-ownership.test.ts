@@ -1,4 +1,10 @@
 /**
+ * Test layer: unit
+ * Behavior: Three Combat Indicators Ownership covers Combat indicators ownership; initial state has combatIndicators = false; setting combatIndicators=true marks Three as owning label rendering.
+ * Proof: focused assertions verify returned values, state changes, rendered output, or emitted events.
+ * Validation: pnpm vitest run apps/web/src/rendering/three/three-combat-indicators-ownership.test.ts
+ */
+/**
  * Workstream 8: Combat indicators and hit flash ownership tests.
  *
  * Tests for:

@@ -1,3 +1,9 @@
+/**
+ * Test layer: property
+ * Behavior: Combat covers Combat - Property-Based Tests; Hit chance determinism; same seed produces same hitmiss sequences.
+ * Proof: seeded/generated cases preserve the invariant under varied inputs.
+ * Validation: pnpm vitest run packages/game-core/src/systems/combat.property.test.ts
+ */
 import { describe, it, expect } from 'vitest';
 import fc from 'fast-check';
 import { SeededRNG } from '../utils/rng.js';

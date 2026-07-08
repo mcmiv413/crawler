@@ -1,3 +1,9 @@
+/**
+ * Test layer: unit
+ * Behavior: Quest Progress covers Quest Progress System; evaluateQuestProgress; marks a collect_item quest ready when player acquires item.
+ * Proof: focused assertions verify returned values, state changes, rendered output, or emitted events.
+ * Validation: pnpm vitest run packages/game-core/src/systems/quest-progress.test.ts
+ */
 import { describe, it, expect } from 'vitest';
 import type { GameState, Quest } from '@dungeon/contracts';
 import { entityId } from '@dungeon/contracts';

@@ -1,3 +1,9 @@
+/**
+ * Test layer: unit
+ * Behavior: Entrypoint covers Server entrypoint separation; buildApp() can be imported without triggering listener startup; buildApp() creates a Fastify instance.
+ * Proof: focused assertions verify returned values, state changes, rendered output, or emitted events.
+ * Validation: pnpm vitest run apps/server/src/entrypoint.test.ts
+ */
 import { describe, it, expect } from 'vitest';
 
 describe('Server entrypoint separation', () => {

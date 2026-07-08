@@ -1,4 +1,10 @@
 /**
+ * Test layer: contract
+ * Behavior: Example Fixtures covers example fixture: new-character; passes validation; loads into a player at level 1.
+ * Proof: live catalog/schema assertions validate IDs, shapes, and cross references.
+ * Validation: pnpm vitest run packages/game-core/src/fixtures/example-fixtures.contract.test.ts
+ */
+/**
  * Contract tests for the example player fixtures.
  *
  * Verifies that each fixture file under fixtures/players/ is valid and
@@ -82,7 +88,7 @@ describe('example fixture: midgame-warrior', () => {
 
   it('has inventory items', () => {
     const { player } = loadPlayerFromFixture(fixture);
-    expect(player.inventory.length).toBeGreaterThan(0);
+    expect(player.inventory).toHaveLength(4);
   });
 
   it('has no ring mastery (pure melee warrior)', () => {
@@ -114,7 +120,11 @@ describe('example fixture: fire-mage-mastery-test', () => {
 
   it('has learned ring spells', () => {
     const { player } = loadPlayerFromFixture(fixture);
-    expect(player.learnedRingSpellIds.length).toBeGreaterThan(0);
+    expect(player.learnedRingSpellIds).toEqual(expect.arrayContaining([
+      'ember',
+      'heat_surge',
+      'cinder_wake',
+    ]));
   });
 
   it('has fire ring equipped', () => {
@@ -145,8 +155,10 @@ describe('example fixture: high-level-everything', () => {
 
   it('has mastery in both ring schools', () => {
     const { player } = loadPlayerFromFixture(fixture);
-    expect(player.ringMastery['fire']).toBeDefined();
-    expect(player.ringMastery['lightning']).toBeDefined();
+    expect(player.ringMastery).toEqual(expect.objectContaining({
+      fire: expect.objectContaining({ xp: expect.any(Number) }),
+      lightning: expect.objectContaining({ xp: expect.any(Number) }),
+    }));
   });
 
   it('has both ring slots filled', () => {

@@ -1,3 +1,9 @@
+/**
+ * Test layer: unit
+ * Behavior: Ambient Behavior Engine covers ambient-behavior-engine; scoreTiles; returns empty map when run is null.
+ * Proof: focused assertions verify returned values, state changes, rendered output, or emitted events.
+ * Validation: pnpm vitest run packages/game-core/src/systems/ambient-behavior-engine.test.ts
+ */
 import { describe, it, expect, beforeEach } from 'vitest';
 import {
   scoreTiles,

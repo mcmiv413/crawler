@@ -1,3 +1,9 @@
+/**
+ * Test layer: unit
+ * Behavior: Retreat covers retreat; canRetreat returns true when on stairs_up tile; canRetreat returns true when on entrance position.
+ * Proof: focused assertions verify returned values, state changes, rendered output, or emitted events.
+ * Validation: pnpm vitest run packages/game-core/src/systems/retreat.test.ts
+ */
 import { describe, it, expect } from 'vitest';
 import { canRetreat, executeRetreat } from './retreat.js';
 import { entityId } from '@dungeon/contracts';

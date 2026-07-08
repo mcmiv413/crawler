@@ -1,4 +1,9 @@
-import type { GameEngine } from '@dungeon/core';
+/**
+ * Test layer: unit
+ * Behavior: Process Command covers processGameCommand; uses deterministic run-end town text without calling AI summary or rumor generation.
+ * Proof: focused assertions verify returned values, state changes, rendered output, or emitted events.
+ * Validation: pnpm vitest run apps/server/src/game-command/process-command.test.ts
+ */
 import type {
   AiService,
   NpcDialogueContext,
@@ -13,6 +18,7 @@ import type {
   IGameRepository,
 } from '@dungeon/contracts';
 import { processGameCommand } from './process-command.js';
+import type { ProcessGameCommandArgs } from './process-command.js';
 import {
   buildDeterministicRunSummary,
   buildDeterministicTownRumors,
@@ -117,7 +123,7 @@ describe('processGameCommand', () => {
         events,
         runEnded: true,
       })),
-    } as unknown as GameEngine;
+    } as unknown as ProcessGameCommandArgs['engine'];
     const ai = createAiStub();
     const repo = createRepoStub();
     const log = { warn: vi.fn() };

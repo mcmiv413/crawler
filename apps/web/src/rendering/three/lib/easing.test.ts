@@ -1,3 +1,9 @@
+/**
+ * Test layer: unit
+ * Behavior: Easing covers clamp01; clamps values below 0 to 0; clamps values above 1 to 1.
+ * Proof: focused assertions verify returned values, state changes, rendered output, or emitted events.
+ * Validation: pnpm vitest run apps/web/src/rendering/three/lib/easing.test.ts
+ */
 import { describe, expect, it } from 'vitest';
 import {
   clamp01,

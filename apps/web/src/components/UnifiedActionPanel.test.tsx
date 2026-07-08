@@ -1,4 +1,10 @@
 /**
+ * Test layer: unit
+ * Behavior: UnifiedActionPanel covers UnifiedActionPanel; Button Rendering; renders all 7 action buttons.
+ * Proof: focused assertions verify returned values, state changes, rendered output, or emitted events.
+ * Validation: pnpm vitest run apps/web/src/components/UnifiedActionPanel.test.tsx
+ */
+/**
  * Tests for UnifiedActionPanel component.
  * Verifies all action buttons render, can be clicked, and dispatch correct commands.
  */

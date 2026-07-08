@@ -1,4 +1,10 @@
 /**
+ * Test layer: unit
+ * Behavior: Command Validation covers invalid command parsing and required command fields.
+ * Proof: focused assertions verify returned values, state changes, rendered output, or emitted events.
+ * Validation: pnpm vitest run packages/game-core/src/validation/command-validation.test.ts
+ */
+/**
  * packages/game-core/src/validation/command-validation.test.ts
  *
  * Comprehensive tests for command validation at all layers.

@@ -1,3 +1,9 @@
+/**
+ * Test layer: unit
+ * Behavior: UseDelayedVisibility covers useDelayedVisibility; returns false initially when trigger is false; returns false immediately when trigger is true (within delay).
+ * Proof: focused assertions verify returned values, state changes, rendered output, or emitted events.
+ * Validation: pnpm vitest run apps/web/src/hooks/useDelayedVisibility.test.ts
+ */
 import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest';
 import { renderHook, act } from '@testing-library/react';
 import { useDelayedVisibility } from './useDelayedVisibility.js';

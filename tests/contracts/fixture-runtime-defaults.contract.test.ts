@@ -1,4 +1,10 @@
 /**
+ * Test layer: contract
+ * Behavior: Fixture Runtime Defaults covers fixture default: shop.buybackMultiplier matches runtime; runtime initialises buybackMultiplier from ECONOMY.buybackRate; fixture default....
+ * Proof: live catalog/schema assertions validate IDs, shapes, and cross references.
+ * Validation: pnpm vitest run tests/contracts/fixture-runtime-defaults.contract.test.ts
+ */
+/**
  * Contract: fixture defaults match runtime defaults
  *
  * The fixture system promises that a freshly-loaded fixture with all fields

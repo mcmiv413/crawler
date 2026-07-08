@@ -1,7 +1,12 @@
+/**
+ * Test layer: unit
+ * Behavior: Animation Dispatch Policy covers AnimationDispatchPolicy; getThreeOwnedAnimationIds; extracts animation IDs from module animations.
+ * Proof: focused assertions verify returned values, state changes, rendered output, or emitted events.
+ * Validation: pnpm vitest run apps/web/src/rendering/animation-dispatch-policy.test.ts
+ */
 import { describe, it, expect } from 'vitest';
 import type { MapView } from '@dungeon/presenter';
 import type { StatusPresentationView } from '@dungeon/presenter';
-import type { AnimationId } from '@dungeon/content';
 import type { EntityId } from '@dungeon/contracts';
 import {
   computeAnimationDispatchPolicy,
@@ -10,6 +15,8 @@ import {
   getThreeOwnedEntityIds,
   isAnimationOwnedByThree,
 } from './animation-dispatch-policy.js';
+
+type AnimationId = `fx.${'status' | 'impact' | 'projectile' | 'self' | 'aoe' | 'utility'}.${string}`;
 
 describe('AnimationDispatchPolicy', () => {
   describe('getThreeOwnedAnimationIds', () => {
@@ -56,7 +63,7 @@ describe('AnimationDispatchPolicy', () => {
     it('returns false when any presentation has non-owned animation ID', () => {
       const presentations: StatusPresentationView[] = [
         { animationId: 'fx.self.healing-pulse' as AnimationId, entityScale: undefined, ring: undefined },
-        { animationId: 'fx.unknown.animation' as AnimationId, entityScale: undefined, ring: undefined },
+        { animationId: 'fx.utility.unknown-animation' as AnimationId, entityScale: undefined, ring: undefined },
       ];
       const ownedIds = ['fx.self.healing-pulse'] as AnimationId[];
 
@@ -152,7 +159,7 @@ describe('AnimationDispatchPolicy', () => {
     });
 
     it('returns false for non-owned animation ID', () => {
-      const result = isAnimationOwnedByThree('fx.unknown.animation' as AnimationId, policy);
+      const result = isAnimationOwnedByThree('fx.utility.unknown-animation' as AnimationId, policy);
 
       expect(result).toBe(false);
     });
@@ -218,7 +225,7 @@ describe('AnimationDispatchPolicy', () => {
         { animationId: 'fx.self.healing-pulse' as AnimationId },
       ];
       const presentations: StatusPresentationView[] = [
-        { animationId: 'fx.unknown.animation' as AnimationId, entityScale: undefined, ring: undefined },
+        { animationId: 'fx.utility.unknown-animation' as AnimationId, entityScale: undefined, ring: undefined },
       ];
 
       const policy = computeAnimationDispatchPolicy(

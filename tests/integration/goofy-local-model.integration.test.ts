@@ -1,3 +1,9 @@
+/**
+ * Test layer: integration
+ * Behavior: Goofy Local Model covers goofy local model catalog; tracks the recommended Q4 default and Q3 fallback; keeps the current Goofy baseline available for evaluation.
+ * Proof: integrated command, service, or repository assertions verify the cross-module result.
+ * Validation: pnpm vitest run tests/integration/goofy-local-model.integration.test.ts
+ */
 import { describe, expect, it } from 'vitest';
 import {
   getDefaultEvalProfiles,

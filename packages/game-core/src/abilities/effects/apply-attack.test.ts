@@ -1,4 +1,10 @@
 /**
+ * Test layer: unit
+ * Behavior: Apply Attack covers applyAttack; invalid target — no active run; emits ATTACK_PERFORMED with hit:false when run is null.
+ * Proof: focused assertions verify returned values, state changes, rendered output, or emitted events.
+ * Validation: pnpm vitest run packages/game-core/src/abilities/effects/apply-attack.test.ts
+ */
+/**
  * Tests for applyAttack — combat observability (Phase 3).
  *
  * Verifies that blocked, invalid-target, and miss cases emit visible events
@@ -20,6 +26,7 @@ const baseEffect: AttackEffect = {
   forceHit: false,
   trackMastery: false,
 };
+const NO_DAMAGE = 0;
 
 function makeContext(state: ReturnType<typeof createTestGameStateInCombat>): AbilityContext {
   return {
@@ -77,7 +84,7 @@ describe('applyAttack', () => {
 
       const result = applyAttack(context, baseEffect, 'some_key');
 
-      expect(result.damage).toBe(0);
+      expect(result.damage).toBe(NO_DAMAGE);
       expect(result.hit).toBe(false);
     });
 
@@ -125,7 +132,7 @@ describe('applyAttack', () => {
 
       const result = applyAttack(context, baseEffect, 'nonexistent_key_999');
 
-      expect(result.damage).toBe(0);
+      expect(result.damage).toBe(NO_DAMAGE);
       expect(result.hit).toBe(false);
     });
 
@@ -148,7 +155,7 @@ describe('applyAttack', () => {
 
       const event = result.events[0];
       if (event?.type === 'ATTACK_PERFORMED') {
-        expect(event.reason).toBeTruthy();
+        expect(event.reason).toBe('invalid_target');
       }
     });
   });
@@ -214,7 +221,7 @@ describe('applyAttack', () => {
       const result = applyAttack(context, zeroAccuracyEffect, enemyKey);
 
       expect(result.hit).toBe(false);
-      expect(result.damage).toBe(0);
+      expect(result.damage).toBe(NO_DAMAGE);
     });
   });
 });

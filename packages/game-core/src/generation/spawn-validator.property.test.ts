@@ -1,3 +1,9 @@
+/**
+ * Test layer: property
+ * Behavior: Spawn Validator covers spawn-validator property tests; accepts locally generated safe spawn layouts; rejects enemies on protected entrance or exit positions.
+ * Proof: seeded/generated cases preserve the invariant under varied inputs.
+ * Validation: pnpm vitest run packages/game-core/src/generation/spawn-validator.property.test.ts
+ */
 import { describe, expect, it } from 'vitest';
 import * as fc from 'fast-check';
 import type { DungeonFloor, EnemyInstance, Position, Tile } from '@dungeon/contracts';

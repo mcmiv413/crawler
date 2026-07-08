@@ -1,4 +1,10 @@
 /**
+ * Test layer: unit
+ * Behavior: UseBreakpoint covers useBreakpoint Hook; returns isMobile: false when media query does not match; returns isMobile: true when media query matches.
+ * Proof: focused assertions verify returned values, state changes, rendered output, or emitted events.
+ * Validation: pnpm vitest run apps/web/src/hooks/useBreakpoint.test.ts
+ */
+/**
  * useBreakpoint Hook Tests
  *
  * Verifies that the responsive breakpoint hook correctly detects

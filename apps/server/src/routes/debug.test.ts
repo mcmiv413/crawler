@@ -1,3 +1,9 @@
+/**
+ * Test layer: unit
+ * Behavior: Debug covers debug routes; skips registering routes in production; returns 404 when game not found.
+ * Proof: focused assertions verify returned values, state changes, rendered output, or emitted events.
+ * Validation: pnpm vitest run apps/server/src/routes/debug.test.ts
+ */
 import { describe, it, expect, beforeEach, vi } from 'vitest';
 import fastify from 'fastify';
 import type { FastifyInstance } from 'fastify';

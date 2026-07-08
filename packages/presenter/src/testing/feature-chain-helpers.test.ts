@@ -1,3 +1,9 @@
+/**
+ * Test layer: unit
+ * Behavior: Feature Chain Helpers covers assertFeatureChain; runs entryCheck, viewChecks, and uiCheck against the presenter view contract; fails when entryCheck reports the featu....
+ * Proof: focused assertions verify returned values, state changes, rendered output, or emitted events.
+ * Validation: pnpm vitest run packages/presenter/src/testing/feature-chain-helpers.test.ts
+ */
 import { describe, expect, it } from 'vitest';
 import { handleCommand, SeededRNG } from '@dungeon/core';
 import { createTestGameStateInCombat } from '@dungeon/core/testing';
