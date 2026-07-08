@@ -1,4 +1,10 @@
 /**
+ * Test layer: unit
+ * Behavior: InventoryScreen covers InventoryScreen Component; Header and Navigation; renders inventory title.
+ * Proof: focused assertions verify returned values, state changes, rendered output, or emitted events.
+ * Validation: pnpm vitest run apps/web/src/components/InventoryScreen.test.tsx
+ */
+/**
  * InventoryScreen Component Tests
  *
  * Verifies that the full-screen inventory view correctly displays

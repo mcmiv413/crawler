@@ -1,3 +1,9 @@
+/**
+ * Test layer: contract
+ * Behavior: Quests covers completeFloorDepthQuests — live template round-trips; completes every live floor-depth quest template when its target depth is reached; l....
+ * Proof: live catalog/schema assertions validate IDs, shapes, and cross references.
+ * Validation: pnpm vitest run tests/contracts/quests.contract.test.ts
+ */
 import { describe, it, expect } from 'vitest';
 import { entityId } from '@dungeon/contracts';
 import { QUEST_TEMPLATES } from '@dungeon/content';

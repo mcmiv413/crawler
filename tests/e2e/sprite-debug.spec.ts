@@ -1,3 +1,9 @@
+/**
+ * Test layer: e2e
+ * Behavior: Sprite Debug covers sprite renderer diagnoses sprite loading issues.
+ * Proof: Playwright actions and visible UI assertions verify the browser-facing outcome.
+ * Validation: pnpm test:e2e tests/e2e/sprite-debug.spec.ts
+ */
 import { test, expect } from '@playwright/test';
 
 test('sprite renderer diagnoses sprite loading issues', async ({ page }) => {

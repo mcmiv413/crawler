@@ -1,3 +1,9 @@
+/**
+ * Test layer: unit
+ * Behavior: Client covers API Client; json() response handler (tested via createGame); parses successful response (res.ok=true).
+ * Proof: focused assertions verify returned values, state changes, rendered output, or emitted events.
+ * Validation: pnpm vitest run apps/web/src/api/client.test.ts
+ */
 import { describe, it, expect, beforeEach, vi } from 'vitest';
 import { randomUUID } from 'crypto';
 import type { GameView, CombatLogEntry } from '@dungeon/presenter';

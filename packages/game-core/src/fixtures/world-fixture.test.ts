@@ -1,4 +1,10 @@
 /**
+ * Test layer: unit
+ * Behavior: World Fixture covers Group 1: Minimal world fixture creates valid WorldState with defaults; validates a minimal world fixture without errors; loads a minimal....
+ * Proof: focused assertions verify returned values, state changes, rendered output, or emitted events.
+ * Validation: pnpm vitest run packages/game-core/src/fixtures/world-fixture.test.ts
+ */
+/**
  * World Fixture System Tests — Phase 2
  *
  * Test-first (TDD) suite covering all 5 groups from the plan:
@@ -91,7 +97,12 @@ describe('Group 1: Minimal world fixture creates valid WorldState with defaults'
 
   it('loads a minimal fixture into a WorldState object', () => {
     const world = loadWorldFromFixture(MINIMAL_WORLD_FIXTURE);
-    expect(world).toBeDefined();
+    expect(world.factions.map(faction => faction.id)).toEqual(expect.arrayContaining([
+      'goblin_warband',
+      'undead_legion',
+      'beast_swarm',
+      'shadow_cult',
+    ]));
   });
 
   it('produces all four factions from content by default', () => {
@@ -572,8 +583,8 @@ describe('Group 6: Integration — player + world fixture create a valid GameSta
   it('a world loaded from fixture can be used in createTestGameState', () => {
     const world = loadWorldFromFixture(MINIMAL_WORLD_FIXTURE);
     const state = createTestGameState({ world });
-    expect(state).toBeDefined();
-    expect(state.world).toBeDefined();
+    expect(state.world.factions).toHaveLength(4);
+    expect(state.world.town.prosperity).toBe(world.town.prosperity);
   });
 
   it('a player + world fixture GameState serializes without error', () => {

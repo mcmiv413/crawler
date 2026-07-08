@@ -1,3 +1,9 @@
+/**
+ * Test layer: integration
+ * Behavior: Composite ai covers CompositeAiService — LM Studio Integration; uses successful LM Studio response when available; triggers fallback when LM Studio times out.
+ * Proof: integrated command, service, or repository assertions verify the cross-module result.
+ * Validation: pnpm vitest run apps/server/src/ai/composite-ai.integration.test.ts
+ */
 import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest';
 import { CompositeAiService } from './ai-service-composite.js';
 import type { NpcDialogueContext, RumorContext, RunSummaryContext } from '@dungeon/core/ai/ai-service';
@@ -161,15 +167,15 @@ describe('CompositeAiService — Fallback Chain', () => {
 
     // Test dialogue
     const dialogue = await service.generateDialogue(npcDialogueContext);
-    expect(dialogue.length).toBeGreaterThan(0);
+    expect(dialogue).toMatch(/\S/);
 
     // Test rumor
     const rumor = await service.generateRumor(rumorContext);
-    expect(rumor.length).toBeGreaterThan(0);
+    expect(rumor).toMatch(/\S/);
 
     // Test run summary
     const summary = await service.generateRunSummary(runSummaryContext);
-    expect(summary.length).toBeGreaterThan(0);
+    expect(summary).toMatch(/\S/);
 
   });
 
@@ -328,4 +334,3 @@ describe('CompositeAiService — Edge Cases', () => {
     expect(fallbackResult.length).toBeGreaterThan(0);
   });
 });
-

@@ -1,3 +1,9 @@
+/**
+ * Test layer: integration
+ * Behavior: Faction Progression covers GameEngine faction progression; all factions have power between 0 and 100; all factions have valid status (leaderless, led, or broken).
+ * Proof: integrated command, service, or repository assertions verify the cross-module result.
+ * Validation: pnpm vitest run packages/game-core/src/engine/faction-progression.integration.test.ts
+ */
 import { describe, it, expect } from 'vitest';
 import { GameEngine } from './game-engine.js';
 

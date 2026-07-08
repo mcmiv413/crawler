@@ -1,4 +1,10 @@
 /**
+ * Test layer: unit
+ * Behavior: Town Validator covers validateTownTransaction; STUDY_SPELL; rejects when spellId is not provided.
+ * Proof: focused assertions verify returned values, state changes, rendered output, or emitted events.
+ * Validation: pnpm vitest run packages/game-core/src/systems/town-validator.test.ts
+ */
+/**
  * Contract tests for the centralized town transaction validator.
  *
  * Proves: allow on valid input, reject on invalid input, stable reason codes,

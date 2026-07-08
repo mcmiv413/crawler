@@ -1,6 +1,13 @@
+/**
+ * Test layer: unit
+ * Behavior: Quest Selection covers selectFromTemplates — RNG behavior with local fixtures; returns a template from the provided templates array; accepts different rng value....
+ * Proof: focused assertions verify returned values, state changes, rendered output, or emitted events.
+ * Validation: pnpm vitest run packages/game-core/src/systems/quest-selection.test.ts
+ */
 import { describe, it, expect } from 'vitest';
-import type { QuestTemplate } from '@dungeon/content';
 import { selectFromTemplates } from './quest-selection.js';
+
+type QuestTemplate = Parameters<typeof selectFromTemplates>[0][number];
 
 const LOCAL_TEMPLATES: QuestTemplate[] = [
   {

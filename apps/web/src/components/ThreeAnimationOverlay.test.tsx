@@ -1,3 +1,9 @@
+/**
+ * Test layer: unit
+ * Behavior: ThreeAnimationOverlay covers componentsThreeAnimationOverlay; initializes the generated registry before rendering the lazy overlay; stays unloaded when no Three-owned....
+ * Proof: focused assertions verify returned values, state changes, rendered output, or emitted events.
+ * Validation: pnpm vitest run apps/web/src/components/ThreeAnimationOverlay.test.tsx
+ */
 import React from 'react';
 import { describe, expect, it, vi, beforeEach } from 'vitest';
 import { render, screen } from '@testing-library/react';

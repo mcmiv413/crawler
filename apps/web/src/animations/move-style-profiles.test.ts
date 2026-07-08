@@ -1,3 +1,9 @@
+/**
+ * Test layer: unit
+ * Behavior: Move Style Profiles covers MOVE_STYLE_PROFILES; locks the shared move style rendering table; returns the requested style profile.
+ * Proof: focused assertions verify returned values, state changes, rendered output, or emitted events.
+ * Validation: pnpm vitest run apps/web/src/animations/move-style-profiles.test.ts
+ */
 import { describe, expect, it } from 'vitest';
 import {
   MOVE_STYLE_PROFILES,

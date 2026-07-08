@@ -1,3 +1,9 @@
+/**
+ * Test layer: unit
+ * Behavior: Town View Builder covers buildTownView; town stats; displays prosperity level.
+ * Proof: focused assertions verify returned values, state changes, rendered output, or emitted events.
+ * Validation: pnpm vitest run packages/presenter/src/builders/town-view-builder.test.ts
+ */
 import { describe, it, expect, beforeEach } from 'vitest';
 import { buildTownView } from './town-view-builder.js';
 import { createTestGameState } from '@dungeon/core/testing';
@@ -81,7 +87,7 @@ describe('buildTownView', () => {
       };
 
       const view = buildTownView(state);
-      expect(view.atmosphereDescription).toBeTruthy();
+      expect(view.atmosphereDescription).toMatch(/\S/);
     });
 
     it('returns fearful description when fear >= 60', () => {
@@ -94,7 +100,7 @@ describe('buildTownView', () => {
       };
 
       const view = buildTownView(state);
-      expect(view.atmosphereDescription).toBeTruthy();
+      expect(view.atmosphereDescription).toMatch(/\S/);
     });
 
     it('returns corrupted description when corruption >= 60', () => {
@@ -107,7 +113,7 @@ describe('buildTownView', () => {
       };
 
       const view = buildTownView(state);
-      expect(view.atmosphereDescription).toBeTruthy();
+      expect(view.atmosphereDescription).toMatch(/\S/);
     });
 
     it('returns normal description by default', () => {
@@ -120,7 +126,7 @@ describe('buildTownView', () => {
       };
 
       const view = buildTownView(state);
-      expect(view.atmosphereDescription).toBeTruthy();
+      expect(view.atmosphereDescription).toMatch(/\S/);
     });
   });
 

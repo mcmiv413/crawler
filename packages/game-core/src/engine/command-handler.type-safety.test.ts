@@ -1,3 +1,9 @@
+/**
+ * Test layer: unit
+ * Behavior: Command Handler.type Safety covers command-handler type safety; handles MOVE command without type casting; handles ATTACK command with typed access.
+ * Proof: focused assertions verify returned values, state changes, rendered output, or emitted events.
+ * Validation: pnpm vitest run packages/game-core/src/engine/command-handler.type-safety.test.ts
+ */
 import { describe, it, expect, beforeEach } from 'vitest';
 import { handleCommand } from './command-handler.js';
 import { createTestGameState } from '../test-utils.js';
@@ -39,7 +45,8 @@ describe('command-handler type safety', () => {
     };
 
     const result = handleCommand(state, attackCmd, rng);
-    expect(result).toBeDefined();
+    expect(result.state.gameId).toBe(state.gameId);
+    expect(Array.isArray(result.events)).toBe(true);
   });
 
   it('handles EQUIP command with typed access', () => {
@@ -50,7 +57,8 @@ describe('command-handler type safety', () => {
     };
 
     const result = handleCommand(state, equipCmd, rng);
-    expect(result).toBeDefined();
+    expect(result.state.gameId).toBe(state.gameId);
+    expect(Array.isArray(result.events)).toBe(true);
   });
 
   it('uses type guards to safely dispatch WAIT command', () => {
@@ -58,8 +66,8 @@ describe('command-handler type safety', () => {
     const waitCmd: { type: 'WAIT' } = { type: 'WAIT' };
 
     const result = handleCommand(state, waitCmd as any, rng);
-    expect(result).toBeDefined();
-    expect(result.events).toBeDefined();
+    expect(result.state.gameId).toBe(state.gameId);
+    expect(Array.isArray(result.events)).toBe(true);
   });
 
   it('exhaustively handles all command types', () => {
@@ -82,6 +90,12 @@ describe('command-handler type safety', () => {
     ];
 
     // Just verify the list — actual dispatch is verified by integration tests
-    expect(testCases.length).toBeGreaterThan(0);
+    expect(testCases.map(({ type }) => type)).toEqual(expect.arrayContaining([
+      'MOVE',
+      'ATTACK',
+      'USE_ITEM',
+      'WAIT',
+      'USE_ABILITY',
+    ]));
   });
 });

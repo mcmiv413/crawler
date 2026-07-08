@@ -1,3 +1,9 @@
+/**
+ * Test layer: contract
+ * Behavior: Integrity covers Ability Registry Structure; all abilities have required fields; all ability IDs are strings (not nullundefined).
+ * Proof: live catalog/schema assertions validate IDs, shapes, and cross references.
+ * Validation: pnpm vitest run packages/game-core/src/abilities/integrity.contract.test.ts
+ */
 import { describe, it, expect } from 'vitest';
 import { ALL_ABILITY_DEFINITIONS, buildRegistry } from './index.js';
 import { WEAPON_TYPES } from '@dungeon/contracts';
@@ -253,10 +259,14 @@ describe('Ability-Specific Validations', () => {
   it('every ability has at least one effect', () => {
     for (const ability of ALL_ABILITY_DEFINITIONS) {
       const usesCustomRuntime = ability.targeting.selector.kind === 'custom';
-      expect(
-        ability.effects.length > 0 || usesCustomRuntime,
-        `${ability.id} has no effects (empty ability) and is not using a custom runtime`,
-      ).toBe(true);
+      if (usesCustomRuntime) {
+        expect(ability.targeting.selector.kind).toBe('custom');
+      } else {
+        expect(
+          ability.effects,
+          `${ability.id} has no effects (empty ability) and is not using a custom runtime`,
+        ).toEqual(expect.arrayContaining([expect.objectContaining({ kind: expect.any(String) })]));
+      }
     }
   });
 

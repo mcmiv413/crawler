@@ -1,3 +1,9 @@
+/**
+ * Test layer: unit
+ * Behavior: Command Handler covers handleUseAbility; ember; deducts mana, deals damage, and applies the content-authored burn duration on a valid cast.
+ * Proof: focused assertions verify returned values, state changes, rendered output, or emitted events.
+ * Validation: pnpm vitest run packages/game-core/src/engine/command-handler.test.ts
+ */
 import { describe, it, expect } from 'vitest';
 import { handleCommand, type CommandResult } from './command-handler.js';
 import { SeededRNG } from '../utils/rng.js';
@@ -550,7 +556,10 @@ describe('handleUseAbility', () => {
       const abilityEvent = result.events.find(
         (e) => e.type === 'ABILITY_USED',
       ) as any;
-      expect(abilityEvent).toBeDefined();
+      expect(abilityEvent).toEqual(expect.objectContaining({
+        abilityId: 'second_wind',
+        type: 'ABILITY_USED',
+      }));
     });
   });
 
@@ -614,7 +623,10 @@ describe('handleUseAbility', () => {
       const abilityEvent = result.events.find(
         (e) => e.type === 'ABILITY_USED' && (e as any).abilityId === 'blade_riposte',
       );
-      expect(abilityEvent).toBeDefined();
+      expect(abilityEvent).toEqual(expect.objectContaining({
+        abilityId: 'blade_riposte',
+        type: 'ABILITY_USED',
+      }));
     });
   });
 
@@ -630,7 +642,10 @@ describe('handleUseAbility', () => {
       const abilityEvent = result.events.find(
         (e) => e.type === 'ABILITY_USED' && (e as any).abilityId === 'bludgeon_stagger',
       );
-      expect(abilityEvent).toBeDefined();
+      expect(abilityEvent).toEqual(expect.objectContaining({
+        abilityId: 'bludgeon_stagger',
+        type: 'ABILITY_USED',
+      }));
     });
   });
 
@@ -785,7 +800,10 @@ describe('handleUseAbility', () => {
       const abilityEvent = result.events.find(
         (e) => e.type === 'ABILITY_USED',
       ) as any;
-      expect(abilityEvent).toBeDefined();
+      expect(abilityEvent).toEqual(expect.objectContaining({
+        abilityId: 'axe_execute',
+        type: 'ABILITY_USED',
+      }));
       // Should deal high damage (3x attack)
     });
 
@@ -802,7 +820,10 @@ describe('handleUseAbility', () => {
       const abilityEvent = result.events.find(
         (e) => e.type === 'ABILITY_USED',
       ) as any;
-      expect(abilityEvent).toBeDefined();
+      expect(abilityEvent).toEqual(expect.objectContaining({
+        abilityId: 'axe_execute',
+        type: 'ABILITY_USED',
+      }));
     });
 
     it('deals 1x damage at exactly 30% HP (strict < 0.3)', () => {
@@ -828,7 +849,10 @@ describe('handleUseAbility', () => {
       const abilityEvent = resultExact.events.find(
         (e) => e.type === 'ABILITY_USED',
       ) as any;
-      expect(abilityEvent).toBeDefined();
+      expect(abilityEvent).toEqual(expect.objectContaining({
+        abilityId: 'axe_execute',
+        type: 'ABILITY_USED',
+      }));
     });
   });
 
@@ -1124,7 +1148,7 @@ describe('handleAttack', () => {
     expect(result.state.turnNumber).toBe(state.turnNumber);
     // Now returns ATTACK_PERFORMED event with reason explaining why attack failed
     const attackEvent = result.events.find((e) => e.type === 'ATTACK_PERFORMED');
-    expect(attackEvent).toBeDefined();
+    expect(attackEvent).toEqual(expect.objectContaining({ type: 'ATTACK_PERFORMED' }));
     expect((attackEvent as any).hit).toBe(false);
   });
 
@@ -1180,7 +1204,7 @@ describe('handleMove', () => {
     const result = handleCommand(state, createMoveCommandWithDirection('E'), rng);
 
     const attackEvent = result.events.find((e) => e.type === 'ATTACK_PERFORMED');
-    expect(attackEvent).toBeDefined();
+    expect(attackEvent).toEqual(expect.objectContaining({ type: 'ATTACK_PERFORMED' }));
   });
 
   it('valid move: PLAYER_MOVED, position updated', () => {

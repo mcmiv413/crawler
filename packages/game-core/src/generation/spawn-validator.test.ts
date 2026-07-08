@@ -1,11 +1,18 @@
+/**
+ * Test layer: unit
+ * Behavior: Spawn Validator covers validateSpawns; returns valid when no enemies are present; returns invalid when an enemy is on the entrance tile.
+ * Proof: focused assertions verify returned values, state changes, rendered output, or emitted events.
+ * Validation: pnpm vitest run packages/game-core/src/generation/spawn-validator.test.ts
+ */
 import { describe, it, expect, beforeAll } from 'vitest';
 import { validateSpawns } from './spawn-validator.js';
 import { generateFloor } from './map-generator.js';
 import { SeededRNG } from '../utils/rng.js';
-import type { BiomeDefinition } from '@dungeon/content';
 import { posKey } from '@dungeon/contracts';
 import type { EnemyInstance, DungeonFloor } from '@dungeon/contracts';
 import { createTestEnemy } from '../test-utils.js';
+
+type BiomeDefinition = Parameters<typeof generateFloor>[1];
 
 const STUB_BIOME: BiomeDefinition = {
   biomeId: 'stub',

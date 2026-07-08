@@ -1,3 +1,9 @@
+/**
+ * Test layer: integration
+ * Behavior: Workspace Wiring covers check-workspace-wiring script; passes for declared workspace imports that use exported subpaths; fails when a consumer imports another wo....
+ * Proof: integrated command, service, or repository assertions verify the cross-module result.
+ * Validation: pnpm vitest run tests/integration/workspace-wiring.integration.test.ts
+ */
 import { afterEach, describe, expect, it } from 'vitest';
 import { mkdtempSync, mkdirSync, rmSync, writeFileSync } from 'node:fs';
 import { tmpdir } from 'node:os';

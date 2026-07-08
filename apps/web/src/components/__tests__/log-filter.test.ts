@@ -1,3 +1,9 @@
+/**
+ * Test layer: unit
+ * Behavior: log Filter covers filterCombatLogForDisplay; passes all entries when debugMode is true; filters out [DEBUG]-prefixed entries when debugMode is false.
+ * Proof: focused assertions verify returned values, state changes, rendered output, or emitted events.
+ * Validation: pnpm vitest run apps/web/src/components/__tests__/log-filter.test.ts
+ */
 import { describe, it, expect } from 'vitest';
 import { filterCombatLogForDisplay, type CombatLogEntry } from '../combat-log-filter';
 

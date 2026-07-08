@@ -1,3 +1,9 @@
+/**
+ * Test layer: unit
+ * Behavior: Ability ui Metadata covers Ability UI Metadata Adapter; basic properties; derives name, description, and cooldown from ability definition.
+ * Proof: focused assertions verify returned values, state changes, rendered output, or emitted events.
+ * Validation: pnpm vitest run packages/game-core/src/abilities/ability-ui-metadata.test.ts
+ */
 import { describe, it, expect } from 'vitest';
 import { ALL_ABILITY_DEFINITIONS } from './definitions/index.js';
 import { getAbilityUiMetadata, type AbilityUiMetadata } from './ability-ui-metadata.js';

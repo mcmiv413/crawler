@@ -1,3 +1,9 @@
+/**
+ * Test layer: contract
+ * Behavior: Custom Ring Spell Handlers covers Custom Ring Spell Handlers Contract; every custom ring spell has an effectHandlerId; every custom ring spell effectHandlerId has a regist....
+ * Proof: live catalog/schema assertions validate IDs, shapes, and cross references.
+ * Validation: pnpm vitest run tests/contracts/custom-ring-spell-handlers.contract.test.ts
+ */
 import { describe, it, expect } from 'vitest';
 import { RING_SPELL_BY_ID } from '@dungeon/content';
 import { getAllCustomRingSpellHandlerIds } from '../../packages/game-core/src/engine/custom-ring-spell-handlers.js';

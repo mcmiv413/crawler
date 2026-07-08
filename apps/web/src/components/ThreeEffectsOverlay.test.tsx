@@ -1,3 +1,9 @@
+/**
+ * Test layer: unit
+ * Behavior: ThreeEffectsOverlay covers componentsThreeEffectsOverlay; routes legacy imports through the modern ThreeAnimationOverlay wrapper.
+ * Proof: focused assertions verify returned values, state changes, rendered output, or emitted events.
+ * Validation: pnpm vitest run apps/web/src/components/ThreeEffectsOverlay.test.tsx
+ */
 import React from 'react';
 import { describe, expect, it, vi, beforeEach } from 'vitest';
 import { render, screen } from '@testing-library/react';

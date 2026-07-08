@@ -1,3 +1,9 @@
+/**
+ * Test layer: unit
+ * Behavior: EnchanterPanel covers EnchanterPanel enchantment data consumption; fixture enchantments all have non-empty names; fixture enchantments all have valid tiers.
+ * Proof: focused assertions verify returned values, state changes, rendered output, or emitted events.
+ * Validation: pnpm vitest run apps/web/src/components/EnchanterPanel.test.ts
+ */
 import { describe, it, expect } from 'vitest';
 
 /**
@@ -21,7 +27,7 @@ const TEST_ENCHANTMENTS = [
 describe('EnchanterPanel enchantment data consumption', () => {
   it('fixture enchantments all have non-empty names', () => {
     for (const ench of TEST_ENCHANTMENTS) {
-      expect(ench.name.length).toBeGreaterThan(0);
+      expect(ench.name).toMatch(/\S/);
     }
   });
 

@@ -1,3 +1,9 @@
+/**
+ * Test layer: unit
+ * Behavior: UseAnimationOrchestrator covers useAnimationOrchestrator; uses the legacy timeout scheduler when the beat flag is off; uses the beat scheduler when the flag is on.
+ * Proof: focused assertions verify returned values, state changes, rendered output, or emitted events.
+ * Validation: pnpm vitest run apps/web/src/hooks/useAnimationOrchestrator.test.ts
+ */
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import { act, renderHook } from '@testing-library/react';
 import { type AnimatedEvent, type MoveAnimationEntry } from '@dungeon/presenter';

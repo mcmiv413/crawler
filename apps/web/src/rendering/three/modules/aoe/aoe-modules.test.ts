@@ -1,4 +1,10 @@
 /**
+ * Test layer: unit
+ * Behavior: aoe Modules covers bombBlast; cleaveArc (aoe); shatterBurst (aoe).
+ * Proof: focused assertions verify returned values, state changes, rendered output, or emitted events.
+ * Validation: pnpm vitest run apps/web/src/rendering/three/modules/aoe/aoe-modules.test.ts
+ */
+/**
  * Lifecycle contract tests for all aoe Three animation modules.
  */
 

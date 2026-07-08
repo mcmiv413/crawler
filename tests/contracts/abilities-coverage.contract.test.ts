@@ -1,3 +1,9 @@
+/**
+ * Test layer: contract
+ * Behavior: Abilities Coverage covers Abilities Coverage Contract; All abilities are properly defined; all ability definitions exist and have names.
+ * Proof: live catalog/schema assertions validate IDs, shapes, and cross references.
+ * Validation: pnpm vitest run tests/contracts/abilities-coverage.contract.test.ts
+ */
 import { describe, it, expect } from 'vitest';
 import { GameEngine } from '@dungeon/core';
 import { ABILITY_DEFINITIONS } from '@dungeon/content';
@@ -9,10 +15,12 @@ describe('Abilities Coverage Contract', () => {
       expect(ABILITY_DEFINITIONS.size).toBeGreaterThan(0);
 
       for (const [id, definition] of ABILITY_DEFINITIONS) {
-        expect(definition).toBeDefined();
+        expect(definition).toEqual(expect.objectContaining({
+          id,
+          name: expect.any(String),
+        }));
         expect((definition as any).id).toBe(id);
-        expect((definition as any).name).toBeDefined();
-        expect((definition as any).name.length).toBeGreaterThan(0);
+        expect((definition as any).name).toMatch(/\S/);
       }
     });
 
@@ -20,7 +28,7 @@ describe('Abilities Coverage Contract', () => {
       const requiredAbilities = ['power_strike', 'dagger_disarm', 'dagger_set_trap'];
       for (const abilityId of requiredAbilities) {
         const definition = ABILITY_DEFINITIONS.get(abilityId);
-        expect(definition).toBeDefined();
+        expect(definition).toEqual(expect.objectContaining({ id: abilityId }));
       }
     });
 
@@ -79,15 +87,15 @@ describe('Abilities Coverage Contract', () => {
 
       // Create first game
       const state1 = engine.createNewGame(100);
-      expect(state1).toBeDefined();
+      expect(state1.gameId).toMatch(/\S/);
 
       // Create second game
       const state2 = engine.createNewGame(200);
-      expect(state2).toBeDefined();
+      expect(state2.gameId).toMatch(/\S/);
 
       // Both games should have players with abilities
-      expect(state1.player.abilities).toBeDefined();
-      expect(state2.player.abilities).toBeDefined();
+      expect(state1.player.abilities).toEqual(expect.any(Array));
+      expect(state2.player.abilities).toEqual(expect.any(Array));
     });
   });
 
@@ -105,7 +113,7 @@ describe('Abilities Coverage Contract', () => {
 
       for (const abilityId of attackAbilities) {
         const definition = ABILITY_DEFINITIONS.get(abilityId);
-        expect(definition).toBeDefined();
+        expect(definition).toEqual(expect.objectContaining({ id: abilityId }));
       }
     });
 
@@ -119,7 +127,7 @@ describe('Abilities Coverage Contract', () => {
         action: 'enter_dungeon',
       }).state;
 
-      expect(state.run).toBeDefined();
+      expect(state.run?.floor.depth).toBeGreaterThan(0);
 
       // Verify we can move in dungeon
       const moveResult = engine.submitCommand(state, {
@@ -127,8 +135,8 @@ describe('Abilities Coverage Contract', () => {
         direction: 'N',
       });
 
-      expect(moveResult.state).toBeDefined();
-      expect(moveResult.events).toBeDefined();
+      expect(moveResult.state.gameId).toBe(state.gameId);
+      expect(Array.isArray(moveResult.events)).toBe(true);
     });
   });
 
@@ -137,8 +145,8 @@ describe('Abilities Coverage Contract', () => {
       const disarm = ABILITY_DEFINITIONS.get('dagger_disarm');
       const setTrap = ABILITY_DEFINITIONS.get('dagger_set_trap');
 
-      expect(disarm).toBeDefined();
-      expect(setTrap).toBeDefined();
+      expect(disarm).toEqual(expect.objectContaining({ id: 'dagger_disarm' }));
+      expect(setTrap).toEqual(expect.objectContaining({ id: 'dagger_set_trap' }));
     });
 
     it('all trap types can be referenced in definitions', () => {
@@ -148,7 +156,7 @@ describe('Abilities Coverage Contract', () => {
       // Just verify abilities exist; actual trap validation
       // happens in game-core handler
       const disarmDef = ABILITY_DEFINITIONS.get('dagger_disarm');
-      expect(disarmDef).toBeDefined();
+      expect(disarmDef).toEqual(expect.objectContaining({ id: 'dagger_disarm' }));
     });
   });
 });

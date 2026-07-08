@@ -1,3 +1,9 @@
+/**
+ * Test layer: integration
+ * Behavior: Engine Consequences covers GameEngine — applyRunConsequences integration; uses current command events when evaluating same-run fear escalation.
+ * Proof: integrated GameEngine assertions verify command events and world consequence state.
+ * Validation: pnpm vitest run packages/game-core/src/engine/engine-consequences.test.ts
+ */
 import { describe, expect, it } from 'vitest';
 import { GameEngine } from './game-engine.js';
 import { createTestGameStateInCombat, createWaitCommand } from '../test-utils.js';

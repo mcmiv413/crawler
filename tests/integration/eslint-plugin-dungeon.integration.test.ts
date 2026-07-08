@@ -1,3 +1,9 @@
+/**
+ * Test layer: integration
+ * Behavior: Eslint Plugin Dungeon covers eslint-plugin-dungeon; flags as unknown as GameState in tests; flags intersections that still target GameView.
+ * Proof: integrated command, service, or repository assertions verify the cross-module result.
+ * Validation: pnpm vitest run tests/integration/eslint-plugin-dungeon.integration.test.ts
+ */
 import { afterEach, describe, expect, it } from 'vitest';
 import { ESLint } from 'eslint';
 import tseslint from 'typescript-eslint';

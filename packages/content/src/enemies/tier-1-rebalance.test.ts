@@ -1,3 +1,9 @@
+/**
+ * Test layer: unit
+ * Behavior: Tier 1 Rebalance covers Tier 1 Enemy Rebalance; Cave Rat; should have reasonable HP.
+ * Proof: focused assertions verify returned values, state changes, rendered output, or emitted events.
+ * Validation: pnpm vitest run packages/content/src/enemies/tier-1-rebalance.test.ts
+ */
 import { describe, it, expect } from 'vitest';
 import { caveRat, skeletonWarrior, pitSpider } from './index.js';
 

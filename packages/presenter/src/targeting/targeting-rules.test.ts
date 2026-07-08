@@ -1,3 +1,9 @@
+/**
+ * Test layer: unit
+ * Behavior: Targeting Rules covers Targeting Rules; getEffectiveRange; returns melee range (1) for non-ranged abilities.
+ * Proof: focused assertions verify returned values, state changes, rendered output, or emitted events.
+ * Validation: pnpm vitest run packages/presenter/src/targeting/targeting-rules.test.ts
+ */
 import { describe, it, expect } from 'vitest';
 import {
   getEffectiveRange,

@@ -1,4 +1,10 @@
 /**
+ * Test layer: unit
+ * Behavior: Ability Validator covers validateAbilityAction; ability not found; rejects when ability id does not exist.
+ * Proof: focused assertions verify returned values, state changes, rendered output, or emitted events.
+ * Validation: pnpm vitest run packages/game-core/src/systems/ability-validator.test.ts
+ */
+/**
  * Contract tests for the centralized ability action validator.
  *
  * These tests prove validator behavior independent of handler behavior.

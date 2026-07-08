@@ -1,4 +1,10 @@
 /**
+ * Test layer: unit
+ * Behavior: Content Integrity covers enemy integrity migration note; keeps enemy-integrity coverage in the contract layer.
+ * Proof: focused assertions verify returned values, state changes, rendered output, or emitted events.
+ * Validation: pnpm vitest run packages/content/src/enemies/content-integrity.test.ts
+ */
+/**
  * Enemy content integrity tests have been moved to the contract layer.
  *
  * See: tests/contracts/enemy-integrity.contract.test.ts

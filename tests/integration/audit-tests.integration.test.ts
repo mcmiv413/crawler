@@ -1,3 +1,9 @@
+/**
+ * Test layer: integration
+ * Behavior: Audit Tests covers fixture; passes; property fixture.
+ * Proof: integrated command, service, or repository assertions verify the cross-module result.
+ * Validation: pnpm vitest run tests/integration/audit-tests.integration.test.ts
+ */
 import { afterEach, describe, expect, it } from 'vitest';
 import { mkdtempSync, mkdirSync, rmSync, writeFileSync } from 'node:fs';
 import { tmpdir } from 'node:os';

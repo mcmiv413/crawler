@@ -1,4 +1,10 @@
 /**
+ * Test layer: unit
+ * Behavior: ThreeAnimationOverlay covers ThreeAnimationOverlay – canvas identity; mounts canvas with data-testid="three-animation-overlay"; canvas has pointer-events:none style.
+ * Proof: focused assertions verify returned values, state changes, rendered output, or emitted events.
+ * Validation: pnpm vitest run apps/web/src/rendering/three/ThreeAnimationOverlay.test.tsx
+ */
+/**
  * Tests for ThreeAnimationOverlay React component (Workstream 2).
  *
  * ThreeAnimationOverlay is the generalized replacement for ThreeEffectsOverlay.
@@ -353,7 +359,7 @@ describe('ThreeAnimationOverlay – canvas identity', () => {
         })}
       />,
     );
-    expect(getByTestId('three-animation-overlay')).toBeTruthy();
+    expect(getByTestId('three-animation-overlay').tagName).toBe('CANVAS');
   });
 
   it('canvas has pointer-events:none style', () => {
@@ -459,7 +465,7 @@ describe('ThreeAnimationOverlay – render gating', () => {
         })}
       />,
     );
-    expect(getByTestId('three-animation-overlay')).toBeTruthy();
+    expect(getByTestId('three-animation-overlay').tagName).toBe('CANVAS');
   });
 
   it('renders canvas when fxAnimations has an active animation with a registered module', () => {
@@ -470,7 +476,7 @@ describe('ThreeAnimationOverlay – render gating', () => {
         })}
       />,
     );
-    expect(getByTestId('three-animation-overlay')).toBeTruthy();
+    expect(getByTestId('three-animation-overlay').tagName).toBe('CANVAS');
   });
 
   it('renders canvas when moveAnimations owns a visible entity', () => {
@@ -482,7 +488,7 @@ describe('ThreeAnimationOverlay – render gating', () => {
         })}
       />,
     );
-    expect(getByTestId('three-animation-overlay')).toBeTruthy();
+    expect(getByTestId('three-animation-overlay').tagName).toBe('CANVAS');
   });
 
   it('renders canvas when atmosphereEnabled=true without other active visuals', () => {
@@ -495,7 +501,7 @@ describe('ThreeAnimationOverlay – render gating', () => {
         })}
       />,
     );
-    expect(getByTestId('three-animation-overlay')).toBeTruthy();
+    expect(getByTestId('three-animation-overlay').tagName).toBe('CANVAS');
   });
 
   it('renders canvas when defenderHits has an active visible entity', () => {
@@ -511,7 +517,7 @@ describe('ThreeAnimationOverlay – render gating', () => {
         })}
       />,
     );
-    expect(getByTestId('three-animation-overlay')).toBeTruthy();
+    expect(getByTestId('three-animation-overlay').tagName).toBe('CANVAS');
   });
 
   it('renders defender-hit flash at snapshot position when entity is absent from the map', async () => {

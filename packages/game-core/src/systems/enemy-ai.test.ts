@@ -1,3 +1,9 @@
+/**
+ * Test layer: unit
+ * Behavior: Enemy ai covers decideEnemyAction; un-alerted enemy beyond dist 5 returns wait; un-alerted enemy at dist 4 (within detection) approaches (not wait).
+ * Proof: focused assertions verify returned values, state changes, rendered output, or emitted events.
+ * Validation: pnpm vitest run packages/game-core/src/systems/enemy-ai.test.ts
+ */
 import { describe, it, expect } from 'vitest';
 import { decideEnemyAction } from './enemy-ai.js';
 import { posKey, entityId, EMPTY_WEAPON_MASTERY } from '@dungeon/contracts';

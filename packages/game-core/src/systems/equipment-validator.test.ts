@@ -1,4 +1,10 @@
 /**
+ * Test layer: unit
+ * Behavior: Equipment Validator covers validateEquipmentAction; item not found; rejects when item entity id is not in registry.
+ * Proof: focused assertions verify returned values, state changes, rendered output, or emitted events.
+ * Validation: pnpm vitest run packages/game-core/src/systems/equipment-validator.test.ts
+ */
+/**
  * Contract tests for the centralized equipment action validator.
  *
  * Proves: allow on valid input, reject on invalid input, stable reason codes,

@@ -1,4 +1,10 @@
 /**
+ * Test layer: contract
+ * Behavior: Example Scenario Fixtures covers Example scenario library: structural validity; case validates against live content and Phase-1 fixtures; case loads into a dungeon-phase....
+ * Proof: live catalog/schema assertions validate IDs, shapes, and cross references.
+ * Validation: pnpm vitest run tests/contracts/example-scenario-fixtures.contract.test.ts
+ */
+/**
  * Contract tests for the example scenario library (Group 10).
  *
  * Every example scenario must function as executable gameplay documentation:

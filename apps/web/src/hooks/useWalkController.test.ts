@@ -1,3 +1,9 @@
+/**
+ * Test layer: unit
+ * Behavior: UseWalkController covers useWalkController; continues held movement at the step boundary instead of raw key repeat; waits for loading to clear after the boundary....
+ * Proof: focused assertions verify returned values, state changes, rendered output, or emitted events.
+ * Validation: pnpm vitest run apps/web/src/hooks/useWalkController.test.ts
+ */
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import { act, renderHook } from '@testing-library/react';
 import type { MoveAnimationEntry } from '@dungeon/presenter';

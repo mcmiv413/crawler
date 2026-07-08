@@ -1,3 +1,9 @@
+/**
+ * Test layer: unit
+ * Behavior: Enemy ai Engine covers Enemy AI Scoring Engine; scoreEnemyActions; returns valid trace with candidates.
+ * Proof: focused assertions verify returned values, state changes, rendered output, or emitted events.
+ * Validation: pnpm vitest run packages/game-core/src/systems/enemy-ai-engine.test.ts
+ */
 import { describe, it, expect } from 'vitest';
 import { scoreEnemyActions } from './enemy-ai-engine.js';
 import type { ArchetypeDefinition } from '@dungeon/contracts';
@@ -182,9 +188,9 @@ describe('Enemy AI Scoring Engine', () => {
 
       const trace = scoreEnemyActions(enemy, archetype, state, rng);
       // Skittish should have move action when adjacent (retreat is one of the feasible actions)
-      expect(trace.candidates.length).toBeGreaterThan(0);
+      expect(trace.candidates.map(candidate => candidate.action.type)).toContain('wait');
       // The chosen action should be high-scored (based on archetype rules)
-      expect(trace.chosen.action).toBeDefined();
+      expect(trace.chosen.action.type).toMatch(/^(attack|move|wait|ability)$/);
     });
 
     it('all candidates have scores and reasoning', () => {
@@ -257,7 +263,9 @@ describe('Enemy AI Scoring Engine', () => {
 
       const trace = scoreEnemyActions(enemy, archetype, state, rng);
       const waitCandidate = trace.candidates.find(c => c.action.type === 'wait');
-      expect(waitCandidate).toBeDefined();
+      expect(waitCandidate).toEqual(expect.objectContaining({
+        action: expect.objectContaining({ type: 'wait' }),
+      }));
     });
   });
 
@@ -277,7 +285,6 @@ describe('Enemy AI Scoring Engine', () => {
       }
 
       const trace = scoreEnemyActions(enemy, archetype, state, rng);
-      expect(trace.chosen).toBeDefined();
       // Should still work, just without ability options
       expect(trace.chosen.action.type).toBe('attack');
     });
@@ -294,8 +301,7 @@ describe('Enemy AI Scoring Engine', () => {
 
       const trace = scoreEnemyActions(enemy, archetype, state, rng);
       // Should still pick one (first in sorted list)
-      expect(trace.chosen).toBeDefined();
-      expect(trace.chosen.action).toBeDefined();
+      expect(trace.chosen.action.type).toMatch(/^(attack|move|wait|ability)$/);
     });
   });
 
@@ -316,8 +322,8 @@ describe('Enemy AI Scoring Engine', () => {
       }
 
       const trace = scoreEnemyActions(enemy, archetype, state, rng);
-      expect(trace.chosen).toBeDefined();
-      expect(trace.candidates.length).toBeGreaterThan(0);
+      expect(trace.chosen.action.type).toMatch(/^(attack|move|wait|ability)$/);
+      expect(trace.candidates.map(candidate => candidate.action.type)).toContain('wait');
     });
 
     it('handles hpBelowThreshold boundary at exact threshold', () => {
@@ -337,7 +343,7 @@ describe('Enemy AI Scoring Engine', () => {
 
       const trace = scoreEnemyActions(enemy, archetype, state, rng);
       // At 30% HP, selfHpLow condition (< 0.3) should not trigger, but 30% itself might affect other rules
-      expect(trace.chosen).toBeDefined();
+      expect(trace.chosen.action.type).toMatch(/^(attack|move|wait|ability)$/);
     });
 
     it('parses hpAboveThreshold condition correctly', () => {
@@ -356,8 +362,7 @@ describe('Enemy AI Scoring Engine', () => {
       }
 
       const trace = scoreEnemyActions(enemy, archetype, state, rng);
-      expect(trace.chosen).toBeDefined();
-      expect(trace.chosen.action).toBeDefined();
+      expect(trace.chosen.action.type).toMatch(/^(attack|move|wait|ability)$/);
     });
 
     it('evaluates playerAdjacent condition at distance 1', () => {
@@ -393,7 +398,7 @@ describe('Enemy AI Scoring Engine', () => {
 
       const trace = scoreEnemyActions(enemy, archetype, state, rng);
       // At distance 3, playerRange2to5 is true
-      expect(trace.candidates.length).toBeGreaterThan(0);
+      expect(trace.candidates.map(candidate => candidate.action.type)).toContain('wait');
     });
 
     it('evaluates playerRange6Plus condition correctly', () => {
@@ -411,7 +416,7 @@ describe('Enemy AI Scoring Engine', () => {
 
       const trace = scoreEnemyActions(enemy, archetype, state, rng);
       // At distance 7, playerRange6Plus is true
-      expect(trace.candidates.length).toBeGreaterThan(0);
+      expect(trace.candidates.map(candidate => candidate.action.type)).toContain('wait');
     });
   });
 
@@ -432,8 +437,7 @@ describe('Enemy AI Scoring Engine', () => {
 
       // Should process without error even with movement behavior set
       const trace = scoreEnemyActions(enemy, archetype, state, rng);
-      expect(trace.chosen).toBeDefined();
-      expect(trace.chosen.action).toBeDefined();
+      expect(trace.chosen.action.type).toMatch(/^(attack|move|wait|ability)$/);
     });
 
     it('wait action serves as fallback when no other actions feasible', () => {
@@ -452,7 +456,9 @@ describe('Enemy AI Scoring Engine', () => {
       const trace = scoreEnemyActions(enemy, archetype, state, rng);
       // Wait should always be available
       const waitAction = trace.candidates.find(c => c.action.type === 'wait');
-      expect(waitAction).toBeDefined();
+      expect(waitAction).toEqual(expect.objectContaining({
+        action: expect.objectContaining({ type: 'wait' }),
+      }));
     });
   });
 

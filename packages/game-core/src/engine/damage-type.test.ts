@@ -1,3 +1,9 @@
+/**
+ * Test layer: integration
+ * Behavior: Combat damage type correctness through GameEngine command processing.
+ * Proof: integrated GameEngine assertions verify emitted combat events and resulting state.
+ * Validation: pnpm vitest run packages/game-core/src/engine/damage-type.test.ts
+ */
 import { describe, it, expect } from 'vitest';
 import { GameEngine } from './game-engine.js';
 import { entityId } from '@dungeon/contracts';

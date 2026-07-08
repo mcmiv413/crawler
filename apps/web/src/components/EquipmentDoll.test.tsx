@@ -1,4 +1,10 @@
 /**
+ * Test layer: unit
+ * Behavior: EquipmentDoll covers EquipmentDoll Component; Slot Labels and Structure; renders all 8 equipment slots.
+ * Proof: focused assertions verify returned values, state changes, rendered output, or emitted events.
+ * Validation: pnpm vitest run apps/web/src/components/EquipmentDoll.test.tsx
+ */
+/**
  * EquipmentDoll Component Tests
  *
  * Verifies that the equipment slot grid correctly displays

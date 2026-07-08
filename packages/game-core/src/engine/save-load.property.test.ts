@@ -1,3 +1,9 @@
+/**
+ * Test layer: integration
+ * Behavior: Save/load roundtrip property tests through GameEngine and state serialization.
+ * Proof: integrated GameEngine and serialization assertions verify state roundtrips.
+ * Validation: pnpm vitest run packages/game-core/src/engine/save-load.property.test.ts
+ */
 import { describe, it, expect } from 'vitest';
 import * as fc from 'fast-check';
 import { entityId, type GameState, type StoredFloor } from '@dungeon/contracts';

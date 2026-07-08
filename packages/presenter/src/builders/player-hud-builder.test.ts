@@ -1,3 +1,9 @@
+/**
+ * Test layer: unit
+ * Behavior: Player hud Builder covers buildPlayerHud; basic player stats; displays player name.
+ * Proof: focused assertions verify returned values, state changes, rendered output, or emitted events.
+ * Validation: pnpm vitest run packages/presenter/src/builders/player-hud-builder.test.ts
+ */
 import { describe, it, expect, beforeEach } from 'vitest';
 import { buildPlayerHud } from './player-hud-builder.js';
 import { PLAYER_STATUS_PRESENTATION, getStatusPresentation } from '../animation-metadata.js';
@@ -554,8 +560,8 @@ describe('buildPlayerHud', () => {
 
     it('displays biome information when in dungeon', () => {
       const hud = buildPlayerHud(state);
-      expect(hud.biomeId).toBeTruthy();
-      expect(hud.biomeColor).toBeTruthy();
+      expect(hud.biomeId).toMatch(/\S/);
+      expect(hud.biomeColor).toMatch(/^#/);
     });
 
     it('displays weapon mastery progress', () => {

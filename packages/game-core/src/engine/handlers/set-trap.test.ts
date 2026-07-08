@@ -1,4 +1,10 @@
 /**
+ * Test layer: unit
+ * Behavior: set Trap covers handleSetTrap - trap placement observability (Phase 4B); invalid placement rejection; emits PLAYER_ACTION_REJECTED with WRONG_PHASE when....
+ * Proof: focused assertions verify returned values, state changes, rendered output, or emitted events.
+ * Validation: pnpm vitest run packages/game-core/src/engine/handlers/set-trap.test.ts
+ */
+/**
  * Tests for trap placement action observability (Phase 4B).
  *
  * Proves:

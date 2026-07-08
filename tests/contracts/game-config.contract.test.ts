@@ -1,3 +1,9 @@
+/**
+ * Test layer: contract
+ * Behavior: Game Config covers Ability Registry Contract; all abilities have required fields (id, name, cooldown, requiresTarget); ability stats are in valid ranges (co....
+ * Proof: live catalog/schema assertions validate IDs, shapes, and cross references.
+ * Validation: pnpm vitest run tests/contracts/game-config.contract.test.ts
+ */
 import { describe, it, expect } from 'vitest';
 import { fc } from '@fast-check/vitest';
 import {

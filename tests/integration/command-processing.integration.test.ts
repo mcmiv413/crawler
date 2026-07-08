@@ -1,3 +1,9 @@
+/**
+ * Test layer: integration
+ * Behavior: Command Processing covers command-processing integration; persists current command events into event history before returning the run-end state.
+ * Proof: integrated command, service, or repository assertions verify the cross-module result.
+ * Validation: pnpm vitest run tests/integration/command-processing.integration.test.ts
+ */
 import { describe, expect, it } from 'vitest';
 import { GameEngine } from '@dungeon/core';
 import type {

@@ -1,4 +1,10 @@
 /**
+ * Test layer: unit
+ * Behavior: CombatLogView covers CombatLogView Component; Basic Rendering; renders null when entries are empty.
+ * Proof: focused assertions verify returned values, state changes, rendered output, or emitted events.
+ * Validation: pnpm vitest run apps/web/src/components/CombatLogView.test.tsx
+ */
+/**
  * CombatLogView Component Tests
  *
  * Verifies that formatted events from the presenter actually render

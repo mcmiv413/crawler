@@ -1,3 +1,9 @@
+/**
+ * Test layer: property
+ * Behavior: Command Handler covers command-handler invariants; turn number never decreases after any command; health never exceeds maxHealth after any command.
+ * Proof: seeded/generated cases preserve the invariant under varied inputs.
+ * Validation: pnpm vitest run packages/game-core/src/engine/command-handler.property.test.ts
+ */
 import { describe, it, expect } from 'vitest';
 import * as fc from 'fast-check';
 import { handleCommand } from './command-handler.js';

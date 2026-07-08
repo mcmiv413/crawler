@@ -1,3 +1,9 @@
+/**
+ * Test layer: unit
+ * Behavior: UseDungeonRenderState covers useDungeonRenderState; returns the expected render-state fields; accepts map, vpTilesWidth, and vpTilesHeight as inputs.
+ * Proof: focused assertions verify returned values, state changes, rendered output, or emitted events.
+ * Validation: pnpm vitest run apps/web/src/hooks/useDungeonRenderState.test.ts
+ */
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import { renderHook } from '@testing-library/react';
 import type { MapView } from '@dungeon/presenter';

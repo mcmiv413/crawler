@@ -1,3 +1,9 @@
+/**
+ * Test layer: unit
+ * Behavior: Projectile Trail covers createProjectileTrail; places mesh at local y = -lengthPx  2; places mesh at local x = 0 and z = 0.
+ * Proof: focused assertions verify returned values, state changes, rendered output, or emitted events.
+ * Validation: pnpm vitest run apps/web/src/rendering/three/lib/projectile-trail.test.ts
+ */
 import { beforeEach, describe, expect, it, vi } from 'vitest';
 import { createProjectileTrail } from './projectile-trail.js';
 
@@ -21,8 +27,8 @@ describe('createProjectileTrail', () => {
 
   it('exposes geometry and material', () => {
     const trail = createProjectileTrail(defaultOptions);
-    expect(trail.geometry).toBeDefined();
-    expect(trail.material).toBeDefined();
+    expect(trail.object.geometry).toBe(trail.geometry);
+    expect(trail.object.material).toBe(trail.material);
   });
 
   describe('update()', () => {

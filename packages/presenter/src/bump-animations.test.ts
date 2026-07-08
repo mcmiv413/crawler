@@ -1,3 +1,9 @@
+/**
+ * Test layer: unit
+ * Behavior: Bump Animations covers buildBumpAnimations; ATTACK_PERFORMED; creates bump animation for player attacking enemy.
+ * Proof: focused assertions verify returned values, state changes, rendered output, or emitted events.
+ * Validation: pnpm vitest run packages/presenter/src/bump-animations.test.ts
+ */
 import { describe, it, expect } from 'vitest';
 import { entityId, type DomainEvent, type GameState } from '@dungeon/contracts';
 import { createTestEnemy, createTestGameStateInCombat } from '@dungeon/core/testing';

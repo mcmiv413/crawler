@@ -1,3 +1,9 @@
+/**
+ * Test layer: unit
+ * Behavior: Derive Mastery map covers deriveMasteryAbilities; derives mastery ability map from definitions; all mastery-unlocked abilities are in the map.
+ * Proof: focused assertions verify returned values, state changes, rendered output, or emitted events.
+ * Validation: pnpm vitest run packages/game-core/src/abilities/derive-mastery-map.test.ts
+ */
 import { describe, it, expect } from 'vitest';
 import { deriveMasteryAbilities } from './derive-mastery-map.js';
 import { ALL_ABILITY_DEFINITIONS } from './definitions/index.js';

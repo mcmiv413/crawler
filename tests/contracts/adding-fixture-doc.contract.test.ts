@@ -1,4 +1,10 @@
 /**
+ * Test layer: contract
+ * Behavior: Adding Fixture doc covers adding-fixture.md: all JSON code blocks are valid JSON; doc file exists and is readable; every ```json block parses without error.
+ * Proof: live catalog/schema assertions validate IDs, shapes, and cross references.
+ * Validation: pnpm vitest run tests/contracts/adding-fixture-doc.contract.test.ts
+ */
+/**
  * Documentation Contract Tests — docs/guides/adding-fixture.md
  *
  * Ensures every JSON example in the fixture guide is valid and executable.
@@ -94,7 +100,7 @@ function looksLikeWorldFixture(obj: unknown): obj is WorldFixture {
 describe('adding-fixture.md: all JSON code blocks are valid JSON', () => {
   it('doc file exists and is readable', () => {
     const text = readFileSync(DOC_PATH, 'utf-8');
-    expect(text.length).toBeGreaterThan(0);
+    expect(text).toContain('# Player Fixture System');
   });
 
   it('every ```json block parses without error', () => {
@@ -106,7 +112,7 @@ describe('adding-fixture.md: all JSON code blocks are valid JSON', () => {
   it('doc contains at least one JSON code block', () => {
     const text = readFileSync(DOC_PATH, 'utf-8');
     const blocks = extractJsonBlocks(text);
-    expect(blocks.length).toBeGreaterThan(0);
+    expect(blocks[0]).toEqual(expect.any(Object));
   });
 });
 

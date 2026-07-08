@@ -1,3 +1,9 @@
+/**
+ * Test layer: unit
+ * Behavior: DispatchAnimatedEvent covers dispatchAnimatedEvent; preserves defender-hit snapshot position.
+ * Proof: focused assertions verify returned values, state changes, rendered output, or emitted events.
+ * Validation: pnpm vitest run apps/web/src/animation-runtime/dispatchAnimatedEvent.test.ts
+ */
 import { describe, expect, it, vi } from 'vitest';
 import { entityId } from '@dungeon/contracts';
 import type { AnimatedEvent } from '@dungeon/presenter';

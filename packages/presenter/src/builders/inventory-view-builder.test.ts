@@ -1,3 +1,9 @@
+/**
+ * Test layer: unit
+ * Behavior: Inventory View Builder covers buildInventoryView; basic inventory structure; returns InventoryView with items and equipped slots.
+ * Proof: focused assertions verify returned values, state changes, rendered output, or emitted events.
+ * Validation: pnpm vitest run packages/presenter/src/builders/inventory-view-builder.test.ts
+ */
 import { buildInventoryView } from './inventory-view-builder.js';
 import { entityId } from '@dungeon/contracts';
 import type { EntityId, GameState, ItemRegistry } from '@dungeon/contracts';

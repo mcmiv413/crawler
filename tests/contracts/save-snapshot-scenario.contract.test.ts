@@ -1,3 +1,9 @@
+/**
+ * Test layer: contract
+ * Behavior: Save Snapshot Scenario covers SaveSnapshot scenario compatibility; Test Group 12: restores scenario-derived gameplay after turns and continues equivalently.
+ * Proof: live catalog/schema assertions validate IDs, shapes, and cross references.
+ * Validation: pnpm vitest run tests/contracts/save-snapshot-scenario.contract.test.ts
+ */
 import { describe, expect, it } from 'vitest';
 import type { GameCommand, GameState } from '@dungeon/contracts';
 import { GameEngine } from '../../packages/game-core/src/engine/game-engine.js';

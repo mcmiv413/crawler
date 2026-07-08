@@ -1,3 +1,9 @@
+/**
+ * Test layer: unit
+ * Behavior: npc covers processTalkNpc; informant assigns a quest on first conversation; informant does not assign duplicate quest on second talk.
+ * Proof: focused assertions verify returned values, state changes, rendered output, or emitted events.
+ * Validation: pnpm vitest run packages/game-core/src/systems/npc.test.ts
+ */
 import { describe, it, expect } from 'vitest';
 import { processTalkNpc, updateNpcDisposition } from './npc.js';
 import { createTestGameState } from '../test-utils.js';

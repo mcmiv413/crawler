@@ -1,9 +1,16 @@
+/**
+ * Test layer: property
+ * Behavior: map Generator covers map-generator property tests; should produce valid connected maps for 100 random seeds; entrance and exit should be distinct positions.
+ * Proof: seeded/generated cases preserve the invariant under varied inputs.
+ * Validation: pnpm vitest run packages/game-core/src/generation/map-generator.property.test.ts
+ */
 import { describe, it, expect } from 'vitest';
 import * as fc from 'fast-check';
 import { generateFloor, bfsReachable } from './map-generator.js';
 import { SeededRNG } from '../utils/rng.js';
-import type { BiomeDefinition } from '@dungeon/content';
 import { posKey } from '@dungeon/contracts';
+
+type BiomeDefinition = Parameters<typeof generateFloor>[1];
 
 const STUB_BIOME_A: BiomeDefinition = {
   biomeId: 'stub_a',

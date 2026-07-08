@@ -1,3 +1,9 @@
+/**
+ * Test layer: unit
+ * Behavior: Ambient Simulation Policy covers ambient-simulation-policy; getSimulationFidelity; returns High fidelity when distance <= 5.
+ * Proof: focused assertions verify returned values, state changes, rendered output, or emitted events.
+ * Validation: pnpm vitest run packages/game-core/src/systems/ambient-simulation-policy.test.ts
+ */
 import { describe, it, expect } from 'vitest';
 import { getSimulationFidelity, SimulationFidelity } from './ambient-simulation-policy.js';
 import { createTestEnemy, createTestPlayer } from '../test-utils.js';

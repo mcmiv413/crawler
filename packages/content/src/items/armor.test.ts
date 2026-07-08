@@ -1,3 +1,9 @@
+/**
+ * Test layer: unit
+ * Behavior: Armor covers armor catalog; every item has a valid ArmorSlot; enchantmentSlots matches ENCHANTMENT_SLOTS_BY_RARITY[rarity].
+ * Proof: focused assertions verify returned values, state changes, rendered output, or emitted events.
+ * Validation: pnpm vitest run packages/content/src/items/armor.test.ts
+ */
 import { describe, it, expect } from 'vitest';
 import { ARMOR } from './armor/index.js';
 import { ENCHANTMENT_SLOTS_BY_RARITY } from '../balance/tables.js';

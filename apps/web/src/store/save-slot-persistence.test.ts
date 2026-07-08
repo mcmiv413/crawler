@@ -1,3 +1,9 @@
+/**
+ * Test layer: unit
+ * Behavior: Save Slot Persistence covers save slot persistence; Test Group 8: stores and restores three independent save slots without contamination; Test Group 11: exposes save....
+ * Proof: focused assertions verify returned values, state changes, rendered output, or emitted events.
+ * Validation: pnpm vitest run apps/web/src/store/save-slot-persistence.test.ts
+ */
 import { beforeEach, describe, expect, it } from 'vitest';
 import { SAVE_SNAPSHOT_SCHEMA_VERSION } from '@dungeon/contracts';
 import {

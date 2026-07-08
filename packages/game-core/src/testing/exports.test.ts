@@ -1,3 +1,9 @@
+/**
+ * Test layer: unit
+ * Behavior: Exports covers package exports: @dungeoncoretesting; should export test utilities from @dungeoncoretesting; should be able to create test objects using....
+ * Proof: focused assertions verify returned values, state changes, rendered output, or emitted events.
+ * Validation: pnpm vitest run packages/game-core/src/testing/exports.test.ts
+ */
 import { describe, it, expect } from 'vitest';
 import {
   createTestGameState,
@@ -72,7 +78,7 @@ describe('package exports: @dungeon/core/testing', () => {
     const player = createTestPlayer();
 
     // If we can create these objects, the exports are working
-    expect(state).toBeDefined();
-    expect(player).toBeDefined();
+    expect(state.phase).toBe('town');
+    expect(player.stats.health).toBe(player.stats.maxHealth);
   });
 });

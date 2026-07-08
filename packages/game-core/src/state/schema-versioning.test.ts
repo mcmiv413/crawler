@@ -1,4 +1,10 @@
 /**
+ * Test layer: unit
+ * Behavior: Schema Versioning covers Schema Versioning; serializeState with schemaVersion; should include schemaVersion in serialized output.
+ * Proof: focused assertions verify returned values, state changes, rendered output, or emitted events.
+ * Validation: pnpm vitest run packages/game-core/src/state/schema-versioning.test.ts
+ */
+/**
  * Comprehensive schema versioning tests.
  * Validates that serializeState/deserializeState handle versions correctly
  * and reject incompatible saves.
@@ -42,10 +48,12 @@ describe('Schema Versioning', () => {
     it('should preserve all state fields alongside schemaVersion', () => {
       const serialized = serializeState(baseState);
       const parsed = JSON.parse(serialized);
-      expect(parsed.gameId).toBeDefined();
-      expect(parsed.player).toBeDefined();
-      expect(parsed.world).toBeDefined();
-      expect(parsed.phase).toBeDefined();
+      expect(parsed).toEqual(expect.objectContaining({
+        gameId: baseState.gameId,
+        phase: baseState.phase,
+        player: expect.any(Object),
+        world: expect.any(Object),
+      }));
     });
   });
 

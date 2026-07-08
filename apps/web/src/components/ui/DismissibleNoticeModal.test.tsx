@@ -1,3 +1,9 @@
+/**
+ * Test layer: unit
+ * Behavior: DismissibleNoticeModal covers DismissibleNoticeModal; dismisses the visible notice id from the modal close button; does not render when the notice has already been dis....
+ * Proof: focused assertions verify returned values, state changes, rendered output, or emitted events.
+ * Validation: pnpm vitest run apps/web/src/components/ui/DismissibleNoticeModal.test.tsx
+ */
 import { fireEvent, render, screen } from '@testing-library/react';
 import { describe, expect, it, vi } from 'vitest';
 import type { DismissibleNotice } from '@dungeon/presenter';

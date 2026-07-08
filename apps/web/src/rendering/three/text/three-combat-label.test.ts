@@ -1,4 +1,10 @@
 /**
+ * Test layer: unit
+ * Behavior: Three Combat Label covers createCombatLabel; returns a label instance; adds the label mesh to the scene.
+ * Proof: focused assertions verify returned values, state changes, rendered output, or emitted events.
+ * Validation: pnpm vitest run apps/web/src/rendering/three/text/three-combat-label.test.ts
+ */
+/**
  * Tests for three-combat-label.ts
  *
  * Creates disposable text textures for floating combat indicator labels.
@@ -50,7 +56,8 @@ describe('createCombatLabel', () => {
   it('returns a label instance', () => {
     const ctx = makeContext();
     const label = createCombatLabel(ctx, '+15');
-    expect(label).toBeDefined();
+    expect(label.mesh.geometry).toBe(label.geometry);
+    expect(label.mesh.material).toBe(label.material);
   });
 
   it('adds the label mesh to the scene', () => {
@@ -62,8 +69,9 @@ describe('createCombatLabel', () => {
   it('label has a material with a map (texture)', () => {
     const ctx = makeContext();
     const label = createCombatLabel(ctx, '+15');
-    expect(label.material).toBeDefined();
-    expect(label.material.map).toBeDefined();
+    const image = label.material.map?.image as HTMLCanvasElement | undefined;
+    expect(image?.width).toBe(128);
+    expect(image?.height).toBe(32);
   });
 
   it('initial opacity is 1', () => {

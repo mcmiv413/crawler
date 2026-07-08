@@ -1,4 +1,10 @@
 /// <reference types="@testing-library/jest-dom" />
+/**
+ * Test layer: unit
+ * Behavior: App covers App progress notices; shows the faction leader emerged surface; shows the faction leader slain surface.
+ * Proof: focused assertions verify returned values, state changes, rendered output, or emitted events.
+ * Validation: pnpm vitest run apps/web/src/App.test.tsx
+ */
 import React from 'react';
 import { describe, it, expect, vi, beforeEach } from 'vitest';
 import { fireEvent, render, screen } from '@testing-library/react';

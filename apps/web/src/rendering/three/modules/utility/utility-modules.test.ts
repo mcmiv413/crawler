@@ -1,4 +1,10 @@
 /**
+ * Test layer: unit
+ * Behavior: Utility Modules covers trapSpark; trapPlacement.
+ * Proof: focused assertions verify returned values, state changes, rendered output, or emitted events.
+ * Validation: pnpm vitest run apps/web/src/rendering/three/modules/utility/utility-modules.test.ts
+ */
+/**
  * Lifecycle contract tests for all utility Three animation modules.
  */
 

@@ -1,3 +1,9 @@
+/**
+ * Test layer: unit
+ * Behavior: Move Style Secondary Motion covers move style secondary motion; keeps styles free of anticipation, recoil, jitter, and squash; matches deployed dungeon arc offsets.
+ * Proof: focused assertions verify returned values, state changes, rendered output, or emitted events.
+ * Validation: pnpm vitest run apps/web/src/animations/move-style-secondary-motion.test.ts
+ */
 import { describe, expect, it } from 'vitest';
 import {
   getAnticipationOffsetPx,

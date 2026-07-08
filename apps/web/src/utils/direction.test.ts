@@ -1,3 +1,9 @@
+/**
+ * Test layer: unit
+ * Behavior: Direction covers positionToDirection; maps N correctly (0, -1); maps S correctly (0, +1).
+ * Proof: focused assertions verify returned values, state changes, rendered output, or emitted events.
+ * Validation: pnpm vitest run apps/web/src/utils/direction.test.ts
+ */
 import { describe, it, expect } from 'vitest';
 import { positionToDirection } from './direction.js';
 

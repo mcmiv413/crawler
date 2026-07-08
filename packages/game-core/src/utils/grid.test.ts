@@ -1,3 +1,9 @@
+/**
+ * Test layer: unit
+ * Behavior: Grid covers Grid utilities; calculates Manhattan distance correctly; calculates Chebyshev distance correctly.
+ * Proof: focused assertions verify returned values, state changes, rendered output, or emitted events.
+ * Validation: pnpm vitest run packages/game-core/src/utils/grid.test.ts
+ */
 import { describe, it, expect } from 'vitest';
 import { manhattanDistance, chebyshevDistance, moveInDirection, positionsEqual, getNeighbors } from './grid.js';
 

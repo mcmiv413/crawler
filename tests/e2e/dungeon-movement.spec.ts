@@ -1,3 +1,9 @@
+/**
+ * Test layer: e2e
+ * Behavior: Dungeon Movement covers movement keeps accepting turn inputs while move animations settle; click auto-walk collapses hidden turns and waits only for visible anim....
+ * Proof: Playwright actions and visible UI assertions verify the browser-facing outcome.
+ * Validation: pnpm test:e2e tests/e2e/dungeon-movement.spec.ts
+ */
 import { expect, test } from '@playwright/test';
 import type { Locator, Page, Request } from '@playwright/test';
 import { CELL_SIZE } from '../../apps/web/src/config/ui-config.js';

@@ -1,3 +1,9 @@
+/**
+ * Test layer: unit
+ * Behavior: UseCombatIndicators covers useCombatIndicators; should not throw when given valid inputs; should handle empty indicator array.
+ * Proof: focused assertions verify returned values, state changes, rendered output, or emitted events.
+ * Validation: pnpm vitest run apps/web/src/hooks/useCombatIndicators.test.ts
+ */
 import { renderHook } from '@testing-library/react';
 import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest';
 import type { CombatIndicatorEntry } from '@dungeon/presenter';

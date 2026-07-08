@@ -1,3 +1,9 @@
+/**
+ * Test layer: unit
+ * Behavior: Action Rejection covers rejectPlayerAction; emits PLAYER_ACTION_REJECTED event; preserves state object values.
+ * Proof: focused assertions verify returned values, state changes, rendered output, or emitted events.
+ * Validation: pnpm vitest run packages/game-core/src/engine/action-rejection.test.ts
+ */
 import { describe, it, expect } from 'vitest';
 import { rejectPlayerAction } from './action-rejection.js';
 import { createTestGameState } from '../test-utils.js';

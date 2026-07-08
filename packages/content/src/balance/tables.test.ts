@@ -1,3 +1,9 @@
+/**
+ * Test layer: unit
+ * Behavior: Tables covers Balance tables — property tests; MAP_GENERATION scaling; floor N enemies scales with baseDensity + perFloor  N.
+ * Proof: focused assertions verify returned values, state changes, rendered output, or emitted events.
+ * Validation: pnpm vitest run packages/content/src/balance/tables.test.ts
+ */
 import { describe, it, expect } from 'vitest';
 import { MAP_GENERATION, FLOOR_SCALING, getFloorScalingMultipliers, isRarityBuyable } from './tables.js';
 

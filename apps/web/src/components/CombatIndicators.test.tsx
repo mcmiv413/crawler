@@ -1,3 +1,9 @@
+/**
+ * Test layer: unit
+ * Behavior: CombatIndicators covers CombatIndicators; renders nothing when the runtime supplies no labels; positions labels relative to the viewport and fade progress.
+ * Proof: focused assertions verify returned values, state changes, rendered output, or emitted events.
+ * Validation: pnpm vitest run apps/web/src/components/CombatIndicators.test.tsx
+ */
 import { render, screen } from '@testing-library/react';
 import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest';
 import React from 'react';

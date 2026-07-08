@@ -1,3 +1,9 @@
+/**
+ * Test layer: unit
+ * Behavior: lm Studio Client covers queryLmStudio; returns text on successful API response; trims whitespace from response text.
+ * Proof: focused assertions verify returned values, state changes, rendered output, or emitted events.
+ * Validation: pnpm vitest run apps/server/src/ai/lm-studio-client.test.ts
+ */
 import { describe, it, expect, beforeEach, afterEach, vi } from 'vitest';
 import { queryLmStudio } from './lm-studio-client.js';
 

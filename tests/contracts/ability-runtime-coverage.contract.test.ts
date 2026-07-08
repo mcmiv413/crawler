@@ -1,3 +1,9 @@
+/**
+ * Test layer: contract
+ * Behavior: Ability Runtime Coverage covers Ability Runtime Coverage Contract; keeps the legacy combat-handler allowlist narrow and explicit; covers every content-backed ability wit....
+ * Proof: live catalog/schema assertions validate IDs, shapes, and cross references.
+ * Validation: pnpm vitest run tests/contracts/ability-runtime-coverage.contract.test.ts
+ */
 import { describe, expect, it } from 'vitest';
 import { ALL_ABILITY_DEFINITIONS, LEGACY_CONTENT_ABILITY_HANDLER_IDS } from '@dungeon/core';
 import { ABILITY_DEFINITIONS, daggerDisarm, daggerSetTrap } from '@dungeon/content';

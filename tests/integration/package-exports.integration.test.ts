@@ -1,3 +1,9 @@
+/**
+ * Test layer: integration
+ * Behavior: Package Exports covers check-package-exports script; passes for valid export maps and consumer-context runtime resolution; fails when an export condition object....
+ * Proof: integrated command, service, or repository assertions verify the cross-module result.
+ * Validation: pnpm vitest run tests/integration/package-exports.integration.test.ts
+ */
 import { afterEach, describe, expect, it } from 'vitest';
 import {
   mkdtempSync,

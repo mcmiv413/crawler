@@ -1,3 +1,9 @@
+/**
+ * Test layer: unit
+ * Behavior: Game Routes covers Game Routes; POST apigames; creates a new game and returns 201 with gameId, view, and serializedState.
+ * Proof: focused assertions verify returned values, state changes, rendered output, or emitted events.
+ * Validation: pnpm vitest run apps/server/src/api/game-routes.test.ts
+ */
 import { describe, it, expect, beforeEach, afterEach, vi } from 'vitest';
 import type { FastifyInstance } from 'fastify';
 import { buildApp } from '../app.js';

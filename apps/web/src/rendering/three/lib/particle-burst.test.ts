@@ -1,3 +1,9 @@
+/**
+ * Test layer: unit
+ * Behavior: Particle Burst covers createParticleBurst; returns object, geometry, and material; position attribute length equals count  3.
+ * Proof: focused assertions verify returned values, state changes, rendered output, or emitted events.
+ * Validation: pnpm vitest run apps/web/src/rendering/three/lib/particle-burst.test.ts
+ */
 import { describe, expect, it, vi } from 'vitest';
 import { createParticleBurst } from './particle-burst.js';
 
@@ -11,9 +17,8 @@ const BASE_OPTIONS = {
 describe('createParticleBurst', () => {
   it('returns object, geometry, and material', () => {
     const burst = createParticleBurst(BASE_OPTIONS);
-    expect(burst.object).toBeDefined();
-    expect(burst.geometry).toBeDefined();
-    expect(burst.material).toBeDefined();
+    expect(burst.object.geometry).toBe(burst.geometry);
+    expect(burst.object.material).toBe(burst.material);
   });
 
   it('position attribute length equals count * 3', () => {

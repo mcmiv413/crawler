@@ -1,3 +1,9 @@
+/**
+ * Test layer: contract
+ * Behavior: no Nemesis Artifacts covers PV0 — Nemesis system fully removed; no source file references any nemesis identifier; NemesisRisenScreen.tsx, NemesisSlainScreen.tsx, Nem....
+ * Proof: live catalog/schema assertions validate IDs, shapes, and cross references.
+ * Validation: pnpm vitest run tests/contracts/no-nemesis-artifacts.contract.test.ts
+ */
 import { describe, it, expect } from 'vitest';
 import { execSync } from 'node:child_process';
 import * as path from 'node:path';

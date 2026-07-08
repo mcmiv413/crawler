@@ -1,3 +1,9 @@
+/**
+ * Test layer: unit
+ * Behavior: Enchantment Resistall covers Enchantment resistAll field; calculateEquippedStats applies resistAll without hardcoded logic; applies arcane_ward resistance to protecte....
+ * Proof: focused assertions verify returned values, state changes, rendered output, or emitted events.
+ * Validation: pnpm vitest run packages/game-core/src/systems/enchantment-resistall.test.ts
+ */
 import { describe, it, expect } from 'vitest';
 import { calculateEquippedStats } from './equipment.js';
 import { entityId } from '@dungeon/contracts';
@@ -239,8 +245,8 @@ describe('Enchantment resistAll field', () => {
       const blightWard = ENCHANTMENT_BY_ID.get('blight_ward');
 
       // Both have the resistAll field, demonstrating the pattern
-      expect(arcaneWard?.resistAll).toBeDefined();
-      expect(blightWard?.resistAll).toBeDefined();
+      expect(arcaneWard?.resistAll).toEqual(expect.arrayContaining(['fire', 'shock', 'frost']));
+      expect(blightWard?.resistAll).toEqual(expect.arrayContaining(['poison']));
 
       // A hypothetical new enchantment could be:
       // { id: 'elemental_ward', ..., resistAll: ['fire', 'cold', 'lightning', 'acid'] }

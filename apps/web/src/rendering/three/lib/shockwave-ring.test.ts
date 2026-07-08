@@ -1,3 +1,9 @@
+/**
+ * Test layer: unit
+ * Behavior: Shockwave Ring covers createShockwaveRing; scale at progress 0 equals startScale; scale at progress 1 equals endScale.
+ * Proof: focused assertions verify returned values, state changes, rendered output, or emitted events.
+ * Validation: pnpm vitest run apps/web/src/rendering/three/lib/shockwave-ring.test.ts
+ */
 import { describe, expect, it, vi } from 'vitest';
 import { createShockwaveRing } from './shockwave-ring.js';
 
@@ -63,7 +69,7 @@ describe('createShockwaveRing', () => {
   it('does not add itself to a scene', () => {
     // The factory takes no scene argument — verified structurally.
     const ring = createShockwaveRing(BASE_OPTIONS);
-    expect(ring.object).toBeDefined();
+    expect(ring.object.parent).toBeNull();
   });
 
   it('double-dispose only disposes geometry and material once each', () => {

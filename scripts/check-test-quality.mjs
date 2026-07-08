@@ -7,6 +7,12 @@ import { lineNumberAt, normalizePath } from './guardrails/common.mjs';
 
 const DEFAULT_BASE_REF = process.env.TEST_QUALITY_BASE ?? 'main';
 const TEST_LAYER_VALUES = new Set(['unit', 'property', 'contract', 'integration', 'balance', 'e2e']);
+const COLOCATED_INTEGRATION_TEST_PATHS = new Set([
+  'packages/game-core/src/engine/damage-type.test.ts',
+  'packages/game-core/src/engine/engine-consequences.test.ts',
+  'packages/game-core/src/engine/save-load.property.test.ts',
+  'packages/game-core/src/state/save-snapshot.test.ts',
+]);
 const TUNABLE_GAME_CORE_TEST_ROOTS = [
   'packages/game-core/src/systems/',
   'packages/game-core/src/abilities/effects/',
@@ -79,6 +85,12 @@ function listChangedPaths(repoRoot, baseRef = DEFAULT_BASE_REF) {
     .sort();
 }
 
+function listTrackedPaths(repoRoot) {
+  return splitGitPaths(runGit(repoRoot, ['ls-files']))
+    .filter((relativePath) => existsSync(join(repoRoot, relativePath)))
+    .sort();
+}
+
 function isChangedTestPath(relativePath) {
   return (
     relativePath.endsWith('.test.ts')
@@ -93,6 +105,7 @@ function isChangedTestPath(relativePath) {
 function getLayer(relativePath) {
   if (relativePath.startsWith('tests/e2e/') || relativePath.endsWith('.spec.ts') || relativePath.endsWith('.spec.tsx')) return 'e2e';
   if (relativePath.startsWith('tests/contracts/') || relativePath.includes('.contract.test.')) return 'contract';
+  if (COLOCATED_INTEGRATION_TEST_PATHS.has(relativePath)) return 'integration';
   if (relativePath.startsWith('tests/integration/') || relativePath.includes('.integration.test.')) return 'integration';
   if (relativePath.startsWith('tests/balance/') || relativePath.includes('.balance.test.')) return 'balance';
   if (relativePath.endsWith('.property.test.ts') || relativePath.endsWith('.property.test.tsx')) return 'property';
@@ -720,8 +733,42 @@ function checkFile(repoRoot, relativePath) {
   ];
 }
 
+function formatReportAllRow({ relativePath, failures }) {
+  if (failures.length === 0) {
+    return `${relativePath} -> []`;
+  }
+
+  const titles = [...new Set(failures.map((failure) => failure.title))];
+  return `${relativePath} -> [${titles.join(', ')}]`;
+}
+
+function runReportAll(repoRoot) {
+  const testPaths = listTrackedPaths(repoRoot)
+    .filter(isChangedTestPath);
+  const rows = testPaths.map((relativePath) => ({
+    relativePath,
+    failures: checkFile(repoRoot, relativePath),
+  }));
+  const failingRows = rows.filter(({ failures }) => failures.length > 0);
+
+  console.log([
+    'Test quality report-all diagnostic.',
+    `Checked ${testPaths.length} tracked test file(s).`,
+    `Files with violations: ${failingRows.length}.`,
+    '',
+    ...failingRows.map(formatReportAllRow),
+  ].join('\n'));
+}
+
 function run() {
   const repoRoot = resolve(process.cwd());
+  const reportAll = process.argv.includes('--report-all');
+
+  if (reportAll) {
+    runReportAll(repoRoot);
+    return;
+  }
+
   const changedTestPaths = listChangedPaths(repoRoot)
     .filter(isChangedTestPath);
 

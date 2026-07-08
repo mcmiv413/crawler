@@ -1,3 +1,9 @@
+/**
+ * Test layer: unit
+ * Behavior: UseKeyboard covers useKeyboard; blocks non-movement shortcuts while loading; dispatches wait when loading is false.
+ * Proof: focused assertions verify returned values, state changes, rendered output, or emitted events.
+ * Validation: pnpm vitest run apps/web/src/hooks/useKeyboard.test.ts
+ */
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import { act, renderHook } from '@testing-library/react';
 import { useGameStore } from '../store/game-store.js';

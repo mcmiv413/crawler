@@ -1,4 +1,10 @@
 /**
+ * Test layer: unit
+ * Behavior: Three Animation Registry covers registerAnimationModule; stores a module retrievable by its id; stores multiple modules independently.
+ * Proof: focused assertions verify returned values, state changes, rendered output, or emitted events.
+ * Validation: pnpm vitest run apps/web/src/rendering/three/three-animation-registry.test.ts
+ */
+/**
  * Tests for three-animation-registry.ts
  *
  * The generalized animation registry maps AnimationId → ThreeAnimationModule.
@@ -23,7 +29,8 @@ import { initializeThreeAnimationModules } from './generated/index.js';
 import { lightningStrike } from './modules/impact/lightning-strike.js';
 import { lightningBolt } from './modules/projectile/lightning-bolt.js';
 import type { ThreeAnimationModule } from './three-animation-types.js';
-import type { AnimationCategory } from '@dungeon/content';
+
+type AnimationCategory = ThreeAnimationModule['category'];
 
 // ---------------------------------------------------------------------------
 // Fixture factories — no live @dungeon/content imports

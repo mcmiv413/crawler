@@ -1,7 +1,14 @@
+/**
+ * Test layer: unit
+ * Behavior: map Generator covers Map Generation; generates a floor with entrance and exit; floor cells exist and are a Map.
+ * Proof: focused assertions verify returned values, state changes, rendered output, or emitted events.
+ * Validation: pnpm vitest run packages/game-core/src/generation/map-generator.test.ts
+ */
 import { describe, it, expect } from 'vitest';
 import { generateFloor, bfsReachable } from './map-generator.js';
 import { SeededRNG } from '../utils/rng.js';
-import type { BiomeDefinition } from '@dungeon/content';
+
+type BiomeDefinition = Parameters<typeof generateFloor>[1];
 
 const STUB_BIOME: BiomeDefinition = {
   biomeId: 'stub',

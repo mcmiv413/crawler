@@ -1,3 +1,9 @@
+/**
+ * Test layer: unit
+ * Behavior: Lightning Modules covers lightningBoltModule; routes its particle stream from source to target; lightningStrikeModule.
+ * Proof: focused assertions verify returned values, state changes, rendered output, or emitted events.
+ * Validation: pnpm vitest run apps/web/src/animations/modules/lightning-modules.test.ts
+ */
 import { describe, expect, it, vi } from 'vitest';
 import { resolveModule } from '../registry.js';
 import { initializeAnimationModules } from '../generated/index.js';

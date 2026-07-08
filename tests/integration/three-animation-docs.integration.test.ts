@@ -1,3 +1,9 @@
+/**
+ * Test layer: integration
+ * Behavior: Three Animation Docs covers Three animation docs guardrail; keeps the animation authoring guide aligned with the generated-module workflow; keeps the UI design guide....
+ * Proof: integrated command, service, or repository assertions verify the cross-module result.
+ * Validation: pnpm vitest run tests/integration/three-animation-docs.integration.test.ts
+ */
 import { describe, expect, it } from 'vitest';
 import { readFileSync } from 'node:fs';
 

@@ -1,3 +1,9 @@
+/**
+ * Test layer: unit
+ * Behavior: Actions Builder covers buildAvailableActions; town phase; includes enter_dungeon action.
+ * Proof: focused assertions verify returned values, state changes, rendered output, or emitted events.
+ * Validation: pnpm vitest run packages/presenter/src/builders/actions-builder.test.ts
+ */
 import { describe, it, expect, beforeEach } from 'vitest';
 import { buildAvailableActions } from './actions-builder.js';
 import {

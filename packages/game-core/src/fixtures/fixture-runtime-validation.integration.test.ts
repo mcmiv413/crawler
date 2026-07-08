@@ -1,4 +1,10 @@
 /**
+ * Test layer: integration
+ * Behavior: Fixture Runtime Validation covers Group 1: Item Registry Resolution; every inventory item in high-level-everything resolves in itemRegistry; every equipped item in high-le....
+ * Proof: integrated command, service, or repository assertions verify the cross-module result.
+ * Validation: pnpm vitest run packages/game-core/src/fixtures/fixture-runtime-validation.integration.test.ts
+ */
+/**
  * Fixture Runtime Validation Tests
  *
  * Verifies that fixture-created game state behaves identically to
@@ -69,10 +75,9 @@ const OGRE_EMERGENCE_FIXTURE = loadWorldFixtureFile('ogre-emergence-world');
 describe('Group 1: Item Registry Resolution', () => {
   it('every inventory item in high-level-everything resolves in itemRegistry', () => {
     const { player, itemRegistry } = loadPlayerFromFixture(HIGH_LEVEL_FIXTURE);
-    expect(player.inventory.length).toBeGreaterThan(0);
+    expect(player.inventory).toHaveLength(7);
     for (const entityId of player.inventory) {
-      const template = itemRegistry.items.get(entityId);
-      expect(template, `inventory entityId ${entityId} missing from itemRegistry`).toBeDefined();
+      expect(itemRegistry.items.has(entityId), `inventory entityId ${entityId} missing from itemRegistry`).toBe(true);
     }
   });
 
@@ -89,8 +94,7 @@ describe('Group 1: Item Registry Resolution', () => {
     ];
     for (const entityId of slots) {
       if (entityId !== null) {
-        const template = itemRegistry.items.get(entityId);
-        expect(template, `equipment entityId ${entityId} missing from itemRegistry`).toBeDefined();
+        expect(itemRegistry.items.has(entityId), `equipment entityId ${entityId} missing from itemRegistry`).toBe(true);
       }
     }
   });
@@ -111,8 +115,10 @@ describe('Group 1: Item Registry Resolution', () => {
     for (const entityId of [weapon, chest, head, gloves, boots, ring1, ring2]) {
       if (entityId !== null) {
         const template = itemRegistry.items.get(entityId) as AnyItemTemplate;
-        expect(template.itemId).toBeDefined();
-        expect(template.name).toBeDefined();
+        expect(template).toEqual(expect.objectContaining({
+          itemId: expect.any(String),
+          name: expect.any(String),
+        }));
       }
     }
   });

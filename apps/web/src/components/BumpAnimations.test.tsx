@@ -1,3 +1,9 @@
+/**
+ * Test layer: unit
+ * Behavior: BumpAnimations covers BumpAnimations; renders null (animation happens on canvas); dispatches bump events through the runtime emitter boundary.
+ * Proof: focused assertions verify returned values, state changes, rendered output, or emitted events.
+ * Validation: pnpm vitest run apps/web/src/components/BumpAnimations.test.tsx
+ */
 import { describe, it, expect, vi } from 'vitest';
 import { render } from '@testing-library/react';
 import type { BumpAnimationEntry } from '@dungeon/presenter';

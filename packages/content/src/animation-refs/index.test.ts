@@ -1,3 +1,9 @@
+/**
+ * Test layer: unit
+ * Behavior: Index covers animation ref catalog; every exported ref has integer impact and recovery timing; projectile and aoe refs explicitly declare suppressActo....
+ * Proof: focused assertions verify returned values, state changes, rendered output, or emitted events.
+ * Validation: pnpm vitest run packages/content/src/animation-refs/index.test.ts
+ */
 import { describe, expect, it } from 'vitest';
 import { ANIMATION_REF_BY_ID, animationRefs } from './index.js';
 import { STATUS_DEFINITIONS } from '../statuses/index.js';

@@ -1,3 +1,9 @@
+/**
+ * Test layer: unit
+ * Behavior: Burn Spread covers spreadBurnFromDeadEnemy; spreads burn from a burned dead enemy to nearby living enemies only; does not spread when the dead enemy was not....
+ * Proof: focused assertions verify returned values, state changes, rendered output, or emitted events.
+ * Validation: pnpm vitest run packages/game-core/src/systems/burn-spread.test.ts
+ */
 import { describe, it, expect } from 'vitest';
 import { entityId, posKey } from '@dungeon/contracts';
 import type { SeededRNG } from '../utils/rng.js';

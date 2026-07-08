@@ -1,3 +1,9 @@
+/**
+ * Test layer: unit
+ * Behavior: Loot covers Loot system; gold drop scales with enemy tier; item drop returns null or a valid string across multiple seeds.
+ * Proof: focused assertions verify returned values, state changes, rendered output, or emitted events.
+ * Validation: pnpm vitest run packages/game-core/src/systems/loot.test.ts
+ */
 import { describe, it, expect } from 'vitest';
 import { rollGoldDrop, rollItemDrop, processEnemyLoot } from './loot.js';
 import { SeededRNG } from '../utils/rng.js';

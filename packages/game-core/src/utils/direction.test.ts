@@ -1,3 +1,9 @@
+/**
+ * Test layer: unit
+ * Behavior: Direction covers positionToDirection; returns N when moving north (dy = -1); returns S when moving south (dy = 1).
+ * Proof: focused assertions verify returned values, state changes, rendered output, or emitted events.
+ * Validation: pnpm vitest run packages/game-core/src/utils/direction.test.ts
+ */
 import { describe, it, expect } from 'vitest';
 import { positionToDirection } from './direction.js';
 

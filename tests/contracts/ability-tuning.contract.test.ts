@@ -1,3 +1,9 @@
+/**
+ * Test layer: contract
+ * Behavior: Ability Tuning covers Ability Definitions — Area 3 tuning; power_strike has a reasonable unlock level; second_wind has a reasonable unlock level.
+ * Proof: live catalog/schema assertions validate IDs, shapes, and cross references.
+ * Validation: pnpm vitest run tests/contracts/ability-tuning.contract.test.ts
+ */
 import { describe, it, expect } from 'vitest';
 import { ABILITY_DEFINITIONS, ABILITY_UNLOCK_BY_LEVEL, MASTERY_THRESHOLDS } from '@dungeon/content';
 

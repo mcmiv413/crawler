@@ -1,3 +1,9 @@
+/**
+ * Test layer: unit
+ * Behavior: Three Coordinate Utils covers tileCenterWorld; places tile (0,0) center at (halfTile, halfTile); places tile (1,0) center one full tile to the right.
+ * Proof: focused assertions verify returned values, state changes, rendered output, or emitted events.
+ * Validation: pnpm vitest run apps/web/src/rendering/three/three-coordinate-utils.test.ts
+ */
 import { describe, it, expect } from 'vitest';
 import {
   tileCenterWorld,

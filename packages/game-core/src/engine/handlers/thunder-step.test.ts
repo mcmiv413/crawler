@@ -1,3 +1,9 @@
+/**
+ * Test layer: unit
+ * Behavior: Thunder Step covers handleThunderStep; teleports player, damages both blast zones, and emits both strike positions; recomputes visibility from the arrival ti....
+ * Proof: focused assertions verify returned values, state changes, rendered output, or emitted events.
+ * Validation: pnpm vitest run packages/game-core/src/engine/handlers/thunder-step.test.ts
+ */
 import { describe, it, expect } from 'vitest';
 import { handleThunderStep } from './thunder-step.js';
 import { createTestEnemy, createTestGameStateInCombat } from '../../test-utils.js';

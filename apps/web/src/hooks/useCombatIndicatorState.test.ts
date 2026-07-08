@@ -1,3 +1,9 @@
+/**
+ * Test layer: unit
+ * Behavior: UseCombatIndicatorState covers useCombatIndicatorState; collects and expires combat indicators on the shared channel; keeps combat indicators visible until the configur....
+ * Proof: focused assertions verify returned values, state changes, rendered output, or emitted events.
+ * Validation: pnpm vitest run apps/web/src/hooks/useCombatIndicatorState.test.ts
+ */
 import { act, renderHook } from '@testing-library/react';
 import { afterEach, describe, expect, it, vi } from 'vitest';
 import { useCombatIndicatorState } from './useCombatIndicatorState.js';

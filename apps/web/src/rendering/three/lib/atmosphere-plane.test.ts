@@ -1,3 +1,9 @@
+/**
+ * Test layer: unit
+ * Behavior: Atmosphere Plane covers createAtmosphereVignette; creates object, material, and texture when canvas APIs are available; falls back to a null texture when documen....
+ * Proof: focused assertions verify returned values, state changes, rendered output, or emitted events.
+ * Validation: pnpm vitest run apps/web/src/rendering/three/lib/atmosphere-plane.test.ts
+ */
 import * as THREE from 'three';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import { createAtmosphereVignette } from './atmosphere-plane.js';

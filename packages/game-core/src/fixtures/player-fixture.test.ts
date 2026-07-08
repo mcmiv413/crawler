@@ -1,4 +1,10 @@
 /**
+ * Test layer: unit
+ * Behavior: Player Fixture covers Group 1: Minimal fixture creates valid player with defaults; validates a minimal fixture without errors; loads a minimal fixture into a P....
+ * Proof: focused assertions verify returned values, state changes, rendered output, or emitted events.
+ * Validation: pnpm vitest run packages/game-core/src/fixtures/player-fixture.test.ts
+ */
+/**
  * Player Fixture System Tests
  *
  * Test-first (TDD) suite covering all 6 groups from the plan:

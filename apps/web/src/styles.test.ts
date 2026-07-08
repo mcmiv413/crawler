@@ -1,3 +1,9 @@
+/**
+ * Test layer: unit
+ * Behavior: Styles covers Typography tokens (Slice 1); should export fontSize tokens with mobile-friendly values; should ensure primary mobile text is 15px or larger.
+ * Proof: focused assertions verify returned values, state changes, rendered output, or emitted events.
+ * Validation: pnpm vitest run apps/web/src/styles.test.ts
+ */
 import { describe, it, expect } from 'vitest';
 import { fontSize, spacing } from './styles.js';
 

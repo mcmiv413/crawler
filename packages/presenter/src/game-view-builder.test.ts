@@ -1,3 +1,9 @@
+/**
+ * Test layer: unit
+ * Behavior: Game View Builder covers buildGameView runResult; returns runResult "victory" when game_over with victory metrics; returns runResult "death" when game_over with d....
+ * Proof: focused assertions verify returned values, state changes, rendered output, or emitted events.
+ * Validation: pnpm vitest run packages/presenter/src/game-view-builder.test.ts
+ */
 import { describe, it, expect } from 'vitest';
 import { buildGameView } from './game-view-builder.js';
 import { entityId, posKey, EMPTY_RUN_METRICS } from '@dungeon/contracts';

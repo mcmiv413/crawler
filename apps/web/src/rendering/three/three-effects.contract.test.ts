@@ -1,3 +1,9 @@
+/**
+ * Test layer: contract
+ * Behavior: Three Effects covers Three effect contracts; derives metadata ids from the generated Three registry; registers every built-in metadata id into the Three anima....
+ * Proof: live catalog/schema assertions validate IDs, shapes, and cross references.
+ * Validation: pnpm vitest run apps/web/src/rendering/three/three-effects.contract.test.ts
+ */
 import { beforeEach, describe, expect, it } from 'vitest';
 import { ANIMATION_REF_BY_ID, animationRefs } from '@dungeon/content';
 import { BUILT_IN_THREE_EFFECT_IDS } from '../three-effect-metadata.js';
@@ -20,10 +26,10 @@ describe('Three effect contracts', () => {
     'AnimationId %s exists in ANIMATION_REF_BY_ID',
     (id) => {
       expect(
-        ANIMATION_REF_BY_ID.get(id),
+        ANIMATION_REF_BY_ID.has(id),
         `Three effect "${id}" is not registered in ANIMATION_REF_BY_ID — ` +
           `add it to packages/content/src/animation-refs/ and regenerate indexes`,
-      ).toBeDefined();
+      ).toBe(true);
     },
   );
 
@@ -31,7 +37,7 @@ describe('Three effect contracts', () => {
     initializeThreeAnimationModules();
 
     for (const animationId of BUILT_IN_THREE_EFFECT_IDS) {
-      expect(getAnimationModule(animationId)).toBeDefined();
+      expect(getAnimationModule(animationId)).toEqual(expect.objectContaining({ id: animationId }));
     }
   });
 

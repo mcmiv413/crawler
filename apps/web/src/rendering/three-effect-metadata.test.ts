@@ -1,4 +1,10 @@
 /**
+ * Test layer: unit
+ * Behavior: Three Effect Metadata covers three-effect-metadata; isBuiltInThreeEffectId; returns false when no modules are registered.
+ * Proof: focused assertions verify returned values, state changes, rendered output, or emitted events.
+ * Validation: pnpm vitest run apps/web/src/rendering/three-effect-metadata.test.ts
+ */
+/**
  * Tests for three-effect-metadata.ts
  *
  * Contracts:

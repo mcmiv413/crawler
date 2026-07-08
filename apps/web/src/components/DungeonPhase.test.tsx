@@ -1,4 +1,10 @@
 /**
+ * Test layer: unit
+ * Behavior: DungeonPhase covers DungeonPhase – legacy rendering (regression); renders player HUD with name and HP bar; renders danger indicator from map.
+ * Proof: focused assertions verify returned values, state changes, rendered output, or emitted events.
+ * Validation: pnpm vitest run apps/web/src/components/DungeonPhase.test.tsx
+ */
+/**
  * DungeonPhase Component Tests — refactored for useDungeonRenderState hook
  * and Three overlay wiring.
  *

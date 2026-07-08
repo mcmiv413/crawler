@@ -1,3 +1,9 @@
+/**
+ * Test layer: contract
+ * Behavior: Ring Magic covers Ring Magic System Contracts; When RING_SPELL_BY_ID is populated; every spell has a non-empty schools array.
+ * Proof: live catalog/schema assertions validate IDs, shapes, and cross references.
+ * Validation: pnpm vitest run tests/contracts/ring-magic.contract.test.ts
+ */
 import { describe, it, expect } from 'vitest';
 import { readdirSync, readFileSync } from 'node:fs';
 import { join } from 'node:path';
@@ -7,7 +13,6 @@ import { RING_SPELL_BY_ID, RING_SCHOOL_BY_ID } from '@dungeon/content';
 import { ABILITY_DEFINITIONS } from '@dungeon/content';
 import { STATUS_DEFINITIONS } from '@dungeon/content';
 import { ITEM_BY_ID, MAGIC } from '@dungeon/content';
-import { getSchoolDisplayLevelFromXp } from '@dungeon/core';
 import { entityId } from '@dungeon/contracts';
 
 /**
@@ -23,14 +28,6 @@ import { entityId } from '@dungeon/contracts';
  * Run before every commit to ensure magic system integrity.
  */
 
-function getMinimumXpForDisplayLevel(displayLevel: number): number {
-  let xp = 0;
-  while (getSchoolDisplayLevelFromXp(xp) < displayLevel) {
-    xp += 1;
-  }
-  return xp;
-}
-
 function collectSourceFiles(dir: string): string[] {
   return readdirSync(dir, { withFileTypes: true }).flatMap((entry) => {
     const fullPath = join(dir, entry.name);
@@ -42,9 +39,11 @@ function collectSourceFiles(dir: string): string[] {
 describe('Ring Magic System Contracts', () => {
   describe('When RING_SPELL_BY_ID is populated', () => {
     it('every spell has a non-empty schools array', () => {
-      expect(RING_SPELL_BY_ID).toBeDefined();
+      expect(RING_SPELL_BY_ID.size).toBeGreaterThan(0);
       for (const [id, spell] of RING_SPELL_BY_ID) {
-        expect(spell.schools.length, `Spell "${id}" has empty schools`).toBeGreaterThan(0);
+        expect(spell.schools, `Spell "${id}" has empty schools`).toEqual(
+          expect.arrayContaining([expect.any(String)]),
+        );
       }
     });
 
@@ -241,22 +240,14 @@ describe('Ring Magic System Contracts', () => {
 
     it('thunderstorm stays locked until both Fire and Lightning reach display level 4', () => {
       const thunderstorm = RING_SPELL_BY_ID.get('thunderstorm');
-      const minimumXpForLevelFour = getMinimumXpForDisplayLevel(4);
-      const xpRequirements = thunderstorm?.studyRequirements
-        .filter((requirement): requirement is { kind: 'minimumSchoolXp'; school: string; xp: number } =>
-          requirement.kind === 'minimumSchoolXp');
       const equippedSchools = thunderstorm?.studyRequirements
         .filter((requirement): requirement is { kind: 'equippedSchool'; school: string } =>
           requirement.kind === 'equippedSchool')
         .map(requirement => requirement.school);
 
       expect(thunderstorm?.schools).toEqual(['fire', 'lightning']);
+      expect(thunderstorm?.minimumSchoolLevel).toBe(4);
       expect(equippedSchools).toEqual(expect.arrayContaining(['fire', 'lightning']));
-      expect(xpRequirements).toEqual(expect.arrayContaining([
-        expect.objectContaining({ school: 'fire', xp: minimumXpForLevelFour }),
-        expect.objectContaining({ school: 'lightning', xp: minimumXpForLevelFour }),
-      ]));
-      expect(xpRequirements).toHaveLength(2);
     });
   });
 
@@ -366,10 +357,10 @@ describe('Ring Magic System Contracts', () => {
     it('RingSchoolDefinition has required fields', () => {
       for (const school of RING_SCHOOL_BY_ID.values()) {
         const requiredFields: Pick<RingSchoolDefinition, 'id' | 'label' | 'ringId' | 'description'> = school;
-        expect(requiredFields.id.length).toBeGreaterThan(0);
-        expect(requiredFields.label.length).toBeGreaterThan(0);
-        expect(requiredFields.ringId.length).toBeGreaterThan(0);
-        expect(requiredFields.description.length).toBeGreaterThan(0);
+        expect(requiredFields.id).toMatch(/\S/);
+        expect(requiredFields.label).toMatch(/\S/);
+        expect(requiredFields.ringId).toMatch(/\S/);
+        expect(requiredFields.description).toMatch(/\S/);
       }
     });
   });

@@ -1,4 +1,10 @@
 /**
+ * Test layer: unit
+ * Behavior: Self Modules covers healingPulse; staminaSurge; cureSparkle.
+ * Proof: focused assertions verify returned values, state changes, rendered output, or emitted events.
+ * Validation: pnpm vitest run apps/web/src/rendering/three/modules/self/self-modules.test.ts
+ */
+/**
  * Lifecycle contract tests for all self Three animation modules.
  */
 

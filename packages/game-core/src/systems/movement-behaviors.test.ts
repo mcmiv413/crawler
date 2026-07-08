@@ -1,3 +1,9 @@
+/**
+ * Test layer: unit
+ * Behavior: Movement Behaviors covers Movement Behaviors; wall_stalker behavior; prefers tiles adjacent to walls over open tiles.
+ * Proof: focused assertions verify returned values, state changes, rendered output, or emitted events.
+ * Validation: pnpm vitest run packages/game-core/src/systems/movement-behaviors.test.ts
+ */
 import { describe, it, expect } from 'vitest';
 import { decideMovementByBehavior, getWalkableNeighbors, getAllBehaviors, getBehaviorInfo } from './movement-behaviors.js';
 import { createTestGameStateInCombat, createTestEnemy, createTestRunState } from '../test-utils.js';

@@ -1,4 +1,10 @@
 /**
+ * Test layer: unit
+ * Behavior: Trap Action Validator covers validateDisarmTrapAction; rejects when not in dungeon phase; returns WRONG_PHASE when run is null.
+ * Proof: focused assertions verify returned values, state changes, rendered output, or emitted events.
+ * Validation: pnpm vitest run packages/game-core/src/systems/trap-action-validator.test.ts
+ */
+/**
  * Tests for centralized trap action validation.
  *
  * Proves:

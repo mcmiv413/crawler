@@ -1,3 +1,9 @@
+/**
+ * Test layer: unit
+ * Behavior: Equipment covers calculateEquippedStats; returns base stats when nothing is equipped; adds weapon damage, accuracy, and speed bonuses.
+ * Proof: focused assertions verify returned values, state changes, rendered output, or emitted events.
+ * Validation: pnpm vitest run packages/game-core/src/systems/equipment.test.ts
+ */
 import { describe, it, expect } from 'vitest';
 import {
   calculateEquippedStats,

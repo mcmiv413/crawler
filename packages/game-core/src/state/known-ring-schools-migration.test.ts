@@ -1,4 +1,10 @@
 /**
+ * Test layer: unit
+ * Behavior: Known Ring Schools Migration covers knownRingSchools migration safety; old save missing knownRingSchools (pre-migration save); deserializes successfully when knownRingSchool....
+ * Proof: focused assertions verify returned values, state changes, rendered output, or emitted events.
+ * Validation: pnpm vitest run packages/game-core/src/state/known-ring-schools-migration.test.ts
+ */
+/**
  * Migration safety tests for the knownRingSchools player field.
  *
  * knownRingSchools was added as a required Player field. Old save files

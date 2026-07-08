@@ -1,3 +1,9 @@
+/**
+ * Test layer: unit
+ * Behavior: Combat covers handleAttack integration; rejects attacks against a missing target; should pass weapon damage profile to combat resolver.
+ * Proof: focused assertions verify returned values, state changes, rendered output, or emitted events.
+ * Validation: pnpm vitest run packages/game-core/src/engine/handlers/combat.test.ts
+ */
 import { describe, it, expect } from 'vitest';
 import { handleAttack } from './combat.js';
 import { processEnemyKill } from '../enemy-death-pipeline.js';

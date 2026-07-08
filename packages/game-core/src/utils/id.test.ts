@@ -1,3 +1,9 @@
+/**
+ * Test layer: unit
+ * Behavior: id covers generateId; uses crypto.randomUUID when available; falls back to a v4 UUID when crypto is unavailable.
+ * Proof: focused assertions verify returned values, state changes, rendered output, or emitted events.
+ * Validation: pnpm vitest run packages/game-core/src/utils/id.test.ts
+ */
 import { afterEach, describe, expect, it, vi } from 'vitest';
 import { generateId } from './id.js';
 

@@ -1,3 +1,9 @@
+/**
+ * Test layer: unit
+ * Behavior: Sprite map covers SPRITE_MAP; has required static keys; all rects have non-negative integer coordinates and 16x16 dimensions.
+ * Proof: focused assertions verify returned values, state changes, rendered output, or emitted events.
+ * Validation: pnpm vitest run apps/web/src/sprites/sprite-map.test.ts
+ */
 import { describe, it, expect } from 'vitest';
 import { SPRITE_MAP } from './sprite-map.js';
 
@@ -10,12 +16,14 @@ import { SPRITE_MAP } from './sprite-map.js';
  */
 describe('SPRITE_MAP', () => {
   it('has required static keys', () => {
-    expect(SPRITE_MAP['player']).toBeDefined();
-    expect(SPRITE_MAP['tile:floor']).toBeDefined();
-    expect(SPRITE_MAP['tile:wall']).toBeDefined();
-    expect(SPRITE_MAP['tile:chest']).toBeDefined();
-    expect(SPRITE_MAP['tile:stairs_down']).toBeDefined();
-    expect(SPRITE_MAP['tile:stairs_up']).toBeDefined();
+    expect(Object.keys(SPRITE_MAP)).toEqual(expect.arrayContaining([
+      'player',
+      'tile:floor',
+      'tile:wall',
+      'tile:chest',
+      'tile:stairs_down',
+      'tile:stairs_up',
+    ]));
   });
 
   it('all rects have non-negative integer coordinates and 16x16 dimensions', () => {
@@ -31,7 +39,7 @@ describe('SPRITE_MAP', () => {
 
   it('has at least one enemy entry', () => {
     const enemyKeys = Object.keys(SPRITE_MAP).filter(k => k.startsWith('enemy:'));
-    expect(enemyKeys.length).toBeGreaterThan(0);
+    expect(enemyKeys).toEqual(expect.arrayContaining(['enemy:goblin_archer']));
   });
 
   it('does not throw when accessing an unknown key', () => {

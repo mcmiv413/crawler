@@ -1,4 +1,10 @@
 /**
+ * Test layer: unit
+ * Behavior: Impact Modules covers radialImpactBurst; forwardSlash; cleaveArc (impact).
+ * Proof: focused assertions verify returned values, state changes, rendered output, or emitted events.
+ * Validation: pnpm vitest run apps/web/src/rendering/three/modules/impact/impact-modules.test.ts
+ */
+/**
  * Lifecycle contract tests for all impact Three animation modules.
  * Uses runThreeAnimationContract to verify id, category, create/setPosition/update/dispose.
  */

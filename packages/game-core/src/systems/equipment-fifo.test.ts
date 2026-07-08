@@ -1,3 +1,9 @@
+/**
+ * Test layer: unit
+ * Behavior: Equipment Fifo covers equipment FIFO behavior; weapon FIFO; equips first weapon to primary slot.
+ * Proof: focused assertions verify returned values, state changes, rendered output, or emitted events.
+ * Validation: pnpm vitest run packages/game-core/src/systems/equipment-fifo.test.ts
+ */
 import { describe, it, expect, beforeEach } from 'vitest';
 import { equipItem } from './equipment.js';
 import { createTestGameState } from '../test-utils.js';

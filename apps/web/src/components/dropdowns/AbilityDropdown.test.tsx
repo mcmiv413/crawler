@@ -1,3 +1,9 @@
+/**
+ * Test layer: unit
+ * Behavior: AbilityDropdown covers AbilityDropdown; Self-targeted abilities; does not assign targetId for self-targeted abilities.
+ * Proof: focused assertions verify returned values, state changes, rendered output, or emitted events.
+ * Validation: pnpm vitest run apps/web/src/components/dropdowns/AbilityDropdown.test.tsx
+ */
 import { describe, it, expect, vi } from 'vitest';
 import { render, screen, fireEvent } from '@testing-library/react';
 import '@testing-library/jest-dom';

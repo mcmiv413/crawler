@@ -1,3 +1,9 @@
+/**
+ * Test layer: integration
+ * Behavior: E2e Bridge Boundary covers E2E bridge entry boundary guardrail; keeps the Playwright bridge out of the normal app entry chunk.
+ * Proof: integrated command, service, or repository assertions verify the cross-module result.
+ * Validation: pnpm vitest run tests/integration/e2e-bridge-boundary.integration.test.ts
+ */
 import { describe, expect, it } from 'vitest';
 import { readFileSync } from 'node:fs';
 

@@ -1,3 +1,9 @@
+/**
+ * Test layer: unit
+ * Behavior: UseHitStop covers useHitStop; tracks the trigger and clear lifecycle; stays paused until overlapping hit stops have both cleared.
+ * Proof: focused assertions verify returned values, state changes, rendered output, or emitted events.
+ * Validation: pnpm vitest run apps/web/src/hooks/useHitStop.test.ts
+ */
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import { act, renderHook } from '@testing-library/react';
 import { triggerHitStop, useHitStop } from './useHitStop.js';

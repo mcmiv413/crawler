@@ -1,3 +1,9 @@
+/**
+ * Test layer: unit
+ * Behavior: Movement covers validateMove; allows a valid move on a floor tile; blocks movement by a wall.
+ * Proof: focused assertions verify returned values, state changes, rendered output, or emitted events.
+ * Validation: pnpm vitest run packages/game-core/src/systems/movement.test.ts
+ */
 import { describe, it, expect } from 'vitest'
 import { validateMove } from './movement.js'
 
