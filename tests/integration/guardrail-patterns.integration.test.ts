@@ -513,6 +513,89 @@ describe('guardrail pattern checks', () => {
     )).toEqual([]);
   });
 
+  it('fails closed when the file-size ratchet base ref cannot be resolved', () => {
+    const rootDir = makeTempRoot('guardrail-ratchet-missing-base');
+    const config = {
+      maxLinesPerFile: 500,
+      includedRoots: ['packages/game-core/src'],
+      excludePatterns: [/\.test\.[tj]sx?$/, /dist\//],
+      allowlistedFiles: [
+        {
+          path: 'packages/game-core/src/hotspot.ts',
+          reason: 'Existing hotspot under active refactor',
+          lines: 600,
+        },
+      ],
+    };
+    const lines = Array.from({ length: 600 }, (_, i) => `const line${i} = ${i};`).join('\n');
+    writeFixture(rootDir, 'packages/game-core/src/hotspot.ts', lines);
+    initRepo(rootDir);
+    commitAll(rootDir);
+
+    const failures = checkFileSizeHotspots({
+      rootDir,
+      config,
+      baseRef: 'missing-file-size-base',
+    });
+
+    expect(failures).toHaveLength(1);
+    expect(failures[0]).toContain('Cannot verify file-size ratchet');
+    expect(failures[0]).toContain('base ref "missing-file-size-base" (or "origin/missing-file-size-base") is not available');
+    expect(failures[0]).toContain('git fetch origin missing-file-size-base');
+  });
+
+  it('allows first file-size ratchet adoption when the config is absent at a resolved base ref', () => {
+    const rootDir = makeTempRoot('guardrail-ratchet-new-config');
+    const config = {
+      maxLinesPerFile: 500,
+      includedRoots: ['packages/game-core/src'],
+      excludePatterns: [/\.test\.[tj]sx?$/, /dist\//],
+      allowlistedFiles: [
+        {
+          path: 'packages/game-core/src/hotspot.ts',
+          reason: 'Existing hotspot under active refactor',
+          lines: 600,
+        },
+      ],
+    };
+    const lines = Array.from({ length: 600 }, (_, i) => `const line${i} = ${i};`).join('\n');
+    writeFixture(rootDir, 'packages/game-core/src/hotspot.ts', lines);
+    initRepo(rootDir);
+    commitAll(rootDir);
+
+    expect(checkFileSizeHotspots({ rootDir, config, baseRef: 'HEAD' })).toEqual([]);
+  });
+
+  it('rejects file-size config paths that escape the repo before ratchet git lookup', () => {
+    const rootDir = makeTempRoot('guardrail-ratchet-escaping-config');
+    const config = {
+      maxLinesPerFile: 500,
+      includedRoots: ['packages/game-core/src'],
+      excludePatterns: [/\.test\.[tj]sx?$/, /dist\//],
+      allowlistedFiles: [
+        {
+          path: 'packages/game-core/src/hotspot.ts',
+          reason: 'Existing hotspot under active refactor',
+          lines: 600,
+        },
+      ],
+    };
+    const lines = Array.from({ length: 600 }, (_, i) => `const line${i} = ${i};`).join('\n');
+    writeFixture(rootDir, 'packages/game-core/src/hotspot.ts', lines);
+
+    const failures = checkFileSizeHotspots({
+      rootDir,
+      config,
+      baseRef: 'missing-file-size-base',
+      configRelativePath: join(rootDir, '..', 'outside-config.mjs'),
+    });
+
+    expect(failures).toHaveLength(1);
+    expect(failures[0]).toContain('config path');
+    expect(failures[0]).toContain('resolves outside repository root');
+    expect(failures.join('\n')).not.toContain('base ref "missing-file-size-base"');
+  });
+
   it('fails when a manually maintained source file exceeds the line budget without allowlist entry', () => {
     const rootDir = makeTempRoot('guardrail-file-size-bad');
     const config = {
@@ -563,8 +646,10 @@ describe('guardrail pattern checks', () => {
     // Create a fixture file with 590 lines (exceeds budget but is allowlisted)
     const lines = Array.from({ length: 590 }, (_, i) => `const line${i} = ${i};`).join('\n');
     writeFixture(rootDir, 'packages/game-core/src/critical-handler.ts', lines);
+    initRepo(rootDir);
+    commitAll(rootDir);
 
-    expect(checkFileSizeHotspots({ rootDir, config })).toEqual([]);
+    expect(checkFileSizeHotspots({ rootDir, config, baseRef: 'HEAD' })).toEqual([]);
   });
 
   it('excludes test files from the line budget check', () => {
@@ -634,8 +719,10 @@ describe('guardrail pattern checks', () => {
     // Create a file with 919 lines (exceeds budget but is allowlisted)
     const lines = Array.from({ length: 919 }, (_, i) => `const rule${i} = { name: "rule-${i}" };`).join('\n');
     writeFixture(rootDir, 'packages/eslint-plugin/src/index.ts', lines);
+    initRepo(rootDir);
+    commitAll(rootDir);
 
-    expect(checkFileSizeHotspots({ rootDir, config })).toEqual([]);
+    expect(checkFileSizeHotspots({ rootDir, config, baseRef: 'HEAD' })).toEqual([]);
   });
 
   it('auto-discovers packages outside explicit enumeration when includedRoots is not provided', () => {
@@ -812,8 +899,10 @@ describe('guardrail pattern checks', () => {
     // Actual 595 lines: drift of 25 is within the ceil(570 * 5%) = 29 allowance
     const lines = Array.from({ length: 595 }, (_, i) => `const line${i} = ${i};`).join('\n');
     writeFixture(rootDir, 'packages/presenter/src/game-view.ts', lines);
+    initRepo(rootDir);
+    commitAll(rootDir);
 
-    expect(checkFileSizeHotspots({ rootDir, config })).toEqual([]);
+    expect(checkFileSizeHotspots({ rootDir, config, baseRef: 'HEAD' })).toEqual([]);
   });
 
   it('still flags line-count drift beyond linesTolerancePercent', () => {
