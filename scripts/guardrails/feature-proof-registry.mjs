@@ -1,6 +1,10 @@
 import { existsSync } from 'node:fs';
 import { join } from 'node:path';
-import { normalizePath } from './common.mjs';
+import {
+  formatRepoRelativePathFailure,
+  isRepoRelativePath,
+  normalizePath,
+} from './common.mjs';
 
 export const DEFAULT_FEATURE_PROOF_REGISTRY_PATH = 'docs/feature-proofs.yml';
 
@@ -97,15 +101,26 @@ function parseNode(tokens, index, indent) {
     : parseObject(tokens, index, indent);
 }
 
+function listNode(value, next) {
+  return { value, next };
+}
+
+function* listValues(list) {
+  if (list !== null) {
+    yield list.value;
+    yield* listValues(list.next);
+  }
+}
+
 function parseObject(tokens, index, indent) {
-  const parseNextEntry = (cursor, object) => {
+  const parseNextEntry = (cursor) => {
     if (cursor >= tokens.length) {
-      return { value: object, index: cursor };
+      return { entries: null, index: cursor };
     }
 
     const token = tokens[cursor];
     if (token.indent < indent || token.text.startsWith('- ')) {
-      return { value: object, index: cursor };
+      return { entries: null, index: cursor };
     }
     if (token.indent > indent) {
       throw new Error(`Unexpected indentation at line ${token.line}`);
@@ -114,36 +129,52 @@ function parseObject(tokens, index, indent) {
     const { key, value } = splitKeyValue(token.text, token.line);
     if (value.length === 0) {
       const child = parseNode(tokens, cursor + 1, indent + 2);
-      return parseNextEntry(child.index, { ...object, [key]: child.value ?? {} });
+      const rest = parseNextEntry(child.index);
+      return {
+        entries: listNode([key, child.value ?? {}], rest.entries),
+        index: rest.index,
+      };
     }
 
-    return parseNextEntry(cursor + 1, { ...object, [key]: parseScalar(value) });
+    const rest = parseNextEntry(cursor + 1);
+    return {
+      entries: listNode([key, parseScalar(value)], rest.entries),
+      index: rest.index,
+    };
   };
 
-  return parseNextEntry(index, {});
+  const parsed = parseNextEntry(index);
+  return {
+    value: Object.fromEntries(listValues(parsed.entries)),
+    index: parsed.index,
+  };
 }
 
 function parseArray(tokens, index, indent) {
-  const parseNextItem = (cursor, array) => {
+  const parseNextItem = (cursor) => {
     if (cursor >= tokens.length) {
-      return { value: array, index: cursor };
+      return { items: null, index: cursor };
     }
 
     const token = tokens[cursor];
     if (token.indent < indent) {
-      return { value: array, index: cursor };
+      return { items: null, index: cursor };
     }
     if (token.indent > indent) {
       throw new Error(`Unexpected indentation at line ${token.line}`);
     }
     if (!token.text.startsWith('- ')) {
-      return { value: array, index: cursor };
+      return { items: null, index: cursor };
     }
 
     const itemText = token.text.slice(2).trim();
     if (itemText.length === 0) {
       const child = parseNode(tokens, cursor + 1, indent + 2);
-      return parseNextItem(child.index, [...array, child.value]);
+      const rest = parseNextItem(child.index);
+      return {
+        items: listNode(child.value, rest.items),
+        index: rest.index,
+      };
     }
 
     if (/^[A-Za-z0-9_-]+:\s*/u.test(itemText)) {
@@ -153,16 +184,32 @@ function parseArray(tokens, index, indent) {
 
       if (nextCursor < tokens.length && tokens[nextCursor].indent === indent + 2) {
         const child = parseObject(tokens, nextCursor, indent + 2);
-        return parseNextItem(child.index, [...array, { ...item, ...child.value }]);
+        const rest = parseNextItem(child.index);
+        return {
+          items: listNode({ ...item, ...child.value }, rest.items),
+          index: rest.index,
+        };
       }
 
-      return parseNextItem(nextCursor, [...array, item]);
+      const rest = parseNextItem(nextCursor);
+      return {
+        items: listNode(item, rest.items),
+        index: rest.index,
+      };
     }
 
-    return parseNextItem(cursor + 1, [...array, parseScalar(itemText)]);
+    const rest = parseNextItem(cursor + 1);
+    return {
+      items: listNode(parseScalar(itemText), rest.items),
+      index: rest.index,
+    };
   };
 
-  return parseNextItem(index, []);
+  const parsed = parseNextItem(index);
+  return {
+    value: [...listValues(parsed.items)],
+    index: parsed.index,
+  };
 }
 
 export function parseFeatureProofRegistry(source) {
@@ -384,6 +431,10 @@ function isGeneratedMirrorPath(relativePath) {
 }
 
 function validateExistingPath(rootDir, relativePath, context) {
+  if (isRepoRelativePath(relativePath) === false) {
+    return [`${context}: ${formatRepoRelativePathFailure(relativePath, 'registry path')}`];
+  }
+
   const normalized = normalizePath(relativePath);
   return [
     ...(isGeneratedMirrorPath(normalized)
@@ -395,17 +446,33 @@ function validateExistingPath(rootDir, relativePath, context) {
   ];
 }
 
+function duplicateFeatureIndexes(features) {
+  return new Set(
+    features
+      .map((feature, index) => ({ featureId: feature.feature, index }))
+      .sort((left, right) =>
+        left.featureId === right.featureId
+          ? left.index - right.index
+          : left.featureId.localeCompare(right.featureId),
+      )
+      .filter((entry, index, sorted) => index > 0 && entry.featureId === sorted[index - 1].featureId)
+      .map((entry) => entry.index),
+  );
+}
+
 export function validateFeatureProofRegistry({ rootDir, registry }) {
+  const duplicatedIndexes = duplicateFeatureIndexes(registry.features);
   return registry.features.flatMap((feature, index) => [
-    ...(registry.features
-      .slice(0, index)
-      .some((previousFeature) => previousFeature.feature === feature.feature)
+    ...(duplicatedIndexes.has(index)
       ? [`feature id "${feature.feature}" is duplicated`]
       : []),
     ...collectAllRegistryPaths(feature).flatMap((relativePath) =>
       validateExistingPath(rootDir, relativePath, `${feature.feature}`),
     ),
     ...collectRequiredProofPatterns(feature).flatMap((relativePath) => {
+      if (isRepoRelativePath(relativePath) === false) {
+        return [`${feature.feature}: ${formatRepoRelativePathFailure(relativePath, 'required proof path')}`];
+      }
       const normalized = normalizePath(relativePath);
       return !isExplicitGlob(normalized) && existsSync(join(rootDir, normalized)) === false
         ? [`${feature.feature}: required proof file does not exist: ${normalized}`]
@@ -417,7 +484,11 @@ export function validateFeatureProofRegistry({ rootDir, registry }) {
         : [`${feature.feature}: validation command must start with pnpm: ${command}`],
     ),
     ...getScenarioFixtureNames(feature).flatMap((fixtureName) => {
-      const fixturePath = join(rootDir, 'fixtures/scenarios', `${fixtureName}.json`);
+      if (isRepoRelativePath(fixtureName) === false) {
+        return [`${feature.feature}: ${formatRepoRelativePathFailure(fixtureName, 'scenario fixture name')}`];
+      }
+
+      const fixturePath = join(rootDir, 'fixtures/scenarios', `${normalizePath(fixtureName)}.json`);
       return existsSync(fixturePath) === false
         ? [`${feature.feature}: scenario fixture does not exist: ${fixtureName}`]
         : [];

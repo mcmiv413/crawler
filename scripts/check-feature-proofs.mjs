@@ -11,7 +11,13 @@ import {
   parseFeatureProofRegistry,
 } from './guardrails/feature-proof-registry.mjs';
 import { isBrowserFacingPath, isBrowserFacingWebUiPath } from './guardrails/browser-facing.mjs';
-import { isCliMain, normalizePath, parseArgs } from './guardrails/common.mjs';
+import {
+  assertRepoRelativePath,
+  isCliMain,
+  isRepoRelativePath,
+  normalizePath,
+  parseArgs,
+} from './guardrails/common.mjs';
 
 const DEFAULT_BASE_REF = process.env.FEATURE_PROOF_BASE ?? 'main';
 
@@ -208,7 +214,7 @@ function listChangedPathsForResolvedBase(repoRoot, resolvedBaseRef) {
   ];
 
   return [...new Set(pathSets.flat())]
-    .filter((relativePath) => existsSync(join(repoRoot, relativePath)))
+    .filter((relativePath) => isRepoRelativePath(relativePath) && existsSync(join(repoRoot, relativePath)))
     .sort();
 }
 
@@ -357,7 +363,7 @@ function classifyProductionPath(relativePath) {
 }
 
 function readSource(rootDir, relativePath) {
-  return readFileSync(join(rootDir, relativePath), 'utf8');
+  return readFileSync(join(rootDir, assertRepoRelativePath(relativePath, 'feature proof source path')), 'utf8');
 }
 
 function extractAddedLines(diffOutput) {
@@ -661,11 +667,15 @@ export function checkFeatureProofs({
   registryPath = DEFAULT_FEATURE_PROOF_REGISTRY_PATH,
 } = {}) {
   const absoluteRoot = resolve(rootDir);
+  const normalizedRegistryPath = assertRepoRelativePath(
+    registryPath,
+    'feature proof registry path',
+  );
   const resolvedBaseRef = resolveBaseRef(absoluteRoot, baseRef);
   const changedPaths = listChangedPathsForResolvedBase(absoluteRoot, resolvedBaseRef);
   const changedProofPaths = changedPaths.filter(isProofPath);
   const untrackedPaths = listUntrackedPaths(absoluteRoot);
-  const registryAbsolutePath = join(absoluteRoot, registryPath);
+  const registryAbsolutePath = join(absoluteRoot, normalizedRegistryPath);
   const registry = existsSync(registryAbsolutePath)
     ? parseFeatureProofRegistry(readFileSync(registryAbsolutePath, 'utf8'))
     : { features: [] };
