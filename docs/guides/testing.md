@@ -36,11 +36,17 @@ AI assistants are allowed to generate test scaffolding, but every test must be r
 | Fast pre-commit gate | `pnpm run check:fast` |
 | Local confidence gate | `pnpm validate:quick` |
 | Tracked artifact guardrail | `pnpm run check:tracked-artifacts` |
+| Feature proof guardrail | `pnpm run check:feature-proofs` |
+| Feature proof registry guardrail | `pnpm run check:feature-proof-registry` |
 | Test quality guardrail | `pnpm run check:test-quality` |
+| Weak-test baseline report | `pnpm run report:test-quality-baseline` |
 | Workspace wiring guardrail | `pnpm run check:workspace-wiring` |
 | Ability contract guardrail | `pnpm run check:ability-contracts` |
 | Package export guardrail | `pnpm run check:exports` |
 | Playwright only | `pnpm test:e2e` |
+| Playwright smoke | `pnpm test:e2e:smoke` |
+| Playwright scenario coverage | `pnpm test:e2e:scenario` |
+| Critical mutation config | `pnpm test:mutation:critical` |
 | Repo-wide test layer audit | `pnpm exec tsx scripts/audit-tests.ts` |
 | Merge gate | `pnpm validate` |
 
@@ -59,6 +65,8 @@ Root `tests/` single-file runs should use `tests/vitest.config.ts`. The default 
 Use the existing smoke scripts by failure class instead of building ad hoc one-off checks:
 
 - `pnpm run check:tracked-artifacts` catches force-added or already tracked cache files, Zone.Identifier files, and source-map noise that `.gitignore` alone cannot prevent.
+- `pnpm run check:feature-proofs` catches production feature-surface changes that are not paired with matching proof files in the same diff. It uses [docs/feature-proofs.yml](../feature-proofs.yml) for known feature ownership and falls back to path-based surface classification.
+- `pnpm run check:feature-proof-registry` validates [docs/feature-proofs.yml](../feature-proofs.yml): unique feature ids, existing listed files, `pnpm` validation commands, real scenario fixtures, and no generated skill mirrors as canonical proof owners.
 - `pnpm run check:audit-guardrails` catches deterministic review failures: ignored or untracked tests, tests that execute mocked subjects, optional backend static imports, copied generated/catalog refs, stale docs paths, and configured source-of-truth literal drift.
 - `pnpm run check:test-quality` catches bad patterns only in test files changed against `main`: focused or unallowlisted skipped tests, unseeded randomness, weak assertion-only tests, unit/property layer drift, Playwright presence-only behavior proofs, missing intent headers, and exact numeric `.toBe(...)` assertions in guarded tunable game-core runtime areas.
 - `pnpm run check:workspace-wiring` catches undeclared workspace dependencies, `src`-internal imports across packages, and unexported workspace subpaths before the failure diffuses into later build or runtime noise.
@@ -73,6 +81,54 @@ This split is intentional: each script is cheap, deterministic, and points at a 
 - dot-walk generated/catalog refs through source-of-truth exports
 - update docs paths to real files or explicitly declared new files
 - import configured constants from their owner module
+
+## Feature Proof Guardrail
+
+Use [docs/feature-proofs.yml](../feature-proofs.yml) before adding or changing production gameplay. It maps major mechanics to owning files, proof homes, scenario fixtures, and focused validation commands.
+
+`pnpm run check:feature-proofs` inspects changed production files against `main`, unstaged changes, staged changes, and untracked files. For each detected surface it requires a matching proof file in the same diff:
+
+- command, schema, or event changes need contract or integration proof
+- core gameplay changes need unit, property, or integration proof
+- player-visible gameplay needs feature-chain proof through event formatting, presenter output, integration, component, or E2E coverage
+- presenter changes need presenter proof
+- web UI changes need component or E2E proof
+- content ID changes need contract proof
+- ability content/runtime changes need ability contract and runtime/integration proof
+- animation changes need animation coverage plus renderer or browser proof when appropriate
+- save-shape or restore changes need save snapshot, migration, restore, or historical fixture proof
+
+Use `// feature-proof: allow-refactor-only - reason` only for a demonstrably non-behavioral production refactor. Use `// feature-proof: allow-browser-not-required - reason` only when a browser-facing production change cannot affect browser output. The reason must be specific and searchable.
+
+## Browser Proof
+
+Browser-facing paths include web components/hooks/rendering, presenter output, command/event contracts, `packages/game-core/src/engine/command-handler.ts`, E2E support, and scenario fixtures.
+
+When these paths change, prefer the cheapest proof that observes the browser-facing contract:
+
+- component/Vitest proof is enough when a React component consumes presenter output directly
+- `pnpm test:e2e:scenario` is required when the behavior depends on the real browser, scenario loader, canvas/WebGL, session restore, or full user flow
+- `pnpm test:e2e:smoke` runs in CI for broad browser startup coverage
+
+Changes to E2E specs must name a focused `pnpm test:e2e...` validation command in the test intent header. Changes to `fixtures/scenarios/**` must record `pnpm test:e2e:scenario` in an E2E header, checklist/docs update, or `FEATURE_PROOF_TEST_INTENT` for local guardrail runs.
+
+## Save Compatibility Fixtures
+
+Historical saves live under `fixtures/saves/v1/` and are intentionally checked in. They prove older snapshots continue to load through `loadSaveSnapshot`, stabilize through `exportSaveSnapshot`, build `GameView`, and accept representative commands after restore.
+
+Run the focused compatibility suite when persisted state shape, save validation, restore behavior, item registry persistence, or floor cache persistence changes:
+
+```bash
+pnpm vitest run packages/game-core/src/state/save-compatibility.test.ts
+```
+
+Use `scripts/generate-save-fixtures.ts` only when intentionally adding a new historical baseline or schema version. Do not casually regenerate old fixtures to make a failing migration disappear; add a migration/default instead.
+
+## Mutation And Legacy Baselines
+
+`pnpm test:mutation:critical` validates the critical mutation target list in report-only mode. The Stryker config is in `stryker.config.mjs`, and the baseline notes live in [docs/testing/mutation-baseline.md](../testing/mutation-baseline.md). Mutation failures should lead to stronger behavior tests, not implementation changes made only to satisfy mutants.
+
+`pnpm run report:test-quality-baseline` writes `.validate-logs/test-quality-baseline.json` from `check:test-quality -- --report-all`. The checked-in summary is [docs/testing/weak-test-backlog.md](../testing/weak-test-backlog.md). The normal `check:test-quality` gate remains changed-file scoped; strengthen nearby legacy tests opportunistically when touching related behavior.
 
 ## Test Intent Header
 

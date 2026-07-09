@@ -23,7 +23,9 @@ Add a full ring package. This skill is for **ring item + school + grant + spell-
 5. If the ring introduces a new school, force an explicit scope decision: starter spell only, full school ladder, or full ladder plus combo spells with already-supported schools.
 6. If the ring's spells need new visuals, route that branch through `adding-animation`.
 7. If the ring's spells or progression add new player-visible behavior, route that branch through `adding-game-mechanic`.
-8. Run `pnpm generate:indexes` and finish on the right proofs, then `pnpm validate`.
+8. Use `docs/feature-proofs.yml` to find ring ability and content proof homes.
+9. Run `pnpm run check:feature-proofs` before `pnpm run check:fast`.
+10. Run `pnpm generate:indexes` and finish on the right proofs, then `pnpm validate`.
 
 ## Workflow
 
@@ -32,7 +34,7 @@ Add a full ring package. This skill is for **ring item + school + grant + spell-
 3. If the ring introduces a new school, decide whether the rollout is starter-only, full ladder, or full ladder plus combo spells with already-supported schools.
 4. Name the base package files: item, school mapping, enchantment grant, and spell surfaces.
 5. Decide whether the ring also needs new spell content, new visuals, or new mechanic/platform work.
-6. Return the full file map, generator step, and proof homes.
+6. Return the full file map, generator step, feature-proof registry coverage, and proof homes.
 
 ## Output contract
 
@@ -44,6 +46,7 @@ Return:
 - the exact content/runtime/presenter/UI files that are in scope
 - whether `adding-animation` or `adding-game-mechanic` is also needed
 - the proof homes
+- the focused validation commands from `docs/feature-proofs.yml` when a matching feature exists
 
 ## Examples
 
@@ -74,3 +77,4 @@ Output:
 - Do not leave a new school's ladder/combo scope implicit.
 - Do not duplicate ring spells under `packages/content/src/abilities/`.
 - Do not hide animation or mechanic expansion inside a content-only answer.
+- Do not use feature-proof allowlists for content or runtime behavior changes.

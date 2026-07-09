@@ -2,6 +2,8 @@
 
 Use this reference when the prompt needs exact ring-spell surfaces, tuning fields, or escalation rules.
 
+Use `docs/feature-proofs.yml` to find ring ability proof homes before editing. Run `pnpm run check:feature-proofs` before `pnpm run check:fast`.
+
 ## Base spell surfaces
 
 | Surface | Files |
@@ -53,6 +55,8 @@ Use this reference when the prompt needs exact ring-spell surfaces, tuning field
 | New visuals | spell proofs plus animation-ref, generator, and Three ownership proofs |
 | Custom mechanic | feature-chain proofs plus ring-magic contracts |
 | New school or combo-school work | content cross-reference contracts, presenter/game-view proofs, and mechanic-chain coverage |
+
+Browser-facing spell changes need component or `pnpm test:e2e:scenario` proof. Persisted state shape changes need save compatibility coverage.
 
 ## Known-bad cases
 

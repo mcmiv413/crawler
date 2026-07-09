@@ -21,7 +21,9 @@ Add or update an animation in the repo's content and web renderer pipelines. Thi
 5. Treat Three ownership as explicit. Canvas stays correct unless the overlay owns that surface.
 6. Use `apps/web/src/components/ThreeAnimationOverlay.tsx` as the production wrapper. The `ThreeEffectsOverlay` files are compatibility aliases only.
 7. Anchor damage text, defender-hit flashes, and ability/fx animations to event-time positions. Prefer event positions, then event target snapshots, then live state; targeted effects without positions must render nothing instead of falling back to the player.
-8. Finish on the right proofs for the change, then `pnpm validate`.
+8. Check `docs/feature-proofs.yml` for renderer/animation proof homes before adding tests.
+9. Run `pnpm run check:feature-proofs` before widening to `pnpm run check:fast`.
+10. Finish on the right proofs for the change, then `pnpm validate`.
 
 ## Workflow
 
@@ -32,6 +34,7 @@ Add or update an animation in the repo's content and web renderer pipelines. Thi
 5. If the feature needs overlay-owned WebGL presentation, update or add the Three module under `apps/web/src/rendering/three/modules/<category>/`.
 6. Run `pnpm generate:indexes`.
 7. Name the exact proof homes: ref tests, generator tests, Three coverage, component ownership, or browser proof.
+8. Use `pnpm test:e2e:renderer` or `pnpm test:e2e:scenario` when the browser canvas/WebGL path is part of the proof.
 
 ## Decision points
 
@@ -76,6 +79,7 @@ When answering an animation request, return:
 - whether an existing animation can be reused
 - the generator step
 - the proof homes that match the requested behavior
+- whether the renderer/animation entry in `docs/feature-proofs.yml` covers the change
 
 Do not stop at "add an animation ref." The useful answer here is the **full animation ownership path**.
 
@@ -108,4 +112,5 @@ Output:
 - Do not add new behavior to `ThreeEffectsOverlay` compatibility aliases.
 - Do not skip `suppressActorBump` on projectile or aoe refs.
 - Do not assume a Three module is optional when the requested behavior needs overlay ownership.
+- Do not rely on a feature-proof allowlist for animation behavior changes.
 - Do not stop at a content ref when the feature clearly needs canvas or Three code too.

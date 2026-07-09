@@ -111,7 +111,13 @@ export default {
       path: 'scripts/check-test-quality.mjs',
       reason: 'Guardrail script with cohesive changed-file discovery, AST checks, and rich repair-message formatting for test-quality enforcement',
       auditReportNote: 'Probity-inspired native test-quality gate; future split seam is extracting AST helpers and individual rule checks if policy grows past the initial rollout',
-      lines: 800,
+      lines: 845,
+    },
+    {
+      path: 'scripts/check-feature-proofs.mjs',
+      reason: 'Diff-aware feature proof guardrail with changed-file discovery, surface classification, registry-backed guidance, allowlist reporting, and browser proof routing in one CLI entry point',
+      auditReportNote: 'Autonomous feature confidence guardrail rollout; future split seam is extracting surface classifiers and proof-category matchers after the registry stabilizes',
+      lines: 657,
     },
     {
       path: 'packages/game-core/src/fixtures/scenario-fixture-validation.ts',

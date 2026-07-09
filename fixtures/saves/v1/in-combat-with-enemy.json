@@ -1,0 +1,1458 @@
+{
+  "schemaVersion": 1,
+  "metadata": {
+    "saveTimestamp": 10,
+    "characterLevel": 1,
+    "currentFloor": 0,
+    "displayName": "Hero"
+  },
+  "gameId": "g1",
+  "phase": "dungeon",
+  "player": {
+    "id": "p1",
+    "name": "Hero",
+    "level": 1,
+    "experience": 0,
+    "stats": {
+      "maxHealth": 36,
+      "health": 36,
+      "attack": 4,
+      "defense": 4,
+      "accuracy": 6,
+      "evasion": 8,
+      "speed": 100
+    },
+    "baseStats": {
+      "maxHealth": 36,
+      "health": 36,
+      "attack": 4,
+      "defense": 4,
+      "accuracy": 6,
+      "evasion": 8,
+      "speed": 100
+    },
+    "position": {
+      "x": 0,
+      "y": 0
+    },
+    "equipment": {
+      "weapon": "rusty_sword",
+      "secondaryWeapon": null,
+      "chest": null,
+      "head": null,
+      "gloves": null,
+      "boots": null,
+      "ring1": null,
+      "ring2": null
+    },
+    "inventory": [],
+    "statuses": [],
+    "abilities": [],
+    "gold": 50,
+    "floor": 0,
+    "totalKills": 0,
+    "totalDeaths": 0,
+    "totalRuns": 0,
+    "deathStash": null,
+    "mana": 20,
+    "maxMana": 20,
+    "ringMastery": {},
+    "learnedRingSpellIds": [],
+    "knownRingSchools": []
+  },
+  "world": {
+    "town": {
+      "prosperity": 50,
+      "fear": 20,
+      "corruption": 10,
+      "rumors": [],
+      "lastRunSummary": null
+    },
+    "npcs": [],
+    "shop": {
+      "items": [],
+      "buybackMultiplier": 0.4
+    },
+    "eventHistory": [],
+    "totalRuns": 0,
+    "deepestFloor": 0,
+    "factions": [
+      {
+        "id": "beast_swarm",
+        "name": "Beast Swarm",
+        "power": 50,
+        "disposition": -20,
+        "status": "leaderless",
+        "leader": null,
+        "leaderSlain": false,
+        "membersKilledByPlayer": 0,
+        "leadersKilledByPlayer": 0,
+        "playerDeathsCaused": 0
+      },
+      {
+        "id": "goblin_warband",
+        "name": "Goblin Warband",
+        "power": 40,
+        "disposition": -30,
+        "status": "leaderless",
+        "leader": null,
+        "leaderSlain": false,
+        "membersKilledByPlayer": 0,
+        "leadersKilledByPlayer": 0,
+        "playerDeathsCaused": 0
+      },
+      {
+        "id": "shadow_cult",
+        "name": "Shadow Cult",
+        "power": 25,
+        "disposition": -60,
+        "status": "leaderless",
+        "leader": null,
+        "leaderSlain": false,
+        "membersKilledByPlayer": 0,
+        "leadersKilledByPlayer": 0,
+        "playerDeathsCaused": 0
+      },
+      {
+        "id": "undead_legion",
+        "name": "Undead Legion",
+        "power": 30,
+        "disposition": -50,
+        "status": "leaderless",
+        "leader": null,
+        "leaderSlain": false,
+        "membersKilledByPlayer": 0,
+        "leadersKilledByPlayer": 0,
+        "playerDeathsCaused": 0
+      }
+    ],
+    "dungeonOgre": {
+      "id": "dungeon_ogre",
+      "status": "sealed"
+    },
+    "unlockedBlueprints": [],
+    "highestRarityFound": "common"
+  },
+  "run": {
+    "runId": "run1",
+    "turnCount": 0,
+    "isActive": true,
+    "runMetrics": {
+      "damageDealt": 0,
+      "damageTaken": 0,
+      "turnsElapsed": 0,
+      "enemiesKilled": 0,
+      "itemsUsed": 0,
+      "goldEarned": 0,
+      "floorsCleared": 0,
+      "causeOfEnd": null,
+      "consecutiveMisses": 0
+    },
+    "speedAccumulators": {
+      "e1": 0
+    }
+  },
+  "floor": {
+    "width": 10,
+    "height": 10,
+    "depth": 1,
+    "biomeId": "crypt",
+    "cells": {
+      "0,0": {
+        "tile": {
+          "type": "floor",
+          "walkable": true,
+          "blocksVision": false,
+          "ascii": ".",
+          "color": "#aaa"
+        },
+        "visibility": "visible"
+      },
+      "0,1": {
+        "tile": {
+          "type": "floor",
+          "walkable": true,
+          "blocksVision": false,
+          "ascii": ".",
+          "color": "#aaa"
+        },
+        "visibility": "visible"
+      },
+      "1,0": {
+        "tile": {
+          "type": "floor",
+          "walkable": true,
+          "blocksVision": false,
+          "ascii": ".",
+          "color": "#aaa"
+        },
+        "visibility": "visible"
+      },
+      "1,1": {
+        "tile": {
+          "type": "floor",
+          "walkable": true,
+          "blocksVision": false,
+          "ascii": ".",
+          "color": "#aaa"
+        },
+        "visibility": "visible"
+      }
+    },
+    "entrance": {
+      "x": 0,
+      "y": 0
+    },
+    "exit": {
+      "x": 9,
+      "y": 9
+    },
+    "seed": 42
+  },
+  "enemies": {
+    "1,0": {
+      "id": "e1",
+      "templateId": "goblin_archer",
+      "name": "Goblin Archer",
+      "archetype": "ranged",
+      "tier": 2,
+      "stats": {
+        "maxHealth": 30,
+        "health": 30,
+        "attack": 8,
+        "defense": 3,
+        "accuracy": 70,
+        "evasion": 15,
+        "speed": 120
+      },
+      "equipment": {
+        "weapon": {
+          "damageMultiplier": 1,
+          "damageType": "physical",
+          "weaponRange": 1
+        }
+      },
+      "affinities": {},
+      "spawn": {
+        "floorRange": [
+          1,
+          3
+        ],
+        "weight": 1
+      },
+      "lootTableId": "goblin",
+      "experienceValue": 20,
+      "description": "A sneaky goblin scout.",
+      "ascii": "g",
+      "biomes": [],
+      "factions": [],
+      "position": {
+        "x": 1,
+        "y": 0
+      },
+      "statuses": [],
+      "isAlerted": true,
+      "lastKnownPlayerPos": null,
+      "ambientState": "roaming",
+      "ambientStateAge": 0
+    }
+  },
+  "objects": {},
+  "itemRegistry": {
+    "items": {
+      "absolute_zero_trap": {
+        "itemId": "absolute_zero_trap",
+        "name": "Absolute Zero Trap",
+        "description": "A trap of ultimate cold that completely immobilizes targets.",
+        "itemClass": "trap",
+        "rarity": "rare",
+        "value": 150,
+        "stackable": true,
+        "maxStack": 1,
+        "trapTemplateId": "frost_trap",
+        "spriteName": "ice icon"
+      },
+      "antidote": {
+        "itemId": "antidote",
+        "name": "Antidote",
+        "description": "Cures poison.",
+        "itemClass": "consumable",
+        "rarity": "common",
+        "value": 8,
+        "stackable": true,
+        "maxStack": 5,
+        "spriteName": "dark green potion",
+        "consumable": {
+          "effect": "cure",
+          "magnitude": 0,
+          "targetStatus": "poison"
+        },
+        "animation": {
+          "id": "fx.self.cure-sparkle"
+        }
+      },
+      "arcane_powder": {
+        "itemId": "arcane_powder",
+        "spriteName": "potion 2",
+        "name": "Arcane Powder",
+        "description": "Grants Arcane Charge stack on use.",
+        "itemClass": "consumable",
+        "rarity": "uncommon",
+        "value": 75,
+        "stackable": true,
+        "maxStack": 99,
+        "consumable": {
+          "effect": "buff",
+          "magnitude": 1,
+          "targetStatus": "arcane_charge",
+          "duration": 5
+        },
+        "animation": {
+          "id": "fx.self.heat-surge-aura"
+        }
+      },
+      "blazing_trap": {
+        "itemId": "blazing_trap",
+        "name": "Blazing Trap",
+        "description": "An infernal trap that engulfs targets in flames.",
+        "itemClass": "trap",
+        "rarity": "legendary",
+        "value": 60,
+        "stackable": true,
+        "maxStack": 2,
+        "trapTemplateId": "fire_pit",
+        "spriteName": "fire icon"
+      },
+      "blessed_ring": {
+        "itemId": "blessed_ring",
+        "spriteName": "agate ring",
+        "name": "Blessed Ring",
+        "description": "A holy ring that grants slow regeneration.",
+        "itemClass": "armor",
+        "rarity": "rare",
+        "value": 72,
+        "stackable": false,
+        "maxStack": 1,
+        "armor": {
+          "defense": 0,
+          "evasionPenalty": 0,
+          "slot": "ring",
+          "enchantmentSlots": 2,
+          "enchantments": [
+            "hp_regen",
+            null
+          ]
+        }
+      },
+      "bomb": {
+        "itemId": "bomb",
+        "name": "Bomb",
+        "description": "Deals 25 fire damage to an adjacent enemy.",
+        "itemClass": "consumable",
+        "rarity": "uncommon",
+        "value": 15,
+        "stackable": true,
+        "maxStack": 3,
+        "spriteName": "fire bomb",
+        "consumable": {
+          "effect": "damage",
+          "magnitude": 25
+        },
+        "animation": {
+          "id": "fx.aoe.bomb-blast"
+        }
+      },
+      "bone_guard_plate": {
+        "itemId": "bone_guard_plate",
+        "spriteName": "bronze armor",
+        "name": "Bone Guard Plate",
+        "description": "Heavy plate crafted from bone, with sharp edges.",
+        "itemClass": "armor",
+        "rarity": "epic",
+        "value": 150,
+        "stackable": false,
+        "maxStack": 1,
+        "armor": {
+          "defense": 12,
+          "evasionPenalty": 10,
+          "slot": "chest",
+          "enchantmentSlots": 3,
+          "enchantments": [
+            "thorns",
+            "defense_boost",
+            null
+          ]
+        }
+      },
+      "chain_gauntlets": {
+        "itemId": "chain_gauntlets",
+        "spriteName": "iron gauntlet",
+        "name": "Chain Gauntlets",
+        "description": "Mail gauntlets for solid hand defense.",
+        "itemClass": "armor",
+        "rarity": "uncommon",
+        "value": 22,
+        "stackable": false,
+        "maxStack": 1,
+        "armor": {
+          "defense": 3,
+          "evasionPenalty": 2,
+          "slot": "gloves",
+          "enchantmentSlots": 1,
+          "enchantments": [
+            null
+          ]
+        }
+      },
+      "chain_shirt": {
+        "itemId": "chain_shirt",
+        "spriteName": "chain shirt",
+        "name": "Chain Shirt",
+        "description": "Linked metal rings offering decent protection.",
+        "itemClass": "armor",
+        "rarity": "uncommon",
+        "value": 35,
+        "stackable": false,
+        "maxStack": 1,
+        "armor": {
+          "defense": 5,
+          "evasionPenalty": 5,
+          "slot": "chest",
+          "enchantmentSlots": 1,
+          "enchantments": [
+            null
+          ]
+        }
+      },
+      "common_dagger": {
+        "itemId": "common_dagger",
+        "name": "Common Dagger",
+        "description": "A simple dagger. Perfect for learning basic combat.",
+        "itemClass": "weapon",
+        "rarity": "common",
+        "value": 10,
+        "stackable": false,
+        "maxStack": 1,
+        "spriteName": "elven dagger",
+        "weapon": {
+          "damage": 5,
+          "damageType": "physical",
+          "accuracy": 4,
+          "speed": 10,
+          "slot": "weapon",
+          "weaponRange": 1,
+          "weaponType": "dagger"
+        }
+      },
+      "copper_ring": {
+        "itemId": "copper_ring",
+        "spriteName": "copper ring",
+        "name": "Copper Ring",
+        "description": "A plain copper ring, suitable for enchanting.",
+        "itemClass": "armor",
+        "rarity": "common",
+        "value": 10,
+        "stackable": false,
+        "maxStack": 1,
+        "armor": {
+          "defense": 0,
+          "evasionPenalty": 0,
+          "slot": "ring",
+          "enchantmentSlots": 0,
+          "enchantments": []
+        }
+      },
+      "ember_cloak": {
+        "itemId": "ember_cloak",
+        "spriteName": "dreadwyrm armor",
+        "name": "Ember Cloak",
+        "description": "A cloak that radiates heat and grants regeneration.",
+        "itemClass": "armor",
+        "rarity": "rare",
+        "value": 95,
+        "stackable": false,
+        "maxStack": 1,
+        "armor": {
+          "defense": 5,
+          "evasionPenalty": 0,
+          "slot": "chest",
+          "enchantmentSlots": 2,
+          "enchantments": [
+            "resist_fire",
+            "hp_regen"
+          ]
+        }
+      },
+      "ember_ring": {
+        "itemId": "ember_ring",
+        "spriteName": "copper ring",
+        "name": "Ember Ring",
+        "description": "A ring wreathed in flames, granting fire resistance.",
+        "itemClass": "armor",
+        "rarity": "uncommon",
+        "value": 29,
+        "stackable": false,
+        "maxStack": 1,
+        "armor": {
+          "defense": 0,
+          "evasionPenalty": 0,
+          "slot": "ring",
+          "enchantmentSlots": 1,
+          "enchantments": [
+            "resist_fire"
+          ]
+        }
+      },
+      "epic_inferno_pit": {
+        "itemId": "epic_inferno_pit",
+        "name": "Epic Inferno Pit",
+        "description": "The ultimate fire trap. Immense heat and flames consume all.",
+        "itemClass": "trap",
+        "rarity": "legendary",
+        "value": 150,
+        "stackable": true,
+        "maxStack": 1,
+        "trapTemplateId": "inferno_pit",
+        "spriteName": "big flame"
+      },
+      "fire_ring": {
+        "itemId": "fire_ring",
+        "spriteName": "ruby ring",
+        "name": "Fire Ring",
+        "description": "A smoldering ring that grants command over flame.",
+        "itemClass": "armor",
+        "rarity": "common",
+        "value": 1,
+        "stackable": false,
+        "maxStack": 1,
+        "armor": {
+          "defense": 0,
+          "evasionPenalty": 0,
+          "slot": "ring",
+          "enchantmentSlots": 0,
+          "enchantments": []
+        }
+      },
+      "fire_trap": {
+        "itemId": "fire_trap",
+        "name": "Fire Trap",
+        "description": "A trap that ignites on contact. Sets targets ablaze.",
+        "itemClass": "trap",
+        "rarity": "common",
+        "value": 15,
+        "stackable": true,
+        "maxStack": 5,
+        "trapTemplateId": "fire_pit",
+        "spriteName": "fire icon"
+      },
+      "fire_ward_cloak": {
+        "itemId": "fire_ward_cloak",
+        "spriteName": "bogwyrm armor",
+        "name": "Fire Ward Cloak",
+        "description": "A cloak woven with fire-resistant fibers.",
+        "itemClass": "armor",
+        "rarity": "uncommon",
+        "value": 40,
+        "stackable": false,
+        "maxStack": 1,
+        "armor": {
+          "defense": 3,
+          "evasionPenalty": 0,
+          "slot": "chest",
+          "resistance": {
+            "fire": 0.3
+          },
+          "enchantmentSlots": 1,
+          "enchantments": [
+            null
+          ]
+        }
+      },
+      "flame_dagger": {
+        "itemId": "flame_dagger",
+        "spriteName": "elven dagger",
+        "name": "Flame Dagger",
+        "description": "A dagger that burns on contact.",
+        "itemClass": "weapon",
+        "rarity": "uncommon",
+        "value": 45,
+        "stackable": false,
+        "maxStack": 1,
+        "weapon": {
+          "damage": 8,
+          "damageType": "fire",
+          "accuracy": 5,
+          "speed": 10,
+          "slot": "weapon",
+          "weaponRange": 1,
+          "weaponType": "blade",
+          "onHitStatus": "burn",
+          "onHitChance": 20
+        }
+      },
+      "frost_axe": {
+        "itemId": "frost_axe",
+        "spriteName": "battle axe",
+        "name": "Frost Axe",
+        "description": "An axe wreathed in cold.",
+        "itemClass": "weapon",
+        "rarity": "rare",
+        "value": 80,
+        "stackable": false,
+        "maxStack": 1,
+        "weapon": {
+          "damage": 12,
+          "damageType": "frost",
+          "accuracy": -1,
+          "speed": -2,
+          "slot": "weapon",
+          "weaponRange": 1,
+          "weaponType": "axe",
+          "onHitStatus": "slow",
+          "onHitChance": 30
+        }
+      },
+      "frost_trap": {
+        "itemId": "frost_trap",
+        "name": "Frost Trap",
+        "description": "An icy trap that slows those who trigger it.",
+        "itemClass": "trap",
+        "rarity": "rare",
+        "value": 30,
+        "stackable": true,
+        "maxStack": 3,
+        "trapTemplateId": "frost_trap",
+        "spriteName": "ice icon"
+      },
+      "frozen_trap": {
+        "itemId": "frozen_trap",
+        "name": "Frozen Trap",
+        "description": "A powerful frost trap that freezes targets.",
+        "itemClass": "trap",
+        "rarity": "rare",
+        "value": 60,
+        "stackable": true,
+        "maxStack": 2,
+        "trapTemplateId": "frost_trap",
+        "spriteName": "ice icon"
+      },
+      "greater_health_potion": {
+        "itemId": "greater_health_potion",
+        "name": "Greater Health Potion",
+        "description": "Restores 60 health.",
+        "itemClass": "consumable",
+        "rarity": "uncommon",
+        "value": 25,
+        "stackable": true,
+        "maxStack": 3,
+        "spriteName": "ruby potion",
+        "consumable": {
+          "effect": "heal",
+          "magnitude": 60
+        },
+        "animation": {
+          "id": "fx.self.healing-pulse"
+        }
+      },
+      "grip_gauntlets": {
+        "itemId": "grip_gauntlets",
+        "spriteName": "iron gauntlet",
+        "name": "Grip Gauntlets",
+        "description": "Reinforced gauntlets that improve defensive capabilities.",
+        "itemClass": "armor",
+        "rarity": "uncommon",
+        "value": 32,
+        "stackable": false,
+        "maxStack": 1,
+        "armor": {
+          "defense": 4,
+          "evasionPenalty": 2,
+          "slot": "gloves",
+          "enchantmentSlots": 1,
+          "enchantments": [
+            "defense_boost"
+          ]
+        }
+      },
+      "hand_axe": {
+        "itemId": "hand_axe",
+        "spriteName": "axe",
+        "name": "Hand Axe",
+        "description": "A light axe balanced for throwing or swinging.",
+        "itemClass": "weapon",
+        "rarity": "common",
+        "value": 16,
+        "stackable": false,
+        "maxStack": 1,
+        "weapon": {
+          "damage": 8,
+          "damageType": "physical",
+          "accuracy": 0,
+          "speed": -2,
+          "slot": "weapon",
+          "weaponRange": 1,
+          "weaponType": "axe"
+        }
+      },
+      "health_potion": {
+        "itemId": "health_potion",
+        "name": "Health Potion",
+        "description": "Restores 30 health.",
+        "itemClass": "consumable",
+        "rarity": "common",
+        "value": 10,
+        "stackable": true,
+        "maxStack": 5,
+        "spriteName": "purple red potion",
+        "consumable": {
+          "effect": "heal",
+          "magnitude": 30
+        },
+        "animation": {
+          "id": "fx.self.healing-pulse"
+        }
+      },
+      "inferno_trap": {
+        "itemId": "inferno_trap",
+        "name": "Inferno Trap",
+        "description": "A powerful fire trap that burns with intense heat.",
+        "itemClass": "trap",
+        "rarity": "common",
+        "value": 30,
+        "stackable": true,
+        "maxStack": 3,
+        "trapTemplateId": "fire_pit",
+        "spriteName": "fire icon"
+      },
+      "iron_band": {
+        "itemId": "iron_band",
+        "spriteName": "copper ring",
+        "name": "Iron Band",
+        "description": "A sturdy iron ring that enhances defense.",
+        "itemClass": "armor",
+        "rarity": "uncommon",
+        "value": 26,
+        "stackable": false,
+        "maxStack": 1,
+        "armor": {
+          "defense": 0,
+          "evasionPenalty": 0,
+          "slot": "ring",
+          "enchantmentSlots": 1,
+          "enchantments": [
+            "defense_boost"
+          ]
+        }
+      },
+      "iron_crown": {
+        "itemId": "iron_crown",
+        "spriteName": "etched helm",
+        "name": "Iron Crown",
+        "description": "A regal crown of pure iron with enhanced defenses.",
+        "itemClass": "armor",
+        "rarity": "rare",
+        "value": 85,
+        "stackable": false,
+        "maxStack": 1,
+        "armor": {
+          "defense": 7,
+          "evasionPenalty": 4,
+          "slot": "head",
+          "enchantmentSlots": 2,
+          "enchantments": [
+            "defense_boost",
+            null
+          ]
+        }
+      },
+      "iron_helm": {
+        "itemId": "iron_helm",
+        "spriteName": "dwarvish iron helm",
+        "name": "Iron Helm",
+        "description": "A solid iron helmet.",
+        "itemClass": "armor",
+        "rarity": "uncommon",
+        "value": 28,
+        "stackable": false,
+        "maxStack": 1,
+        "armor": {
+          "defense": 4,
+          "evasionPenalty": 3,
+          "slot": "head",
+          "enchantmentSlots": 1,
+          "enchantments": [
+            null
+          ]
+        }
+      },
+      "iron_mace": {
+        "itemId": "iron_mace",
+        "spriteName": "mace",
+        "name": "Iron Mace",
+        "description": "A heavy mace that hits hard but slow.",
+        "itemClass": "weapon",
+        "rarity": "common",
+        "value": 20,
+        "stackable": false,
+        "maxStack": 1,
+        "weapon": {
+          "damage": 9,
+          "damageType": "physical",
+          "accuracy": -2,
+          "speed": -4,
+          "slot": "weapon",
+          "weaponRange": 1,
+          "weaponType": "bludgeon"
+        }
+      },
+      "iron_spike_trap": {
+        "itemId": "iron_spike_trap",
+        "name": "Iron Spike Trap",
+        "description": "A reinforced spike trap. Deals more damage and causes bleeding.",
+        "itemClass": "trap",
+        "rarity": "uncommon",
+        "value": 30,
+        "stackable": true,
+        "maxStack": 3,
+        "trapTemplateId": "trap_spikes",
+        "spriteName": "spikes"
+      },
+      "iron_sword": {
+        "itemId": "iron_sword",
+        "spriteName": "elven short sword",
+        "name": "Iron Sword",
+        "description": "A reliable blade forged from quality iron.",
+        "itemClass": "weapon",
+        "rarity": "rare",
+        "value": 75,
+        "stackable": false,
+        "maxStack": 1,
+        "weapon": {
+          "damage": 10,
+          "damageType": "physical",
+          "accuracy": 3,
+          "speed": 5,
+          "slot": "weapon",
+          "weaponRange": 1,
+          "weaponType": "blade"
+        }
+      },
+      "leather_boots": {
+        "itemId": "leather_boots",
+        "spriteName": "leather boots",
+        "name": "Leather Boots",
+        "description": "Basic leather footwear.",
+        "itemClass": "armor",
+        "rarity": "common",
+        "value": 8,
+        "stackable": false,
+        "maxStack": 1,
+        "armor": {
+          "defense": 1,
+          "evasionPenalty": 0,
+          "slot": "boots",
+          "enchantmentSlots": 0,
+          "enchantments": []
+        }
+      },
+      "leather_cap": {
+        "itemId": "leather_cap",
+        "spriteName": "elven leather helm",
+        "name": "Leather Cap",
+        "description": "A simple leather cap.",
+        "itemClass": "armor",
+        "rarity": "common",
+        "value": 8,
+        "stackable": false,
+        "maxStack": 1,
+        "armor": {
+          "defense": 1,
+          "evasionPenalty": 0,
+          "slot": "head",
+          "enchantmentSlots": 0,
+          "enchantments": []
+        }
+      },
+      "leather_gloves": {
+        "itemId": "leather_gloves",
+        "spriteName": "leather glove",
+        "name": "Leather Gloves",
+        "description": "Simple leather hand protection.",
+        "itemClass": "armor",
+        "rarity": "common",
+        "value": 7,
+        "stackable": false,
+        "maxStack": 1,
+        "armor": {
+          "defense": 1,
+          "evasionPenalty": 0,
+          "slot": "gloves",
+          "enchantmentSlots": 0,
+          "enchantments": []
+        }
+      },
+      "leather_vest": {
+        "itemId": "leather_vest",
+        "spriteName": "scale armor",
+        "name": "Leather Vest",
+        "description": "Basic leather protection.",
+        "itemClass": "armor",
+        "rarity": "common",
+        "value": 12,
+        "stackable": false,
+        "maxStack": 1,
+        "armor": {
+          "defense": 2,
+          "evasionPenalty": 0,
+          "slot": "chest",
+          "enchantmentSlots": 0,
+          "enchantments": []
+        }
+      },
+      "leech_wraps": {
+        "itemId": "leech_wraps",
+        "spriteName": "iron gauntlet",
+        "name": "Leech Wraps",
+        "description": "Mystical wraps that steal vitality from enemies.",
+        "itemClass": "armor",
+        "rarity": "rare",
+        "value": 88,
+        "stackable": false,
+        "maxStack": 1,
+        "armor": {
+          "defense": 3,
+          "evasionPenalty": 0,
+          "slot": "gloves",
+          "enchantmentSlots": 2,
+          "enchantments": [
+            "life_steal",
+            null
+          ]
+        }
+      },
+      "lethal_poison_trap": {
+        "itemId": "lethal_poison_trap",
+        "name": "Lethal Poison Trap",
+        "description": "A deadly trap with concentrated venom.",
+        "itemClass": "trap",
+        "rarity": "rare",
+        "value": 150,
+        "stackable": true,
+        "maxStack": 1,
+        "trapTemplateId": "poison_trap",
+        "spriteName": "acid pool center"
+      },
+      "lightning_ring": {
+        "itemId": "lightning_ring",
+        "spriteName": "sapphire ring",
+        "name": "Lightning Ring",
+        "description": "A crackling ring that grants command over lightning.",
+        "itemClass": "armor",
+        "rarity": "common",
+        "value": 1,
+        "stackable": false,
+        "maxStack": 1,
+        "armor": {
+          "defense": 0,
+          "evasionPenalty": 0,
+          "slot": "ring",
+          "enchantmentSlots": 0,
+          "enchantments": []
+        }
+      },
+      "lightning_trap": {
+        "itemId": "lightning_trap",
+        "name": "Lightning Trap",
+        "description": "An electrical trap that stuns those who trigger it.",
+        "itemClass": "trap",
+        "rarity": "epic",
+        "value": 60,
+        "stackable": true,
+        "maxStack": 2,
+        "trapTemplateId": "lightning_trap",
+        "spriteName": "lightning icon"
+      },
+      "mana_potion": {
+        "itemId": "mana_potion",
+        "spriteName": "potion 1",
+        "name": "Mana Potion",
+        "description": "Restores 15 mana when consumed.",
+        "itemClass": "consumable",
+        "rarity": "common",
+        "value": 50,
+        "stackable": true,
+        "maxStack": 99,
+        "consumable": {
+          "effect": "mana",
+          "magnitude": 15
+        },
+        "animation": {
+          "id": "fx.self.stamina-surge"
+        }
+      },
+      "mind_veil": {
+        "itemId": "mind_veil",
+        "spriteName": "helmet",
+        "name": "Mind Veil",
+        "description": "A mystical veil that protects against magical ailments.",
+        "itemClass": "armor",
+        "rarity": "rare",
+        "value": 90,
+        "stackable": false,
+        "maxStack": 1,
+        "armor": {
+          "defense": 3,
+          "evasionPenalty": 0,
+          "slot": "head",
+          "enchantmentSlots": 2,
+          "enchantments": [
+            "blight_ward",
+            null
+          ]
+        }
+      },
+      "phase_steps": {
+        "itemId": "phase_steps",
+        "spriteName": "exquisite boots",
+        "name": "Phase Steps",
+        "description": "Boots that allow brief teleportation and enhanced evasion.",
+        "itemClass": "armor",
+        "rarity": "rare",
+        "value": 98,
+        "stackable": false,
+        "maxStack": 1,
+        "armor": {
+          "defense": 2,
+          "evasionPenalty": 0,
+          "slot": "boots",
+          "enchantmentSlots": 2,
+          "enchantments": [
+            "blink",
+            "evasion_boost"
+          ]
+        }
+      },
+      "plague_mantle": {
+        "itemId": "plague_mantle",
+        "spriteName": "scale armor",
+        "name": "Plague Mantle",
+        "description": "A tattered mantle that grants poison resistance.",
+        "itemClass": "armor",
+        "rarity": "uncommon",
+        "value": 40,
+        "stackable": false,
+        "maxStack": 1,
+        "armor": {
+          "defense": 3,
+          "evasionPenalty": 0,
+          "slot": "chest",
+          "enchantmentSlots": 1,
+          "enchantments": [
+            "blight_ward"
+          ]
+        }
+      },
+      "plate_armor": {
+        "itemId": "plate_armor",
+        "spriteName": "full plate",
+        "name": "Plate Armor",
+        "description": "Heavy metal plates. Excellent defense, poor mobility.",
+        "itemClass": "armor",
+        "rarity": "rare",
+        "value": 70,
+        "stackable": false,
+        "maxStack": 1,
+        "armor": {
+          "defense": 10,
+          "evasionPenalty": 15,
+          "slot": "chest",
+          "enchantmentSlots": 2,
+          "enchantments": [
+            null,
+            null
+          ]
+        }
+      },
+      "poison_gas_trap": {
+        "itemId": "poison_gas_trap",
+        "name": "Poison Gas Trap",
+        "description": "Releases toxic gas. Poisons those who trigger it.",
+        "itemClass": "trap",
+        "rarity": "rare",
+        "value": 30,
+        "stackable": true,
+        "maxStack": 3,
+        "trapTemplateId": "poison_trap",
+        "spriteName": "acid pool center"
+      },
+      "regen_vest": {
+        "itemId": "regen_vest",
+        "spriteName": "brass armor",
+        "name": "Regen Vest",
+        "description": "A vest imbued with regenerative magic.",
+        "itemClass": "armor",
+        "rarity": "rare",
+        "value": 90,
+        "stackable": false,
+        "maxStack": 1,
+        "armor": {
+          "defense": 8,
+          "evasionPenalty": 0,
+          "slot": "chest",
+          "enchantmentSlots": 2,
+          "enchantments": [
+            "hp_regen",
+            null
+          ]
+        }
+      },
+      "rusty_sword": {
+        "itemId": "rusty_sword",
+        "name": "Rusty Sword",
+        "description": "A worn but functional blade.",
+        "itemClass": "weapon",
+        "rarity": "common",
+        "value": 15,
+        "stackable": false,
+        "maxStack": 1,
+        "spriteName": "dwarvish short sword",
+        "weapon": {
+          "damage": 7,
+          "damageType": "physical",
+          "accuracy": 2,
+          "speed": 0,
+          "slot": "weapon",
+          "weaponRange": 1,
+          "weaponType": "blade"
+        }
+      },
+      "shadow_ring": {
+        "itemId": "shadow_ring",
+        "spriteName": "agate ring",
+        "name": "Shadow Ring",
+        "description": "A dark ring that enables evasion and teleportation.",
+        "itemClass": "armor",
+        "rarity": "rare",
+        "value": 85,
+        "stackable": false,
+        "maxStack": 1,
+        "armor": {
+          "defense": 0,
+          "evasionPenalty": 0,
+          "slot": "ring",
+          "enchantmentSlots": 2,
+          "enchantments": [
+            "blink",
+            "evasion_boost"
+          ]
+        }
+      },
+      "shadow_vest": {
+        "itemId": "shadow_vest",
+        "spriteName": "mirror plate",
+        "name": "Shadow Vest",
+        "description": "A dark vest that enables brief moments of teleportation.",
+        "itemClass": "armor",
+        "rarity": "rare",
+        "value": 100,
+        "stackable": false,
+        "maxStack": 1,
+        "armor": {
+          "defense": 4,
+          "evasionPenalty": 0,
+          "slot": "chest",
+          "enchantmentSlots": 2,
+          "enchantments": [
+            "blink",
+            null
+          ]
+        }
+      },
+      "short_bow": {
+        "itemId": "short_bow",
+        "spriteName": "composite bow",
+        "name": "Short Bow",
+        "description": "A simple ranged weapon. Can attack from up to 5 tiles away.",
+        "itemClass": "weapon",
+        "rarity": "common",
+        "value": 18,
+        "stackable": false,
+        "maxStack": 1,
+        "weapon": {
+          "damage": 6,
+          "damageType": "physical",
+          "accuracy": 14,
+          "speed": 5,
+          "slot": "weapon",
+          "weaponRange": 5,
+          "minRange": 2,
+          "weaponType": "ranged"
+        }
+      },
+      "silver_band": {
+        "itemId": "silver_band",
+        "spriteName": "agate ring",
+        "name": "Silver Band",
+        "description": "A silver ring with one enchantment slot.",
+        "itemClass": "armor",
+        "rarity": "uncommon",
+        "value": 30,
+        "stackable": false,
+        "maxStack": 1,
+        "armor": {
+          "defense": 0,
+          "evasionPenalty": 0,
+          "slot": "ring",
+          "enchantmentSlots": 1,
+          "enchantments": [
+            null
+          ]
+        }
+      },
+      "spiked_leather": {
+        "itemId": "spiked_leather",
+        "spriteName": "darkwyrm armor",
+        "name": "Spiked Leather",
+        "description": "Leather armor with sharp spikes protruding from the surface.",
+        "itemClass": "armor",
+        "rarity": "uncommon",
+        "value": 45,
+        "stackable": false,
+        "maxStack": 1,
+        "armor": {
+          "defense": 3,
+          "evasionPenalty": 0,
+          "slot": "chest",
+          "enchantmentSlots": 1,
+          "enchantments": [
+            "thorns"
+          ]
+        }
+      },
+      "steel_sabatons": {
+        "itemId": "steel_sabatons",
+        "spriteName": "exquisite boots",
+        "name": "Steel Sabatons",
+        "description": "Heavy steel foot armor.",
+        "itemClass": "armor",
+        "rarity": "rare",
+        "value": 55,
+        "stackable": false,
+        "maxStack": 1,
+        "armor": {
+          "defense": 5,
+          "evasionPenalty": 5,
+          "slot": "boots",
+          "enchantmentSlots": 2,
+          "enchantments": [
+            null,
+            null
+          ]
+        }
+      },
+      "steel_spike_trap": {
+        "itemId": "steel_spike_trap",
+        "name": "Steel Spike Trap",
+        "description": "A finely crafted spike trap. Devastating to those who trigger it.",
+        "itemClass": "trap",
+        "rarity": "uncommon",
+        "value": 60,
+        "stackable": true,
+        "maxStack": 2,
+        "trapTemplateId": "trap_spikes",
+        "spriteName": "spikes"
+      },
+      "stone_hammer": {
+        "itemId": "stone_hammer",
+        "spriteName": "war hammer",
+        "name": "Stone Hammer",
+        "description": "A brutal hammer that weakens foes on impact.",
+        "itemClass": "weapon",
+        "rarity": "uncommon",
+        "value": 40,
+        "stackable": false,
+        "maxStack": 1,
+        "weapon": {
+          "damage": 11,
+          "damageType": "physical",
+          "accuracy": -3,
+          "speed": -6,
+          "slot": "weapon",
+          "weaponRange": 1,
+          "weaponType": "bludgeon",
+          "onHitStatus": "weaken",
+          "onHitChance": 20
+        }
+      },
+      "strength_elixir": {
+        "itemId": "strength_elixir",
+        "name": "Strength Elixir",
+        "description": "Grants +5 attack for approximately 10 turns.",
+        "itemClass": "consumable",
+        "rarity": "uncommon",
+        "value": 20,
+        "stackable": true,
+        "maxStack": 3,
+        "spriteName": "golden potion",
+        "consumable": {
+          "effect": "buff",
+          "magnitude": 5,
+          "duration": 10
+        },
+        "animation": {
+          "id": "fx.self.stamina-surge"
+        }
+      },
+      "swift_boots": {
+        "itemId": "swift_boots",
+        "spriteName": "exquisite boots",
+        "name": "Swift Boots",
+        "description": "Enchanted boots that enhance movement speed.",
+        "itemClass": "armor",
+        "rarity": "uncommon",
+        "value": 38,
+        "stackable": false,
+        "maxStack": 1,
+        "armor": {
+          "defense": 1,
+          "evasionPenalty": 0,
+          "slot": "boots",
+          "enchantmentSlots": 1,
+          "enchantments": [
+            "speed_boost"
+          ]
+        }
+      },
+      "thunder_trap": {
+        "itemId": "thunder_trap",
+        "name": "Thunder Trap",
+        "description": "A powerful electrical trap that shocks the area.",
+        "itemClass": "trap",
+        "rarity": "epic",
+        "value": 150,
+        "stackable": true,
+        "maxStack": 1,
+        "trapTemplateId": "lightning_trap",
+        "spriteName": "lightning icon"
+      },
+      "toxic_trap": {
+        "itemId": "toxic_trap",
+        "name": "Toxic Trap",
+        "description": "A highly toxic trap that spreads poisonous fumes.",
+        "itemClass": "trap",
+        "rarity": "rare",
+        "value": 60,
+        "stackable": true,
+        "maxStack": 2,
+        "trapTemplateId": "poison_trap",
+        "spriteName": "acid pool center"
+      },
+      "venom_blade": {
+        "itemId": "venom_blade",
+        "spriteName": "dagger",
+        "name": "Venom Blade",
+        "description": "A wicked blade coated in poison.",
+        "itemClass": "weapon",
+        "rarity": "uncommon",
+        "value": 50,
+        "stackable": false,
+        "maxStack": 1,
+        "weapon": {
+          "damage": 9,
+          "damageType": "physical",
+          "accuracy": 3,
+          "speed": 5,
+          "slot": "weapon",
+          "weaponRange": 1,
+          "weaponType": "blade",
+          "onHitStatus": "poison",
+          "onHitChance": 25
+        }
+      },
+      "venom_ring": {
+        "itemId": "venom_ring",
+        "spriteName": "agate ring",
+        "name": "Venom Ring",
+        "description": "A ring that grants poison resistance.",
+        "itemClass": "armor",
+        "rarity": "uncommon",
+        "value": 28,
+        "stackable": false,
+        "maxStack": 1,
+        "armor": {
+          "defense": 0,
+          "evasionPenalty": 0,
+          "slot": "ring",
+          "enchantmentSlots": 1,
+          "enchantments": [
+            "resist_poison"
+          ]
+        }
+      },
+      "war_bow": {
+        "itemId": "war_bow",
+        "spriteName": "crossbow",
+        "name": "War Bow",
+        "description": "A powerful longbow with exceptional range.",
+        "itemClass": "weapon",
+        "rarity": "uncommon",
+        "value": 55,
+        "stackable": false,
+        "maxStack": 1,
+        "weapon": {
+          "damage": 9,
+          "damageType": "physical",
+          "accuracy": 9,
+          "speed": 0,
+          "slot": "weapon",
+          "weaponRange": 6,
+          "minRange": 2,
+          "weaponType": "ranged"
+        }
+      },
+      "warden_helm": {
+        "itemId": "warden_helm",
+        "spriteName": "crested helm",
+        "name": "Warden Helm",
+        "description": "A sturdy helmet that improves defense.",
+        "itemClass": "armor",
+        "rarity": "uncommon",
+        "value": 35,
+        "stackable": false,
+        "maxStack": 1,
+        "armor": {
+          "defense": 5,
+          "evasionPenalty": 2,
+          "slot": "head",
+          "enchantmentSlots": 1,
+          "enchantments": [
+            "defense_boost"
+          ]
+        }
+      },
+      "wooden_spike_trap": {
+        "itemId": "wooden_spike_trap",
+        "name": "Wooden Spike Trap",
+        "description": "A simple spike trap. Causes bleeding when triggered.",
+        "itemClass": "trap",
+        "rarity": "uncommon",
+        "value": 15,
+        "stackable": true,
+        "maxStack": 5,
+        "trapTemplateId": "trap_spikes",
+        "spriteName": "spikes"
+      }
+    }
+  },
+  "seed": 42,
+  "turnNumber": 10,
+  "version": 1,
+  "activeQuests": [],
+  "weaponMastery": {
+    "blade": 0,
+    "bludgeon": 0,
+    "axe": 0,
+    "ranged": 0,
+    "dagger": 0
+  }
+}

@@ -2,6 +2,8 @@
 
 Use this reference when the request needs exact file targets, repo-specific gotchas, or proof-home selection.
 
+Check `docs/feature-proofs.yml` for the renderer/animation entry before adding proof files. Run `pnpm run check:feature-proofs` before `pnpm run check:fast`.
+
 ## File map by surface
 
 | Surface | Files |
@@ -47,6 +49,8 @@ Use this reference when the request needs exact file targets, repo-specific gotc
 | `apps/web/src/rendering/three/ThreeAnimationOverlay.test.tsx` | Overlay ownership or module behavior changes |
 | `apps/web/src/components/DungeonPhase.test.tsx` | Player-visible renderer ownership wiring |
 | `tests/e2e/three-animation-backend.spec.ts` | Browser-level overlay proof for meaningful WebGL-owned behavior |
+
+Use `pnpm test:e2e:renderer` or `pnpm test:e2e:scenario` when browser canvas/WebGL behavior is part of the requested proof.
 
 ## Known-bad cases
 

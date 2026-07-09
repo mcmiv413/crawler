@@ -25,6 +25,7 @@ Each guide below includes a "Quick Start" section that reminds you to run this c
 | [Architecture Pattern Audit](guides/architecture-pattern-audit.md) | Classifying architecture drift, generated-index violations, stale docs, guardrail gaps, and bug logging for future sweeps |
 | [Nemesis + Factions Sequence Diagrams](guides/nemesis-factions-sequence-diagrams.md) | Tracing the current nemesis and faction systems end-to-end across engine, server, presenter, and UI |
 | [Testing](guides/testing.md) | Writing tests, anti-patterns, helpers, balance testing |
+| [Feature Proof Registry](feature-proofs.yml) | Machine-readable feature ownership, proof homes, scenario fixtures, and focused validation commands |
 | [How to Audit the Codebase](guides/how-to-audit.md) | Performing a rigorous structural audit and turning findings into a fix plan |
 | [Audit Tooling Guide](guides/audit-tooling.md) | CLI paths, audit workflow (Serena for symbol lookup, Fossil for leads), and external-semantics fallback |
 | [Goofy Local Model](guides/goofy-local-model.md) | Syncing the live Goofy launcher, installing local Ollama aliases, and rerunning the backing-model benchmark |

@@ -23,6 +23,7 @@ Add or change a **ring spell**. This skill defaults to the ring-magic path and o
 5. If the spell needs new visuals, route that branch through `adding-animation`.
 6. If the spell adds new runtime/event/presenter/UI behavior, route that branch through `adding-game-mechanic`.
 7. Treat new-school or combo-school asks as platform expansion unless repo reality proves otherwise.
+8. Use `docs/feature-proofs.yml` to find ring ability proof homes, then run `pnpm run check:feature-proofs` before `pnpm run check:fast`.
 
 ## Workflow
 
@@ -31,7 +32,7 @@ Add or change a **ring spell**. This skill defaults to the ring-magic path and o
 3. Lock the spell's authored fields and school model.
 4. Name the content and runtime surfaces.
 5. Add any animation or mechanic routes that the classification requires.
-6. Return the proof homes and generator step.
+6. Return the proof homes, feature-proof registry coverage, and generator step.
 
 ## Output contract
 
@@ -42,6 +43,7 @@ Return:
 - the exact content/runtime/presenter/UI files that matter
 - whether `adding-animation` or `adding-game-mechanic` is also needed
 - the proof homes
+- the focused validation commands from `docs/feature-proofs.yml` when a matching feature exists
 
 ## Examples
 
@@ -70,3 +72,4 @@ Output:
 - Do not omit study/mastery implications.
 - Do not invent a duplicate `packages/content/src/abilities/` file for the spell.
 - Do not stop at the spell content file when the ask clearly needs animation or mechanic work.
+- Do not skip ability contract, browser, or save compatibility proof when the changed surfaces require them.

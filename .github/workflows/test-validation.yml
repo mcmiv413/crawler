@@ -34,6 +34,31 @@ jobs:
       - name: Run repository validation gate
         run: pnpm validate
 
+      - name: Run browser smoke coverage
+        run: pnpm test:e2e:smoke
+
+      - name: Detect browser-facing changes
+        id: browser_changes
+        shell: bash
+        run: |
+          BASE_SHA="${{ github.event.pull_request.base.sha }}"
+          if [ -z "$BASE_SHA" ]; then
+            BASE_SHA="${{ github.event.before }}"
+          fi
+          if [ -z "$BASE_SHA" ] || [[ "$BASE_SHA" =~ ^0+$ ]]; then
+            BASE_SHA="HEAD^"
+          fi
+          git diff --name-only "$BASE_SHA"...HEAD > /tmp/browser-facing-changes.txt
+          if grep -E '^(apps/web/src/components/|apps/web/src/hooks/|apps/web/src/animation-runtime/|apps/web/src/rendering/|packages/presenter/src/|packages/game-contracts/src/events/|packages/game-contracts/src/commands/|packages/game-core/src/engine/command-handler\.ts|tests/e2e/support/|fixtures/scenarios/)' /tmp/browser-facing-changes.txt; then
+            echo "changed=true" >> "$GITHUB_OUTPUT"
+          else
+            echo "changed=false" >> "$GITHUB_OUTPUT"
+          fi
+
+      - name: Run browser scenario coverage
+        if: steps.browser_changes.outputs.changed == 'true'
+        run: pnpm test:e2e:scenario
+
       - name: Report structural hotspots
         run: pnpm run lint:structural:hotspots
 
