@@ -125,7 +125,7 @@ async function run() {
   }
 
   console.log([
-    'Critical mutation testing is configured in report-only mode.',
+    'Critical mutation config baseline is present; mutation testing is configured report-only and Stryker was not run.',
     `Config: ${configPath}`,
     `Critical target files resolved: ${resolvedTargets.length}`,
     `Thresholds: high ${config.thresholds.high}, low ${config.thresholds.low}, break ${config.thresholds.break}`,

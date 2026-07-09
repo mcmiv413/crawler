@@ -5,15 +5,17 @@ import { parseArgs } from './guardrails/common.mjs';
 import { getTestQualityReportAll } from './check-test-quality.mjs';
 
 function groupByCategory(rows) {
-  const categories = {};
+  const categoryPaths = rows
+    .flatMap((row) => row.failures.map((failure) => [failure.title, row.relativePath]))
+    .reduce((categories, [category, relativePath]) => new Map([
+      ...categories,
+      [category, [...(categories.get(category) ?? []), relativePath]],
+    ]), new Map());
 
-  for (const row of rows) {
-    for (const failure of row.failures) {
-      categories[failure.title] = [...(categories[failure.title] ?? []), row.relativePath].sort();
-    }
-  }
-
-  return categories;
+  return Object.fromEntries([...categoryPaths.entries()].map(([category, paths]) => [
+    category,
+    [...new Set(paths)].sort(),
+  ]));
 }
 
 function run() {

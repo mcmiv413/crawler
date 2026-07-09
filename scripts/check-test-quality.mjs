@@ -4,6 +4,20 @@ import { join, resolve } from 'node:path';
 import { spawnSync } from 'node:child_process';
 import ts from 'typescript';
 import { isCliMain, lineNumberAt, normalizePath } from './guardrails/common.mjs';
+import {
+  collectAssertions,
+  collectTestCases,
+  collectVitestCalls,
+  createSourceFile,
+  findIdentifier,
+  getExpectMatcher,
+  hasContentImport,
+  hasInteractionSignal,
+  isNumericExpression,
+  isPresenceMatcher,
+  isWeakAssertion,
+  walk,
+} from './guardrails/test-quality-ast.mjs';
 
 const DEFAULT_BASE_REF = process.env.TEST_QUALITY_BASE ?? 'main';
 const TEST_LAYER_VALUES = new Set(['unit', 'property', 'contract', 'integration', 'balance', 'e2e']);
@@ -20,14 +34,6 @@ const TUNABLE_GAME_CORE_TEST_ROOTS = [
   'packages/game-core/src/abilities/runtime/',
   'packages/game-core/src/engine/handlers/',
 ];
-const PRESENCE_MATCHERS = new Set([
-  'toBeVisible',
-  'toBeAttached',
-  'toBeInViewport',
-  'toHaveCount',
-  'toBeTruthy',
-  'toBeDefined',
-]);
 const GENERIC_PROOF_PHRASES = ['focused assertions verify returned values, state changes, rendered output, or emitted events', 'assertions verify returned values, state changes, rendered output, or emitted events', 'live catalog/schema assertions validate ids, shapes, and cross references'];
 
 function runGit(repoRoot, args, options = {}) {
@@ -129,16 +135,6 @@ function readSource(repoRoot, relativePath) {
   return readFileSync(join(repoRoot, relativePath), 'utf8');
 }
 
-function createSourceFile(relativePath, source) {
-  return ts.createSourceFile(
-    relativePath,
-    source,
-    ts.ScriptTarget.Latest,
-    true,
-    relativePath.endsWith('.tsx') ? ts.ScriptKind.TSX : ts.ScriptKind.TS,
-  );
-}
-
 function formatSnippet(text) {
   return text
     .split('\n')
@@ -172,217 +168,6 @@ function formatFailure(failure) {
     'Repair:',
     ...failure.repair.map((line) => `  ${line}`),
   ].join('\n');
-}
-
-function getVitestCall(node) {
-  const expression = node.expression;
-
-  if (ts.isIdentifier(expression) && ['test', 'it', 'describe'].includes(expression.text)) {
-    return { base: expression.text, modifier: null };
-  }
-
-  if (!ts.isPropertyAccessExpression(expression)) {
-    return null;
-  }
-
-  // Walk the whole member-access chain down to its root identifier, collecting property names,
-  // so chained/nested forms like test.describe.only(...), test.describe.skip(...), and
-  // test.only.each(...) are detected — not just single-level test.only(...).
-  const propertyNames = [];
-  let current = expression;
-  while (ts.isPropertyAccessExpression(current)) {
-    propertyNames.push(current.name.text);
-    current = current.expression;
-  }
-
-  if (!ts.isIdentifier(current) || !['test', 'it', 'describe'].includes(current.text)) {
-    return null;
-  }
-
-  const modifier = propertyNames.includes('only')
-    ? 'only'
-    : propertyNames.includes('skip')
-      ? 'skip'
-      : null;
-
-  return { base: current.text, modifier };
-}
-
-function getStringArgText(node) {
-  if (ts.isStringLiteral(node) || ts.isNoSubstitutionTemplateLiteral(node)) {
-    return node.text;
-  }
-  return null;
-}
-
-function isFunctionLikeArg(node) {
-  return ts.isArrowFunction(node) || ts.isFunctionExpression(node);
-}
-
-function getTestCase(node) {
-  const vitestCall = getVitestCall(node);
-  if (vitestCall === null || (vitestCall.base !== 'test' && vitestCall.base !== 'it')) {
-    return null;
-  }
-
-  const callback = node.arguments.find(isFunctionLikeArg);
-  if (!callback) return null;
-
-  const titleArg = node.arguments.find((arg) => getStringArgText(arg) !== null);
-  return {
-    node,
-    callback,
-    title: titleArg ? getStringArgText(titleArg) ?? '<unnamed test>' : '<unnamed test>',
-  };
-}
-
-function walk(node, visit) {
-  visit(node);
-  ts.forEachChild(node, (child) => walk(child, visit));
-}
-
-function collectVitestCalls(sourceFile) {
-  const calls = [];
-  walk(sourceFile, (node) => {
-    if (ts.isCallExpression(node)) {
-      const vitestCall = getVitestCall(node);
-      if (vitestCall !== null) {
-        calls.push({ node, ...vitestCall });
-      }
-    }
-  });
-  return calls;
-}
-
-function collectTestCases(sourceFile) {
-  const cases = [];
-  walk(sourceFile, (node) => {
-    if (!ts.isCallExpression(node)) return;
-    const testCase = getTestCase(node);
-    if (testCase !== null) {
-      cases.push(testCase);
-    }
-  });
-  return cases;
-}
-
-function findExpectCall(expression) {
-  if (ts.isCallExpression(expression)) {
-    if (ts.isIdentifier(expression.expression) && expression.expression.text === 'expect') {
-      return expression;
-    }
-
-    if (
-      ts.isPropertyAccessExpression(expression.expression)
-      && ts.isIdentifier(expression.expression.expression)
-      && expression.expression.expression.text === 'expect'
-    ) {
-      return expression;
-    }
-
-    return findExpectCall(expression.expression);
-  }
-
-  if (ts.isPropertyAccessExpression(expression)) {
-    return findExpectCall(expression.expression);
-  }
-
-  return null;
-}
-
-function getExpectMatcher(node) {
-  if (!ts.isPropertyAccessExpression(node.expression)) {
-    return null;
-  }
-
-  const matcher = node.expression.name.text;
-  const expectCall = findExpectCall(node.expression.expression);
-  if (expectCall === null) {
-    return null;
-  }
-
-  return {
-    matcher,
-    expectCall,
-    text: node.getText(),
-  };
-}
-
-function isNumericExpression(node) {
-  if (ts.isNumericLiteral(node)) return true;
-  return (
-    ts.isPrefixUnaryExpression(node)
-    && (node.operator === ts.SyntaxKind.MinusToken || node.operator === ts.SyntaxKind.PlusToken)
-    && ts.isNumericLiteral(node.operand)
-  );
-}
-
-function isBooleanLiteral(node, value) {
-  return value ? node.kind === ts.SyntaxKind.TrueKeyword : node.kind === ts.SyntaxKind.FalseKeyword;
-}
-
-function numericLiteralValue(node) {
-  if (ts.isNumericLiteral(node)) {
-    return Number(node.text);
-  }
-
-  if (ts.isPrefixUnaryExpression(node) && ts.isNumericLiteral(node.operand)) {
-    const value = Number(node.operand.text);
-    return node.operator === ts.SyntaxKind.MinusToken ? -value : value;
-  }
-
-  return null;
-}
-
-function isLengthGreaterThanAssertion(assertion, sourceFile) {
-  const expected = assertion.expectCall.arguments[0];
-  if (!expected) return false;
-  const expectedText = expected.getText(sourceFile);
-  const firstMatcherArg = assertion.node?.arguments?.[0];
-
-  if (
-    assertion.matcher === 'toBeGreaterThan'
-    && firstMatcherArg
-    && numericLiteralValue(firstMatcherArg) === 0
-    && expectedText.includes('.length')
-  ) {
-    return true;
-  }
-
-  if (
-    assertion.matcher === 'toBe'
-    && firstMatcherArg
-    && isBooleanLiteral(firstMatcherArg, true)
-    && /\.length\s*>\s*0\b/.test(expectedText)
-  ) {
-    return true;
-  }
-
-  return false;
-}
-
-function collectAssertions(callback, sourceFile) {
-  const assertions = [];
-  walk(callback, (node) => {
-    if (!ts.isCallExpression(node)) return;
-    const matcher = getExpectMatcher(node);
-    if (matcher === null) return;
-
-    assertions.push({
-      ...matcher,
-      node,
-      line: lineNumberAt(sourceFile.text, node.getStart(sourceFile)),
-    });
-  });
-  return assertions;
-}
-
-function isWeakAssertion(assertion, sourceFile) {
-  return (
-    assertion.matcher === 'toBeDefined'
-    || assertion.matcher === 'toBeTruthy'
-    || isLengthGreaterThanAssertion(assertion, sourceFile)
-  );
 }
 
 function hasIntentHeader(source) {
@@ -420,49 +205,12 @@ function getHeaderFieldValues(source) {
 
 function normalizeHeaderText(value) { return value.toLowerCase().replace(/[.…\s]+$/, '').trim(); }
 
-function hasContentImport(sourceFile) {
-  let contentImport = null;
-  walk(sourceFile, (node) => {
-    if (contentImport !== null) return;
-    if (
-      (ts.isImportDeclaration(node) || ts.isExportDeclaration(node))
-      && node.moduleSpecifier
-      && ts.isStringLiteral(node.moduleSpecifier)
-      && /^@dungeon\/content(?:\/|$)/.test(node.moduleSpecifier.text)
-    ) {
-      contentImport = node;
-    }
-  });
-  return contentImport;
-}
-
-function findIdentifier(sourceFile, name) {
-  let match = null;
-  walk(sourceFile, (node) => {
-    if (match !== null) return;
-    if (ts.isIdentifier(node) && node.text === name) {
-      match = node;
-    }
-  });
-  return match;
-}
-
 function hasSkipAllowlist(source, index) {
   const before = source.slice(0, index).split('\n');
   const currentLine = before.length - 1;
   const lines = source.split('\n');
   const nearby = lines.slice(Math.max(0, currentLine - 2), currentLine + 1).join('\n');
   return /test-quality:\s*allow-skip\s+-\s+\S+/i.test(nearby);
-}
-
-function hasInteractionSignal(testBody) {
-  return /\b(?:click|dblclick|press|fill|type|dragTo|hover)\s*\(/.test(testBody)
-    || /\b(?:keyboard|mouse)\s*\./.test(testBody)
-    || /\b(?:submitCommand|actionButton|dispatchEvent|startNewGame|newGame)\b/.test(testBody);
-}
-
-function isPresenceMatcher(matcher) {
-  return PRESENCE_MATCHERS.has(matcher);
 }
 
 function shouldRequireHeader(relativePath, sourceFile) {

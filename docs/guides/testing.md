@@ -126,7 +126,7 @@ Use `scripts/generate-save-fixtures.ts` only when intentionally adding a new his
 
 ## Mutation And Legacy Baselines
 
-`pnpm test:mutation:critical` validates the critical mutation target list in report-only mode. The Stryker config is in `stryker.config.mjs`, and the baseline notes live in [docs/testing/mutation-baseline.md](../testing/mutation-baseline.md). Mutation failures should lead to stronger behavior tests, not implementation changes made only to satisfy mutants.
+`pnpm test:mutation:critical` validates the critical mutation config baseline in report-only mode. The Stryker config is in `stryker.config.mjs`, and the baseline notes live in [docs/testing/mutation-baseline.md](../testing/mutation-baseline.md). When mutation testing is executed intentionally, failures should lead to stronger behavior tests, not implementation changes made only to satisfy mutants.
 
 `pnpm run report:test-quality-baseline` writes `.validate-logs/test-quality-baseline.json` from `check:test-quality -- --report-all`. The checked-in summary is [docs/testing/weak-test-backlog.md](../testing/weak-test-backlog.md). The normal `check:test-quality` gate remains changed-file scoped; strengthen nearby legacy tests opportunistically when touching related behavior.
 

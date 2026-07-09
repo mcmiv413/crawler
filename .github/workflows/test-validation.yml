@@ -28,6 +28,9 @@ jobs:
       - name: Install dependencies
         run: pnpm install --frozen-lockfile
 
+      - name: Install Playwright browsers
+        run: pnpm exec playwright install --with-deps chromium
+
       - name: Generate repo skill mirrors
         run: pnpm skills:generate
 
@@ -49,7 +52,7 @@ jobs:
             BASE_SHA="HEAD^"
           fi
           git diff --name-only "$BASE_SHA"...HEAD > /tmp/browser-facing-changes.txt
-          if grep -E '^(apps/web/src/components/|apps/web/src/hooks/|apps/web/src/animation-runtime/|apps/web/src/rendering/|packages/presenter/src/|packages/game-contracts/src/events/|packages/game-contracts/src/commands/|packages/game-core/src/engine/command-handler\.ts|tests/e2e/support/|fixtures/scenarios/)' /tmp/browser-facing-changes.txt; then
+          if node scripts/guardrails/browser-facing.mjs < /tmp/browser-facing-changes.txt; then
             echo "changed=true" >> "$GITHUB_OUTPUT"
           else
             echo "changed=false" >> "$GITHUB_OUTPUT"

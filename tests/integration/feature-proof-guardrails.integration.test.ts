@@ -5,14 +5,17 @@
  * Validation: pnpm vitest run tests/integration/feature-proof-guardrails.integration.test.ts
  */
 import { afterEach, describe, expect, it } from 'vitest';
-import { mkdtempSync, mkdirSync, rmSync, writeFileSync } from 'node:fs';
+import { mkdtempSync, mkdirSync, readFileSync, rmSync, writeFileSync } from 'node:fs';
 import { spawnSync } from 'node:child_process';
 import { tmpdir } from 'node:os';
 import { dirname, join } from 'node:path';
 import { fileURLToPath } from 'node:url';
+import { isBrowserFacingPath } from '../../scripts/guardrails/browser-facing.mjs';
 
 const FEATURE_PROOFS_SCRIPT = fileURLToPath(new URL('../../scripts/check-feature-proofs.mjs', import.meta.url));
 const REGISTRY_SCRIPT = fileURLToPath(new URL('../../scripts/check-feature-proof-registry.mjs', import.meta.url));
+const BROWSER_FACING_SCRIPT = fileURLToPath(new URL('../../scripts/guardrails/browser-facing.mjs', import.meta.url));
+const TEST_VALIDATION_WORKFLOW = fileURLToPath(new URL('../../.github/workflows/test-validation.yml', import.meta.url));
 
 const tempDirs: string[] = [];
 
@@ -61,12 +64,46 @@ function runRegistryCheck(rootDir: string) {
   });
 }
 
+function runBrowserFacingMatcher(paths: string[]) {
+  return spawnSync(process.execPath, [BROWSER_FACING_SCRIPT], {
+    encoding: 'utf8',
+    input: paths.join('\n'),
+  });
+}
+
 function seedGameplayRepo(rootDir: string): void {
   initRepo(rootDir);
   writeFixture(rootDir, 'packages/game-core/src/systems/town.ts', 'export const town = "baseline";\n');
+  writeFixture(rootDir, 'packages/game-core/src/systems/combat.ts', 'export const combat = "baseline";\n');
   writeFixture(rootDir, 'packages/presenter/src/game-view-builder.ts', 'export const view = "baseline";\n');
   writeFixture(rootDir, 'apps/web/src/components/TownPhase.tsx', 'export const TownPhase = () => null;\n');
   commitAll(rootDir);
+}
+
+function writeCombatFeatureRegistry(rootDir: string): void {
+  writeFixture(
+    rootDir,
+    'docs/feature-proofs.yml',
+    [
+      'features:',
+      '  - feature: combat-resolution',
+      '    name: Combat resolution',
+      '    state:',
+      '      files:',
+      '        - packages/game-core/src/systems/combat.ts',
+      '    proofs:',
+      '      required:',
+      '        - packages/game-core/src/systems/combat.test.ts',
+      '      optional:',
+      '        - tests/integration/combat.integration.test.ts',
+      '    validation:',
+      '      focused:',
+      '        - pnpm vitest run packages/game-core/src/systems/combat.test.ts',
+      '      final:',
+      '        - pnpm validate',
+      '',
+    ].join('\n'),
+  );
 }
 
 afterEach(() => {
@@ -152,6 +189,29 @@ describe('check-feature-proofs script', () => {
     expect(result.stdout).toContain('rename local helper');
   });
 
+  it('ignores stale allowlist comments that are not added in the current diff', () => {
+    const rootDir = makeTempRoot('feature-proofs-stale-allowlist');
+    seedGameplayRepo(rootDir);
+    writeFixture(
+      rootDir,
+      'packages/game-core/src/systems/town.ts',
+      '// feature-proof: allow-refactor-only - baseline refactor comment\nexport const town = "baseline";\n',
+    );
+    commitAll(rootDir, 'add baseline allowlist');
+    writeFixture(
+      rootDir,
+      'packages/game-core/src/systems/town.ts',
+      '// feature-proof: allow-refactor-only - baseline refactor comment\nexport const town = "behavior changed";\n',
+    );
+
+    const result = runFeatureProofs(rootDir);
+
+    expect(result.status).toBe(1);
+    expect(result.stderr).toContain('Production feature change requires proof');
+    expect(result.stderr).toContain('packages/game-core/src/systems/town.ts');
+    expect(result.stdout).not.toContain('allow-refactor-only');
+  });
+
   it('fails browser-facing component changes without component or E2E proof', () => {
     const rootDir = makeTempRoot('feature-proofs-browser');
     seedGameplayRepo(rootDir);
@@ -176,6 +236,20 @@ describe('check-feature-proofs script', () => {
     expect(result.stderr).toContain('packages/presenter/src/game-view-builder.ts');
     expect(result.stderr).toContain('presenter proof');
     expect(result.stderr).toContain('browser-facing proof');
+  });
+
+  it('detects store and app paths through the shared browser-facing predicate used by CI', () => {
+    expect(isBrowserFacingPath('apps/web/src/store/game-store.ts')).toBe(true);
+    expect(isBrowserFacingPath('apps/web/src/App.tsx')).toBe(true);
+    expect(isBrowserFacingPath('packages/game-core/src/systems/town.ts')).toBe(false);
+
+    expect(runBrowserFacingMatcher(['apps/web/src/store/game-store.ts']).status).toBe(0);
+    expect(runBrowserFacingMatcher(['apps/web/src/App.tsx']).status).toBe(0);
+    expect(runBrowserFacingMatcher(['packages/game-core/src/systems/town.ts']).status).toBe(1);
+
+    const workflow = readFileSync(TEST_VALIDATION_WORKFLOW, 'utf8');
+    expect(workflow).toContain('node scripts/guardrails/browser-facing.mjs < /tmp/browser-facing-changes.txt');
+    expect(workflow).not.toContain('grep -E');
   });
 
   it('uses registry feature ownership to improve repair guidance', () => {
@@ -211,6 +285,46 @@ describe('check-feature-proofs script', () => {
     expect(result.stderr).toContain('Feature registry matches');
     expect(result.stderr).toContain('Town Actions');
     expect(result.stderr).toContain('tests/integration/town.integration.test.ts');
+  });
+
+  it('does not let unrelated integration proof satisfy registered feature change', () => {
+    const rootDir = makeTempRoot('feature-proofs-registry-specific-miss');
+    seedGameplayRepo(rootDir);
+    writeCombatFeatureRegistry(rootDir);
+    commitAll(rootDir, 'add combat registry');
+    writeFixture(rootDir, 'packages/game-core/src/systems/combat.ts', 'export const combat = "changed";\n');
+    writeFixture(
+      rootDir,
+      'tests/integration/unrelated-town.integration.test.ts',
+      'import { it } from "vitest";\nit("proves unrelated town behavior", () => undefined);\n',
+    );
+
+    const result = runFeatureProofs(rootDir);
+
+    expect(result.status).toBe(1);
+    expect(result.stderr).toContain('Registered feature proof requirement was not satisfied');
+    expect(result.stderr).toContain('Combat resolution');
+    expect(result.stderr).toContain('packages/game-core/src/systems/combat.test.ts');
+    expect(result.stderr).toContain('tests/integration/unrelated-town.integration.test.ts');
+    expect(result.stderr).not.toContain('core gameplay runtime proof');
+  });
+
+  it('passes when a registered feature change includes one of that feature proof patterns', () => {
+    const rootDir = makeTempRoot('feature-proofs-registry-specific-hit');
+    seedGameplayRepo(rootDir);
+    writeCombatFeatureRegistry(rootDir);
+    commitAll(rootDir, 'add combat registry');
+    writeFixture(rootDir, 'packages/game-core/src/systems/combat.ts', 'export const combat = "changed";\n');
+    writeFixture(
+      rootDir,
+      'tests/integration/combat.integration.test.ts',
+      'import { it } from "vitest";\nit("proves registered combat behavior", () => undefined);\n',
+    );
+
+    const result = runFeatureProofs(rootDir);
+
+    expect(result.status).toBe(0);
+    expect(result.stdout).toContain('Feature proof guardrail passed');
   });
 
   it('does not let a registry proof for a different category satisfy core gameplay proof', () => {

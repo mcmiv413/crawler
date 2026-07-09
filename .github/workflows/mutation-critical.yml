@@ -1,4 +1,4 @@
-name: Critical Mutation Testing
+name: Critical Mutation Config Baseline
 
 on:
   workflow_dispatch:
@@ -27,5 +27,5 @@ jobs:
       - name: Install dependencies
         run: pnpm install --frozen-lockfile
 
-      - name: Check critical mutation configuration
+      - name: Check critical mutation config baseline
         run: pnpm test:mutation:critical

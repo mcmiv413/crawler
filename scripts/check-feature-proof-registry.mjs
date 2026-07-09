@@ -6,14 +6,14 @@ import {
   parseFeatureProofRegistry,
   validateFeatureProofRegistry,
 } from './guardrails/feature-proof-registry.mjs';
-import { isCliMain, parseArgs } from './guardrails/common.mjs';
+import { isCliMain, normalizePath, parseArgs } from './guardrails/common.mjs';
 
 export function checkFeatureProofRegistry({
   rootDir = process.cwd(),
   registryPath = DEFAULT_FEATURE_PROOF_REGISTRY_PATH,
 } = {}) {
   const absoluteRoot = resolve(rootDir);
-  const normalizedRegistryPath = registryPath;
+  const normalizedRegistryPath = normalizePath(registryPath);
   const source = readFileSync(join(absoluteRoot, normalizedRegistryPath), 'utf8');
   const registry = parseFeatureProofRegistry(source);
   const failures = validateFeatureProofRegistry({

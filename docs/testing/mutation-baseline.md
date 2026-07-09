@@ -1,8 +1,8 @@
-# Critical Mutation Baseline
+# Critical Mutation Config Baseline
 
 ## Scope
 
-`pnpm test:mutation:critical` uses `stryker.config.mjs` for the high-risk seams:
+`pnpm test:mutation:critical` validates the `stryker.config.mjs` baseline for the high-risk seams without running Stryker by default:
 
 - command handling
 - save snapshot export/load
