@@ -1,20 +1,27 @@
 #!/usr/bin/env node
 import { mkdirSync, writeFileSync } from 'node:fs';
 import { dirname, join, resolve } from 'node:path';
-import { parseArgs } from './guardrails/common.mjs';
+import { isCliMain, parseArgs } from './guardrails/common.mjs';
 import { getTestQualityReportAll } from './check-test-quality.mjs';
 
-function groupByCategory(rows) {
-  const categoryPaths = rows
-    .flatMap((row) => row.failures.map((failure) => [failure.title, row.relativePath]))
-    .reduce((categories, [category, relativePath]) => new Map([
-      ...categories,
-      [category, [...(categories.get(category) ?? []), relativePath]],
-    ]), new Map());
+export function groupByCategory(rows) {
+  const categoryRows = rows.flatMap((row) =>
+    row.failures.map((failure) => ({
+      category: failure.title,
+      relativePath: row.relativePath,
+    })),
+  );
+  const categories = [...new Set(categoryRows.map((row) => row.category))];
 
-  return Object.fromEntries([...categoryPaths.entries()].map(([category, paths]) => [
+  return Object.fromEntries(categories.map((category) => [
     category,
-    [...new Set(paths)].sort(),
+    [
+      ...new Set(
+        categoryRows
+          .filter((row) => row.category === category)
+          .map((row) => row.relativePath),
+      ),
+    ].sort(),
   ]));
 }
 
@@ -45,4 +52,6 @@ function run() {
   ].join('\n'));
 }
 
-run();
+if (isCliMain(import.meta.url)) {
+  run();
+}

@@ -1,9 +1,9 @@
 /**
  * Test layer: integration
  * Behavior: repo guardrail checkers (topology, optional-import boundaries, reference/centralized
- *   literals, and file-size hotspots) flag violations and pass on compliant fixtures.
+ *   literals, file-size hotspots, path validation, mutation config, and baseline grouping) flag violations and pass on compliant fixtures.
  * Proof: each checker returns the expected failure strings for bad fixtures and an empty array for
- *   good ones, driven through temp-dir repositories.
+ *   good ones, driven through temp-dir repositories and direct script entry functions.
  * Validation: pnpm exec vitest run -c tests/vitest.config.ts guardrail-patterns
  */
 import { afterEach, describe, expect, it } from 'vitest';
@@ -11,12 +11,17 @@ import { mkdtempSync, mkdirSync, rmSync, writeFileSync, readFileSync } from 'nod
 import { spawnSync } from 'node:child_process';
 import { tmpdir } from 'node:os';
 import { dirname, join } from 'node:path';
+import { checkFeatureProofRegistry } from '../../scripts/check-feature-proof-registry.mjs';
+import { checkFeatureProofs } from '../../scripts/check-feature-proofs.mjs';
+import { groupByCategory } from '../../scripts/report-test-quality-baseline.mjs';
+import { checkCriticalMutationConfig } from '../../scripts/run-critical-mutation.mjs';
 import { checkCentralizedLiterals } from '../../scripts/guardrails/check-centralized-literals.mjs';
 import { checkDocPaths } from '../../scripts/guardrails/check-doc-paths.mjs';
 import {
   checkFileSizeHotspots,
   findRatchetViolations,
 } from '../../scripts/guardrails/check-file-size-hotspots.mjs';
+import { assertRepoRelativePath, isRepoRelativePath } from '../../scripts/guardrails/common.mjs';
 import { checkOptionalImportBoundaries } from '../../scripts/guardrails/check-optional-import-boundaries.mjs';
 import { checkReferenceLiterals } from '../../scripts/guardrails/check-reference-literals.mjs';
 import { checkTestTopology } from '../../scripts/guardrails/check-test-topology.mjs';
@@ -62,6 +67,126 @@ afterEach(() => {
 });
 
 describe('guardrail pattern checks', () => {
+  it('accepts normal repo paths and rejects absolute or parent traversal paths', () => {
+    const accepted = [
+      'docs/feature-proofs.yml',
+      './scripts/check-feature-proofs.mjs',
+      'packages/game-core/src/**/*.ts',
+      'fixtures/scenarios/full-feature-e2e-test',
+    ];
+    const rejected = [
+      '/tmp/outside.ts',
+      '../outside.ts',
+      'docs/../outside.ts',
+      String.raw`C:\outside\file.ts`,
+      String.raw`\\server\share\file.ts`,
+    ];
+
+    expect(accepted.map((path) => isRepoRelativePath(path))).toEqual([true, true, true, true]);
+    expect(rejected.map((path) => isRepoRelativePath(path))).toEqual([false, false, false, false, false]);
+    expect(assertRepoRelativePath('./docs/feature-proofs.yml', 'fixture path')).toBe('docs/feature-proofs.yml');
+    expect(() => assertRepoRelativePath('../outside.yml', 'fixture path')).toThrow(/repo-relative path/);
+  });
+
+  it('rejects escaping feature-proof registry options before git diff inspection', () => {
+    const rootDir = makeTempRoot('guardrail-feature-proof-option-traversal');
+
+    expect(() => checkFeatureProofs({
+      rootDir,
+      registryPath: '../feature-proofs.yml',
+    })).toThrow(/feature proof registry path must be a repo-relative path/);
+  });
+
+  it('reports escaping registry entries and scenario fixture names through registry validation', () => {
+    const rootDir = makeTempRoot('guardrail-registry-entry-traversal');
+    writeFixture(rootDir, 'docs/feature-proofs.yml', [
+      'features:',
+      '  - feature: escaping-feature',
+      '    name: Escaping Feature',
+      '    state:',
+      '      files:',
+      '        - ../outside.ts',
+      '    scenarioFixtures:',
+      '      - ../secret-scenario',
+      '    proofs:',
+      '      required:',
+      '        - /tmp/outside-proof.test.ts',
+      '    validation:',
+      '      focused:',
+      '        - pnpm validate',
+      '',
+    ].join('\n'));
+
+    const failures = checkFeatureProofRegistry({ rootDir }).failures.join('\n');
+
+    expect(failures).toContain('registry path must be a repo-relative path');
+    expect(failures).toContain('required proof path must be a repo-relative path');
+    expect(failures).toContain('scenario fixture name must be a repo-relative path');
+  });
+
+  it('rejects escaping standalone feature-proof registry paths before reading', () => {
+    const rootDir = makeTempRoot('guardrail-registry-path-traversal');
+
+    expect(() => checkFeatureProofRegistry({
+      rootDir,
+      registryPath: '../feature-proofs.yml',
+    })).toThrow(/feature proof registry path must be a repo-relative path/);
+  });
+
+  it('rejects escaping critical mutation targets from stryker config before exact-target probing', async () => {
+    const rootDir = makeTempRoot('guardrail-mutation-traversal');
+    writeFixture(rootDir, 'stryker.config.mjs', [
+      'export default {',
+      "  mutate: ['../outside.ts'],",
+      '  thresholds: { high: 80, low: 60, break: 50 },',
+      '};',
+      '',
+    ].join('\n'));
+
+    const result = await checkCriticalMutationConfig({ rootDir });
+    const failures = result.failures.join('\n');
+
+    expect(failures).toContain('Invalid critical mutation target');
+    expect(failures).toContain('mutation target must be a repo-relative path');
+    expect(failures).not.toContain('mutation target list resolved to zero files');
+  });
+
+  it('dedupes and sorts test-quality baseline paths per category deterministically', () => {
+    const rows = [
+      {
+        relativePath: 'tests/z.test.ts',
+        failures: [
+          { title: 'weak assertion-only test' },
+          { title: 'missing test intent header' },
+        ],
+      },
+      {
+        relativePath: 'tests/a.test.ts',
+        failures: [
+          { title: 'weak assertion-only test' },
+          { title: 'weak assertion-only test' },
+        ],
+      },
+      {
+        relativePath: 'tests/clean.test.ts',
+        failures: [],
+      },
+      {
+        relativePath: 'tests/b.test.ts',
+        failures: [
+          { title: 'missing test intent header' },
+        ],
+      },
+    ];
+    const expected = {
+      'weak assertion-only test': ['tests/a.test.ts', 'tests/z.test.ts'],
+      'missing test intent header': ['tests/b.test.ts', 'tests/z.test.ts'],
+    };
+
+    expect(groupByCategory(rows)).toEqual(expected);
+    expect(groupByCategory(rows)).toEqual(expected);
+  });
+
   it('passes when root integration tests are tracked and named for their runner', () => {
     const rootDir = makeTempRoot('guardrail-topology-valid');
     initRepo(rootDir);
@@ -594,6 +719,42 @@ describe('guardrail pattern checks', () => {
     expect(failures[0]).toContain('config path');
     expect(failures[0]).toContain('resolves outside repository root');
     expect(failures.join('\n')).not.toContain('base ref "missing-file-size-base"');
+  });
+
+  it('rejects file-size allowlist entries and included roots that escape the repo', () => {
+    const rootDir = makeTempRoot('guardrail-file-size-entry-traversal');
+    const baseConfig = {
+      maxLinesPerFile: 500,
+      includedRoots: [],
+      excludePatterns: [],
+      allowlistedFiles: [],
+    };
+    writeFixture(rootDir, 'README.md', '# fixture\n');
+    initRepo(rootDir);
+    commitAll(rootDir);
+
+    const allowlistFailures = checkFileSizeHotspots({
+      rootDir,
+      baseRef: 'HEAD',
+      config: {
+        ...baseConfig,
+        allowlistedFiles: [{
+          path: '../outside.ts',
+          reason: 'Escaping fixture',
+          lines: 600,
+        }],
+      },
+    }).join('\n');
+    const includedRootFailures = checkFileSizeHotspots({
+      rootDir,
+      config: {
+        ...baseConfig,
+        includedRoots: ['../outside'],
+      },
+    }).join('\n');
+
+    expect(allowlistFailures).toContain('file-size allowlist path must be a repo-relative path');
+    expect(includedRootFailures).toContain('file-size included root must be a repo-relative path');
   });
 
   it('fails when a manually maintained source file exceeds the line budget without allowlist entry', () => {

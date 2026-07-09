@@ -1,6 +1,8 @@
 import {
   formatFailures,
+  formatRepoRelativePathFailure,
   isCliMain,
+  isRepoRelativePath,
   loadConfig,
   normalizePath,
   parseArgs,
@@ -11,7 +13,7 @@ import {
 import { spawnSync } from 'node:child_process';
 import { existsSync, mkdtempSync, readdirSync, rmSync, writeFileSync } from 'node:fs';
 import { tmpdir } from 'node:os';
-import { isAbsolute, join, relative } from 'node:path';
+import { join } from 'node:path';
 import { pathToFileURL } from 'node:url';
 import defaultConfig from './file-size-hotspots.config.mjs';
 
@@ -28,7 +30,11 @@ function isExcluded(relativePath, excludePatterns) {
 
 function isAllowlisted(relativePath, allowlistedFiles) {
   const normalized = normalizePath(relativePath);
-  return allowlistedFiles.some((entry) => normalizePath(entry.path) === normalized);
+  return allowlistedFiles.some((entry) =>
+    typeof entry.path === 'string'
+    && isRepoRelativePath(entry.path)
+    && normalizePath(entry.path) === normalized,
+  );
 }
 
 function runGit(repoRoot, args, options = {}) {
@@ -63,30 +69,21 @@ function formatUnavailableBaseRefFailure(baseRef) {
     `Fetch the base branch (git fetch origin ${baseRef}) before running this guardrail.`;
 }
 
-function resolveConfigRelativePath(rootDir, configPath = DEFAULT_CONFIG_RELATIVE_PATH) {
+function resolveConfigRelativePath(configPath = DEFAULT_CONFIG_RELATIVE_PATH) {
   const requestedPath = typeof configPath === 'string' && configPath.length > 0
     ? configPath
     : DEFAULT_CONFIG_RELATIVE_PATH;
-  const absolutePath = isAbsolute(requestedPath)
-    ? requestedPath
-    : join(rootDir, requestedPath);
-  const relativePath = normalizePath(relative(rootDir, absolutePath));
-  const escapesRoot =
-    relativePath.length === 0
-    || relativePath === '..'
-    || relativePath.startsWith('../')
-    || isAbsolute(relativePath);
 
-  return escapesRoot
+  return isRepoRelativePath(requestedPath) === false
     ? {
       configRelativePath: DEFAULT_CONFIG_RELATIVE_PATH,
       failures: [
-        `Cannot verify file-size ratchet: config path "${requestedPath}" resolves outside repository root. ` +
+        `Cannot verify file-size ratchet: config path "${requestedPath}" resolves outside repository root or is not repo-relative. ` +
         `Use a tracked repo-relative config path such as "${DEFAULT_CONFIG_RELATIVE_PATH}".`,
       ],
     }
     : {
-      configRelativePath: relativePath,
+      configRelativePath: normalizePath(requestedPath),
       failures: [],
     };
 }
@@ -227,37 +224,44 @@ function calculateAllowedDrift(lines, rawTolerance) {
 function validateAllowlistEntries(rootDir, config) {
   return config.allowlistedFiles.flatMap((entry) => {
     const { path, reason, lines } = entry;
-    const absolutePath = join(rootDir, path);
+    if (typeof path !== 'string' || isRepoRelativePath(path) === false) {
+      return [
+        `Allowlist entry path is invalid: ${formatRepoRelativePathFailure(path, 'file-size allowlist path')}`,
+      ];
+    }
+
+    const normalizedPath = normalizePath(path);
+    const absolutePath = join(rootDir, normalizedPath);
 
     // Check if file exists
     if (!existsSync(absolutePath)) {
       return [
-        `Allowlist entry '${path}' does not exist in the repository`,
+        `Allowlist entry '${normalizedPath}' does not exist in the repository`,
       ];
     }
 
     // Check if it's a source file
-    if (!isSourceFile(path)) {
+    if (!isSourceFile(normalizedPath)) {
       return [
-        `Allowlist entry '${path}' is not a source file (.js, .ts, .jsx, .tsx)`,
+        `Allowlist entry '${normalizedPath}' is not a source file (.js, .ts, .jsx, .tsx)`,
       ];
     }
 
     // Check if it's excluded by excludePatterns (dead entry)
-    if (isExcluded(path, config.excludePatterns)) {
+    if (isExcluded(normalizedPath, config.excludePatterns)) {
       return [
-        `Allowlist entry '${path}' is excluded by excludePatterns (pattern: ${config.excludePatterns.find((p) => p.test(path))}) — remove from allowlist`,
+        `Allowlist entry '${normalizedPath}' is excluded by excludePatterns (pattern: ${config.excludePatterns.find((p) => p.test(normalizedPath))}) — remove from allowlist`,
       ];
     }
 
     // Get current line count
-    const source = readText(rootDir, path);
+    const source = readText(rootDir, normalizedPath);
     const lineCount = source.split('\n').length;
 
     // Check if it actually exceeds the budget
     if (lineCount <= config.maxLinesPerFile) {
       return [
-        `Allowlist entry '${path}' is ${lineCount} lines, below the ${config.maxLinesPerFile}-line budget — remove from allowlist`,
+        `Allowlist entry '${normalizedPath}' is ${lineCount} lines, below the ${config.maxLinesPerFile}-line budget — remove from allowlist`,
       ];
     }
 
@@ -268,7 +272,7 @@ function validateAllowlistEntries(rootDir, config) {
       const { allowedDrift, tolerancePercent } = calculateAllowedDrift(lines, config.linesTolerancePercent);
       if (Math.abs(lineCount - lines) > allowedDrift) {
         return [
-          `Allowlist entry '${path}' has stale lines metadata: declared ${lines}, actual ${lineCount} ` +
+          `Allowlist entry '${normalizedPath}' has stale lines metadata: declared ${lines}, actual ${lineCount} ` +
           `(allowed drift ±${allowedDrift} at ${tolerancePercent}%) — update to match`,
         ];
       }
@@ -277,12 +281,20 @@ function validateAllowlistEntries(rootDir, config) {
     // Check if reason is non-empty
     if (!reason || reason.trim() === '') {
       return [
-        `Allowlist entry '${path}' has an empty reason — provide justification or remove`,
+        `Allowlist entry '${normalizedPath}' has an empty reason — provide justification or remove`,
       ];
     }
 
     return [];
   });
+}
+
+function validateIncludedRoots(includedRoots) {
+  return includedRoots.flatMap((root) =>
+    typeof root === 'string' && isRepoRelativePath(root)
+      ? []
+      : [`Included source root is invalid: ${formatRepoRelativePathFailure(root, 'file-size included root')}`],
+  );
 }
 
 function discoverSourceRoots(rootDir) {
@@ -305,7 +317,6 @@ export function checkFileSizeHotspots(options = {}) {
   const rootDir = resolveRoot(options.rootDir);
   const config = options.config ?? defaultConfig;
   const configPathResolution = resolveConfigRelativePath(
-    rootDir,
     options.configRelativePath ?? DEFAULT_CONFIG_RELATIVE_PATH,
   );
 
@@ -319,7 +330,11 @@ export function checkFileSizeHotspots(options = {}) {
     });
 
   // Use explicit includedRoots if provided; otherwise auto-discover
-  const includedRoots = config.includedRoots ?? discoverSourceRoots(rootDir);
+  const requestedIncludedRoots = config.includedRoots ?? discoverSourceRoots(rootDir);
+  const includedRootFailures = validateIncludedRoots(requestedIncludedRoots);
+  const includedRoots = requestedIncludedRoots.filter((root) =>
+    typeof root === 'string' && isRepoRelativePath(root),
+  );
 
   // Collect all files in included roots
   const allFiles = includedRoots.flatMap((root) =>
@@ -348,6 +363,7 @@ export function checkFileSizeHotspots(options = {}) {
 
   return [
     ...allowlistFailures,
+    ...includedRootFailures,
     ...configPathResolution.failures,
     ...ratchetFailures,
     ...oversizedFileFailures,
@@ -359,7 +375,6 @@ if (isCliMain(import.meta.url)) {
   const rootDir = resolveRoot(args.root);
   const requestedConfigPath = typeof args.config === 'string' ? args.config : DEFAULT_CONFIG_RELATIVE_PATH;
   const configPathResolution = resolveConfigRelativePath(
-    rootDir,
     requestedConfigPath,
   );
   const config = configPathResolution.failures.length > 0

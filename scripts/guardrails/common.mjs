@@ -1,5 +1,5 @@
 import { existsSync, readdirSync, readFileSync, statSync } from 'node:fs';
-import { dirname, extname, isAbsolute, join, relative, resolve, sep } from 'node:path';
+import { dirname, extname, isAbsolute, join, relative, resolve } from 'node:path';
 import { pathToFileURL } from 'node:url';
 
 export const DEFAULT_IGNORED_DIRS = new Set([
@@ -24,25 +24,61 @@ export function normalizePath(filePath) {
   return filePath.replace(/\\/g, '/').replace(/^\.\//, '');
 }
 
+function hasWindowsDrivePrefix(filePath) {
+  return /^[A-Za-z]:/u.test(filePath);
+}
+
+export function isRepoRelativePath(filePath) {
+  if (typeof filePath !== 'string' || filePath.length === 0) {
+    return false;
+  }
+  if (isAbsolute(filePath) || hasWindowsDrivePrefix(filePath) || filePath.startsWith('\\\\')) {
+    return false;
+  }
+
+  const normalized = normalizePath(filePath);
+  if (
+    normalized.length === 0
+    || normalized.startsWith('/')
+    || normalized.startsWith('//')
+    || hasWindowsDrivePrefix(normalized)
+  ) {
+    return false;
+  }
+
+  return normalized.split('/').every((segment) => segment !== '..');
+}
+
+export function formatRepoRelativePathFailure(filePath, context) {
+  return `${context} must be a repo-relative path without absolute roots or ".." segments: ${String(filePath)}`;
+}
+
+export function assertRepoRelativePath(filePath, context) {
+  if (!isRepoRelativePath(filePath)) {
+    throw new Error(formatRepoRelativePathFailure(filePath, context));
+  }
+  return normalizePath(filePath);
+}
+
 export function toRelativePath(rootDir, filePath) {
   return normalizePath(relative(rootDir, filePath));
 }
 
 export function readText(rootDir, relativePath) {
-  return readFileSync(join(rootDir, relativePath), 'utf8');
+  return readFileSync(join(rootDir, assertRepoRelativePath(relativePath, 'read path')), 'utf8');
 }
 
 export function pathExists(rootDir, relativePath) {
-  return existsSync(join(rootDir, relativePath));
+  return existsSync(join(rootDir, assertRepoRelativePath(relativePath, 'path probe')));
 }
 
 export function isFile(rootDir, relativePath) {
-  const absolutePath = join(rootDir, relativePath);
+  const absolutePath = join(rootDir, assertRepoRelativePath(relativePath, 'file probe'));
   return existsSync(absolutePath) && statSync(absolutePath).isFile();
 }
 
 export function isDirectory(rootDir, relativePath) {
-  const absolutePath = join(rootDir, relativePath);
+  const absolutePath = join(rootDir, assertRepoRelativePath(relativePath, 'directory probe'));
   return existsSync(absolutePath) && statSync(absolutePath).isDirectory();
 }
 
@@ -60,29 +96,30 @@ export function matchesAnyRegex(relativePath, patterns = []) {
 
 export function walkFiles(rootDir, options = {}) {
   const ignoredDirs = options.ignoredDirs ?? DEFAULT_IGNORED_DIRS;
-  const startRelativePath = normalizePath(options.startRelativePath ?? '.');
-  const files = [];
+  const startRelativePath = assertRepoRelativePath(
+    normalizePath(options.startRelativePath ?? '.'),
+    'walk start path',
+  );
 
   function walk(relativeDir) {
-    const absoluteDir = relativeDir === '.' ? rootDir : join(rootDir, relativeDir);
-    if (!existsSync(absoluteDir)) return;
+    const absoluteDir = relativeDir === '.'
+      ? rootDir
+      : join(rootDir, assertRepoRelativePath(relativeDir, 'walk path'));
+    if (!existsSync(absoluteDir)) return [];
 
-    for (const entry of readdirSync(absoluteDir, { withFileTypes: true })) {
+    return readdirSync(absoluteDir, { withFileTypes: true }).flatMap((entry) => {
       const childRelativePath = normalizePath(
         relativeDir === '.' ? entry.name : join(relativeDir, entry.name),
       );
 
       if (entry.isDirectory()) {
-        if (ignoredDirs.has(entry.name)) continue;
-        walk(childRelativePath);
-      } else if (entry.isFile()) {
-        files.push(childRelativePath);
+        return ignoredDirs.has(entry.name) ? [] : walk(childRelativePath);
       }
-    }
+      return entry.isFile() ? [childRelativePath] : [];
+    });
   }
 
-  walk(startRelativePath);
-  return files.sort();
+  return walk(startRelativePath).sort();
 }
 
 export function stripComments(source) {
@@ -92,20 +129,29 @@ export function stripComments(source) {
 }
 
 export function parseArgs(argv) {
-  const args = {};
-  for (let index = 0; index < argv.length; index += 1) {
+  function* entries(index = 0) {
+    if (index >= argv.length) {
+      return;
+    }
+
     const arg = argv[index];
-    if (!arg.startsWith('--')) continue;
+    if (!arg.startsWith('--')) {
+      yield* entries(index + 1);
+      return;
+    }
+
     const key = arg.slice(2);
     const next = argv[index + 1];
     if (next === undefined || next.startsWith('--')) {
-      args[key] = true;
+      yield [key, true];
+      yield* entries(index + 1);
     } else {
-      args[key] = next;
-      index += 1;
+      yield [key, next];
+      yield* entries(index + 2);
     }
   }
-  return args;
+
+  return Object.fromEntries(entries());
 }
 
 export function resolveRoot(argRoot) {
@@ -139,46 +185,47 @@ export function resolveImportPath(rootDir, importerRelativePath, specifier) {
 
   const importerDir = dirname(join(rootDir, importerRelativePath));
   const absoluteBase = resolve(importerDir, specifier);
-  const candidates = [];
-
-  if (extname(absoluteBase) !== '') {
-    candidates.push(absoluteBase);
-    if (absoluteBase.endsWith('.js')) {
-      candidates.push(`${absoluteBase.slice(0, -3)}.ts`);
-      candidates.push(`${absoluteBase.slice(0, -3)}.tsx`);
-    }
-    if (absoluteBase.endsWith('.jsx')) {
-      candidates.push(`${absoluteBase.slice(0, -4)}.tsx`);
-    }
-  } else {
-    candidates.push(absoluteBase);
-    candidates.push(`${absoluteBase}.ts`);
-    candidates.push(`${absoluteBase}.tsx`);
-    candidates.push(`${absoluteBase}.js`);
-    candidates.push(join(absoluteBase, 'index.ts'));
-    candidates.push(join(absoluteBase, 'index.tsx'));
-    candidates.push(join(absoluteBase, 'index.js'));
-  }
+  const candidates = extname(absoluteBase) !== ''
+    ? [
+      absoluteBase,
+      ...(absoluteBase.endsWith('.js')
+        ? [`${absoluteBase.slice(0, -3)}.ts`, `${absoluteBase.slice(0, -3)}.tsx`]
+        : []),
+      ...(absoluteBase.endsWith('.jsx')
+        ? [`${absoluteBase.slice(0, -4)}.tsx`]
+        : []),
+    ]
+    : [
+      absoluteBase,
+      `${absoluteBase}.ts`,
+      `${absoluteBase}.tsx`,
+      `${absoluteBase}.js`,
+      join(absoluteBase, 'index.ts'),
+      join(absoluteBase, 'index.tsx'),
+      join(absoluteBase, 'index.js'),
+    ];
 
   const match = candidates.find((candidate) => existsSync(candidate) && statSync(candidate).isFile());
   if (!match) return null;
 
   const relativePath = normalizePath(relative(rootDir, match));
-  return relativePath.startsWith(`..${sep}`) ? null : relativePath;
+  return isRepoRelativePath(relativePath) ? relativePath : null;
 }
 
-export function extractStringLiterals(source) {
+function* stringLiteralEntries(source) {
   const stripped = stripComments(source);
-  const literals = [];
   const regex = /(['"`])((?:\\.|(?!\1)[\s\S])*?)\1/g;
   let match;
   while ((match = regex.exec(stripped)) !== null) {
     const quote = match[1];
     const value = match[2];
     if (quote === '`' && value.includes('${')) continue;
-    literals.push({ value, index: match.index });
+    yield { value, index: match.index };
   }
-  return literals;
+}
+
+export function extractStringLiterals(source) {
+  return [...stringLiteralEntries(source)];
 }
 
 export function lineNumberAt(source, index) {
