@@ -57,27 +57,56 @@ function resolveBaseRef(repoRoot, baseRef) {
   }) ?? null;
 }
 
-function resolveConfigRelativePath(rootDir, configPath = DEFAULT_CONFIG_RELATIVE_PATH) {
-  if (typeof configPath !== 'string' || configPath.length === 0) {
-    return DEFAULT_CONFIG_RELATIVE_PATH;
-  }
+function formatUnavailableBaseRefFailure(baseRef) {
+  const fallbackRef = `origin/${baseRef}`;
+  return `Cannot verify file-size ratchet: base ref "${baseRef}" (or "${fallbackRef}") is not available. ` +
+    `Fetch the base branch (git fetch origin ${baseRef}) before running this guardrail.`;
+}
 
-  return normalizePath(
-    isAbsolute(configPath)
-      ? relative(rootDir, configPath)
-      : configPath,
-  );
+function resolveConfigRelativePath(rootDir, configPath = DEFAULT_CONFIG_RELATIVE_PATH) {
+  const requestedPath = typeof configPath === 'string' && configPath.length > 0
+    ? configPath
+    : DEFAULT_CONFIG_RELATIVE_PATH;
+  const absolutePath = isAbsolute(requestedPath)
+    ? requestedPath
+    : join(rootDir, requestedPath);
+  const relativePath = normalizePath(relative(rootDir, absolutePath));
+  const escapesRoot =
+    relativePath.length === 0
+    || relativePath === '..'
+    || relativePath.startsWith('../')
+    || isAbsolute(relativePath);
+
+  return escapesRoot
+    ? {
+      configRelativePath: DEFAULT_CONFIG_RELATIVE_PATH,
+      failures: [
+        `Cannot verify file-size ratchet: config path "${requestedPath}" resolves outside repository root. ` +
+        `Use a tracked repo-relative config path such as "${DEFAULT_CONFIG_RELATIVE_PATH}".`,
+      ],
+    }
+    : {
+      configRelativePath: relativePath,
+      failures: [],
+    };
 }
 
 function readBaseConfigSource(rootDir, baseRef, configRelativePath) {
   const resolvedBaseRef = resolveBaseRef(rootDir, baseRef);
   if (resolvedBaseRef === null) {
-    return null;
+    return {
+      status: 'base-ref-unavailable',
+      failure: formatUnavailableBaseRefFailure(baseRef),
+    };
   }
 
-  return runGit(rootDir, ['show', `${resolvedBaseRef}:${configRelativePath}`], {
+  const source = runGit(rootDir, ['show', `${resolvedBaseRef}:${configRelativePath}`], {
     allowFailure: true,
   });
+
+  return source === null
+    ? { status: 'base-config-missing' }
+    : { status: 'base-config-found', source };
 }
 
 function importAllowlistedFilesFromSource(source) {
@@ -108,8 +137,24 @@ function importAllowlistedFilesFromSource(source) {
 }
 
 function loadBaseAllowlistedFiles(rootDir, baseRef, configRelativePath) {
-  const source = readBaseConfigSource(rootDir, baseRef, configRelativePath);
-  return source === null ? null : importAllowlistedFilesFromSource(source);
+  const baseConfigSource = readBaseConfigSource(rootDir, baseRef, configRelativePath);
+  if (baseConfigSource.status === 'base-ref-unavailable') {
+    return {
+      entries: null,
+      failures: [baseConfigSource.failure],
+    };
+  }
+  if (baseConfigSource.status === 'base-config-missing') {
+    return {
+      entries: null,
+      failures: [],
+    };
+  }
+
+  return {
+    entries: importAllowlistedFilesFromSource(baseConfigSource.source),
+    failures: [],
+  };
 }
 
 function isFiniteNumber(value) {
@@ -147,15 +192,25 @@ export function findRatchetViolations(currentEntries, baseEntries, maxLinesPerFi
 }
 
 function findCurrentRatchetViolations(rootDir, config, options) {
-  const baseEntries = loadBaseAllowlistedFiles(
+  const currentEntries = Array.isArray(config.allowlistedFiles)
+    ? config.allowlistedFiles
+    : [];
+  if (currentEntries.length === 0) {
+    return [];
+  }
+
+  const baseAllowlist = loadBaseAllowlistedFiles(
     rootDir,
     options.baseRef ?? DEFAULT_BASE_REF,
     options.configRelativePath ?? DEFAULT_CONFIG_RELATIVE_PATH,
   );
 
-  return baseEntries === null
-    ? []
-    : findRatchetViolations(config.allowlistedFiles, baseEntries, config.maxLinesPerFile);
+  return [
+    ...baseAllowlist.failures,
+    ...(baseAllowlist.entries === null
+      ? []
+      : findRatchetViolations(currentEntries, baseAllowlist.entries, config.maxLinesPerFile)),
+  ];
 }
 
 function calculateAllowedDrift(lines, rawTolerance) {
@@ -249,17 +304,19 @@ function discoverSourceRoots(rootDir) {
 export function checkFileSizeHotspots(options = {}) {
   const rootDir = resolveRoot(options.rootDir);
   const config = options.config ?? defaultConfig;
-  const configRelativePath = resolveConfigRelativePath(
+  const configPathResolution = resolveConfigRelativePath(
     rootDir,
     options.configRelativePath ?? DEFAULT_CONFIG_RELATIVE_PATH,
   );
 
   // Validate that allowlist entries are current and correct
   const allowlistFailures = validateAllowlistEntries(rootDir, config);
-  const ratchetFailures = findCurrentRatchetViolations(rootDir, config, {
-    ...options,
-    configRelativePath,
-  });
+  const ratchetFailures = configPathResolution.failures.length > 0
+    ? []
+    : findCurrentRatchetViolations(rootDir, config, {
+      ...options,
+      configRelativePath: configPathResolution.configRelativePath,
+    });
 
   // Use explicit includedRoots if provided; otherwise auto-discover
   const includedRoots = config.includedRoots ?? discoverSourceRoots(rootDir);
@@ -291,6 +348,7 @@ export function checkFileSizeHotspots(options = {}) {
 
   return [
     ...allowlistFailures,
+    ...configPathResolution.failures,
     ...ratchetFailures,
     ...oversizedFileFailures,
   ];
@@ -299,15 +357,18 @@ export function checkFileSizeHotspots(options = {}) {
 if (isCliMain(import.meta.url)) {
   const args = parseArgs(process.argv.slice(2));
   const rootDir = resolveRoot(args.root);
-  const config = await loadConfig(args.config, defaultConfig);
-  const configRelativePath = resolveConfigRelativePath(
+  const requestedConfigPath = typeof args.config === 'string' ? args.config : DEFAULT_CONFIG_RELATIVE_PATH;
+  const configPathResolution = resolveConfigRelativePath(
     rootDir,
-    typeof args.config === 'string' ? args.config : DEFAULT_CONFIG_RELATIVE_PATH,
+    requestedConfigPath,
   );
+  const config = configPathResolution.failures.length > 0
+    ? defaultConfig
+    : await loadConfig(args.config, defaultConfig);
   const failures = checkFileSizeHotspots({
     rootDir,
     config,
-    configRelativePath,
+    configRelativePath: requestedConfigPath,
     baseRef: typeof args.base === 'string' ? args.base : DEFAULT_BASE_REF,
   });
   if (failures.length > 0) {
