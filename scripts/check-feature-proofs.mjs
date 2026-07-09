@@ -4,10 +4,13 @@ import { join, resolve } from 'node:path';
 import { spawnSync } from 'node:child_process';
 import {
   DEFAULT_FEATURE_PROOF_REGISTRY_PATH,
+  collectProofPatterns,
   collectRequiredProofPatterns,
   findFeaturesForPath,
+  matchesPathPattern,
   parseFeatureProofRegistry,
 } from './guardrails/feature-proof-registry.mjs';
+import { isBrowserFacingPath, isBrowserFacingWebUiPath } from './guardrails/browser-facing.mjs';
 import { isCliMain, normalizePath, parseArgs } from './guardrails/common.mjs';
 
 const DEFAULT_BASE_REF = process.env.FEATURE_PROOF_BASE ?? 'main';
@@ -191,6 +194,10 @@ function resolveBaseRef(repoRoot, baseRef) {
 
 export function listChangedPaths(repoRoot, baseRef = DEFAULT_BASE_REF) {
   const resolvedBaseRef = resolveBaseRef(repoRoot, baseRef);
+  return listChangedPathsForResolvedBase(repoRoot, resolvedBaseRef);
+}
+
+function listChangedPathsForResolvedBase(repoRoot, resolvedBaseRef) {
   const pathSets = [
     splitGitPaths(
       runGit(repoRoot, ['diff', '--name-only', '--diff-filter=ACMR', `${resolvedBaseRef}...HEAD`]),
@@ -203,6 +210,10 @@ export function listChangedPaths(repoRoot, baseRef = DEFAULT_BASE_REF) {
   return [...new Set(pathSets.flat())]
     .filter((relativePath) => existsSync(join(repoRoot, relativePath)))
     .sort();
+}
+
+function listUntrackedPaths(repoRoot) {
+  return new Set(splitGitPaths(runGit(repoRoot, ['ls-files', '--others', '--exclude-standard'])));
 }
 
 function isTestPath(relativePath) {
@@ -233,10 +244,14 @@ function matchesPrefix(relativePath, prefixes) {
   return prefixes.some((prefix) => relativePath === prefix || relativePath.startsWith(prefix));
 }
 
-function addSurface(surfaces, surface) {
-  if (!surfaces.some((existing) => existing.id === surface.id)) {
-    surfaces.push(surface);
-  }
+function uniqueSurfaces(surfaces) {
+  return surfaces.filter((surface, index) =>
+    surfaces.findIndex((candidate) => candidate.id === surface.id) === index,
+  );
+}
+
+function optionalSurface(condition, surface) {
+  return condition ? [surface] : [];
 }
 
 function classifyProductionPath(relativePath) {
@@ -248,160 +263,140 @@ function classifyProductionPath(relativePath) {
     || relativePath.startsWith('.agents/')
     || relativePath.startsWith('.claude/')
     || relativePath.startsWith('.codex/')
-    || relativePath.startsWith('fixtures/saves/')
+    || relativePath.startsWith('fixtures/')
     || relativePath === 'package.json'
     || relativePath === 'pnpm-lock.yaml'
   ) {
     return [];
   }
 
-  const surfaces = [];
-
-  if (matchesPrefix(relativePath, [
-    'packages/game-contracts/src/commands/',
-    'packages/game-contracts/src/schemas/',
-  ])) {
-    addSurface(surfaces, {
+  return uniqueSurfaces([
+    ...optionalSurface(matchesPrefix(relativePath, [
+      'packages/game-contracts/src/commands/',
+      'packages/game-contracts/src/schemas/',
+    ]), {
       id: 'command-schema',
       label: 'command/schema surface',
-      categories: ['contract-or-integration', 'browser-proof'],
-    });
-  }
-
-  if (
-    matchesPrefix(relativePath, ['packages/game-contracts/src/events/'])
-    || relativePath === 'packages/presenter/src/event-formatter.ts'
-  ) {
-    addSurface(surfaces, {
-      id: 'event',
-      label: 'event surface',
-      categories: ['contract-or-integration', 'feature-chain', 'browser-proof'],
-    });
-  }
-
-  if (matchesPrefix(relativePath, [
-    'packages/game-core/src/engine/',
-    'packages/game-core/src/systems/',
-    'packages/game-core/src/abilities/',
-    'packages/game-core/src/generation/',
-    'packages/game-core/src/state/',
-  ])) {
-    addSurface(surfaces, {
+      categories: ['contract-or-integration'],
+    }),
+    ...optionalSurface(
+      matchesPrefix(relativePath, ['packages/game-contracts/src/events/'])
+      || relativePath === 'packages/presenter/src/event-formatter.ts',
+      {
+        id: 'event',
+        label: 'event surface',
+        categories: ['contract-or-integration', 'feature-chain'],
+      },
+    ),
+    ...optionalSurface(matchesPrefix(relativePath, [
+      'packages/game-core/src/engine/',
+      'packages/game-core/src/systems/',
+      'packages/game-core/src/abilities/',
+      'packages/game-core/src/generation/',
+      'packages/game-core/src/state/',
+    ]), {
       id: 'core-gameplay',
       label: 'core gameplay surface',
       categories: ['core-runtime', 'feature-chain'],
-    });
-  }
-
-  if (
-    relativePath === 'packages/game-core/src/engine/command-handler.ts'
-    || relativePath === 'packages/game-core/src/engine/game-engine.ts'
-  ) {
-    addSurface(surfaces, {
-      id: 'browser-facing-core',
-      label: 'browser-facing command runtime',
-      categories: ['browser-proof'],
-    });
-  }
-
-  if (
-    relativePath === 'packages/presenter/src/game-view.ts'
-    || relativePath === 'packages/presenter/src/game-view-builder.ts'
-    || relativePath.startsWith('packages/presenter/src/builders/')
-    || relativePath.startsWith('packages/presenter/src/')
-  ) {
-    addSurface(surfaces, {
-      id: 'presenter',
-      label: 'presenter read-model surface',
-      categories: ['presenter', 'browser-proof'],
-    });
-  }
-
-  if (matchesPrefix(relativePath, [
-    'apps/web/src/components/',
-    'apps/web/src/hooks/',
-    'apps/web/src/animation-runtime/',
-    'apps/web/src/rendering/',
-    'apps/web/src/store/',
-  ]) || relativePath === 'apps/web/src/App.tsx') {
-    addSurface(surfaces, {
+    }),
+    ...optionalSurface(
+      relativePath === 'packages/presenter/src/game-view.ts'
+      || relativePath === 'packages/presenter/src/game-view-builder.ts'
+      || relativePath.startsWith('packages/presenter/src/builders/')
+      || relativePath.startsWith('packages/presenter/src/'),
+      {
+        id: 'presenter',
+        label: 'presenter read-model surface',
+        categories: ['presenter'],
+      },
+    ),
+    ...optionalSurface(isBrowserFacingWebUiPath(relativePath), {
       id: 'web-ui',
       label: 'web UI surface',
-      categories: ['web-ui', 'browser-proof'],
-    });
-  }
-
-  if (relativePath.startsWith('packages/content/src/')) {
-    addSurface(surfaces, {
+      categories: ['web-ui'],
+    }),
+    ...optionalSurface(relativePath.startsWith('packages/content/src/'), {
       id: 'content',
       label: 'content surface',
       categories: ['content-id'],
-    });
-  }
-
-  if (
-    relativePath.includes('/abilities/')
-    || relativePath.includes('/ring-spells/')
-    || relativePath.includes('/ring-schools/')
-  ) {
-    addSurface(surfaces, {
-      id: 'ability',
-      label: 'ability or ring-spell surface',
-      categories: ['ability-contract'],
-    });
-  }
-
-  if (
-    relativePath.includes('animation')
-    || relativePath.startsWith('apps/web/src/rendering/three/')
-  ) {
-    addSurface(surfaces, {
-      id: 'animation',
-      label: 'animation/rendering surface',
-      categories: ['animation', 'browser-proof'],
-    });
-  }
-
-  if (
-    /save|restore|game-state|persistedFloorCache|floor-cache|floor-transition|serialization|itemRegistry|item-registry/u.test(relativePath)
-    || relativePath === 'packages/game-contracts/src/types/save-snapshot.ts'
-  ) {
-    addSurface(surfaces, {
-      id: 'persistence',
-      label: 'persistence/save-shape surface',
-      categories: ['persistence'],
-    });
-  }
-
-  return surfaces;
+    }),
+    ...optionalSurface(
+      relativePath.includes('/abilities/')
+      || relativePath.includes('/ring-spells/')
+      || relativePath.includes('/ring-schools/'),
+      {
+        id: 'ability',
+        label: 'ability or ring-spell surface',
+        categories: ['ability-contract'],
+      },
+    ),
+    ...optionalSurface(
+      relativePath.includes('animation')
+      || relativePath.startsWith('apps/web/src/rendering/three/'),
+      {
+        id: 'animation',
+        label: 'animation/rendering surface',
+        categories: ['animation'],
+      },
+    ),
+    ...optionalSurface(
+      /save|restore|game-state|persistedFloorCache|floor-cache|floor-transition|serialization|itemRegistry|item-registry/u.test(relativePath)
+      || relativePath === 'packages/game-contracts/src/types/save-snapshot.ts',
+      {
+        id: 'persistence',
+        label: 'persistence/save-shape surface',
+        categories: ['persistence'],
+      },
+    ),
+    ...optionalSurface(isBrowserFacingPath(relativePath), {
+      id: 'browser-facing',
+      label: 'browser-facing surface',
+      categories: ['browser-proof'],
+    }),
+  ]);
 }
 
 function readSource(rootDir, relativePath) {
   return readFileSync(join(rootDir, relativePath), 'utf8');
 }
 
-function getFeatureProofAllowlist(rootDir, relativePath) {
-  const source = readSource(rootDir, relativePath);
-  const valid = [];
-  const invalid = [];
-  const validPattern = /feature-proof:\s*(allow-refactor-only|allow-browser-not-required)\s+-\s*(\S[^\n\r]*)/giu;
-  const anyPattern = /feature-proof:\s*(allow-refactor-only|allow-browser-not-required)\b[^\n\r]*/giu;
+function extractAddedLines(diffOutput) {
+  return diffOutput
+    .split('\n')
+    .filter((line) => line.startsWith('+') && line.startsWith('+++') === false)
+    .map((line) => line.slice(1));
+}
 
-  for (const match of source.matchAll(validPattern)) {
-    valid.push({
-      kind: match[1],
-      reason: match[2].trim(),
-    });
+function getAddedLinesForPath(rootDir, resolvedBaseRef, relativePath, untrackedPaths) {
+  if (untrackedPaths.has(relativePath)) {
+    return readSource(rootDir, relativePath).split(/\r?\n/u);
   }
 
-  for (const match of source.matchAll(anyPattern)) {
-    const matchedText = match[0];
-    if (/feature-proof:\s*(allow-refactor-only|allow-browser-not-required)\s+-\s*\S/iu.test(matchedText) === false) {
-      invalid.push(matchedText.trim());
-    }
-  }
+  return [
+    runGit(rootDir, ['diff', '--unified=0', `${resolvedBaseRef}...HEAD`, '--', relativePath]),
+    runGit(rootDir, ['diff', '--unified=0', '--', relativePath]),
+    runGit(rootDir, ['diff', '--cached', '--unified=0', '--', relativePath]),
+  ].flatMap(extractAddedLines);
+}
 
-  return { valid, invalid };
+function getFeatureProofAllowlist(addedLines) {
+  const validPattern = /feature-proof:\s*(allow-refactor-only|allow-browser-not-required)\s+-\s*(\S[^\n\r]*)/iu;
+  const anyPattern = /feature-proof:\s*(allow-refactor-only|allow-browser-not-required)\b[^\n\r]*/iu;
+
+  return {
+    valid: addedLines.flatMap((line) => {
+      const match = line.match(validPattern);
+      return match === null
+        ? []
+        : [{
+            kind: match[1],
+            reason: match[2].trim(),
+          }];
+    }),
+    invalid: addedLines
+      .filter((line) => anyPattern.test(line) && validPattern.test(line) === false)
+      .map((line) => line.trim()),
+  };
 }
 
 function hasAllowlist(allowlist, kind) {
@@ -421,12 +416,17 @@ function uniqueCategories(surfaces) {
 }
 
 function formatRegistryFeature(feature) {
-  const proofs = collectRequiredProofPatterns(feature);
+  const requiredProofs = collectRequiredProofPatterns(feature);
+  const optionalProofs = collectProofPatterns(feature)
+    .filter((proof) => requiredProofs.includes(proof) === false);
   return [
     `- ${feature.name} (${feature.feature})`,
-    ...(proofs.length > 0
-      ? proofs.slice(0, 6).map((proof) => `  required proof: ${proof}`)
+    ...(requiredProofs.length > 0
+      ? requiredProofs.slice(0, 6).map((proof) => `  required proof: ${proof}`)
       : ['  required proof: <none listed>']),
+    ...(optionalProofs.length > 0
+      ? optionalProofs.slice(0, 6).map((proof) => `  optional proof: ${proof}`)
+      : []),
   ].join('\n');
 }
 
@@ -472,8 +472,38 @@ function makeProofFailure({
   ].join('\n');
 }
 
+function changedProofMatchesRegistryFeature(changedProofPaths, feature) {
+  const proofPatterns = collectProofPatterns(feature);
+  return changedProofPaths.some((proofPath) =>
+    proofPatterns.some((pattern) => matchesPathPattern(pattern, proofPath)),
+  );
+}
+
+function makeRegistryProofFailure({
+  relativePath,
+  registryFeatures,
+  changedProofPaths,
+}) {
+  return [
+    'Registered feature proof requirement was not satisfied.',
+    '',
+    'Changed production file:',
+    relativePath,
+    '',
+    'Required proof:',
+    'At least one changed proof must match the registered feature required/optional proof patterns.',
+    '',
+    'Changed proofs:',
+    ...(changedProofPaths.length > 0
+      ? changedProofPaths.map((proofPath) => `- ${proofPath}`)
+      : ['- <none>']),
+    '',
+    'Registered feature required/optional proofs were not among the changed proofs:',
+    ...registryFeatures.map(formatRegistryFeature),
+  ].join('\n');
+}
+
 function collectBrowserIntentFailures(rootDir, changedPaths) {
-  const failures = [];
   const changedE2eSpecs = changedPaths.filter((path) =>
     path.startsWith('tests/e2e/') && (path.endsWith('.spec.ts') || path.endsWith('.spec.tsx')),
   );
@@ -485,10 +515,10 @@ function collectBrowserIntentFailures(rootDir, changedPaths) {
   );
   const externalIntent = process.env.FEATURE_PROOF_TEST_INTENT ?? '';
 
-  for (const relativePath of changedE2eSpecs) {
+  const e2eSpecFailures = changedE2eSpecs.flatMap((relativePath) => {
     const firstLines = readSource(rootDir, relativePath).split('\n').slice(0, 30).join('\n');
-    if (/pnpm\s+test:e2e\b/u.test(firstLines) === false) {
-      failures.push([
+    return /pnpm\s+test:e2e\b/u.test(firstLines) === false
+      ? [[
         'E2E proof changes must name the focused Playwright command.',
         '',
         'Changed E2E file:',
@@ -496,17 +526,17 @@ function collectBrowserIntentFailures(rootDir, changedPaths) {
         '',
         'Required proof:',
         'Add a test intent header Validation line that starts with pnpm test:e2e, such as pnpm test:e2e:scenario.',
-      ].join('\n'));
-    }
-  }
+      ].join('\n')]
+      : [];
+  });
 
-  for (const relativePath of changedE2eSupport) {
+  const e2eSupportFailures = changedE2eSupport.flatMap((relativePath) => {
     const firstLines = readSource(rootDir, relativePath).split('\n').slice(0, 30).join('\n');
-    if (
+    return (
       /pnpm\s+test:e2e\b/u.test(firstLines) === false
       && externalIntent.includes('pnpm test:e2e') === false
-    ) {
-      failures.push([
+    )
+      ? [[
         'E2E support changes must name the focused Playwright command.',
         '',
         'Changed E2E support file:',
@@ -514,20 +544,18 @@ function collectBrowserIntentFailures(rootDir, changedPaths) {
         '',
         'Required proof:',
         'Record a pnpm test:e2e focused command in a nearby header/comment or FEATURE_PROOF_TEST_INTENT.',
-      ].join('\n'));
-    }
-  }
+      ].join('\n')]
+      : [];
+  });
 
-  if (changedScenarioFixtures.length > 0) {
-    const changedIntentSources = changedPaths.filter((path) =>
-      path.endsWith('.md')
-      || (path.startsWith('tests/e2e/') && (path.endsWith('.spec.ts') || path.endsWith('.spec.tsx'))),
-    );
-    const commandWasRecorded = externalIntent.includes('pnpm test:e2e:scenario')
-      || changedIntentSources.some((path) => readSource(rootDir, path).includes('pnpm test:e2e:scenario'));
-
-    if (commandWasRecorded === false) {
-      failures.push([
+  const changedIntentSources = changedPaths.filter((path) =>
+    path.endsWith('.md')
+    || (path.startsWith('tests/e2e/') && (path.endsWith('.spec.ts') || path.endsWith('.spec.tsx'))),
+  );
+  const commandWasRecorded = externalIntent.includes('pnpm test:e2e:scenario')
+    || changedIntentSources.some((path) => readSource(rootDir, path).includes('pnpm test:e2e:scenario'));
+  const scenarioFixtureFailures = changedScenarioFixtures.length > 0 && commandWasRecorded === false
+    ? [[
         'Scenario fixture changes must record the focused browser proof command.',
         '',
         'Changed scenario fixture:',
@@ -535,11 +563,96 @@ function collectBrowserIntentFailures(rootDir, changedPaths) {
         '',
         'Required proof:',
         'Record pnpm test:e2e:scenario in an E2E test intent header, docs/checklist update, or FEATURE_PROOF_TEST_INTENT.',
-      ].join('\n'));
-    }
+      ].join('\n')]
+    : [];
+
+  return [
+    ...e2eSpecFailures,
+    ...e2eSupportFailures,
+    ...scenarioFixtureFailures,
+  ];
+}
+
+function makeInvalidAllowlistFailures(relativePath, invalidAllowlists) {
+  return invalidAllowlists.map((invalidAllowlist) => [
+    'Feature proof allowlist requires a non-empty reason.',
+    '',
+    'Changed production file:',
+    relativePath,
+    '',
+    'Found:',
+    invalidAllowlist,
+    '',
+    'Required format:',
+    'feature-proof: allow-refactor-only - reason',
+    'feature-proof: allow-browser-not-required - reason',
+  ].join('\n'));
+}
+
+function evaluateProductionPath({
+  absoluteRoot,
+  changedProofPaths,
+  registry,
+  relativePath,
+  resolvedBaseRef,
+  untrackedPaths,
+}) {
+  const surfaces = classifyProductionPath(relativePath);
+  if (surfaces.length === 0) {
+    return { failures: [], allowlists: [] };
   }
 
-  return failures;
+  const allowlist = getFeatureProofAllowlist(
+    getAddedLinesForPath(absoluteRoot, resolvedBaseRef, relativePath, untrackedPaths),
+  );
+  const invalidAllowlistFailures = makeInvalidAllowlistFailures(relativePath, allowlist.invalid);
+  if (invalidAllowlistFailures.length > 0) {
+    return { failures: invalidAllowlistFailures, allowlists: [] };
+  }
+
+  if (hasAllowlist(allowlist, 'allow-refactor-only')) {
+    return {
+      failures: [],
+      allowlists: [{ relativePath, allowlist: allowlist.valid }],
+    };
+  }
+
+  const categories = uniqueCategories(surfaces).filter((categoryId) =>
+    categoryId === 'browser-proof'
+      ? hasAllowlist(allowlist, 'allow-browser-not-required') === false
+      : true,
+  );
+  const registryFeatures = findFeaturesForPath(registry, relativePath);
+  const missingCategories = categories.filter((categoryId) =>
+    changedProofMatchesCategory(changedProofPaths, categoryId) === false,
+  );
+  const categoryFailures = missingCategories.length > 0
+    ? [makeProofFailure({
+        relativePath,
+        surfaces,
+        missingCategories,
+        registryFeatures,
+      })]
+    : [];
+  const registryFailures = registryFeatures.length > 0
+    && registryFeatures.some((feature) => changedProofMatchesRegistryFeature(changedProofPaths, feature)) === false
+    ? [makeRegistryProofFailure({
+        relativePath,
+        registryFeatures,
+        changedProofPaths,
+      })]
+    : [];
+  const browserAllowlists = hasAllowlist(allowlist, 'allow-browser-not-required')
+    ? [{ relativePath, allowlist: allowlist.valid }]
+    : [];
+
+  return {
+    failures: [
+      ...categoryFailures,
+      ...registryFailures,
+    ],
+    allowlists: browserAllowlists,
+  };
 }
 
 export function checkFeatureProofs({
@@ -548,71 +661,27 @@ export function checkFeatureProofs({
   registryPath = DEFAULT_FEATURE_PROOF_REGISTRY_PATH,
 } = {}) {
   const absoluteRoot = resolve(rootDir);
-  const changedPaths = listChangedPaths(absoluteRoot, baseRef);
+  const resolvedBaseRef = resolveBaseRef(absoluteRoot, baseRef);
+  const changedPaths = listChangedPathsForResolvedBase(absoluteRoot, resolvedBaseRef);
   const changedProofPaths = changedPaths.filter(isProofPath);
+  const untrackedPaths = listUntrackedPaths(absoluteRoot);
   const registryAbsolutePath = join(absoluteRoot, registryPath);
   const registry = existsSync(registryAbsolutePath)
     ? parseFeatureProofRegistry(readFileSync(registryAbsolutePath, 'utf8'))
     : { features: [] };
-  const failures = [];
-  const allowlists = [];
-
-  for (const relativePath of changedPaths) {
-    const surfaces = classifyProductionPath(relativePath);
-    if (surfaces.length === 0) {
-      continue;
-    }
-
-    const allowlist = getFeatureProofAllowlist(absoluteRoot, relativePath);
-    for (const invalidAllowlist of allowlist.invalid) {
-      failures.push([
-        'Feature proof allowlist requires a non-empty reason.',
-        '',
-        'Changed production file:',
-        relativePath,
-        '',
-        'Found:',
-        invalidAllowlist,
-        '',
-        'Required format:',
-        'feature-proof: allow-refactor-only - reason',
-        'feature-proof: allow-browser-not-required - reason',
-      ].join('\n'));
-    }
-    if (allowlist.invalid.length > 0) {
-      continue;
-    }
-
-    if (hasAllowlist(allowlist, 'allow-refactor-only')) {
-      allowlists.push({ relativePath, allowlist: allowlist.valid });
-      continue;
-    }
-
-    const categories = uniqueCategories(surfaces).filter((categoryId) =>
-      categoryId === 'browser-proof'
-        ? hasAllowlist(allowlist, 'allow-browser-not-required') === false
-        : true,
-    );
-    if (hasAllowlist(allowlist, 'allow-browser-not-required')) {
-      allowlists.push({ relativePath, allowlist: allowlist.valid });
-    }
-
-    const registryFeatures = findFeaturesForPath(registry, relativePath);
-    const missingCategories = categories.filter((categoryId) =>
-      changedProofMatchesCategory(changedProofPaths, categoryId) === false,
-    );
-
-    if (missingCategories.length > 0) {
-      failures.push(makeProofFailure({
-        relativePath,
-        surfaces,
-        missingCategories,
-        registryFeatures,
-      }));
-    }
-  }
-
-  failures.push(...collectBrowserIntentFailures(absoluteRoot, changedPaths));
+  const results = changedPaths.map((relativePath) => evaluateProductionPath({
+    absoluteRoot,
+    changedProofPaths,
+    registry,
+    relativePath,
+    resolvedBaseRef,
+    untrackedPaths,
+  }));
+  const failures = [
+    ...results.flatMap((result) => result.failures),
+    ...collectBrowserIntentFailures(absoluteRoot, changedPaths),
+  ];
+  const allowlists = results.flatMap((result) => result.allowlists);
 
   return {
     changedPaths,

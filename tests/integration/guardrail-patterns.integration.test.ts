@@ -13,7 +13,10 @@ import { tmpdir } from 'node:os';
 import { dirname, join } from 'node:path';
 import { checkCentralizedLiterals } from '../../scripts/guardrails/check-centralized-literals.mjs';
 import { checkDocPaths } from '../../scripts/guardrails/check-doc-paths.mjs';
-import { checkFileSizeHotspots } from '../../scripts/guardrails/check-file-size-hotspots.mjs';
+import {
+  checkFileSizeHotspots,
+  findRatchetViolations,
+} from '../../scripts/guardrails/check-file-size-hotspots.mjs';
 import { checkOptionalImportBoundaries } from '../../scripts/guardrails/check-optional-import-boundaries.mjs';
 import { checkReferenceLiterals } from '../../scripts/guardrails/check-reference-literals.mjs';
 import { checkTestTopology } from '../../scripts/guardrails/check-test-topology.mjs';
@@ -473,6 +476,41 @@ describe('guardrail pattern checks', () => {
     );
 
     expect(checkCentralizedLiterals({ rootDir, config })).toEqual([]);
+  });
+
+  it('reports a ratchet violation when an allowlist pin increases from base', () => {
+    const violations = findRatchetViolations(
+      [{ path: 'src/hotspot.ts', reason: 'Existing hotspot', lines: 600 }],
+      [{ path: 'src/hotspot.ts', reason: 'Existing hotspot', lines: 500 }],
+      500,
+    );
+
+    expect(violations).toHaveLength(1);
+    expect(violations[0]).toContain("pinned line budget for 'src/hotspot.ts' increased from 500 to 600");
+  });
+
+  it('allows a ratcheted allowlist pin to decrease from base', () => {
+    expect(findRatchetViolations(
+      [{ path: 'src/hotspot.ts', reason: 'Existing hotspot', lines: 500 }],
+      [{ path: 'src/hotspot.ts', reason: 'Existing hotspot', lines: 600 }],
+      500,
+    )).toEqual([]);
+  });
+
+  it('allows an allowlist pin for an entry absent at base', () => {
+    expect(findRatchetViolations(
+      [{ path: 'src/new-hotspot.ts', reason: 'New hotspot', lines: 600 }],
+      [{ path: 'src/old-hotspot.ts', reason: 'Existing hotspot', lines: 500 }],
+      500,
+    )).toEqual([]);
+  });
+
+  it('allows an allowlist pin that is equal to base', () => {
+    expect(findRatchetViolations(
+      [{ path: 'src/hotspot.ts', reason: 'Existing hotspot', lines: 500 }],
+      [{ path: 'src/hotspot.ts', reason: 'Existing hotspot', lines: 500 }],
+      500,
+    )).toEqual([]);
   });
 
   it('fails when a manually maintained source file exceeds the line budget without allowlist entry', () => {

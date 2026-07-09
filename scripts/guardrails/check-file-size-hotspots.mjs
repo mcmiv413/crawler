@@ -8,9 +8,15 @@ import {
   resolveRoot,
   walkFiles,
 } from './common.mjs';
-import { existsSync, readdirSync } from 'node:fs';
-import { join } from 'node:path';
+import { spawnSync } from 'node:child_process';
+import { existsSync, mkdtempSync, readdirSync, rmSync, writeFileSync } from 'node:fs';
+import { tmpdir } from 'node:os';
+import { isAbsolute, join, relative } from 'node:path';
+import { pathToFileURL } from 'node:url';
 import defaultConfig from './file-size-hotspots.config.mjs';
+
+const DEFAULT_BASE_REF = process.env.FILE_SIZE_BASE ?? 'main';
+const DEFAULT_CONFIG_RELATIVE_PATH = 'scripts/guardrails/file-size-hotspots.config.mjs';
 
 function isSourceFile(relativePath) {
   return /\.([jt]sx?|m[jt]s|c[jt]s)$/.test(relativePath);
@@ -25,35 +31,168 @@ function isAllowlisted(relativePath, allowlistedFiles) {
   return allowlistedFiles.some((entry) => normalizePath(entry.path) === normalized);
 }
 
-function validateAllowlistEntries(rootDir, config) {
-  const failures = [];
+function runGit(repoRoot, args, options = {}) {
+  const result = spawnSync('git', ['-C', repoRoot, ...args], {
+    encoding: 'utf8',
+    stdio: ['ignore', 'pipe', 'pipe'],
+  });
 
-  for (const entry of config.allowlistedFiles) {
+  if (result.status !== 0) {
+    if (options.allowFailure === true) {
+      return null;
+    }
+    throw new Error((result.stderr || result.stdout || '').trim() || `git ${args.join(' ')} failed`);
+  }
+
+  return result.stdout;
+}
+
+function resolveBaseRef(repoRoot, baseRef) {
+  const fallbackRef = `origin/${baseRef}`;
+  return [baseRef, fallbackRef].find((candidateRef) => {
+    const resolved = runGit(repoRoot, ['rev-parse', '--verify', '--quiet', candidateRef], {
+      allowFailure: true,
+    })?.trim();
+    return resolved !== undefined && resolved.length > 0;
+  }) ?? null;
+}
+
+function resolveConfigRelativePath(rootDir, configPath = DEFAULT_CONFIG_RELATIVE_PATH) {
+  if (typeof configPath !== 'string' || configPath.length === 0) {
+    return DEFAULT_CONFIG_RELATIVE_PATH;
+  }
+
+  return normalizePath(
+    isAbsolute(configPath)
+      ? relative(rootDir, configPath)
+      : configPath,
+  );
+}
+
+function readBaseConfigSource(rootDir, baseRef, configRelativePath) {
+  const resolvedBaseRef = resolveBaseRef(rootDir, baseRef);
+  if (resolvedBaseRef === null) {
+    return null;
+  }
+
+  return runGit(rootDir, ['show', `${resolvedBaseRef}:${configRelativePath}`], {
+    allowFailure: true,
+  });
+}
+
+function importAllowlistedFilesFromSource(source) {
+  const tempDir = mkdtempSync(join(tmpdir(), 'file-size-hotspots-config-'));
+  const tempPath = join(tempDir, 'base-config.mjs');
+
+  try {
+    writeFileSync(tempPath, source, 'utf8');
+    const importer = [
+      `const module = await import(${JSON.stringify(pathToFileURL(tempPath).href)});`,
+      'const config = module.default ?? module.config ?? {};',
+      'process.stdout.write(JSON.stringify(config.allowlistedFiles ?? []));',
+    ].join('\n');
+    const result = spawnSync(process.execPath, ['--input-type=module', '--eval', importer], {
+      encoding: 'utf8',
+      stdio: ['ignore', 'pipe', 'pipe'],
+    });
+
+    if (result.status !== 0) {
+      throw new Error((result.stderr || result.stdout || '').trim() || 'failed to import base file-size config');
+    }
+
+    const parsed = JSON.parse(result.stdout || '[]');
+    return Array.isArray(parsed) ? parsed : [];
+  } finally {
+    rmSync(tempDir, { recursive: true, force: true });
+  }
+}
+
+function loadBaseAllowlistedFiles(rootDir, baseRef, configRelativePath) {
+  const source = readBaseConfigSource(rootDir, baseRef, configRelativePath);
+  return source === null ? null : importAllowlistedFilesFromSource(source);
+}
+
+function isFiniteNumber(value) {
+  return typeof value === 'number' && Number.isFinite(value);
+}
+
+export function findRatchetViolations(currentEntries, baseEntries, maxLinesPerFile) {
+  const baseEntriesByPath = new Map(
+    baseEntries.flatMap((entry) =>
+      typeof entry.path === 'string'
+        ? [[normalizePath(entry.path), entry]]
+        : [],
+    ),
+  );
+
+  return currentEntries.flatMap((currentEntry) => {
+    const currentPath = typeof currentEntry.path === 'string'
+      ? normalizePath(currentEntry.path)
+      : null;
+    const baseEntry = currentPath === null ? undefined : baseEntriesByPath.get(currentPath);
+    if (
+      baseEntry === undefined
+      || isFiniteNumber(currentEntry.lines) === false
+      || isFiniteNumber(baseEntry.lines) === false
+      || currentEntry.lines <= baseEntry.lines
+    ) {
+      return [];
+    }
+
+    return [
+      `Ratchet violation: pinned line budget for '${currentEntry.path}' increased from ${baseEntry.lines} to ${currentEntry.lines}. ` +
+      `The file-size allowlist only ratchets DOWN — split the file to get under the ${maxLinesPerFile}-line budget instead of raising the pin.`,
+    ];
+  });
+}
+
+function findCurrentRatchetViolations(rootDir, config, options) {
+  const baseEntries = loadBaseAllowlistedFiles(
+    rootDir,
+    options.baseRef ?? DEFAULT_BASE_REF,
+    options.configRelativePath ?? DEFAULT_CONFIG_RELATIVE_PATH,
+  );
+
+  return baseEntries === null
+    ? []
+    : findRatchetViolations(config.allowlistedFiles, baseEntries, config.maxLinesPerFile);
+}
+
+function calculateAllowedDrift(lines, rawTolerance) {
+  const tolerancePercent =
+    typeof rawTolerance === 'number' && Number.isFinite(rawTolerance) && rawTolerance > 0
+      ? rawTolerance
+      : 0;
+  return {
+    allowedDrift: Math.ceil((lines * tolerancePercent) / 100),
+    tolerancePercent,
+  };
+}
+
+function validateAllowlistEntries(rootDir, config) {
+  return config.allowlistedFiles.flatMap((entry) => {
     const { path, reason, lines } = entry;
     const absolutePath = join(rootDir, path);
 
     // Check if file exists
     if (!existsSync(absolutePath)) {
-      failures.push(
+      return [
         `Allowlist entry '${path}' does not exist in the repository`,
-      );
-      continue;
+      ];
     }
 
     // Check if it's a source file
     if (!isSourceFile(path)) {
-      failures.push(
+      return [
         `Allowlist entry '${path}' is not a source file (.js, .ts, .jsx, .tsx)`,
-      );
-      continue;
+      ];
     }
 
     // Check if it's excluded by excludePatterns (dead entry)
     if (isExcluded(path, config.excludePatterns)) {
-      failures.push(
+      return [
         `Allowlist entry '${path}' is excluded by excludePatterns (pattern: ${config.excludePatterns.find((p) => p.test(path))}) — remove from allowlist`,
-      );
-      continue;
+      ];
     }
 
     // Get current line count
@@ -62,90 +201,73 @@ function validateAllowlistEntries(rootDir, config) {
 
     // Check if it actually exceeds the budget
     if (lineCount <= config.maxLinesPerFile) {
-      failures.push(
+      return [
         `Allowlist entry '${path}' is ${lineCount} lines, below the ${config.maxLinesPerFile}-line budget — remove from allowlist`,
-      );
-      continue;
+      ];
     }
 
     // Check if lines field is present and within tolerance of the actual count (prevent stale metadata).
     // A percentage tolerance lets an allowlisted file drift a little before the number must be re-pinned,
     // so small edits don't force a metadata bump on every change.
     if (typeof lines === 'number') {
-      const rawTolerance = config.linesTolerancePercent;
-      const tolerancePercent =
-        typeof rawTolerance === 'number' && Number.isFinite(rawTolerance) && rawTolerance > 0
-          ? rawTolerance
-          : 0;
-      const allowedDrift = Math.ceil((lines * tolerancePercent) / 100);
+      const { allowedDrift, tolerancePercent } = calculateAllowedDrift(lines, config.linesTolerancePercent);
       if (Math.abs(lineCount - lines) > allowedDrift) {
-        failures.push(
+        return [
           `Allowlist entry '${path}' has stale lines metadata: declared ${lines}, actual ${lineCount} ` +
           `(allowed drift ±${allowedDrift} at ${tolerancePercent}%) — update to match`,
-        );
-        continue;
+        ];
       }
     }
 
     // Check if reason is non-empty
     if (!reason || reason.trim() === '') {
-      failures.push(
+      return [
         `Allowlist entry '${path}' has an empty reason — provide justification or remove`,
-      );
-      continue;
+      ];
     }
-  }
 
-  return failures;
+    return [];
+  });
 }
 
 function discoverSourceRoots(rootDir) {
-  const roots = [];
-
-  // Discover all apps/*/src directories
-  try {
-    const appsDir = join(rootDir, 'apps');
-    const apps = readdirSync(appsDir);
-    for (const app of apps) {
-      roots.push(join('apps', app, 'src'));
+  const readDirectory = (relativePath) => {
+    try {
+      return readdirSync(join(rootDir, relativePath));
+    } catch {
+      return [];
     }
-  } catch {
-    // apps directory may not exist in all contexts
-  }
+  };
 
-  // Discover all packages/*/src directories
-  try {
-    const packagesDir = join(rootDir, 'packages');
-    const packages = readdirSync(packagesDir);
-    for (const pkg of packages) {
-      roots.push(join('packages', pkg, 'src'));
-    }
-  } catch {
-    // packages directory may not exist in all contexts
-  }
-
-  // Always include scripts root
-  roots.push('scripts');
-
-  return roots;
+  return [
+    ...readDirectory('apps').map((app) => join('apps', app, 'src')),
+    ...readDirectory('packages').map((pkg) => join('packages', pkg, 'src')),
+    'scripts',
+  ];
 }
 
 export function checkFileSizeHotspots(options = {}) {
   const rootDir = resolveRoot(options.rootDir);
   const config = options.config ?? defaultConfig;
-  const failures = [];
+  const configRelativePath = resolveConfigRelativePath(
+    rootDir,
+    options.configRelativePath ?? DEFAULT_CONFIG_RELATIVE_PATH,
+  );
 
   // Validate that allowlist entries are current and correct
-  failures.push(...validateAllowlistEntries(rootDir, config));
+  const allowlistFailures = validateAllowlistEntries(rootDir, config);
+  const ratchetFailures = findCurrentRatchetViolations(rootDir, config, {
+    ...options,
+    configRelativePath,
+  });
 
   // Use explicit includedRoots if provided; otherwise auto-discover
   const includedRoots = config.includedRoots ?? discoverSourceRoots(rootDir);
 
   // Collect all files in included roots
-  const allFiles = [];
-  for (const root of includedRoots) {
-    allFiles.push(...walkFiles(rootDir, { startRelativePath: root }));
-  }
+  const allFiles = includedRoots.flatMap((root) =>
+    walkFiles(rootDir, { startRelativePath: root }),
+  );
 
   // Filter to source files, exclude tests/generated/etc, and check size
   const filesToCheck = allFiles.filter(
@@ -155,25 +277,39 @@ export function checkFileSizeHotspots(options = {}) {
       !isAllowlisted(relativePath, config.allowlistedFiles),
   );
 
-  for (const relativePath of filesToCheck) {
+  const oversizedFileFailures = filesToCheck.flatMap((relativePath) => {
     const source = readText(rootDir, relativePath);
     const lineCount = source.split('\n').length;
 
-    if (lineCount > config.maxLinesPerFile) {
-      failures.push(
+    return lineCount > config.maxLinesPerFile
+      ? [
         `${relativePath} exceeds ${config.maxLinesPerFile}-line budget (${lineCount} lines); ` +
         `add allowlist entry to file-size-hotspots.config.mjs with audit rationale or split the file`,
-      );
-    }
-  }
+      ]
+      : [];
+  });
 
-  return failures;
+  return [
+    ...allowlistFailures,
+    ...ratchetFailures,
+    ...oversizedFileFailures,
+  ];
 }
 
 if (isCliMain(import.meta.url)) {
   const args = parseArgs(process.argv.slice(2));
+  const rootDir = resolveRoot(args.root);
   const config = await loadConfig(args.config, defaultConfig);
-  const failures = checkFileSizeHotspots({ rootDir: args.root, config });
+  const configRelativePath = resolveConfigRelativePath(
+    rootDir,
+    typeof args.config === 'string' ? args.config : DEFAULT_CONFIG_RELATIVE_PATH,
+  );
+  const failures = checkFileSizeHotspots({
+    rootDir,
+    config,
+    configRelativePath,
+    baseRef: typeof args.base === 'string' ? args.base : DEFAULT_BASE_REF,
+  });
   if (failures.length > 0) {
     console.error(formatFailures('File-size hotspot guardrail', failures));
     process.exit(1);
