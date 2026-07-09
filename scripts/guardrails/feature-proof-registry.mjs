@@ -258,26 +258,82 @@ function escapeRegex(char) {
   return /[\\^$+?.()|[\]{}]/u.test(char) ? `\\${char}` : char;
 }
 
-export function globToRegExp(pattern) {
-  let source = '^';
-  for (let index = 0; index < pattern.length; index += 1) {
-    const char = pattern[index];
-    if (char === '*') {
-      if (pattern[index + 1] === '*') {
-        source += '.*';
-        index += 1;
-      } else {
-        source += '[^/]*';
+function escapeCharacterClassContent(content) {
+  return [...content]
+    .map((char, index) => {
+      if (char === '\\' || char === '[' || char === ']') {
+        return `\\${char}`;
       }
-      continue;
-    }
-    if (char === '?') {
-      source += '[^/]';
-      continue;
-    }
-    source += escapeRegex(char);
+      if (char === '^' && index === 0) {
+        return '\\^';
+      }
+      return char;
+    })
+    .join('');
+}
+
+function parseCharacterClass(pattern, index) {
+  const closingIndex = pattern.indexOf(']', index + 1);
+  const content = closingIndex === -1 ? null : pattern.slice(index + 1, closingIndex);
+  if (content === null || content.length === 0 || content === '!') {
+    return { source: escapeRegex(pattern[index]), nextIndex: index + 1 };
   }
-  return new RegExp(`${source}$`, 'u');
+
+  const negated = content.startsWith('!');
+  const classContent = negated ? content.slice(1) : content;
+  return {
+    source: `[${negated ? '^' : ''}${escapeCharacterClassContent(classContent)}]`,
+    nextIndex: closingIndex + 1,
+  };
+}
+
+function parseBraceAlternation(pattern, index) {
+  const closingIndex = pattern.indexOf('}', index + 1);
+  const content = closingIndex === -1 ? null : pattern.slice(index + 1, closingIndex);
+  if (content === null || !content.includes(',')) {
+    return { source: escapeRegex(pattern[index]), nextIndex: index + 1 };
+  }
+
+  return {
+    source: `(?:${content.split(',').map(globSource).join('|')})`,
+    nextIndex: closingIndex + 1,
+  };
+}
+
+function parseGlobToken(pattern, index) {
+  const char = pattern[index];
+  if (char === '*') {
+    return pattern[index + 1] === '*'
+      ? { source: '.*', nextIndex: index + 2 }
+      : { source: '[^/]*', nextIndex: index + 1 };
+  }
+  if (char === '?') {
+    return { source: '[^/]', nextIndex: index + 1 };
+  }
+  if (char === '[') {
+    return parseCharacterClass(pattern, index);
+  }
+  if (char === '{') {
+    return parseBraceAlternation(pattern, index);
+  }
+  return { source: escapeRegex(char), nextIndex: index + 1 };
+}
+
+function* globSourceTokens(pattern, index = 0) {
+  if (index >= pattern.length) {
+    return;
+  }
+  const token = parseGlobToken(pattern, index);
+  yield token.source;
+  yield* globSourceTokens(pattern, token.nextIndex);
+}
+
+function globSource(pattern) {
+  return [...globSourceTokens(pattern)].join('');
+}
+
+export function globToRegExp(pattern) {
+  return new RegExp(`^${globSource(pattern)}$`, 'u');
 }
 
 export function matchesPathPattern(pattern, relativePath) {

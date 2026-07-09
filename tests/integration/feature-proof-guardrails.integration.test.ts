@@ -1,7 +1,7 @@
 /**
  * Test layer: integration
- * Behavior: feature-proof guardrails classify changed production surfaces, require matching proofs, honor narrow allowlists, and validate the registry in temp git fixtures.
- * Proof: Assertions run the CLI scripts against staged, unstaged, committed, and untracked fixture diffs and check failure text for missing proof categories, registry context, and invalid registry entries.
+ * Behavior: feature-proof and test-quality guardrails classify changed production surfaces, match registry globs, traverse AST nodes in order, honor narrow allowlists, and validate the registry in temp git fixtures.
+ * Proof: Assertions run the CLI scripts against staged, unstaged, committed, and untracked fixture diffs, exercise exported helper contracts, and check failure text for missing proof categories, registry context, and invalid registry entries.
  * Validation: pnpm vitest run tests/integration/feature-proof-guardrails.integration.test.ts
  */
 import { afterEach, describe, expect, it } from 'vitest';
@@ -11,6 +11,8 @@ import { tmpdir } from 'node:os';
 import { dirname, join } from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { isBrowserFacingPath } from '../../scripts/guardrails/browser-facing.mjs';
+import { matchesPathPattern } from '../../scripts/guardrails/feature-proof-registry.mjs';
+import { collectTestCases, collectVitestCalls, createSourceFile } from '../../scripts/guardrails/test-quality-ast.mjs';
 
 const FEATURE_PROOFS_SCRIPT = fileURLToPath(new URL('../../scripts/check-feature-proofs.mjs', import.meta.url));
 const REGISTRY_SCRIPT = fileURLToPath(new URL('../../scripts/check-feature-proof-registry.mjs', import.meta.url));
@@ -111,6 +113,55 @@ afterEach(() => {
     rmSync(tempDir, { recursive: true, force: true });
   }
   tempDirs.length = 0;
+});
+
+describe('guardrail helper contracts', () => {
+  it('matches brace alternation glob patterns', () => {
+    expect(matchesPathPattern('*.{ts,tsx}', 'a.ts')).toBe(true);
+    expect(matchesPathPattern('*.{ts,tsx}', 'a.tsx')).toBe(true);
+    expect(matchesPathPattern('*.{ts,tsx}', 'a.js')).toBe(false);
+  });
+
+  it('matches character class glob patterns', () => {
+    expect(matchesPathPattern('file-[ab].ts', 'file-a.ts')).toBe(true);
+    expect(matchesPathPattern('file-[ab].ts', 'file-b.ts')).toBe(true);
+    expect(matchesPathPattern('file-[ab].ts', 'file-c.ts')).toBe(false);
+    expect(matchesPathPattern('file-[!c].ts', 'file-a.ts')).toBe(true);
+    expect(matchesPathPattern('file-[!c].ts', 'file-c.ts')).toBe(false);
+  });
+
+  it('preserves literal, star, and globstar path matching', () => {
+    expect(matchesPathPattern('packages/presenter/src/game-view-builder.ts', 'packages/presenter/src/game-view-builder.ts')).toBe(true);
+    expect(matchesPathPattern('packages/presenter/src/game-view-builder.ts', 'packages/presenter/src/other.ts')).toBe(false);
+    expect(matchesPathPattern('packages/presenter/src/*.ts', 'packages/presenter/src/game-view-builder.ts')).toBe(true);
+    expect(matchesPathPattern('packages/presenter/src/*.ts', 'packages/presenter/src/builders/map-view-builder.ts')).toBe(false);
+    expect(matchesPathPattern('packages/presenter/src/builders/**', 'packages/presenter/src/builders/map-view-builder.ts')).toBe(true);
+  });
+
+  it('collects Vitest calls and test cases in source order', () => {
+    const sourceFile = createSourceFile(
+      'guardrail-order.test.ts',
+      [
+        "import { describe, expect, it, test } from 'vitest';",
+        "describe('outer', () => {",
+        "  test('first', () => {",
+        '    expect(1).toBe(1);',
+        '  });',
+        "  it.skip('second', () => undefined);",
+        "  test.only('third', () => undefined);",
+        '});',
+        '',
+      ].join('\n'),
+    );
+
+    expect(collectVitestCalls(sourceFile).map(({ base, modifier }) => `${base}:${modifier ?? 'run'}`)).toEqual([
+      'describe:run',
+      'test:run',
+      'it:skip',
+      'test:only',
+    ]);
+    expect(collectTestCases(sourceFile).map(({ title }) => title)).toEqual(['first', 'second', 'third']);
+  });
 });
 
 describe('check-feature-proofs script', () => {

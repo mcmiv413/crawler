@@ -26,14 +26,29 @@ export function walk(node, visit) {
   ts.forEachChild(node, (child) => walk(child, visit));
 }
 
-function collectMatchingNodes(root, matches) {
-  let nodes = [];
-  walk(root, (node) => {
-    if (matches(node)) {
-      nodes = [...nodes, node];
-    }
+function* childNodes(root) {
+  let emitChildren = function* emptyChildNodes() {};
+  ts.forEachChild(root, (child) => {
+    const emitPreviousChildren = emitChildren;
+    emitChildren = function* nextChildNodes() {
+      yield* emitPreviousChildren();
+      yield child;
+    };
   });
-  return nodes;
+  yield* emitChildren();
+}
+
+function* matchingNodes(root, matches) {
+  if (matches(root)) {
+    yield root;
+  }
+  for (const child of childNodes(root)) {
+    yield* matchingNodes(child, matches);
+  }
+}
+
+function collectMatchingNodes(root, matches) {
+  return [...matchingNodes(root, matches)];
 }
 
 function getPropertyAccessParts(expression) {
