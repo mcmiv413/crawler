@@ -29,13 +29,9 @@ function validateThresholds(thresholds) {
   if (thresholds === undefined || thresholds === null || typeof thresholds !== 'object') {
     return ['stryker.config.mjs must define thresholds'];
   }
-  const failures = [];
-  for (const key of ['high', 'low', 'break']) {
-    if (typeof thresholds[key] !== 'number') {
-      failures.push(`thresholds.${key} must be a number`);
-    }
-  }
-  return failures;
+  return ['high', 'low', 'break'].flatMap((key) =>
+    typeof thresholds[key] === 'number' ? [] : [`thresholds.${key} must be a number`],
+  );
 }
 
 function resolveMutationTargets(rootDir, patterns) {
@@ -79,33 +75,24 @@ async function run() {
   const configPath = typeof args.config === 'string' ? args.config : DEFAULT_CONFIG_PATH;
   const execute = args.execute === true || process.env.MUTATION_EXECUTE === 'true';
   const config = await loadConfig(rootDir, configPath);
-  const failures = [];
-
-  if (config === undefined || config === null || typeof config !== 'object') {
-    failures.push(`${configPath} must export a config object`);
-  }
 
   const mutate = Array.isArray(config?.mutate) ? config.mutate : [];
-  if (mutate.length === 0) {
-    failures.push(`${configPath} must list critical mutation targets`);
-  }
-
-  failures.push(...validateThresholds(config?.thresholds));
-
   const missingExactTargets = mutate.filter((pattern) =>
     typeof pattern === 'string'
     && pattern.startsWith('!') === false
     && !isExplicitGlob(pattern)
     && existsSync(join(rootDir, pattern)) === false,
   );
-  for (const target of missingExactTargets) {
-    failures.push(`mutation target does not exist: ${target}`);
-  }
-
   const resolvedTargets = resolveMutationTargets(rootDir, mutate);
-  if (resolvedTargets.length === 0) {
-    failures.push('mutation target list resolved to zero files');
-  }
+  const failures = [
+    ...(config === undefined || config === null || typeof config !== 'object'
+      ? [`${configPath} must export a config object`]
+      : []),
+    ...(mutate.length === 0 ? [`${configPath} must list critical mutation targets`] : []),
+    ...validateThresholds(config?.thresholds),
+    ...missingExactTargets.map((target) => `mutation target does not exist: ${target}`),
+    ...(resolvedTargets.length === 0 ? ['mutation target list resolved to zero files'] : []),
+  ];
 
   if (failures.length > 0) {
     console.error([

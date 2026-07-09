@@ -98,12 +98,15 @@ function parseNode(tokens, index, indent) {
 }
 
 function parseObject(tokens, index, indent) {
-  const object = {};
-  let cursor = index;
+  const parseNextEntry = (cursor, object) => {
+    if (cursor >= tokens.length) {
+      return { value: object, index: cursor };
+    }
 
-  while (cursor < tokens.length) {
     const token = tokens[cursor];
-    if (token.indent < indent || token.text.startsWith('- ')) break;
+    if (token.indent < indent || token.text.startsWith('- ')) {
+      return { value: object, index: cursor };
+    }
     if (token.indent > indent) {
       throw new Error(`Unexpected indentation at line ${token.line}`);
     }
@@ -111,58 +114,55 @@ function parseObject(tokens, index, indent) {
     const { key, value } = splitKeyValue(token.text, token.line);
     if (value.length === 0) {
       const child = parseNode(tokens, cursor + 1, indent + 2);
-      object[key] = child.value ?? {};
-      cursor = child.index;
-    } else {
-      object[key] = parseScalar(value);
-      cursor += 1;
+      return parseNextEntry(child.index, { ...object, [key]: child.value ?? {} });
     }
-  }
 
-  return { value: object, index: cursor };
+    return parseNextEntry(cursor + 1, { ...object, [key]: parseScalar(value) });
+  };
+
+  return parseNextEntry(index, {});
 }
 
 function parseArray(tokens, index, indent) {
-  const array = [];
-  let cursor = index;
+  const parseNextItem = (cursor, array) => {
+    if (cursor >= tokens.length) {
+      return { value: array, index: cursor };
+    }
 
-  while (cursor < tokens.length) {
     const token = tokens[cursor];
-    if (token.indent < indent) break;
+    if (token.indent < indent) {
+      return { value: array, index: cursor };
+    }
     if (token.indent > indent) {
       throw new Error(`Unexpected indentation at line ${token.line}`);
     }
-    if (!token.text.startsWith('- ')) break;
+    if (!token.text.startsWith('- ')) {
+      return { value: array, index: cursor };
+    }
 
     const itemText = token.text.slice(2).trim();
     if (itemText.length === 0) {
       const child = parseNode(tokens, cursor + 1, indent + 2);
-      array.push(child.value);
-      cursor = child.index;
-      continue;
+      return parseNextItem(child.index, [...array, child.value]);
     }
 
     if (/^[A-Za-z0-9_-]+:\s*/u.test(itemText)) {
       const { key, value } = splitKeyValue(itemText, token.line);
-      const item = {};
-      item[key] = value.length === 0 ? {} : parseScalar(value);
-      cursor += 1;
+      const item = { [key]: value.length === 0 ? {} : parseScalar(value) };
+      const nextCursor = cursor + 1;
 
-      if (cursor < tokens.length && tokens[cursor].indent === indent + 2) {
-        const child = parseObject(tokens, cursor, indent + 2);
-        Object.assign(item, child.value);
-        cursor = child.index;
+      if (nextCursor < tokens.length && tokens[nextCursor].indent === indent + 2) {
+        const child = parseObject(tokens, nextCursor, indent + 2);
+        return parseNextItem(child.index, [...array, { ...item, ...child.value }]);
       }
 
-      array.push(item);
-      continue;
+      return parseNextItem(nextCursor, [...array, item]);
     }
 
-    array.push(parseScalar(itemText));
-    cursor += 1;
-  }
+    return parseNextItem(cursor + 1, [...array, parseScalar(itemText)]);
+  };
 
-  return { value: array, index: cursor };
+  return parseNextItem(index, []);
 }
 
 export function parseFeatureProofRegistry(source) {
@@ -383,50 +383,44 @@ function isGeneratedMirrorPath(relativePath) {
   return GENERATED_MIRROR_ROOTS.some((root) => normalized.startsWith(root));
 }
 
-function validateExistingPath(rootDir, relativePath, context, failures) {
+function validateExistingPath(rootDir, relativePath, context) {
   const normalized = normalizePath(relativePath);
-  if (isGeneratedMirrorPath(normalized)) {
-    failures.push(`${context}: generated skill mirror path "${normalized}" must not be canonical proof ownership`);
-  }
-  if (!isExplicitGlob(normalized) && existsSync(join(rootDir, normalized)) === false) {
-    failures.push(`${context}: listed path does not exist: ${normalized}`);
-  }
+  return [
+    ...(isGeneratedMirrorPath(normalized)
+      ? [`${context}: generated skill mirror path "${normalized}" must not be canonical proof ownership`]
+      : []),
+    ...(!isExplicitGlob(normalized) && existsSync(join(rootDir, normalized)) === false
+      ? [`${context}: listed path does not exist: ${normalized}`]
+      : []),
+  ];
 }
 
 export function validateFeatureProofRegistry({ rootDir, registry }) {
-  const failures = [];
-  const seenFeatureIds = new Set();
-
-  for (const feature of registry.features) {
-    if (seenFeatureIds.has(feature.feature)) {
-      failures.push(`feature id "${feature.feature}" is duplicated`);
-    }
-    seenFeatureIds.add(feature.feature);
-
-    for (const relativePath of collectAllRegistryPaths(feature)) {
-      validateExistingPath(rootDir, relativePath, `${feature.feature}`, failures);
-    }
-
-    for (const relativePath of collectRequiredProofPatterns(feature)) {
+  return registry.features.flatMap((feature, index) => [
+    ...(registry.features
+      .slice(0, index)
+      .some((previousFeature) => previousFeature.feature === feature.feature)
+      ? [`feature id "${feature.feature}" is duplicated`]
+      : []),
+    ...collectAllRegistryPaths(feature).flatMap((relativePath) =>
+      validateExistingPath(rootDir, relativePath, `${feature.feature}`),
+    ),
+    ...collectRequiredProofPatterns(feature).flatMap((relativePath) => {
       const normalized = normalizePath(relativePath);
-      if (!isExplicitGlob(normalized) && existsSync(join(rootDir, normalized)) === false) {
-        failures.push(`${feature.feature}: required proof file does not exist: ${normalized}`);
-      }
-    }
-
-    for (const command of getValidationCommands(feature)) {
-      if (!command.startsWith('pnpm ')) {
-        failures.push(`${feature.feature}: validation command must start with pnpm: ${command}`);
-      }
-    }
-
-    for (const fixtureName of getScenarioFixtureNames(feature)) {
+      return !isExplicitGlob(normalized) && existsSync(join(rootDir, normalized)) === false
+        ? [`${feature.feature}: required proof file does not exist: ${normalized}`]
+        : [];
+    }),
+    ...getValidationCommands(feature).flatMap((command) =>
+      command.startsWith('pnpm ')
+        ? []
+        : [`${feature.feature}: validation command must start with pnpm: ${command}`],
+    ),
+    ...getScenarioFixtureNames(feature).flatMap((fixtureName) => {
       const fixturePath = join(rootDir, 'fixtures/scenarios', `${fixtureName}.json`);
-      if (existsSync(fixturePath) === false) {
-        failures.push(`${feature.feature}: scenario fixture does not exist: ${fixtureName}`);
-      }
-    }
-  }
-
-  return failures;
+      return existsSync(fixturePath) === false
+        ? [`${feature.feature}: scenario fixture does not exist: ${fixtureName}`]
+        : [];
+    }),
+  ]);
 }
