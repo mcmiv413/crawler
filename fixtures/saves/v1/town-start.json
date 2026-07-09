@@ -1,0 +1,279 @@
+{
+  "schemaVersion": 1,
+  "metadata": {
+    "saveTimestamp": 0,
+    "characterLevel": 1,
+    "currentFloor": 0,
+    "displayName": "Adventurer"
+  },
+  "gameId": "0ae31a5d-3900-41d7-ad7d-5fa93c9cb84b",
+  "phase": "town",
+  "player": {
+    "id": "737799c6-42ee-4823-a2c9-83f19a95cf5f",
+    "name": "Adventurer",
+    "level": 1,
+    "experience": 0,
+    "stats": {
+      "maxHealth": 36,
+      "health": 36,
+      "attack": 4,
+      "defense": 4,
+      "accuracy": 6,
+      "evasion": 8,
+      "speed": 100
+    },
+    "baseStats": {
+      "maxHealth": 36,
+      "health": 36,
+      "attack": 4,
+      "defense": 4,
+      "accuracy": 6,
+      "evasion": 8,
+      "speed": 100
+    },
+    "position": {
+      "x": 0,
+      "y": 0
+    },
+    "equipment": {
+      "weapon": null,
+      "secondaryWeapon": null,
+      "chest": null,
+      "head": null,
+      "gloves": null,
+      "boots": null,
+      "ring1": null,
+      "ring2": null
+    },
+    "inventory": [],
+    "statuses": [],
+    "abilities": [],
+    "gold": 50,
+    "floor": 0,
+    "totalKills": 0,
+    "totalDeaths": 0,
+    "totalRuns": 0,
+    "deathStash": null,
+    "mana": 20,
+    "maxMana": 20,
+    "ringMastery": {},
+    "learnedRingSpellIds": [],
+    "knownRingSchools": []
+  },
+  "world": {
+    "town": {
+      "prosperity": 50,
+      "fear": 10,
+      "corruption": 0,
+      "rumors": [],
+      "lastRunSummary": null
+    },
+    "npcs": [
+      {
+        "id": "npc_shopkeeper",
+        "name": "Torben",
+        "role": "shopkeeper",
+        "disposition": 50,
+        "available": true,
+        "dialogueKey": "shopkeeper"
+      },
+      {
+        "id": "npc_healer",
+        "name": "Miriam",
+        "role": "healer",
+        "disposition": 60,
+        "available": true,
+        "dialogueKey": "healer"
+      },
+      {
+        "id": "npc_informant",
+        "name": "Scratch",
+        "role": "informant",
+        "disposition": 30,
+        "available": true,
+        "dialogueKey": "informant"
+      },
+      {
+        "id": "npc_blacksmith",
+        "name": "Hilda",
+        "role": "blacksmith",
+        "disposition": 40,
+        "available": true,
+        "dialogueKey": "blacksmith"
+      },
+      {
+        "id": "npc_elder",
+        "name": "Elder Orin",
+        "role": "elder",
+        "disposition": 70,
+        "available": true,
+        "dialogueKey": "elder"
+      },
+      {
+        "id": "npc_enchanter",
+        "name": "Seraphel",
+        "role": "enchanter",
+        "disposition": 50,
+        "available": true,
+        "dialogueKey": "enchanter"
+      }
+    ],
+    "shop": {
+      "items": [
+        {
+          "itemId": "antidote",
+          "price": 12,
+          "stock": 15
+        },
+        {
+          "itemId": "arcane_powder",
+          "price": 113,
+          "stock": 15
+        },
+        {
+          "itemId": "bomb",
+          "price": 23,
+          "stock": 15
+        },
+        {
+          "itemId": "greater_health_potion",
+          "price": 38,
+          "stock": 15
+        },
+        {
+          "itemId": "health_potion",
+          "price": 15,
+          "stock": 15
+        },
+        {
+          "itemId": "mana_potion",
+          "price": 75,
+          "stock": 15
+        },
+        {
+          "itemId": "strength_elixir",
+          "price": 30,
+          "stock": 15
+        },
+        {
+          "itemId": "stone_hammer",
+          "price": 60,
+          "stock": 1
+        },
+        {
+          "itemId": "frost_axe",
+          "price": 120,
+          "stock": 1
+        },
+        {
+          "itemId": "venom_blade",
+          "price": 75,
+          "stock": 1
+        },
+        {
+          "itemId": "chain_gauntlets",
+          "price": 33,
+          "stock": 1
+        },
+        {
+          "itemId": "leather_gloves",
+          "price": 11,
+          "stock": 1
+        },
+        {
+          "itemId": "leather_boots",
+          "price": 12,
+          "stock": 1
+        },
+        {
+          "itemId": "fire_ring",
+          "price": 2,
+          "stock": 1
+        },
+        {
+          "itemId": "lightning_ring",
+          "price": 2,
+          "stock": 1
+        }
+      ],
+      "buybackMultiplier": 0.5
+    },
+    "eventHistory": [],
+    "totalRuns": 0,
+    "deepestFloor": 0,
+    "factions": [
+      {
+        "id": "beast_swarm",
+        "name": "Beast Swarm",
+        "power": 50,
+        "disposition": -20,
+        "status": "leaderless",
+        "leader": null,
+        "leaderSlain": false,
+        "membersKilledByPlayer": 0,
+        "leadersKilledByPlayer": 0,
+        "playerDeathsCaused": 0
+      },
+      {
+        "id": "goblin_warband",
+        "name": "Goblin Warband",
+        "power": 40,
+        "disposition": -30,
+        "status": "leaderless",
+        "leader": null,
+        "leaderSlain": false,
+        "membersKilledByPlayer": 0,
+        "leadersKilledByPlayer": 0,
+        "playerDeathsCaused": 0
+      },
+      {
+        "id": "shadow_cult",
+        "name": "Shadow Cult",
+        "power": 25,
+        "disposition": -60,
+        "status": "leaderless",
+        "leader": null,
+        "leaderSlain": false,
+        "membersKilledByPlayer": 0,
+        "leadersKilledByPlayer": 0,
+        "playerDeathsCaused": 0
+      },
+      {
+        "id": "undead_legion",
+        "name": "Undead Legion",
+        "power": 30,
+        "disposition": -50,
+        "status": "leaderless",
+        "leader": null,
+        "leaderSlain": false,
+        "membersKilledByPlayer": 0,
+        "leadersKilledByPlayer": 0,
+        "playerDeathsCaused": 0
+      }
+    ],
+    "dungeonOgre": {
+      "id": "dungeon_ogre",
+      "status": "sealed"
+    },
+    "unlockedBlueprints": [],
+    "highestRarityFound": "common"
+  },
+  "run": null,
+  "floor": null,
+  "enemies": {},
+  "objects": {},
+  "itemRegistry": {
+    "items": {}
+  },
+  "seed": 101,
+  "turnNumber": 0,
+  "version": 1,
+  "activeQuests": [],
+  "weaponMastery": {
+    "blade": 0,
+    "bludgeon": 0,
+    "axe": 0,
+    "ranged": 0,
+    "dagger": 0
+  }
+}

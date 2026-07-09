@@ -19,7 +19,9 @@ Add a feature through the repo's full **6-hop chain**. This skill is for mechani
 3. Keep presenter output display-ready. Do not make the web duplicate content or formatting logic.
 4. If the feature references live content IDs, require contract coverage.
 5. If the state shape changes, cover schema, persistence, defaults, restore compatibility, and presenter compatibility.
-6. Use the lightest correct proofs while iterating, but finish on `pnpm validate`.
+6. Use `docs/feature-proofs.yml` to find existing proof homes and update it when adding a new major mechanic.
+7. Run `pnpm run check:feature-proofs` before `pnpm run check:fast`.
+8. Use the lightest correct proofs while iterating, but finish on `pnpm validate`.
 
 ## Workflow
 
@@ -28,7 +30,8 @@ Add a feature through the repo's full **6-hop chain**. This skill is for mechani
 3. Name the emitted event and the formatter or view surface that exposes it.
 4. Name the presenter builder and UI component that will show the feature.
 5. Decide whether the feature also needs content declarations, contract tests, or animation support.
-6. Choose proofs that actually cover the player-visible chain.
+6. Choose proofs that actually cover the player-visible chain for every changed production surface.
+7. Add browser component/E2E proof for browser-facing changes and save compatibility fixtures for persisted state shape changes.
 
 ## Escalation rules
 
@@ -64,6 +67,7 @@ When answering a mechanic request, return:
 - any content/schema/persistence additions
 - whether animation or contract work is also required
 - the proof homes for the mechanic
+- whether `docs/feature-proofs.yml` already covers the mechanic or needs a new entry
 
 Do not stop at only the system or only the UI. The value of this skill is the **full chain**.
 
@@ -94,4 +98,5 @@ Output:
 - Do not leave player-visible changes without an event or presenter surface.
 - Do not put runtime decisions in `packages/content`.
 - Do not skip contract tests when live IDs are involved.
+- Do not use feature-proof allowlists for behavioral work.
 - Do not finish on targeted proofs alone; the merge gate is `pnpm validate`.

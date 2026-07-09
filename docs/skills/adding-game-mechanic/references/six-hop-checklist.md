@@ -2,6 +2,8 @@
 
 Use this reference when the request needs exact layer ownership, file targets, or proof-home selection.
 
+Before selecting proof homes, check `docs/feature-proofs.yml` for the closest existing feature owner. The diff-aware guardrail requires matching proof files for every changed production surface.
+
 ## The 6 hops
 
 | Hop | Question | Typical files |
@@ -26,6 +28,9 @@ Use this reference when the request needs exact layer ownership, file targets, o
 ## Non-obvious repo rules
 
 - `assertFeatureChain()` is the preferred end-to-end proof helper for new mechanics.
+- `pnpm run check:feature-proofs` must pass before `pnpm run check:fast`.
+- Browser-facing changes need component proof or `pnpm test:e2e:scenario`.
+- Persisted state shape changes need save compatibility proof and historical fixture coverage when older saves must keep loading.
 - Player-visible behavior should prove `state -> event -> presenter -> UI`, not just internal state changes.
 - Unit/property tests should use builders or local fixtures rather than live content imports when possible.
 - Contract tests belong in `tests/contracts/` when live IDs or cross-references are involved.

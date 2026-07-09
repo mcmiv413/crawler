@@ -2,6 +2,8 @@
 
 Use this reference when the prompt needs exact ring-package surfaces or the hidden repo rules that are easy to miss.
 
+Use `docs/feature-proofs.yml` to find ring ability/content proof homes before editing. Run `pnpm run check:feature-proofs` before `pnpm run check:fast`.
+
 ## Base package surfaces
 
 | Surface | Files |

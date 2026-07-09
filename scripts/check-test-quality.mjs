@@ -3,7 +3,7 @@ import { existsSync, readFileSync } from 'node:fs';
 import { join, resolve } from 'node:path';
 import { spawnSync } from 'node:child_process';
 import ts from 'typescript';
-import { lineNumberAt, normalizePath } from './guardrails/common.mjs';
+import { isCliMain, lineNumberAt, normalizePath } from './guardrails/common.mjs';
 
 const DEFAULT_BASE_REF = process.env.TEST_QUALITY_BASE ?? 'main';
 const TEST_LAYER_VALUES = new Set(['unit', 'property', 'contract', 'integration', 'balance', 'e2e']);
@@ -11,6 +11,7 @@ const COLOCATED_INTEGRATION_TEST_PATHS = new Set([
   'packages/game-core/src/engine/damage-type.test.ts',
   'packages/game-core/src/engine/engine-consequences.test.ts',
   'packages/game-core/src/engine/save-load.property.test.ts',
+  'packages/game-core/src/state/save-compatibility.test.ts',
   'packages/game-core/src/state/save-snapshot.test.ts',
 ]);
 const TUNABLE_GAME_CORE_TEST_ROOTS = [
@@ -766,7 +767,7 @@ function formatReportAllRow({ relativePath, failures }) {
   return `${relativePath} -> [${titles.join(', ')}]`;
 }
 
-function runReportAll(repoRoot) {
+export function getTestQualityReportAll(repoRoot) {
   const testPaths = listTrackedPaths(repoRoot)
     .filter(isChangedTestPath);
   const rows = testPaths.map((relativePath) => ({
@@ -775,12 +776,22 @@ function runReportAll(repoRoot) {
   }));
   const failingRows = rows.filter(({ failures }) => failures.length > 0);
 
+  return {
+    testPaths,
+    rows,
+    failingRows,
+  };
+}
+
+function runReportAll(repoRoot) {
+  const report = getTestQualityReportAll(repoRoot);
+
   console.log([
     'Test quality report-all diagnostic.',
-    `Checked ${testPaths.length} tracked test file(s).`,
-    `Files with violations: ${failingRows.length}.`,
+    `Checked ${report.testPaths.length} tracked test file(s).`,
+    `Files with violations: ${report.failingRows.length}.`,
     '',
-    ...rows.map(formatReportAllRow),
+    ...report.rows.map(formatReportAllRow),
   ].join('\n'));
 }
 
@@ -811,21 +822,23 @@ function run() {
   console.log(`Test quality gate passed for ${changedTestPaths.length} changed test file(s).`);
 }
 
-try {
-  run();
-} catch (error) {
-  const message = error instanceof Error ? error.message : String(error);
-  console.error([
-    'Blocked: test quality gate could not run',
-    '',
-    'Found:',
-    `  ${message}`,
-    '',
-    'Why this is blocked:',
-    '  The repository cannot verify changed test files when the guardrail itself fails.',
-    '',
-    'Repair:',
-    '  Fix scripts/check-test-quality.mjs or the local git checkout, then rerun pnpm run check:test-quality.',
-  ].join('\n'));
-  process.exit(1);
+if (isCliMain(import.meta.url)) {
+  try {
+    run();
+  } catch (error) {
+    const message = error instanceof Error ? error.message : String(error);
+    console.error([
+      'Blocked: test quality gate could not run',
+      '',
+      'Found:',
+      `  ${message}`,
+      '',
+      'Why this is blocked:',
+      '  The repository cannot verify changed test files when the guardrail itself fails.',
+      '',
+      'Repair:',
+      '  Fix scripts/check-test-quality.mjs or the local git checkout, then rerun pnpm run check:test-quality.',
+    ].join('\n'));
+    process.exit(1);
+  }
 }

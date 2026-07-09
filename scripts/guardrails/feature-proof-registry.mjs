@@ -1,0 +1,376 @@
+import { existsSync } from 'node:fs';
+import { join } from 'node:path';
+import { normalizePath } from './common.mjs';
+
+export const DEFAULT_FEATURE_PROOF_REGISTRY_PATH = 'docs/feature-proofs.yml';
+
+const OWNER_SECTIONS = [
+  'entry',
+  'state',
+  'event',
+  'presenter',
+  'ui',
+  'content',
+  'persistence',
+];
+
+const GENERATED_MIRROR_ROOTS = [
+  '.agents/skills/',
+  '.claude/skills/',
+  '.github/skills/',
+];
+
+function stripInlineComment(line) {
+  let quote = null;
+  for (let index = 0; index < line.length; index += 1) {
+    const char = line[index];
+    if ((char === '"' || char === "'") && line[index - 1] !== '\\') {
+      quote = quote === char ? null : quote ?? char;
+      continue;
+    }
+    if (char === '#' && quote === null && (index === 0 || /\s/.test(line[index - 1] ?? ''))) {
+      return line.slice(0, index);
+    }
+  }
+  return line;
+}
+
+function tokenizeYaml(source) {
+  return source
+    .split('\n')
+    .map((rawLine, index) => {
+      if (rawLine.includes('\t')) {
+        throw new Error(`YAML tab indentation is not supported at line ${index + 1}`);
+      }
+      const line = stripInlineComment(rawLine).replace(/\s+$/u, '');
+      if (line.trim().length === 0) {
+        return null;
+      }
+      return {
+        line: index + 1,
+        indent: line.match(/^ */u)?.[0].length ?? 0,
+        text: line.trim(),
+      };
+    })
+    .filter(Boolean);
+}
+
+function parseScalar(value) {
+  const trimmed = value.trim();
+  if (trimmed === '[]') return [];
+  if (trimmed === 'true') return true;
+  if (trimmed === 'false') return false;
+  if (trimmed === 'null') return null;
+  if (
+    (trimmed.startsWith('"') && trimmed.endsWith('"'))
+    || (trimmed.startsWith("'") && trimmed.endsWith("'"))
+  ) {
+    return trimmed.slice(1, -1);
+  }
+  if (/^-?\d+(?:\.\d+)?$/u.test(trimmed)) {
+    return Number(trimmed);
+  }
+  return trimmed;
+}
+
+function splitKeyValue(text, line) {
+  const separatorIndex = text.indexOf(':');
+  if (separatorIndex <= 0) {
+    throw new Error(`Expected "key: value" at line ${line}`);
+  }
+  return {
+    key: text.slice(0, separatorIndex).trim(),
+    value: text.slice(separatorIndex + 1).trim(),
+  };
+}
+
+function parseNode(tokens, index, indent) {
+  const token = tokens[index];
+  if (token === undefined || token.indent < indent) {
+    return { value: null, index };
+  }
+  if (token.indent > indent) {
+    throw new Error(`Unexpected indentation at line ${token.line}`);
+  }
+  return token.text.startsWith('- ')
+    ? parseArray(tokens, index, indent)
+    : parseObject(tokens, index, indent);
+}
+
+function parseObject(tokens, index, indent) {
+  const object = {};
+  let cursor = index;
+
+  while (cursor < tokens.length) {
+    const token = tokens[cursor];
+    if (token.indent < indent || token.text.startsWith('- ')) break;
+    if (token.indent > indent) {
+      throw new Error(`Unexpected indentation at line ${token.line}`);
+    }
+
+    const { key, value } = splitKeyValue(token.text, token.line);
+    if (value.length === 0) {
+      const child = parseNode(tokens, cursor + 1, indent + 2);
+      object[key] = child.value ?? {};
+      cursor = child.index;
+    } else {
+      object[key] = parseScalar(value);
+      cursor += 1;
+    }
+  }
+
+  return { value: object, index: cursor };
+}
+
+function parseArray(tokens, index, indent) {
+  const array = [];
+  let cursor = index;
+
+  while (cursor < tokens.length) {
+    const token = tokens[cursor];
+    if (token.indent < indent) break;
+    if (token.indent > indent) {
+      throw new Error(`Unexpected indentation at line ${token.line}`);
+    }
+    if (!token.text.startsWith('- ')) break;
+
+    const itemText = token.text.slice(2).trim();
+    if (itemText.length === 0) {
+      const child = parseNode(tokens, cursor + 1, indent + 2);
+      array.push(child.value);
+      cursor = child.index;
+      continue;
+    }
+
+    if (/^[A-Za-z0-9_-]+:\s*/u.test(itemText)) {
+      const { key, value } = splitKeyValue(itemText, token.line);
+      const item = {};
+      item[key] = value.length === 0 ? {} : parseScalar(value);
+      cursor += 1;
+
+      if (cursor < tokens.length && tokens[cursor].indent === indent + 2) {
+        const child = parseObject(tokens, cursor, indent + 2);
+        Object.assign(item, child.value);
+        cursor = child.index;
+      }
+
+      array.push(item);
+      continue;
+    }
+
+    array.push(parseScalar(itemText));
+    cursor += 1;
+  }
+
+  return { value: array, index: cursor };
+}
+
+export function parseFeatureProofRegistry(source) {
+  const tokens = tokenizeYaml(source);
+  if (tokens.length === 0) {
+    throw new Error('registry is empty');
+  }
+  const parsed = parseNode(tokens, 0, tokens[0].indent);
+  if (parsed.index !== tokens.length) {
+    throw new Error(`Unexpected YAML content at line ${tokens[parsed.index].line}`);
+  }
+  return normalizeFeatureProofRegistry(parsed.value);
+}
+
+export function normalizeFeatureProofRegistry(value) {
+  if (value === null || typeof value !== 'object' || Array.isArray(value)) {
+    throw new Error('registry root must be an object');
+  }
+  if (!Array.isArray(value.features)) {
+    throw new Error('registry must contain a features array');
+  }
+
+  return {
+    features: value.features.map((feature, index) => {
+      if (feature === null || typeof feature !== 'object' || Array.isArray(feature)) {
+        throw new Error(`features[${index}] must be an object`);
+      }
+      if (typeof feature.feature !== 'string' || feature.feature.trim().length === 0) {
+        throw new Error(`features[${index}] must have a non-empty feature id`);
+      }
+      if (typeof feature.name !== 'string' || feature.name.trim().length === 0) {
+        throw new Error(`features[${index}] must have a non-empty name`);
+      }
+      return feature;
+    }),
+  };
+}
+
+function asStringArray(value) {
+  if (value === undefined || value === null) return [];
+  if (Array.isArray(value)) return value.filter((item) => typeof item === 'string');
+  if (typeof value === 'string') return [value];
+  return [];
+}
+
+function sectionFiles(feature, sectionName) {
+  const section = feature[sectionName];
+  if (section === undefined || section === null || typeof section !== 'object' || Array.isArray(section)) {
+    return [];
+  }
+  return asStringArray(section.files);
+}
+
+export function collectOwnerPatterns(feature) {
+  return OWNER_SECTIONS.flatMap((sectionName) => sectionFiles(feature, sectionName));
+}
+
+export function collectRequiredProofPatterns(feature) {
+  const proofs = feature.proofs;
+  if (proofs === undefined || proofs === null || typeof proofs !== 'object' || Array.isArray(proofs)) {
+    return [];
+  }
+  return asStringArray(proofs.required);
+}
+
+export function collectOptionalProofPatterns(feature) {
+  const proofs = feature.proofs;
+  if (proofs === undefined || proofs === null || typeof proofs !== 'object' || Array.isArray(proofs)) {
+    return [];
+  }
+  return asStringArray(proofs.optional);
+}
+
+export function collectProofPatterns(feature) {
+  return [
+    ...collectRequiredProofPatterns(feature),
+    ...collectOptionalProofPatterns(feature),
+  ];
+}
+
+export function collectAllRegistryPaths(feature) {
+  return [
+    ...collectOwnerPatterns(feature),
+    ...collectProofPatterns(feature),
+  ];
+}
+
+export function isExplicitGlob(pattern) {
+  return /[*?[\]{}]/u.test(pattern);
+}
+
+function escapeRegex(char) {
+  return /[\\^$+?.()|[\]{}]/u.test(char) ? `\\${char}` : char;
+}
+
+export function globToRegExp(pattern) {
+  let source = '^';
+  for (let index = 0; index < pattern.length; index += 1) {
+    const char = pattern[index];
+    if (char === '*') {
+      if (pattern[index + 1] === '*') {
+        source += '.*';
+        index += 1;
+      } else {
+        source += '[^/]*';
+      }
+      continue;
+    }
+    if (char === '?') {
+      source += '[^/]';
+      continue;
+    }
+    source += escapeRegex(char);
+  }
+  return new RegExp(`${source}$`, 'u');
+}
+
+export function matchesPathPattern(pattern, relativePath) {
+  const normalizedPattern = normalizePath(pattern);
+  const normalizedPath = normalizePath(relativePath);
+  if (!isExplicitGlob(normalizedPattern)) {
+    return normalizedPath === normalizedPattern;
+  }
+  return globToRegExp(normalizedPattern).test(normalizedPath);
+}
+
+export function findFeaturesForPath(registry, relativePath) {
+  return registry.features.filter((feature) =>
+    collectOwnerPatterns(feature).some((pattern) => matchesPathPattern(pattern, relativePath)),
+  );
+}
+
+export function findFeatureProofMatches(registry, relativePath) {
+  return registry.features.filter((feature) =>
+    collectProofPatterns(feature).some((pattern) => matchesPathPattern(pattern, relativePath)),
+  );
+}
+
+export function getValidationCommands(feature) {
+  const validation = feature.validation;
+  if (validation === undefined || validation === null || typeof validation !== 'object' || Array.isArray(validation)) {
+    return [];
+  }
+  return [
+    ...asStringArray(validation.focused),
+    ...asStringArray(validation.final),
+  ];
+}
+
+export function getScenarioFixtureNames(feature) {
+  return [
+    ...asStringArray(feature.scenarioFixtures),
+    ...asStringArray(feature.scenarioFixtureNames),
+    ...(feature.scenarios && typeof feature.scenarios === 'object' && !Array.isArray(feature.scenarios)
+      ? asStringArray(feature.scenarios.fixtures)
+      : []),
+  ];
+}
+
+function isGeneratedMirrorPath(relativePath) {
+  const normalized = normalizePath(relativePath);
+  return GENERATED_MIRROR_ROOTS.some((root) => normalized.startsWith(root));
+}
+
+function validateExistingPath(rootDir, relativePath, context, failures) {
+  const normalized = normalizePath(relativePath);
+  if (isGeneratedMirrorPath(normalized)) {
+    failures.push(`${context}: generated skill mirror path "${normalized}" must not be canonical proof ownership`);
+  }
+  if (!isExplicitGlob(normalized) && existsSync(join(rootDir, normalized)) === false) {
+    failures.push(`${context}: listed path does not exist: ${normalized}`);
+  }
+}
+
+export function validateFeatureProofRegistry({ rootDir, registry }) {
+  const failures = [];
+  const seenFeatureIds = new Set();
+
+  for (const feature of registry.features) {
+    if (seenFeatureIds.has(feature.feature)) {
+      failures.push(`feature id "${feature.feature}" is duplicated`);
+    }
+    seenFeatureIds.add(feature.feature);
+
+    for (const relativePath of collectAllRegistryPaths(feature)) {
+      validateExistingPath(rootDir, relativePath, `${feature.feature}`, failures);
+    }
+
+    for (const relativePath of collectRequiredProofPatterns(feature)) {
+      const normalized = normalizePath(relativePath);
+      if (!isExplicitGlob(normalized) && existsSync(join(rootDir, normalized)) === false) {
+        failures.push(`${feature.feature}: required proof file does not exist: ${normalized}`);
+      }
+    }
+
+    for (const command of getValidationCommands(feature)) {
+      if (!command.startsWith('pnpm ')) {
+        failures.push(`${feature.feature}: validation command must start with pnpm: ${command}`);
+      }
+    }
+
+    for (const fixtureName of getScenarioFixtureNames(feature)) {
+      const fixturePath = join(rootDir, 'fixtures/scenarios', `${fixtureName}.json`);
+      if (existsSync(fixturePath) === false) {
+        failures.push(`${feature.feature}: scenario fixture does not exist: ${fixtureName}`);
+      }
+    }
+  }
+
+  return failures;
+}

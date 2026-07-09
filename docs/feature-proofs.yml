@@ -1,0 +1,372 @@
+features:
+  - feature: ring-ability-casting
+    name: Ring ability casting
+    entry:
+      files:
+        - packages/game-contracts/src/commands/index.ts
+        - packages/game-contracts/src/schemas/index.ts
+        - packages/game-core/src/engine/command-handler.ts
+    state:
+      files:
+        - packages/game-core/src/abilities/runtime/**
+        - packages/game-core/src/abilities/effects/**
+        - packages/game-core/src/engine/handlers/combat.ts
+    event:
+      files:
+        - packages/game-contracts/src/events/index.ts
+        - packages/presenter/src/event-formatter.ts
+    presenter:
+      files:
+        - packages/presenter/src/game-view-builder.ts
+        - packages/presenter/src/builders/**
+    ui:
+      files:
+        - apps/web/src/components/**
+    content:
+      files:
+        - packages/content/src/ring-spells/**
+        - packages/content/src/abilities/**
+    scenarioFixtures:
+      - full-feature-e2e-test
+    proofs:
+      required:
+        - scripts/check-ability-contracts.ts
+        - tests/contracts/ability-contracts.contract.test.ts
+        - tests/contracts/ability-runtime-coverage.contract.test.ts
+        - tests/contracts/ring-magic.contract.test.ts
+        - tests/e2e/full-game-features.spec.ts
+      optional:
+        - packages/game-core/src/engine/abilities-coverage.integration.test.ts
+        - apps/web/src/components/DungeonPhase.test.tsx
+    validation:
+      focused:
+        - pnpm run check:ability-contracts
+        - pnpm vitest run tests/contracts/ability-contracts.contract.test.ts
+        - pnpm test:e2e:scenario
+      final:
+        - pnpm validate
+
+  - feature: combat-resolution
+    name: Combat resolution
+    entry:
+      files:
+        - packages/game-core/src/engine/command-handler.ts
+        - packages/game-core/src/engine/handlers/combat.ts
+    state:
+      files:
+        - packages/game-core/src/systems/combat.ts
+        - packages/game-core/src/combat-preview.ts
+    event:
+      files:
+        - packages/game-contracts/src/events/index.ts
+        - packages/presenter/src/event-formatter.ts
+    presenter:
+      files:
+        - packages/presenter/src/combat-indicators.ts
+        - packages/presenter/src/game-view-builder.ts
+    ui:
+      files:
+        - apps/web/src/components/DungeonPhase.tsx
+        - apps/web/src/rendering/three/**
+    scenarioFixtures:
+      - enemy-death-test
+      - full-feature-e2e-test
+    proofs:
+      required:
+        - packages/game-core/src/systems/combat.test.ts
+        - packages/game-core/src/engine/handlers/combat.test.ts
+        - packages/presenter/src/event-formatter.test.ts
+        - tests/e2e/combat-indicators.spec.ts
+      optional:
+        - packages/game-core/src/systems/combat.property.test.ts
+        - packages/presenter/src/combat-indicators.test.ts
+    validation:
+      focused:
+        - pnpm vitest run packages/game-core/src/systems/combat.test.ts
+        - pnpm vitest run packages/presenter/src/event-formatter.test.ts
+        - pnpm test:e2e:scenario
+      final:
+        - pnpm validate
+
+  - feature: inventory-equipment
+    name: Inventory and equipment
+    entry:
+      files:
+        - packages/game-core/src/engine/handlers/inventory-handlers.ts
+        - packages/game-core/src/engine/command-handler.ts
+    state:
+      files:
+        - packages/game-core/src/systems/inventory.ts
+    presenter:
+      files:
+        - packages/presenter/src/builders/inventory-view-builder.ts
+        - packages/presenter/src/game-view-builder.ts
+    ui:
+      files:
+        - apps/web/src/components/ShopPanel.tsx
+        - apps/web/src/components/EquipmentDoll.tsx
+        - apps/web/src/components/PlayerHud.tsx
+    content:
+      files:
+        - packages/content/src/items/**
+    scenarioFixtures:
+      - inventory-chest-test
+      - full-feature-e2e-test
+    proofs:
+      required:
+        - packages/game-core/src/systems/inventory.test.ts
+        - packages/presenter/src/builders/inventory-view-builder.test.ts
+        - apps/web/src/components/ShopPanel.test.tsx
+        - tests/e2e/full-game-features.spec.ts
+      optional:
+        - tests/contracts/item-view-completeness.contract.test.ts
+        - tests/contracts/content-cross-references.contract.test.ts
+    validation:
+      focused:
+        - pnpm vitest run packages/game-core/src/systems/inventory.test.ts
+        - pnpm vitest run packages/presenter/src/builders/inventory-view-builder.test.ts
+        - pnpm test:e2e:scenario
+      final:
+        - pnpm validate
+
+  - feature: quests
+    name: Quest lifecycle
+    entry:
+      files:
+        - packages/game-core/src/systems/npc.ts
+        - packages/game-core/src/systems/town.ts
+    state:
+      files:
+        - packages/game-core/src/systems/quest-selection.ts
+        - packages/game-core/src/systems/quest-progress.ts
+        - packages/game-core/src/systems/quests.ts
+        - packages/game-core/src/engine/quest-evaluator.ts
+    event:
+      files:
+        - packages/game-contracts/src/events/index.ts
+        - packages/presenter/src/event-formatter.ts
+    presenter:
+      files:
+        - packages/presenter/src/builders/player-quest-view-builder.ts
+        - packages/presenter/src/game-view-builder.ts
+    ui:
+      files:
+        - apps/web/src/components/PlayerHud.tsx
+        - apps/web/src/components/TownPhase.tsx
+    content:
+      files:
+        - packages/content/src/quests/**
+    scenarioFixtures:
+      - full-feature-e2e-test
+    proofs:
+      required:
+        - packages/game-core/src/systems/quest-progress.test.ts
+        - packages/game-core/src/systems/quests.test.ts
+        - tests/contracts/quests.contract.test.ts
+        - tests/contracts/content-cross-references.contract.test.ts
+        - tests/e2e/full-game-features.spec.ts
+      optional:
+        - packages/game-core/src/systems/quest-selection.test.ts
+        - packages/game-core/src/systems/npc.test.ts
+    validation:
+      focused:
+        - pnpm vitest run packages/game-core/src/systems/quest-progress.test.ts
+        - pnpm vitest run tests/contracts/quests.contract.test.ts
+        - pnpm test:e2e:scenario
+      final:
+        - pnpm validate
+
+  - feature: town-actions
+    name: Town actions
+    entry:
+      files:
+        - packages/game-core/src/engine/handlers/town-handlers.ts
+        - packages/game-core/src/engine/command-handler.ts
+    state:
+      files:
+        - packages/game-core/src/systems/town.ts
+        - packages/game-core/src/systems/town-validator.ts
+    event:
+      files:
+        - packages/game-contracts/src/events/index.ts
+        - packages/presenter/src/event-formatter.ts
+    presenter:
+      files:
+        - packages/presenter/src/builders/town-view-builder.ts
+        - packages/presenter/src/builders/town-text.ts
+    ui:
+      files:
+        - apps/web/src/components/TownPhase.tsx
+    scenarioFixtures:
+      - fresh-game-town-test
+    proofs:
+      required:
+        - packages/game-core/src/systems/town.test.ts
+        - packages/game-core/src/systems/town-validator.test.ts
+        - packages/presenter/src/builders/town-view-builder.test.ts
+        - apps/web/src/components/TownPhase.test.tsx
+      optional:
+        - packages/presenter/src/builders/town-text.test.ts
+    validation:
+      focused:
+        - pnpm vitest run packages/game-core/src/systems/town.test.ts
+        - pnpm vitest run apps/web/src/components/TownPhase.test.tsx
+      final:
+        - pnpm validate
+
+  - feature: dungeon-movement
+    name: Dungeon movement
+    entry:
+      files:
+        - packages/game-core/src/engine/command-handler.ts
+        - packages/game-core/src/engine/handlers/movement.ts
+    state:
+      files:
+        - packages/game-core/src/systems/movement.ts
+        - packages/game-core/src/systems/movement-behaviors.ts
+        - packages/game-core/src/engine/floor-transition-service.ts
+    event:
+      files:
+        - packages/game-contracts/src/events/index.ts
+        - packages/presenter/src/event-formatter.ts
+    presenter:
+      files:
+        - packages/presenter/src/game-view-builder.ts
+        - packages/presenter/src/builders/map-view-builder.ts
+    ui:
+      files:
+        - apps/web/src/components/DungeonPhase.tsx
+        - apps/web/src/rendering/**
+    scenarioFixtures:
+      - full-feature-e2e-test
+    proofs:
+      required:
+        - packages/game-core/src/systems/movement.test.ts
+        - packages/game-core/src/engine/handlers/movement.test.ts
+        - packages/presenter/src/game-view-builder.test.ts
+        - apps/web/src/components/DungeonPhase.test.tsx
+        - tests/e2e/dungeon-movement.spec.ts
+      optional:
+        - packages/game-core/src/systems/movement-behaviors.test.ts
+    validation:
+      focused:
+        - pnpm vitest run packages/game-core/src/systems/movement.test.ts
+        - pnpm vitest run apps/web/src/components/DungeonPhase.test.tsx
+        - pnpm test:e2e:scenario
+      final:
+        - pnpm validate
+
+  - feature: save-load-compatibility
+    name: Save load compatibility
+    entry:
+      files:
+        - apps/server/src/services/restore-game-service.ts
+        - apps/web/src/store/session-restore-service.ts
+        - apps/web/src/store/session-persistence.ts
+    state:
+      files:
+        - packages/game-core/src/state/save-snapshot.ts
+        - packages/game-core/src/state/save-snapshot-validation.ts
+        - packages/game-core/src/state/serialization.ts
+        - packages/game-contracts/src/types/save-snapshot.ts
+    persistence:
+      files:
+        - packages/game-core/src/state/**
+        - apps/server/src/services/restore-game-service.ts
+        - apps/server/src/sqlite-repository.ts
+        - apps/web/src/store/save-slot-persistence.ts
+    ui:
+      files:
+        - apps/web/src/store/**
+    proofs:
+      required:
+        - packages/game-core/src/state/save-snapshot.test.ts
+        - packages/game-core/src/state/save-compatibility.test.ts
+        - tests/contracts/save-snapshot-scenario.contract.test.ts
+        - apps/web/src/store/save-slot-persistence.test.ts
+        - fixtures/saves/v1/town-start.json
+      optional:
+        - apps/server/src/repository-state-safety.test.ts
+    validation:
+      focused:
+        - pnpm vitest run packages/game-core/src/state/save-compatibility.test.ts
+        - pnpm vitest run tests/contracts/save-snapshot-scenario.contract.test.ts
+      final:
+        - pnpm validate
+
+  - feature: renderer-animation
+    name: Renderer and animation pipeline
+    entry:
+      files:
+        - apps/web/src/animation-runtime/**
+        - apps/web/src/rendering/**
+    state:
+      files:
+        - packages/content/src/animation-refs/**
+    event:
+      files:
+        - packages/presenter/src/event-formatter.ts
+    presenter:
+      files:
+        - packages/presenter/src/game-view-builder.ts
+    ui:
+      files:
+        - apps/web/src/components/DungeonPhase.tsx
+        - apps/web/src/components/ThreeEffectsOverlay.tsx
+        - apps/web/src/rendering/three/**
+        - apps/web/src/animations/**
+    scenarioFixtures:
+      - enemy-death-test
+      - inventory-chest-test
+    proofs:
+      required:
+        - tests/contracts/three-animation-coverage.contract.test.ts
+        - apps/web/src/animation-runtime/dispatchAnimatedEvent.test.ts
+        - apps/web/src/rendering/animation-dispatch-policy.test.ts
+        - apps/web/src/rendering/three/three-effects.contract.test.ts
+        - tests/e2e/three-animation-backend.spec.ts
+      optional:
+        - apps/web/src/rendering/three/ThreeEffectsOverlay.test.tsx
+        - tests/e2e/three-effects-overlay.spec.ts
+    validation:
+      focused:
+        - pnpm run check:three-animations
+        - pnpm vitest run apps/web/src/rendering/animation-dispatch-policy.test.ts
+        - pnpm test:e2e:renderer
+      final:
+        - pnpm validate
+
+  - feature: session-restore
+    name: Browser session restore
+    entry:
+      files:
+        - apps/server/src/routes/register-restore-routes.ts
+        - apps/server/src/services/restore-game-service.ts
+        - apps/web/src/store/session-restore-service.ts
+    state:
+      files:
+        - packages/game-core/src/state/save-snapshot.ts
+        - apps/web/src/store/session-persistence.ts
+        - apps/web/src/store/save-slot-persistence.ts
+    presenter:
+      files:
+        - packages/presenter/src/game-view-builder.ts
+    ui:
+      files:
+        - apps/web/src/store/game-store.ts
+        - apps/web/src/App.tsx
+    proofs:
+      required:
+        - apps/server/src/api/game-routes.test.ts
+        - apps/web/src/store/game-store.test.ts
+        - apps/web/src/store/save-slot-persistence.test.ts
+        - tests/e2e/full-game-features.spec.ts
+      optional:
+        - packages/game-core/src/state/save-compatibility.test.ts
+    validation:
+      focused:
+        - pnpm vitest run apps/web/src/store/game-store.test.ts
+        - pnpm vitest run apps/server/src/api/game-routes.test.ts
+        - pnpm test:e2e:scenario
+      final:
+        - pnpm validate

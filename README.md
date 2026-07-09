@@ -43,6 +43,11 @@ The game is **fully playable without LM Studio**. To enable LM Studio locally, s
 | `pnpm test:verbose` | Run the full Vitest suite with standard output |
 | `pnpm test:watch` | Vitest watch mode — re-run tests on file changes |
 | `pnpm test:e2e` | Run Playwright E2E tests (automatically starts server+web) |
+| `pnpm test:e2e:smoke` | Run the required browser smoke subset |
+| `pnpm test:e2e:scenario` | Run scenario-driven browser coverage for browser-facing changes |
+| `pnpm run check:feature-proofs` | Verify production feature changes include matching proof files |
+| `pnpm run check:feature-proof-registry` | Validate `docs/feature-proofs.yml` ownership and proof metadata |
+| `pnpm test:mutation:critical` | Check critical mutation-test configuration in report-only mode |
 | `pnpm validate` | Run the repository validation gate: tracked-artifact checks -> audit guardrails -> lint -> test -> build |
 | `pnpm skills:generate` | Rebuild `.github/skills/`, `.claude/skills/`, and `.agents/skills/` from `docs/skills/` |
 | `pnpm skills:check` | Verify the generated skill mirrors still match `docs/skills/` |
@@ -120,6 +125,10 @@ pnpm test:watch
 # Playwright E2E only (auto-starts server+web)
 pnpm test:e2e
 
+# Browser smoke and scenario subsets
+pnpm test:e2e:smoke
+pnpm test:e2e:scenario
+
 # Single test file
 pnpm vitest run packages/game-core/src/systems/combat.test.ts
 
@@ -151,9 +160,13 @@ Use `pnpm validate` as the merge gate. It runs audit guardrails, linting, the Vi
 The repo intentionally keeps its deterministic smoke checks split by responsibility instead of folding them into one opaque meta-validator:
 
 - `pnpm run check:tracked-artifacts` catches staged or already tracked cache files, Zone.Identifier files, and source-map noise that `.gitignore` alone cannot stop.
+- `pnpm run check:feature-proofs` catches production gameplay, presenter, UI, content, animation, and persistence changes that are not paired with matching proof files in the same diff.
+- `pnpm run check:feature-proof-registry` validates `docs/feature-proofs.yml`, the source of truth for major feature ownership and proof homes.
 - `pnpm run check:workspace-wiring` catches undeclared workspace dependencies, `src`-internal imports, and unexported subpaths.
 - `pnpm run check:ability-contracts` catches live ability metadata, payload, and animation drift with invariant checks.
 - `pnpm run check:exports` catches built-output and consumer-context package resolution failures that source-only tests can miss.
+
+Browser smoke runs in CI. Scenario E2E runs when browser-facing paths change, and local feature-proof checks require component or E2E proof for those changes unless a narrow allowlist explains why browser output cannot change.
 
 ---
 

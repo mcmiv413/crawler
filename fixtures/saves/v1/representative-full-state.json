@@ -1,0 +1,543 @@
+{
+  "schemaVersion": 1,
+  "metadata": {
+    "saveTimestamp": 0,
+    "characterLevel": 5,
+    "currentFloor": 1,
+    "displayName": "Hero"
+  },
+  "gameId": "scenario_full_feature_e2e_test_101",
+  "phase": "dungeon",
+  "player": {
+    "id": "fixture_player",
+    "name": "Hero",
+    "level": 5,
+    "experience": 999,
+    "stats": {
+      "maxHealth": 76,
+      "health": 60,
+      "attack": 8,
+      "defense": 12,
+      "accuracy": 10,
+      "evasion": 12,
+      "speed": 100
+    },
+    "baseStats": {
+      "maxHealth": 76,
+      "health": 60,
+      "attack": 8,
+      "defense": 12,
+      "accuracy": 10,
+      "evasion": 12,
+      "speed": 100
+    },
+    "position": {
+      "x": 0,
+      "y": 0
+    },
+    "equipment": {
+      "weapon": "fixture_rusty_sword",
+      "secondaryWeapon": null,
+      "chest": "fixture_plate_armor",
+      "head": null,
+      "gloves": null,
+      "boots": null,
+      "ring1": null,
+      "ring2": null
+    },
+    "inventory": [
+      "fixture_health_potion",
+      "fixture_leather_boots"
+    ],
+    "statuses": [],
+    "abilities": [],
+    "gold": 125,
+    "floor": 1,
+    "totalKills": 0,
+    "totalDeaths": 0,
+    "totalRuns": 0,
+    "deathStash": null,
+    "mana": 20,
+    "maxMana": 20,
+    "ringMastery": {},
+    "learnedRingSpellIds": [],
+    "knownRingSchools": []
+  },
+  "world": {
+    "town": {
+      "prosperity": 50,
+      "fear": 10,
+      "corruption": 0,
+      "rumors": [],
+      "lastRunSummary": null
+    },
+    "npcs": [],
+    "shop": {
+      "items": [],
+      "buybackMultiplier": 0.5
+    },
+    "eventHistory": [],
+    "totalRuns": 0,
+    "deepestFloor": 0,
+    "factions": [
+      {
+        "id": "beast_swarm",
+        "name": "Beast Swarm",
+        "power": 50,
+        "disposition": -20,
+        "status": "leaderless",
+        "leader": null,
+        "leaderSlain": false,
+        "membersKilledByPlayer": 0,
+        "leadersKilledByPlayer": 0,
+        "playerDeathsCaused": 0
+      },
+      {
+        "id": "goblin_warband",
+        "name": "Goblin Warband",
+        "power": 40,
+        "disposition": -30,
+        "status": "leaderless",
+        "leader": null,
+        "leaderSlain": false,
+        "membersKilledByPlayer": 0,
+        "leadersKilledByPlayer": 0,
+        "playerDeathsCaused": 0
+      },
+      {
+        "id": "shadow_cult",
+        "name": "Shadow Cult",
+        "power": 25,
+        "disposition": -60,
+        "status": "leaderless",
+        "leader": null,
+        "leaderSlain": false,
+        "membersKilledByPlayer": 0,
+        "leadersKilledByPlayer": 0,
+        "playerDeathsCaused": 0
+      },
+      {
+        "id": "undead_legion",
+        "name": "Undead Legion",
+        "power": 30,
+        "disposition": -50,
+        "status": "leaderless",
+        "leader": null,
+        "leaderSlain": false,
+        "membersKilledByPlayer": 0,
+        "leadersKilledByPlayer": 0,
+        "playerDeathsCaused": 0
+      }
+    ],
+    "dungeonOgre": {
+      "id": "dungeon_ogre",
+      "status": "sealed"
+    },
+    "unlockedBlueprints": [],
+    "highestRarityFound": "common"
+  },
+  "run": {
+    "runId": "scenario_run_full_feature_e2e_test_101",
+    "turnCount": 0,
+    "isActive": true,
+    "runMetrics": {
+      "damageDealt": 0,
+      "damageTaken": 0,
+      "turnsElapsed": 0,
+      "enemiesKilled": 0,
+      "itemsUsed": 0,
+      "goldEarned": 0,
+      "floorsCleared": 0,
+      "causeOfEnd": null,
+      "consecutiveMisses": 0
+    },
+    "speedAccumulators": {
+      "scenario_enemy_1": 0
+    }
+  },
+  "floor": {
+    "width": 5,
+    "height": 1,
+    "depth": 1,
+    "biomeId": "crypt",
+    "cells": {
+      "0,0": {
+        "tile": {
+          "type": "floor",
+          "walkable": true,
+          "blocksVision": false,
+          "ascii": ".",
+          "color": "#888888"
+        },
+        "visibility": "visible"
+      },
+      "1,0": {
+        "tile": {
+          "type": "floor",
+          "walkable": true,
+          "blocksVision": false,
+          "ascii": ".",
+          "color": "#888888"
+        },
+        "visibility": "visible"
+      },
+      "2,0": {
+        "tile": {
+          "type": "floor",
+          "walkable": true,
+          "blocksVision": false,
+          "ascii": ".",
+          "color": "#888888"
+        },
+        "visibility": "visible"
+      },
+      "3,0": {
+        "tile": {
+          "type": "floor",
+          "walkable": true,
+          "blocksVision": false,
+          "ascii": ".",
+          "color": "#888888"
+        },
+        "visibility": "visible"
+      },
+      "4,0": {
+        "tile": {
+          "type": "floor",
+          "walkable": true,
+          "blocksVision": false,
+          "ascii": ".",
+          "color": "#888888"
+        },
+        "visibility": "visible"
+      }
+    },
+    "entrance": {
+      "x": 0,
+      "y": 0
+    },
+    "exit": {
+      "x": 4,
+      "y": 0
+    },
+    "seed": 101
+  },
+  "enemies": {
+    "1,0": {
+      "id": "scenario_enemy_1",
+      "templateId": "shadow_lurker",
+      "name": "Shadow Lurker",
+      "archetype": "ambusher",
+      "tier": 2,
+      "stats": {
+        "maxHealth": 24,
+        "health": 1,
+        "attack": 9,
+        "defense": 2,
+        "accuracy": 8,
+        "evasion": 12,
+        "speed": 120
+      },
+      "equipment": {
+        "weapon": {
+          "damageMultiplier": 1.1,
+          "damageType": "corruption",
+          "weaponRange": 1
+        }
+      },
+      "affinities": {
+        "corruption": 0.5
+      },
+      "spawn": {
+        "floorRange": [
+          2,
+          4
+        ],
+        "weight": 1
+      },
+      "abilityCooldowns": {},
+      "lootTableId": "loot_shadow",
+      "experienceValue": 25,
+      "description": "A dark creature that strikes from the shadows.",
+      "ascii": "L",
+      "color": "#5533aa",
+      "movementBehaviorId": "ambush_idle",
+      "spriteName": "shadow skeleton",
+      "biomes": [
+        {
+          "biomeId": "moss_caverns"
+        },
+        {
+          "biomeId": "frozen_depths"
+        }
+      ],
+      "factions": [
+        {
+          "factionId": "shadow_cult",
+          "weight": 1
+        }
+      ],
+      "ambientBehaviorProfile": "wall_lurker",
+      "position": {
+        "x": 1,
+        "y": 0
+      },
+      "statuses": [],
+      "isAlerted": false,
+      "lastKnownPlayerPos": null
+    }
+  },
+  "objects": {},
+  "itemRegistry": {
+    "items": {
+      "fixture_health_potion": {
+        "itemId": "health_potion",
+        "name": "Health Potion",
+        "description": "Restores 30 health.",
+        "itemClass": "consumable",
+        "rarity": "common",
+        "value": 10,
+        "stackable": true,
+        "maxStack": 5,
+        "spriteName": "purple red potion",
+        "consumable": {
+          "effect": "heal",
+          "magnitude": 30
+        },
+        "animation": {
+          "id": "fx.self.healing-pulse"
+        }
+      },
+      "fixture_leather_boots": {
+        "itemId": "leather_boots",
+        "spriteName": "leather boots",
+        "name": "Leather Boots",
+        "description": "Basic leather footwear.",
+        "itemClass": "armor",
+        "rarity": "common",
+        "value": 8,
+        "stackable": false,
+        "maxStack": 1,
+        "armor": {
+          "defense": 1,
+          "evasionPenalty": 0,
+          "slot": "boots",
+          "enchantmentSlots": 0,
+          "enchantments": []
+        }
+      },
+      "fixture_plate_armor": {
+        "itemId": "plate_armor",
+        "spriteName": "full plate",
+        "name": "Plate Armor",
+        "description": "Heavy metal plates. Excellent defense, poor mobility.",
+        "itemClass": "armor",
+        "rarity": "rare",
+        "value": 70,
+        "stackable": false,
+        "maxStack": 1,
+        "armor": {
+          "defense": 10,
+          "evasionPenalty": 15,
+          "slot": "chest",
+          "enchantmentSlots": 2,
+          "enchantments": [
+            null,
+            null
+          ]
+        }
+      },
+      "fixture_rusty_sword": {
+        "itemId": "rusty_sword",
+        "name": "Rusty Sword",
+        "description": "A worn but functional blade.",
+        "itemClass": "weapon",
+        "rarity": "common",
+        "value": 15,
+        "stackable": false,
+        "maxStack": 1,
+        "spriteName": "dwarvish short sword",
+        "weapon": {
+          "damage": 7,
+          "damageType": "physical",
+          "accuracy": 2,
+          "speed": 0,
+          "slot": "weapon",
+          "weaponRange": 1,
+          "weaponType": "blade"
+        }
+      }
+    }
+  },
+  "seed": 101,
+  "turnNumber": 0,
+  "version": 1,
+  "activeQuests": [
+    {
+      "id": "fixture_reach_floor_3",
+      "title": "Fixture Reach Floor",
+      "description": "A stable historical save fixture quest.",
+      "status": "active",
+      "objective": {
+        "type": "reach_floor",
+        "targetCount": 3,
+        "progress": 1
+      },
+      "reward": {
+        "type": "gold",
+        "amount": 25
+      },
+      "giverNpcId": "fixture_npc"
+    }
+  ],
+  "persistedFloorCache": {
+    "3": {
+      "floor": {
+        "width": 5,
+        "height": 1,
+        "depth": 3,
+        "biomeId": "crypt",
+        "cells": {
+          "0,0": {
+            "tile": {
+              "type": "floor",
+              "walkable": true,
+              "blocksVision": false,
+              "ascii": ".",
+              "color": "#888888"
+            },
+            "visibility": "visible"
+          },
+          "1,0": {
+            "tile": {
+              "type": "floor",
+              "walkable": true,
+              "blocksVision": false,
+              "ascii": ".",
+              "color": "#888888"
+            },
+            "visibility": "visible"
+          },
+          "2,0": {
+            "tile": {
+              "type": "floor",
+              "walkable": true,
+              "blocksVision": false,
+              "ascii": ".",
+              "color": "#888888"
+            },
+            "visibility": "visible"
+          },
+          "3,0": {
+            "tile": {
+              "type": "floor",
+              "walkable": true,
+              "blocksVision": false,
+              "ascii": ".",
+              "color": "#888888"
+            },
+            "visibility": "visible"
+          },
+          "4,0": {
+            "tile": {
+              "type": "floor",
+              "walkable": true,
+              "blocksVision": false,
+              "ascii": ".",
+              "color": "#888888"
+            },
+            "visibility": "visible"
+          }
+        },
+        "entrance": {
+          "x": 0,
+          "y": 0
+        },
+        "exit": {
+          "x": 4,
+          "y": 0
+        },
+        "seed": 101
+      },
+      "enemies": {
+        "1,0": {
+          "id": "scenario_enemy_1",
+          "templateId": "shadow_lurker",
+          "name": "Shadow Lurker",
+          "archetype": "ambusher",
+          "tier": 2,
+          "stats": {
+            "maxHealth": 24,
+            "health": 1,
+            "attack": 9,
+            "defense": 2,
+            "accuracy": 8,
+            "evasion": 12,
+            "speed": 120
+          },
+          "equipment": {
+            "weapon": {
+              "damageMultiplier": 1.1,
+              "damageType": "corruption",
+              "weaponRange": 1
+            }
+          },
+          "affinities": {
+            "corruption": 0.5
+          },
+          "spawn": {
+            "floorRange": [
+              2,
+              4
+            ],
+            "weight": 1
+          },
+          "abilityCooldowns": {},
+          "lootTableId": "loot_shadow",
+          "experienceValue": 25,
+          "description": "A dark creature that strikes from the shadows.",
+          "ascii": "L",
+          "color": "#5533aa",
+          "movementBehaviorId": "ambush_idle",
+          "spriteName": "shadow skeleton",
+          "biomes": [
+            {
+              "biomeId": "moss_caverns"
+            },
+            {
+              "biomeId": "frozen_depths"
+            }
+          ],
+          "factions": [
+            {
+              "factionId": "shadow_cult",
+              "weight": 1
+            }
+          ],
+          "ambientBehaviorProfile": "wall_lurker",
+          "position": {
+            "x": 1,
+            "y": 0
+          },
+          "statuses": [],
+          "isAlerted": false,
+          "lastKnownPlayerPos": null
+        }
+      },
+      "objects": {},
+      "playerPosition": {
+        "x": 0,
+        "y": 0
+      },
+      "originalEnemyCount": 1,
+      "lastSimulatedTurn": 0
+    }
+  },
+  "weaponMastery": {
+    "blade": 0,
+    "bludgeon": 0,
+    "axe": 0,
+    "ranged": 0,
+    "dagger": 0
+  }
+}

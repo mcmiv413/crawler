@@ -17,7 +17,8 @@ Use this skill after implementation work when the user asks for review or when a
    - **finding**: out-of-scope, unsafe, or contradictory to the approved plan
 4. Check package boundaries: content stays static, core/server own runtime decisions, presenter owns read models, and web renders views.
 5. Check generated artifacts, persistence compatibility, presenter/UI split, docs, and validation evidence.
-6. Produce findings ordered by severity, then summarize residual risk.
+6. Check `docs/feature-proofs.yml`, proof-file changes, browser proof routing, save compatibility fixtures, and `pnpm run check:feature-proofs` evidence.
+7. Produce findings ordered by severity, then summarize residual risk.
 
 ## Review checklist
 
@@ -29,9 +30,11 @@ Use this skill after implementation work when the user asks for review or when a
 - Central pipelines: shared behavior routes through command, ability, equipment, event, presenter, store, or renderer pipelines.
 - Presenter/UI split: presenter exposes display-ready data; UI does not duplicate content display logic.
 - Persistence and restore: state-shape changes include schema, migration/default/defaults, restore, and old-save compatibility checks.
+- Feature proof registry: changed production surfaces are covered by `docs/feature-proofs.yml` when applicable, or the registry was updated for new major mechanics.
+- Browser proof: browser-facing changes include component/E2E proof or a narrow justified allowlist.
 - Test layers: unit/property tests use builders/local fixtures; live content checks are in contract tests.
 - Docs: guides, checklists, and examples changed with the behavior.
-- Validation: final evidence includes `pnpm validate`.
+- Validation: final evidence includes `pnpm run check:feature-proofs`, `pnpm run check:fast`, and `pnpm validate`.
 
 ## Finding format
 

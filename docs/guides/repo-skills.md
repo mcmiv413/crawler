@@ -24,6 +24,7 @@ Use the narrower building-block skills when the user asks directly for animation
 | 2 | `scripts/generate-repo-skills.mjs` / `scripts/check-repo-skills.mjs` | Maintain mirror generation and drift detection |
 | 3 | `.github/skills/**/*`, `.claude/skills/**/*`, `.agents/skills/**/*` | Generated output only; regenerate instead of hand-editing |
 | 4 | `README.md`, `docs/README.md`, `docs/guides/testing.md`, `docs/guides/architecture-patterns.md` | Keep contributor-facing workflow docs current |
+| 5 | `docs/feature-proofs.yml` | Source of truth for major feature ownership, proof homes, scenario fixtures, and focused validation commands |
 
 ## Canonical Source and Mirrors
 
@@ -75,15 +76,18 @@ Do not hand-edit the mirror trees. If the mirrors drift, regenerate them from `d
 
 4. Confirm planning or workflow changes still name deterministic guardrails with an enforcement home, known-bad case, and proof command when the plan needs them.
 
-5. Run the targeted tooling test:
+5. When a skill changes feature delivery, make sure it tells agents to consult `docs/feature-proofs.yml`, add proof files for every changed production surface, run `pnpm run check:feature-proofs`, and finish on `pnpm validate`.
+
+6. Run the targeted tooling test:
 
    ```bash
    pnpm vitest run tests/integration/repo-skills.integration.test.ts
    ```
 
-6. Finish on the normal repo gates:
+7. Finish on the normal repo gates:
 
    ```bash
+   pnpm run check:feature-proof-registry
    pnpm run check:fast
    pnpm validate:quick
    pnpm validate
@@ -106,6 +110,7 @@ Do not hand-edit the mirror trees. If the mirrors drift, regenerate them from `d
 | `docs/skills/adding-game-mechanic/` | Canonical 6-hop mechanic skill and feature-chain references |
 | `docs/skills/adding-ring/` | Canonical full ring-package authoring skill |
 | `docs/skills/adding-spell/` | Canonical ring-spell authoring skill |
+| `docs/feature-proofs.yml` | Feature proof registry used by guardrails and skills before selecting proof homes |
 | `scripts/repo-skills-lib.mjs` | Shared helper for generation and drift checks |
 | `scripts/generate-repo-skills.mjs` | Mirror generator |
 | `scripts/check-repo-skills.mjs` | Mirror drift checker |

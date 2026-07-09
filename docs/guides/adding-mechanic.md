@@ -6,6 +6,8 @@ Every game mechanic must complete the **6-hop end-to-end chain**. If any hop is 
 
 Before implementation, check [Architecture Patterns](architecture-patterns.md). Content should remain static declarations, runtime decisions belong in `game-core` or `server`, presenter output should be display-ready, and web should render `GameView` instead of duplicating content logic.
 
+Before editing, look up the closest existing owner in [docs/feature-proofs.yml](../feature-proofs.yml). If the mechanic changes a production surface, `pnpm run check:feature-proofs` requires matching proof files in the same diff.
+
 ---
 
 ## The 6-Hop Chain
@@ -105,6 +107,14 @@ it('my feature works end-to-end', () => {
 });
 ```
 
+Run the feature proof guardrail before widening to the full local gates:
+
+```bash
+pnpm run check:feature-proofs
+pnpm run check:fast
+pnpm validate
+```
+
 ---
 
 ## Common Incomplete Feature Patterns
@@ -134,6 +144,10 @@ Before marking done:
 - [ ] **Persistence/Restore** — State shape changes include schema, migration/default, and restore compatibility checks
 - [ ] **Cross-Reference Validation** — All content IDs (items, enemies, abilities) actually exist
 - [ ] **Test** — `assertFeatureChain()` validates all 6 hops (including `entryCheck` and `uiCheck` if applicable)
+- [ ] **Proof Registry** — Existing proof homes were checked in `docs/feature-proofs.yml`, or the registry was updated for a new major mechanic
+- [ ] **Feature Proof Guardrail** — `pnpm run check:feature-proofs` passes without broad allowlists
+- [ ] **Browser Proof** — UI/player-visible browser changes include component or `pnpm test:e2e:scenario` proof
+- [ ] **Historical Saves** — Persisted state shape changes update or add `fixtures/saves/v1/` coverage and pass `packages/game-core/src/state/save-compatibility.test.ts`
 - [ ] **Validate** — `pnpm validate` passes
 - [ ] **Contract Test** — If your feature references content IDs, add a contract test to verify they exist
 

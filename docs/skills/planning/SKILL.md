@@ -16,15 +16,17 @@ Use this skill when the user asks for a plan, a plan review, sequencing advice, 
 5. Check layer ownership: content is static declarations, core/server own runtime decisions, presenter owns display-ready views, and web renders `GameView`.
 6. Enumerate affected surfaces: entry points, state, events, contracts, persistence, migrations/defaults, restore/session behavior, validators, presenter/read model, UI/store, docs, generated artifacts, and final validation.
 7. Convert work into acceptance stories with proof homes. Use the lightest correct test layer: unit/property for pure logic, contract for live IDs and cross-references, integration for flow, presenter/UI for read models and rendering, E2E only when lower layers are not enough.
-8. Identify guardrails for repeated, severe, or easy-to-regress patterns. Prefer deterministic checks with a clear enforcement home: ESLint/type rule, audit script, generator check, test helper, CI gate, or validation gate. Avoid one-off checks that only match the current incident unless they enforce a documented repo pattern.
-9. Build workstreams as vertical slices using `references/deliverable-template.md`. Name real files, new files, proof targets, guardrail homes, and exit criteria for each slice.
-10. Run a readiness pass before presenting the plan:
+8. Check `docs/feature-proofs.yml` for existing proof ownership. Plans that add a major mechanic or new proof home should update the registry.
+9. Identify guardrails for repeated, severe, or easy-to-regress patterns. Prefer deterministic checks with a clear enforcement home: ESLint/type rule, audit script, generator check, test helper, CI gate, or validation gate. Avoid one-off checks that only match the current incident unless they enforce a documented repo pattern.
+10. Build workstreams as vertical slices using `references/deliverable-template.md`. Name real files, new files, proof targets, guardrail homes, and exit criteria for each slice.
+11. Run a readiness pass before presenting the plan:
    - every referenced file path exists or is explicitly declared new
    - workstreams are dependency ordered
    - no `TBD`, `TODO`, `FIXME`, or `???` placeholders remain
    - every proposed guardrail names the pattern it protects, the enforcement home, the known-bad case it catches, and the command that proves it
    - docs, generated artifacts, and validation are included when relevant
    - new tests are tracked by git, not ignored, and run in the intended validation layer
+   - the plan includes `pnpm run check:feature-proofs` before `pnpm run check:fast`
    - the plan finishes on `pnpm validate`
 
 ## Required plan structure
@@ -52,6 +54,8 @@ Use this section order unless the user explicitly wants a different format:
 - If research findings conflict, call out the tradeoff and lock the decision instead of blending both implicitly.
 - If a feature references content IDs, require contract coverage.
 - If player-visible behavior changes, prove the chain through event, presenter, and UI.
+- If browser-facing files change, require component proof or `pnpm test:e2e:scenario`.
+- If persisted state shape changes, require historical save compatibility proof.
 - If generated indexes or registries are affected, require `pnpm generate:indexes` and a diff check.
 - If the plan proposes a guardrail, make it pattern-level, deterministic, and cheap enough for the named validation gate. Include a known-bad fixture or test where practical.
 - If a guardrail needs exceptions, require a narrow allowlist with comments that point to the owning pattern or source of truth.

@@ -1,0 +1,235 @@
+{
+  "schemaVersion": 1,
+  "metadata": {
+    "saveTimestamp": 10,
+    "characterLevel": 1,
+    "currentFloor": 0,
+    "displayName": "Hero"
+  },
+  "gameId": "g1",
+  "phase": "town",
+  "player": {
+    "id": "p1",
+    "name": "Hero",
+    "level": 1,
+    "experience": 0,
+    "stats": {
+      "maxHealth": 36,
+      "health": 36,
+      "attack": 4,
+      "defense": 4,
+      "accuracy": 6,
+      "evasion": 8,
+      "speed": 100
+    },
+    "baseStats": {
+      "maxHealth": 36,
+      "health": 36,
+      "attack": 4,
+      "defense": 4,
+      "accuracy": 6,
+      "evasion": 8,
+      "speed": 100
+    },
+    "position": {
+      "x": 0,
+      "y": 0
+    },
+    "equipment": {
+      "weapon": "fixture_rusty_sword",
+      "secondaryWeapon": null,
+      "chest": "fixture_plate_armor",
+      "head": null,
+      "gloves": null,
+      "boots": null,
+      "ring1": null,
+      "ring2": null
+    },
+    "inventory": [
+      "fixture_health_potion",
+      "fixture_leather_boots"
+    ],
+    "statuses": [],
+    "abilities": [],
+    "gold": 125,
+    "floor": 0,
+    "totalKills": 0,
+    "totalDeaths": 0,
+    "totalRuns": 0,
+    "deathStash": null,
+    "mana": 20,
+    "maxMana": 20,
+    "ringMastery": {},
+    "learnedRingSpellIds": [],
+    "knownRingSchools": []
+  },
+  "world": {
+    "town": {
+      "prosperity": 50,
+      "fear": 20,
+      "corruption": 10,
+      "rumors": [],
+      "lastRunSummary": null
+    },
+    "npcs": [],
+    "shop": {
+      "items": [],
+      "buybackMultiplier": 0.4
+    },
+    "eventHistory": [],
+    "totalRuns": 0,
+    "deepestFloor": 0,
+    "factions": [
+      {
+        "id": "beast_swarm",
+        "name": "Beast Swarm",
+        "power": 50,
+        "disposition": -20,
+        "status": "leaderless",
+        "leader": null,
+        "leaderSlain": false,
+        "membersKilledByPlayer": 0,
+        "leadersKilledByPlayer": 0,
+        "playerDeathsCaused": 0
+      },
+      {
+        "id": "goblin_warband",
+        "name": "Goblin Warband",
+        "power": 40,
+        "disposition": -30,
+        "status": "leaderless",
+        "leader": null,
+        "leaderSlain": false,
+        "membersKilledByPlayer": 0,
+        "leadersKilledByPlayer": 0,
+        "playerDeathsCaused": 0
+      },
+      {
+        "id": "shadow_cult",
+        "name": "Shadow Cult",
+        "power": 25,
+        "disposition": -60,
+        "status": "leaderless",
+        "leader": null,
+        "leaderSlain": false,
+        "membersKilledByPlayer": 0,
+        "leadersKilledByPlayer": 0,
+        "playerDeathsCaused": 0
+      },
+      {
+        "id": "undead_legion",
+        "name": "Undead Legion",
+        "power": 30,
+        "disposition": -50,
+        "status": "leaderless",
+        "leader": null,
+        "leaderSlain": false,
+        "membersKilledByPlayer": 0,
+        "leadersKilledByPlayer": 0,
+        "playerDeathsCaused": 0
+      }
+    ],
+    "dungeonOgre": {
+      "id": "dungeon_ogre",
+      "status": "sealed"
+    },
+    "unlockedBlueprints": [],
+    "highestRarityFound": "common"
+  },
+  "run": null,
+  "floor": null,
+  "enemies": {},
+  "objects": {},
+  "itemRegistry": {
+    "items": {
+      "fixture_health_potion": {
+        "itemId": "health_potion",
+        "name": "Health Potion",
+        "description": "Restores 30 health.",
+        "itemClass": "consumable",
+        "rarity": "common",
+        "value": 10,
+        "stackable": true,
+        "maxStack": 5,
+        "spriteName": "purple red potion",
+        "consumable": {
+          "effect": "heal",
+          "magnitude": 30
+        },
+        "animation": {
+          "id": "fx.self.healing-pulse"
+        }
+      },
+      "fixture_leather_boots": {
+        "itemId": "leather_boots",
+        "spriteName": "leather boots",
+        "name": "Leather Boots",
+        "description": "Basic leather footwear.",
+        "itemClass": "armor",
+        "rarity": "common",
+        "value": 8,
+        "stackable": false,
+        "maxStack": 1,
+        "armor": {
+          "defense": 1,
+          "evasionPenalty": 0,
+          "slot": "boots",
+          "enchantmentSlots": 0,
+          "enchantments": []
+        }
+      },
+      "fixture_plate_armor": {
+        "itemId": "plate_armor",
+        "spriteName": "full plate",
+        "name": "Plate Armor",
+        "description": "Heavy metal plates. Excellent defense, poor mobility.",
+        "itemClass": "armor",
+        "rarity": "rare",
+        "value": 70,
+        "stackable": false,
+        "maxStack": 1,
+        "armor": {
+          "defense": 10,
+          "evasionPenalty": 15,
+          "slot": "chest",
+          "enchantmentSlots": 2,
+          "enchantments": [
+            null,
+            null
+          ]
+        }
+      },
+      "fixture_rusty_sword": {
+        "itemId": "rusty_sword",
+        "name": "Rusty Sword",
+        "description": "A worn but functional blade.",
+        "itemClass": "weapon",
+        "rarity": "common",
+        "value": 15,
+        "stackable": false,
+        "maxStack": 1,
+        "spriteName": "dwarvish short sword",
+        "weapon": {
+          "damage": 7,
+          "damageType": "physical",
+          "accuracy": 2,
+          "speed": 0,
+          "slot": "weapon",
+          "weaponRange": 1,
+          "weaponType": "blade"
+        }
+      }
+    }
+  },
+  "seed": 42,
+  "turnNumber": 10,
+  "version": 1,
+  "activeQuests": [],
+  "weaponMastery": {
+    "blade": 0,
+    "bludgeon": 0,
+    "axe": 0,
+    "ranged": 0,
+    "dagger": 0
+  }
+}
