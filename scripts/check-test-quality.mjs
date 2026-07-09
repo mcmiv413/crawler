@@ -16,7 +16,6 @@ import {
   isNumericExpression,
   isPresenceMatcher,
   isWeakAssertion,
-  walk,
 } from './guardrails/test-quality-ast.mjs';
 
 const DEFAULT_BASE_REF = process.env.TEST_QUALITY_BASE ?? 'main';
@@ -154,6 +153,20 @@ function makeFailure({ title, relativePath, line, found, why, repair }) {
   };
 }
 
+function* childNodes(root) {
+  let emitChildren = function* emptyChildNodes() {};
+  ts.forEachChild(root, (child) => {
+    const emitPreviousChildren = emitChildren;
+    emitChildren = function* nextChildNodes() { yield* emitPreviousChildren(); yield child; };
+  });
+  yield* emitChildren();
+}
+
+function* collectNodeFailures(root, getFailures) {
+  yield* getFailures(root);
+  for (const child of childNodes(root)) yield* collectNodeFailures(child, getFailures);
+}
+
 function formatFailure(failure) {
   const location = `${failure.relativePath}${failure.line ? `:${failure.line}` : ''}`;
   return [
@@ -254,35 +267,63 @@ function checkHeaderBoilerplate({ relativePath, source, sourceFile }) {
   if (!shouldRequireHeader(relativePath, sourceFile)) return [];
   const { behavior, proof } = getHeaderFieldValues(source);
   if (behavior === undefined && proof === undefined) return [];
-  const failures = [];
-  const push = (title, found, why, repair) => failures.push(makeFailure({ title, relativePath, line: 1, found, why, repair }));
   const coversMatch = behavior?.match(/^(.+?)\s+covers\s+(.+?)(?:[;.]|$)/i);
-  if (coversMatch) {
-    const [subject, covered] = coversMatch.slice(1, 3).map(normalizeHeaderText);
-    if (subject && subject === covered) push('boilerplate behavior header (duplicated phrase around "covers")', `Behavior: ${behavior}`, 'A Behavior line of the form "X covers X" restates the suite name instead of describing the behavior under test.', ['Rewrite Behavior to state the specific behavior this file proves.', 'Name the concrete inputs and the observable result, not the suite title.']);
-  }
-  if (proof) {
-    const np = normalizeHeaderText(proof);
-    if (GENERIC_PROOF_PHRASES.some((p) => np === p || np.startsWith(p))) push('generic proof header', `Proof: ${proof}`, 'This Proof line is shared filler that does not describe what THIS file asserts.', ['Replace Proof with a file-specific sentence naming the actual assertions:', '- the emitted event type(s), state transition, presenter/GameView field, or UI/pixel evidence this file checks.']);
-  }
-  for (const [field, value] of [['Behavior', behavior], ['Proof', proof]]) {
-    if (value && (/\.{4,}/.test(value) || /…/.test(value))) push('truncated/placeholder header', `${field}: ${value}`, 'A header line ending in "...." or an ellipsis is truncated and not searchable.', ['Finish the sentence: state the complete behavior/proof without "...." or an ellipsis.']);
-  }
-  return failures;
+  const coveredSubjects = coversMatch?.slice(1, 3).map(normalizeHeaderText);
+  const proofText = proof ? normalizeHeaderText(proof) : '';
+
+  return [
+    ...(coveredSubjects?.[0] && coveredSubjects[0] === coveredSubjects[1]
+      ? [
+        makeFailure({
+          title: 'boilerplate behavior header (duplicated phrase around "covers")',
+          relativePath,
+          line: 1,
+          found: `Behavior: ${behavior}`,
+          why: 'A Behavior line of the form "X covers X" restates the suite name instead of describing the behavior under test.',
+          repair: ['Rewrite Behavior to state the specific behavior this file proves.', 'Name the concrete inputs and the observable result, not the suite title.'],
+        }),
+      ]
+      : []),
+    ...(proof && GENERIC_PROOF_PHRASES.some((phrase) => proofText === phrase || proofText.startsWith(phrase))
+      ? [
+        makeFailure({
+          title: 'generic proof header',
+          relativePath,
+          line: 1,
+          found: `Proof: ${proof}`,
+          why: 'This Proof line is shared filler that does not describe what THIS file asserts.',
+          repair: ['Replace Proof with a file-specific sentence naming the actual assertions:', '- the emitted event type(s), state transition, presenter/GameView field, or UI/pixel evidence this file checks.'],
+        }),
+      ]
+      : []),
+    ...[['Behavior', behavior], ['Proof', proof]].flatMap(([field, value]) =>
+      value && (/\.{4,}/.test(value) || /…/.test(value))
+        ? [
+          makeFailure({
+            title: 'truncated/placeholder header',
+            relativePath,
+            line: 1,
+            found: `${field}: ${value}`,
+            why: 'A header line ending in "...." or an ellipsis is truncated and not searchable.',
+            repair: ['Finish the sentence: state the complete behavior/proof without "...." or an ellipsis.'],
+          }),
+        ]
+        : [],
+    ),
+  ];
 }
 
 function checkFocusedAndSkipped({ relativePath, source, sourceFile }) {
-  const failures = [];
-  for (const call of collectVitestCalls(sourceFile)) {
+  return collectVitestCalls(sourceFile).flatMap((call) => {
     if (call.modifier !== 'only' && call.modifier !== 'skip') {
-      continue;
+      return [];
     }
 
     const line = lineNumberAt(source, call.node.getStart(sourceFile));
     const found = call.node.getText(sourceFile).split('\n')[0] ?? call.node.getText(sourceFile);
 
     if (call.modifier === 'only') {
-      failures.push(
+      return [
         makeFailure({
           title: 'focused test',
           relativePath,
@@ -294,15 +335,14 @@ function checkFocusedAndSkipped({ relativePath, source, sourceFile }) {
             'Run the smallest affected test command, then finish on pnpm validate.',
           ],
         }),
-      );
-      continue;
+      ];
     }
 
     if (hasSkipAllowlist(source, call.node.getStart(sourceFile))) {
-      continue;
+      return [];
     }
 
-    failures.push(
+    return [
       makeFailure({
         title: 'skipped test without allowlist',
         relativePath,
@@ -314,22 +354,18 @@ function checkFocusedAndSkipped({ relativePath, source, sourceFile }) {
           'If a skip is intentional, add a nearby comment: // test-quality: allow-skip - tracked reason',
         ],
       }),
-    );
-  }
-  return failures;
+    ];
+  });
 }
 
 function checkMathRandom({ relativePath, source, sourceFile }) {
-  const failures = [];
-  walk(sourceFile, (node) => {
-    if (
-      ts.isCallExpression(node)
+  return [...collectNodeFailures(sourceFile, (node) =>
+    ts.isCallExpression(node)
       && ts.isPropertyAccessExpression(node.expression)
       && ts.isIdentifier(node.expression.expression)
       && node.expression.expression.text === 'Math'
       && node.expression.name.text === 'random'
-    ) {
-      failures.push(
+      ? [
         makeFailure({
           title: 'unseeded randomness',
           relativePath,
@@ -341,24 +377,22 @@ function checkMathRandom({ relativePath, source, sourceFile }) {
             'Keep the seed in the test so failures can be reproduced.',
           ],
         }),
-      );
-    }
-  });
-  return failures;
+      ]
+      : [],
+  )];
 }
 
 function checkWeakAssertionOnlyTests({ relativePath, sourceFile }) {
-  const failures = [];
-  for (const testCase of collectTestCases(sourceFile)) {
+  return collectTestCases(sourceFile).flatMap((testCase) => {
     const assertions = collectAssertions(testCase.callback, sourceFile);
     const weakAssertions = assertions.filter((assertion) => isWeakAssertion(assertion, sourceFile));
     const strongAssertions = assertions.filter((assertion) => isWeakAssertion(assertion, sourceFile) === false);
 
     if (weakAssertions.length === 0 || strongAssertions.length > 0) {
-      continue;
+      return [];
     }
 
-    failures.push(
+    return [
       makeFailure({
         title: 'weak assertion-only test',
         relativePath,
@@ -374,9 +408,8 @@ function checkWeakAssertionOnlyTests({ relativePath, sourceFile }) {
           `Test title: ${testCase.title}`,
         ],
       }),
-    );
-  }
-  return failures;
+    ];
+  });
 }
 
 function checkUnitLayerBoundaries({ relativePath, source, sourceFile }) {
@@ -384,42 +417,41 @@ function checkUnitLayerBoundaries({ relativePath, source, sourceFile }) {
     return [];
   }
 
-  const failures = [];
   const contentImport = hasContentImport(sourceFile);
-  if (contentImport !== null) {
-    failures.push(
-      makeFailure({
-        title: 'live content import in unit/property test',
-        relativePath,
-        line: lineNumberAt(source, contentImport.getStart(sourceFile)),
-        found: contentImport.getText(sourceFile),
-        why: 'Unit and property tests must use local fixtures/builders. Live @dungeon/content belongs in contract, integration, balance, or E2E layers.',
-        repair: [
-          'Replace live registry data with a builder or local fixture.',
-          'Move live ID and cross-reference proof to tests/contracts when that is the behavior under test.',
-        ],
-      }),
-    );
-  }
-
   const gameEngineIdentifier = findIdentifier(sourceFile, 'GameEngine');
-  if (gameEngineIdentifier !== null) {
-    failures.push(
-      makeFailure({
-        title: 'GameEngine usage in unit/property test',
-        relativePath,
-        line: lineNumberAt(source, gameEngineIdentifier.getStart(sourceFile)),
-        found: gameEngineIdentifier.getText(sourceFile),
-        why: 'GameEngine builds integrated state. Tests that need it belong in integration, contract, balance, or E2E layers, not unit/property files.',
-        repair: [
-          'Rename and move the test to the correct layer, or replace GameEngine with focused builders/local fixtures.',
-          'Use tests/integration for multi-step engine behavior.',
-        ],
-      }),
-    );
-  }
 
-  return failures;
+  return [
+    ...(contentImport !== null
+      ? [
+        makeFailure({
+          title: 'live content import in unit/property test',
+          relativePath,
+          line: lineNumberAt(source, contentImport.getStart(sourceFile)),
+          found: contentImport.getText(sourceFile),
+          why: 'Unit and property tests must use local fixtures/builders. Live @dungeon/content belongs in contract, integration, balance, or E2E layers.',
+          repair: [
+            'Replace live registry data with a builder or local fixture.',
+            'Move live ID and cross-reference proof to tests/contracts when that is the behavior under test.',
+          ],
+        }),
+      ]
+      : []),
+    ...(gameEngineIdentifier !== null
+      ? [
+        makeFailure({
+          title: 'GameEngine usage in unit/property test',
+          relativePath,
+          line: lineNumberAt(source, gameEngineIdentifier.getStart(sourceFile)),
+          found: gameEngineIdentifier.getText(sourceFile),
+          why: 'GameEngine builds integrated state. Tests that need it belong in integration, contract, balance, or E2E layers, not unit/property files.',
+          repair: [
+            'Rename and move the test to the correct layer, or replace GameEngine with focused builders/local fixtures.',
+            'Use tests/integration for multi-step engine behavior.',
+          ],
+        }),
+      ]
+      : []),
+  ];
 }
 
 function checkPlaywrightPresenceOnly({ relativePath, sourceFile }) {
@@ -427,19 +459,18 @@ function checkPlaywrightPresenceOnly({ relativePath, sourceFile }) {
     return [];
   }
 
-  const failures = [];
-  for (const testCase of collectTestCases(sourceFile)) {
+  return collectTestCases(sourceFile).flatMap((testCase) => {
     const bodyText = testCase.callback.getText(sourceFile);
     const assertions = collectAssertions(testCase.callback, sourceFile);
     if (assertions.length === 0 || hasInteractionSignal(bodyText) === false) {
-      continue;
+      return [];
     }
 
     if (assertions.every((assertion) => isPresenceMatcher(assertion.matcher)) === false) {
-      continue;
+      return [];
     }
 
-    failures.push(
+    return [
       makeFailure({
         title: 'Playwright presence-only behavior proof',
         relativePath,
@@ -454,9 +485,8 @@ function checkPlaywrightPresenceOnly({ relativePath, sourceFile }) {
           `Test title: ${testCase.title}`,
         ],
       }),
-    );
-  }
-  return failures;
+    ];
+  });
 }
 
 function checkTunableNumericToBe({ relativePath, source, sourceFile }) {
@@ -464,15 +494,14 @@ function checkTunableNumericToBe({ relativePath, source, sourceFile }) {
     return [];
   }
 
-  const failures = [];
-  walk(sourceFile, (node) => {
-    if (!ts.isCallExpression(node)) return;
+  return [...collectNodeFailures(sourceFile, (node) => {
+    if (!ts.isCallExpression(node)) return [];
     const assertion = getExpectMatcher(node);
-    if (assertion === null || assertion.matcher !== 'toBe') return;
+    if (assertion === null || assertion.matcher !== 'toBe') return [];
     const expected = node.arguments[0];
-    if (!expected || isNumericExpression(expected) === false) return;
+    if (!expected || isNumericExpression(expected) === false) return [];
 
-    failures.push(
+    return [
       makeFailure({
         title: 'exact numeric assertion in tunable game-core test',
         relativePath,
@@ -484,9 +513,8 @@ function checkTunableNumericToBe({ relativePath, source, sourceFile }) {
           'If an exact value is a schema/coordinate constant rather than tuning, move that proof outside the guarded tunable runtime areas or assert a named constant.',
         ],
       }),
-    );
-  });
-  return failures;
+    ];
+  })];
 }
 
 function checkFile(repoRoot, relativePath) {
