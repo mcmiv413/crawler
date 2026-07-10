@@ -3,6 +3,7 @@ import { sortedCopy } from '@dungeon/contracts';
 import { ABILITY_DEFINITIONS, ANIMATION_REF_BY_ID, animationRefs } from '@dungeon/content';
 import type { AnimationId } from '@dungeon/content';
 import { ALL_ABILITY_DEFINITIONS } from '@dungeon/core';
+import { buildTrapDisarmedAction, buildTrapPlacedAction, buildTrapTriggeredAction } from './trap-animation-sequence.js';
 import type {
   AbilityAnimationEntry,
   BumpAnimationEntry,
@@ -263,6 +264,15 @@ function collectPrimaryActorIds(
         break;
       case 'ITEM_USED':
         actorIds.add(event.userId);
+        break;
+      case 'TRAP_PLACED':
+      case 'TRAP_DISARMED':
+        actorIds.add(event.playerId);
+        break;
+      case 'TRAP_TRIGGERED':
+        if (event.targetId !== undefined) {
+          actorIds.add(event.targetId);
+        }
         break;
       default:
         break;
@@ -801,6 +811,28 @@ export function buildAnimationSequence(
         const beat = actorBeats.get(event.userId);
         if (beat !== undefined) {
           scheduleBeatAction(beat, buildConsumableAction(event, state));
+        }
+        break;
+      }
+      case 'TRAP_PLACED': {
+        const beat = actorBeats.get(event.playerId);
+        if (beat !== undefined) {
+          scheduleBeatAction(beat, buildTrapPlacedAction(event));
+        }
+        break;
+      }
+      case 'TRAP_DISARMED': {
+        const beat = actorBeats.get(event.playerId);
+        if (beat !== undefined) {
+          scheduleBeatAction(beat, buildTrapDisarmedAction(event, state));
+        }
+        break;
+      }
+      case 'TRAP_TRIGGERED': {
+        const targetId = event.targetId;
+        const beat = targetId === undefined ? undefined : actorBeats.get(targetId);
+        if (beat !== undefined) {
+          scheduleBeatAction(beat, buildTrapTriggeredAction(event));
         }
         break;
       }

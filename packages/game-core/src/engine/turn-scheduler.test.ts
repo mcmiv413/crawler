@@ -1,7 +1,7 @@
 /**
  * Test layer: unit
- * Behavior: processEnemyTurns schedules enemy actions by speed and accumulators while applying alerts, movement hazards, combat enchantments, storm effects, cooldowns, and status ticks during enemy turn processing.
- * Proof: Assertions check ATTACK_PERFORMED attacker order and player damage, ENEMY_ALERTED propagation, no actions for stunned/dead-player cases, TRAP_TRIGGERED before ENTITY_DIED and THORNS_REFLECTED before ENTITY_DIED with enemy removal, deterministic thunderstorm ABILITY_USED targetSnapshots with burn/stun statuses and hidden enemies untouched, BLINK_DODGED/LIFE_STEAL/debug event shapes, speedAccumulator values/action counts, cooldown decrements, and burn damage clamped on player/enemies.
+ * Behavior: processEnemyTurns schedules enemy actions by speed and accumulators while applying alerts, movement hazards, trap statuses and exhaustion, combat enchantments, storm effects, cooldowns, and status ticks during enemy turn processing.
+ * Proof: Assertions check ATTACK_PERFORMED attacker order and player damage, ENEMY_ALERTED propagation, no actions for stunned/dead-player cases, TRAP_TRIGGERED before ENTITY_DIED, trap STATUS_APPLIED and player-origin exhaustion, THORNS_REFLECTED before ENTITY_DIED with enemy removal, deterministic thunderstorm ABILITY_USED targetSnapshots with burn/stun statuses and hidden enemies untouched, BLINK_DODGED/LIFE_STEAL/debug event shapes, speedAccumulator values/action counts, cooldown decrements, and burn damage clamped on player/enemies.
  * Validation: pnpm vitest run packages/game-core/src/engine/turn-scheduler.test.ts
  */
 import { describe, it, expect } from 'vitest';
@@ -188,6 +188,92 @@ describe('processEnemyTurns', () => {
       sourceEventType: 'TRAP_TRIGGERED',
     });
     expect(resultState.run?.enemies.size).toBe(0);
+  });
+
+  it('applies trap status effects to enemies through the shared status pipeline', () => {
+    const trapPosition = { x: 1, y: 0 };
+    const enemy = createTestEnemy({
+      id: entityId('trap_status_victim'),
+      position: { x: 2, y: 0 },
+      archetype: 'unknown_archetype',
+      isAlerted: true,
+      stats: { maxHealth: 40, health: 40, attack: 8, defense: 0, accuracy: 70, evasion: 0, speed: 100 },
+    });
+    const trap: ObjectInstance = {
+      id: entityId('poison_trap_enemy'),
+      templateId: 'poison_trap',
+      position: trapPosition,
+      isExhausted: false,
+    };
+    const state = makeTurnState({ x: 0, y: 0 }, [enemy]);
+    const stateWithTrap: GameState = {
+      ...state,
+      run: {
+        ...state.run!,
+        objects: new Map([[posKey(trapPosition), trap]]),
+      },
+    };
+
+    const { state: resultState, events } = processEnemyTurns(stateWithTrap, new SeededRNG(1));
+    const trapEvent = events.find(
+      (event): event is Extract<DomainEvent, { type: 'TRAP_TRIGGERED' }> => event.type === 'TRAP_TRIGGERED',
+    );
+    const statusEvent = events.find(
+      (event): event is Extract<DomainEvent, { type: 'STATUS_APPLIED' }> => event.type === 'STATUS_APPLIED',
+    );
+    const updatedEnemy = resultState.run!.enemies.get(posKey(trapPosition));
+
+    expect(trapEvent).toMatchObject({
+      trapId: trap.id,
+      statusEffect: 'poison',
+      targetId: enemy.id,
+      targetPosition: trapPosition,
+    });
+    expect(statusEvent).toMatchObject({
+      targetId: enemy.id,
+      statusId: 'poison',
+      sourceId: trap.id,
+    });
+    expect(updatedEnemy?.statuses.some(status => status.id === 'poison' && status.sourceId === trap.id)).toBe(true);
+  });
+
+  it('exhausts player-origin traps when enemies trigger them and persists the floor state', () => {
+    const trapPosition = { x: 1, y: 0 };
+    const enemy = createTestEnemy({
+      id: entityId('trap_exhaustion_victim'),
+      position: { x: 2, y: 0 },
+      archetype: 'unknown_archetype',
+      isAlerted: true,
+      stats: { maxHealth: 40, health: 40, attack: 8, defense: 0, accuracy: 70, evasion: 0, speed: 100 },
+    });
+    const trap: ObjectInstance = {
+      id: entityId('player_trap_enemy'),
+      templateId: 'trap_spikes',
+      position: trapPosition,
+      isExhausted: false,
+      origin: 'player',
+    };
+    const state = makeTurnState({ x: 0, y: 0 }, [enemy]);
+    const stateWithTrap: GameState = {
+      ...state,
+      run: {
+        ...state.run!,
+        objects: new Map([[posKey(trapPosition), trap]]),
+      },
+    };
+
+    const { state: resultState, events } = processEnemyTurns(stateWithTrap, new SeededRNG(1));
+    const trapEvent = events.find(
+      (event): event is Extract<DomainEvent, { type: 'TRAP_TRIGGERED' }> => event.type === 'TRAP_TRIGGERED',
+    );
+    const exhaustedTrap = resultState.run!.objects.get(posKey(trapPosition));
+    const cachedTrap = resultState.persistedFloorCache
+      ?.get(resultState.run!.floor.depth)
+      ?.objects.get(posKey(trapPosition));
+
+    expect(trapEvent).toMatchObject({ trapOrigin: 'player', exhausted: true });
+    expect(exhaustedTrap?.isExhausted).toBe(true);
+    expect(cachedTrap?.isExhausted).toBe(true);
   });
 
   it('un-alerted enemy within range 5 becomes alerted', () => {

@@ -1,7 +1,7 @@
 /**
  * Test layer: unit
- * Behavior: buildAnimationSequence converts movement, attack, ability, status, and visibility-filtered events into ordered non-overlapping animation beats with stable timing and action-time target positions.
- * Proof: Assertions inspect beat indexes, beat IDs, delays, bump timing, damage and ability positions, hidden beat filtering, lightning animation IDs, empty no-run output, and getAnimatedEventBatchSettleMs matching getBeatSettleMs.
+ * Behavior: buildAnimationSequence converts movement, attack, ability, trap, status, and visibility-filtered events into ordered non-overlapping animation beats with stable timing and action-time target positions.
+ * Proof: Assertions inspect beat indexes, beat IDs, delays, bump timing, trap placement/disarm/trigger animation IDs and impact-frame damage, hidden beat filtering, lightning animation IDs, empty no-run output, and getAnimatedEventBatchSettleMs matching getBeatSettleMs.
  * Validation: pnpm vitest run packages/presenter/src/animation-sequence.test.ts
  */
 import { describe, expect, it } from 'vitest';
@@ -17,6 +17,9 @@ import {
 
 const LIGHTNING_STRIKE_ANIMATION_ID = 'fx.impact.lightning-strike';
 const RADIAL_IMPACT_BURST_ANIMATION_ID = 'fx.impact.radial-impact-burst';
+const TRAP_PLACEMENT_ANIMATION_ID = 'fx.utility.trap-placement';
+const TRAP_DISARM_ANIMATION_ID = 'fx.impact.disarm-strike';
+const TRAP_SPARK_ANIMATION_ID = 'fx.utility.trap-spark';
 
 function createMockGameState(): GameState {
   const baseState = createTestGameStateInCombat();
@@ -427,6 +430,208 @@ describe('buildAnimationSequence', () => {
     expect(damage?.beatId).toBe(ability?.beatId);
     expect(damage?.beatRelativeDelayMs).toBe(impactFrameMs);
     expect(damage?.delayMs).toBe(ability!.delayMs + impactFrameMs);
+  });
+
+  it('generates a placement animation for TRAP_PLACED events', () => {
+    const events: DomainEvent[] = [{
+      type: 'TRAP_PLACED',
+      timestamp: 1000,
+      turnNumber: 1,
+      trapObjectId: entityId('trap-placed-1'),
+      trapName: 'Spike Trap',
+      trapTemplateId: 'trap_spikes',
+      itemEntityId: entityId('trap-item-1'),
+      position: { x: 51, y: 50 },
+      playerId: entityId('player-1'),
+    } as DomainEvent];
+
+    const sequence = buildAnimationSequence(events, mockGameState);
+    const ability = sequence.find((event) => event.type === 'ability');
+
+    expect(ability?.data).toMatchObject({
+      abilityId: 'trap_placed',
+      animationId: TRAP_PLACEMENT_ANIMATION_ID,
+      selfTargeted: true,
+      playerPos: { x: 51, y: 50 },
+    });
+  });
+
+  it('generates a disarm animation anchored to the disarmed trap position', () => {
+    const events: DomainEvent[] = [{
+      type: 'TRAP_DISARMED',
+      timestamp: 1000,
+      turnNumber: 1,
+      trapObjectId: entityId('trap-disarmed-1'),
+      trapName: 'Spike Trap',
+      position: { x: 51, y: 50 },
+      recoveredItemId: entityId('trap-item-1'),
+      recoveredItemName: 'Wooden Spike Trap',
+      playerId: entityId('player-1'),
+    } as DomainEvent];
+
+    const sequence = buildAnimationSequence(events, mockGameState);
+    const ability = sequence.find((event) => event.type === 'ability');
+
+    expect(ability?.data).toMatchObject({
+      abilityId: 'trap_disarmed',
+      animationId: TRAP_DISARM_ANIMATION_ID,
+      playerPos: { x: 50, y: 50 },
+      targetPos: { x: 51, y: 50 },
+    });
+  });
+
+  it('anchors trap trigger damage indicators to the trigger animation impact frame', () => {
+    const events: DomainEvent[] = [{
+      type: 'TRAP_TRIGGERED',
+      timestamp: 1000,
+      turnNumber: 1,
+      trapId: entityId('trap-triggered-1'),
+      trapName: 'Spike Trap',
+      position: { x: 51, y: 50 },
+      damage: 9,
+      hazardType: 'spike',
+      targetId: entityId('player-1'),
+      targetName: 'Hero',
+      targetPosition: { x: 51, y: 50 },
+      preHealth: 100,
+      postHealth: 91,
+      maxHealth: 100,
+      killed: false,
+    } as DomainEvent];
+
+    const sequence = buildAnimationSequence(events, mockGameState);
+    const ability = sequence.find((event) => event.type === 'ability');
+    const damage = sequence.find((event) => event.type === 'damage');
+
+    expect(ability?.data).toMatchObject({
+      abilityId: 'trap_triggered_spike',
+      animationId: TRAP_SPARK_ANIMATION_ID,
+      selfTargeted: true,
+      playerPos: { x: 51, y: 50 },
+    });
+    const impactFrameMs = (ability?.data as { impactFrameMs: number }).impactFrameMs;
+    expect(damage?.beatId).toBe(ability?.beatId);
+    expect(damage?.beatRelativeDelayMs).toBe(impactFrameMs);
+    expect(damage?.data).toMatchObject({ x: 51, y: 50, text: '-9' });
+  });
+
+  it('schedules trap impact flashes and hit-stop for lightning trap triggers', () => {
+    const events: DomainEvent[] = [{
+      type: 'TRAP_TRIGGERED',
+      timestamp: 1000,
+      turnNumber: 1,
+      trapId: entityId('lightning-trap-1'),
+      trapName: 'Lightning Trap',
+      position: { x: 51, y: 50 },
+      damage: 11,
+      hazardType: 'lightning',
+      targetId: entityId('enemy-1'),
+      targetName: 'Slow Goblin',
+      targetPosition: { x: 51, y: 50 },
+      preHealth: 20,
+      postHealth: 9,
+      maxHealth: 20,
+      killed: false,
+    } as DomainEvent];
+
+    const sequence = buildAnimationSequence(events, mockGameState);
+    const ability = sequence.find((event) => event.type === 'ability');
+    const hitStop = sequence.find((event) => event.type === 'hit-stop');
+    const defenderHit = sequence.find((event) => event.type === 'defender-hit');
+    const impactFrameMs = (ability?.data as { impactFrameMs: number }).impactFrameMs;
+
+    expect(ability?.data).toMatchObject({
+      animationId: LIGHTNING_STRIKE_ANIMATION_ID,
+      targetPos: { x: 51, y: 50 },
+    });
+    expect(hitStop?.beatRelativeDelayMs).toBe(impactFrameMs);
+    expect(defenderHit?.beatRelativeDelayMs).toBe(impactFrameMs);
+    expect(defenderHit?.data).toMatchObject({
+      entityId: entityId('enemy-1'),
+      position: { x: 51, y: 50 },
+    });
+  });
+
+  it('sequences multiple trap events without overlapping their impact frames', () => {
+    const events: DomainEvent[] = [
+      {
+        type: 'TRAP_PLACED',
+        timestamp: 1000,
+        turnNumber: 1,
+        trapObjectId: entityId('trap-placed-1'),
+        trapName: 'Spike Trap',
+        trapTemplateId: 'trap_spikes',
+        itemEntityId: entityId('trap-item-1'),
+        position: { x: 51, y: 50 },
+        playerId: entityId('player-1'),
+      } as DomainEvent,
+      {
+        type: 'TRAP_DISARMED',
+        timestamp: 1001,
+        turnNumber: 1,
+        trapObjectId: entityId('trap-disarmed-1'),
+        trapName: 'Spike Trap',
+        position: { x: 52, y: 50 },
+        recoveredItemId: entityId('trap-item-2'),
+        recoveredItemName: 'Wooden Spike Trap',
+        playerId: entityId('player-1'),
+      } as DomainEvent,
+    ];
+
+    const sequence = buildAnimationSequence(events, mockGameState);
+    const trapAnimations = sequence.filter((event) => event.type === 'ability');
+
+    expect(trapAnimations).toHaveLength(2);
+    expect(trapAnimations[1]!.delayMs).toBeGreaterThan(trapAnimations[0]!.delayMs);
+    expect((trapAnimations[0]!.data as { animationId: string }).animationId).toBe(TRAP_PLACEMENT_ANIMATION_ID);
+    expect((trapAnimations[1]!.data as { animationId: string }).animationId).toBe(TRAP_DISARM_ANIMATION_ID);
+  });
+
+  it('keeps trap trigger visuals in the mover beat within mixed event batches', () => {
+    const events: DomainEvent[] = [
+      {
+        type: 'PLAYER_MOVED',
+        timestamp: 1000,
+        turnNumber: 1,
+        from: { x: 50, y: 50 },
+        to: { x: 51, y: 50 },
+      } as DomainEvent,
+      {
+        type: 'TRAP_TRIGGERED',
+        timestamp: 1000,
+        turnNumber: 1,
+        trapId: entityId('trap-triggered-1'),
+        trapName: 'Spike Trap',
+        position: { x: 51, y: 50 },
+        damage: 9,
+        hazardType: 'spike',
+        targetId: entityId('player-1'),
+        targetName: 'Hero',
+        targetPosition: { x: 51, y: 50 },
+        preHealth: 100,
+        postHealth: 91,
+        maxHealth: 100,
+        killed: false,
+      } as DomainEvent,
+      createAttackEvent({
+        attackerId: entityId('enemy-2'),
+        defenderId: entityId('player-1'),
+        timestamp: 1001,
+        position: { x: 51, y: 50 },
+      }),
+    ];
+
+    const sequence = buildAnimationSequence(events, mockGameState);
+    const move = sequence.find((event) => event.type === 'move');
+    const trapAbility = sequence.find((event) =>
+      event.type === 'ability'
+      && (event.data as { abilityId?: string }).abilityId === 'trap_triggered_spike',
+    );
+    const enemyBump = sequence.find((event) => event.type === 'bump');
+
+    expect(trapAbility?.beatId).toBe(move?.beatId);
+    expect(trapAbility!.delayMs).toBeGreaterThan(move!.delayMs);
+    expect(enemyBump?.beatIndex).toBeGreaterThan(trapAbility!.beatIndex);
   });
 
   it('does not reserve a player beat for wait turns with enemy-only actions', () => {

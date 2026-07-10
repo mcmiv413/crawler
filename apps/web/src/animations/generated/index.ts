@@ -28,6 +28,7 @@ import { rangedPinModule } from '../modules/ranged-pin.js';
 import { rangedVolleyModule } from '../modules/ranged-volley.js';
 import { secondWindModule } from '../modules/second-wind.js';
 import { staminaSurgeModule } from '../modules/stamina-surge.js';
+import { trapSparkModule } from '../modules/trap-spark.js';
 import { goldRingPulseModule } from '../status-overlays/gold-ring-pulse.js';
 
 // Register all modules
@@ -53,5 +54,6 @@ export function initializeAnimationModules(): void {
   registerModule(rangedVolleyModule);
   registerModule(secondWindModule);
   registerModule(staminaSurgeModule);
+  registerModule(trapSparkModule);
   registerModule(goldRingPulseModule);
 }

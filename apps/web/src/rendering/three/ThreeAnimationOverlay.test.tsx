@@ -786,6 +786,24 @@ describe('ThreeAnimationOverlay – ownership helpers', () => {
     expect(resolved[0]?.position).toEqual({ x: 8, y: 3 });
   });
 
+  it('uses playerPos for self-targeted utility fx animations without target positions', () => {
+    const resolved = resolveHandledModuleAnimations(
+      makeMap(),
+      [],
+      [makeFxAnimation({
+        animationId: 'fx.utility.trap-spark' as any,
+        selfTargeted: true,
+        playerPos: { x: 7, y: 4 },
+        targetPos: undefined,
+        blastPositions: [],
+      })],
+      [],
+      () => mockAnimationModule,
+    );
+
+    expect(resolved[0]?.position).toEqual({ x: 7, y: 4 });
+  });
+
   it('passes projectile source and target positions through the overlay bridge', () => {
     const resolved = resolveHandledModuleAnimations(
       makeMap(),

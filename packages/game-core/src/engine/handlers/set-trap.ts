@@ -44,6 +44,7 @@ export function handleSetTrap(
     templateId: validation.trapItemTemplate.trapTemplateId,
     position: validation.adjacentPos,
     isExhausted: false,
+    origin: 'player',
   };
 
   // Remove trap item from inventory

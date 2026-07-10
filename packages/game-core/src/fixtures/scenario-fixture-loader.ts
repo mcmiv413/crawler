@@ -127,10 +127,11 @@ function buildScenarioState(
   // like natural gameplay where equipping a ring syncs granted abilities. Without
   // this, casts are rejected as ABILITY_NOT_UNLOCKED despite learnedRingSpellIds.
   const equippedPlayer = syncEquipmentGrantedAbilities(loadedPlayer, playerRegistry.items);
+  const scenarioAbilityPlayer = applyScenarioPlayerAbilities(equippedPlayer, scenario.playerAbilityIds ?? []);
 
   // Position the player at the map start and onto the floor.
   const player = {
-    ...equippedPlayer,
+    ...scenarioAbilityPlayer,
     position: { ...scenario.map.playerStart },
     floor: floorNumber,
   };
@@ -178,7 +179,10 @@ function buildScenarioState(
     turnNumber: 0,
     version: 1,
     activeQuests: [],
-    weaponMastery: EMPTY_WEAPON_MASTERY,
+    weaponMastery: {
+      ...EMPTY_WEAPON_MASTERY,
+      ...(scenario.weaponMastery ?? {}),
+    },
   };
 
   return { state, loot };
@@ -234,6 +238,29 @@ function buildFloor(map: ScenarioMapFixture, depth: number, seed: number): Dunge
 
   // Reveal the player's starting field of view exactly as the engine does.
   return { ...floor, cells: computeFov(floor, map.playerStart) };
+}
+
+function applyScenarioPlayerAbilities(
+  player: GameState['player'],
+  abilityIds: readonly string[],
+): GameState['player'] {
+  if (abilityIds.length === 0) return player;
+
+  const existingIds = new Set(player.abilities.map(ability => ability.id));
+  const grantedAbilities = abilityIds
+    .filter((abilityId) => {
+      if (existingIds.has(abilityId)) return false;
+      existingIds.add(abilityId);
+      return true;
+    })
+    .map(abilityId => ({ id: abilityId, cooldownRemaining: 0 }));
+
+  return grantedAbilities.length === 0
+    ? player
+    : {
+        ...player,
+        abilities: [...player.abilities, ...grantedAbilities],
+      };
 }
 
 /**
@@ -294,7 +321,8 @@ function buildObjects(scenario: ScenarioFixture): Map<string, ObjectInstance> {
       id: entityId(`scenario_object_${i + 1}`),
       templateId: placement.templateId,
       position: { ...placement.position },
-      isExhausted: false,
+      isExhausted: placement.isExhausted ?? false,
+      ...(placement.origin !== undefined ? { origin: placement.origin } : {}),
     };
     objects.set(posKey(placement.position), instance);
   }

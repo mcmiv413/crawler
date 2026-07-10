@@ -1,7 +1,7 @@
 /**
  * Test layer: unit
- * Behavior: handleMove applies passive trap damage only when walking onto hazardous objects and treats chests or healing fountains as non-triggering walk-over objects.
- * Proof: Assertions check position moves to the trap tile, health decreases by positive damage equal to TRAP_TRIGGERED.damage, TRAP_TRIGGERED trapId/trapName/position, no health change or TRAP_TRIGGERED for chest/fountain, and turnNumber increments by exactly one for trap movement.
+ * Behavior: handleMove applies passive trap damage and declared status effects only when walking onto active hazardous objects, exhausts player-origin traps, and treats chests or healing fountains as non-triggering walk-over objects.
+ * Proof: Assertions check position moves to the trap tile, health decreases by positive damage equal to TRAP_TRIGGERED.damage, enriched TRAP_TRIGGERED target fields, STATUS_APPLIED source fields, player-origin exhaustion, reusable environmental traps, no health change or TRAP_TRIGGERED for chest/fountain, and turnNumber increments by exactly one for trap movement.
  * Validation: pnpm vitest run packages/game-core/src/engine/handlers/movement.test.ts
  */
 import { describe, it, expect } from 'vitest';
@@ -23,6 +23,20 @@ function getTrapTriggeredEvent(
   }
 
   return trapEvent;
+}
+
+function getStatusAppliedEvent(
+  events: readonly DomainEvent[],
+): Extract<DomainEvent, { type: 'STATUS_APPLIED' }> {
+  const statusEvent = events.find(
+    (event): event is Extract<DomainEvent, { type: 'STATUS_APPLIED' }> => event.type === 'STATUS_APPLIED',
+  );
+
+  if (statusEvent === undefined) {
+    throw new Error('Expected STATUS_APPLIED event');
+  }
+
+  return statusEvent;
 }
 
 describe('handleMove - Trap Damage on Walk', () => {
@@ -58,13 +72,25 @@ describe('handleMove - Trap Damage on Walk', () => {
 
     // Player should take damage from trap
     const healthAfter = result.state.player.stats.health;
-    const damageTaken = healthBefore - healthAfter;
     const trapEvent = getTrapTriggeredEvent(result.events);
+    expect(trapEvent.preHealth).toBeDefined();
+    expect(trapEvent.postHealth).toBeDefined();
+    const damageTaken = trapEvent.preHealth! - trapEvent.postHealth!;
 
     expect(result.state.player.position).toEqual(trapPosition);
     expect(healthAfter).toBeLessThan(healthBefore);
     expect(damageTaken).toBeGreaterThan(0);
     expect(trapEvent.damage).toBe(damageTaken);
+    expect(trapEvent).toMatchObject({
+      targetId: stateWithTrap.player.id,
+      targetName: stateWithTrap.player.name,
+      targetPosition: trapPosition,
+      preHealth: healthBefore,
+      maxHealth: stateWithTrap.player.stats.maxHealth,
+      killed: false,
+      trapOrigin: 'environment',
+      exhausted: false,
+    });
   });
 
   /**
@@ -96,7 +122,9 @@ describe('handleMove - Trap Damage on Walk', () => {
 
     // Find TRAP_TRIGGERED event
     const trapEvent = getTrapTriggeredEvent(result.events);
-    const damageTaken = healthBefore - result.state.player.stats.health;
+    expect(trapEvent.preHealth).toBeDefined();
+    expect(trapEvent.postHealth).toBeDefined();
+    const damageTaken = trapEvent.preHealth! - trapEvent.postHealth!;
 
     expect(trapEvent.trapId).toBe(trapInstance.id);
     expect(trapEvent.trapName.length).toBeGreaterThan(0);
@@ -216,5 +244,93 @@ describe('handleMove - Trap Damage on Walk', () => {
 
     // Should increment by 1 (normal move cost)
     expect(result.state.turnNumber).toBe(turnsBefore + 1);
+  });
+
+  it('applies declared trap status effects through the shared status pipeline', () => {
+    const state = createTestGameStateInCombat({ enemyAt: { x: 5, y: 5 } });
+    const trapPosition = { x: 1, y: 0 };
+    const trapInstance: ObjectInstance = {
+      id: entityId('poison_trap_1'),
+      templateId: 'poison_trap',
+      position: trapPosition,
+      isExhausted: false,
+    };
+    const objects = new Map(state.run!.objects);
+    objects.set(posKey(trapPosition), trapInstance);
+    const stateWithTrap: GameState = {
+      ...state,
+      run: { ...state.run!, objects },
+    };
+
+    const result = handleMove(stateWithTrap, 'E', new SeededRNG(42));
+    const trapEvent = getTrapTriggeredEvent(result.events);
+    const statusEvent = getStatusAppliedEvent(result.events);
+
+    expect(trapEvent.statusEffect).toBe('poison');
+    expect(statusEvent).toMatchObject({
+      targetId: state.player.id,
+      statusId: 'poison',
+      sourceId: trapInstance.id,
+    });
+    expect(result.state.player.statuses.some(status => status.id === 'poison' && status.sourceId === trapInstance.id)).toBe(true);
+  });
+
+  it('exhausts player-origin traps after they trigger and persists the floor lifecycle state', () => {
+    const state = createTestGameStateInCombat({ enemyAt: { x: 5, y: 5 } });
+    const trapPosition = { x: 1, y: 0 };
+    const trapInstance: ObjectInstance = {
+      id: entityId('player_trap_1'),
+      templateId: 'trap_spikes',
+      position: trapPosition,
+      isExhausted: false,
+      origin: 'player',
+    };
+    const objects = new Map(state.run!.objects);
+    objects.set(posKey(trapPosition), trapInstance);
+    const stateWithTrap: GameState = {
+      ...state,
+      run: { ...state.run!, objects },
+    };
+
+    const first = handleMove(stateWithTrap, 'E', new SeededRNG(42));
+    const firstTrapEvent = getTrapTriggeredEvent(first.events);
+    const exhaustedTrap = first.state.run!.objects.get(posKey(trapPosition));
+    const cachedTrap = first.state.persistedFloorCache
+      ?.get(first.state.run!.floor.depth)
+      ?.objects.get(posKey(trapPosition));
+
+    expect(firstTrapEvent).toMatchObject({ trapOrigin: 'player', exhausted: true });
+    expect(exhaustedTrap?.isExhausted).toBe(true);
+    expect(cachedTrap?.isExhausted).toBe(true);
+
+    const movedAway = handleMove(first.state, 'W', new SeededRNG(43));
+    const second = handleMove(movedAway.state, 'E', new SeededRNG(44));
+
+    expect(second.events.some(event => event.type === 'TRAP_TRIGGERED')).toBe(false);
+  });
+
+  it('keeps environmental hazards reusable after triggering', () => {
+    const state = createTestGameStateInCombat({ enemyAt: { x: 5, y: 5 } });
+    const trapPosition = { x: 1, y: 0 };
+    const trapInstance: ObjectInstance = {
+      id: entityId('environment_trap_1'),
+      templateId: 'trap_spikes',
+      position: trapPosition,
+      isExhausted: false,
+    };
+    const objects = new Map(state.run!.objects);
+    objects.set(posKey(trapPosition), trapInstance);
+    const stateWithTrap: GameState = {
+      ...state,
+      run: { ...state.run!, objects },
+    };
+
+    const first = handleMove(stateWithTrap, 'E', new SeededRNG(42));
+    const movedAway = handleMove(first.state, 'W', new SeededRNG(43));
+    const second = handleMove(movedAway.state, 'E', new SeededRNG(44));
+
+    expect(getTrapTriggeredEvent(first.events).exhausted).toBe(false);
+    expect(first.state.run!.objects.get(posKey(trapPosition))?.isExhausted).toBe(false);
+    expect(getTrapTriggeredEvent(second.events).trapId).toBe(trapInstance.id);
   });
 });

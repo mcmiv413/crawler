@@ -16,11 +16,13 @@
  */
 
 import { describe, it, expect } from 'vitest';
+import { MASTERY_THRESHOLDS } from '@dungeon/content';
 import { GameEngine } from '../../packages/game-core/src/engine/game-engine.js';
 import {
   loadScenario,
   validateScenarioFixture,
 } from '../../packages/game-core/src/fixtures/scenario-fixture-loader.js';
+import { buildGameView } from '../../packages/presenter/src/game-view-builder.js';
 import type { ScenarioFixture } from '../../packages/game-core/src/fixtures/scenario-fixture-types.js';
 import { RESOLVERS, loadScenarioFile } from './helpers/fixture-loaders.js';
 
@@ -32,6 +34,7 @@ const EXAMPLE_NAMES = [
   'ogre-emergence-test',
   'fresh-game-town-test',
   'full-feature-e2e-test',
+  'trap-interaction-test',
 ];
 
 const engine = new GameEngine();
@@ -125,5 +128,54 @@ describe('Example scenario library: executable gameplay', () => {
     expect(ogre.templateId).toBe('dungeon_ogre');
     const result = engine.submitCommand(state, { type: 'ATTACK', targetId: ogre.id });
     expect(result.events.length).toBeGreaterThan(0);
+  });
+
+  it('trap-interaction-test: deterministic trap scenario exposes inventory, abilities, origins, and core trap actions', () => {
+    const { state } = loadScenario(loadScenarioFile('trap-interaction-test'), RESOLVERS);
+    const view = buildGameView(state);
+    const inventoryItemIds = state.player.inventory.map(itemId => state.itemRegistry.items.get(itemId)?.itemId);
+
+    expect(state.player.equipment.weapon).toBeDefined();
+    expect(state.itemRegistry.items.get(state.player.equipment.weapon!)?.itemId).toBe('common_dagger');
+    expect(state.weaponMastery.dagger).toBeGreaterThanOrEqual(MASTERY_THRESHOLDS[2]);
+    expect(inventoryItemIds).toEqual(expect.arrayContaining(['wooden_spike_trap', 'poison_gas_trap']));
+    expect(view.player.abilities).toEqual(expect.arrayContaining([
+      expect.objectContaining({ id: 'dagger_set_trap', trapInteraction: 'place', ready: true }),
+      expect.objectContaining({ id: 'dagger_disarm', trapInteraction: 'disarm', ready: true }),
+    ]));
+    expect(state.run!.objects.get('3,1')).toEqual(expect.objectContaining({
+      templateId: 'trap_spikes',
+      origin: 'player',
+      isExhausted: false,
+    }));
+
+    const trapItemEntityId = state.player.inventory.find(
+      itemId => state.itemRegistry.items.get(itemId)?.itemId === 'wooden_spike_trap',
+    )!;
+    const placed = engine.submitCommand(state, {
+      type: 'SET_TRAP',
+      direction: 'S',
+      itemEntityId: trapItemEntityId,
+    });
+    expect(placed.events).toContainEqual(expect.objectContaining({
+      type: 'TRAP_PLACED',
+      position: { x: 1, y: 2 },
+    }));
+
+    const triggered = engine.submitCommand(placed.state, { type: 'WAIT' });
+    expect(triggered.events).toContainEqual(expect.objectContaining({
+      type: 'TRAP_TRIGGERED',
+      trapOrigin: 'player',
+      exhausted: true,
+      targetPosition: { x: 3, y: 1 },
+    }));
+    expect(triggered.state.run!.objects.get('3,1')?.isExhausted).toBe(true);
+
+    const disarmed = engine.submitCommand(state, { type: 'DISARM_TRAP', direction: 'N' });
+    expect(disarmed.events).toContainEqual(expect.objectContaining({
+      type: 'TRAP_DISARMED',
+      position: { x: 1, y: 0 },
+    }));
+    expect(disarmed.state.run!.objects.get('1,0')).toBeUndefined();
   });
 });
