@@ -519,10 +519,15 @@ function validateObjects(objects: unknown, floor: unknown): SaveSnapshotValidati
       ? [{ field: `objects[${key}].isExhausted`, message: `objects[${key}].isExhausted must be a boolean` }]
       : [];
 
+    const originErrors: SaveSnapshotValidationError[] = object['origin'] === undefined || object['origin'] === 'environment' || object['origin'] === 'player'
+      ? []
+      : [{ field: `objects[${key}].origin`, message: `objects[${key}].origin must be "environment", "player", or omitted` }];
+
     return [
       ...templateErrors,
       ...positionErrors,
       ...exhaustedErrors,
+      ...originErrors,
     ];
   });
 }

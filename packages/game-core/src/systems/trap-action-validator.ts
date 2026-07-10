@@ -1,5 +1,22 @@
 import type { GameState, Direction, TrapItemTemplate, ObjectTemplate, AnyItemTemplate, ObjectInstance, EntityId } from '@dungeon/contracts';
-import { OBJECT_TEMPLATES, ITEM_BY_ID } from '@dungeon/content';
+import {
+  OBJECT_TEMPLATES,
+  ITEM_BY_ID,
+  absoluteZeroTrap,
+  blazingTrap,
+  fireTrap,
+  frostTrapItem,
+  frozenTrap,
+  infernoTrap,
+  ironSpikeTrap,
+  lethalPoisonTrap,
+  lightningTrapItem,
+  poisonGasTrap,
+  steelSpikeTrap,
+  thunderTrap,
+  toxicTrap,
+  woodenSpikeTrap,
+} from '@dungeon/content';
 import { moveInDirection } from '../utils/grid.js';
 import { HAZARD_DAMAGE_TYPE_MAP } from './hazard-damage.js';
 import { posKey } from '@dungeon/contracts';
@@ -293,24 +310,6 @@ function isDisarmableTrapType(hazardType: string): boolean {
  * Find a trap item that matches the given hazard type and rarity.
  */
 function findTrapItemForHazard(hazardType: string, rarity: string): EntityId | null {
-  // Import trap items on demand to avoid circular dependencies
-  const {
-    woodenSpikeTrap,
-    ironSpikeTrap,
-    steelSpikeTrap,
-    fireTrap,
-    infernoTrap,
-    blazingTrap,
-    poisonGasTrap,
-    toxicTrap,
-    lethalPoisonTrap,
-    frostTrapItem,
-    frozenTrap,
-    absoluteZeroTrap,
-    lightningTrapItem,
-    thunderTrap,
-  } = require('@dungeon/content');
-
   const trapMap: Record<string, Record<string, string>> = {
     spike: {
       common: woodenSpikeTrap.itemId,

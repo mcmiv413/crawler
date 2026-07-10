@@ -15,8 +15,8 @@ import { updateRunMetrics } from './command-handler.js';
 import { processEnemyKill } from './enemy-death-pipeline.js';
 import { resolveEnemyAbility } from '../systems/enemy-abilities.js';
 import { COMBAT, AMBIENT_PROFILES, OBJECT_TEMPLATES, stun } from '@dungeon/content';
-import { calculateHazardDamage, hazardTypeToDamageType } from '../systems/hazard-damage.js';
-import { applyDamageToEnemy } from '../systems/damage.js';
+import { withActiveFloorPersisted } from '../state/floor-cache.js';
+import { triggerTrapOnEnemy } from '../systems/trap-effects.js';
 
 /** Process all enemy turns after a player action */
 export function processEnemyTurns(
@@ -264,7 +264,7 @@ function executeEnemyAction(
       };
       newEnemies.set(posKey(action.targetPosition), movedEnemy);
 
-      let newState = {
+      let newState: GameState = {
         ...state,
         run: { ...state.run, enemies: newEnemies },
       };
@@ -284,44 +284,25 @@ function executeEnemyAction(
       if (hazardAtPos !== undefined) {
         const hazardTemplate = OBJECT_TEMPLATES.get(hazardAtPos.templateId);
         if (hazardTemplate !== undefined && hazardTemplate.isHazard === true) {
-          const trapDamage = calculateHazardDamage(hazardTemplate, movedEnemy.stats.maxHealth);
-          const damageType = hazardTemplate.hazardType !== undefined ? hazardTypeToDamageType(hazardTemplate.hazardType) : 'physical';
-
-          // Apply damage through central function (applies defense and resistance)
-          const damageResult = applyDamageToEnemy(newState as GameState, movedEnemy.id, {
-            amount: trapDamage,
-            damageType,
-            source: 'trap',
-            sourceId: hazardAtPos.id,
-          });
-          newState = damageResult.state as typeof newState;
-          const snapshot = damageResult.targetSnapshot;
-
-          events = [...events, {
-            type: 'TRAP_TRIGGERED',
-            trapId: hazardAtPos.id,
-            trapName: hazardTemplate.name,
+          const trapResult = triggerTrapOnEnemy({
+            state: newState,
+            enemyId: movedEnemy.id,
+            trap: hazardAtPos,
+            template: hazardTemplate,
             position: action.targetPosition,
-            damage: damageResult.finalDamage,
-            rarity: hazardTemplate.rarity,
-            hazardType: hazardTemplate.hazardType,
-            statusEffect: hazardTemplate.statusEffect,
-            ...(snapshot !== undefined
-              ? {
-                  targetId: snapshot.id,
-                  targetName: snapshot.name,
-                  targetPosition: { ...snapshot.position },
-                  preHealth: snapshot.preHealth,
-                  postHealth: snapshot.postHealth,
-                  maxHealth: snapshot.maxHealth,
-                  killed: damageResult.killed,
-                }
-              : {}),
-            timestamp: state.turnNumber,
             turnNumber: state.turnNumber,
-          }];
+          });
+          newState = trapResult.exhausted === true
+            ? withActiveFloorPersisted(trapResult.state, {
+                originalEnemyCount: trapResult.state.run!.enemies.size,
+                lastSimulatedTurn: state.turnNumber,
+              })
+            : trapResult.state;
+          const snapshot = trapResult.targetSnapshot;
 
-          if (damageResult.killed === true && snapshot !== undefined) {
+          events = [...events, ...trapResult.events];
+
+          if (trapResult.killed === true && snapshot !== undefined) {
             const killResult = processEnemyKill(newState, snapshot.enemy, snapshot.mapKey, rng, {
               targetSnapshot: snapshot,
               causeType: 'trap',
@@ -331,7 +312,7 @@ function executeEnemyAction(
               sourceEventType: 'TRAP_TRIGGERED',
               turnNumber: state.turnNumber,
             });
-            newState = killResult.state as typeof newState;
+            newState = killResult.state;
             events = [...events, ...killResult.events];
           }
         }

@@ -24,7 +24,7 @@ import { handleDisarmTrap } from './disarm-trap.js';
 import { handleSetTrap } from './set-trap.js';
 import { processEnemyKill } from '../enemy-death-pipeline.js';
 
-export const LEGACY_CONTENT_ABILITY_HANDLER_IDS = [daggerDisarm.id, daggerSetTrap.id] as const;
+export const LEGACY_CONTENT_ABILITY_HANDLER_IDS = [] as const;
 const ABILITY_REGISTRY = buildRegistry(ALL_ABILITY_DEFINITIONS);
 
 /** Returns the WeaponType of the currently equipped weapon, or null if none/unknown */

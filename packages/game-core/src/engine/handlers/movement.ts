@@ -5,7 +5,7 @@ import { posKey } from '@dungeon/contracts';
 import { ITEM_BY_ID, OBJECT_TEMPLATES } from '@dungeon/content';
 import type { SeededRNG } from '../../utils/rng.js';
 import type { CommandResult } from './shared.js';
-import { applyActiveTurnManaRegen, updateRunMetrics } from './shared.js';
+import { applyActiveTurnManaRegen, updateFloorCacheForCurrentFloor, updateRunMetrics } from './shared.js';
 import { validateMove } from '../../systems/movement.js';
 import { computeFov } from '../../systems/fov.js';
 import { moveInDirection } from '../../utils/grid.js';
@@ -15,8 +15,7 @@ import { rollChestLoot, rollRareLoot } from '../../systems/loot.js';
 import { addItemToInventory } from '../../systems/inventory.js';
 import { handleAttack } from './combat.js';
 import { handlePlayerDeath } from '../../systems/death.js';
-import { calculateHazardDamage, hazardTypeToDamageType } from '../../systems/hazard-damage.js';
-import { applyDamageToPlayer } from '../../systems/damage.js';
+import { triggerTrapOnPlayer } from '../../systems/trap-effects.js';
 import { buildMovementBlockedEvent, buildTargetNotFoundMovementBlockedEvent } from './movement-blocked.js';
 import { buildGoldChangedEvent } from '../../abilities/runtime/emit-events.js';
 
@@ -86,47 +85,34 @@ export function handleMove(
     if (objAtPos !== undefined) {
       const template = OBJECT_TEMPLATES.get(objAtPos.templateId);
       if (template !== undefined && template.isHazard === true) {
-        // Trap triggered - calculate damage and route through central damage function
-        const trapDamage = calculateHazardDamage(template, newState.player.stats.maxHealth);
-        const damageType = template.hazardType !== undefined ? hazardTypeToDamageType(template.hazardType) : 'physical';
-
-        // Apply damage through central function (applies defense and resistance)
-        const damageResult = applyDamageToPlayer(newState, {
-          amount: trapDamage,
-          damageType,
-          source: 'trap',
-          sourceId: objAtPos.id,
-        });
-        newState = damageResult.state;
-
-        // Emit trap triggered event with enriched data
-        events = [...events, {
-          type: 'TRAP_TRIGGERED',
-          trapId: objAtPos.id,
-          trapName: template.name,
+        const trapResult = triggerTrapOnPlayer({
+          state: newState,
+          trap: objAtPos,
+          template,
           position: newPos,
-          damage: damageResult.finalDamage,
-          rarity: template.rarity,
-          hazardType: template.hazardType,
-          statusEffect: template.statusEffect,
-          timestamp: state.turnNumber,
           turnNumber: state.turnNumber,
-        }];
+        });
+        newState = trapResult.state;
+        events = [...events, ...trapResult.events];
 
         // Check if trap damage is lethal
-        if (damageResult.killed === true) {
+        if (trapResult.killed === true) {
           const deathResult = handlePlayerDeath(
             newState,
             {
               type: 'TRAP_HAZARD',
               hazardId: objAtPos.id,
               hazardName: template.name,
-              damage: damageResult.finalDamage,
+              damage: trapResult.damage,
             },
           );
           newState = deathResult.state;
           events = [...events, ...deathResult.events];
           return { state: newState, events, runEnded: true };
+        }
+
+        if (trapResult.exhausted === true) {
+          newState = updateFloorCacheForCurrentFloor(newState);
         }
       }
     }

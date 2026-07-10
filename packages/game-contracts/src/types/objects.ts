@@ -41,4 +41,6 @@ export interface ObjectInstance {
   readonly position: Position;
   /** True after a consumable has been interacted with (pending removal) */
   readonly isExhausted: boolean;
+  /** Runtime origin for lifecycle rules. Omitted values are treated as environment objects for save compatibility. */
+  readonly origin?: 'environment' | 'player';
 }

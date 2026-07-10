@@ -651,6 +651,15 @@ describe('Group 9: Invalid Scenario Validation', () => {
     );
   });
 
+  it('rejects invalid scenario weapon mastery data', () => {
+    expectInvalid(
+      combatScenario({
+        weaponMastery: { dagger: -1 },
+      }),
+      'weaponMastery.dagger',
+    );
+  });
+
   it('loadScenario throws a ScenarioLoadError on invalid input', () => {
     expect(() => loadScenario(combatScenario({ schemaVersion: 99 }))).toThrow(ScenarioLoadError);
   });

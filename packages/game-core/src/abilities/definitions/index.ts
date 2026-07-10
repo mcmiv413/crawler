@@ -9,6 +9,8 @@ import { BLUDGEON_SHATTER_DEFINITION } from './bludgeon-shatter.js';
 import { AXE_EXECUTE_DEFINITION } from './axe-execute.js';
 import { AXE_CLEAVE_DEFINITION } from './axe-cleave.js';
 import { RANGED_VOLLEY_DEFINITION } from './ranged-volley.js';
+import { DAGGER_SET_TRAP_DEFINITION } from './dagger-set-trap.js';
+import { DAGGER_DISARM_DEFINITION } from './dagger-disarm.js';
 import { EMBER_DEFINITION } from './ember.js';
 import { HEAT_SURGE_DEFINITION } from './heat-surge.js';
 import { CINDER_WAKE_DEFINITION } from './cinder-wake.js';
@@ -39,6 +41,8 @@ export const ALL_ABILITY_DEFINITIONS: readonly AbilityDefinition[] = [
   AXE_EXECUTE_DEFINITION,
   AXE_CLEAVE_DEFINITION,
   RANGED_VOLLEY_DEFINITION,
+  DAGGER_SET_TRAP_DEFINITION,
+  DAGGER_DISARM_DEFINITION,
   EMBER_DEFINITION,
   HEAT_SURGE_DEFINITION,
   CINDER_WAKE_DEFINITION,

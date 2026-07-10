@@ -16,7 +16,7 @@
  *   - cached calculations or engine bookkeeping
  */
 
-import type { Position, GameState } from '@dungeon/contracts';
+import type { Position, GameState, WeaponMastery } from '@dungeon/contracts';
 import type { PlayerFixture } from './player-fixture-types.js';
 import type { WorldFixture } from './world-fixture-types.js';
 import type { FixtureValidationIssue, FixtureValidationResultFor } from './fixture-validation.js';
@@ -127,6 +127,12 @@ export interface ScenarioInteractablePlacement {
 
   /** Grid coordinate. Must be in-bounds and not overlap another entity. */
   readonly position: Position;
+
+  /** Optional lifecycle origin. Player-origin traps exhaust after triggering; omitted means environment. */
+  readonly origin?: 'environment' | 'player';
+
+  /** Optional initial lifecycle state for regression scenarios. Defaults to false. */
+  readonly isExhausted?: boolean;
 }
 
 /**
@@ -187,6 +193,12 @@ export interface ScenarioFixture {
 
   /** Deterministic RNG seed for the scenario (default 1). */
   readonly seed?: number;
+
+  /** Optional player ability ids to grant for this scenario. Must exist in the core ability registry. */
+  readonly playerAbilityIds?: readonly string[];
+
+  /** Optional run-scoped weapon mastery counts for scenarios that need unlocked mastery abilities. */
+  readonly weaponMastery?: Partial<WeaponMastery>;
 
   /** Explicit dungeon map. */
   readonly map: ScenarioMapFixture;

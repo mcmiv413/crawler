@@ -423,6 +423,8 @@ export interface TrapTriggeredEvent extends BaseEvent {
   readonly rarity?: string;
   readonly hazardType?: string;
   readonly statusEffect?: StatusId;
+  readonly trapOrigin?: 'environment' | 'player';
+  readonly exhausted?: boolean;
   readonly targetId?: EntityId;
   readonly targetName?: string;
   readonly targetPosition?: Position;

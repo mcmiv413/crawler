@@ -18,6 +18,8 @@ import {
 import { validatePlayerFixture } from './player-fixture-loader.js';
 import { loadWorldFromValidatedFixture, validateWorldFixture } from './world-fixture-loader.js';
 import { createEnemyInstance } from '../generation/enemy-instantiation.js';
+import { validateScenarioPlayerAbilityIds } from './scenario-ability-validation.js';
+import { validateScenarioWeaponMastery } from './scenario-weapon-mastery-validation.js';
 import {
   isFiniteNumber,
   isPosition,
@@ -196,6 +198,8 @@ function validateMeta(scenario: ScenarioFixture): ScenarioValidationError[] {
     ...(scenario.seed !== undefined && (!isFiniteNumber(scenario.seed) || !Number.isInteger(scenario.seed))
       ? [{ field: 'seed', message: `seed must be an integer, got ${scenario.seed}.` }]
       : []),
+    ...validateScenarioPlayerAbilityIds(scenario),
+    ...validateScenarioWeaponMastery(scenario),
   ];
 }
 
@@ -632,6 +636,15 @@ function validateInteractablePlacements(
       }
     }
 
-    return [...templateIdErrors, ...positionErrors];
+    const rawOrigin = (placement as { readonly origin?: unknown }).origin;
+    const rawIsExhausted = (placement as { readonly isExhausted?: unknown }).isExhausted;
+    const originErrors: ScenarioValidationError[] = rawOrigin === undefined || rawOrigin === 'environment' || rawOrigin === 'player'
+      ? []
+      : [{ field: `${field}.origin`, message: `interactable origin must be "environment", "player", or omitted, got ${JSON.stringify(rawOrigin)}.` }];
+    const exhaustedErrors: ScenarioValidationError[] = rawIsExhausted === undefined || typeof rawIsExhausted === 'boolean'
+      ? []
+      : [{ field: `${field}.isExhausted`, message: `interactable isExhausted must be a boolean or omitted, got ${JSON.stringify(rawIsExhausted)}.` }];
+
+    return [...templateIdErrors, ...positionErrors, ...originErrors, ...exhaustedErrors];
   });
 }

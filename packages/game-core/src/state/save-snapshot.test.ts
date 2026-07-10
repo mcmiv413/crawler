@@ -129,6 +129,7 @@ const TEST_POTION: ConsumableTemplate = {
 type InvalidPositionEnemy = Omit<EnemyInstance, 'position'> & { position: { x: string; y: number } };
 type InvalidPositionObject = Omit<ObjectInstance, 'position'> & { position: { x: string; y: number } };
 type InvalidExhaustedObject = Omit<ObjectInstance, 'isExhausted'> & { isExhausted: string };
+type InvalidOriginObject = Omit<ObjectInstance, 'origin'> & { origin: string };
 type InvalidPositionAndExhaustedObject = Omit<ObjectInstance, 'position' | 'isExhausted'> & {
   position: { x: string; y: number };
   isExhausted: string;
@@ -145,7 +146,7 @@ type MutableSnapshot = Record<string, unknown> & {
   run?: Record<string, unknown> | null;
   floor?: { cells?: Record<string, unknown> } | null;
   enemies?: Record<string, EnemyInstance | string | InvalidPositionEnemy>;
-  objects?: Record<string, ObjectInstance | InvalidPositionObject | InvalidExhaustedObject | InvalidPositionAndExhaustedObject>;
+  objects?: Record<string, ObjectInstance | InvalidPositionObject | InvalidExhaustedObject | InvalidOriginObject | InvalidPositionAndExhaustedObject>;
   itemRegistry?: { items?: Record<string, AnyItemTemplate> };
   weaponMastery?: Record<string, unknown>;
 };
@@ -498,6 +499,14 @@ describe('SaveSnapshot validation path consistency', () => {
     const invalidIsExhausted = mutableSnapshot(createTestGameStateInCombat());
     invalidIsExhausted.objects = { '1,1': invalidIsExhaustedObject };
     expectValidationField(invalidIsExhausted, 'objects[1,1].isExhausted');
+
+    const invalidOriginObject: InvalidOriginObject = {
+      ...createSnapshotObject(entityId('invalid_origin_object'), { x: 1, y: 1 }, false),
+      origin: 'summoned',
+    };
+    const invalidOrigin = mutableSnapshot(createTestGameStateInCombat());
+    invalidOrigin.objects = { '1,1': invalidOriginObject };
+    expectValidationField(invalidOrigin, 'objects[1,1].origin');
   });
 
   it('uses bracket paths for enemy fields', () => {
@@ -726,6 +735,7 @@ describe('SaveSnapshot round trips', () => {
             templateId: 'healing_fountain',
             position: { x: 1, y: 1 },
             isExhausted: true,
+            origin: 'player',
           }],
         ]),
         speedAccumulators: {},
@@ -739,6 +749,7 @@ describe('SaveSnapshot round trips', () => {
     expect(restored.run?.turnCount).toBe(9);
     expect(restored.run?.enemies.size).toBe(0);
     expect(restored.run?.objects.get('1,1')?.isExhausted).toBe(true);
+    expect(restored.run?.objects.get('1,1')?.origin).toBe('player');
     expectCommandEquivalent(restored, { type: 'MOVE', direction: 'E' });
   });
 

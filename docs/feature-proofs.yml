@@ -256,6 +256,64 @@ features:
       final:
         - pnpm validate
 
+  - feature: trap-interactions
+    name: Trap interactions
+    entry:
+      files:
+        - packages/game-contracts/src/commands/index.ts
+        - packages/game-contracts/src/schemas/index.ts
+        - packages/game-core/src/engine/command-handler.ts
+        - packages/game-core/src/engine/handlers/set-trap.ts
+        - packages/game-core/src/engine/handlers/disarm-trap.ts
+        - packages/game-core/src/engine/handlers/movement.ts
+        - packages/game-core/src/engine/turn-scheduler.ts
+    state:
+      files:
+        - packages/game-contracts/src/types/objects.ts
+        - packages/game-core/src/systems/trap-effects.ts
+        - packages/game-core/src/systems/trap-action-validator.ts
+        - packages/game-core/src/systems/hazard-damage.ts
+        - packages/game-core/src/state/save-snapshot-validation.ts
+    event:
+      files:
+        - packages/game-contracts/src/events/index.ts
+        - packages/presenter/src/event-formatter.ts
+    presenter:
+      files:
+        - packages/presenter/src/animation-sequence.ts
+        - packages/presenter/src/game-view-builder.ts
+        - packages/presenter/src/builders/map-view-builder.ts
+    ui:
+      files:
+        - apps/web/src/components/UnifiedActionPanel.tsx
+        - apps/web/src/components/dropdowns/AbilityDropdown.tsx
+        - apps/web/src/animations/**
+        - apps/web/src/rendering/three/**
+    scenarioFixtures:
+      - trap-interaction-test
+    proofs:
+      required:
+        - packages/game-core/src/engine/handlers/movement.test.ts
+        - packages/game-core/src/engine/handlers/set-trap.test.ts
+        - packages/game-core/src/engine/handlers/disarm-trap.test.ts
+        - packages/game-core/src/engine/turn-scheduler.test.ts
+        - packages/game-core/src/state/save-snapshot.test.ts
+        - packages/presenter/src/animation-sequence.test.ts
+        - apps/web/src/animations/modules/trap-modules.test.ts
+        - apps/web/src/rendering/animation-dispatch-policy.test.ts
+        - apps/web/src/rendering/three/three-effects.contract.test.ts
+        - tests/contracts/example-scenario-fixtures.contract.test.ts
+        - tests/e2e/trap-interactions.spec.ts
+      optional:
+        - tests/contracts/three-animation-coverage.contract.test.ts
+    validation:
+      focused:
+        - pnpm vitest run packages/game-core/src/engine/handlers/movement.test.ts packages/game-core/src/engine/turn-scheduler.test.ts
+        - pnpm vitest run packages/presenter/src/animation-sequence.test.ts apps/web/src/animations/modules/trap-modules.test.ts
+        - pnpm test:e2e:scenario
+      final:
+        - pnpm validate
+
   - feature: save-load-compatibility
     name: Save load compatibility
     entry:
