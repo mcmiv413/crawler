@@ -17,6 +17,7 @@ import type {
 import {
   isFiniteNumber,
   isNonNegativeInteger,
+  isPositiveInteger,
   validateContentRef,
   validateNumberInRange,
 } from '../state/validation-guards.js';
@@ -79,11 +80,10 @@ function validateFixtureFactions(
     return [];
   }
 
-  const mutableSeenFactionIds = new Set<string>();
-
   return factions.flatMap((override, index) => {
-    const isDuplicate = mutableSeenFactionIds.has(override.id);
-    mutableSeenFactionIds.add(override.id);
+    const isDuplicate = factions
+      .slice(0, index)
+      .some((previous) => previous.id === override.id);
 
     return [
       ...validateContentRef<string, WorldFixtureValidationError>(
@@ -121,7 +121,12 @@ function validateFixtureDungeonOgre(
     }];
   }
 
-  const ogreRaw = ogre as { status?: unknown; emergedAfterRun?: unknown; emergedAtDepth?: unknown };
+  const ogreRaw = ogre as {
+    status?: unknown;
+    emergedAfterRun?: unknown;
+    emergedAtDepth?: unknown;
+    selectedSpawnDepth?: unknown;
+  };
   return [
     ...fixtureErrorIf(
       !VALID_OGRE_STATUSES.has(ogreRaw.status as 'sealed' | 'emerged' | 'slain'),
@@ -145,6 +150,15 @@ function validateFixtureDungeonOgre(
           {
             field: 'dungeonOgre.emergedAtDepth',
             message: `dungeonOgre.emergedAtDepth must be a number when present, got ${JSON.stringify(ogreRaw.emergedAtDepth)}.`,
+          },
+        )
+      : []),
+    ...(ogreRaw.status === 'emerged' || ogreRaw.selectedSpawnDepth !== undefined
+      ? fixtureErrorIf(
+          !isPositiveInteger(ogreRaw.selectedSpawnDepth),
+          {
+            field: 'dungeonOgre.selectedSpawnDepth',
+            message: `dungeonOgre.selectedSpawnDepth must be a positive integer when status is 'emerged', got ${JSON.stringify(ogreRaw.selectedSpawnDepth)}.`,
           },
         )
       : []),
@@ -335,5 +349,6 @@ function buildDungeonOgre(fixture: WorldFixture): DungeonOgreState {
     status: ogre.status,
     ...(ogre.emergedAfterRun !== undefined ? { emergedAfterRun: ogre.emergedAfterRun } : {}),
     ...(ogre.emergedAtDepth !== undefined ? { emergedAtDepth: ogre.emergedAtDepth } : {}),
+    ...(ogre.selectedSpawnDepth !== undefined ? { selectedSpawnDepth: ogre.selectedSpawnDepth } : {}),
   };
 }

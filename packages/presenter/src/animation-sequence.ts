@@ -70,8 +70,8 @@ interface PendingAnimatedEvent {
 
 interface BeatBuilder {
   readonly key: string;
-  mutableEvents: PendingAnimatedEvent[];
-  cursorMs: number;
+  readonly events: readonly PendingAnimatedEvent[];
+  readonly cursorMs: number;
 }
 
 interface BeatActionSpec {
@@ -224,21 +224,45 @@ function buildAnimationBatchId(
 function createBeatBuilder(key: string): BeatBuilder {
   return {
     key,
-    mutableEvents: [],
+    events: [],
     cursorMs: 0,
   };
 }
 
-function scheduleBeatAction(beat: BeatBuilder, spec: BeatActionSpec): void {
+function scheduleBeatAction(beat: BeatBuilder, spec: BeatActionSpec): BeatBuilder {
   const actionStartMs = beat.cursorMs;
-  beat.mutableEvents = [
-    ...beat.mutableEvents,
-    ...spec.events.map((event) => ({
-      ...event,
-      beatRelativeDelayMs: actionStartMs + event.beatRelativeDelayMs,
-    })),
-  ];
-  beat.cursorMs = Math.max(beat.cursorMs, actionStartMs + spec.settleMs);
+  return {
+    ...beat,
+    events: [
+      ...beat.events,
+      ...spec.events.map((event) => ({
+        ...event,
+        beatRelativeDelayMs: actionStartMs + event.beatRelativeDelayMs,
+      })),
+    ],
+    cursorMs: Math.max(beat.cursorMs, actionStartMs + spec.settleMs),
+  };
+}
+
+function scheduleActorBeat(
+  beats: ReadonlyMap<EntityId, BeatBuilder>,
+  actorId: EntityId,
+  spec: BeatActionSpec | null,
+): ReadonlyMap<EntityId, BeatBuilder> {
+  const beat = beats.get(actorId);
+  if (beat === undefined || spec === null) return beats;
+
+  return new Map([...beats, [actorId, scheduleBeatAction(beat, spec)]]);
+}
+
+function appendBeatEvent(
+  beat: BeatBuilder,
+  event: PendingAnimatedEvent,
+): BeatBuilder {
+  return {
+    ...beat,
+    events: [...beat.events, event],
+  };
 }
 
 function collectPrimaryActorIds(
@@ -424,6 +448,9 @@ function buildAbilityAction(
   const blastPositions = resolveAbilityBlastPositions(event, state, targetSnapshotLookup);
   const damagePositions = resolveAbilityDamagePositions(event, state, targetSnapshotLookup);
   const impactTargetIds = resolveAbilityImpactTargetIds(event);
+  const healPosition = event.healAmount !== undefined && event.healAmount > 0
+    ? resolveAbilityTargetPosition(event.targetId ?? event.playerId, state, targetSnapshotLookup)
+    : null;
 
   let targetHpFraction: number | undefined;
   if (event.abilityId === 'axe_execute' && event.targetId) {
@@ -463,6 +490,18 @@ function buildAbilityAction(
         y: pos.y,
       } satisfies CombatIndicatorEntry,
     })),
+    ...(healPosition !== null && event.healAmount !== undefined && event.healAmount > 0
+      ? [{
+          type: 'heal' as const,
+          beatRelativeDelayMs: impactFrameMs,
+          data: {
+            text: `+${event.healAmount}`,
+            type: 'heal',
+            x: healPosition.x,
+            y: healPosition.y,
+          } satisfies CombatIndicatorEntry,
+        }]
+      : []),
     ...(hitStopMs !== undefined && impactTargetIds.length > 0
       ? [{
           type: 'hit-stop' as const,
@@ -718,40 +757,29 @@ function getBeatEventsSettleMs(events: readonly BeatEventLike[]): number {
 export function getAnimatedEventBatchSettleMs(events: readonly AnimatedEvent[]): number {
   if (events.length === 0) return 0;
 
-  const beats = new Map<string, {
-    startMs: number;
-    mutableEvents: BeatEventLike[];
-  }>();
-
-  for (const event of events) {
-    const beat = beats.get(event.beatId);
-    if (beat === undefined) {
-      beats.set(event.beatId, {
+  const beats = events.reduce<ReadonlyMap<string, {
+    readonly startMs: number;
+    readonly events: readonly BeatEventLike[];
+  }>>((beatMap, event) => {
+    const beat = beatMap.get(event.beatId);
+    const beatEvent = {
+      type: event.type,
+      beatRelativeDelayMs: event.beatRelativeDelayMs,
+      data: event.data,
+    };
+    return new Map([
+      ...beatMap,
+      [event.beatId, {
         startMs: event.delayMs - event.beatRelativeDelayMs,
-        mutableEvents: [{
-          type: event.type,
-          beatRelativeDelayMs: event.beatRelativeDelayMs,
-          data: event.data,
-        }],
-      });
-      continue;
-    }
+        events: [...(beat?.events ?? []), beatEvent],
+      }],
+    ]);
+  }, new Map());
 
-    beat.mutableEvents = [
-      ...beat.mutableEvents,
-      {
-        type: event.type,
-        beatRelativeDelayMs: event.beatRelativeDelayMs,
-        data: event.data,
-      },
-    ];
-  }
-
-  let settleMs = 0;
-  for (const beat of beats.values()) {
-    settleMs = Math.max(settleMs, beat.startMs + getBeatEventsSettleMs(beat.mutableEvents));
-  }
-  return settleMs;
+  return Math.max(
+    0,
+    ...Array.from(beats.values()).map((beat) => beat.startMs + getBeatEventsSettleMs(beat.events)),
+  );
 }
 
 export function buildAnimationSequence(
@@ -762,53 +790,45 @@ export function buildAnimationSequence(
 
   const batchId = buildAnimationBatchId(events, state);
   const orderedActorIds = collectPrimaryActorIds(events, state);
-  const actorBeats = new Map(orderedActorIds.map((actorId) => [actorId, createBeatBuilder(String(actorId))]));
+  let actorBeats: ReadonlyMap<EntityId, BeatBuilder> = new Map(
+    orderedActorIds.map((actorId) => [actorId, createBeatBuilder(String(actorId))]),
+  );
   let statusBeat: BeatBuilder | null = null;
 
   for (const event of events) {
     switch (event.type) {
       case 'PLAYER_MOVED': {
-        const beat = actorBeats.get(state.player.id);
-        if (beat !== undefined) {
-          scheduleBeatAction(beat, buildMoveAction(state.player.id, event.from, event.to, state));
-        }
+        actorBeats = scheduleActorBeat(
+          actorBeats,
+          state.player.id,
+          buildMoveAction(state.player.id, event.from, event.to, state),
+        );
         break;
       }
       case 'ENEMY_MOVED': {
-        const beat = actorBeats.get(event.enemyId);
-        if (beat !== undefined) {
-          scheduleBeatAction(beat, buildMoveAction(event.enemyId, event.from, event.to, state));
-        }
+        actorBeats = scheduleActorBeat(
+          actorBeats,
+          event.enemyId,
+          buildMoveAction(event.enemyId, event.from, event.to, state),
+        );
         break;
       }
       case 'ABILITY_USED': {
-        const beat = actorBeats.get(event.playerId);
-        const action = beat === undefined ? null : buildAbilityAction(event, state);
-        if (beat !== undefined && action !== null) {
-          scheduleBeatAction(beat, action);
-        }
+        actorBeats = scheduleActorBeat(actorBeats, event.playerId, buildAbilityAction(event, state));
         break;
       }
       case 'ATTACK_PERFORMED': {
-        const beat = actorBeats.get(event.attackerId);
-        const action = beat === undefined ? null : buildAttackAction(event, state);
-        if (beat !== undefined && action !== null) {
-          scheduleBeatAction(beat, action);
-        }
+        actorBeats = scheduleActorBeat(actorBeats, event.attackerId, buildAttackAction(event, state));
         break;
       }
       case 'ITEM_USED': {
-        const beat = actorBeats.get(event.userId);
-        if (beat !== undefined) {
-          scheduleBeatAction(beat, buildConsumableAction(event, state));
-        }
+        actorBeats = scheduleActorBeat(actorBeats, event.userId, buildConsumableAction(event, state));
         break;
       }
       case 'STATUS_DAMAGE_TICK': {
-        statusBeat ??= createBeatBuilder('status');
         const statusEvent = buildStatusDamageEvent(event);
         if (statusEvent !== null) {
-          statusBeat.mutableEvents = [...statusBeat.mutableEvents, statusEvent];
+          statusBeat = appendBeatEvent(statusBeat ?? createBeatBuilder('status'), statusEvent);
         }
         break;
       }
@@ -820,39 +840,42 @@ export function buildAnimationSequence(
   const orderedBeats = [
     ...orderedActorIds
       .map((actorId) => actorBeats.get(actorId))
-      .filter((beat): beat is BeatBuilder => beat !== undefined && beat.mutableEvents.length > 0),
-    ...(statusBeat !== null && statusBeat.mutableEvents.length > 0 ? [statusBeat] : []),
+      .filter((beat): beat is BeatBuilder => beat !== undefined && beat.events.length > 0),
+    ...(statusBeat !== null && statusBeat.events.length > 0 ? [statusBeat] : []),
   ];
 
-  const mutableAnimatedEvents: AnimatedEvent[] = [];
-  let sequenceIndex = 0;
-  let beatStartMs = 0;
-  let visibleBeatIndex = 0;
+  const sequence = orderedBeats.reduce<{
+    readonly animatedEvents: readonly AnimatedEvent[];
+    readonly sequenceIndex: number;
+    readonly beatStartMs: number;
+    readonly visibleBeatIndex: number;
+  }>((sequenceState, beat) => {
+    if (isBeatVisible(beat.events, state) === false) return sequenceState;
 
-  for (const beat of orderedBeats) {
-    if (beat === undefined) continue;
-    if (isBeatVisible(beat.mutableEvents, state) === false) {
-      continue;
-    }
+    const beatId = `${batchId}:beat:${sequenceState.visibleBeatIndex}`;
+    const animatedEvents = beat.events.map((event, eventIndex) => ({
+      type: event.type,
+      sequenceIndex: sequenceState.sequenceIndex + eventIndex,
+      delayMs: sequenceState.beatStartMs + event.beatRelativeDelayMs,
+      beatId,
+      beatIndex: sequenceState.visibleBeatIndex,
+      beatRelativeDelayMs: event.beatRelativeDelayMs,
+      batchId,
+      data: event.data,
+    } satisfies AnimatedEvent));
 
-    const beatId = `${batchId}:beat:${visibleBeatIndex}`;
-    for (const event of beat.mutableEvents) {
-      mutableAnimatedEvents.push({
-        type: event.type,
-        sequenceIndex,
-        delayMs: beatStartMs + event.beatRelativeDelayMs,
-        beatId,
-        beatIndex: visibleBeatIndex,
-        beatRelativeDelayMs: event.beatRelativeDelayMs,
-        batchId,
-        data: event.data,
-      });
-      sequenceIndex += 1;
-    }
+    return {
+      animatedEvents: [...sequenceState.animatedEvents, ...animatedEvents],
+      sequenceIndex: sequenceState.sequenceIndex + animatedEvents.length,
+      beatStartMs: sequenceState.beatStartMs + getBeatEventsSettleMs(beat.events),
+      visibleBeatIndex: sequenceState.visibleBeatIndex + 1,
+    };
+  }, {
+    animatedEvents: [],
+    sequenceIndex: 0,
+    beatStartMs: 0,
+    visibleBeatIndex: 0,
+  });
 
-    beatStartMs += getBeatEventsSettleMs(beat.mutableEvents);
-    visibleBeatIndex += 1;
-  }
-
-  return mutableAnimatedEvents;
+  return sequence.animatedEvents;
 }

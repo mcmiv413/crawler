@@ -1,7 +1,7 @@
 /**
  * Test layer: unit
  * Behavior: World fixture loading applies defaults, overrides, validation errors, schema versioning, and player-world serialization compatibility for fixture-backed WorldState.
- * Proof: Assertions check validateWorldFixture isValid/errors fields, loaded faction/town/dungeonOgre values, WORLD_FIXTURE_SCHEMA_VERSION, serializeState JSON retention, and non-throwing malformed dungeonOgre validation.
+ * Proof: Assertions check validateWorldFixture isValid/errors fields, loaded faction/town/dungeonOgre values including selectedSpawnDepth, WORLD_FIXTURE_SCHEMA_VERSION, serializeState JSON retention, and non-throwing malformed dungeonOgre validation.
  * Validation: pnpm vitest run packages/game-core/src/fixtures/world-fixture.test.ts
  */
 /**
@@ -57,7 +57,7 @@ const FACTION_FIXTURE: WorldFixture = {
 
 const OGRE_EMERGED_FIXTURE: WorldFixture = {
   schemaVersion: 1,
-  dungeonOgre: { status: 'emerged', emergedAfterRun: 3, emergedAtDepth: 5 },
+  dungeonOgre: { status: 'emerged', emergedAfterRun: 3, emergedAtDepth: 5, selectedSpawnDepth: 5 },
 };
 
 // ─── Fixture with ogre slain ──────────────────────────────────────────────────
@@ -77,7 +77,7 @@ const FULL_WORLD_FIXTURE: WorldFixture = {
     { id: 'shadow_cult', power: 90, disposition: -80 },
     { id: 'beast_swarm', power: 10, disposition: 0 },
   ],
-  dungeonOgre: { status: 'emerged', emergedAfterRun: 2, emergedAtDepth: 4 },
+  dungeonOgre: { status: 'emerged', emergedAfterRun: 2, emergedAtDepth: 4, selectedSpawnDepth: 4 },
   town: { prosperity: 30, fear: 60, corruption: 45 },
   totalRuns: 5,
   deepestFloor: 8,
@@ -272,6 +272,11 @@ describe('Group 3: Dungeon Ogre status fixtures', () => {
     expect(world.dungeonOgre.emergedAtDepth).toBe(5);
   });
 
+  it('emerged ogre carries selectedSpawnDepth value', () => {
+    const world = loadWorldFromFixture(OGRE_EMERGED_FIXTURE);
+    expect(world.dungeonOgre.selectedSpawnDepth).toBe(5);
+  });
+
   it('slain ogre has status slain', () => {
     const world = loadWorldFromFixture(OGRE_SLAIN_FIXTURE);
     expect(world.dungeonOgre.status).toBe('slain');
@@ -303,6 +308,7 @@ describe('Group 3: Dungeon Ogre status fixtures', () => {
     expect(world.dungeonOgre.status).toBe('emerged');
     expect(world.dungeonOgre.emergedAfterRun).toBe(2);
     expect(world.dungeonOgre.emergedAtDepth).toBe(4);
+    expect(world.dungeonOgre.selectedSpawnDepth).toBe(4);
   });
 });
 

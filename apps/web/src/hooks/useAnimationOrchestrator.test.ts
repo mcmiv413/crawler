@@ -1,7 +1,7 @@
 /**
  * Test layer: unit
  * Behavior: useAnimationOrchestrator schedules animated events with legacy timeout and beat schedulers while preserving batch order through pauses and rerenders.
- * Proof: Mock emitter assertions verify emitCombatIndicator timing for legacy, beat, and hit-stop cases plus emitted text order ['first', 'second'] and move entity order ['player-1', 'enemy-1'].
+ * Proof: Mock emitter assertions verify emitCombatIndicator timing for legacy, beat, heal, and hit-stop cases plus emitted text order ['first', 'second'] and move entity order ['player-1', 'enemy-1'].
  * Validation: pnpm vitest run apps/web/src/hooks/useAnimationOrchestrator.test.ts
  */
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
@@ -42,6 +42,29 @@ function createDamageEvent(args: {
       y: 5,
       text: args.text,
       type: 'damage',
+    },
+  } satisfies AnimatedEvent;
+}
+
+function createHealEvent(args: {
+  readonly batchId: string;
+  readonly beatId: string;
+  readonly delayMs: number;
+  readonly text: string;
+}): AnimatedEvent {
+  return {
+    type: 'heal',
+    sequenceIndex: 0,
+    delayMs: args.delayMs,
+    beatId: args.beatId,
+    beatIndex: 0,
+    beatRelativeDelayMs: args.delayMs,
+    batchId: args.batchId,
+    data: {
+      x: 5,
+      y: 5,
+      text: args.text,
+      type: 'heal',
     },
   } satisfies AnimatedEvent;
 }
@@ -156,6 +179,24 @@ describe('useAnimationOrchestrator', () => {
     });
 
     expect(runtimeEmitters.emitCombatIndicator).toHaveBeenCalledWith(5, 5, 'beat', 'damage');
+  });
+
+  it('forwards heal events through the beat scheduler as positive combat indicators', () => {
+    setBeatSchedulerFlag('true');
+    const event = createHealEvent({
+      batchId: 'heal-batch',
+      beatId: 'heal-beat',
+      delayMs: 16,
+      text: '+19',
+    });
+
+    renderHook(() => useAnimationOrchestrator([event]));
+
+    act(() => {
+      vi.advanceTimersByTime(32);
+    });
+
+    expect(runtimeEmitters.emitCombatIndicator).toHaveBeenCalledWith(5, 5, '+19', 'heal');
   });
 
   it('continues beat scheduling after hit-stop events', async () => {

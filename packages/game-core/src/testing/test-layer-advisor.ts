@@ -286,7 +286,7 @@ function validateBalanceLayer(
 function validateE2eLayer(
   code: string,
 ): Findings {
-  const mutableIssues: Issue[] = [];
+  let issues: Issue[] = [];
   const lines = code.split('\n');
   const testOwnership = findE2eTestOwnership(lines);
   const broadBodyVariables = new Set(
@@ -320,7 +320,7 @@ function validateE2eLayer(
   }
 
   const addIssue = (codeValue: string, description: string, line: number): void => {
-    mutableIssues.push({ severity: 'error', code: codeValue, description, line });
+    issues = [...issues, { severity: 'error', code: codeValue, description, line }];
   };
 
   lines.forEach((line, index) => {
@@ -408,7 +408,7 @@ function validateE2eLayer(
   }
 
   return {
-    issues: mutableIssues,
+    issues,
     suggestions: [
       ...(/@playwright\/test/.test(code) !== true
         ? ['E2E tests should use Playwright and verify browser-visible behavior.']

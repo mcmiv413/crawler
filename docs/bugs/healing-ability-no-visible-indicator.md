@@ -1,10 +1,12 @@
 ---
 title: Healing abilities produce no visible combat indicator
-status: open
+status: fixed
 date: 2026-07-04
 ---
 
 # Healing Abilities Produce No Visible Combat Indicator
+
+Fixed: 2026-07-10 — working tree; `packages/presenter/src/animation-sequence.ts:427-480` emits heal animated events and `tests/e2e/combat-indicators.spec.ts:39` is unskipped for Playwright coverage.
 
 ## Symptom
 
@@ -37,4 +39,3 @@ Update the `buildAnimationSequence()` ability path to emit a heal event when the
 - **Event** — the animation sequence does not emit a heal event for the successful health restoration.
 - **Presenter/animation** — no healing animation or combat-indicator presentation is derived from the response.
 - **UI** — no visible positive-value healing indicator is rendered.
-

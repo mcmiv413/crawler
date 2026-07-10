@@ -117,11 +117,10 @@ export class SqliteRepository implements IGameRepository {
         'SELECT event_json FROM events WHERE game_id = ? ORDER BY id DESC LIMIT ?',
       )
       .all(gameId, limit) as { event_json: string }[];
-    const mutableEvents = rows.map(
-      (row) => JSON.parse(row.event_json) as DomainEvent,
+    return rows.reduceRight<DomainEvent[]>(
+      (events, row) => [...events, JSON.parse(row.event_json) as DomainEvent],
+      [],
     );
-    mutableEvents.reverse();
-    return mutableEvents;
   }
 
   recordRunMetrics(metrics: RunMetrics, gameId?: string): void {

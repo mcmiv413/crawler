@@ -93,6 +93,12 @@ function isSameAnimationData(
 
 // Prefer the beat scheduler for active runtime behavior. Keep this timeout path
 // only as temporary compatibility until parity coverage lets us remove it.
+function clearScheduledTimeouts(timeouts: readonly ReturnType<typeof setTimeout>[]): void {
+  for (const timeout of timeouts) {
+    clearTimeout(timeout);
+  }
+}
+
 function useLegacyAnimationOrchestrator(
   animatedEvents: readonly AnimatedEvent[],
   enabled: boolean,
@@ -102,24 +108,18 @@ function useLegacyAnimationOrchestrator(
 
   useEffect(() => {
     const previous = previousRef.current;
-    const mutableTimeouts = timeoutsRef.current;
-
-    for (const timeout of mutableTimeouts) {
-      clearTimeout(timeout);
-    }
-    mutableTimeouts.length = 0;
+    clearScheduledTimeouts(timeoutsRef.current);
+    timeoutsRef.current = [];
 
     if (!enabled) {
       previousRef.current = [];
       return () => {
-        for (const timeout of mutableTimeouts) {
-          clearTimeout(timeout);
-        }
-        mutableTimeouts.length = 0;
+        clearScheduledTimeouts(timeoutsRef.current);
+        timeoutsRef.current = [];
       };
     }
 
-    for (const animEvent of animatedEvents) {
+    const scheduledTimeouts = animatedEvents.reduce<ReturnType<typeof setTimeout>[]>((timeouts, animEvent) => {
       const wasAlreadyEmitted = previous.some(
         (previousEvent) =>
           previousEvent.batchId === animEvent.batchId
@@ -129,22 +129,22 @@ function useLegacyAnimationOrchestrator(
           && isSameAnimationData(previousEvent.data, animEvent.data),
       );
 
-      if (!wasAlreadyEmitted) {
-        const timeout = setTimeout(() => {
-          dispatchAnimatedEvent(animEvent);
-        }, animEvent.delayMs);
+      if (wasAlreadyEmitted) return timeouts;
 
-        mutableTimeouts.push(timeout);
-      }
-    }
+      const timeout = setTimeout(() => {
+        dispatchAnimatedEvent(animEvent);
+      }, animEvent.delayMs);
+
+      return [...timeouts, timeout];
+    }, []);
+
+    timeoutsRef.current = scheduledTimeouts;
 
     previousRef.current = animatedEvents;
 
     return () => {
-      for (const timeout of mutableTimeouts) {
-        clearTimeout(timeout);
-      }
-      mutableTimeouts.length = 0;
+      clearScheduledTimeouts(timeoutsRef.current);
+      timeoutsRef.current = [];
     };
   }, [animatedEvents, enabled]);
 }

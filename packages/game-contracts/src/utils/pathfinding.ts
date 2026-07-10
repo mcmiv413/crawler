@@ -22,6 +22,29 @@ const NEIGHBORS = [
   { dx: 1, dy: -1 }, { dx: -1, dy: -1 }, { dx: 1, dy: 1 }, { dx: -1, dy: 1 },
 ];
 
+interface PathSearchState {
+  readonly queue: readonly PathPosition[];
+  readonly visited: ReadonlySet<string>;
+  readonly parent: ReadonlyMap<string, string>;
+}
+
+function buildPath(
+  parent: ReadonlyMap<string, string>,
+  startKey: string,
+  key: string,
+): PathPosition[] {
+  if (key === startKey) return [];
+
+  const previousKey = parent.get(key);
+  if (previousKey === undefined) return [];
+
+  const [x, y] = key.split(',').map(Number);
+  return [
+    ...buildPath(parent, startKey, previousKey),
+    { x: x!, y: y! },
+  ];
+}
+
 export function findPath(
   map: PathMapViewRef,
   from: PathPosition,
@@ -49,37 +72,38 @@ export function findPath(
 
   if (!walkable.has(goalKey)) return [];
 
-  const visited = new Set<string>([startKey]);
-  const parent = new Map<string, string>();
-  const mutableQueue: PathPosition[] = [from];
+  let searchState: PathSearchState = {
+    queue: [from],
+    visited: new Set<string>([startKey]),
+    parent: new Map<string, string>(),
+  };
 
-  while (mutableQueue.length > 0) {
-    const current = mutableQueue.shift()!;
+  while (searchState.queue.length > 0) {
+    const [current, ...remainingQueue] = searchState.queue;
+    if (current === undefined) return [];
     const currentKey = toKey(current);
 
     if (currentKey === goalKey) {
-      const mutablePath: PathPosition[] = [];
-      let key = goalKey;
-      while (key !== startKey) {
-        const [x, y] = key.split(',').map(Number);
-        mutablePath.unshift({ x: x!, y: y! });
-        key = parent.get(key)!;
-      }
-      return mutablePath;
+      return buildPath(searchState.parent, startKey, goalKey);
     }
 
-    for (const { dx, dy } of NEIGHBORS) {
+    searchState = NEIGHBORS.reduce<PathSearchState>((nextState, { dx, dy }) => {
       const next: PathPosition = { x: current.x + dx, y: current.y + dy };
       const nextKey = toKey(next);
 
-      if (visited.has(nextKey)) continue;
-      if (!walkable.has(nextKey)) continue;
-      if (blocked.has(nextKey) && nextKey !== goalKey) continue;
+      if (nextState.visited.has(nextKey)) return nextState;
+      if (!walkable.has(nextKey)) return nextState;
+      if (blocked.has(nextKey) && nextKey !== goalKey) return nextState;
 
-      visited.add(nextKey);
-      parent.set(nextKey, currentKey);
-      mutableQueue.push(next);
-    }
+      return {
+        queue: [...nextState.queue, next],
+        visited: new Set([...nextState.visited, nextKey]),
+        parent: new Map([...nextState.parent, [nextKey, currentKey]]),
+      };
+    }, {
+      ...searchState,
+      queue: remainingQueue,
+    });
   }
 
   return [];

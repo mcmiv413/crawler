@@ -1,7 +1,7 @@
 /**
  * Test layer: unit
  * Behavior: buildAnimationSequence converts movement, attack, ability, status, and visibility-filtered events into ordered non-overlapping animation beats with stable timing and action-time target positions.
- * Proof: Assertions inspect beat indexes, beat IDs, delays, bump timing, damage and ability positions, hidden beat filtering, lightning animation IDs, empty no-run output, and getAnimatedEventBatchSettleMs matching getBeatSettleMs.
+ * Proof: Assertions inspect beat indexes, beat IDs, delays, bump timing, damage/heal and ability positions, hidden beat filtering, lightning animation IDs, empty no-run output, and getAnimatedEventBatchSettleMs matching getBeatSettleMs.
  * Validation: pnpm vitest run packages/presenter/src/animation-sequence.test.ts
  */
 import { describe, expect, it } from 'vitest';
@@ -427,6 +427,37 @@ describe('buildAnimationSequence', () => {
     expect(damage?.beatId).toBe(ability?.beatId);
     expect(damage?.beatRelativeDelayMs).toBe(impactFrameMs);
     expect(damage?.delayMs).toBe(ability!.delayMs + impactFrameMs);
+  });
+
+  it('emits a heal indicator for self-healing abilities at the impact frame', () => {
+    const events: DomainEvent[] = [{
+      type: 'ABILITY_USED',
+      timestamp: 1000,
+      turnNumber: 1,
+      playerId: entityId('player-1'),
+      abilityId: 'second_wind',
+      abilityName: 'Second Wind',
+      targetId: entityId('player-1'),
+      targetName: 'Hero',
+      hit: true,
+      healAmount: 19,
+    } as DomainEvent];
+
+    const sequence = buildAnimationSequence(events, mockGameState);
+    const ability = sequence.find((event) => event.type === 'ability');
+    const heal = sequence.find((event) => event.type === 'heal');
+
+    expect(ability).toBeDefined();
+    expect(heal).toBeDefined();
+    const impactFrameMs = (ability?.data as { impactFrameMs: number }).impactFrameMs;
+    expect(heal?.beatId).toBe(ability?.beatId);
+    expect(heal?.beatRelativeDelayMs).toBe(impactFrameMs);
+    expect(heal?.data).toMatchObject({
+      text: '+19',
+      type: 'heal',
+      x: 50,
+      y: 50,
+    });
   });
 
   it('does not reserve a player beat for wait turns with enemy-only actions', () => {

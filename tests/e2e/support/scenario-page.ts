@@ -33,6 +33,10 @@ export interface ScenarioCommandResponse {
   readonly view?: unknown;
 }
 
+type CommandRequestBody = Readonly<Record<string, unknown>> & {
+  readonly type?: unknown;
+};
+
 export function tryPostDataJSON(request: Request): unknown | undefined {
   try {
     return request.postDataJSON();
@@ -43,6 +47,22 @@ export function tryPostDataJSON(request: Request): unknown | undefined {
 
 export function escapeRegExp(value: string): string {
   return value.replace(/[.*+?^${}()|[\]\\]/gu, '\\$&');
+}
+
+function isCommandRequestBody(value: unknown): value is CommandRequestBody {
+  return typeof value === 'object' && value !== null && !Array.isArray(value);
+}
+
+function matchesCommandRequest(
+  body: unknown,
+  type: string,
+  expectedFields: Readonly<Record<string, unknown>>,
+): body is CommandRequestBody {
+  if (!isCommandRequestBody(body) || body.type !== type) {
+    return false;
+  }
+
+  return Object.entries(expectedFields).every(([field, expectedValue]) => body[field] === expectedValue);
 }
 
 function requireSessionField(
@@ -139,26 +159,29 @@ export class ScenarioPage {
     });
   }
 
-  waitForCommand(type: string): Promise<Response> {
+  waitForCommand(type: string, expectedFields: Readonly<Record<string, unknown>> = {}): Promise<Response> {
     return this.page.waitForResponse(response => {
       if (response.request().method() !== 'POST' || !response.url().includes('/commands')) {
         return false;
       }
 
-      const body = tryPostDataJSON(response.request()) as { readonly type?: unknown } | null | undefined;
-      return body?.type === type;
+      return matchesCommandRequest(tryPostDataJSON(response.request()), type, expectedFields);
     });
   }
 
-  async commandJson(response: Response, expectedType: string): Promise<ScenarioCommandResponse> {
+  async commandJson(
+    response: Response,
+    expectedType: string,
+    expectedFields: Readonly<Record<string, unknown>> = {},
+  ): Promise<ScenarioCommandResponse> {
     expect(response.ok()).toBe(true);
-    const requestBody = tryPostDataJSON(response.request()) as { readonly type?: unknown } | null | undefined;
+    const requestBody = tryPostDataJSON(response.request());
     if (requestBody === undefined) {
       throw new Error(
         `Failed to parse JSON request body for expected command "${expectedType}" at ${response.url()}`,
       );
     }
-    expect(requestBody?.type).toBe(expectedType);
+    expect(matchesCommandRequest(requestBody, expectedType, expectedFields)).toBe(true);
     return response.json() as Promise<ScenarioCommandResponse>;
   }
 }

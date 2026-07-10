@@ -54,6 +54,9 @@ export interface FixtureDungeonOgre {
 
   /** Dungeon depth at which the ogre emerged. Only meaningful when status is 'emerged' or 'slain'. */
   readonly emergedAtDepth?: number;
+
+  /** Dungeon depth claimed by the emerged ogre. Required when status is 'emerged'. */
+  readonly selectedSpawnDepth?: number;
 }
 
 /**

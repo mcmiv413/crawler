@@ -1,7 +1,7 @@
 /**
  * Test layer: e2e
- * Behavior: Combat scenarios keep damage indicators, combat feedback, and chest-loot inventory rows visible on desktop and mobile while the healing indicator gap remains documented.
- * Proof: Assertions check visible damage indicator locators after ATTACK, ENTITY_DIED events, delayed indicator visibility, mobile combat-log text, LOOT_ACQUIRED itemName, and inventory item-list text containing that loot.
+ * Behavior: Combat scenarios keep damage and healing indicators, combat feedback, and chest-loot inventory rows visible on desktop and mobile.
+ * Proof: Assertions check visible damage/heal indicator locators after ATTACK and USE_ABILITY, ENTITY_DIED and ABILITY_USED events, delayed indicator visibility, mobile combat-log text, LOOT_ACQUIRED itemName, and inventory item-list text containing that loot.
  * Validation: pnpm test:e2e tests/e2e/combat-indicators.spec.ts
  */
 import { expect, test } from '@playwright/test';
@@ -36,8 +36,7 @@ test('scenario enemy attack shows a visible damage combat indicator', async ({ p
   expect(attackResult.events).toContainEqual(expect.objectContaining({ type: 'ENTITY_DIED' }));
 });
 
-// Expected product gap: docs/bugs/healing-ability-no-visible-indicator.md
-test.fixme('scenario healing ability shows a visible healing combat indicator', async ({ page }) => {
+test('scenario healing ability shows a visible healing combat indicator', async ({ page }) => {
   const scenario = await ScenarioPage.load(page, 'inventory-chest-test', 'desktop-default', {
     prepareState: state => ({
       ...state,
@@ -48,13 +47,14 @@ test.fixme('scenario healing ability shows a visible healing combat indicator', 
       },
     }),
   });
-  const abilityResponsePromise = scenario.waitForCommand('USE_ABILITY');
+  const secondWindCommand = { abilityId: 'second_wind' } as const;
+  const abilityResponsePromise = scenario.waitForCommand('USE_ABILITY', secondWindCommand);
 
   await scenario.actionButton('Ability').click();
   await page.getByRole('button', { name: 'Second Wind' }).click();
 
   await expect(healIndicators(page).first()).toBeVisible();
-  const abilityResult = await scenario.commandJson(await abilityResponsePromise, 'USE_ABILITY');
+  const abilityResult = await scenario.commandJson(await abilityResponsePromise, 'USE_ABILITY', secondWindCommand);
   expect(abilityResult.events).toContainEqual(expect.objectContaining({
     type: 'ABILITY_USED',
     abilityId: 'second_wind',

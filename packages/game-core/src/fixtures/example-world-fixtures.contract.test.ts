@@ -1,7 +1,7 @@
 /**
  * Test layer: contract
  * Behavior: Example world fixture files load into WorldState objects matching fresh, mid-corruption, and ogre-emergence world profiles.
- * Proof: Assertions check validateWorldFixture success and loaded world fields including faction ids/counts and powers, dungeonOgre status/emergence run/depth, totalRuns, deepestFloor, town prosperity/fear, and highestRarityFound.
+ * Proof: Assertions check validateWorldFixture success and loaded world fields including faction ids/counts and powers, dungeonOgre status/emergence run/depth/selected spawn depth, totalRuns, deepestFloor, town prosperity/fear, and highestRarityFound.
  * Validation: pnpm vitest run packages/game-core/src/fixtures/example-world-fixtures.contract.test.ts
  */
 /**
@@ -172,6 +172,11 @@ describe('example world fixture: ogre-emergence-world', () => {
   it('dungeon ogre emerged at depth 8', () => {
     const world = loadWorldFromFixture(fixture);
     expect(world.dungeonOgre.emergedAtDepth).toBe(8);
+  });
+
+  it('dungeon ogre selected floor 8 for spawning', () => {
+    const world = loadWorldFromFixture(fixture);
+    expect(world.dungeonOgre.selectedSpawnDepth).toBe(8);
   });
 
   it('has 8 total runs', () => {

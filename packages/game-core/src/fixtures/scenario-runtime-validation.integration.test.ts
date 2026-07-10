@@ -65,7 +65,7 @@ const FRESH_WORLD: WorldFixture = { schemaVersion: 1 };
 const OGRE_WORLD: WorldFixture = {
   schemaVersion: 1,
   factions: [{ id: 'goblin_warband', power: 90, disposition: -80 }],
-  dungeonOgre: { status: 'emerged', emergedAfterRun: 10, emergedAtDepth: 8 },
+  dungeonOgre: { status: 'emerged', emergedAfterRun: 10, emergedAtDepth: 8, selectedSpawnDepth: 8 },
   totalRuns: 12,
   deepestFloor: 8,
 };

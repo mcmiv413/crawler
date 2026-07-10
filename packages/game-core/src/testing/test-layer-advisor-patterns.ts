@@ -21,7 +21,7 @@ export function findE2eTestOwnership(lines: readonly string[]): E2eTestOwnership
   const describeTitlePattern = /\btest\.describe(?:\.(?:only|skip|fixme|serial|parallel))*\s*\(\s*(['"`])([^\n]*?)\1/;
   let braceDepth = 0;
   let activeTest: { readonly title: string; readonly bodyDepth: number } | undefined;
-  const mutableDescribeStack: { readonly title: string; readonly bodyDepth: number }[] = [];
+  let describeStack: readonly { readonly title: string; readonly bodyDepth: number }[] = [];
   let pendingBlock: { readonly kind: 'describe' | 'test'; readonly title: string } | undefined;
   let hasRendererTest = false;
 
@@ -32,7 +32,7 @@ export function findE2eTestOwnership(lines: readonly string[]): E2eTestOwnership
     if (describeTitle !== undefined) {
       pendingBlock = { kind: 'describe', title: describeTitle };
     } else if (testTitle !== undefined) {
-      effectiveTestTitle = [...mutableDescribeStack.map(scope => scope.title), testTitle].join(' ');
+      effectiveTestTitle = [...describeStack.map(scope => scope.title), testTitle].join(' ');
       pendingBlock = { kind: 'test', title: effectiveTestTitle };
       hasRendererTest ||= /\brenderer\b/i.test(effectiveTestTitle);
     }
@@ -44,16 +44,16 @@ export function findE2eTestOwnership(lines: readonly string[]): E2eTestOwnership
     const nextBraceDepth = braceDepth + openingBraces - closingBraces;
     if (pendingBlock !== undefined && nextBraceDepth > braceDepth) {
       if (pendingBlock.kind === 'describe') {
-        mutableDescribeStack.push({ title: pendingBlock.title, bodyDepth: braceDepth + 1 });
+        describeStack = [...describeStack, { title: pendingBlock.title, bodyDepth: braceDepth + 1 }];
       } else {
         activeTest = { title: pendingBlock.title, bodyDepth: braceDepth + 1 };
       }
       pendingBlock = undefined;
     }
     if (activeTest !== undefined && nextBraceDepth < activeTest.bodyDepth) activeTest = undefined;
-    while (mutableDescribeStack.at(-1) !== undefined
-      && nextBraceDepth < (mutableDescribeStack.at(-1)?.bodyDepth ?? 0)) {
-      mutableDescribeStack.pop();
+    while (describeStack.at(-1) !== undefined
+      && nextBraceDepth < (describeStack.at(-1)?.bodyDepth ?? 0)) {
+      describeStack = describeStack.slice(0, -1);
     }
     braceDepth = nextBraceDepth;
   });

@@ -1,7 +1,7 @@
 /**
  * Test layer: contract
- * Behavior: Every example scenario validates against live resolvers, loads as dungeon state, and executes its documented gameplay action.
- * Proof: Assertions require empty validation errors, dungeon phase with non-null run, ENTITY_DIED on attack, negative MANA_CHANGED for ember, loot and health changes from chest/potion use, faction scaling above fresh world, and an attackable dungeon_ogre.
+ * Behavior: Every example scenario validates against live resolvers, loads as dungeon state, survives restore parsing, and executes its documented gameplay action.
+ * Proof: Assertions require empty validation errors, dungeon phase with non-null run, serializeState -> parseRestoreState success, ENTITY_DIED on attack, negative MANA_CHANGED for ember, loot and health changes from chest/potion use, faction scaling above fresh world, and an attackable dungeon_ogre.
  * Validation: pnpm vitest run tests/contracts/example-scenario-fixtures.contract.test.ts
  */
 /**
@@ -16,11 +16,13 @@
  */
 
 import { describe, it, expect } from 'vitest';
+import { parseRestoreState } from '../../apps/server/src/services/restore-game-service.js';
 import { GameEngine } from '../../packages/game-core/src/engine/game-engine.js';
 import {
   loadScenario,
   validateScenarioFixture,
 } from '../../packages/game-core/src/fixtures/scenario-fixture-loader.js';
+import { serializeState } from '../../packages/game-core/src/state/serialization.js';
 import type { ScenarioFixture } from '../../packages/game-core/src/fixtures/scenario-fixture-types.js';
 import { RESOLVERS, loadScenarioFile } from './helpers/fixture-loaders.js';
 
@@ -49,6 +51,12 @@ describe('Example scenario library: structural validity', () => {
       const { state } = loadScenario(loadScenarioFile(name), RESOLVERS);
       expect(state.phase).toBe('dungeon');
       expect(state.run).not.toBeNull();
+    });
+
+    it(`${name} survives serialized restore validation`, () => {
+      const { state } = loadScenario(loadScenarioFile(name), RESOLVERS);
+
+      expect(() => parseRestoreState(serializeState(state))).not.toThrow();
     });
   }
 });

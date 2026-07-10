@@ -13,7 +13,8 @@
   "dungeonOgre": {
     "status": "emerged",
     "emergedAfterRun": 6,
-    "emergedAtDepth": 8
+    "emergedAtDepth": 8,
+    "selectedSpawnDepth": 8
   },
   "town": { "prosperity": 25, "fear": 70, "corruption": 55 }
 }

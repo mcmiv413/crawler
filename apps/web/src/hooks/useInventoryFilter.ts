@@ -1,4 +1,5 @@
 import { useState } from 'react';
+import { sortedCopy } from '@dungeon/contracts';
 import type { InventoryItemView } from '@dungeon/presenter';
 
 export type InventoryFilterType = 'all' | 'weapons' | 'armor' | 'consumables';
@@ -66,9 +67,7 @@ export function sortInventoryItems<T extends FilterableItem>(
     return rarityDelta === 0 ? a.name.localeCompare(b.name) : rarityDelta;
   };
 
-  const mutableItems = Array.from(items);
-  mutableItems.sort(compareItems);
-  return mutableItems;
+  return sortedCopy(items, compareItems);
 }
 
 export function useInventoryFilter(items: readonly InventoryItemView[]): {

@@ -1,4 +1,5 @@
 import { useCallback, useEffect, useRef } from 'react';
+import { sortedCopy } from '@dungeon/contracts';
 import type {
   AnimatedEvent,
 } from '@dungeon/presenter';
@@ -17,8 +18,7 @@ interface QueuedBatch {
 }
 
 function createQueuedBatch(animatedEvents: readonly AnimatedEvent[]): QueuedBatch {
-  const mutableSortedEvents = [...animatedEvents];
-  mutableSortedEvents.sort((a, b) => {
+  const sortedEvents = sortedCopy(animatedEvents, (a, b) => {
     if (a.delayMs !== b.delayMs) {
       return a.delayMs - b.delayMs;
     }
@@ -27,7 +27,7 @@ function createQueuedBatch(animatedEvents: readonly AnimatedEvent[]): QueuedBatc
 
   return {
     batchId: animatedEvents[0]!.batchId,
-    events: mutableSortedEvents,
+    events: sortedEvents,
     settleMs: getAnimatedEventBatchSettleMs(animatedEvents),
     nextEventIndex: 0,
     logicalElapsedMs: 0,

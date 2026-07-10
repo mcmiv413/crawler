@@ -8,19 +8,16 @@ import { evaluateQuestProgress } from '../systems/quest-progress.js';
 export function evaluateAllQuestProgress(
   state: GameState,
 ): { state: GameState; events: DomainEvent[] } {
-  let currentState = state;
-  const mutableEvents: DomainEvent[] = [];
-
-  for (const quest of state.activeQuests) {
-    const result = evaluateQuestProgress(quest, currentState);
-    currentState = {
-      ...currentState,
-      activeQuests: currentState.activeQuests.map(q =>
-        q.id === quest.id ? result.quest : q,
-      ),
+  return state.activeQuests.reduce<{ state: GameState; events: DomainEvent[] }>((progress, quest) => {
+    const result = evaluateQuestProgress(quest, progress.state);
+    return {
+      state: {
+        ...progress.state,
+        activeQuests: progress.state.activeQuests.map(q =>
+          q.id === quest.id ? result.quest : q,
+        ),
+      },
+      events: [...progress.events, ...result.events],
     };
-    mutableEvents.push(...result.events);
-  }
-
-  return { state: currentState, events: mutableEvents };
+  }, { state, events: [] });
 }
