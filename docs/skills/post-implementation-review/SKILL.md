@@ -18,7 +18,8 @@ Use this skill after implementation work when the user asks for review or when a
 4. Check package boundaries: content stays static, core/server own runtime decisions, presenter owns read models, and web renders views.
 5. Check generated artifacts, persistence compatibility, presenter/UI split, docs, and validation evidence.
 6. Check `docs/feature-proofs.yml`, proof-file changes, browser proof routing, save compatibility fixtures, and `pnpm run check:feature-proofs` evidence.
-7. Produce findings ordered by severity, then summarize residual risk.
+7. For merge-intended pull-request work, verify the attestation ID, `PR_HEAD_SHA`, `POLICY_SHA`, `LANDING_COMMIT_SHA`, landing-commit parents, `EVALUATED_TREE_SHA`, verifier identity, policy digest, and `proofctl verify --pr=PR_NUMBER` status.
+8. Produce findings ordered by severity, then summarize residual risk.
 
 ## Review checklist
 
@@ -34,7 +35,8 @@ Use this skill after implementation work when the user asks for review or when a
 - Browser proof: browser-facing changes include component/E2E proof or a narrow justified allowlist.
 - Test layers: unit/property tests use builders/local fixtures; live content checks are in contract tests.
 - Docs: guides, checklists, and examples changed with the behavior.
-- Validation: final evidence includes `pnpm run check:feature-proofs`, `pnpm run check:fast`, and `pnpm validate`.
+- Validation: final local evidence includes `pnpm run check:feature-proofs`, `pnpm run check:fast`, and `pnpm validate`.
+- Remote attestation: merge-intended pull requests include a current attestation ID and passing `proofctl verify --pr=PR_NUMBER`; targeted tests, `pnpm run check:fast`, `pnpm validate:quick`, and `pnpm validate` alone are advisory.
 
 ## Finding format
 
