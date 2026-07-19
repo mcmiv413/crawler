@@ -76,21 +76,25 @@ Do not hand-edit the mirror trees. If the mirrors drift, regenerate them from `d
 
 4. Confirm planning or workflow changes still name deterministic guardrails with an enforcement home, known-bad case, and proof command when the plan needs them.
 
-5. When a skill changes feature delivery, make sure it tells agents to consult `docs/feature-proofs.yml`, add proof files for every changed production surface, run `pnpm run check:feature-proofs`, and finish on `pnpm validate`.
+5. When a skill changes feature delivery, make sure it tells agents to consult `docs/feature-proofs.yml`, add proof files for every changed production surface, run `pnpm run check:feature-proofs`, and include `pnpm validate` as local confidence.
 
-6. Run the targeted tooling test:
+6. When a skill guides merge-intended pull-request work, make sure it ends on the authoritative remote workflow: `proofctl plan --pr=PR_NUMBER` during planning, `proofctl validate --pr=PR_NUMBER` after commit and push, and `proofctl verify --pr=PR_NUMBER` before marking ready. Skills must not teach agents to claim completion from targeted tests, `pnpm run check:fast`, `pnpm validate:quick`, or `pnpm validate` alone.
+
+7. Run the targeted tooling test:
 
    ```bash
    pnpm vitest run tests/integration/repo-skills.integration.test.ts
    ```
 
-7. Finish on the normal repo gates:
+8. Finish on the normal repo gates, then remote proof when the change is intended to merge:
 
    ```bash
    pnpm run check:feature-proof-registry
    pnpm run check:fast
    pnpm validate:quick
    pnpm validate
+   proofctl validate --pr=PR_NUMBER
+   proofctl verify --pr=PR_NUMBER
    ```
 
 ## What Happens Automatically
@@ -105,6 +109,8 @@ Do not hand-edit the mirror trees. If the mirrors drift, regenerate them from `d
 |------|---------|
 | `docs/skills/planning/` | Canonical planning skill plus planning references |
 | `docs/skills/model-orchestrator/` | Canonical source for the existing model-orchestrator skill |
+| `docs/guides/deterministic-proof.md` | Authoritative proofctl workflow, external verifier boundary, and crawler policy contract |
+| `proof/crawler-policy.json` | Declarative crawler policy consumed by the external verifier at protected `POLICY_SHA` |
 | `docs/skills/ring-magic-triage/` | Scope classifier for ring, spell, school, and combo-work asks |
 | `docs/skills/adding-animation/` | Canonical animation-authoring skill and animation ownership references |
 | `docs/skills/adding-game-mechanic/` | Canonical 6-hop mechanic skill and feature-chain references |

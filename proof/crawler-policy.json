@@ -1,0 +1,199 @@
+{
+  "schemaVersion": "crawler-proof-policy/v1",
+  "challengeSchemaVersion": "crawler-proof-challenge/v1",
+  "minimumVerifierVersion": "0.1.0",
+  "verifier": {
+    "implementationLocation": "external-protected-repository",
+    "release": {
+      "version": "0.1.0",
+      "sourceCommitSha": "0000000000000000000000000000000000000000",
+      "releaseArtifactSha256": "sha256:0000000000000000000000000000000000000000000000000000000000000000",
+      "commandCatalogVersion": "crawler-command-catalog/v1",
+      "resultAdapterVersion": "crawler-result-adapter/v1"
+    },
+    "serviceEndpoint": "https://proof.verifier.invalid/crawler",
+    "minimumClientVersion": "0.1.0"
+  },
+  "authority": {
+    "localEvidence": "advisory",
+    "authoritativeValidation": "remote-verifier-service",
+    "mergeAdmission": "installed-github-app",
+    "nativeGitHubActions": "not-authoritative"
+  },
+  "protectedBranches": [
+    {
+      "name": "main",
+      "updatesAllowedOnlyFrom": "installed-github-app",
+      "forcePush": false,
+      "humanDirectPush": false,
+      "nativeSquashMerge": false,
+      "nativeRebaseMerge": false,
+      "requireLinearHistory": false,
+      "requireSignedCommits": false
+    }
+  ],
+  "policyReconciliation": {
+    "trustedPolicySource": "POLICY_SHA",
+    "effectiveContract": "union-of-policy-and-head-additions",
+    "headMayAdd": [
+      "owner-paths",
+      "required-proof-mappings",
+      "focused-obligations",
+      "proof-owners",
+      "scenario-fixtures",
+      "proof-ids",
+      "challenge-proposals"
+    ],
+    "headMayNotWeaken": [
+      "owner-paths",
+      "required-proof-mappings",
+      "focused-obligations",
+      "proof-ownership",
+      "quarantines",
+      "protected-challenges"
+    ],
+    "newSamePullRequestFeatures": "fallback-proof-required-until-merged"
+  },
+  "featureContracts": {
+    "source": "docs/feature-proofs.yml",
+    "activationReasons": [
+      "owner-path-change",
+      "required-proof-owner-change",
+      "scenario-fixture-change",
+      "validation-declaration-change",
+      "challenge-declaration-change",
+      "semantic-registry-change",
+      "durable-proof-id-owner-change",
+      "trusted-e2e-spec-change"
+    ],
+    "proofIdDiscovery": [
+      "restricted-file-header",
+      "declarative-sidecar-manifest",
+      "statically-parsed-allowlisted-helper-call"
+    ]
+  },
+  "commandModel": {
+    "freeFormShell": false,
+    "commandKinds": [
+      "protected-stage",
+      "vitest",
+      "playwright",
+      "head-lint",
+      "head-typecheck",
+      "head-build",
+      "sensitivity-challenge"
+    ],
+    "protectedStages": [
+      "registry-validation",
+      "feature-proof-validation",
+      "proof-id-validation",
+      "test-quality-validation",
+      "animation-validation",
+      "ability-contract-validation",
+      "export-shape-validation"
+    ]
+  },
+  "globalValidation": {
+    "fullSuiteFallback": "non-bailing",
+    "stages": [
+      "protected-registry-validation",
+      "protected-feature-proof-validation",
+      "protected-proof-id-validation",
+      "protected-test-quality-validation",
+      "protected-animation-validation",
+      "protected-ability-contract-validation",
+      "head-lint",
+      "head-typecheck",
+      "head-full-non-bailing-vitest-suite",
+      "head-build",
+      "protected-export-shape-validation"
+    ]
+  },
+  "globalExactSpecRules": {
+    "changedE2eSpec": "run-exact-spec-under-protected-project-set",
+    "changedPlaywrightSupportPath": "run-browser-smoke-scenario-and-renderer-suites",
+    "changedScenarioFixture": "run-scenario-fixture-contract-and-scenario-e2e-suite",
+    "changedSharedPlaywrightConfiguration": "run-browser-smoke-scenario-and-renderer-suites",
+    "changedBrowserAdapterOrMetadata": "run-browser-smoke-scenario-and-renderer-suites"
+  },
+  "fallbackProofMapping": {
+    "general-contract": "protected-non-bailing-full-vitest-suite",
+    "core-runtime": "protected-non-bailing-full-vitest-suite",
+    "feature-chain": "protected-non-bailing-full-vitest-suite",
+    "presenter": "protected-non-bailing-full-vitest-suite",
+    "web-ui": "protected-non-bailing-full-vitest-suite",
+    "content-id": "protected-content-cross-reference-contract",
+    "ability": "protected-ability-contract-stage",
+    "animation-or-three-rendering": "protected-animation-stage-and-renderer-e2e-suite",
+    "persistence": "save-compatibility-tests-and-save-snapshot-scenario-contracts",
+    "browser-facing": "scenario-e2e-suite"
+  },
+  "repositoryDrift": {
+    "checkpoints": [
+      "clean-checkout",
+      "post-install-pre-proof",
+      "post-proof"
+    ],
+    "gitignoreBoundsVisibility": false,
+    "dependencyRoots": "read-only-with-digest",
+    "installOutputAllowlist": [
+      ".pnpm-store/**"
+    ],
+    "proofOutputAllowlist": [
+      ".validate-logs/**",
+      "test-results/**",
+      "playwright-report/**"
+    ],
+    "allowlistNeverExempts": [
+      "tracked-file-modification",
+      "tracked-file-deletion",
+      "tracked-mode-change",
+      "tracked-type-change",
+      "preexisting-boundary-path"
+    ]
+  },
+  "landingCommit": {
+    "commitObject": "deterministic-service-owned-merge-commit",
+    "firstParent": "POLICY_SHA",
+    "secondParent": "PR_HEAD_SHA",
+    "tree": "GITHUB_MERGE_TREE_SHA",
+    "signature": "none",
+    "author": {
+      "name": "Crawler Proof Verifier",
+      "email": "crawler-proof-verifier@example.invalid"
+    },
+    "committer": {
+      "name": "Crawler Proof Verifier",
+      "email": "crawler-proof-verifier@example.invalid"
+    },
+    "authorDate": "pr-head-author-date-utc",
+    "committerDate": "policy-sha-committer-date-plus-one-second-utc",
+    "messageTemplate": "Attested merge of {PR_HEAD_SHA} onto {POLICY_SHA}\n"
+  },
+  "attestationIdentities": [
+    "POLICY_SHA",
+    "PR_HEAD_SHA",
+    "MERGE_BASE_SHA",
+    "GITHUB_MERGE_TREE_SHA",
+    "LANDING_COMMIT_SHA",
+    "EVALUATED_TREE_SHA"
+  ],
+  "policyRetirement": {
+    "mode": "proofctl validate --pr=PR_NUMBER --mode=policy-retirement",
+    "changedPaths": "allowlisted-policy-files-only",
+    "requiresCodeownersApprovalBoundToPrHeadSha": true,
+    "mixedPolicyAndImplementationChange": "rejected"
+  },
+  "localWorkflow": [
+    "develop-and-run-targeted-tests",
+    "commit-and-push-branch",
+    "open-draft-pull-request",
+    "proofctl plan --pr=PR_NUMBER",
+    "review-selected-obligations",
+    "proofctl validate --pr=PR_NUMBER",
+    "record-remote-attestation-id",
+    "proofctl verify --pr=PR_NUMBER",
+    "mark-pull-request-ready",
+    "request-attested-merge-through-github-app"
+  ]
+}
