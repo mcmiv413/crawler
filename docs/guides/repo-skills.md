@@ -78,7 +78,7 @@ Do not hand-edit the mirror trees. If the mirrors drift, regenerate them from `d
 
 5. When a skill changes feature delivery, make sure it tells agents to consult `docs/feature-proofs.yml`, add proof files for every changed production surface, run `pnpm run check:feature-proofs`, and include `pnpm validate` as local confidence.
 
-6. When a skill guides merge-intended pull-request work, make sure it ends on the authoritative remote workflow: `proofctl plan --pr=PR_NUMBER` during planning, `proofctl validate --pr=PR_NUMBER` after commit and push, and `proofctl verify --pr=PR_NUMBER` before marking ready. Skills must not teach agents to claim completion from targeted tests, `pnpm run check:fast`, `pnpm validate:quick`, or `pnpm validate` alone.
+6. When a skill guides merge-intended pull-request work, make sure it includes advisory `proofctl plan --repository PATH --base BASE_SHA --head HEAD_SHA` during planning. Do not make `proofctl validate` or `proofctl verify` required current steps; document them as arriving with PR0B/PR0C. Skills must not teach agents to claim completion from targeted tests, `pnpm run check:fast`, `pnpm validate:quick`, or `pnpm validate` alone once the remote attestation flow exists.
 
 7. Run the targeted tooling test:
 
@@ -86,13 +86,15 @@ Do not hand-edit the mirror trees. If the mirrors drift, regenerate them from `d
    pnpm vitest run tests/integration/repo-skills.integration.test.ts
    ```
 
-8. Finish on the normal repo gates, then remote proof when the change is intended to merge:
+8. Finish on the normal repo gates and advisory proof planning when deterministic proof is in scope. Remote `proofctl validate --pr=PR_NUMBER` and `proofctl verify --pr=PR_NUMBER` become final merge-intended steps only after PR0B/PR0C provide those capabilities:
 
    ```bash
    pnpm run check:feature-proof-registry
    pnpm run check:fast
    pnpm validate:quick
    pnpm validate
+   proofctl plan --repository PATH --base BASE_SHA --head HEAD_SHA
+   # After PR0B/PR0C:
    proofctl validate --pr=PR_NUMBER
    proofctl verify --pr=PR_NUMBER
    ```

@@ -31,8 +31,8 @@ If the task grows beyond that threshold, stop and route to `planning`.
 5. Re-check scope during implementation. If new files, higher risk, or design questions appear, stop and escalate to `planning`.
 6. Do a brief self-review for edge cases, naming, and security-sensitive mistakes.
 7. Run the smallest relevant validation first, then end on the repo gate that matches the change. Code changes should still finish on `pnpm validate`.
-8. For pull-request work intended to merge, commit and push the branch, run `proofctl validate --pr=PR_NUMBER`, and then run `proofctl verify --pr=PR_NUMBER` before marking the pull request ready.
-9. Do not claim completion from targeted tests, `pnpm run check:fast`, `pnpm validate:quick`, or `pnpm validate` alone when remote authoritative validation is required.
+8. When deterministic proof planning is in scope, run the released `proofctl plan --repository PATH --base BASE_SHA --head HEAD_SHA` and keep the selected obligations intact.
+9. Do not require `proofctl validate` or `proofctl verify` today; those authoritative remote steps arrive with PR0B/PR0C.
 
 ## Escalation triggers
 
@@ -48,4 +48,4 @@ Escalate out of `quick-task` immediately if:
 - Do not create repo-local planning files.
 - Do not silently turn a quick task into a medium-sized rollout.
 - If the task is actually a bug report or workflow problem, consider `issue-report` instead of implementing immediately.
-- A small diff is not exempt from the remote proof requirement once it is intended to merge.
+- A small diff is not exempt from advisory `proofctl plan` when deterministic proof planning is in scope, and it will not be exempt from remote proof once PR0B/PR0C make validation and attestation verification available.
