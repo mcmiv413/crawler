@@ -47,9 +47,7 @@ The game is **fully playable without LM Studio**. To enable LM Studio locally, s
 | `pnpm test:e2e:scenario` | Run scenario-driven browser coverage for browser-facing changes |
 | `pnpm run check:feature-proofs` | Verify production feature changes include matching proof files |
 | `pnpm run check:feature-proof-registry` | Validate `docs/feature-proofs.yml` ownership and proof metadata |
-| `pnpm proof:plan -- --pr=PR_NUMBER` | Convenience alias for advisory remote proof planning; direct `proofctl plan --pr=PR_NUMBER` is canonical |
-| `pnpm proof:validate -- --pr=PR_NUMBER` | Convenience alias for authoritative remote validation; direct `proofctl validate --pr=PR_NUMBER` is canonical |
-| `pnpm proof:verify -- --pr=PR_NUMBER` | Convenience alias for attestation freshness verification; direct `proofctl verify --pr=PR_NUMBER` is canonical |
+| `pnpm proof:plan -- --repository PATH --base BASE_SHA --head HEAD_SHA` | Convenience alias for advisory verifier planning with installed `proofctl 0.2.0`; direct `proofctl plan --repository PATH --base BASE_SHA --head HEAD_SHA` is canonical |
 | `pnpm test:mutation:critical` | Check critical mutation-test configuration in report-only mode |
 | `pnpm validate` | Run the repository validation gate: tracked-artifact checks -> audit guardrails -> lint -> test -> build |
 | `pnpm skills:generate` | Rebuild `.github/skills/`, `.claude/skills/`, and `.agents/skills/` from `docs/skills/` |
@@ -158,7 +156,7 @@ This ensures the Docker build works and the containerized app is fully functiona
 
 ### Validation Gate
 
-Use `pnpm validate` as the local repository confidence gate. It runs audit guardrails, linting, the Vitest suites, and the production builds in the same order CI uses. For pull requests intended to merge, local validation is advisory: after committing, pushing, and opening a draft pull request, run `proofctl validate --pr=PR_NUMBER` and then `proofctl verify --pr=PR_NUMBER`. The remote verifier service and GitHub App provide authoritative proof and merge admission.
+Use `pnpm validate` as the local repository confidence gate. It runs audit guardrails, linting, the Vitest suites, and the production builds in the same order CI uses. Local validation and `proofctl plan --repository PATH --base BASE_SHA --head HEAD_SHA` are advisory today. Authoritative `proofctl validate` and attestation `proofctl verify` arrive with the PR0B/PR0C verifier service work, and the GitHub App merge gate arrives after that.
 
 The repo intentionally keeps its deterministic smoke checks split by responsibility instead of folding them into one opaque meta-validator:
 

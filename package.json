@@ -49,8 +49,6 @@
     "check:workspace-wiring": "node scripts/check-workspace-wiring.mjs",
     "check:exports": "node scripts/check-package-exports.mjs",
     "proof:plan": "proofctl plan",
-    "proof:validate": "proofctl validate",
-    "proof:verify": "proofctl verify",
     "ci:verify": "pnpm run clean:zone-identifiers && pnpm run clean:artifacts && pnpm install --frozen-lockfile && pnpm build && pnpm run check:exports && pnpm test:verbose",
     "test:e2e": "playwright test",
     "test:e2e:smoke": "playwright test --grep \"@smoke\"",

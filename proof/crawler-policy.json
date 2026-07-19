@@ -1,18 +1,16 @@
 {
   "schemaVersion": "crawler-proof-policy/v1",
   "challengeSchemaVersion": "crawler-proof-challenge/v1",
-  "minimumVerifierVersion": "0.1.0",
+  "minimumVerifierVersion": "0.2.0",
   "verifier": {
     "implementationLocation": "external-protected-repository",
     "release": {
-      "version": "0.1.0",
-      "sourceCommitSha": "0000000000000000000000000000000000000000",
-      "releaseArtifactSha256": "sha256:0000000000000000000000000000000000000000000000000000000000000000",
-      "commandCatalogVersion": "crawler-command-catalog/v1",
-      "resultAdapterVersion": "crawler-result-adapter/v1"
+      "repository": "github.com/mcmiv413/agent-verifier",
+      "tag": "v0.2.0",
+      "sourceSha": "7d9f35fcfb011c1978e1bf6c76cae24290e8ba03",
+      "artifactDigest": "75bdfbc9f5c76771f41adf9e69ee4bf684f9731de44dc6cff1b03c51e6d453ee"
     },
-    "serviceEndpoint": "https://proof.verifier.invalid/crawler",
-    "minimumClientVersion": "0.1.0"
+    "minimumClientVersion": "0.2.0"
   },
   "authority": {
     "localEvidence": "advisory",
@@ -160,11 +158,11 @@
     "signature": "none",
     "author": {
       "name": "Crawler Proof Verifier",
-      "email": "crawler-proof-verifier@example.invalid"
+      "email": "crawler-proof-verifier@noreply.github.com"
     },
     "committer": {
       "name": "Crawler Proof Verifier",
-      "email": "crawler-proof-verifier@example.invalid"
+      "email": "crawler-proof-verifier@noreply.github.com"
     },
     "authorDate": "pr-head-author-date-utc",
     "committerDate": "policy-sha-committer-date-plus-one-second-utc",
@@ -179,21 +177,20 @@
     "EVALUATED_TREE_SHA"
   ],
   "policyRetirement": {
-    "mode": "proofctl validate --pr=PR_NUMBER --mode=policy-retirement",
+    "mode": "planned-authoritative-policy-retirement-validation-after-pr0b-pr0c",
     "changedPaths": "allowlisted-policy-files-only",
     "requiresCodeownersApprovalBoundToPrHeadSha": true,
     "mixedPolicyAndImplementationChange": "rejected"
   },
   "localWorkflow": [
+    "install-proofctl-v0.2.0-from-github.com/mcmiv413/agent-verifier-release-v0.2.0",
+    "verify-proofctl-artifact-digest",
     "develop-and-run-targeted-tests",
+    "proofctl plan --repository PATH --base BASE_SHA --head HEAD_SHA",
+    "review-selected-obligations",
+    "run-local-validation-gates",
     "commit-and-push-branch",
     "open-draft-pull-request",
-    "proofctl plan --pr=PR_NUMBER",
-    "review-selected-obligations",
-    "proofctl validate --pr=PR_NUMBER",
-    "record-remote-attestation-id",
-    "proofctl verify --pr=PR_NUMBER",
-    "mark-pull-request-ready",
-    "request-attested-merge-through-github-app"
+    "await-pr0b-pr0c-for-authoritative-validation-attestation-and-merge-admission"
   ]
 }

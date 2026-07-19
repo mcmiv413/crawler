@@ -29,8 +29,8 @@ If no approved plan exists, stop and route back to `planning`.
 10. Test from the smallest affected scope first. If quiet output fails, rerun the failing scope with full output before diagnosing.
 11. Run `pnpm run check:feature-proofs` before `pnpm run check:fast`. Browser-facing changes need component proof or `pnpm test:e2e:scenario`; persisted state changes need save compatibility proof.
 12. Run the local gates required by the repo workflow: `pnpm run check:fast`, `pnpm validate:quick`, and `pnpm validate`.
-13. For pull-request work intended to merge, commit and push the completed branch, run `proofctl validate --pr=PR_NUMBER`, then run `proofctl verify --pr=PR_NUMBER` before marking the pull request ready.
-14. Do not claim completion from targeted tests, `pnpm run check:fast`, `pnpm validate:quick`, or `pnpm validate` alone when remote authoritative validation is required.
+13. When deterministic proof planning is in scope, run the released `proofctl plan --repository PATH --base BASE_SHA --head HEAD_SHA` and keep the selected obligations intact.
+14. Do not require `proofctl validate` or `proofctl verify` today; those authoritative remote steps arrive with PR0B/PR0C.
 
 ## Plan-fidelity rules
 
@@ -48,7 +48,7 @@ If no approved plan exists, stop and route back to `planning`.
 - Dot-walk or import content references where practical instead of repeating raw IDs.
 - Unit/property tests use builders and local fixtures. Live content checks belong in contract tests.
 - Do not use `feature-proof` allowlists unless the diff is demonstrably non-behavioral or browser output truly cannot change, and always include a concrete reason.
-- Do not replace verifier-selected proof obligations with a smaller local command set. Local validation is advisory; the signed remote attestation is authoritative for merge admission.
+- Do not replace verifier-selected proof obligations with a smaller local command set. Local validation and local `proofctl plan` output are advisory until the signed remote attestation flow arrives with PR0B/PR0C.
 
 ## Completion report
 
@@ -59,5 +59,5 @@ Report:
 - whether generated artifacts were regenerated
 - which deviation decisions were needed, if any
 - validation commands run, ending with `pnpm validate`
-- remote proof commands run, ending with `proofctl verify --pr=PR_NUMBER`, when the work is merge-intended
+- local `proofctl plan --repository PATH --base BASE_SHA --head HEAD_SHA` evidence, when deterministic proof planning is in scope
 - any follow-up risks or bugs logged

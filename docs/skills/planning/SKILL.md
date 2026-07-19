@@ -17,7 +17,7 @@ Use this skill when the user asks for a plan, a plan review, sequencing advice, 
 6. Enumerate affected surfaces: entry points, state, events, contracts, persistence, migrations/defaults, restore/session behavior, validators, presenter/read model, UI/store, docs, generated artifacts, and final validation.
 7. Convert work into acceptance stories with proof homes. Use the lightest correct test layer: unit/property for pure logic, contract for live IDs and cross-references, integration for flow, presenter/UI for read models and rendering, E2E only when lower layers are not enough.
 8. Check `docs/feature-proofs.yml` for existing proof ownership. Plans that add a major mechanic or new proof home should update the registry.
-9. For pull-request work intended to merge under deterministic proof, push the branch, open a draft pull request, run `proofctl plan --pr=PR_NUMBER`, copy the selected obligations into the implementation plan, and do not choose a smaller proof set.
+9. For deterministic proof planning, install the released `proofctl 0.2.0`, run `proofctl plan --repository PATH --base BASE_SHA --head HEAD_SHA`, copy the selected obligations into the implementation plan, and do not choose a smaller proof set.
 10. Identify guardrails for repeated, severe, or easy-to-regress patterns. Prefer deterministic checks with a clear enforcement home: ESLint/type rule, audit script, generator check, test helper, CI gate, or validation gate. Avoid one-off checks that only match the current incident unless they enforce a documented repo pattern.
 11. Build workstreams as vertical slices using `references/deliverable-template.md`. Name real files, new files, proof targets, guardrail homes, and exit criteria for each slice.
 12. Run a readiness pass before presenting the plan:
@@ -29,8 +29,9 @@ Use this skill when the user asks for a plan, a plan review, sequencing advice, 
    - new tests are tracked by git, not ignored, and run in the intended validation layer
    - the plan includes `pnpm run check:feature-proofs` before `pnpm run check:fast`
    - the local validation plan includes `pnpm validate`
-   - merge-intended pull-request work ends on `proofctl validate --pr=PR_NUMBER` followed by `proofctl verify --pr=PR_NUMBER`
-   - selected remote proof obligations from `proofctl plan --pr=PR_NUMBER` are present and not narrowed
+   - deterministic proof planning uses `proofctl plan --repository PATH --base BASE_SHA --head HEAD_SHA`
+   - `proofctl validate` and `proofctl verify` are documented as arriving with PR0B/PR0C, not as required current steps
+   - selected proof obligations from `proofctl plan --repository PATH --base BASE_SHA --head HEAD_SHA` are present and not narrowed
 
 ## Required plan structure
 
@@ -66,7 +67,7 @@ Use this section order unless the user explicitly wants a different format:
 - If tests are added outside colocated unit tests, require evidence that they are tracked and included in the intended runner or contract suite.
 - If docs or examples would teach the old pattern, include docs updates in scope.
 - If a confirmed bug is discovered during planning, require a `docs/bugs/` entry before implementation unless the user already scoped bug fixing.
-- Never end a plan on partial evidence. Targeted tests are iteration proof, `pnpm validate` is local confidence, and merge-intended pull requests still require `proofctl validate --pr=PR_NUMBER` followed by `proofctl verify --pr=PR_NUMBER`.
+- Never end a plan on partial evidence. Targeted tests are iteration proof, `pnpm validate` is local confidence, and deterministic proof planning uses the released `proofctl plan --repository PATH --base BASE_SHA --head HEAD_SHA`. Remote `proofctl validate` and `proofctl verify` become required only after PR0B/PR0C provide those services.
 
 ## Handoff expectations
 
