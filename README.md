@@ -47,7 +47,7 @@ The game is **fully playable without LM Studio**. To enable LM Studio locally, s
 | `pnpm test:e2e:scenario` | Run scenario-driven browser coverage for browser-facing changes |
 | `pnpm run check:feature-proofs` | Verify production feature changes include matching proof files |
 | `pnpm run check:feature-proof-registry` | Validate `docs/feature-proofs.yml` ownership and proof metadata |
-| `pnpm proof:plan -- --repository PATH --base BASE_SHA --head HEAD_SHA` | Convenience alias for advisory verifier planning with installed `proofctl 0.2.0`; direct `proofctl plan --repository PATH --base BASE_SHA --head HEAD_SHA` is canonical |
+| `pnpm proof:plan -- --repository PATH --base BASE_SHA --head HEAD_SHA` | Convenience alias for advisory verifier planning with installed `proofctl 0.4.2`; direct `proofctl plan --repository PATH --base BASE_SHA --head HEAD_SHA` is canonical |
 | `pnpm test:mutation:critical` | Check critical mutation-test configuration in report-only mode |
 | `pnpm validate` | Run the repository validation gate: tracked-artifact checks -> audit guardrails -> lint -> test -> build |
 | `pnpm skills:generate` | Rebuild `.github/skills/`, `.claude/skills/`, and `.agents/skills/` from `docs/skills/` |
