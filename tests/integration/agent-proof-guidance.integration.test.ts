@@ -46,9 +46,9 @@ type CrawlerPolicy = {
 
 const releasedVerifier = {
   repository: 'github.com/mcmiv413/agent-verifier',
-  tag: 'v0.2.0',
-  sourceSha: '7d9f35fcfb011c1978e1bf6c76cae24290e8ba03',
-  artifactDigest: '75bdfbc9f5c76771f41adf9e69ee4bf684f9731de44dc6cff1b03c51e6d453ee',
+  tag: 'v0.4.2',
+  sourceSha: '31a195d774982ae04c4e157c0bbd5c3b0ff33515',
+  artifactDigest: 'ab25db52939959362eaca3c4dc8374228c0e12c2532719e90a78ecb3a9591318',
 } as const;
 
 function readRepoFile(relativePath: string): string {
@@ -97,7 +97,7 @@ describe('deterministic proof guidance', () => {
     const planningSkill = readRepoFile('docs/skills/planning/SKILL.md');
 
     requirePhrasesInOrder(planningSkill, [
-      'install the released `proofctl 0.2.0`',
+      'install the released `proofctl 0.4.2`',
       '`proofctl plan --repository PATH --base BASE_SHA --head HEAD_SHA`',
       'copy the selected obligations into the implementation plan',
       'do not choose a smaller proof set',
@@ -178,8 +178,8 @@ describe('deterministic proof guidance', () => {
 
     expect(policy.schemaVersion).toBe('crawler-proof-policy/v1');
     expect(policy.challengeSchemaVersion).toBe('crawler-proof-challenge/v1');
-    expect(policy.minimumVerifierVersion).toBe('0.2.0');
-    expect(policy.verifier.minimumClientVersion).toBe('0.2.0');
+    expect(policy.minimumVerifierVersion).toBe('0.4.2');
+    expect(policy.verifier.minimumClientVersion).toBe('0.4.2');
     expect(policy.verifier.release).toEqual(releasedVerifier);
     expect(policy.verifier.serviceEndpoint).toBeUndefined();
   });
@@ -219,7 +219,7 @@ describe('deterministic proof guidance', () => {
       signature: 'none',
     });
     expect(policy.localWorkflow).toEqual([
-      'install-proofctl-v0.2.0-from-github.com/mcmiv413/agent-verifier-release-v0.2.0',
+      'install-proofctl-v0.4.2-from-github.com/mcmiv413/agent-verifier-release-v0.4.2',
       'verify-proofctl-artifact-digest',
       'develop-and-run-targeted-tests',
       'proofctl plan --repository PATH --base BASE_SHA --head HEAD_SHA',

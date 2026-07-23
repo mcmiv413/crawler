@@ -1,16 +1,16 @@
 {
   "schemaVersion": "crawler-proof-policy/v1",
   "challengeSchemaVersion": "crawler-proof-challenge/v1",
-  "minimumVerifierVersion": "0.2.0",
+  "minimumVerifierVersion": "0.4.2",
   "verifier": {
     "implementationLocation": "external-protected-repository",
     "release": {
       "repository": "github.com/mcmiv413/agent-verifier",
-      "tag": "v0.2.0",
-      "sourceSha": "7d9f35fcfb011c1978e1bf6c76cae24290e8ba03",
-      "artifactDigest": "75bdfbc9f5c76771f41adf9e69ee4bf684f9731de44dc6cff1b03c51e6d453ee"
+      "tag": "v0.4.2",
+      "sourceSha": "31a195d774982ae04c4e157c0bbd5c3b0ff33515",
+      "artifactDigest": "ab25db52939959362eaca3c4dc8374228c0e12c2532719e90a78ecb3a9591318"
     },
-    "minimumClientVersion": "0.2.0"
+    "minimumClientVersion": "0.4.2"
   },
   "authority": {
     "localEvidence": "advisory",
@@ -183,7 +183,7 @@
     "mixedPolicyAndImplementationChange": "rejected"
   },
   "localWorkflow": [
-    "install-proofctl-v0.2.0-from-github.com/mcmiv413/agent-verifier-release-v0.2.0",
+    "install-proofctl-v0.4.2-from-github.com/mcmiv413/agent-verifier-release-v0.4.2",
     "verify-proofctl-artifact-digest",
     "develop-and-run-targeted-tests",
     "proofctl plan --repository PATH --base BASE_SHA --head HEAD_SHA",

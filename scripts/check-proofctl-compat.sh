@@ -33,9 +33,9 @@ git -C "$fixture_root" commit -m "Add fixture head change" >/dev/null
 head_sha="$(git -C "$fixture_root" rev-parse HEAD)"
 version_output="$("$PROOFCTL_BIN" --version)"
 
-if [[ "$version_output" != *"proofctl 0.2.0"* ]]; then
+if [[ "$version_output" != *"proofctl 0.4.2"* ]]; then
   echo "$version_output" >&2
-  echo "PROOFCTL_BIN did not report proofctl 0.2.0." >&2
+  echo "PROOFCTL_BIN did not report proofctl 0.4.2." >&2
   exit 1
 fi
 

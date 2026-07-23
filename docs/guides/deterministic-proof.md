@@ -7,7 +7,7 @@ No crawler JavaScript or TypeScript file may select proof obligations, classify 
 ## Authority Model
 
 - Local `pnpm` validation is advisory implementation feedback.
-- `proofctl plan --repository PATH --base BASE_SHA --head HEAD_SHA` is available now in the released `proofctl 0.2.0` CLI. It reports verifier-selected obligations for local advisory planning; agents copy those obligations into the implementation plan and must not choose a smaller set.
+- `proofctl plan --repository PATH --base BASE_SHA --head HEAD_SHA` is available now in the released `proofctl 0.4.2` CLI. It reports verifier-selected obligations for local advisory planning; agents copy those obligations into the implementation plan and must not choose a smaller set.
 - Authoritative remote validation arrives with PR0B and PR0C. Until then, `proofctl validate` must not be treated as a required crawler-side step.
 - Attestation freshness verification arrives with PR0C. Until then, `proofctl verify` must not be treated as a required crawler-side step.
 - The GitHub App, not GitHub Actions or a status check with the same name, will control merge admission after PR0D.
@@ -29,20 +29,20 @@ Feature ownership remains in [docs/feature-proofs.yml](../feature-proofs.yml). T
 
 ## Released Verifier
 
-The active parser/planner release is `proofctl 0.2.0` from `github.com/mcmiv413/agent-verifier` tag `v0.2.0`.
+The active parser/planner release is `proofctl 0.4.2` from `github.com/mcmiv413/agent-verifier` tag `v0.4.2`.
 
-- Source SHA: `7d9f35fcfb011c1978e1bf6c76cae24290e8ba03`
-- Artifact SHA-256: `75bdfbc9f5c76771f41adf9e69ee4bf684f9731de44dc6cff1b03c51e6d453ee`
+- Source SHA: `31a195d774982ae04c4e157c0bbd5c3b0ff33515`
+- Artifact SHA-256: `ab25db52939959362eaca3c4dc8374228c0e12c2532719e90a78ecb3a9591318`
 - Supported policy schema: `crawler-proof-policy/v1`
 - Supported challenge schema: `crawler-proof-challenge/v1`
 
-Install from that repository's `RELEASE.md`: download `proofctl` and `proofctl.sha256` from release `v0.2.0`, run `sha256sum -c proofctl.sha256`, make the binary executable, and put it on `PATH`.
+Install from that repository's `RELEASE.md`: download `proofctl` and `proofctl.sha256` from release `v0.4.2`, run `sha256sum -c proofctl.sha256`, make the binary executable, and put it on `PATH`.
 
 ## Agent Workflow
 
 Planning:
 
-1. Install `proofctl 0.2.0` from the verifier release and verify its artifact digest.
+1. Install `proofctl 0.4.2` from the verifier release and verify its artifact digest.
 2. Run `proofctl plan --repository PATH --base BASE_SHA --head HEAD_SHA`.
 3. Copy the selected obligations into the implementation plan.
 4. Do not replace the selected obligations with a smaller local test set.
